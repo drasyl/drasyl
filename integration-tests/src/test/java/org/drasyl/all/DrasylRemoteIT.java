@@ -27,7 +27,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
-class RelayServerIT {
+class DrasylRemoteIT {
     @BeforeEach
     void setUp() {
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
@@ -46,7 +46,7 @@ class RelayServerIT {
 
     @Test
     public void startFailed() throws DrasylException {
-        Config config = ConfigFactory.parseString("relay.port = 72522").withFallback(ConfigFactory.load());
+        Config config = ConfigFactory.parseString("drasyl.port = 72522").withFallback(ConfigFactory.load());
         Drasyl drasyl = new Drasyl(config);
         drasyl.open();
         assertThrows(DrasylException.class, drasyl::awaitOpen);

@@ -4,7 +4,7 @@ ADD all/target/drasyl-*.zip ./
 ADD all/monitoring-page drasyl/monitoring-page
 
 RUN unzip -qq './drasyl-*.zip' -d ./drasyl && \
-    rm ./relayserver-*.zip
+    rm ./drasyl-*.zip
 
 # our final base image
 FROM kroeb/slim-jre-11-with-curl:latest
@@ -12,7 +12,7 @@ FROM kroeb/slim-jre-11-with-curl:latest
 COPY --from=build ./drasyl/drasyl-* /drasyl/
 COPY --from=build drasyl/monitoring-page/dist/ /drasyl/public/
 
-WORKDIR ./relayserver
+WORKDIR ./drasyl
 
 EXPOSE 22527 8080
 
