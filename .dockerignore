@@ -1,0 +1,9 @@
+# IntelliJ IDEA
+.idea
+**/*.iml
+
+# macOS
+.DS_Store
+
+# node
+all/monitoring-page/node_modules

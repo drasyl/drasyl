@@ -1,0 +1,85 @@
+image: maven:3.6.0-jdk-11
+
+cache:
+  key: "$CI_COMMIT_REF_SLUG"
+  untracked: false
+  paths:
+    - .m2/repository
+    - all/monitoring-page/node_modules/
+
+variables:
+  MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
+  MAVEN_CLI_OPTS: "-s .m2/settings.xml --batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true"
+
+# Node stage to build the monitoring page
+node:
+  image: node:latest
+  stage: pre_build
+  before_script:
+    - cd all/monitoring-page
+  script:
+    - npm install
+    - npm run-script build
+  artifacts:
+    paths:
+      - all/monitoring-page/dist/
+  cache:
+    key: "$CI_COMMIT_REF_SLUG"
+    paths:
+      - all/monitoring-page/node_modules/
+
+# Extra stage for sonar (artifactId must be replaced for sonar)
+test:
+  stage: pre_build
+  script:
+    - 'sh .gitlab-ci/mvnreplace.sh ${CI_COMMIT_REF_NAME}'
+    - 'mvn $MAVEN_CLI_OPTS verify sonar:sonar'
+  after_script:
+    - '/bin/bash .gitlab-ci/coverage-jacoco.sh'
+  coverage: '/\d+.\d+ \% covered/'
+  artifacts:
+    reports:
+      junit:
+        - "*/target/surefire-reports/TEST-*.xml"
+        - "*/target/failsafe-reports/TEST-*.xml"
+  cache:
+    key: "$CI_COMMIT_REF_SLUG"
+    paths:
+      - .m2/repository
+
+# Package stage for branches except master (because test stage produces wrong artifactIds)
+package:
+  stage: build
+  script:
+    - 'rm all/target/drasyl-*.zip || true'
+    - 'mvn $MAVEN_CLI_OPTS package -DskipTests'
+  except:
+    - master
+    - /^\d+\.\d+/
+  cache:
+    key: "$CI_COMMIT_REF_SLUG"
+    paths:
+      - .m2/repository
+  artifacts:
+    paths:
+      - "all/target/drasyl-*.zip"
+    expire_in: 1h
+
+# Deploy stage for master
+deploy:
+  stage: build
+  script:
+    - 'rm all/target/drasyl-*.zip || true'
+    - 'mvn $MAVEN_CLI_OPTS deploy -DskipTests sonar:sonar'
+    - 'mv all/target/drasyl-*.zip all/target/drasyl-latest-full.zip'
+  only:
+    - master
+    - /^\d+\.\d+/
+  artifacts:
+    paths:
+      - "all/target/drasyl-latest-full.zip"
+    expire_in: 4 week
+  cache:
+    key: "$CI_COMMIT_REF_SLUG"
+    paths:
+      - .m2/repository
