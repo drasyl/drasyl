@@ -1,6 +1,6 @@
 FROM kubeless/unzip AS build
 
-ADD all/target/drasyl-*.zip ./
+ADD core/target/drasyl-*.zip ./
 #ADD all/monitoring-page drasyl/monitoring-page
 
 RUN unzip -qq './drasyl-*.zip' -d ./drasyl && \

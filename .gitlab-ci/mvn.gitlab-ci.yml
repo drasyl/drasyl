@@ -33,7 +33,7 @@ test:
 package:
   stage: build
   script:
-    - 'rm all/target/drasyl-*.zip || true'
+    - 'rm core/target/drasyl-*.zip || true'
     - 'mvn $MAVEN_CLI_OPTS package -DskipTests'
   except:
     - master
@@ -44,22 +44,22 @@ package:
       - .m2/repository
   artifacts:
     paths:
-      - "all/target/drasyl-*.zip"
+      - "core/target/drasyl-*.zip"
     expire_in: 1h
 
 # Deploy stage for master
 deploy:
   stage: build
   script:
-    - 'rm all/target/drasyl-*.zip || true'
+    - 'rm core/target/drasyl-*.zip || true'
     - 'mvn $MAVEN_CLI_OPTS deploy -DskipTests sonar:sonar'
-    - 'mv all/target/drasyl-*.zip all/target/drasyl-latest-full.zip'
+    - 'mv core/target/drasyl-*.zip core/target/drasyl-latest-full.zip'
   only:
     - master
     - /^\d+\.\d+/
   artifacts:
     paths:
-      - "all/target/drasyl-latest-full.zip"
+      - "core/target/drasyl-latest-full.zip"
     expire_in: 4 week
   cache:
     key: "$CI_COMMIT_REF_SLUG"

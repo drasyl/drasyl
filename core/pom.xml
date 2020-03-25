@@ -21,13 +21,20 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
-        <artifactId>parent</artifactId>
+        <artifactId>drasyl-parent</artifactId>
         <groupId>org.drasyl</groupId>
         <version>0.0.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <artifactId>all</artifactId>
+    <artifactId>core</artifactId>
+
+    <name>drasyl: Next Generation Overlay Network - Core Package</name>
+    <description>
+        drasyl is a general purpose overlay network that is concurrent, resilient, flexible, automated and
+        presents itself to the user as a transparent system which offers suitable discovery and awareness methods,
+        particularly with a focus on smart city and IoT devices.
+    </description>
 
     <properties>
         <mvn.dependency.version>3.1.1</mvn.dependency.version>
@@ -79,7 +86,7 @@
                 <configuration>
                     <archive>
                         <manifest>
-                            <mainClass>org.drasyl.all.Drasyl</mainClass>
+                            <mainClass>org.drasyl.core.Drasyl</mainClass>
                             <addClasspath>true</addClasspath>
                             <useUniqueVersions>false</useUniqueVersions>
                             <classpathPrefix>${output.libs.dir}/</classpathPrefix>

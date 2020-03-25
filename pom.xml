@@ -23,7 +23,7 @@
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.drasyl</groupId>
-    <artifactId>parent</artifactId>
+    <artifactId>drasyl-parent</artifactId>
     <packaging>pom</packaging>
     <version>0.0.1-SNAPSHOT</version>
 
@@ -44,7 +44,7 @@
     </scm>
 
     <modules>
-        <module>all</module>
+        <module>core</module>
         <module>integration-tests</module>
     </modules>
 

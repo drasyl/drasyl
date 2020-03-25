@@ -40,7 +40,7 @@
 		</encoder>
 	</appender>
 	
-	<logger name="org.drasyl.all" level="debug">
+	<logger name="org.drasyl.core" level="debug">
 	</logger>
 
 	<root level="info">
