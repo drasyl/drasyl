@@ -5,28 +5,10 @@ cache:
   untracked: false
   paths:
     - .m2/repository
-    - all/monitoring-page/node_modules/
 
 variables:
   MAVEN_OPTS: "-Dmaven.repo.local=.m2/repository -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"
   MAVEN_CLI_OPTS: "-s .m2/settings.xml --batch-mode --errors --fail-at-end --show-version -DinstallAtEnd=true -DdeployAtEnd=true"
-
-# Node stage to build the monitoring page
-node:
-  image: node:latest
-  stage: pre_build
-  before_script:
-    - cd all/monitoring-page
-  script:
-    - npm install
-    - npm run-script build
-  artifacts:
-    paths:
-      - all/monitoring-page/dist/
-  cache:
-    key: "$CI_COMMIT_REF_SLUG"
-    paths:
-      - all/monitoring-page/node_modules/
 
 # Extra stage for sonar (artifactId must be replaced for sonar)
 test:

@@ -29,10 +29,7 @@
 		</encoder>
 	</appender>
 
-	<logger name="org.drasyl.all.session" level="error">
-	</logger>
-
-	<logger name="org.drasyl.all.testutils" level="error">
+	<logger name="org.drasyl.all" level="debug">
 	</logger>
 
 	<logger name="io.netty" level="error">

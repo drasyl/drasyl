@@ -40,18 +40,8 @@
 		</encoder>
 	</appender>
 	
-	<logger name="org.drasyl.all.handler" level="debug">
+	<logger name="org.drasyl.all" level="debug">
 	</logger>
-
-	<logger name="org.drasyl.all.monitoring.server.handler" level="info">
-	</logger>
-	
-	<logger name="io.netty" level="error">
-	</logger>
-
-	<logger name="org.drasyl.all.handler.ExceptionHandler" level="info">
-	</logger>
-
 
 	<root level="info">
 		<appender-ref ref="STDOUT" />

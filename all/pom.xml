@@ -23,7 +23,7 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>org.drasyl</groupId>
-        <version>1.0-SNAPSHOT</version>
+        <version>0.0.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -39,7 +39,7 @@
 
     <build>
         <resources>
-            <resource>
+            <!--<resource>
                 <directory>monitoring-page</directory>
                 <includes>
                     <include>dist/*</include>
@@ -47,7 +47,7 @@
                     <include>dist/css/*</include>
                     <include>dist/fonts/*</include>
                 </includes>
-            </resource>
+            </resource>-->
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
