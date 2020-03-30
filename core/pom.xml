@@ -38,8 +38,9 @@
 
     <repositories>
         <repository>
-            <id>jcenter</id>
-            <url>https://jcenter.bintray.com/</url>
+            <id>cadeia-releases</id>
+            <name>cadeia-releases</name>
+            <url>https://nexus.cadeia.org/content/repositories/releases/</url>
         </repository>
     </repositories>
 
