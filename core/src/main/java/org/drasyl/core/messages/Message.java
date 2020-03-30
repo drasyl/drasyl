@@ -19,16 +19,31 @@
 
 package org.drasyl.core.messages;
 
+import org.cadeia.blockchain.crypto.Signable;
+import org.cadeia.blockchain.crypto.Signature;
 import org.drasyl.core.crypto.CompressedPublicKey;
 
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Objects;
 
-class Message {
+class Message implements Signable {
     private final CompressedPublicKey recipient;
+    private final CompressedPublicKey sender;
+    private Signature signature;
     private final byte[] payload;
 
-    public Message(CompressedPublicKey recipient, byte[] payload) {
+    protected Message() {
+        recipient = null;
+        sender = null;
+        signature = null;
+        payload = null;
+    }
+
+    public Message(CompressedPublicKey sender, CompressedPublicKey recipient, byte[] payload) {
+        this.sender = sender;
         this.recipient = recipient;
         this.payload = payload;
     }
@@ -37,8 +52,28 @@ class Message {
         return recipient;
     }
 
+    public CompressedPublicKey getSender() { return sender; }
+
     public byte[] getPayload() {
         return payload;
+    }
+
+    public Signature getSignature() { return signature; }
+
+    @Override
+    public void writeFieldsTo(OutputStream outstream) throws IOException {
+        Objects.requireNonNull(recipient);
+        Objects.requireNonNull(sender);
+        Objects.requireNonNull(payload);
+
+        outstream.write(recipient.toString().getBytes(StandardCharsets.UTF_8));
+        outstream.write(sender.toString().getBytes(StandardCharsets.UTF_8));
+        outstream.write(payload);
+    }
+
+    @Override
+    public void setSignature(Signature signature) {
+        this.signature = signature;
     }
 
     @Override
@@ -65,6 +100,7 @@ class Message {
     public String toString() {
         return "Message{" +
                 "recipient=" + recipient +
+                "sender = " + sender +
                 ", payload=" + Arrays.toString(payload) +
                 '}';
     }
