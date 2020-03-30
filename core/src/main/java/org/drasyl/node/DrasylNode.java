@@ -12,11 +12,11 @@ public abstract class DrasylNode {
         // implement
     }
 
-    abstract void onMessage(Message message);
+    abstract void onMessage(byte[] payload);
 
     abstract void onEvent(Event event);
 
-    public void send(Message message) {
+    public void send(Object recipient, byte[] payload) {
         // implement
     }
 
@@ -28,8 +28,8 @@ public abstract class DrasylNode {
         // create node
         DrasylNode node = new DrasylNode() {
             @Override
-            void onMessage(Message message) {
-                System.out.println("Message received: " + message);
+            void onMessage(byte[] payload) {
+                System.out.println("Message received: " + payload);
             }
 
             @Override

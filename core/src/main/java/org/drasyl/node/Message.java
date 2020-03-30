@@ -3,7 +3,7 @@ package org.drasyl.node;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class Message {
+class Message {
     private final Object recipient;
     private final byte[] payload;
 
