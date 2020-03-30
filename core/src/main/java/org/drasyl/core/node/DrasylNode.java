@@ -21,7 +21,7 @@ package org.drasyl.core.node;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import org.drasyl.core.messages.Message;
+import org.drasyl.core.crypto.CompressedPublicKey;
 import org.drasyl.core.node.models.Event;
 
 public abstract class DrasylNode {
@@ -33,11 +33,11 @@ public abstract class DrasylNode {
         // implement
     }
 
-    abstract void onMessage(Message message);
+    abstract void onMessage(byte[] payload);
 
     abstract void onEvent(Event event);
 
-    public void send(Message message) {
+    public void send(CompressedPublicKey recipient, byte[] payload) {
         // implement
     }
 
@@ -49,8 +49,8 @@ public abstract class DrasylNode {
         // create node
         DrasylNode node = new DrasylNode() {
             @Override
-            void onMessage(Message message) {
-                System.out.println("Message received: " + message);
+            void onMessage(byte[] payload) {
+                System.out.println("Message received: " + payload);
             }
 
             @Override

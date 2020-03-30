@@ -24,7 +24,7 @@ import org.drasyl.core.crypto.CompressedPublicKey;
 import java.util.Arrays;
 import java.util.Objects;
 
-public class Message {
+class Message {
     private final CompressedPublicKey recipient;
     private final byte[] payload;
 
