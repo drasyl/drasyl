@@ -36,6 +36,14 @@
         particularly with a focus on smart city and IoT devices.
     </description>
 
+    <repositories>
+        <repository>
+            <id>cadeia-releases</id>
+            <name>cadeia-releases</name>
+            <url>https://nexus.cadeia.org/content/repositories/releases/</url>
+        </repository>
+    </repositories>
+
     <properties>
         <mvn.dependency.version>3.1.1</mvn.dependency.version>
         <mvn.assembly.version>3.2.0</mvn.assembly.version>
@@ -148,6 +156,11 @@
             <groupId>com.google.re2j</groupId>
             <artifactId>re2j</artifactId>
             <version>1.3</version>
+        </dependency>
+        <dependency>
+            <groupId>org.cadeia</groupId>
+            <artifactId>crypto</artifactId>
+            <version>1.3.1</version>
         </dependency>
         <dependency>
             <groupId>net.javacrumbs.json-unit</groupId>

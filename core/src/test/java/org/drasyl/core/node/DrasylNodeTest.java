@@ -1,27 +1,27 @@
-package org.drasyl.node;
+package org.drasyl.core.node;
 
 import org.awaitility.Awaitility;
-import org.drasyl.node.Event.Node;
-import org.junit.BeforeClass;
+import org.drasyl.core.node.models.Event;
 import org.junit.Test;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.mockito.Mockito;
 
 import java.util.ArrayList;
 import java.util.Collection;
 
 import static org.awaitility.Awaitility.await;
-import static org.drasyl.node.Event.Code.*;
+import static org.drasyl.core.node.models.Event.Code.*;
 import static org.hamcrest.Matchers.contains;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.mock;
 
 public class DrasylNodeTest {
-    private Node node;
+    private Event.Node node;
 
     @BeforeEach
     void setUp() {
-        node = mock(Node.class);
+        node = mock(Event.Node.class);
     }
 
     @AfterEach
