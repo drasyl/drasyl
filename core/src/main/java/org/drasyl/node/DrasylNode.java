@@ -20,7 +20,11 @@ public abstract class DrasylNode {
         // implement
     }
 
-    public void close() {
+    public void start() {
+        // implement
+    }
+
+    public void shutdown() {
         // implement
     }
 
@@ -67,6 +71,6 @@ public abstract class DrasylNode {
 //            node.send(message);
 //        });
 
-        node.close();
+        node.shutdown();
     }
 }
