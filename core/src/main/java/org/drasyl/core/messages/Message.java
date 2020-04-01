@@ -18,8 +18,8 @@
  */
 package org.drasyl.core.messages;
 
-import org.cadeia.blockchain.crypto.Signable;
-import org.cadeia.blockchain.crypto.Signature;
+import org.drasyl.core.crypto.Signable;
+import org.drasyl.core.crypto.Signature;
 import org.drasyl.core.models.Identity;
 
 import java.io.IOException;
