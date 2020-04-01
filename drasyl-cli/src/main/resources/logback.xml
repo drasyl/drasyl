@@ -1,0 +1,21 @@
+<configuration>
+    <appender name="consoleAppender" class="ch.qos.logback.core.ConsoleAppender">
+        <encoder>
+            <pattern>%d [%t] %-5level %logger{36} %X{sourceThread} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- available levels: off, error, warn, info, debug, trace -->
+
+    <logger name="org.drasyl" level="debug" additivity="false">
+        <appender-ref ref="consoleAppender"/>
+    </logger>
+
+    <logger name="ch.qos.logback" level="warn" additivity="false">
+        <appender-ref ref="consoleAppender"/>
+    </logger>
+
+    <root level="warn">
+        <appender-ref ref="consoleAppender"/>
+    </root>
+</configuration>

@@ -23,6 +23,9 @@ import com.typesafe.config.ConfigFactory;
 import org.drasyl.core.models.Event;
 import org.drasyl.core.models.Identity;
 
+import java.io.IOException;
+import java.util.Properties;
+
 public abstract class DrasylNode {
     public DrasylNode() {
         this(ConfigFactory.load());
@@ -92,5 +95,21 @@ public abstract class DrasylNode {
 //        });
 
         node.shutdown();
+    }
+
+    /**
+     * Returns the version of the bide. If this is not possible, <code>null</code> is returned.
+     *
+     * @return
+     */
+    public static String getVersion() {
+        final Properties properties = new Properties();
+        try {
+            properties.load(DrasylNode.class.getClassLoader().getResourceAsStream("project.properties"));
+            return properties.getProperty("version");
+        }
+        catch (IOException e) {
+            return null;
+        }
     }
 }

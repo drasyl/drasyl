@@ -1,24 +1,18 @@
 FROM kubeless/unzip AS build
 
-ADD core/target/drasyl-*.zip ./
-#ADD all/monitoring-page drasyl/monitoring-page
+ADD ./drasyl-*.zip .
 
-RUN unzip -qq './drasyl-*.zip' -d ./drasyl && \
+RUN unzip -qq ./drasyl-*.zip && \
     rm ./drasyl-*.zip
 
-# our final base image
-FROM kroeb/slim-jre-11-with-curl:latest
+FROM openjdk:11-jre-slim
 
-COPY --from=build ./drasyl/drasyl-* /drasyl/
-#COPY --from=build drasyl/monitoring-page/dist/ /drasyl/public/
+RUN mkdir /usr/local/share/drasyl && \
+    ln -s ../share/drasyl/bin/drasyl /usr/local/bin/drasyl
 
-WORKDIR ./drasyl
+COPY --from=build ./drasyl-* /usr/local/share/drasyl/
 
-EXPOSE 22527 8080
+# http
+EXPOSE 8080
 
-CMD ["java", "--illegal-access=permit", "-Dconfig.override_with_env_vars=true", "-jar", "drasyl.jar"]
-
-#HEALTHCHECK --start-period=1m \
-#    CMD curl 127.0.0.1:22527 2>&1 \
-#        | grep -q 'not a WebSocket handshake request: missing upgrade' && \
-#        exit 0 || exit 1
+ENTRYPOINT ["drasyl"]

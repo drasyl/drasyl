@@ -46,6 +46,7 @@
     <modules>
         <module>core</module>
         <module>integration-tests</module>
+        <module>drasyl-cli</module>
     </modules>
 
     <properties>
