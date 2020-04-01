@@ -47,15 +47,6 @@
 
     <build>
         <resources>
-            <!--<resource>
-                <directory>monitoring-page</directory>
-                <includes>
-                    <include>dist/*</include>
-                    <include>dist/js/*</include>
-                    <include>dist/css/*</include>
-                    <include>dist/fonts/*</include>
-                </includes>
-            </resource>-->
             <resource>
                 <directory>src/main/resources</directory>
                 <filtering>true</filtering>
@@ -64,54 +55,21 @@
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-dependency-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <id>copy-dependencies</id>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>copy-dependencies</goal>
-                        </goals>
-                        <configuration>
-                            <!-- exclude junit, we need runtime dependency only -->
-                            <includeScope>runtime</includeScope>
-                            <outputDirectory>${project.build.directory}/${output.libs.dir}/</outputDirectory>
-                        </configuration>
-                    </execution>
-                </executions>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <version>3.1.1</version>
+                <!--                <configuration>-->
+                <!--                    <doclint>none</doclint>-->
+                <!--                </configuration>-->
             </plugin>
             <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <version>${mvn.jar.version}</version>
-                <configuration>
-                    <archive>
-                        <manifest>
-                            <mainClass>org.drasyl.core.Drasyl</mainClass>
-                            <addClasspath>true</addClasspath>
-                            <useUniqueVersions>false</useUniqueVersions>
-                            <classpathPrefix>${output.libs.dir}/</classpathPrefix>
-                        </manifest>
-                    </archive>
-                    <finalName>${finalFileName}</finalName>
-                </configuration>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <configuration>
-                    <descriptors>
-                        <descriptor>src/assembly/full.xml</descriptor>
-                    </descriptors>
-                    <finalName>${finalFileName}-${project.version}</finalName>
-                    <appendAssemblyId>false</appendAssemblyId>
-                </configuration>
+                <groupId>pl.project13.maven</groupId>
+                <artifactId>git-commit-id-plugin</artifactId>
+                <version>4.0.0</version>
                 <executions>
                     <execution>
-                        <id>create-archive</id>
-                        <phase>package</phase>
+                        <id>get-the-git-infos</id>
                         <goals>
-                            <goal>single</goal>
+                            <goal>revision</goal>
                         </goals>
                     </execution>
                 </executions>

@@ -14,7 +14,7 @@
             <directory>${project.build.directory}</directory>
             <outputDirectory>./lib/</outputDirectory>
             <includes>
-                <include>drasyl.jar</include>
+                <include>drasyl-cli.jar</include>
             </includes>
         </fileSet>
         <fileSet>

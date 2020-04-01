@@ -112,7 +112,7 @@ class Cli {
         HelpFormatter formatter = new HelpFormatter();
         formatter.setWidth(100);
         formatter.setSyntaxPrefix("Usage: ");
-        formatter.printHelp("drasyl [options] [SCRIPT]...", header, options, footer);
+        formatter.printHelp("drasyl [options]", header, options, footer);
     }
 
     private void printVersion() {
@@ -122,5 +122,6 @@ class Cli {
 
     private void runNode(CommandLine cmd) throws CliException {
         // FIXME: implement
+        throw new CliException("Not implemented yet!");
     }
 }
