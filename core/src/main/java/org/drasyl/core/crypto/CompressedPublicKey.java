@@ -16,13 +16,13 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.core.crypto;
 
 import java.security.PublicKey;
 
 /**
- * This interface models a compressed public key that can be converted into a string and vice versa.
+ * This interface models a compressed public key that can be converted into a string and vice
+ * versa.
  */
 public interface CompressedPublicKey {
     /**
@@ -42,7 +42,6 @@ public interface CompressedPublicKey {
     public String toString(CompressedPublicKey key);
 
     /**
-     *
      * @return Returns this {@link CompressedPublicKey} object as a {@link PublicKey} object.
      */
     public PublicKey getPubKey();

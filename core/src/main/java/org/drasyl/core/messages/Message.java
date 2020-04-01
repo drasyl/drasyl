@@ -16,12 +16,11 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.core.messages;
 
 import org.cadeia.blockchain.crypto.Signable;
 import org.cadeia.blockchain.crypto.Signature;
-import org.drasyl.core.crypto.CompressedPublicKey;
+import org.drasyl.core.models.Identity;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -30,8 +29,8 @@ import java.util.Arrays;
 import java.util.Objects;
 
 class Message implements Signable {
-    private final CompressedPublicKey recipient;
-    private final CompressedPublicKey sender;
+    private final Identity recipient;
+    private final Identity sender;
     private Signature signature;
     private final byte[] payload;
 
@@ -42,23 +41,27 @@ class Message implements Signable {
         payload = null;
     }
 
-    public Message(CompressedPublicKey sender, CompressedPublicKey recipient, byte[] payload) {
+    public Message(Identity sender, Identity recipient, byte[] payload) {
         this.sender = sender;
         this.recipient = recipient;
         this.payload = payload;
     }
 
-    public CompressedPublicKey getRecipient() {
+    public Identity getRecipient() {
         return recipient;
     }
 
-    public CompressedPublicKey getSender() { return sender; }
+    public Identity getSender() {
+        return sender;
+    }
 
     public byte[] getPayload() {
         return payload;
     }
 
-    public Signature getSignature() { return signature; }
+    public Signature getSignature() {
+        return signature;
+    }
 
     @Override
     public void writeFieldsTo(OutputStream outstream) throws IOException {
@@ -78,7 +81,7 @@ class Message implements Signable {
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(recipient);
+        int result = Objects.hashCode(recipient);
         result = 31 * result + Arrays.hashCode(payload);
         return result;
     }
@@ -102,6 +105,6 @@ class Message implements Signable {
                 "recipient=" + recipient +
                 "sender = " + sender +
                 ", payload=" + Arrays.toString(payload) +
-                '}';
+                "}";
     }
 }

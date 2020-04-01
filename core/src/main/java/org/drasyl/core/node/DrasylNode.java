@@ -16,13 +16,12 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.core.node;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import org.drasyl.core.crypto.CompressedPublicKey;
-import org.drasyl.core.node.models.Event;
+import org.drasyl.core.models.Event;
+import org.drasyl.core.models.Identity;
 
 public abstract class DrasylNode {
     public DrasylNode() {
@@ -37,7 +36,7 @@ public abstract class DrasylNode {
 
     abstract void onEvent(Event event);
 
-    public void send(CompressedPublicKey recipient, byte[] payload) {
+    public void send(Identity recipient, byte[] payload) {
         // implement
     }
 

@@ -1,27 +1,27 @@
 package org.drasyl.core.node;
 
-import org.drasyl.core.crypto.CompressedPublicKey;
-import org.drasyl.core.node.models.Event;
-import org.drasyl.core.node.models.Event.Node;
-import org.junit.Test;
+import org.drasyl.core.models.Event;
+import org.drasyl.core.models.Event.Node;
+import org.drasyl.core.models.Identity;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
 
-import static org.drasyl.core.node.models.Event.Code.*;
-import static org.junit.Assert.fail;
+import static org.drasyl.core.models.Event.Code.*;
+import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.*;
 
 public class DrasylNodeTest {
     private Node node;
     private Event event;
     private byte[] payload;
-    private CompressedPublicKey recipient;
+    private Identity recipient;
 
     @BeforeEach
     void setUp() {
         event = mock(Event.class);
         node = mock(Node.class);
-        recipient = mock(CompressedPublicKey.class);
+        recipient = mock(Identity.class);
         payload = new byte[]{ 0x4f };
     }
 

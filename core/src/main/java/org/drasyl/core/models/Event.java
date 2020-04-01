@@ -16,10 +16,7 @@
  * You should have received a copy of the GNU Lesser General Public License
  * along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-package org.drasyl.core.node.models;
-
-import org.drasyl.core.crypto.CompressedPublicKey;
+package org.drasyl.core.models;
 
 import java.util.Objects;
 
@@ -86,7 +83,8 @@ public class Event {
         NODE_OFFLINE,
 
         /**
-         * This events signals that the identity is already being used by another node on the network.
+         * This events signals that the identity is already being used by another node on the
+         * network.
          */
         NODE_IDENTITY_COLLISION,
 
@@ -117,13 +115,13 @@ public class Event {
     }
 
     public class Peer {
-        private final CompressedPublicKey address;
+        private final Identity address;
 
-        public Peer(CompressedPublicKey address) {
+        public Peer(Identity address) {
             this.address = address;
         }
 
-        public CompressedPublicKey getAddress() {
+        public Identity getAddress() {
             return address;
         }
 
@@ -153,13 +151,13 @@ public class Event {
     }
 
     public static class Node {
-        private final CompressedPublicKey address;
+        private final Identity address;
 
-        public Node(CompressedPublicKey address) {
+        public Node(Identity address) {
             this.address = address;
         }
 
-        public CompressedPublicKey getAddress() {
+        public Identity getAddress() {
             return address;
         }
 
