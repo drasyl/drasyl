@@ -71,7 +71,6 @@ public class IdentityTest {
     public void sameIdShouldBeEquals() {
         Identity id1 = Identity.of("1234567890");
         Identity id2 = Identity.of("1234567890");
-        ;
 
         assertEquals(id1, id2);
         assertEquals(id1, id1);
