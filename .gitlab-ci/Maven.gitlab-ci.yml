@@ -14,7 +14,7 @@ maven-verify:
     - 'mvn $MAVEN_CLI_OPTS verify sonar:sonar'
     - mv drasyl-cli/target/drasyl-*.zip .
   after_script:
-    - '/bin/bash ./gitlab-ci/coverage-jacoco.sh'
+    - '/bin/bash coverage-jacoco.sh'
   coverage: '/\d+.\d+ \% covered/'
   except:
     - master
@@ -33,7 +33,7 @@ maven-deploy:
     - 'mvn $MAVEN_CLI_OPTS deploy sonar:sonar'
     - mv drasyl-cli/target/drasyl-*.zip .
   after_script:
-    - '/bin/bash ./gitlab-ci/coverage-jacoco.sh'
+    - '/bin/bash coverage-jacoco.sh'
   coverage: '/\d+.\d+ \% covered/'
   only:
     - master
