@@ -27,7 +27,7 @@ curl --request POST \
 
 ```bash
 mvn -DskipTests -pl drasyl-cli -am package
-# wot-servient-cli/target/wot-servient-*.zip generated
+# drasyl-cli/target/drasyl-*.zip generated
 ```
 
 ## Build and Push Docker Image

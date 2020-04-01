@@ -95,7 +95,7 @@ class Cli {
     private void printHelp(Options options) {
         String header = "" +
                 "       drasyl\n" +
-                "       wot-servient -f ~/drasyl.conf\n" +
+                "       drasyl -f ~/drasyl.conf\n" +
                 "\n" +
                 "Run a Drasyl Node in the current directory.\n" +
                 "If the file '" + CONF + "' exists, that configuration is applied.\n" +

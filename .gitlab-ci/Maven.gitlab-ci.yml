@@ -25,7 +25,7 @@ maven-verify:
         - "*/target/surefire-reports/TEST-*.xml"
         - "*/target/failsafe-reports/TEST-*.xml"
     paths:
-      - "wot-servient-*.zip"
+      - "drasyl-*.zip"
 
 maven-deploy:
   stage: deploy
