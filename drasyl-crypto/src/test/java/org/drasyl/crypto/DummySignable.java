@@ -16,22 +16,20 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-package org.drasyl.core.crypto;
+package org.drasyl.crypto;
 
 /*
  * Dummy for Testing Keychain
  */
 public class DummySignable implements Signable {
-
     private Signature signature;
     private byte[] bytes;
 
     public DummySignable() {
-        bytes = new byte[] {(byte) 0x3a, (byte) 0x22};
+        bytes = new byte[]{ (byte) 0x3a, (byte) 0x22 };
     }
 
-    public DummySignable(byte[] b){
+    public DummySignable(byte[] b) {
         bytes = b;
     }
 
@@ -49,5 +47,4 @@ public class DummySignable implements Signable {
     public void setSignature(Signature sig) {
         signature = sig;
     }
-
 }

@@ -1,5 +1,6 @@
 package org.drasyl.core.node;
 
+import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.models.Event;
 import org.drasyl.core.models.Event.Node;
 import org.drasyl.core.models.Identity;
@@ -32,7 +33,7 @@ public class DrasylNodeTest {
     }
 
     @Test
-    public void startShouldEmitOnlineEventOnSuccessfulSuperPeerRegistration() {
+    public void startShouldEmitOnlineEventOnSuccessfulSuperPeerRegistration() throws DrasylException {
         // FIXME: mock behaviour here
 
         DrasylNode drasylNode = spy(new DrasylNode() {
@@ -50,7 +51,7 @@ public class DrasylNodeTest {
     }
 
     @Test
-    public void startShouldEmitIdentityCollisionEventIfIdentityIsAlreadyUsedByAnotherNode() {
+    public void startShouldEmitIdentityCollisionEventIfIdentityIsAlreadyUsedByAnotherNode() throws DrasylException {
         // FIXME: mock behaviour here
 
         DrasylNode drasylNode = spy(new DrasylNode() {
@@ -68,7 +69,7 @@ public class DrasylNodeTest {
     }
 
     @Test
-    public void startShouldNotEmitAnyEventsIfNodeHasAlreadyBeenStarted() {
+    public void startShouldNotEmitAnyEventsIfNodeHasAlreadyBeenStarted() throws DrasylException {
         // FIXME: mock behaviour here
 
         DrasylNode drasylNode = spy(new DrasylNode() {
@@ -86,7 +87,7 @@ public class DrasylNodeTest {
     }
 
     @Test
-    public void shutdownShouldEmitNormalTerminationEventOnSuccessfulSuperPeerDeregistration() {
+    public void shutdownShouldEmitNormalTerminationEventOnSuccessfulSuperPeerDeregistration() throws DrasylException {
         // FIXME: mock behaviour here
 
         DrasylNode drasylNode = spy(new DrasylNode() {
@@ -104,7 +105,7 @@ public class DrasylNodeTest {
     }
 
     @Test
-    public void shutdownShouldEmitDeregisterFailedEventIfDeregistrationFromSuperPeerFailed() {
+    public void shutdownShouldEmitDeregisterFailedEventIfDeregistrationFromSuperPeerFailed() throws DrasylException {
         // FIXME: mock behaviour here
 
         DrasylNode drasylNode = spy(new DrasylNode() {
@@ -122,7 +123,7 @@ public class DrasylNodeTest {
     }
 
     @Test
-    public void shutdownShouldNotEmitAnyEventsIfNodeHasAlreadyBeenShutDown() {
+    public void shutdownShouldNotEmitAnyEventsIfNodeHasAlreadyBeenShutDown() throws DrasylException {
         // FIXME: mock behaviour here
 
         DrasylNode drasylNode = spy(new DrasylNode() {
@@ -140,7 +141,7 @@ public class DrasylNodeTest {
     }
 
     @Test
-    public void onEventShouldBeCalledForEveryEmittedEvent() {
+    public void onEventShouldBeCalledForEveryEmittedEvent() throws DrasylException {
         // FIXME: mock behaviour here
 
         DrasylNode drasylNode = spy(new DrasylNode() {
@@ -158,7 +159,7 @@ public class DrasylNodeTest {
     }
 
     @Test
-    public void onMessageShouldBeCalledForEveryIncomingMessage() {
+    public void onMessageShouldBeCalledForEveryIncomingMessage() throws DrasylException {
         // FIXME: mock behaviour here
 
         DrasylNode drasylNode = spy(new DrasylNode() {
@@ -175,7 +176,7 @@ public class DrasylNodeTest {
     }
 
     @Test
-    public void sendShouldSendTheMessageToTheRecipient() {
+    public void sendShouldSendTheMessageToTheRecipient() throws DrasylException {
         // FIXME: mock behaviour here
 
         DrasylNode drasylNode = spy(new DrasylNode() {
@@ -193,7 +194,7 @@ public class DrasylNodeTest {
     }
 
     @Test
-    public void shouldEmitOfflineEventIfConnectionToSuperPeerIsLost() {
+    public void shouldEmitOfflineEventIfConnectionToSuperPeerIsLost() throws DrasylException {
         // FIXME: mock behaviour here
 
         DrasylNode drasylNode = spy(new DrasylNode() {
@@ -210,7 +211,7 @@ public class DrasylNodeTest {
     }
 
     @Test
-    public void shouldEmitOnlineEventIfBrokenConnectionToSuperPeerReestablished() {
+    public void shouldEmitOnlineEventIfBrokenConnectionToSuperPeerReestablished() throws DrasylException {
         // FIXME: mock behaviour here
 
         DrasylNode drasylNode = spy(new DrasylNode() {
@@ -227,7 +228,7 @@ public class DrasylNodeTest {
     }
 
     @Test
-    public void shouldEmitUnrecoverableErrorEventIfConnectionToSuperPeerCouldNotReestablished() {
+    public void shouldEmitUnrecoverableErrorEventIfConnectionToSuperPeerCouldNotReestablished() throws DrasylException {
         // FIXME: mock behaviour here
 
         DrasylNode drasylNode = spy(new DrasylNode() {

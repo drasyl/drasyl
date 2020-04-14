@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.core.crypto;
+package org.drasyl.crypto;
 
 import org.bouncycastle.asn1.x9.X9ECParameters;
 import org.bouncycastle.crypto.ec.CustomNamedCurves;
@@ -29,6 +29,8 @@ import org.bouncycastle.jce.spec.ECNamedCurveSpec;
 import org.bouncycastle.jce.spec.ECParameterSpec;
 import org.bouncycastle.jce.spec.ECPrivateKeySpec;
 import org.bouncycastle.math.ec.ECCurve;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.math.BigInteger;
 import java.security.Signature;
@@ -38,11 +40,15 @@ import java.security.spec.ECPublicKeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 
 public class Crypto {
+    private static final Logger LOG = LoggerFactory.getLogger(Crypto.class);
+    public static final SecureRandom SRND = new SecureRandom();
     private static final String PROVIDER = "BC";
     private static final String ECDSA = "ECDSA";
     private static final String SHA256_WITH_ECDSA = "SHA256withECDSA";
     private static final String CURVE_NAME = "curve25519";
-    private static SecureRandom random = new SecureRandom();
+
+    Crypto() {
+    }
 
     static {
         Security.addProvider(new BouncyCastleProvider());
@@ -54,7 +60,7 @@ public class Crypto {
             ECParameterSpec ecSpec = new ECParameterSpec(ecP.getCurve(), ecP.getG(), ecP.getN(), ecP.getH(), ecP.getSeed());
 
             KeyPairGenerator keygen = KeyPairGenerator.getInstance(ECDSA, PROVIDER);
-            keygen.initialize(ecSpec, new SecureRandom());
+            keygen.initialize(ecSpec, SRND);
             return keygen.generateKeyPair();
         }
         catch (NoSuchAlgorithmException | NoSuchProviderException | InvalidAlgorithmParameterException e) {
@@ -133,7 +139,7 @@ public class Crypto {
      */
     public static void sign(PrivateKey key, Signable signable) throws CryptoException {
         byte[] signatureBytes = signMessage(key, signable.getSignableBytes());
-        signable.setSignature(new org.drasyl.core.crypto.Signature(signatureBytes));
+        signable.setSignature(new org.drasyl.crypto.Signature(signatureBytes));
     }
 
     private static ECPublicKeySpec getKeySpec(byte[] pubOrPrivKey) {
@@ -184,7 +190,7 @@ public class Crypto {
             return verifySignature(publicKey, message, signature);
         }
         catch (CryptoException e) {
-            e.printStackTrace();
+            LOG.error("", e);
         }
         return false;
     }
@@ -197,7 +203,7 @@ public class Crypto {
             return ecdsaVerify.verify(signature);
         }
         catch (Exception e) {
-            e.printStackTrace();
+            LOG.error("", e);
         }
         return false;
     }
@@ -207,5 +213,43 @@ public class Crypto {
             return false;
         }
         return verifySignature(publicKey, content.getSignableBytes(), content.getSignature().getBytes());
+    }
+
+    /**
+     * Generates a secure random HEX String with the given {@code entropy} of bytes.
+     *
+     * <p>
+     * Recommendation:
+     *     <ul>
+     *         <li>4 byte for small sets</li>
+     *         <li>8 bytes for unique internal strings, e.g. hash tables</li>
+     *         <li>16 bytes for global uniqueness, e.g. auth token</li>
+     *     </ul>
+     * <p>
+     * You can also use the following probability table for the "Birthday problem", as a starting point for a suitable
+     * entropy size:
+     * <a href="https://en.wikipedia.org/wiki/Birthday_problem#Probability_table">Birthday problem probability table</a>
+     * </p>
+     *
+     * @param entropy entropy in bytes
+     * @return a secure random HEX String
+     */
+    public static String randomString(int entropy) {
+        byte[] token = new byte[entropy];
+        SRND.nextBytes(token);
+
+        return HexUtil.bytesToHex(token);
+    }
+
+    /**
+     * Generates a random number with the static {@link SecureRandom} of this class. Avoids overhead
+     * of generating a new instance of {@link SecureRandom}.
+     *
+     * @param bound the upper bound (exclusive).  Must be positive.
+     * @return the next pseudorandom, uniformly distributed {@code int} value between zero
+     * (inclusive) and {@code bound} (exclusive) from this random number generator's sequence
+     */
+    public static int randomNumber(int bound) {
+        return SRND.nextInt(bound);
     }
 }

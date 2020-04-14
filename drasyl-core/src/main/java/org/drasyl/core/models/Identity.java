@@ -18,8 +18,6 @@
  */
 package org.drasyl.core.models;
 
-import org.drasyl.core.crypto.CompressedPublicKey;
-
 import java.util.Objects;
 
 /**

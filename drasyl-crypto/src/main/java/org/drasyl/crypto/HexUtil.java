@@ -16,9 +16,11 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.core.crypto;
+package org.drasyl.crypto;
 
 public final class HexUtil {
+    private static final char[] HEX_ARRAY = "0123456789ABCDEF".toCharArray();
+
     private HexUtil() {
         // util class
     }
@@ -40,7 +42,7 @@ public final class HexUtil {
      * @return string "AB34"
      */
     public static String toString(byte[] byteArray) {
-        return printHexBinary(byteArray);
+        return bytesToHex(byteArray);
     }
 
     /**
@@ -87,23 +89,19 @@ public final class HexUtil {
         return -1;
     }
 
-    private static final char[] hexCode = "0123456789ABCDEF".toCharArray();
-
     /**
      * Converts an array of bytes into a string.
      *
-     * @param data an array of bytes
-     * @return A string containing a lexical representation of xsd:hexBinary
+     * @param bytes an array of bytes
+     * @return A string hex representation of the byte array
      */
-    public static String printHexBinary(byte[] data) {
-        if (data == null) {
-            return "";
+    public static String bytesToHex(byte[] bytes) {
+        char[] hexChars = new char[bytes.length * 2];
+        for (int j = 0; j < bytes.length; j++) {
+            int v = bytes[j] & 0xFF;
+            hexChars[j * 2] = HEX_ARRAY[v >>> 4];
+            hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
         }
-        String r = "";
-        for (byte b : data) {
-            r += (hexCode[(b >> 4) & 0xF]);
-            r += (hexCode[(b & 0xF)]);
-        }
-        return r;
+        return new String(hexChars);
     }
 }
