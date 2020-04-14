@@ -27,6 +27,13 @@
     <packaging>pom</packaging>
     <version>0.0.1-SNAPSHOT</version>
 
+    <name>drasyl: Next Generation Overlay Network - Parent Package</name>
+    <description>
+        drasyl is a general purpose overlay network that is concurrent, resilient, flexible, automated and
+        presents itself to the user as a transparent system which offers suitable discovery and awareness methods,
+        particularly with a focus on smart city and IoT devices.
+    </description>
+
     <distributionManagement>
         <repository>
             <id>gitlab-maven</id>
@@ -153,23 +160,6 @@
                 </executions>
             </plugin>
             <plugin>
-                <groupId>pl.project13.maven</groupId>
-                <artifactId>git-commit-id-plugin</artifactId>
-                <version>4.0.0</version>
-                <executions>
-                    <execution>
-                        <id>get-the-git-infos</id>
-                        <phase>validate</phase>
-                        <goals>
-                            <goal>revision</goal>
-                        </goals>
-                    </execution>
-                </executions>
-                <configuration>
-                    <injectAllReactorProjects>true</injectAllReactorProjects>
-                </configuration>
-            </plugin>
-            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-release-plugin</artifactId>
                 <version>2.5.3</version>
@@ -220,6 +210,7 @@
             <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
+        <!-- Log dependencies -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>

@@ -18,9 +18,9 @@
  */
 package org.drasyl.core.messages;
 
+import org.drasyl.core.models.Identity;
 import org.drasyl.crypto.Signable;
 import org.drasyl.crypto.Signature;
-import org.drasyl.core.models.Identity;
 
 import java.io.IOException;
 import java.io.OutputStream;

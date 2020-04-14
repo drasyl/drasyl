@@ -30,6 +30,11 @@
 
     <artifactId>drasyl-crypto</artifactId>
 
+    <name>drasyl: Next Generation Overlay Network - Crypto Package</name>
+    <description>
+        This package contains the crypto implementations used by drasyl.
+    </description>
+
     <dependencies>
         <dependency>
             <groupId>org.bouncycastle</groupId>

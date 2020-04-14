@@ -31,19 +31,8 @@
 
     <name>drasyl: Next Generation Overlay Network - Core Package</name>
     <description>
-        drasyl is a general purpose overlay network that is concurrent, resilient, flexible, automated and
-        presents itself to the user as a transparent system which offers suitable discovery and awareness methods,
-        particularly with a focus on smart city and IoT devices.
+        This package provides all necessary files to integrate your application into a drasyl overlay network.
     </description>
-
-    <properties>
-        <mvn.dependency.version>3.1.1</mvn.dependency.version>
-        <mvn.assembly.version>3.2.0</mvn.assembly.version>
-        <mvn.jar.version>3.2.0</mvn.jar.version>
-        <output.libs.dir>libs</output.libs.dir>
-        <finalFileName>drasyl</finalFileName>
-        <bouncycastle.version>1.64</bouncycastle.version>
-    </properties>
 
     <build>
         <resources>
@@ -53,14 +42,6 @@
             </resource>
         </resources>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.1.1</version>
-                <!--                <configuration>-->
-                <!--                    <doclint>none</doclint>-->
-                <!--                </configuration>-->
-            </plugin>
             <plugin>
                 <groupId>pl.project13.maven</groupId>
                 <artifactId>git-commit-id-plugin</artifactId>
