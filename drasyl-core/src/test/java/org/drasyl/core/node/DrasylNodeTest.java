@@ -2,14 +2,14 @@ package org.drasyl.core.node;
 
 import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.models.Event;
-import org.drasyl.core.models.Event.Node;
+import org.drasyl.core.models.Node;
 import org.drasyl.core.models.Identity;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import static org.drasyl.core.models.Event.Code.*;
+import static org.drasyl.core.models.Code.*;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.*;
 

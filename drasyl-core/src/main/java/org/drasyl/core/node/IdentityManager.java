@@ -65,7 +65,7 @@ public class IdentityManager {
 
     /**
      * This function irrevocably replaces the old identity with a new one. Required if the super
-     * peer reports {@link Event.Code#NODE_IDENTITY_COLLISION}.
+     * peer reports {@link Code#NODE_IDENTITY_COLLISION}.
      */
     public void renew() throws DrasylException {
         File file = path.toFile();
