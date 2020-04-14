@@ -55,9 +55,9 @@ public abstract class DrasylNode {
         this.isStarted = isStarted;
     }
 
-    abstract void onMessage(byte[] payload);
+    public abstract void onMessage(byte[] payload);
 
-    abstract void onEvent(Event event);
+    public abstract void onEvent(Event event);
 
     public void send(Identity recipient, byte[] payload) {
         // implement
@@ -83,12 +83,12 @@ public abstract class DrasylNode {
         // create node
         DrasylNode node = new DrasylNode() {
             @Override
-            void onMessage(byte[] payload) {
+            public void onMessage(byte[] payload) {
                 System.out.println("Message received: " + payload);
             }
 
             @Override
-            void onEvent(Event event) {
+            public void onEvent(Event event) {
                 System.out.println("Event received: " + event);
 
                 switch (event.getCode()) {

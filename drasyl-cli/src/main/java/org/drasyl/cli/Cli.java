@@ -3,6 +3,8 @@ package org.drasyl.cli;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import org.apache.commons.cli.*;
+import org.drasyl.core.models.DrasylException;
+import org.drasyl.core.models.Event;
 import org.drasyl.core.node.DrasylNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -121,7 +123,24 @@ class Cli {
     }
 
     private void runNode(CommandLine cmd) throws CliException {
-        // FIXME: implement
-        throw new CliException("Not implemented yet!");
+        try {
+            node = new DrasylNode() {
+                @Override
+                public void onMessage(byte[] payload) {
+                    log.info("Message received: {}", payload);
+                }
+
+                @Override
+                public void onEvent(Event event) {
+                    log.info("Event received: {}", event);
+                }
+            };
+            node.start();
+
+            // TODO: block and wait, while node is running
+        }
+        catch (DrasylException e) {
+            throw new CliException(e);
+        }
     }
 }

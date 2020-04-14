@@ -38,11 +38,11 @@ public class DrasylNodeTest {
 
         DrasylNode drasylNode = spy(new DrasylNode() {
             @Override
-            void onMessage(byte[] payload) {
+            public void onMessage(byte[] payload) {
             }
 
             @Override
-            void onEvent(Event event) {
+            public void onEvent(Event event) {
             }
         });
         drasylNode.start();
@@ -56,11 +56,11 @@ public class DrasylNodeTest {
 
         DrasylNode drasylNode = spy(new DrasylNode() {
             @Override
-            void onMessage(byte[] payload) {
+            public void onMessage(byte[] payload) {
             }
 
             @Override
-            void onEvent(Event event) {
+            public void onEvent(Event event) {
             }
         });
         drasylNode.start();
@@ -74,11 +74,11 @@ public class DrasylNodeTest {
 
         DrasylNode drasylNode = spy(new DrasylNode() {
             @Override
-            void onMessage(byte[] payload) {
+            public void onMessage(byte[] payload) {
             }
 
             @Override
-            void onEvent(Event event) {
+            public void onEvent(Event event) {
             }
         });
         drasylNode.start();
@@ -92,11 +92,11 @@ public class DrasylNodeTest {
 
         DrasylNode drasylNode = spy(new DrasylNode() {
             @Override
-            void onMessage(byte[] payload) {
+            public void onMessage(byte[] payload) {
             }
 
             @Override
-            void onEvent(Event event) {
+            public void onEvent(Event event) {
             }
         });
         drasylNode.shutdown();
@@ -110,11 +110,11 @@ public class DrasylNodeTest {
 
         DrasylNode drasylNode = spy(new DrasylNode() {
             @Override
-            void onMessage(byte[] payload) {
+            public void onMessage(byte[] payload) {
             }
 
             @Override
-            void onEvent(Event event) {
+            public void onEvent(Event event) {
             }
         });
         drasylNode.shutdown();
@@ -128,11 +128,11 @@ public class DrasylNodeTest {
 
         DrasylNode drasylNode = spy(new DrasylNode() {
             @Override
-            void onMessage(byte[] payload) {
+            public void onMessage(byte[] payload) {
             }
 
             @Override
-            void onEvent(Event event) {
+            public void onEvent(Event event) {
             }
         });
         drasylNode.shutdown();
@@ -146,11 +146,11 @@ public class DrasylNodeTest {
 
         DrasylNode drasylNode = spy(new DrasylNode() {
             @Override
-            void onMessage(byte[] payload) {
+            public void onMessage(byte[] payload) {
             }
 
             @Override
-            void onEvent(Event event) {
+            public void onEvent(Event event) {
             }
         });
         drasylNode.shutdown();
@@ -164,11 +164,11 @@ public class DrasylNodeTest {
 
         DrasylNode drasylNode = spy(new DrasylNode() {
             @Override
-            void onMessage(byte[] payload) {
+            public void onMessage(byte[] payload) {
             }
 
             @Override
-            void onEvent(Event event) {
+            public void onEvent(Event event) {
             }
         });
 
@@ -181,11 +181,11 @@ public class DrasylNodeTest {
 
         DrasylNode drasylNode = spy(new DrasylNode() {
             @Override
-            void onMessage(byte[] payload) {
+            public void onMessage(byte[] payload) {
             }
 
             @Override
-            void onEvent(Event event) {
+            public void onEvent(Event event) {
             }
         });
         drasylNode.send(recipient, payload);
@@ -199,11 +199,11 @@ public class DrasylNodeTest {
 
         DrasylNode drasylNode = spy(new DrasylNode() {
             @Override
-            void onMessage(byte[] payload) {
+            public void onMessage(byte[] payload) {
             }
 
             @Override
-            void onEvent(Event event) {
+            public void onEvent(Event event) {
             }
         });
 
@@ -216,11 +216,11 @@ public class DrasylNodeTest {
 
         DrasylNode drasylNode = spy(new DrasylNode() {
             @Override
-            void onMessage(byte[] payload) {
+            public void onMessage(byte[] payload) {
             }
 
             @Override
-            void onEvent(Event event) {
+            public void onEvent(Event event) {
             }
         });
 
@@ -233,11 +233,11 @@ public class DrasylNodeTest {
 
         DrasylNode drasylNode = spy(new DrasylNode() {
             @Override
-            void onMessage(byte[] payload) {
+            public void onMessage(byte[] payload) {
             }
 
             @Override
-            void onEvent(Event event) {
+            public void onEvent(Event event) {
             }
         });
 
