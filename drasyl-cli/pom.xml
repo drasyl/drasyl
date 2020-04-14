@@ -11,6 +11,11 @@
 
     <artifactId>drasyl-cli</artifactId>
 
+    <name>drasyl: Next Generation Overlay Network - CLI Package</name>
+    <description>
+        This package contains a pre-packed drasyl Node. It can be run via the command line interface. This allows you to easily create new (root) super peers.
+    </description>
+
     <build>
         <plugins>
             <plugin>
@@ -78,14 +83,6 @@
             <artifactId>drasyl-core</artifactId>
             <version>${project.version}</version>
             <scope>compile</scope>
-        </dependency>
-
-        <!-- Logging -->
-        <!-- https://mvnrepository.com/artifact/ch.qos.logback/logback-classic -->
-        <dependency>
-            <groupId>ch.qos.logback</groupId>
-            <artifactId>logback-classic</artifactId>
-            <version>1.2.3</version>
         </dependency>
 
         <!-- Command Line Interfae -->
