@@ -68,7 +68,7 @@ public abstract class DrasylNode {
             LOG.info("Try starting a drasyl node (v.{})...", DrasylNode.getVersion());
             isStarted = true;
             identityManager = new IdentityManager(config.getIdentityPath());
-            LOG.debug("Generated identity {}", identityManager.getIdentity());
+            LOG.debug("Using identity '{}'", identityManager.getIdentity());
         }
         else {
             throw new DrasylException("This node is already started.");

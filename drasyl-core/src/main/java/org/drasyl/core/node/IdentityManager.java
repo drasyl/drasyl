@@ -80,6 +80,7 @@ public class IdentityManager {
             throw new DrasylException("No write permission on identity file.");
         }
         else {
+            LOG.debug("No identity present. Generate a new one at file {}", path);
             generate();
             try {
                 IdentityManager.objectMapper.writerWithDefaultPrettyPrinter().writeValue(file, keyPair);
@@ -106,6 +107,7 @@ public class IdentityManager {
 
     private void load() throws DrasylException {
         try {
+        LOG.debug("Load existing identity from file {}", path);
             this.keyPair = IdentityManager.objectMapper.readValue(path.toFile(), CompressedKeyPair.class);
             this.identity = Identity.of(keyPair.getPublicKey());
         }
