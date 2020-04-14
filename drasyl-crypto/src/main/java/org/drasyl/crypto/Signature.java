@@ -16,13 +16,13 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.core.crypto;
+package org.drasyl.crypto;
 
 /**
  * A signature. (Wrapper class for byte[])
  */
 public class Signature {
-    private byte[] signature;
+    private byte[] signature; // NOSONAR
 
     private Signature() {
     }

@@ -18,8 +18,8 @@
  */
 package org.drasyl.core.messages;
 
-import org.drasyl.core.crypto.Signable;
-import org.drasyl.core.crypto.Signature;
+import org.drasyl.crypto.Signable;
+import org.drasyl.crypto.Signature;
 import org.drasyl.core.models.Identity;
 
 import java.io.IOException;

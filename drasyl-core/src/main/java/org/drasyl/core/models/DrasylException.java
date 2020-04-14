@@ -16,15 +16,15 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.core.crypto;
 
-public class CryptoException extends Exception {
+package org.drasyl.core.models;
 
-    public CryptoException(String message, Exception cause) {
-        super(message, cause);
+public class DrasylException extends Exception {
+    public DrasylException(Throwable cause) {
+        super(cause);
     }
 
-    public CryptoException(Exception wrapped) {
-        super(wrapped);
+    public DrasylException(String cause) {
+        super(cause);
     }
 }

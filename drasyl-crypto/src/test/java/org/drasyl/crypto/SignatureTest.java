@@ -16,8 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-package org.drasyl.core.crypto;
+package org.drasyl.crypto;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -29,17 +28,15 @@ import static org.junit.jupiter.api.Assertions.*;
 class SignatureTest {
     private KeyPair keyPair1;
     private KeyPair keyPair2;
-
     private DummySignable signable1;
     private DummySignable signable2;
-
     private Signature signature1;
     private Signature signature2;
 
     @BeforeEach
     public void init() {
-        signable1 = new DummySignable(new byte[]{(byte) 0x3a, (byte) 0x22});
-        signable2 = new DummySignable(new byte[]{(byte) 0x11, (byte) 0x1b});
+        signable1 = new DummySignable(new byte[]{ (byte) 0x3a, (byte) 0x22 });
+        signable2 = new DummySignable(new byte[]{ (byte) 0x11, (byte) 0x1b });
         keyPair1 = Crypto.generateKeys();
         keyPair2 = Crypto.generateKeys();
     }

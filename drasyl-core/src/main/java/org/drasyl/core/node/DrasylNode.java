@@ -19,20 +19,40 @@
 package org.drasyl.core.node;
 
 import com.typesafe.config.Config;
+import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
+import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.models.Event;
 import org.drasyl.core.models.Identity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Properties;
 
 public abstract class DrasylNode {
-    public DrasylNode() {
+    private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);
+    private DrasylNodeConfig config;
+    private IdentityManager identityManager;
+    private boolean isStarted;
+
+    public DrasylNode() throws DrasylException {
         this(ConfigFactory.load());
     }
 
-    public DrasylNode(Config config) {
-        // implement
+    public DrasylNode(Config config) throws DrasylException {
+        try {
+            this.config = new DrasylNodeConfig(config);
+        }
+        catch (ConfigException e) {
+            throw new DrasylException("Couldn't load config: \n" + e.getMessage());
+        }
+    }
+
+    DrasylNode(DrasylNodeConfig config, IdentityManager identityManager, boolean isStarted) {
+        this.config = config;
+        this.identityManager = identityManager;
+        this.isStarted = isStarted;
     }
 
     abstract void onMessage(byte[] payload);
@@ -43,15 +63,23 @@ public abstract class DrasylNode {
         // implement
     }
 
-    public void start() {
-        // implement
+    public void start() throws DrasylException {
+        if (!isStarted) {
+            LOG.info("Try starting a drasyl node (v.{})...", DrasylNode.getVersion());
+            isStarted = true;
+            identityManager = new IdentityManager(config.getIdentityPath());
+            LOG.debug("Generated identity {}", identityManager.getIdentity());
+        }
+        else {
+            throw new DrasylException("This node is already started.");
+        }
     }
 
     public void shutdown() {
         // implement
     }
 
-    public static void main(String[] args) {
+    public static void main(String[] args) throws DrasylException {
         // create node
         DrasylNode node = new DrasylNode() {
             @Override
