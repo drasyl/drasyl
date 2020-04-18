@@ -58,6 +58,8 @@
         <module>relayserver-common</module>
         <module>relayserver-integration-tests</module>
         <module>relayserver-server</module>
+        <module>akka-p2p</module>
+        <module>akka-p2p-integration-tests</module>
     </modules>
 
     <properties>
