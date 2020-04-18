@@ -65,7 +65,12 @@ class Cli {
     void shutdown() {
         if (node != null) {
             log.info("Shutdown Drasyl Node");
-            node.shutdown();
+            try {
+                node.shutdown();
+            }
+            catch (DrasylException e) {
+                // ignore
+            }
         }
     }
 

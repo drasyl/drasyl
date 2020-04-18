@@ -24,10 +24,13 @@ import com.typesafe.config.ConfigFactory;
 import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.models.Event;
 import org.drasyl.core.models.Identity;
+import org.drasyl.core.server.RelayServer;
+import org.drasyl.core.server.RelayServerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URISyntaxException;
 import java.util.Properties;
 
 public abstract class DrasylNode {
@@ -35,6 +38,7 @@ public abstract class DrasylNode {
     private DrasylNodeConfig config;
     private IdentityManager identityManager;
     private boolean isStarted;
+    private RelayServer server;
 
     public DrasylNode() throws DrasylException {
         this(ConfigFactory.load());
@@ -49,10 +53,11 @@ public abstract class DrasylNode {
         }
     }
 
-    DrasylNode(DrasylNodeConfig config, IdentityManager identityManager, boolean isStarted) {
+    DrasylNode(DrasylNodeConfig config, IdentityManager identityManager, boolean isStarted, RelayServer server) {
         this.config = config;
         this.identityManager = identityManager;
         this.isStarted = isStarted;
+        this.server = server;
     }
 
     public abstract void onEvent(Event event);
@@ -67,14 +72,28 @@ public abstract class DrasylNode {
             isStarted = true;
             identityManager = new IdentityManager(config.getIdentityPath());
             LOG.debug("Using identity '{}'", identityManager.getIdentity());
+
+            try {
+                server = new RelayServer();
+                LOG.debug("Start Server at {}", server.getEntrypoint());
+                server.open();
+                server.awaitOpen();
+                LOG.debug("Server started at {}", server.getEntrypoint());
+            }
+            catch (URISyntaxException e) {
+                throw new DrasylException(e);
+            }
         }
         else {
             throw new DrasylException("This node is already started.");
         }
     }
 
-    public void shutdown() {
-        // implement
+    public void shutdown() throws DrasylException {
+        LOG.debug("Stop Server at {}", server.getEntrypoint());
+        server.close();
+        server.awaitClose();
+        LOG.debug("Server stopped at {}", server.getEntrypoint());
     }
 
     public static void main(String[] args) throws DrasylException {

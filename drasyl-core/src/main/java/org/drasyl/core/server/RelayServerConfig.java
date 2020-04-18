@@ -179,7 +179,7 @@ public class RelayServerConfig {
 
     @Override
     public String toString() {
-        return "RelayServerConfig [config=" + config.getConfig("relay") + "]";
+        return "RelayServerConfig [config=" + config.getConfig("drasyl.server") + "]";
     }
 
     public boolean isRelayMonitoringEnabled() {

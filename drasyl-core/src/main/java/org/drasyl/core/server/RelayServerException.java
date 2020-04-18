@@ -19,10 +19,12 @@
 
 package org.drasyl.core.server;
 
+import org.drasyl.core.models.DrasylException;
+
 /**
  * A RelayServerException is thrown by the {@link RelayServer} when errors occur.
  */
-public class RelayServerException extends Exception {
+public class RelayServerException extends DrasylException {
     public RelayServerException(Throwable cause) {
         super(cause);
     }
