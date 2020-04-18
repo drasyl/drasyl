@@ -41,7 +41,6 @@ import city.sane.relay.server.RelayServerException;
 import city.sane.relay.server.testutils.*;
 //import net.jcip.annotations.NotThreadSafe;
 import org.awaitility.Durations;
-import org.junit.Assert;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
