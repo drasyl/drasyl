@@ -1,7 +1,7 @@
 package city.sane.akka.p2p.transport.relay;
 
-import city.sane.relay.server.RelayServer;
-import city.sane.relay.server.RelayServerException;
+import org.drasyl.core.server.RelayServer;
+import org.drasyl.core.server.RelayServerException;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 

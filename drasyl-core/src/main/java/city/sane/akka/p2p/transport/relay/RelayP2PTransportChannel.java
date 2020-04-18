@@ -7,7 +7,7 @@ import city.sane.akka.p2p.transport.handler.EnvelopeMessageHandler;
 import city.sane.akka.p2p.transport.relay.handler.RelayJoinHandler;
 import city.sane.akka.p2p.transport.relay.handler.RelayMessageHandler;
 import city.sane.akka.p2p.transport.relay.handler.RelayP2PTransportChannelInitializer;
-import city.sane.relay.common.messages.Leave;
+import org.drasyl.core.common.messages.Leave;
 import com.typesafe.config.Config;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;

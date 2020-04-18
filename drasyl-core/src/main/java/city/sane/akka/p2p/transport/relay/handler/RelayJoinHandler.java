@@ -1,11 +1,11 @@
 package city.sane.akka.p2p.transport.relay.handler;
 
-import city.sane.relay.common.messages.Join;
-import city.sane.relay.common.messages.Message;
-import city.sane.relay.common.messages.RelayException;
-import city.sane.relay.common.messages.Welcome;
-import city.sane.relay.common.models.SessionChannel;
-import city.sane.relay.common.models.SessionUID;
+import org.drasyl.core.common.messages.Join;
+import org.drasyl.core.common.messages.Message;
+import org.drasyl.core.common.messages.RelayException;
+import org.drasyl.core.common.messages.Welcome;
+import org.drasyl.core.common.models.SessionChannel;
+import org.drasyl.core.common.models.SessionUID;
 import io.netty.channel.ChannelException;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;

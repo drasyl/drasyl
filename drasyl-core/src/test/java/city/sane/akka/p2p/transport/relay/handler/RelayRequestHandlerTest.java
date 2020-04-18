@@ -1,8 +1,8 @@
 package city.sane.akka.p2p.transport.relay.handler;
 
-import city.sane.relay.common.messages.Welcome;
-import city.sane.relay.common.messages.Join;
-import city.sane.relay.common.messages.Response;
+import org.drasyl.core.common.messages.Welcome;
+import org.drasyl.core.common.messages.Join;
+import org.drasyl.core.common.messages.Response;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Before;
 import org.junit.Test;

@@ -2,7 +2,7 @@ package city.sane.akka.p2p.transport.relay.handler;
 
 import city.sane.akka.p2p.transport.InboundMessageEnvelope;
 import city.sane.akka.p2p.transport.handler.EnvelopeMessageHandler;
-import city.sane.relay.common.handler.ClientInitializer;
+import org.drasyl.core.common.handler.ClientInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.SocketChannel;

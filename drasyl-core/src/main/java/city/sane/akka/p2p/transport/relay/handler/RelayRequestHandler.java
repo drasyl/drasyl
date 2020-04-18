@@ -1,8 +1,8 @@
 package city.sane.akka.p2p.transport.relay.handler;
 
-import city.sane.relay.common.handler.SimpleChannelDuplexHandler;
-import city.sane.relay.common.messages.Message;
-import city.sane.relay.common.messages.Response;
+import org.drasyl.core.common.handler.SimpleChannelDuplexHandler;
+import org.drasyl.core.common.messages.Message;
+import org.drasyl.core.common.messages.Response;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
 import org.slf4j.Logger;

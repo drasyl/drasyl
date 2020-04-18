@@ -20,7 +20,7 @@ import city.sane.akka.p2p.P2PActorRefProvider;
 import city.sane.akka.p2p.transport.InboundMessageEnvelope;
 import city.sane.akka.p2p.transport.OutboundMessageEnvelope;
 import city.sane.akka.p2p.transport.direct.messages.AkkaMessage;
-import city.sane.relay.common.handler.SimpleChannelDuplexHandler;
+import org.drasyl.core.common.handler.SimpleChannelDuplexHandler;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
 import scala.Function0;

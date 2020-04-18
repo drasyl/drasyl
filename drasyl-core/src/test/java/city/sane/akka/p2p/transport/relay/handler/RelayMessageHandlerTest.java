@@ -2,9 +2,9 @@ package city.sane.akka.p2p.transport.relay.handler;
 
 import city.sane.akka.p2p.transport.InboundMessageEnvelope;
 import city.sane.akka.p2p.transport.direct.messages.AkkaMessage;
-import city.sane.relay.common.messages.ForwardableMessage;
-import city.sane.relay.common.messages.Message;
-import city.sane.relay.common.models.SessionUID;
+import org.drasyl.core.common.messages.ForwardableMessage;
+import org.drasyl.core.common.messages.Message;
+import org.drasyl.core.common.models.SessionUID;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.After;
 import org.junit.Before;

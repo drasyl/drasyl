@@ -6,7 +6,7 @@ import akka.actor.ActorSystem;
 import city.sane.akka.p2p.transport.ActorSystemConfigFactory;
 import city.sane.akka.p2p.transport.MyTestActor;
 import city.sane.akka.p2p.transport.P2PTransportException;
-import city.sane.relay.server.RelayServerException;
+import org.drasyl.core.server.RelayServerException;
 import com.typesafe.config.Config;
 import org.junit.After;
 import org.junit.Assert;

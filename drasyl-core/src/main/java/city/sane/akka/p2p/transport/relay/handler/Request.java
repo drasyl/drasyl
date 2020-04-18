@@ -1,6 +1,6 @@
 package city.sane.akka.p2p.transport.relay.handler;
 
-import city.sane.relay.common.messages.Message;
+import org.drasyl.core.common.messages.Message;
 
 import java.util.concurrent.CompletableFuture;
 

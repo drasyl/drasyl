@@ -1,11 +1,11 @@
 package city.sane.akka.p2p.transport.relay.handler;
 
 import city.sane.akka.p2p.transport.direct.messages.AkkaMessage;
-import city.sane.relay.common.handler.SimpleChannelDuplexHandler;
-import city.sane.relay.common.messages.ForwardableMessage;
-import city.sane.relay.common.messages.Message;
-import city.sane.relay.common.messages.RelayException;
-import city.sane.relay.common.models.SessionUID;
+import org.drasyl.core.common.handler.SimpleChannelDuplexHandler;
+import org.drasyl.core.common.messages.ForwardableMessage;
+import org.drasyl.core.common.messages.Message;
+import org.drasyl.core.common.messages.RelayException;
+import org.drasyl.core.common.models.SessionUID;
 import io.netty.channel.ChannelHandlerContext;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
