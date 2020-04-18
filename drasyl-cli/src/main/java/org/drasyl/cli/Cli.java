@@ -65,7 +65,12 @@ class Cli {
     void shutdown() {
         if (node != null) {
             log.info("Shutdown Drasyl Node");
-            node.shutdown();
+            try {
+                node.shutdown();
+            }
+            catch (DrasylException e) {
+                // ignore
+            }
         }
     }
 
@@ -91,7 +96,7 @@ class Cli {
         Level level = Level.valueOf(value);
 
         LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
-        context.getLoggerList().stream().filter(l -> l.getName().startsWith("city.sane")).forEach(l -> l.setLevel(level));
+        context.getLoggerList().stream().filter(l -> l.getName().startsWith("org.drasyl")).forEach(l -> l.setLevel(level));
     }
 
     private void printHelp(Options options) {
