@@ -26,40 +26,27 @@
         </plugins>
     </build>
 
-    <properties>
-        <akka.version>2.5.23</akka.version>
-        <annoations.version>13.0</annoations.version>
-        <junit.jupiter.version>5.5.2</junit.jupiter.version>
-        <hamcrest.version>2.2</hamcrest.version>
-        <mockito.version>3.2.4</mockito.version>
-    </properties>
-
     <dependencies>
         <!-- akka -->
         <dependency>
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-actor_2.12</artifactId>
-            <version>${akka.version}</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-remote_2.12</artifactId>
-            <version>${akka.version}</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-cluster_2.12</artifactId>
-            <version>${akka.version}</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-cluster-tools_2.12</artifactId>
-            <version>${akka.version}</version>
         </dependency>
         <dependency>
             <groupId>com.typesafe.akka</groupId>
             <artifactId>akka-slf4j_2.12</artifactId>
-            <version>${akka.version}</version>
         </dependency>
         <dependency>
             <groupId>org.jetbrains</groupId>
@@ -75,53 +62,45 @@
             <groupId>org.mockito</groupId>
             <artifactId>mockito-core</artifactId>
             <scope>test</scope>
-            <version>${mockito.version}</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
-            <version>${junit.jupiter.version}</version>
         </dependency>
         <!-- TODO: Migrate tests to JUnit 5 and remove vintage-engine -->
         <dependency>
             <groupId>org.junit.vintage</groupId>
             <artifactId>junit-vintage-engine</artifactId>
             <scope>test</scope>
-            <version>${junit.jupiter.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.hamcrest</groupId>
             <artifactId>hamcrest</artifactId>
             <scope>test</scope>
-            <version>${hamcrest.version}</version>
         </dependency>
 
         <dependency>
             <groupId>org.awaitility</groupId>
             <artifactId>awaitility</artifactId>
             <scope>test</scope>
-            <version>4.0.2</version>
         </dependency>
 
         <!-- Javadoc -->
         <dependency>
             <groupId>org.jetbrains</groupId>
             <artifactId>annotations</artifactId>
-            <version>${annoations.version}</version>
         </dependency>
 
         <dependency>
             <groupId>io.netty</groupId>
             <artifactId>netty-all</artifactId>
-            <version>4.1.39.Final</version>
         </dependency>
 
         <dependency>
             <groupId>org.drasyl</groupId>
             <artifactId>relayserver-common</artifactId>
-            <version>${project.version}</version>
             <scope>compile</scope>
         </dependency>
     </dependencies>

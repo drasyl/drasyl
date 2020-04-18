@@ -36,13 +36,8 @@
 	</repositories>
 
 	<properties>
-		<mvn.dependency.version>3.1.1</mvn.dependency.version>
-		<mvn.assembly.version>3.2.0</mvn.assembly.version>
-		<mvn.jar.version>3.2.0</mvn.jar.version>
 		<output.libs.dir>libs</output.libs.dir>
         <finalFileName>relayserver</finalFileName>
-        <guave.version>28.1-jre</guave.version>
-        <junit.version>5.6.0-M1</junit.version>
 	</properties>
 
 	<build>
@@ -83,7 +78,6 @@
 			<plugin>
 				<groupId>org.apache.maven.plugins</groupId>
 				<artifactId>maven-jar-plugin</artifactId>
-				<version>${mvn.jar.version}</version>
 				<configuration>
 					<archive>
 						<manifest>
@@ -123,40 +117,34 @@
 		<dependency>
 			<groupId>org.drasyl</groupId>
 			<artifactId>relayserver-common</artifactId>
-			<version>${project.version}</version>
-		</dependency>
+            <version>${project.version}</version>
+        </dependency>
 		<dependency>
 			<groupId>org.fusesource.leveldbjni</groupId>
 			<artifactId>leveldbjni-all</artifactId>
-			<version>1.8</version>
-		</dependency>
+        </dependency>
 		<dependency>
 			<groupId>org.apache.tika</groupId>
 			<artifactId>tika-core</artifactId>
-			<version>1.23</version>
-		</dependency>
+        </dependency>
         <dependency>
             <groupId>com.google.guava</groupId>
             <artifactId>guava</artifactId>
-            <version>${guave.version}</version>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-api</artifactId>
-            <version>${junit.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter-engine</artifactId>
-            <version>${junit.version}</version>
-            <scope>test</scope>
+			<scope>test</scope>
         </dependency>
         <dependency>
             <groupId>org.junit.platform</groupId>
             <artifactId>junit-platform-runner</artifactId>
-            <version>1.6.0-M1</version>
-            <scope>test</scope>
+			<scope>test</scope>
         </dependency>
 	</dependencies>
 </project>
