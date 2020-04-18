@@ -46,7 +46,7 @@
     <dependencies>
         <dependency>
             <groupId>org.drasyl</groupId>
-            <artifactId>relayserver-server</artifactId>
+            <artifactId>drasyl-core</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

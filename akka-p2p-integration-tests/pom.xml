@@ -12,12 +12,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.drasyl</groupId>
-            <artifactId>akka-p2p</artifactId>
-            <version>${project.version}</version>
-            <scope>test</scope>
-        </dependency>
-        <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
             <scope>test</scope>
@@ -40,7 +34,7 @@
         </dependency>
         <dependency>
             <groupId>org.drasyl</groupId>
-            <artifactId>relayserver-server</artifactId>
+            <artifactId>drasyl-core</artifactId>
             <version>${project.version}</version>
             <scope>test</scope>
         </dependency>

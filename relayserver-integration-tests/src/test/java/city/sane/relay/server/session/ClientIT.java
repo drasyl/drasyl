@@ -207,7 +207,7 @@ public class ClientIT {
                 if (message instanceof ForwardableMessage) {
                     ForwardableMessage f = (ForwardableMessage) message;
                     lock.countDown();
-                    Assert.assertEquals(msg, f);
+                    assertEquals(msg, f);
                 }
             });
 
@@ -286,7 +286,7 @@ public class ClientIT {
                 if (message instanceof ForwardableMessage) {
                     ForwardableMessage f = (ForwardableMessage) message;
                     lock.countDown();
-                    Assert.assertEquals(msg, f);
+                    assertEquals(msg, f);
                 }
             });
 
@@ -315,7 +315,7 @@ public class ClientIT {
                 if (message instanceof RelayException) {
                     RelayException e = (RelayException) message;
 
-                    Assert.assertEquals(
+                    assertEquals(
                             "Handshake did not take place successfully in "
                                     + relay.getConfig().getRelayMaxHandshakeTimeout().toMillis() + " ms. Connection is closed.",
                             e.getException());
@@ -383,7 +383,7 @@ public class ClientIT {
                 if (message instanceof RelayException) {
                     RelayException e = (RelayException) message;
 
-                    Assert.assertThat(e.getException(), anyOf(
+                    assertThat(e.getException(), anyOf(
                             equalTo("java.lang.IllegalArgumentException: Your request was not a valid Message Object: 'invalid message'"),
                             equalTo("Exception occurred during initialization stage. The connection will shut down.")
                     ));
@@ -551,7 +551,7 @@ public class ClientIT {
 
             session.sendMessage(msg);
             session.sendMessageWithResponse(msg, RelayException.class).thenAccept(response -> {
-                Assert.assertThat(response.getException(), anyOf(
+                assertThat(response.getException(), anyOf(
                         equalTo("This message was already send.")));
 
                 lock.countDown();
@@ -579,7 +579,7 @@ public class ClientIT {
             Response<RelayException> msg = new Response<>(new RelayException("Test"), RandomUtil.randomString(12));
 
             session.sendMessageWithResponse(msg, RelayException.class).thenAccept(response -> {
-                Assert.assertThat(response.getException(), anyOf(
+                assertThat(response.getException(), anyOf(
                         equalTo("This response was not expected from us, as it does not refer to any valid request.")));
 
                 lock.countDown();
@@ -607,7 +607,7 @@ public class ClientIT {
             Response<RelayException> msg = new Response<>(new RelayException("Test"), RandomUtil.randomString(12));
 
             session.sendMessageWithResponse(msg, Status.class).thenAccept(response -> {
-                Assert.assertThat(response, anyOf(
+                assertThat(response, anyOf(
                         equalTo(Status.FORBIDDEN)));
 
                 lock.countDown();

@@ -17,19 +17,27 @@
  * along with Relayserver.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package city.sane.relay.server.testutils;
+package city.sane.relay.server.util.listener;
 
-import city.sane.relay.common.models.IPAddress;
+import static org.junit.Assert.assertEquals;
 
-//public class TestClient extends Session {
-//    /**
-//     * Creates a new connection.
-//     *
-//     * @param channel      channel of the connection
-//     * @param targetSystem the ip address and port of the target system
-//     * @param relay        reference to the relay instance
-//     */
-////    public TestClient(Channel channel, IPAddress targetSystem, RelayServer relay) {
-////        super(channel, targetSystem, relay);
-////    }
-//}
+import org.junit.jupiter.api.Test;
+
+import city.sane.relay.common.messages.Message;
+import city.sane.relay.common.messages.Status;
+
+public class ResponseListenerTest {
+    @Test
+    public void instantiationTest() {
+        Message msg = Status.OK;
+
+        IResponseListener<Message> listener = new ResponseListener() {
+            @Override
+            public void emitEvent(Message message) {
+                assertEquals(msg, message);
+            }
+        };
+
+        listener.emitEvent(msg);
+    }
+}
