@@ -40,5 +40,10 @@ public enum Code {
     /**
      * This event signals that the node has established a connection via a relay to a peer.
      */
-    PEER_RELAY
+    PEER_RELAY,
+
+    /**
+     * This event signals that the node has received a message addressed to it.
+     */
+    MESSAGE
 }

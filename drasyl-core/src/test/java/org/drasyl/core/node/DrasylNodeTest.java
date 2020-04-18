@@ -2,8 +2,8 @@ package org.drasyl.core.node;
 
 import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.models.Event;
-import org.drasyl.core.models.Node;
 import org.drasyl.core.models.Identity;
+import org.drasyl.core.models.Node;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -17,7 +17,7 @@ import static org.mockito.Mockito.*;
 public class DrasylNodeTest {
     private Node node;
     private Event event;
-    private byte[] payload;
+    private byte[] message;
     private Identity recipient;
 
     @BeforeEach
@@ -25,7 +25,7 @@ public class DrasylNodeTest {
         event = mock(Event.class);
         node = mock(Node.class);
         recipient = mock(Identity.class);
-        payload = new byte[]{ 0x4f };
+        message = new byte[]{ 0x4f };
     }
 
     @AfterEach
@@ -38,16 +38,12 @@ public class DrasylNodeTest {
 
         DrasylNode drasylNode = spy(new DrasylNode() {
             @Override
-            public void onMessage(byte[] payload) {
-            }
-
-            @Override
             public void onEvent(Event event) {
             }
         });
         drasylNode.start();
 
-        verify(drasylNode).onEvent(new Event(NODE_ONLINE, node, null));
+        verify(drasylNode).onEvent(new Event(NODE_ONLINE, node, null, new byte[]{}));
     }
 
     @Test
@@ -56,16 +52,12 @@ public class DrasylNodeTest {
 
         DrasylNode drasylNode = spy(new DrasylNode() {
             @Override
-            public void onMessage(byte[] payload) {
-            }
-
-            @Override
             public void onEvent(Event event) {
             }
         });
         drasylNode.start();
 
-        verify(drasylNode).onEvent(new Event(NODE_IDENTITY_COLLISION, node, null));
+        verify(drasylNode).onEvent(new Event(NODE_IDENTITY_COLLISION, node, null, new byte[]{}));
     }
 
     @Test
@@ -73,10 +65,6 @@ public class DrasylNodeTest {
         // FIXME: mock behaviour here
 
         DrasylNode drasylNode = spy(new DrasylNode() {
-            @Override
-            public void onMessage(byte[] payload) {
-            }
-
             @Override
             public void onEvent(Event event) {
             }
@@ -92,16 +80,12 @@ public class DrasylNodeTest {
 
         DrasylNode drasylNode = spy(new DrasylNode() {
             @Override
-            public void onMessage(byte[] payload) {
-            }
-
-            @Override
             public void onEvent(Event event) {
             }
         });
         drasylNode.shutdown();
 
-        verify(drasylNode).onEvent(new Event(NODE_NORMAL_TERMINATION, node, null));
+        verify(drasylNode).onEvent(new Event(NODE_NORMAL_TERMINATION, node, null, new byte[]{}));
     }
 
     @Test
@@ -110,16 +94,12 @@ public class DrasylNodeTest {
 
         DrasylNode drasylNode = spy(new DrasylNode() {
             @Override
-            public void onMessage(byte[] payload) {
-            }
-
-            @Override
             public void onEvent(Event event) {
             }
         });
         drasylNode.shutdown();
 
-        verify(drasylNode).onEvent(new Event(NODE_DEREGISTER_FAILED, node, null));
+        verify(drasylNode).onEvent(new Event(NODE_DEREGISTER_FAILED, node, null, new byte[]{}));
     }
 
     @Test
@@ -127,10 +107,6 @@ public class DrasylNodeTest {
         // FIXME: mock behaviour here
 
         DrasylNode drasylNode = spy(new DrasylNode() {
-            @Override
-            public void onMessage(byte[] payload) {
-            }
-
             @Override
             public void onEvent(Event event) {
             }
@@ -146,10 +122,6 @@ public class DrasylNodeTest {
 
         DrasylNode drasylNode = spy(new DrasylNode() {
             @Override
-            public void onMessage(byte[] payload) {
-            }
-
-            @Override
             public void onEvent(Event event) {
             }
         });
@@ -164,15 +136,11 @@ public class DrasylNodeTest {
 
         DrasylNode drasylNode = spy(new DrasylNode() {
             @Override
-            public void onMessage(byte[] payload) {
-            }
-
-            @Override
             public void onEvent(Event event) {
             }
         });
 
-        verify(drasylNode).onMessage(payload);
+        verify(drasylNode).onEvent(new Event(MESSAGE, null, null, message));
     }
 
     @Test
@@ -181,14 +149,10 @@ public class DrasylNodeTest {
 
         DrasylNode drasylNode = spy(new DrasylNode() {
             @Override
-            public void onMessage(byte[] payload) {
-            }
-
-            @Override
             public void onEvent(Event event) {
             }
         });
-        drasylNode.send(recipient, payload);
+        drasylNode.send(recipient, message);
 
         fail("make sure that DrasylNode has processed the message correctly");
     }
@@ -199,15 +163,11 @@ public class DrasylNodeTest {
 
         DrasylNode drasylNode = spy(new DrasylNode() {
             @Override
-            public void onMessage(byte[] payload) {
-            }
-
-            @Override
             public void onEvent(Event event) {
             }
         });
 
-        verify(drasylNode).onEvent(new Event(NODE_OFFLINE, node, null));
+        verify(drasylNode).onEvent(new Event(NODE_OFFLINE, node, null, new byte[]{}));
     }
 
     @Test
@@ -216,15 +176,11 @@ public class DrasylNodeTest {
 
         DrasylNode drasylNode = spy(new DrasylNode() {
             @Override
-            public void onMessage(byte[] payload) {
-            }
-
-            @Override
             public void onEvent(Event event) {
             }
         });
 
-        verify(drasylNode).onEvent(new Event(NODE_ONLINE, node, null));
+        verify(drasylNode).onEvent(new Event(NODE_ONLINE, node, null, new byte[]{}));
     }
 
     @Test
@@ -233,14 +189,10 @@ public class DrasylNodeTest {
 
         DrasylNode drasylNode = spy(new DrasylNode() {
             @Override
-            public void onMessage(byte[] payload) {
-            }
-
-            @Override
             public void onEvent(Event event) {
             }
         });
 
-        verify(drasylNode).onEvent(new Event(NODE_UNRECOVERABLE_ERROR, node, null));
+        verify(drasylNode).onEvent(new Event(NODE_UNRECOVERABLE_ERROR, node, null, new byte[]{}));
     }
 }

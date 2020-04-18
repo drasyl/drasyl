@@ -126,11 +126,6 @@ class Cli {
         try {
             node = new DrasylNode() {
                 @Override
-                public void onMessage(byte[] payload) {
-                    log.info("Message received: {}", payload);
-                }
-
-                @Override
                 public void onEvent(Event event) {
                     log.info("Event received: {}", event);
                 }

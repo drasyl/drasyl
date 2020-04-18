@@ -18,17 +18,20 @@
  */
 package org.drasyl.core.models;
 
+import java.util.Arrays;
 import java.util.Objects;
 
 public class Event {
     private final Code code;
     private final Node node;
     private final Peer peer;
+    private final byte[] message;
 
-    public Event(Code code, Node node, Peer peer) {
+    public Event(Code code, Node node, Peer peer, byte[] message) {
         this.code = code;
         this.node = node;
         this.peer = peer;
+        this.message = message;
     }
 
     public Code getCode() {
@@ -43,9 +46,15 @@ public class Event {
         return peer;
     }
 
+    public byte[] getMessage() {
+        return message;
+    }
+
     @Override
     public int hashCode() {
-        return Objects.hash(code, node, peer);
+        int result = Objects.hash(code, node, peer);
+        result = 31 * result + Arrays.hashCode(message);
+        return result;
     }
 
     @Override
@@ -59,7 +68,8 @@ public class Event {
         Event event = (Event) o;
         return code == event.code &&
                 Objects.equals(node, event.node) &&
-                Objects.equals(peer, event.peer);
+                Objects.equals(peer, event.peer) &&
+                Arrays.equals(message, event.message);
     }
 
     @Override
@@ -68,6 +78,7 @@ public class Event {
                 "code=" + code +
                 ", node=" + node +
                 ", peer=" + peer +
+                ", message=" + Arrays.toString(message) +
                 '}';
     }
 }
