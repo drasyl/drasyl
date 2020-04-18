@@ -55,6 +55,9 @@
         <module>drasyl-core</module>
         <module>drasyl-integration-tests</module>
         <module>drasyl-crypto</module>
+        <module>relayserver-common</module>
+        <module>relayserver-integration-tests</module>
+        <module>relayserver-server</module>
     </modules>
 
     <properties>
