@@ -260,7 +260,6 @@
         <module>drasyl-integration-tests</module>
         <module>drasyl-crypto</module>
         <module>relayserver-integration-tests</module>
-        <module>akka-p2p-integration-tests</module>
     </modules>
 
     <properties>
