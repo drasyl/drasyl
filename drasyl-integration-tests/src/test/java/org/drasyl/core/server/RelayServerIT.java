@@ -50,7 +50,7 @@ class RelayServerIT {
     public void startFailed() throws RelayServerException, URISyntaxException {
 
         Config config =
-                ConfigFactory.parseString("relay.entrypoint = \"ws://localhost:72522/\"").withFallback(ConfigFactory.load());
+                ConfigFactory.parseString("drasyl.server.entrypoint = \"ws://localhost:72522/\"").withFallback(ConfigFactory.load());
         RelayServer server = new RelayServer(config);
         server.open();
         assertThrows(RelayServerException.class, server::awaitOpen);

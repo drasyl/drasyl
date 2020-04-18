@@ -33,7 +33,7 @@ public class UserAgentMessage extends AbstractMessage implements Message {
         Config conf = ConfigFactory.load()
             .withFallback(ConfigFactory.load(UserAgentMessage.class.getClassLoader()));
 
-        return conf.getString("common.user-agent") + " (" + System.getProperty("os.name") + "; "
+        return conf.getString("drasyl.user-agent") + " (" + System.getProperty("os.name") + "; "
             + System.getProperty("os.arch") + "; Java/"
             + System.getProperty("java.vm.specification.version") + ":" + System.getProperty("java.version.date")
             + ")";

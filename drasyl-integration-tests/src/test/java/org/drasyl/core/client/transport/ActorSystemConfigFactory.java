@@ -15,9 +15,9 @@ public class ActorSystemConfigFactory {
                 .collect(Collectors.toMap(Map.Entry::getKey, entry -> entry.getValue().render()));
 
         baseParams.putAll(Map.of(
-                "akka.p2p.relay.host", baseConfig.getString("relay.external_ip"),
-                "akka.p2p.relay.port", baseConfig.getString("relay.port"),
-                "akka.p2p.relay.channel", baseConfig.getString("relay.default_channel")
+                "akka.p2p.relay.host", baseConfig.getString("drasyl.server.external_ip"),
+                "akka.p2p.relay.port", baseConfig.getString("drasyl.server.port"),
+                "akka.p2p.relay.channel", baseConfig.getString("drasyl.server.default_channel")
         ));
 
         return ConfigFactory.parseString(Streams.concat(baseParams.entrySet().stream(), params.entrySet().stream())

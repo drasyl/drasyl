@@ -108,7 +108,7 @@
             if(!this.cookiesSet()) {
                 let token = this.$cookies.get("TOKEN");
                 store.dispatch('sendMessage', {
-                    'clazz': 'city.sane.relay.server.monitoring.models.WebsocketRequest',
+                    'clazz': 'org.drasyl.core.server.monitoring.models.WebsocketRequest',
                     'token': token,
                     'action': 'getAll'});
                 }
