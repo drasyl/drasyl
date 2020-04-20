@@ -131,6 +131,45 @@ public class DrasylNodeTest {
     }
 
     @Test
+    public void onEventShouldEmitOfflineEventIfConnectionToSuperPeerIsLost() throws DrasylException {
+        // FIXME: mock behaviour here
+
+        DrasylNode drasylNode = spy(new DrasylNode() {
+            @Override
+            public void onEvent(Event event) {
+            }
+        });
+
+        verify(drasylNode).onEvent(new Event(NODE_OFFLINE, node, null, new byte[]{}));
+    }
+
+    @Test
+    public void onEventShouldEmitOnlineEventIfBrokenConnectionToSuperPeerReestablished() throws DrasylException {
+        // FIXME: mock behaviour here
+
+        DrasylNode drasylNode = spy(new DrasylNode() {
+            @Override
+            public void onEvent(Event event) {
+            }
+        });
+
+        verify(drasylNode).onEvent(new Event(NODE_ONLINE, node, null, new byte[]{}));
+    }
+
+    @Test
+    public void onEventShouldEmitUnrecoverableErrorEventIfConnectionToSuperPeerCouldNotReestablished() throws DrasylException {
+        // FIXME: mock behaviour here
+
+        DrasylNode drasylNode = spy(new DrasylNode() {
+            @Override
+            public void onEvent(Event event) {
+            }
+        });
+
+        verify(drasylNode).onEvent(new Event(NODE_UNRECOVERABLE_ERROR, node, null, new byte[]{}));
+    }
+
+    @Test
     public void onMessageShouldBeCalledForEveryIncomingMessage() throws DrasylException {
         // FIXME: mock behaviour here
 
@@ -155,44 +194,5 @@ public class DrasylNodeTest {
         drasylNode.send(recipient, message);
 
         fail("make sure that DrasylNode has processed the message correctly");
-    }
-
-    @Test
-    public void shouldEmitOfflineEventIfConnectionToSuperPeerIsLost() throws DrasylException {
-        // FIXME: mock behaviour here
-
-        DrasylNode drasylNode = spy(new DrasylNode() {
-            @Override
-            public void onEvent(Event event) {
-            }
-        });
-
-        verify(drasylNode).onEvent(new Event(NODE_OFFLINE, node, null, new byte[]{}));
-    }
-
-    @Test
-    public void shouldEmitOnlineEventIfBrokenConnectionToSuperPeerReestablished() throws DrasylException {
-        // FIXME: mock behaviour here
-
-        DrasylNode drasylNode = spy(new DrasylNode() {
-            @Override
-            public void onEvent(Event event) {
-            }
-        });
-
-        verify(drasylNode).onEvent(new Event(NODE_ONLINE, node, null, new byte[]{}));
-    }
-
-    @Test
-    public void shouldEmitUnrecoverableErrorEventIfConnectionToSuperPeerCouldNotReestablished() throws DrasylException {
-        // FIXME: mock behaviour here
-
-        DrasylNode drasylNode = spy(new DrasylNode() {
-            @Override
-            public void onEvent(Event event) {
-            }
-        });
-
-        verify(drasylNode).onEvent(new Event(NODE_UNRECOVERABLE_ERROR, node, null, new byte[]{}));
     }
 }

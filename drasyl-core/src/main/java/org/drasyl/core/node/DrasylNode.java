@@ -21,11 +21,11 @@ package org.drasyl.core.node;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
+import org.drasyl.core.models.Code;
 import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.models.Event;
 import org.drasyl.core.models.Identity;
 import org.drasyl.core.server.RelayServer;
-import org.drasyl.core.server.RelayServerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,17 +53,59 @@ public abstract class DrasylNode {
         }
     }
 
-    DrasylNode(DrasylNodeConfig config, IdentityManager identityManager, boolean isStarted, RelayServer server) {
+    DrasylNode(DrasylNodeConfig config,
+               IdentityManager identityManager,
+               boolean isStarted,
+               RelayServer server) {
         this.config = config;
         this.identityManager = identityManager;
         this.isStarted = isStarted;
         this.server = server;
     }
 
+    /**
+     * This method is responsible for the delivery of the message <code>payload</code> to the
+     * recipient <code>recipient</code>.
+     * <p>
+     * First, the system checks whether the message is addressed to the node itself.
+     * <p>
+     * If this is not the case, it is checked whether the message can be sent to a client/grandson.
+     * <p>
+     * If this is also not possible, the message is sent to a possibly existing super peer.
+     * <p>
+     * If this is also not possible, an exception is thrown.
+     *
+     * @param recipient
+     * @param payload
+     * @throws DrasylException
+     */
+    public synchronized void send(Identity recipient, byte[] payload) throws DrasylException {
+        if (identityManager.getIdentity().equals(recipient)) {
+            onEvent(new Event(Code.MESSAGE, null, null, payload));
+        }
+        else {
+            try {
+                sendToClient(recipient, payload);
+            }
+            catch (ClientNotFoundException e) {
+                try {
+                    sendToSuperPeer(recipient, payload);
+                }
+                catch (NoSuperPeerException ex) {
+                    throw new DrasylException("Unable to send message to recipient " + recipient);
+                }
+            }
+        }
+    }
+
     public abstract void onEvent(Event event);
 
-    public void send(Identity recipient, byte[] payload) {
-        // implement
+    private void sendToClient(Identity recipient, byte[] payload) throws DrasylException {
+        // FIXME: implement
+    }
+
+    private void sendToSuperPeer(Identity recipient, byte[] payload) throws DrasylException {
+        // FIXME: implement
     }
 
     public void start() throws DrasylException {
@@ -89,11 +131,20 @@ public abstract class DrasylNode {
         }
     }
 
-    public void shutdown() throws DrasylException {
-        LOG.debug("Stop Server at {}", server.getEntrypoint());
-        server.close();
-        server.awaitClose();
-        LOG.debug("Server stopped at {}", server.getEntrypoint());
+    /**
+     * Returns the version of the bide. If this is not possible, <code>null</code> is returned.
+     *
+     * @return
+     */
+    public static String getVersion() {
+        final Properties properties = new Properties();
+        try {
+            properties.load(DrasylNode.class.getClassLoader().getResourceAsStream("project.properties"));
+            return properties.getProperty("version");
+        }
+        catch (IOException e) {
+            return null;
+        }
     }
 
     public static void main(String[] args) throws DrasylException {
@@ -137,19 +188,10 @@ public abstract class DrasylNode {
         node.shutdown();
     }
 
-    /**
-     * Returns the version of the bide. If this is not possible, <code>null</code> is returned.
-     *
-     * @return
-     */
-    public static String getVersion() {
-        final Properties properties = new Properties();
-        try {
-            properties.load(DrasylNode.class.getClassLoader().getResourceAsStream("project.properties"));
-            return properties.getProperty("version");
-        }
-        catch (IOException e) {
-            return null;
-        }
+    public void shutdown() throws DrasylException {
+        LOG.debug("Stop Server at {}", server.getEntrypoint());
+        server.close();
+        server.awaitClose();
+        LOG.debug("Server stopped at {}", server.getEntrypoint());
     }
 }
