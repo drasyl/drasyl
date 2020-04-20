@@ -37,6 +37,7 @@ public abstract class DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);
     private DrasylNodeConfig config;
     private IdentityManager identityManager;
+    private PeersManager peersManager;
     private boolean isStarted;
     private RelayServer server;
 
@@ -55,10 +56,11 @@ public abstract class DrasylNode {
 
     DrasylNode(DrasylNodeConfig config,
                IdentityManager identityManager,
-               boolean isStarted,
+               PeersManager peersManager, boolean isStarted,
                RelayServer server) {
         this.config = config;
         this.identityManager = identityManager;
+        this.peersManager = peersManager;
         this.isStarted = isStarted;
         this.server = server;
     }
