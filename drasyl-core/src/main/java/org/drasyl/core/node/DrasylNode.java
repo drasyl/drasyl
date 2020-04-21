@@ -100,6 +100,18 @@ public abstract class DrasylNode {
         }
     }
 
+    public synchronized void send(String recipient, byte[] payload) throws DrasylException {
+        send(Identity.of(recipient), payload);
+    }
+
+    public synchronized void send(Identity recipient, String payload) throws DrasylException {
+        send(recipient, payload.getBytes());
+    }
+
+    public synchronized void send(String recipient, String payload) throws DrasylException {
+        send(Identity.of(recipient), payload);
+    }
+
     public abstract void onEvent(Event event);
 
     private void sendToClient(Identity recipient, byte[] payload) throws DrasylException {
