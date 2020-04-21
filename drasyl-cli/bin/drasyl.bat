@@ -69,7 +69,7 @@ set CMD_LINE_ARGS=%$
 
 set CLASSPATH=%CLASSPATH%;%DRASYL_HOME%;%DRASYL_HOME%\lib\*
 
-@rem Execute WoT Servient
+@rem Execute Drasyl Node
 "%JAVA_EXE%" -classpath "%CLASSPATH%" org.drasyl.cli.Cli %CMD_LINE_ARGS%
 
 :end
