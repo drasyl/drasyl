@@ -51,6 +51,28 @@ Add drasyl as dependency to your `pom.xml`:
 
 https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/releases
 
+### Usage
+
+```java
+// create and start node
+DrasylNode node = new DrasylNode() {
+    @Override
+    public void onEvent(Event event) {
+        // handle incoming events (messages) here
+        System.out.println("Event received: " + event);
+    }
+};
+node.start();
+
+// wait till NODE_ONLINE event has been received
+
+// send message to another node
+node.send("025eb0dc5d", "Hello World");
+
+// shutdown node
+node.shutdown();
+```
+
 ### Documentation
 
 More information can be found in the (still very short) [documentation](doc/README.md).
