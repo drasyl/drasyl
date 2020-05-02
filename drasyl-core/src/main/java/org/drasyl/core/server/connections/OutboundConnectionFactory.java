@@ -1,24 +1,45 @@
 /*
- * Copyright (c) 2020
+ * Copyright (c) 2020.
  *
- * This file is part of Relayserver.
+ * This file is part of drasyl.
  *
- * Relayserver is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  drasyl is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- * Relayserver is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ *  drasyl is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Relayserver.  If not, see <http://www.gnu.org/licenses/>.
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.core.server.connections;
 
+import io.netty.bootstrap.Bootstrap;
+import io.netty.channel.*;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.flush.FlushConsolidationHandler;
+import io.netty.handler.logging.LogLevel;
+import io.netty.handler.logging.LoggingHandler;
+import io.netty.handler.ssl.SslContext;
+import io.netty.handler.ssl.SslContextBuilder;
+import io.netty.handler.ssl.SslHandler;
+import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+import org.drasyl.core.common.handler.ClientInitializer;
+import org.drasyl.core.common.handler.DefaultSessionInitializer;
+import org.drasyl.core.common.handler.ExceptionHandler;
+import org.drasyl.core.common.handler.codec.message.MessageDecoder;
+import org.drasyl.core.common.handler.codec.message.MessageEncoder;
+import org.drasyl.core.common.util.function.Procedure;
+import org.drasyl.core.server.handler.codec.message.ServerActionMessageDecoder;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import javax.net.ssl.SSLException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
@@ -27,61 +48,36 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import org.drasyl.core.common.handler.ClientInitializer;
-import org.drasyl.core.common.handler.DefaultSessionInitializer;
-import org.drasyl.core.common.handler.ExceptionHandler;
-import org.drasyl.core.common.handler.codec.message.MessageDecoder;
-import org.drasyl.core.common.handler.codec.message.MessageEncoder;
-import org.drasyl.core.server.handler.codec.message.ServerActionMessageDecoder;
-import io.netty.handler.ssl.SslHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-
-import org.drasyl.core.common.models.IPAddress;
-import org.drasyl.core.common.util.function.Procedure;
-import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioSocketChannel;
-import io.netty.handler.flush.FlushConsolidationHandler;
-import io.netty.handler.logging.LogLevel;
-import io.netty.handler.logging.LoggingHandler;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
-
-import javax.net.ssl.SSLException;
-
 /**
  * This factory produces outbound netty connections.
  */
-@SuppressWarnings({"squid:S3776", "squid:S00107"})
+@SuppressWarnings({ "squid:S3776", "squid:S00107" })
 public class OutboundConnectionFactory {
     private static final Logger LOG = LoggerFactory.getLogger(OutboundConnectionFactory.class);
-
     private final CompletableFuture<Void> channelReadyFuture;
-
-    private List<ChannelHandler> handler;
+    private final List<ChannelHandler> handler;
     private Procedure shutdownProcedure;
     private ChannelHandler initializer;
     private EventLoopGroup eventGroup;
-    private List<String> sslProtocols;
+    private final List<String> sslProtocols;
     private boolean pingPong = true;
     private SslContext sslCtx;
-    private URI uri;
+    private final URI uri;
     private Duration idleTimeout;
     private int idleRetries;
     private boolean ssl;
     private int maxContentLength;
     private boolean relayToRelayCon;
 
-    private OutboundConnectionFactory(URI target, ChannelInitializer<SocketChannel> initializer,
-                                      Procedure shutdownProcedure, SslContext sslCtx, List<ChannelHandler> handler, List<String> sslProtocols,
-                                      EventLoopGroup eventGroup, int maxContentLength, boolean relayToRelayCon) {
+    private OutboundConnectionFactory(URI target,
+                                      ChannelInitializer<SocketChannel> initializer,
+                                      Procedure shutdownProcedure,
+                                      SslContext sslCtx,
+                                      List<ChannelHandler> handler,
+                                      List<String> sslProtocols,
+                                      EventLoopGroup eventGroup,
+                                      int maxContentLength,
+                                      boolean relayToRelayCon) {
         this.uri = target;
         this.initializer = initializer;
         this.shutdownProcedure = shutdownProcedure;
@@ -95,7 +91,7 @@ public class OutboundConnectionFactory {
     }
 
     /**
-     * Produces an {@link OutboundConnectionFactory} with the given {@link IPAddress} as target.
+     * Produces an {@link OutboundConnectionFactory} with the given {@link URI} as target.
      *
      * @param target the IP address of the target system
      */
@@ -131,7 +127,8 @@ public class OutboundConnectionFactory {
     /**
      * Adds a handler to the default initializer.
      *
-     * <b>If you override the default initializer with {@link #initializer}, this method does nothing.</b>
+     * <b>If you override the default initializer with {@link #initializer}, this method does
+     * nothing.</b>
      *
      * @param handler handler that should be added
      * @return {@link OutboundConnectionFactory} with the changed property
@@ -274,8 +271,9 @@ public class OutboundConnectionFactory {
         b.group(eventGroup).channel(NioSocketChannel.class).handler(new LoggingHandler(LogLevel.INFO))
                 .handler(defaultInitializer());
 
-        if (initializer != null)
+        if (initializer != null) {
             b.handler(initializer);
+        }
 
         Channel ch = b.connect(uri.getHost(), uri.getPort()).sync().channel();
 
@@ -293,16 +291,17 @@ public class OutboundConnectionFactory {
     private DefaultSessionInitializer defaultInitializer() {
         return new ClientInitializer(FlushConsolidationHandler.DEFAULT_EXPLICIT_FLUSH_AFTER_FLUSHES, //NOSONAR
                 idleTimeout, idleRetries, maxContentLength, uri, channelReadyFuture) {
-
             @Override
             protected SslHandler generateSslContext(SocketChannel ch) {
                 if (ssl) {
                     try {
-                        if (sslCtx == null)
+                        if (sslCtx == null) {
                             sslCtx = SslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE)
                                     .protocols(sslProtocols).build();
+                        }
                         return sslCtx.newHandler(ch.alloc(), uri.getHost(), uri.getPort());
-                    } catch (SSLException e) {
+                    }
+                    catch (SSLException e) {
                         LOG.error("SSLException: ", e);
                     }
                 }
@@ -311,8 +310,9 @@ public class OutboundConnectionFactory {
 
             @Override
             protected void idleStage(ChannelPipeline pipeline) {
-                if (pingPong)
+                if (pingPong) {
                     super.idleStage(pipeline);
+                }
             }
 
             @Override
@@ -331,7 +331,8 @@ public class OutboundConnectionFactory {
                 // From String to Message
                 if (relayToRelayCon) {
                     pipeline.addLast("messageDecoder", ServerActionMessageDecoder.INSTANCE);
-                } else {
+                }
+                else {
                     pipeline.addLast("messageDecoder", MessageDecoder.INSTANCE);
                 }
 

@@ -35,9 +35,6 @@ import static akka.remote.WireFormats.AckAndEnvelopeContainer.parseFrom;
  */
 @ChannelHandler.Sharable
 public class EnvelopeMessageHandler extends SimpleChannelDuplexHandler<AkkaMessage, OutboundMessageEnvelope> {
-    private static final Address ALL_ADDRESS = new Address("bud", "ALL");
-    private static final Address ANY_ADDRESS = new Address("bud", "ANY");
-
     private final ExtendedActorSystem system;
     private final P2PActorRefProvider provider;
     private final Address defaultAddress;
@@ -63,7 +60,7 @@ public class EnvelopeMessageHandler extends SimpleChannelDuplexHandler<AkkaMessa
         byte[] blob = constructMessage(serializedMessage, sender, recipient);
         String relayRecipientValue = recipient.path().root().address().system();
 
-        // send message
+        // sendMSG message
         ctx.writeAndFlush(new AkkaMessage(blob, defaultAddress.system(), relayRecipientValue));
     }
 
@@ -78,13 +75,9 @@ public class EnvelopeMessageHandler extends SimpleChannelDuplexHandler<AkkaMessa
 
         InternalActorRef akkaRecipient;
         Address akkaRecipientAddress;
-        if (message.recipient().path().address().equals(ALL_ADDRESS) || message.recipient().path().address().equals(ANY_ADDRESS)) {
-            akkaRecipient = provider.rootGuardian();
-            akkaRecipientAddress = provider.rootGuardian().path().address();
-        } else {
-            akkaRecipient = message.recipient();
-            akkaRecipientAddress = message.recipientAddress();
-        }
+
+        akkaRecipient = message.recipient();
+        akkaRecipientAddress = message.recipientAddress();
 
         InboundMessageEnvelope messageEnvelope = new InboundMessageEnvelope(deserializedMessage, akkaSender, akkaRecipient, akkaRecipientAddress);
         ctx.fireChannelRead(messageEnvelope);

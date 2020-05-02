@@ -19,6 +19,7 @@
 package org.drasyl.core.models;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonValue;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.HexUtil;
@@ -30,6 +31,7 @@ import java.util.Objects;
  * This interface models a compressed key that can be converted into a string and vice versa.
  */
 public class CompressedPublicKey {
+    @JsonValue
     private final String compressedKey;
     @JsonIgnore
     private PublicKey key;
@@ -41,12 +43,11 @@ public class CompressedPublicKey {
 
     private CompressedPublicKey(String compressedKey) throws CryptoException {
         this.compressedKey = compressedKey;
-        this.key = Crypto.getPublicKeyFromBytes(HexUtil.fromString(compressedKey));
+        this.key = toPubKey();
     }
 
     private CompressedPublicKey(PublicKey key) throws CryptoException {
-        this.key = key;
-        this.compressedKey = HexUtil.bytesToHex(Crypto.compressedKey(key));
+        this(HexUtil.bytesToHex(Crypto.compressedKey(key)), key);
     }
 
     CompressedPublicKey(String compressedKey, PublicKey key) {

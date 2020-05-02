@@ -13,6 +13,7 @@ import com.typesafe.config.ConfigFactory;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.junit.jupiter.api.Disabled;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
@@ -23,7 +24,8 @@ import java.util.concurrent.ExecutionException;
  * {@link akka.remote.RemoteActorRefProvider} can be examined, so that this behaviour can be easier migrated to the
  * {@link RelayP2PTransportChannelInitializer}.
  */
-@Ignore
+//FIXME
+@Ignore("Must be repaired")
 public class RemoteIT {
     // Messages to an ActorRef resolved from an ActorSelection should arrive
     @Test(timeout = 1000 * 1000L)
@@ -40,7 +42,7 @@ public class RemoteIT {
             CompletableFuture<Object> messageReceivedBob = new CompletableFuture<>();
             system2.actorOf(MyActor.probs(messageReceivedBob), "Bob");
 
-            // send message from alice to bob using an ActorRef
+            // sendMSG message from alice to bob using an ActorRef
             ActorSelection selectionBob = system1.actorSelection("akka.tcp://ChatServer2@127.0.0.1:2552/user/Bob");
             ActorRef actorRefBob = selectionBob.resolveOne(Duration.ofSeconds(100)).toCompletableFuture().get();
             actorRefBob.tell("Hallo Bob!", actorRefAlice);
@@ -71,7 +73,7 @@ public class RemoteIT {
             CompletableFuture<Object> messageReceivedBob = new CompletableFuture<>();
             system2.actorOf(MyActor.probs(messageReceivedBob), "Bob");
 
-            // send message from alice to bob using an ActorRef
+            // sendMSG message from alice to bob using an ActorRef
             ActorSelection selectionBob = system1.actorSelection("akka.tcp://ChatServer2@127.0.0.1:2552/user/Bob");
             ActorRef actorRefBob = selectionBob.resolveOne(Duration.ofSeconds(10)).toCompletableFuture().get();
             actorRefBob.tell(actorRefBob, actorRefAlice);

@@ -7,7 +7,9 @@ public class AkkaMessage implements Serializable {
     private final String recipientSystem;
     private final String senderSystem;
 
-    public AkkaMessage(byte[] blob, String senderSystem, String recipientSystem) {
+    public AkkaMessage(byte[] blob,
+                       String senderSystem,
+                       String recipientSystem) {
         this.blob = blob;
         this.senderSystem = senderSystem;
         this.recipientSystem = recipientSystem;

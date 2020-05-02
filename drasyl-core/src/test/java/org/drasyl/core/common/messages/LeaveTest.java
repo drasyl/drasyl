@@ -1,20 +1,20 @@
 /*
- * Copyright (c) 2020
+ * Copyright (c) 2020.
  *
- * This file is part of Relayserver.
+ * This file is part of drasyl.
  *
- * Relayserver is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  drasyl is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- * Relayserver is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ *  drasyl is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Relayserver.  If not, see <http://www.gnu.org/licenses/>.
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package org.drasyl.core.common.messages;
@@ -42,7 +42,7 @@ public class LeaveTest {
 
         assertThatJson(JSON_MAPPER.writeValueAsString(message))
                 .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo("{\"type\":\"Leave\",\"messageID\":\"" + message.getMessageID() + "\"}");
+                .isEqualTo("{\"type\":\"Leave\",\"messageID\":\"" + message.getMessageID() + "\",\"signature\":null}");
 
         // Ignore toString()
         message.toString();
@@ -50,9 +50,9 @@ public class LeaveTest {
 
     @Test
     public void fromJson() throws IOException {
-        String json = "{\"type\":\"Leave\",\"messageID\":\"77175D7235920F3BA17341D7\"}";
+        String json = "{\"type\":\"Leave\",\"messageID\":\"77175D7235920F3BA17341D7\",\"signature\":null}";
 
-        assertThat(JSON_MAPPER.readValue(json, Message.class), instanceOf(Leave.class));
+        assertThat(JSON_MAPPER.readValue(json, IMessage.class), instanceOf(Leave.class));
     }
 
     @Test
@@ -60,7 +60,7 @@ public class LeaveTest {
         Leave message1 = new Leave();
         Leave message2 = new Leave();
 
-        Assert.assertTrue(message1.equals(message2));
+        assertEquals(message1, message2);
     }
 
     @Test

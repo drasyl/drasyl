@@ -1,20 +1,20 @@
 /*
- * Copyright (c) 2020
+ * Copyright (c) 2020.
  *
- * This file is part of Relayserver.
+ * This file is part of drasyl.
  *
- * Relayserver is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  drasyl is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- * Relayserver is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ *  drasyl is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Relayserver.  If not, see <http://www.gnu.org/licenses/>.
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package org.drasyl.core.common.handler;
@@ -33,7 +33,7 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Creates a newly configured {@link ChannelPipeline} for a Session to a relay server.
+ * Creates a newly configured {@link ChannelPipeline} for a ServerSession to a node server.
  */
 public abstract class ClientInitializer extends DefaultSessionInitializer {
     private static final Logger LOG = LoggerFactory.getLogger(ClientInitializer.class);
@@ -52,7 +52,7 @@ public abstract class ClientInitializer extends DefaultSessionInitializer {
     }
 
     /**
-     * Initialize a netty Channel for an outbound connection to a relay server.
+     * Initialize a netty Channel for an outbound connection to a node server.
      *
      * @param flushBufferSize  The size of the flush buffer, to minimize IO overhead. A high value is good for
      *                         throughput. A low value is good for latency.
@@ -89,7 +89,7 @@ public abstract class ClientInitializer extends DefaultSessionInitializer {
     }
 
     /**
-     * A future is returned if the handshake was successful and the channel is ready to receive and send messages.
+     * A future is returned if the handshake was successful and the channel is ready to receive and sendMSG messages.
      * <p>
      * The future may fail if a connection could not be established.
      */

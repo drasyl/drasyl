@@ -1,43 +1,43 @@
 /*
- * Copyright (c) 2020
+ * Copyright (c) 2020.
  *
- * This file is part of Relayserver.
+ * This file is part of drasyl.
  *
- * Relayserver is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  drasyl is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- * Relayserver is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ *  drasyl is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Relayserver.  If not, see <http://www.gnu.org/licenses/>.
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package org.drasyl.core.common.handler;
+
+import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
+import org.drasyl.core.common.messages.NodeServerException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.Objects;
 
-import org.drasyl.core.common.messages.RelayException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
-
 /**
- * This handler listens to exceptions on the pipeline and throws them as {@link RelayException} to the peer.
+ * This handler listens to exceptions on the pipeline and throws them as {@link NodeServerException} to the peer.
  */
 public class ExceptionHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ExceptionHandler.class);
-    private ChannelExceptionListener exceptionListener;
+    private final ChannelExceptionListener exceptionListener;
     Throwable handledCause;
-    private boolean rethrowExceptions;
+    private final boolean rethrowExceptions;
 
     class ChannelExceptionListener {
         ChannelPromise getListener(ChannelPromise promise, ChannelHandlerContext ctx) {
@@ -110,7 +110,7 @@ public class ExceptionHandler extends ChannelDuplexHandler {
         handledCause = e;
 
         if (ctx.channel().isWritable()) {
-            ctx.writeAndFlush(new RelayException(e));
+            ctx.writeAndFlush(new NodeServerException(e));
         }
         LOG.debug("", e);
     }

@@ -1,22 +1,21 @@
 /*
- * Copyright (c) 2020
+ * Copyright (c) 2020.
  *
- * This file is part of Relayserver.
+ * This file is part of drasyl.
  *
- * Relayserver is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  drasyl is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- * Relayserver is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ *  drasyl is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Relayserver.  If not, see <http://www.gnu.org/licenses/>.
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.core.common.messages;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -31,7 +30,8 @@ import java.io.IOException;
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
 
 public class ResponseTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
@@ -43,15 +43,15 @@ public class ResponseTest {
 
         assertThatJson(JSON_MAPPER.writeValueAsString(response))
                 .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo("{\"type\":\"Response\",\"messageID\":\"" + response.getMessageID() + "\",\"message\":{\"type\":\"Leave\",\"messageID\":\"" + message.getMessageID() + "\"},\"msgID\":\"" + response.getMsgID() + "\"}");
+                .isEqualTo("{\"type\":\"Response\",\"messageID\":\"" + response.getMessageID() + "\",\"message\":{\"type\":\"Leave\",\"messageID\":\"" + message.getMessageID() + "\",\"signature\":null},\"msgID\":\"" + response.getMsgID() + "\",\"signature\":null}");
     }
 
     @Test
     public void fromJson() throws IOException {
         String json = "{\"type\":\"Response\",\"messageID\":\"0EC61D0CDB5ED12197999ECE\"," +
-                "\"message\":{\"type\":\"Leave\",\"messageID\":\"D2EDF9A065F2AED969EA37CA\"},\"msgID\":\"D2EDF9A065F2AED969EA37CA\"}";
+                "\"message\":{\"type\":\"Leave\",\"messageID\":\"D2EDF9A065F2AED969EA37CA\"},\"msgID\":\"D2EDF9A065F2AED969EA37CA\",\"signature\":null}";
 
-        assertThat(JSON_MAPPER.readValue(json, Message.class), instanceOf(Response.class));
+        assertThat(JSON_MAPPER.readValue(json, IMessage.class), instanceOf(Response.class));
     }
 
     @Test
@@ -77,8 +77,8 @@ public class ResponseTest {
         Leave message3 = new Leave();
         var response3 = new Response<>(message3, message3.getMessageID());
 
-        Assert.assertTrue(response1.equals(response2));
-        Assert.assertFalse(response2.equals(response3));
+        assertEquals(response1, response2);
+        assertNotEquals(response2, response3);
     }
 
     @Test

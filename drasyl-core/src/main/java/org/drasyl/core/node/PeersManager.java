@@ -21,7 +21,7 @@ package org.drasyl.core.node;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import org.drasyl.core.models.Identity;
+import org.drasyl.core.node.identity.Identity;
 
 import java.util.*;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -37,7 +37,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * </p>
  */
 public class PeersManager {
-    private ReadWriteLock lock = new ReentrantReadWriteLock(true);
+    private final ReadWriteLock lock = new ReentrantReadWriteLock(true);
 
     private final Map<Identity, PeerInformation> peers;
     private final Set<Identity> children;
@@ -75,14 +75,15 @@ public class PeersManager {
         }
     }
 
-    public PeerInformation addPeer(Identity identity, PeerInformation peer) {
+    public PeerInformation addPeer(Identity identity) {
         Objects.requireNonNull(identity);
-        Objects.requireNonNull(peer);
 
         try {
             lock.writeLock().lock();
+            PeerInformation peerInformation = new PeerInformation();
+            peers.putIfAbsent(identity, peerInformation);
 
-            return peers.put(identity, peer);
+            return peerInformation;
         } finally {
             lock.writeLock().unlock();
         }
@@ -160,14 +161,17 @@ public class PeersManager {
         }
     }
 
-    public boolean addChildren(Identity identity, PeerInformation peer) {
+    public PeerInformation addChildren(Identity identity) {
         Objects.requireNonNull(identity);
-        Objects.requireNonNull(peer);
 
         try {
             lock.writeLock().lock();
 
-            return peers.put(identity, peer) != null && children.add(identity);
+            PeerInformation peerInformation = new PeerInformation();
+            children.add(identity);
+            peers.putIfAbsent(identity, peerInformation);
+
+            return peerInformation;
         } finally {
             lock.writeLock().unlock();
         }

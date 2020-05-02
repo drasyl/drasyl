@@ -1,26 +1,26 @@
 /*
- * Copyright (c) 2020
+ * Copyright (c) 2020.
  *
- * This file is part of Relayserver.
+ * This file is part of drasyl.
  *
- * Relayserver is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  drasyl is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- * Relayserver is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ *  drasyl is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Relayserver.  If not, see <http://www.gnu.org/licenses/>.
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package org.drasyl.core.common.handler;
 
-import org.drasyl.core.common.messages.RelayException;
-import org.drasyl.core.common.messages.Message;
+import org.drasyl.core.common.messages.NodeServerException;
+import org.drasyl.core.common.messages.IMessage;
 import org.drasyl.core.common.messages.Ping;
 import org.drasyl.core.common.messages.Pong;
 import io.netty.channel.ChannelHandlerContext;
@@ -34,7 +34,7 @@ import io.netty.util.ReferenceCountUtil;
  * This handler answers automatically to {@link Ping}. When a {@link IdleStateHandler} is registered, it's
  * also ask periodically for a {@link Pong} from the peer.
  */
-public class PingPongHandler extends SimpleChannelInboundHandler<Message> {
+public class PingPongHandler extends SimpleChannelInboundHandler<IMessage> {
     protected final short retries;
     protected short counter;
 
@@ -67,7 +67,7 @@ public class PingPongHandler extends SimpleChannelInboundHandler<Message> {
             IdleStateEvent e = (IdleStateEvent) evt;
             if (e.state() == IdleState.READER_IDLE) {
                 if (counter > retries) {
-                    ctx.writeAndFlush(new RelayException(
+                    ctx.writeAndFlush(new NodeServerException(
                             "Max retries for ping/pong requests reached. Connection will be closed."));
                     ctx.close();
                 } else {
@@ -79,7 +79,7 @@ public class PingPongHandler extends SimpleChannelInboundHandler<Message> {
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, IMessage msg) throws Exception {
         if (msg instanceof Ping) {
             ctx.writeAndFlush(new Pong());
             ReferenceCountUtil.release(msg);

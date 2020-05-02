@@ -48,7 +48,7 @@ public class RelayP2PTransportChannel implements P2PTransportChannel {
         initializer = new RelayP2PTransportChannelInitializer(
                 new EnvelopeMessageHandler(system, transport.getProvider(), transport.defaultAddress()),
                 new RelayMessageHandler(),
-                new RelayJoinHandler(properties.getSystemName(), properties.getChannel(), properties.getJoinTimeout()),
+                new RelayJoinHandler(properties.getPublicKey(), properties.getEndpoints(), properties.getJoinTimeout()),
                 new SimpleChannelInboundHandler<InboundMessageEnvelope>() {
                     @Override
                     protected void channelRead0(ChannelHandlerContext ctx, InboundMessageEnvelope message) {
@@ -132,7 +132,7 @@ public class RelayP2PTransportChannel implements P2PTransportChannel {
 
     @Override
     public boolean accept(P2PActorRef recipient) {
-        // Always return <code>true</code>, because the relay can send to all clients
+        // Always return <code>true</code>, because the relay can sendMSG to all clients
         return true;
     }
 }

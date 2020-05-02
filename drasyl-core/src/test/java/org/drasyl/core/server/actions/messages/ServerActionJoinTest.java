@@ -1,111 +1,95 @@
 /*
- * Copyright (c) 2020
+ * Copyright (c) 2020.
  *
- * This file is part of Relayserver.
+ * This file is part of drasyl.
  *
- * Relayserver is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  drasyl is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- * Relayserver is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ *  drasyl is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Relayserver.  If not, see <http://www.gnu.org/licenses/>.
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.core.server.actions.messages;
 
-import org.drasyl.core.common.messages.Response;
-import org.drasyl.core.common.models.IPAddress;
-import org.drasyl.core.common.models.SessionChannel;
-import org.drasyl.core.common.models.SessionUID;
-import org.drasyl.core.server.RelayServer;
-import org.drasyl.core.server.RelayServerConfig;
-import org.drasyl.core.server.session.Session;
-import org.drasyl.core.server.session.util.ClientSessionBucket;
 import com.typesafe.config.ConfigFactory;
+import org.drasyl.core.common.messages.Response;
+import org.drasyl.core.models.CompressedKeyPair;
+import org.drasyl.core.models.CompressedPublicKey;
+import org.drasyl.core.models.DrasylException;
+import org.drasyl.core.node.DrasylNodeConfig;
+import org.drasyl.core.node.PeerInformation;
+import org.drasyl.core.node.PeersManager;
+import org.drasyl.core.node.identity.Identity;
+import org.drasyl.core.node.identity.IdentityManager;
+import org.drasyl.core.node.identity.IdentityTestHelper;
+import org.drasyl.core.server.NodeServer;
+import org.drasyl.core.server.session.ServerSession;
+import org.drasyl.crypto.Crypto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Captor;
 import org.mockito.MockitoAnnotations;
 
-import java.net.URISyntaxException;
-import java.util.ArrayList;
-import java.util.List;
+import java.net.URI;
 import java.util.Set;
-import java.util.stream.IntStream;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class ServerActionJoinTest {
-    private RelayServer relay;
-    private String responseMsgID;
-    private Session localClient, relayClient;
-    private ClientSessionBucket clientSessionBucket;
-
-    private SessionUID clientUID;
-    private List<IPAddress> backups;
-
-    @Captor
-    private ArgumentCaptor<Response> captor;
+    private NodeServer nodeServer;
+    private ServerSession session;
+    private PeersManager peersManager;
+    private CompressedPublicKey compressedPublicKey;
+    private PeerInformation peerInformation;
 
     @BeforeEach
-    void setUp() throws URISyntaxException {
+    void setUp() throws DrasylException {
         MockitoAnnotations.initMocks(this);
-        relay = mock(RelayServer.class);
-        localClient = mock(Session.class);
-        relayClient = mock(Session.class);
-        clientSessionBucket = mock(ClientSessionBucket.class);
+        nodeServer = mock(NodeServer.class);
+        session = mock(ServerSession.class);
+        peersManager = mock(PeersManager.class);
+        peerInformation = mock(PeerInformation.class);
+        compressedPublicKey = mock(CompressedPublicKey.class);
 
-        responseMsgID = "id";
-        clientUID = SessionUID.of("clientUID");
-        backups = new ArrayList<>();
-        IntStream.range(1, 5).forEach(i -> backups.add(new IPAddress("localhost", i)));
+        IdentityManager identityManager = mock(IdentityManager.class);
+        CompressedKeyPair keyPair = mock(CompressedKeyPair.class);
 
-        when(relay.getClientBucket()).thenReturn(clientSessionBucket);
-        when(relay.getConfig()).thenReturn(new RelayServerConfig(ConfigFactory.load()));
+        when(compressedPublicKey.toString()).thenReturn(IdentityTestHelper.random().getId());
+        when(nodeServer.getPeersManager()).thenReturn(peersManager);
+        when(peersManager.addChildren(any(Identity.class))).thenReturn(peerInformation);
+        when(nodeServer.getConfig()).thenReturn(new DrasylNodeConfig(ConfigFactory.load()));
+        when(nodeServer.getMyIdentity()).thenReturn(identityManager);
+        when(identityManager.getKeyPair()).thenReturn(keyPair);
+        when(keyPair.getPublicKey()).thenReturn(compressedPublicKey);
+        when(nodeServer.getEntryPoints()).thenReturn(Set.of(URI.create("ws://testURI")));
     }
 
     @Test
-    public void onMessageIamResponsibleWithoutOldRelayAndChannelsTest() throws URISyntaxException {
-        onMessageIamResponsibleSetup();
+    public void onMessageTest() {
+        ServerActionJoin message = new ServerActionJoin(compressedPublicKey, Set.of());
+        message.onMessage(session, nodeServer);
 
-        Set<SessionChannel> sessionChannels = Set.of(SessionChannel.of("channel1"), SessionChannel.of("channel2"));
+        verify(peersManager, times(1)).addChildren(Identity.of(compressedPublicKey));
+        verify(peerInformation, times(1)).setPublicKey(message.getPublicKey());
+        verify(peerInformation, times(1)).addPeerConnection(session);
+        verify(peerInformation, times(1)).addEndpoint(message.getEndpoints());
 
-        ServerActionJoin message = new ServerActionJoin(clientUID, sessionChannels);
-        message.onMessage(localClient, relay);
-
-        verify(clientSessionBucket, times(1)).addLocalClientSession(clientUID, localClient, sessionChannels);
-
-
-        verify(clientSessionBucket, never()).addLocalClientSession(clientUID, localClient,
-                SessionChannel.of(new RelayServerConfig(ConfigFactory.load()).getRelayDefaultChannel()));
-        verify(clientSessionBucket, never()).transferRemoteToLocal(any(), any());
-        verify(relayClient, never()).sendMessage(any());
-
-        sendBackupRelayServersTest();
-    }
-
-    private void onMessageIamResponsibleSetup() {
-        when(clientSessionBucket.getLocalClientSession(clientUID)).thenReturn(null);
-    }
-
-    private void sendBackupRelayServersTest() {
-        verify(localClient, times(1)).sendMessage(captor.capture());
+        verify(session, times(1)).send(any(Response.class));
     }
 
     @Test
     void onResponse() {
         ServerActionJoin message = new ServerActionJoin();
-        message.onResponse(responseMsgID, localClient, relay);
+        message.onResponse(Crypto.randomString(12), session, nodeServer);
 
-        verifyNoInteractions(localClient);
-        verifyNoInteractions(relay);
+        verifyNoInteractions(session);
+        verifyNoInteractions(nodeServer);
     }
 }

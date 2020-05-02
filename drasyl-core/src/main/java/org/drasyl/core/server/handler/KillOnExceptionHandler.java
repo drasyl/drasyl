@@ -1,43 +1,44 @@
 /*
- * Copyright (c) 2020
+ * Copyright (c) 2020.
  *
- * This file is part of Relayserver.
+ * This file is part of drasyl.
  *
- * Relayserver is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  drasyl is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- * Relayserver is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ *  drasyl is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Relayserver.  If not, see <http://www.gnu.org/licenses/>.
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.core.server.handler;
 
-import org.drasyl.core.common.messages.RelayException;
-import org.drasyl.core.server.RelayServer;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
+import org.drasyl.core.common.messages.NodeServerException;
+import org.drasyl.core.server.NodeServer;
 
 /**
  * This handler closes the channel if an exception occurs during initialization stage.
  */
 public class KillOnExceptionHandler extends ChannelInboundHandlerAdapter {
-    private final RelayServer relay;
+    private final NodeServer server;
 
-    public KillOnExceptionHandler(RelayServer relay) {
-        this.relay = relay;
+    public KillOnExceptionHandler(NodeServer server) {
+        this.server = server;
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        if (!relay.getClientBucket().getInitializedChannels().contains(ctx.channel().id())) {
-            ctx.writeAndFlush(new RelayException(
+        if (server.getPeersManager().getPeers().values().stream().noneMatch(
+                peerInformation -> peerInformation.getConnections().stream().anyMatch(
+                        con -> con.getConnectionId().equals(ctx.channel().id().asLongText())))) {
+            ctx.writeAndFlush(new NodeServerException(
                     "Exception occurred during initialization stage. The connection will shut down."));
             ctx.close();
         }

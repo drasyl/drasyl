@@ -170,13 +170,13 @@ public class P2PTransport {
                 channel.send(outboundMessage);
             }
             catch (P2PTransportChannelException e) {
-                notifyError("Unable to send message: Channel failed", e);
-                throw new P2PTransportException("Unable to send message: Channel failed", e);
+                notifyError("Unable to sendMSG message: Channel failed", e);
+                throw new P2PTransportException("Unable to sendMSG message: Channel failed", e);
             }
         }
         else {
-            P2PTransportException e = new P2PTransportException("Unable to send message: No Channel is able to send this message to recipient " + recipient);
-            notifyError("Unable to send message: No Channel is able to send this message to recipient", e);
+            P2PTransportException e = new P2PTransportException("Unable to sendMSG message: No Channel is able to sendMSG this message to recipient " + recipient);
+            notifyError("Unable to sendMSG message: No Channel is able to sendMSG this message to recipient", e);
             throw e;
         }
     }

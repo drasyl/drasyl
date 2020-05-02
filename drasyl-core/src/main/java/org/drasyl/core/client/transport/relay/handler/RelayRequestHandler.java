@@ -1,7 +1,7 @@
 package org.drasyl.core.client.transport.relay.handler;
 
 import org.drasyl.core.common.handler.SimpleChannelDuplexHandler;
-import org.drasyl.core.common.messages.Message;
+import org.drasyl.core.common.messages.IMessage;
 import org.drasyl.core.common.messages.Response;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
@@ -20,7 +20,7 @@ public class RelayRequestHandler extends SimpleChannelDuplexHandler<Response, Re
 
     @Override
     protected void channelWrite0(ChannelHandlerContext ctx, Request request) {
-        Message message = request.getMessage();
+        IMessage message = request.getMessage();
         String messageID = message.getMessageID();
         log.debug("Send request with id {}: {}", messageID, message);
         requests.put(messageID, request);
@@ -30,7 +30,7 @@ public class RelayRequestHandler extends SimpleChannelDuplexHandler<Response, Re
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Response response) {
-        Message message = response.getMessage();
+        IMessage message = response.getMessage();
         String messageID = response.getMsgID();
         Request request = requests.remove(messageID);
         if (request != null) {
