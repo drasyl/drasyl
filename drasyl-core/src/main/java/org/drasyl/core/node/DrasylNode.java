@@ -21,6 +21,8 @@ package org.drasyl.core.node;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
+import io.sentry.Sentry;
+import io.sentry.event.User;
 import org.drasyl.core.common.messages.Message;
 import org.drasyl.core.models.Code;
 import org.drasyl.core.models.DrasylException;
@@ -32,6 +34,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.Map;
 import java.util.Properties;
 
 public abstract class DrasylNode {
@@ -42,6 +45,10 @@ public abstract class DrasylNode {
     private boolean isStarted;
     private NodeServer server;
     private Messenger messenger;
+
+    static {
+        Sentry.getStoredClient().setRelease(DrasylNode.getVersion());
+    }
 
     public DrasylNode() throws DrasylException {
         this(ConfigFactory.load());
@@ -117,7 +124,7 @@ public abstract class DrasylNode {
             isStarted = true;
             identityManager = new IdentityManager(config.getIdentityPath());
             LOG.debug("Using identity '{}'", identityManager.getIdentity());
-
+            Sentry.getContext().setUser(new User(identityManager.getIdentity().getId(), null, null, null));
             messenger = new Messenger(this, identityManager, peersManager);
 
             server = new NodeServer(identityManager, messenger, peersManager);

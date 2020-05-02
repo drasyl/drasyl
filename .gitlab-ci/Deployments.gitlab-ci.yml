@@ -31,8 +31,7 @@ deploy_review:
   variables:
     APP_IMAGE: "${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_SLUG}"
     APP_DEPLOY_HOST: "${CI_ENVIRONMENT_SLUG}.${APP_HOST}"
-    RELAY_UID: "${CI_PROJECT_NAME}-${CI_PROJECT_ID}-${CI_COMMIT_REF_SLUG}"
-    RELAY_MONITORING_TOKEN: test
+    SENTRY_ENVIRONMENT: "review/${CI_COMMIT_REF_NAME}"
   environment:
     name: review/$CI_COMMIT_REF_NAME
     url: https://$CI_ENVIRONMENT_SLUG.$APP_HOST
@@ -65,7 +64,7 @@ deploy_staging:
   variables:
     APP_IMAGE: "${CI_REGISTRY_IMAGE}:latest"
     APP_DEPLOY_HOST: "staging.${APP_HOST}"
-    RELAY_UID: staging
+    SENTRY_ENVIRONMENT: staging
   environment:
     name: staging
     url: https://staging.$APP_HOST
@@ -93,7 +92,7 @@ deploy_production:
   variables:
     APP_IMAGE: "${CI_REGISTRY_IMAGE}:latest"
     APP_DEPLOY_HOST: "production.${APP_HOST}"
-    RELAY_UID: production
+    SENTRY_ENVIRONMENT: production
   environment:
     name: production
     url: https://$APP_HOST

@@ -1,21 +1,34 @@
 <configuration>
-    <appender name="consoleAppender" class="ch.qos.logback.core.ConsoleAppender">
+    <!-- Configure the Console appender -->
+    <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
             <pattern>%d [%t] %-5level %logger{36} %X{sourceThread} - %msg%n</pattern>
+        </encoder>
+    </appender>
+
+    <!-- Configure the Sentry appender, overriding the logging threshold to the WARN level -->
+    <appender name="Sentry" class="io.sentry.logback.SentryAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>WARN</level>
+        </filter>
+        <!-- Optionally add an encoder -->
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
         </encoder>
     </appender>
 
     <!-- available levels: off, error, warn, info, debug, trace -->
 
     <logger name="org.drasyl" level="debug" additivity="false">
-        <appender-ref ref="consoleAppender"/>
+        <appender-ref ref="Console"/>
     </logger>
 
     <logger name="ch.qos.logback" level="warn" additivity="false">
-        <appender-ref ref="consoleAppender"/>
+        <appender-ref ref="Console"/>
     </logger>
 
-    <root level="warn">
-        <appender-ref ref="consoleAppender"/>
+    <root level="INFO">
+        <appender-ref ref="Console" />
+        <appender-ref ref="Sentry" />
     </root>
 </configuration>
