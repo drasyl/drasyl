@@ -159,11 +159,11 @@ public class P2PActorRef extends InternalActorRef implements ActorRefScope {
     private void handleException(Exception e, Object message, ActorRef sender) {
         throw new RuntimeException(e);
 //        case e: InterruptedException =>
-//        remote.system.eventStream.publish(Error(e, path.toString, getClass, "interrupted during message send"))
+//        remote.system.eventStream.publish(Error(e, path.toString, getClass, "interrupted during message sendMSG"))
 //        remote.system.deadLetters.tell(message, sender)
 //        Thread.currentThread.interrupt()
 //        case NonFatal(e) =>
-//        remote.system.eventStream.publish(Error(e, path.toString, getClass, "swallowing exception during message send"))
+//        remote.system.eventStream.publish(Error(e, path.toString, getClass, "swallowing exception during message sendMSG"))
 //        remote.system.deadLetters.tell(message, sender)
     }
 

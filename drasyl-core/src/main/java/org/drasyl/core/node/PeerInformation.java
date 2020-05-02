@@ -20,8 +20,10 @@
 package org.drasyl.core.node;
 
 import com.google.common.collect.ImmutableSet;
+import org.drasyl.core.models.CompressedPublicKey;
 
 import java.net.URI;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
@@ -36,19 +38,21 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * </p>
  */
 public class PeerInformation {
-    private ReadWriteLock lock = new ReentrantReadWriteLock(true);
+    private final ReadWriteLock lock = new ReentrantReadWriteLock(true);
 
     private final Set<URI> endpoints;
     private final Set<PeerConnection> connections;
+    private CompressedPublicKey publicKey;
 
     public PeerInformation() {
-        this(new HashSet<>(), new HashSet<>());
+        this(new HashSet<>(), new HashSet<>(), null);
     }
 
     PeerInformation(Set<URI> endpoints,
-                    Set<PeerConnection> connections) {
+                    Set<PeerConnection> connections, CompressedPublicKey publicKey) {
         this.endpoints = endpoints;
         this.connections = connections;
+        this.publicKey = publicKey;
     }
 
     public Set<PeerConnection> getConnections() {
@@ -107,6 +111,18 @@ public class PeerInformation {
         }
     }
 
+    public boolean addEndpoint(Collection<URI> endpoints) {
+        Objects.requireNonNull(endpoints);
+
+        try {
+            lock.writeLock().lock();
+
+            return this.endpoints.addAll(endpoints);
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
     public boolean removeEndpoint(URI... endpoints) {
         Objects.requireNonNull(endpoints);
 
@@ -114,6 +130,28 @@ public class PeerInformation {
             lock.writeLock().lock();
 
             return this.endpoints.removeAll(Set.of(endpoints));
+        } finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public CompressedPublicKey getPublicKey() {
+        try {
+            lock.readLock().lock();
+
+            return publicKey;
+        } finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setPublicKey(CompressedPublicKey publicKey) {
+        Objects.requireNonNull(endpoints);
+
+        try {
+            lock.writeLock().lock();
+
+            this.publicKey = publicKey;
         } finally {
             lock.writeLock().unlock();
         }

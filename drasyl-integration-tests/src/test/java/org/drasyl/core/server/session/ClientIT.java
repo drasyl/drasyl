@@ -1,22 +1,21 @@
 /*
- * Copyright (c) 2020
+ * Copyright (c) 2020.
  *
- * This file is part of Relayserver.
+ * This file is part of drasyl.
  *
- * Relayserver is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  drasyl is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- * Relayserver is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ *  drasyl is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Relayserver.  If not, see <http://www.gnu.org/licenses/>.
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.core.server.session;
 
 import ch.qos.logback.classic.Level;
@@ -27,70 +26,88 @@ import com.google.common.collect.ImmutableList;
 import com.typesafe.config.ConfigFactory;
 import org.awaitility.Durations;
 import org.drasyl.core.common.messages.*;
-import org.drasyl.core.common.models.SessionChannel;
-import org.drasyl.core.common.models.SessionUID;
-import org.drasyl.core.common.util.random.RandomUtil;
-import org.drasyl.core.server.RelayServer;
-import org.drasyl.core.server.RelayServerConfig;
-import org.drasyl.core.server.RelayServerException;
+import org.drasyl.core.models.CompressedKeyPair;
+import org.drasyl.core.models.CompressedPrivateKey;
+import org.drasyl.core.models.CompressedPublicKey;
+import org.drasyl.core.models.DrasylException;
+import org.drasyl.core.node.DrasylNode;
+import org.drasyl.core.node.DrasylNodeConfig;
+import org.drasyl.core.node.Messenger;
+import org.drasyl.core.node.PeersManager;
+import org.drasyl.core.node.identity.Identity;
+import org.drasyl.core.node.identity.IdentityManager;
+import org.drasyl.core.server.NodeServer;
 import org.drasyl.core.server.testutils.ANSI_COLOR;
 import org.drasyl.core.server.testutils.BetterArrayList;
 import org.drasyl.core.server.testutils.TestHelper;
 import org.drasyl.core.server.testutils.TestSession;
+import org.drasyl.crypto.Crypto;
+import org.drasyl.crypto.CryptoException;
 import org.junit.Assert;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.parallel.Execution;
+import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.slf4j.LoggerFactory;
 
-import java.net.URISyntaxException;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import static org.awaitility.Awaitility.with;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 //import net.jcip.annotations.NotThreadSafe;
-//import org.junit.jupiter.api.parallel.Execution;
-//import org.junit.jupiter.api.parallel.ExecutionMode;
 
 //@NotThreadSafe
-//@Execution(ExecutionMode.SAME_THREAD)
+@Execution(ExecutionMode.SAME_THREAD)
 public class ClientIT {
+    private IdentityManager identityManager;
     public static final long TIMEOUT = 10000L;
-    private static RelayServerConfig config;
-    private static RelayServer relay;
-    private BetterArrayList<Session> sessions = new BetterArrayList<>();
+    private NodeServer server;
+    private final BetterArrayList<ServerSession> serverSessions = new BetterArrayList<>();
 
-    @BeforeAll
-    public static void setup() throws RelayServerException, URISyntaxException {
+    @BeforeEach
+    public void setup() throws DrasylException, CryptoException {
+        DrasylNode node = mock(DrasylNode.class);
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
+        identityManager = mock(IdentityManager.class);
+        PeersManager peersManager = new PeersManager();
+        Messenger messenger = new Messenger(node, identityManager, peersManager);
 
-        config = new RelayServerConfig(
+        DrasylNodeConfig config = new DrasylNodeConfig(
                 ConfigFactory.load("configs/ClientTest.conf"));
 
-        relay = new RelayServer(config);
+        server = new NodeServer(identityManager, messenger, peersManager, config);
 
-        TestHelper.waitUntilNetworkAvailable(config.getRelayEntrypoint().getPort());
-        relay.open();
-        relay.awaitOpen();
-    }
+        TestHelper.waitUntilNetworkAvailable(config.getServerEntryPoint().getPort());
+        server.open();
+        server.awaitOpen();
 
-    @AfterAll
-    public static void tearDown() throws RelayServerException {
-        relay.close();
-        relay.awaitClose();
+        CompressedKeyPair keyPair = mock(CompressedKeyPair.class);
+        CompressedPublicKey publicKey = CompressedPublicKey.of("0343BC674C4E58A289D3904A16F83177581770D32E3EE0D63B7C75EE2B32C733B1");
+        CompressedPrivateKey privateKey = CompressedPrivateKey.of("0C5D76039113707512C15D23F27C963FA2B636672AE86C66F68E588203556775");
+
+        when(identityManager.getKeyPair()).thenReturn(keyPair);
+        when(keyPair.getPublicKey()).thenReturn(publicKey);
+        when(keyPair.getPrivateKey()).thenReturn(privateKey);
+        when(identityManager.getIdentity()).thenReturn(Identity.of(publicKey));
     }
 
     @AfterEach
-    public void cleanUp() {
-        sessions.forEach(s -> s.sendMessage(new Leave()));
-        sessions.clear();
+    public void cleanUp() throws org.drasyl.core.server.NodeServerException {
+        serverSessions.forEach(s -> s.send(new Leave()));
+        serverSessions.clear();
+
+        server.close();
+        server.awaitClose();
     }
 
     @Test
@@ -100,18 +117,19 @@ public class ClientIT {
         try {
             CountDownLatch lock = new CountDownLatch(1);
 
-            TestSession session = TestSession.build(relay);
-            sessions.add(session);
-            session.sendMessageWithResponse(new Join(session.getUID(), Set.of()),
-                    Welcome.class).thenAccept(response -> {
-                lock.countDown();
-                session.sendMessage(new Leave());
-            });
+            TestSession session = TestSession.build(server);
+            serverSessions.add(session);
 
+            session.send(new Join(identityManager.getKeyPair().getPublicKey(), Set.of()),
+                    Welcome.class).blockingSubscribe(response -> {
+                lock.countDown();
+                session.send(new Leave());
+            });
 
             lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
             assertEquals(0, lock.getCount());
-        } catch (InterruptedException | ExecutionException e) {
+        }
+        catch (InterruptedException | ExecutionException e) {
             fail("Exception occurred during the test.");
         }
 
@@ -123,22 +141,23 @@ public class ClientIT {
         TestHelper.println("STARTING multipleHandshakeTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
 
         CountDownLatch lock = new CountDownLatch(2);
-        Set<SessionChannel> sessionChannels = Set.of(SessionChannel.of("testChannel"));
 
         try {
-            TestSession session1 = TestSession.build(relay);
-            sessions.add(session1);
-            TestSession session2 = TestSession.build(relay);
-            sessions.add(session2);
+            TestSession session1 = TestSession.build(server);
+            serverSessions.add(session1);
+            TestSession session2 = TestSession.build(server);
+            serverSessions.add(session2);
 
-            session1.sendMessageWithResponse(new Join(session1.getUID(), sessionChannels),
-                    Welcome.class).thenAccept(response -> lock.countDown());
-            session2.sendMessageWithResponse(new Join(session2.getUID(), sessionChannels),
-                    Welcome.class).thenAccept(response -> lock.countDown());
+            session1.send(new Join(CompressedPublicKey.of("023E0A51F1830F5EC7DECDB428A63992FADD682513E82DC9594E259EDD9398EDF3"), Set.of()),
+                    Welcome.class).subscribe(response -> lock.countDown());
+            session2.send(new Join(CompressedPublicKey.of("0340A4F2ADBDDEEDC8F9ACE30E3F18713A3405F43F4871B4BAC9624FE80D2056A7"), Set.of()),
+                    Welcome.class).subscribe(response -> lock.countDown());
 
             lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
             assertEquals(0, lock.getCount());
-        } catch (InterruptedException | ExecutionException e) {
+        }
+        catch (InterruptedException | ExecutionException | CryptoException e) {
+            e.printStackTrace();
             fail("Exception occurred during the test.");
         }
 
@@ -152,23 +171,24 @@ public class ClientIT {
         CountDownLatch lock = new CountDownLatch(1);
 
         try {
-            TestSession session1 = TestSession.build(relay, Set.of());
-            sessions.add(session1);
-            TestSession session2 = TestSession.build(relay, Set.of());
-            sessions.add(session2);
+            TestSession session1 = TestSession.buildAutoJoin(server);
+            serverSessions.add(session1);
+            TestSession session2 = TestSession.buildAutoJoin(server);
+            serverSessions.add(session2);
 
             with().pollInSameThread().await().pollDelay(0, TimeUnit.NANOSECONDS).atMost(Durations.FIVE_MINUTES)
-                    .until(() -> relay.getClientBucket().getClientUIDs().size() >= 2);
+                    .until(() -> server.getPeersManager().getChildren().size() >= 2);
 
-            session1.sendMessageWithResponse(new RequestClientsStocktaking(), ClientsStocktaking.class).thenAccept(response -> {
-                assertTrue(response.getClientUIDs().contains(session1.getUID()));
-                assertTrue(response.getClientUIDs().contains(session2.getUID()));
+            session1.send(new RequestClientsStocktaking(), ClientsStocktaking.class).subscribe(response -> {
+                assertTrue(response.getIdentities().contains(session1.getIdentity()));
+                assertTrue(response.getIdentities().contains(session2.getIdentity()));
                 lock.countDown();
             });
 
             lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
             assertEquals(0, lock.getCount());
-        } catch (InterruptedException | ExecutionException e) {
+        }
+        catch (InterruptedException | ExecutionException | CryptoException e) {
             fail("Exception occurred during the test.");
         }
 
@@ -180,31 +200,33 @@ public class ClientIT {
         TestHelper.println("STARTING forwardTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
 
         CountDownLatch lock = new CountDownLatch(2);
-        Set<SessionChannel> sessionChannels = Set.of(SessionChannel.of("testChannel3"));
 
         try {
-            TestSession session1 = TestSession.build(relay, sessionChannels);
-            sessions.add(session1);
-            TestSession session2 = TestSession.build(relay, sessionChannels);
-            sessions.add(session2);
+            TestSession session1 = TestSession.buildAutoJoin(server);
+            serverSessions.add(session1);
+            TestSession session2 = TestSession.buildAutoJoin(server);
+            serverSessions.add(session2);
 
-            ForwardableMessage msg = new ForwardableMessage(session1.getUID(), session2.getUID(), new byte[]{0x00, 0x01,
-                    0x02});
+            Message msg = new Message(session1.getIdentity(), session2.getIdentity(), new byte[]{
+                    0x00,
+                    0x01,
+                    0x02
+            });
 
             session2.addListener(message -> {
-                if (message instanceof ForwardableMessage) {
-                    ForwardableMessage f = (ForwardableMessage) message;
+                if (message instanceof Message) {
+                    Message f = (Message) message;
                     lock.countDown();
                     assertEquals(msg, f);
                 }
             });
 
-            session1.sendMessageWithResponse(msg, Status.class).thenAccept(response -> lock.countDown());
-
+            session1.send(msg, Status.class).subscribe(response -> lock.countDown());
 
             lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
             assertEquals(0, lock.getCount());
-        } catch (InterruptedException | ExecutionException e) {
+        }
+        catch (InterruptedException | ExecutionException | CryptoException e) {
             fail("Exception occurred during the test.");
         }
 
@@ -212,78 +234,33 @@ public class ClientIT {
     }
 
     @Test
-    public void forwardMulticastTest() {
-        TestHelper.println("STARTING forwardMulticastTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
-
-        CountDownLatch lock = new CountDownLatch(3);
-        Set<SessionChannel> sessionChannels = Set.of(SessionChannel.of("testChannel3"));
-
-        try {
-            TestSession session1 = TestSession.build(relay, sessionChannels);
-            sessions.add(session1);
-            TestSession session2 = TestSession.build(relay, sessionChannels);
-            sessions.add(session2);
-            TestSession session3 = TestSession.build(relay, sessionChannels);
-            sessions.add(session3);
-
-            ForwardableMessage msg = new ForwardableMessage(session1.getUID(), SessionUID.of(session2.getUID(),
-                    session3.getUID()), new byte[]{0x00, 0x01, 0x02});
-
-            session2.addListener(message -> {
-                if (message instanceof ForwardableMessage) {
-                    ForwardableMessage f = (ForwardableMessage) message;
-                    lock.countDown();
-                }
-            });
-
-            session3.addListener(message -> {
-                if (message instanceof ForwardableMessage) {
-                    ForwardableMessage f = (ForwardableMessage) message;
-                    lock.countDown();
-                }
-            });
-
-            session1.sendMessageWithResponse(msg, Status.class).thenAccept(response -> lock.countDown());
-
-
-            lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
-            assertEquals(0, lock.getCount());
-        } catch (InterruptedException | ExecutionException e) {
-            fail("Exception occurred during the test.");
-        }
-
-        TestHelper.println("FINISHED forwardMulticastTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
-    }
-
-    @Test
     public void emptyBlobTest() {
         TestHelper.println("STARTING emptyBlobTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
 
         CountDownLatch lock = new CountDownLatch(2);
-        Set<SessionChannel> sessionChannels = Set.of(SessionChannel.of("testChannel3"));
 
         try {
-            TestSession session1 = TestSession.build(relay, sessionChannels);
-            sessions.add(session1);
-            TestSession session2 = TestSession.build(relay, sessionChannels);
-            sessions.add(session1);
+            TestSession session1 = TestSession.buildAutoJoin(server);
+            serverSessions.add(session1);
+            TestSession session2 = TestSession.buildAutoJoin(server);
+            serverSessions.add(session1);
 
-            ForwardableMessage msg = new ForwardableMessage(session1.getUID(), session2.getUID(), new byte[]{});
+            Message msg = new Message(session1.getIdentity(), session2.getIdentity(), new byte[]{});
 
             session2.addListener(message -> {
-                if (message instanceof ForwardableMessage) {
-                    ForwardableMessage f = (ForwardableMessage) message;
+                if (message instanceof Message) {
+                    Message f = (Message) message;
                     lock.countDown();
                     assertEquals(msg, f);
                 }
             });
 
-            session1.sendMessageWithResponse(msg, Status.class).thenAccept(response -> lock.countDown());
-
+            session1.send(msg, Status.class).subscribe(response -> lock.countDown());
 
             lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
             assertEquals(0, lock.getCount());
-        } catch (InterruptedException | ExecutionException e) {
+        }
+        catch (InterruptedException | ExecutionException | CryptoException e) {
             fail("Exception occurred during the test.");
         }
 
@@ -296,29 +273,31 @@ public class ClientIT {
         CountDownLatch lock = new CountDownLatch(1);
 
         try {
-            TestSession session = TestSession.build(relay);
-            sessions.add(session);
+            TestSession session = TestSession.build(server);
+            serverSessions.add(session);
 
             session.addListener(message -> {
-                if (message instanceof RelayException) {
-                    RelayException e = (RelayException) message;
+                if (message instanceof org.drasyl.core.common.messages.NodeServerException) {
+                    org.drasyl.core.common.messages.NodeServerException e = (org.drasyl.core.common.messages.NodeServerException) message;
 
                     assertEquals(
                             "Handshake did not take place successfully in "
-                                    + relay.getConfig().getRelayMaxHandshakeTimeout().toMillis() + " ms. Connection is closed.",
+                                    + server.getConfig().getServerHandshakeTimeout().toMillis() + " ms. Connection is closed.",
                             e.getException());
                     lock.countDown();
                 }
             });
 
-            lock.await(relay.getConfig().getRelayMaxHandshakeTimeout().toMillis() + 2000, TimeUnit.MILLISECONDS);
+            lock.await(server.getConfig().getServerHandshakeTimeout().toMillis() + 2000, TimeUnit.MILLISECONDS);
             assertEquals(0, lock.getCount());
 
             with().pollInSameThread().await().pollDelay(0, TimeUnit.NANOSECONDS).atMost(Durations.TEN_SECONDS)
                     .until(() -> {
-                        return session.isTerminated;
+                        return session.isClosed;
                     });
-        } catch (InterruptedException | ExecutionException e) {
+        }
+        catch (InterruptedException | ExecutionException e) {
+            e.printStackTrace();
             fail("Exception occurred during the test.");
         }
 
@@ -328,30 +307,29 @@ public class ClientIT {
     @Test
     public void timeoutNegativeTest() {
         TestHelper.println("STARTING timeoutNegativeTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
-        Logger clientLogger = (Logger) LoggerFactory.getLogger(Session.class);
+        Logger clientLogger = (Logger) LoggerFactory.getLogger(ServerSession.class);
         ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
         listAppender.start();
         clientLogger.addAppender(listAppender);
 
         try {
-            TestSession session = TestSession.build(relay, Set.of());
-            sessions.add(session);
+            TestSession session = TestSession.buildAutoJoin(server);
+            serverSessions.add(session);
 
             session.addListener(message -> {
-                assertThat(message, is(not(instanceOf(RelayException.class))));
+                assertThat(message, is(not(instanceOf(org.drasyl.core.common.messages.NodeServerException.class))));
             });
 
             // Wait until timeout
-            Thread.sleep(relay.getConfig().getRelayMaxHandshakeTimeout().toMillis() + 2000);// NOSONAR
-            with().pollInSameThread().await().pollDelay(0, TimeUnit.NANOSECONDS).atMost(Durations.TEN_SECONDS)
-                    .until(() -> !session.isTerminated());
+            Thread.sleep(server.getConfig().getServerHandshakeTimeout().toMillis() + 2000);// NOSONAR
 
             for (ILoggingEvent event : ImmutableList.copyOf(listAppender.list)) {
                 if (event.getLevel().equals(Level.INFO)) {
                     assertNotEquals(event.getMessage(), "{} Handshake did not take place successfully in {} ms. " + "Connection is closed.");
                 }
             }
-        } catch (InterruptedException | ExecutionException e) {
+        }
+        catch (InterruptedException | ExecutionException | CryptoException e) {
             fail("Exception occurred during the test.");
         }
 
@@ -364,12 +342,12 @@ public class ClientIT {
         CountDownLatch lock = new CountDownLatch(2);
 
         try {
-            TestSession session = TestSession.build(relay);
-            sessions.add(session);
+            TestSession session = TestSession.build(server);
+            serverSessions.add(session);
 
             session.addListener(message -> {
-                if (message instanceof RelayException) {
-                    RelayException e = (RelayException) message;
+                if (message instanceof org.drasyl.core.common.messages.NodeServerException) {
+                    org.drasyl.core.common.messages.NodeServerException e = (org.drasyl.core.common.messages.NodeServerException) message;
 
                     assertThat(e.getException(), anyOf(
                             equalTo("java.lang.IllegalArgumentException: Your request was not a valid Message Object: 'invalid message'"),
@@ -384,8 +362,8 @@ public class ClientIT {
 
             lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
             assertEquals(0, lock.getCount());
-
-        } catch (InterruptedException | ExecutionException e) {
+        }
+        catch (InterruptedException | ExecutionException e) {
             fail("Exception occurred during the test.");
         }
 
@@ -397,23 +375,27 @@ public class ClientIT {
         TestHelper.println("STARTING multipleHandshakeWithSameIDTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
 
         CountDownLatch lock = new CountDownLatch(1);
-        Set<SessionChannel> sessionChannels = Set.of(SessionChannel.of("testChannel"));
 
         try {
-            TestSession session1 = TestSession.build(relay, sessionChannels);
-            sessions.add(session1);
-            TestSession session2 = TestSession.build(relay, session1.getUID());
-            sessions.add(session2);
+            TestSession session1 = TestSession.build(server);
+            serverSessions.add(session1);
+            TestSession session2 = TestSession.build(server);
+            serverSessions.add(session2);
 
-            session2.sendMessageWithResponse(new Join(session2.getUID(), sessionChannels), RelayException.class).thenAccept(response -> {
+            session1.send(new Join(CompressedPublicKey.of("023E0A51F1830F5EC7DECDB428A63992FADD682513E82DC9594E259EDD9398EDF3"), Set.of()),
+                    Welcome.class).blockingGet();
+            session2.send(new Join(CompressedPublicKey.of("023E0A51F1830F5EC7DECDB428A63992FADD682513E82DC9594E259EDD9398EDF3"), Set.of()),
+                    org.drasyl.core.common.messages.NodeServerException.class).subscribe(response -> {
                 Assert.assertEquals("This client has already an open "
-                        + "session with this relay server. Can't open more sockets.", response.getException());
+                        + "session with this node server. Can't open more sockets.", response.getException());
                 lock.countDown();
             });
 
             lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
             assertEquals(0, lock.getCount());
-        } catch (InterruptedException | ExecutionException e) {
+        }
+        catch (InterruptedException | ExecutionException | CryptoException e) {
+            e.printStackTrace();
             fail("Exception occurred during the test.");
         }
 
@@ -425,21 +407,22 @@ public class ClientIT {
         TestHelper.println("STARTING multipleHandshakeWithObjectTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
 
         CountDownLatch lock = new CountDownLatch(1);
-        Set<SessionChannel> sessionChannels = Set.of(SessionChannel.of("testChannel"));
 
         try {
-            TestSession session = TestSession.build(relay, sessionChannels);
-            sessions.add(session);
+            TestSession session = TestSession.buildAutoJoin(server);
+            serverSessions.add(session);
 
-            session.sendMessageWithResponse(new Join(session.getUID(), sessionChannels), RelayException.class).thenAccept(response -> {
-                Assert.assertEquals("This client has already an open "
-                        + "session with this relay server. No need to authenticate twice.", response.getException());
-                lock.countDown();
-            });
+            session.send(new Join(CompressedPublicKey.of("023E0A51F1830F5EC7DECDB428A63992FADD682513E82DC9594E259EDD9398EDF3"), Set.of()), org.drasyl.core.common.messages.NodeServerException.class)
+                    .subscribe(response -> {
+                        Assert.assertEquals("This client has already an open "
+                                + "session with this node server. No need to authenticate twice.", response.getException());
+                        lock.countDown();
+                    });
 
             lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
             assertEquals(0, lock.getCount());
-        } catch (InterruptedException | ExecutionException e) {
+        }
+        catch (InterruptedException | ExecutionException | CryptoException e) {
             fail("Exception occurred during the test.");
         }
 
@@ -452,12 +435,12 @@ public class ClientIT {
 
         CountDownLatch lock = new CountDownLatch(2);
         try {
-            TestSession session = TestSession.build(relay, false);
-            sessions.add(session);
+            TestSession session = TestSession.build(server, false);
+            serverSessions.add(session);
 
             session.addListener(message -> {
-                if (message instanceof RelayException) {
-                    RelayException m = (RelayException) message;
+                if (message instanceof org.drasyl.core.common.messages.NodeServerException) {
+                    org.drasyl.core.common.messages.NodeServerException m = (org.drasyl.core.common.messages.NodeServerException) message;
                     assertThat(m.getException(),
                             is(equalTo("Max retries for ping/pong requests reached. Connection will be closed.")));
                     lock.countDown();
@@ -469,11 +452,12 @@ public class ClientIT {
             });
 
             // Wait until timeout
-            Thread.sleep(relay.getConfig().getIdleTimeout().toMillis() * (relay.getConfig().getIdleRetries() + 1) + 1000);// NOSONAR
+            Thread.sleep(server.getConfig().getServerIdleTimeout().toMillis() * (server.getConfig().getServerIdleRetries() + 1) + 1000);// NOSONAR
 
             lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
             assertEquals(0, lock.getCount());
-        } catch (InterruptedException | ExecutionException e) {
+        }
+        catch (InterruptedException | ExecutionException e) {
             fail("Exception occurred during the test.");
         }
 
@@ -485,16 +469,17 @@ public class ClientIT {
         TestHelper.println("STARTING idleTimoutNegativeTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
 
         try {
-            TestSession session = TestSession.build(relay, Set.of());
-            sessions.add(session);
+            TestSession session = TestSession.buildAutoJoin(server);
+            serverSessions.add(session);
 
             session.addListener(message -> {
-                assertThat(message, is(not(instanceOf(RelayException.class))));
+                assertThat(message, is(not(instanceOf(org.drasyl.core.common.messages.NodeServerException.class))));
             });
 
             // Wait until timeout
-            Thread.sleep(relay.getConfig().getIdleTimeout().toMillis() * (relay.getConfig().getIdleRetries() + 1) + 1000);// NOSONAR
-        } catch (InterruptedException | ExecutionException e) {
+            Thread.sleep(server.getConfig().getServerIdleTimeout().toMillis() * (server.getConfig().getServerIdleRetries() + 1) + 1000);// NOSONAR
+        }
+        catch (InterruptedException | ExecutionException | CryptoException e) {
             fail("Exception occurred during the test.");
         }
 
@@ -507,80 +492,25 @@ public class ClientIT {
 
         CountDownLatch lock = new CountDownLatch(1);
         try {
-            TestSession session = TestSession.build(relay, false);
-            sessions.add(session);
+            TestSession session = TestSession.build(server, false);
+            serverSessions.add(session);
 
             session.addListener(message -> {
-                if (message instanceof Pong)
+                if (message instanceof Pong) {
                     lock.countDown();
+                }
             });
 
-            session.sendMessage(new Ping());
+            session.send(new Ping());
 
             lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
             assertEquals(0, lock.getCount());
-        } catch (InterruptedException | ExecutionException e) {
+        }
+        catch (InterruptedException | ExecutionException e) {
             fail("Exception occurred during the test.");
         }
 
         TestHelper.println("FINISHED serverPingResponseTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
-    }
-
-    @Test
-    public void messageDuplicateFilterTest() {
-        TestHelper.println("STARTING messageDuplicateFilterTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
-        CountDownLatch lock = new CountDownLatch(1);
-
-        try {
-            TestSession session = TestSession.build(relay, Set.of());
-            sessions.add(session);
-
-            RelayException msg = new RelayException("Test");
-
-            session.sendMessage(msg);
-            session.sendMessageWithResponse(msg, RelayException.class).thenAccept(response -> {
-                assertThat(response.getException(), anyOf(
-                        equalTo("This message was already send.")));
-
-                lock.countDown();
-            });
-
-            lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
-            assertEquals(0, lock.getCount());
-
-        } catch (InterruptedException | ExecutionException e) {
-            fail("Exception occurred during the test.");
-        }
-
-        TestHelper.println("FINISHED messageDuplicateFilterTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
-    }
-
-    @Test
-    public void responseFilterTest() {
-        TestHelper.println("STARTING responseFilterTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
-        CountDownLatch lock = new CountDownLatch(1);
-
-        try {
-            TestSession session = TestSession.build(relay, Set.of());
-            sessions.add(session);
-
-            Response<RelayException> msg = new Response<>(new RelayException("Test"), RandomUtil.randomString(12));
-
-            session.sendMessageWithResponse(msg, RelayException.class).thenAccept(response -> {
-                assertThat(response.getException(), anyOf(
-                        equalTo("This response was not expected from us, as it does not refer to any valid request.")));
-
-                lock.countDown();
-            });
-
-            lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
-            assertEquals(0, lock.getCount());
-
-        } catch (InterruptedException | ExecutionException e) {
-            fail("Exception occurred during the test.");
-        }
-
-        TestHelper.println("FINISHED responseFilterTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
     }
 
     @Test
@@ -589,12 +519,12 @@ public class ClientIT {
         CountDownLatch lock = new CountDownLatch(1);
 
         try {
-            TestSession session = TestSession.build(relay);
-            sessions.add(session);
+            TestSession session = TestSession.build(server);
+            serverSessions.add(session);
 
-            Response<RelayException> msg = new Response<>(new RelayException("Test"), RandomUtil.randomString(12));
+            Response<org.drasyl.core.common.messages.NodeServerException> msg = new Response<>(new org.drasyl.core.common.messages.NodeServerException("Test"), Crypto.randomString(12));
 
-            session.sendMessageWithResponse(msg, Status.class).thenAccept(response -> {
+            session.send(msg, Status.class).subscribe(response -> {
                 assertThat(response, anyOf(
                         equalTo(Status.FORBIDDEN)));
 
@@ -603,8 +533,8 @@ public class ClientIT {
 
             lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
             assertEquals(0, lock.getCount());
-
-        } catch (InterruptedException | ExecutionException e) {
+        }
+        catch (InterruptedException | ExecutionException e) {
             fail("Exception occurred during the test.");
         }
 

@@ -1,20 +1,20 @@
 /*
- * Copyright (c) 2020
+ * Copyright (c) 2020.
  *
- * This file is part of Relayserver.
+ * This file is part of drasyl.
  *
- * Relayserver is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  drasyl is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- * Relayserver is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ *  drasyl is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Relayserver.  If not, see <http://www.gnu.org/licenses/>.
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package org.drasyl.core.server.testutils;
@@ -23,10 +23,12 @@ import static org.awaitility.Awaitility.with;
 
 import java.util.concurrent.TimeUnit;
 
-import org.drasyl.core.server.RelayServerConfig;
-import org.drasyl.core.server.RelayServerException;
+import org.drasyl.core.node.DrasylNodeConfig;
+import org.drasyl.core.node.identity.Identity;
+import org.drasyl.core.server.NodeServer;
+import org.drasyl.core.server.NodeServerException;
 import org.awaitility.Durations;
-import org.drasyl.core.server.RelayServer;
+import org.drasyl.crypto.Crypto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -71,39 +73,41 @@ public final class TestHelper {
     }
 
     /**
-     * Executes the given procedure in a relay server environment. The RelayServer
+     * Executes the given procedure in a relay server environment. The NodeServer
      * is automatically shutdown after execution.
      *
      * @param procedure the procedure
      * @param config    the relay server config
      */
-    public static void giveRelayServerEnv(Procedure procedure, RelayServerConfig config, RelayServer relay) throws RelayServerException {
+    public static void giveRelayServerEnv(Procedure procedure, DrasylNodeConfig config, NodeServer relay) throws NodeServerException {
         giveRelayServerEnv(procedure, config, relay, true);
     }
 
     /**
-     * Executes the given procedure in a relay server environment.
+     * Executes the given procedure in a server server environment.
      *
      * @param procedure           the procedure
-     * @param config              the relay server config
-     * @param closeAfterProcedure if the RelayServer should automatically shutdown
+     * @param config              the server server config
+     * @param closeAfterProcedure if the NodeServer should automatically shutdown
      *                            after execution
      */
-    public static void giveRelayServerEnv(Procedure procedure, RelayServerConfig config, RelayServer relay,
-            boolean closeAfterProcedure) throws RelayServerException {
-        TestHelper.waitUntilNetworkAvailable(config.getRelayEntrypoint().getPort());
-        relay.open();
-
-        RelayServer.startMonitoringServer(relay);
+    public static void giveRelayServerEnv(Procedure procedure, DrasylNodeConfig config, NodeServer server,
+                                          boolean closeAfterProcedure) throws NodeServerException {
+        TestHelper.waitUntilNetworkAvailable(config.getServerEntryPoint().getPort());
+        server.open();
 
         with().pollInSameThread().await().pollDelay(0, TimeUnit.NANOSECONDS).atMost(Durations.FIVE_MINUTES)
                 .until(() -> {
-                    return NetworkTool.alive("127.0.0.1", relay.getConfig().getRelayEntrypoint().getPort());
+                    return NetworkTool.alive("127.0.0.1", server.getConfig().getServerEntryPoint().getPort());
                 });
 
         procedure.execute();
 
         if (closeAfterProcedure)
-            relay.close();
+            server.close();
     }
+
+    public static Identity random() {
+            return Identity.of(Crypto.randomString(5));
+        }
 }

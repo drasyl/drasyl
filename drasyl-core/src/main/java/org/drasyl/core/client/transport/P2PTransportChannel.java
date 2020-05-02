@@ -46,7 +46,7 @@ public interface P2PTransportChannel {
     void receive(InboundMessageEnvelope inboundMessage);
 
     /**
-     * Returns <code>true</code> if this channel is able to send the message to <code>recipient</code>.
+     * Returns <code>true</code> if this channel is able to sendMSG the message to <code>recipient</code>.
      *
      * @param recipient
      * @return

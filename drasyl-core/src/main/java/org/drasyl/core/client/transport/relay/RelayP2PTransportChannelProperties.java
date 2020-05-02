@@ -2,10 +2,12 @@ package org.drasyl.core.client.transport.relay;
 
 import org.drasyl.core.client.transport.relay.handler.RelayP2PTransportChannelInitializer;
 import com.typesafe.config.Config;
+import org.drasyl.core.models.CompressedPublicKey;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
+import java.util.Set;
 import java.util.concurrent.TimeUnit;
 
 import static java.util.Objects.requireNonNull;
@@ -79,5 +81,15 @@ public class RelayP2PTransportChannelProperties {
 
     public Duration getForgetDelay() {
         return forgetDelay;
+    }
+
+    public CompressedPublicKey getPublicKey() {
+        //TODO: Hier muss der Public Key des Nodes zurückgegeben werden. Am besten irgendwie aus dem IdentityManager herausholen.
+        return null;
+    }
+
+    public Set<URI> getEndpoints() {
+        //TODO: Hier müssen die Endpoints dieses Nodes zurückgegeben werden. Wahrscheinlich stehen diese in der application.conf
+        return null;
     }
 }

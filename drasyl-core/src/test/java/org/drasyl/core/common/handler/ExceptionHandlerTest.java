@@ -1,25 +1,25 @@
 /*
- * Copyright (c) 2020
+ * Copyright (c) 2020.
  *
- * This file is part of Relayserver.
+ * This file is part of drasyl.
  *
- * Relayserver is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  drasyl is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- * Relayserver is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ *  drasyl is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Relayserver.  If not, see <http://www.gnu.org/licenses/>.
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package org.drasyl.core.common.handler;
 
-import org.drasyl.core.common.messages.RelayException;
+import org.drasyl.core.common.messages.NodeServerException;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
@@ -76,14 +76,14 @@ class ExceptionHandlerTest {
                 listener.getListener(promise, ctx));
     }
 
-    // send the exception as exception message
+    // sendMSG the exception as exception message
     @Test
     void exceptionCaughtWithoutRethrow() {
         ExceptionHandler handler = new ExceptionHandler(listener, null, false);
         handler.exceptionCaught(ctx, cause);
 
         assertEquals(cause, handler.handledCause);
-        verify(ctx, times(1)).writeAndFlush(any(RelayException.class));
+        verify(ctx, times(1)).writeAndFlush(any(NodeServerException.class));
     }
 
     // do nothing
@@ -93,17 +93,17 @@ class ExceptionHandlerTest {
         handler.exceptionCaught(ctx, new ClosedChannelException());
 
         assertNull(handler.handledCause);
-        verify(ctx, never()).writeAndFlush(any(RelayException.class));
+        verify(ctx, never()).writeAndFlush(any(NodeServerException.class));
     }
 
-    // send the exception as exception message and pass to the next handler in the pipeline
+    // sendMSG the exception as exception message and pass to the next handler in the pipeline
     @Test
     void exceptionCaughtWithRethrow() {
         ExceptionHandler handler = new ExceptionHandler(listener, null, true);
         handler.exceptionCaught(ctx, cause);
 
         assertEquals(cause, handler.handledCause);
-        verify(ctx, times(1)).writeAndFlush(any(RelayException.class));
+        verify(ctx, times(1)).writeAndFlush(any(NodeServerException.class));
         verify(ctx, times(1)).fireExceptionCaught(cause);
     }
 
@@ -114,7 +114,7 @@ class ExceptionHandlerTest {
         handler.exceptionCaught(ctx, cause);
 
         assertEquals(cause, handler.handledCause);
-        verify(ctx, never()).writeAndFlush(any(RelayException.class));
+        verify(ctx, never()).writeAndFlush(any(NodeServerException.class));
         verify(ctx, times(1)).fireExceptionCaught(cause);
     }
 }

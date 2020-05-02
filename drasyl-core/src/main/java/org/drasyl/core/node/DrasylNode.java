@@ -1,45 +1,47 @@
 /*
- * Copyright (c) 2020
+ * Copyright (c) 2020.
  *
  * This file is part of drasyl.
  *
- * drasyl is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  drasyl is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- * drasyl is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ *  drasyl is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.drasyl.core.node;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
+import org.drasyl.core.common.messages.Message;
 import org.drasyl.core.models.Code;
 import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.models.Event;
-import org.drasyl.core.models.Identity;
-import org.drasyl.core.server.RelayServer;
+import org.drasyl.core.node.identity.Identity;
+import org.drasyl.core.node.identity.IdentityManager;
+import org.drasyl.core.server.NodeServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.util.Properties;
 
 public abstract class DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);
-    private DrasylNodeConfig config;
+    private final DrasylNodeConfig config;
     private IdentityManager identityManager;
     private PeersManager peersManager;
     private boolean isStarted;
-    private RelayServer server;
+    private NodeServer server;
+    private Messenger messenger;
 
     public DrasylNode() throws DrasylException {
         this(ConfigFactory.load());
@@ -48,6 +50,7 @@ public abstract class DrasylNode {
     public DrasylNode(Config config) throws DrasylException {
         try {
             this.config = new DrasylNodeConfig(config);
+            this.peersManager = new PeersManager();
         }
         catch (ConfigException e) {
             throw new DrasylException("Couldn't load config: \n" + e.getMessage());
@@ -57,12 +60,13 @@ public abstract class DrasylNode {
     DrasylNode(DrasylNodeConfig config,
                IdentityManager identityManager,
                PeersManager peersManager, boolean isStarted,
-               RelayServer server) {
+               NodeServer server, Messenger messenger) {
         this.config = config;
         this.identityManager = identityManager;
         this.peersManager = peersManager;
         this.isStarted = isStarted;
         this.server = server;
+        this.messenger = messenger;
     }
 
     /**
@@ -86,17 +90,7 @@ public abstract class DrasylNode {
             onEvent(new Event(Code.MESSAGE, null, null, payload));
         }
         else {
-            try {
-                sendToClient(recipient, payload);
-            }
-            catch (ClientNotFoundException e) {
-                try {
-                    sendToSuperPeer(recipient, payload);
-                }
-                catch (NoSuperPeerException ex) {
-                    throw new DrasylException("Unable to send message to recipient " + recipient);
-                }
-            }
+            messenger.send(new Message(identityManager.getIdentity(), recipient, payload));
         }
     }
 
@@ -114,31 +108,22 @@ public abstract class DrasylNode {
 
     public abstract void onEvent(Event event);
 
-    private void sendToClient(Identity recipient, byte[] payload) throws DrasylException {
-        // FIXME: implement
-    }
-
-    private void sendToSuperPeer(Identity recipient, byte[] payload) throws DrasylException {
-        // FIXME: implement
-    }
-
     public void start() throws DrasylException {
+        // https://github.com/netty/netty/issues/7817
+        System.setProperty("io.netty.tryReflectionSetAccessible", "true");
+
         if (!isStarted) {
             LOG.info("Try starting a drasyl node (v.{})...", DrasylNode.getVersion());
             isStarted = true;
             identityManager = new IdentityManager(config.getIdentityPath());
             LOG.debug("Using identity '{}'", identityManager.getIdentity());
 
-            try {
-                server = new RelayServer();
-                LOG.debug("Start Server at {}", server.getEntrypoint());
-                server.open();
-                server.awaitOpen();
-                LOG.debug("Server started at {}", server.getEntrypoint());
-            }
-            catch (URISyntaxException e) {
-                throw new DrasylException(e);
-            }
+            messenger = new Messenger(this, identityManager, peersManager);
+
+            server = new NodeServer(identityManager, messenger, peersManager);
+            server.open();
+            server.awaitOpen();
+            LOG.info("Server started at {}:{}", config.getServerBindHost(), config.getServerBindPort());
         }
         else {
             throw new DrasylException("This node is already started.");
@@ -147,8 +132,6 @@ public abstract class DrasylNode {
 
     /**
      * Returns the version of the bide. If this is not possible, <code>null</code> is returned.
-     *
-     * @return
      */
     public static String getVersion() {
         final Properties properties = new Properties();
@@ -176,10 +159,10 @@ public abstract class DrasylNode {
                         System.out.println("Node is offline");
                         break;
                     case PEER_P2P:
-                        System.out.println("Node can now send messages directly to " + event.getPeer().getAddress());
+                        System.out.println("Node can now sendMSG messages directly to " + event.getPeer().getAddress());
                         break;
                     case PEER_RELAY:
-                        System.out.println("Node can now send messages via a relay to " + event.getPeer().getAddress());
+                        System.out.println("Node can now sendMSG messages via a relay to " + event.getPeer().getAddress());
                         break;
                 }
             }
@@ -191,21 +174,21 @@ public abstract class DrasylNode {
 //        }
 //
 //        Message message = null;
-//        node.send(message);
+//        node.sendMSG(message);
 //
 //        // variante 2: Warte asynchron bis ndoe sendebereit ist und schicke dann nachricht
 //        node.doOnOnline(() -> {
 //            Message message = null;
-//            node.send(message);
+//            node.sendMSG(message);
 //        });
 
-        node.shutdown();
+        node.start();
     }
 
     public void shutdown() throws DrasylException {
-        LOG.debug("Stop Server at {}", server.getEntrypoint());
+        LOG.info("Stop Server at {}:{}", config.getServerBindHost(), config.getServerBindPort());
         server.close();
         server.awaitClose();
-        LOG.debug("Server stopped at {}", server.getEntrypoint());
+        LOG.debug("Server stopped at {}:{}", config.getServerBindHost(), config.getServerBindPort());
     }
 }

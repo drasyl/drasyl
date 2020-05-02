@@ -1,20 +1,20 @@
 /*
- * Copyright (c) 2020
+ * Copyright (c) 2020.
  *
- * This file is part of Relayserver.
+ * This file is part of drasyl.
  *
- * Relayserver is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  drasyl is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- * Relayserver is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ *  drasyl is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Relayserver.  If not, see <http://www.gnu.org/licenses/>.
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package org.drasyl.core.common.handler;
@@ -33,7 +33,7 @@ import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
 /**
- * Creates a newly configured {@link ChannelPipeline} for a new channel for a Session to or from a relay server.
+ * Creates a newly configured {@link ChannelPipeline} for a new channel for a ServerSession to or from a relay server.
  *
  * <p>
  * <b>Note: You have to add a websocket handler by yourself to the {@link #beforeMarshalStage(ChannelPipeline)}</b>

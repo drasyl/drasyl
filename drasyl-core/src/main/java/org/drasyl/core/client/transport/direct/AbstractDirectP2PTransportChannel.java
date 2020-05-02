@@ -88,20 +88,9 @@ public abstract class AbstractDirectP2PTransportChannel implements P2PTransportC
 
         String recipientSystem = outboundMessage.getRecipient().path().address().system();
 
-        if (recipientSystem.equals("ANY")) {
-            String[] peerSystemNames = peers.keySet().toArray(new String[0]);
-            int randomPeer = random.nextInt(peerSystemNames.length);
-            peers.get(peerSystemNames[randomPeer])
-                    .writeAndFlush(outboundMessage);
-
-        } else if (recipientSystem.equals("ALL")) {
-            peers.values().forEach(c -> c.writeAndFlush(outboundMessage));
-        } else {
-            ofNullable(peers.get(recipientSystem))
+        ofNullable(peers.get(recipientSystem))
                     .orElseThrow(() -> new P2PTransportException("No matching channel found for sending!"))
                     .writeAndFlush(outboundMessage);
-        }
-
     }
 
     @Override

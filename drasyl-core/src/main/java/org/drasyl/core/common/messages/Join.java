@@ -1,122 +1,74 @@
 /*
- * Copyright (c) 2020
+ * Copyright (c) 2020.
  *
- * This file is part of Relayserver.
+ * This file is part of drasyl.
  *
- * Relayserver is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  drasyl is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- * Relayserver is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ *  drasyl is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Relayserver.  If not, see <http://www.gnu.org/licenses/>.
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.core.common.messages;
 
-import org.drasyl.core.common.models.SessionChannel;
-import org.drasyl.core.common.models.SessionUID;
+import org.drasyl.core.models.CompressedPublicKey;
 
-import java.util.HashSet;
+import java.net.URI;
 import java.util.Objects;
 import java.util.Set;
 
 /**
- * A message representing a join to the relay server. This message allows a) to
- * set the client UID b) to join one or more channels
- * <p>
- * The relay server forwards messages from the client only to clients that are
- * in the same subscribed channels.
+ * A message representing a join to the node server.
  */
 public class Join extends UserAgentMessage implements UnrestrictedPassableMessage {
-    private final SessionUID clientUID;
-    private final Set<SessionChannel> sessionChannels;
-    private final SessionUID relayUID;
-    private final String rpmID;
+    private final CompressedPublicKey publicKey;
+    private final Set<URI> endpoints;
 
     protected Join() {
-        clientUID = null;
-        sessionChannels = null;
-        relayUID = null;
-        rpmID = null;
+        publicKey = null;
+        endpoints = null;
     }
 
     /**
      * Creates a new join message.
      *
-     * @param clientUID       the session UID of the client
-     * @param sessionChannels the list of channels the client wants to join
-     * @param relayUID        the session UID of the old relay server
-     * @param rpmID           the ID of the {@link ResponsiblePeer}
+     * @param publicKey the public key of the joining node
+     * @param endpoints the endpoints of the joining node
      */
-    private Join(SessionUID clientUID, Set<SessionChannel> sessionChannels, SessionUID relayUID, String rpmID) {
-        this.clientUID = Objects.requireNonNull(clientUID);
-        this.sessionChannels = Objects.requireNonNull(sessionChannels);
-        this.relayUID = relayUID;
-        this.rpmID = rpmID;
+    public Join(CompressedPublicKey publicKey, Set<URI> endpoints) {
+        Objects.requireNonNull(publicKey);
+        Objects.requireNonNull(endpoints);
 
-        if (clientUID.getUIDs().size() > 1)
-            throw new IllegalArgumentException("The client uid can't be a multicast address.");
+        this.publicKey = publicKey;
+        this.endpoints = endpoints;
+    }
+
+    public Set<URI> getEndpoints() {
+        return this.endpoints;
     }
 
     /**
-     * Creates a new join message.
-     *
-     * @param clientUID       the session UID of the client
-     * @param sessionChannels the list of channels the client wants to join
+     * @return the public key of the joining node
      */
-    public Join(SessionUID clientUID, Set<SessionChannel> sessionChannels) {
-        this(clientUID, sessionChannels, null, null);
-    }
-
-    /**
-     * Creates a new join message.
-     *
-     * @param clientUID the session UID of the client
-     * @param relayUID  the UID of the old relay server
-     * @param rpmID     the ID of the {@link ResponsiblePeer}
-     */
-    public Join(SessionUID clientUID, SessionUID relayUID, String rpmID) {
-        this(clientUID, new HashSet<>(), relayUID, rpmID);
-    }
-
-    /**
-     * @return the session UID of the client
-     */
-    public SessionUID getClientUID() {
-        return clientUID;
-    }
-
-    /**
-     * @return the channels
-     */
-    public Set<SessionChannel> getSessionChannels() {
-        return sessionChannels;
-    }
-
-    /**
-     * @return the old relay server UID
-     */
-    public SessionUID getRelayUID() {
-        return relayUID;
-    }
-
-    /**
-     * @return the rpm ID
-     */
-    public String getRpmID() {
-        return rpmID;
+    public CompressedPublicKey getPublicKey() {
+        return publicKey;
     }
 
     @Override
     public String toString() {
-        return "Join [clientUID=" + clientUID + ", channels=" + sessionChannels + ", relayUID=" + relayUID + ", rpmID="
-                + rpmID + ", messageID=" + getMessageID() + ", User-Agent=" + getUserAgent() + "]";
+        return "Join{" +
+                "messageID=" + getMessageID() +
+                ", User-Agent=" + getUserAgent() +
+                ", publicKey=" + publicKey +
+                ", endpoints=" + endpoints +
+                '}';
     }
 
     @Override
@@ -124,21 +76,19 @@ public class Join extends UserAgentMessage implements UnrestrictedPassableMessag
         if (this == o) {
             return true;
         }
-        if (!(o instanceof Join)) {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
         if (!super.equals(o)) {
             return false;
         }
-        Join that = (Join) o;
-        return Objects.equals(getClientUID(), that.getClientUID()) &&
-                Objects.equals(getSessionChannels(), that.getSessionChannels()) &&
-                Objects.equals(getRelayUID(), that.getRelayUID()) &&
-                Objects.equals(getRpmID(), that.getRpmID());
+        Join join = (Join) o;
+        return Objects.equals(publicKey, join.publicKey) &&
+                Objects.equals(endpoints, join.endpoints);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), getClientUID(), getSessionChannels(), getRelayUID(), getRpmID());
+        return Objects.hash(super.hashCode(), publicKey, endpoints);
     }
 }

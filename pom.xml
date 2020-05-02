@@ -258,7 +258,6 @@
         <module>drasyl-cli</module>
         <module>drasyl-core</module>
         <module>drasyl-integration-tests</module>
-        <module>drasyl-crypto</module>
     </modules>
 
     <properties>

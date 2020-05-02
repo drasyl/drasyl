@@ -18,6 +18,8 @@
  */
 package org.drasyl.core.models;
 
+import org.drasyl.core.node.identity.Identity;
+
 import java.util.Objects;
 
 public abstract class AbstractNode {

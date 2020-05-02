@@ -1,41 +1,42 @@
 /*
- * Copyright (c) 2020
+ * Copyright (c) 2020.
  *
- * This file is part of Relayserver.
+ * This file is part of drasyl.
  *
- * Relayserver is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  drasyl is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- * Relayserver is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ *  drasyl is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Relayserver.  If not, see <http://www.gnu.org/licenses/>.
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
 package org.drasyl.core.common.handler;
 
-import org.drasyl.core.common.messages.Message;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketHandshakeException;
+import org.drasyl.core.common.messages.IMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 
-public class WebSocketClientHandler extends SimpleChannelDuplexHandler<Object, Message> {
+public class WebSocketClientHandler extends SimpleChannelDuplexHandler<Object, IMessage> {
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketClientHandler.class);
     private final WebSocketClientHandshaker handshaker;
-    private CompletableFuture<Void> handshakeFuture;
+    private final CompletableFuture<Void> handshakeFuture;
 
     public WebSocketClientHandler(WebSocketClientHandshaker handshaker) {
         this.handshaker = handshaker;
@@ -59,7 +60,7 @@ public class WebSocketClientHandler extends SimpleChannelDuplexHandler<Object, M
     }
 
     @Override
-    protected void channelWrite0(ChannelHandlerContext ctx, Message msg) throws Exception {
+    protected void channelWrite0(ChannelHandlerContext ctx, IMessage msg) throws Exception {
         handshakeFuture.get();
         ctx.write(msg);
     }

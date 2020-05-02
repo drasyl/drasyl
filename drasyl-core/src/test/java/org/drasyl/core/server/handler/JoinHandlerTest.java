@@ -1,29 +1,28 @@
 /*
- * Copyright (c) 2020
+ * Copyright (c) 2020.
  *
- * This file is part of Relayserver.
+ * This file is part of drasyl.
  *
- * Relayserver is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  drasyl is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- * Relayserver is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ *  drasyl is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Relayserver.  If not, see <http://www.gnu.org/licenses/>.
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.core.server.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.core.common.messages.*;
-import org.drasyl.core.common.models.SessionUID;
+import org.drasyl.core.models.CompressedPublicKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -37,7 +36,8 @@ class JoinHandlerTest {
     private ChannelHandlerContext ctx;
     private ScheduledFuture future;
     private ChannelPromise promise;
-    private Message msg;
+    private IMessage msg;
+    private CompressedPublicKey publicKey;
 
     @BeforeEach
     void setUp() {
@@ -45,6 +45,7 @@ class JoinHandlerTest {
         promise = mock(ChannelPromise.class);
         future = mock(ScheduledFuture.class);
         msg = new Leave();
+        publicKey = mock(CompressedPublicKey.class);
     }
 
     @Test
@@ -84,7 +85,7 @@ class JoinHandlerTest {
             handler.channelWrite0(ctx, msg);
         });
 
-        verify(ctx, never()).write(any(Message.class));
+        verify(ctx, never()).write(any(IMessage.class));
     }
 
     @Test
@@ -94,7 +95,7 @@ class JoinHandlerTest {
         handler.channelRead0(ctx, msg);
 
         verify(ctx, times(1)).writeAndFlush(any(Response.class));
-        verify(ctx, never()).fireChannelRead(any(Message.class));
+        verify(ctx, never()).fireChannelRead(any(IMessage.class));
     }
 
     @Test
@@ -113,7 +114,7 @@ class JoinHandlerTest {
     @Test
     void channelRead0DoubleJoin() throws Exception {
         JoinHandler handler = new JoinHandler(true, 1L, future);
-        msg = new Join(SessionUID.random(), Set.of());
+        msg = new Join(publicKey, Set.of());
 
         handler.channelRead0(ctx, msg);
 

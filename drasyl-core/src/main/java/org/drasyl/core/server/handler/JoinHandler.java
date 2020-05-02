@@ -1,22 +1,21 @@
 /*
- * Copyright (c) 2020
+ * Copyright (c) 2020.
  *
- * This file is part of Relayserver.
+ * This file is part of drasyl.
  *
- * Relayserver is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  drasyl is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- * Relayserver is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ *  drasyl is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Relayserver.  If not, see <http://www.gnu.org/licenses/>.
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.core.server.handler;
 
 import io.netty.channel.ChannelHandlerContext;
@@ -25,21 +24,20 @@ import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.core.common.handler.SimpleChannelDuplexHandler;
 import org.drasyl.core.common.messages.*;
-import org.drasyl.core.server.RelayServerConfig;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
 
 /**
- * Acts as a guard for in- and outbound connections. A session is only created, when a {@link Join} was received.
- * Outgoing messages are dropped unless a {@link Join} was received.
- * Every other incoming message is also dropped unless a {@link Join} was received.
+ * Acts as a guard for in- and outbound connections. A session is only created, when a {@link Join}
+ * was received. Outgoing messages are dropped unless a {@link Join} was received. Every other
+ * incoming message is also dropped unless a {@link Join} was received.
  * <p>
- * If a {@link Join} was not received in {@link RelayServerConfig#getRelayMaxHandshakeTimeout()} the
- * connection will be closed.
+ * If a {@link Join} was not received in {@link org.drasyl.core.node.DrasylNodeConfig#getServerHandshakeTimeout()}
+ * the connection will be closed.
  */
-public class JoinHandler extends SimpleChannelDuplexHandler<Message, Message> {
+public class JoinHandler extends SimpleChannelDuplexHandler<IMessage, IMessage> {
     private static final Logger LOG = LoggerFactory.getLogger(JoinHandler.class);
     protected volatile boolean authenticated;
     private ScheduledFuture<?> timeoutFuture;
@@ -62,12 +60,11 @@ public class JoinHandler extends SimpleChannelDuplexHandler<Message, Message> {
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         timeoutFuture = ctx.executor().schedule(() -> {
             if (!timeoutFuture.isCancelled() && !authenticated) {
-                ctx.writeAndFlush(new RelayException("Handshake did not take place successfully in " + timeout + " ms. " +
+                ctx.writeAndFlush(new NodeServerException("Handshake did not take place successfully in " + timeout + " ms. " +
                         "Connection is closed."));
                 ctx.close();
                 LOG.debug("{} Handshake did not take place successfully in {} ms. "
                         + "Connection is closed.", ctx.channel().id(), timeout);
-
             }
         }, timeout, TimeUnit.MILLISECONDS);
 
@@ -81,13 +78,15 @@ public class JoinHandler extends SimpleChannelDuplexHandler<Message, Message> {
     }
 
     @Override
-    protected void channelWrite0(ChannelHandlerContext ctx, Message msg) throws Exception {
+    protected void channelWrite0(ChannelHandlerContext ctx, IMessage msg) throws Exception {
         if (authenticated) {
             ctx.write(msg);
-        } else {
+        }
+        else {
             if (msg instanceof UnrestrictedPassableMessage) {
                 ctx.write(msg);
-            } else {
+            }
+            else {
                 ReferenceCountUtil.release(msg);
                 // is visible to the listening futures
                 throw new IllegalStateException("Client is not authenticated. Outbound message was dropped: '" + msg + "'");
@@ -96,20 +95,23 @@ public class JoinHandler extends SimpleChannelDuplexHandler<Message, Message> {
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Message request) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, IMessage request) throws Exception {
         if (authenticated) {
             if (request instanceof Join) {
-                ctx.writeAndFlush(new Response<>(new RelayException("This client has already an open "
-                        + "session with this relay server. No need to authenticate twice."), request.getMessageID()));
+                ctx.writeAndFlush(new Response<>(new NodeServerException("This client has already an open "
+                        + "session with this node server. No need to authenticate twice."), request.getMessageID()));
                 ReferenceCountUtil.release(request);
-            } else {
+            }
+            else {
                 ctx.fireChannelRead(request);
             }
-        } else if (request instanceof Join) {
+        }
+        else if (request instanceof Join) {
             authenticated = true;
             timeoutFuture.cancel(true);
             ctx.fireChannelRead(request);
-        } else {
+        }
+        else {
             ctx.writeAndFlush(new Response<>(Status.FORBIDDEN, request.getMessageID()));
             ReferenceCountUtil.release(request);
             LOG.debug("[{}] Client is not authenticated. Inbound message was dropped: '{}'",

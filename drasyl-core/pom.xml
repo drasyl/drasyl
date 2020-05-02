@@ -68,11 +68,6 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.drasyl</groupId>
-            <artifactId>drasyl-crypto</artifactId>
-            <version>${project.version}</version>
-        </dependency>
-        <dependency>
             <groupId>com.fasterxml.jackson.core</groupId>
             <artifactId>jackson-databind</artifactId>
         </dependency>

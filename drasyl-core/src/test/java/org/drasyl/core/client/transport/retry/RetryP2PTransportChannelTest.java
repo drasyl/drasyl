@@ -133,7 +133,7 @@ public class RetryP2PTransportChannelTest {
 
         baseChannel1CloseFuture.complete(null);
 
-        // during retry attempts channel.send is not repeated
+        // during retry attempts channel.sendMSG is not repeated
         verify(retryStrategy, timeout(100).times(2)).nextChannel(any());
         channelFuture.completeExceptionally(new P2PTransportChannelException("Test failure!"));
 

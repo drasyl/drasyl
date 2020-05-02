@@ -1,40 +1,40 @@
 /*
- * Copyright (c) 2020
+ * Copyright (c) 2020.
  *
- * This file is part of Relayserver.
+ * This file is part of drasyl.
  *
- * Relayserver is free software: you can redistribute it and/or modify
- * it under the terms of the GNU Lesser General Public License as published by
- * the Free Software Foundation, either version 3 of the License, or
- * (at your option) any later version.
+ *  drasyl is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
  *
- * Relayserver is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- * GNU Lesser General Public License for more details.
+ *  drasyl is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
  *
- * You should have received a copy of the GNU Lesser General Public License
- * along with Relayserver.  If not, see <http://www.gnu.org/licenses/>.
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.core.server.actions.messages;
 
-import org.drasyl.core.common.messages.ClientsStocktaking;
-import org.drasyl.core.common.messages.Response;
-import org.drasyl.core.common.models.SessionUID;
-import org.drasyl.core.server.RelayServer;
-import org.drasyl.core.server.RelayServerConfig;
-import org.drasyl.core.server.session.Session;
-import org.drasyl.core.server.session.util.ClientSessionBucket;
 import com.google.common.collect.Sets;
 import com.typesafe.config.ConfigFactory;
+import org.drasyl.core.common.messages.ClientsStocktaking;
+import org.drasyl.core.common.messages.Response;
+import org.drasyl.core.models.DrasylException;
+import org.drasyl.core.node.DrasylNodeConfig;
+import org.drasyl.core.node.PeersManager;
+import org.drasyl.core.node.identity.Identity;
+import org.drasyl.core.node.identity.IdentityTestHelper;
+import org.drasyl.core.server.NodeServer;
+import org.drasyl.core.server.session.ServerSession;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Captor;
 import org.mockito.MockitoAnnotations;
 
-import java.net.URISyntaxException;
 import java.util.Set;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -42,50 +42,52 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.mockito.Mockito.*;
 
 class ServerActionRequestClientsStocktakingTest {
-    private Session session;
-    private RelayServer relay;
+    private ServerSession serverSession;
+    private NodeServer server;
     private String responseMsgID;
-    private ClientSessionBucket clientSessionBucket;
-
+    private PeersManager peersManager;
     @Captor
-    private ArgumentCaptor<Response> captor;
+    private ArgumentCaptor<Response<ClientsStocktaking>> captor;
 
     @BeforeEach
-    void setUp() throws URISyntaxException {
+    void setUp() throws DrasylException {
         MockitoAnnotations.initMocks(this);
 
-        session = mock(Session.class);
-        relay = mock(RelayServer.class);
-        clientSessionBucket = mock(ClientSessionBucket.class);
+        serverSession = mock(ServerSession.class);
+        server = mock(NodeServer.class);
+        peersManager = mock(PeersManager.class);
 
         responseMsgID = "id";
 
-        when(relay.getClientBucket()).thenReturn(clientSessionBucket);
-        when(relay.getConfig()).thenReturn(new RelayServerConfig(ConfigFactory.load()));
+        when(server.getPeersManager()).thenReturn(peersManager);
+        when(server.getConfig()).thenReturn(new DrasylNodeConfig(ConfigFactory.load()));
     }
 
     @Test
     void onMessage() {
+        Identity identity1 = IdentityTestHelper.random();
+        Identity identity2 = IdentityTestHelper.random();
+
         ServerActionRequestClientsStocktaking message = new ServerActionRequestClientsStocktaking();
-        Set<SessionUID> clients = Sets.newHashSet(SessionUID.of("junit1"), SessionUID.of("junit2"));
+        Set<Identity> clients = Sets.newHashSet(identity1, identity2);
 
-        when(clientSessionBucket.getClientUIDs()).thenReturn(clients);
+        when(peersManager.getChildren()).thenReturn(clients);
 
-        message.onMessage(session, relay);
+        message.onMessage(serverSession, server);
 
-        verify(session).sendMessage(captor.capture());
+        verify(serverSession).send(captor.capture());
 
-        ClientsStocktaking asm = (ClientsStocktaking) captor.getValue().getMessage();
-        assertThat(asm.getClientUIDs(), containsInAnyOrder(SessionUID.of("junit1"), SessionUID.of("junit2")));
+        ClientsStocktaking asm = captor.getValue().getMessage();
+        assertThat(asm.getIdentities(), containsInAnyOrder(identity1, identity2));
     }
 
     @Test
     void onResponse() {
         ServerActionRequestClientsStocktaking message = new ServerActionRequestClientsStocktaking();
 
-        message.onResponse(responseMsgID, session, relay);
+        message.onResponse(responseMsgID, serverSession, server);
 
-        verifyNoInteractions(session);
-        verifyNoInteractions(relay);
+        verifyNoInteractions(serverSession);
+        verifyNoInteractions(server);
     }
 }
