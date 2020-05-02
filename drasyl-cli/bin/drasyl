@@ -78,4 +78,5 @@ fi
 
 exec "$JAVACMD" \
     -classpath "$CLASSPATH" \
+    -Dconfig.override_with_env_vars=true \
     org.drasyl.cli.Cli "$@"
