@@ -29,7 +29,7 @@ import java.util.Objects;
  * is 10 hexadecimal characters long.
  */
 public class Identity {
-    private static final Pattern syntax = Pattern.compile("^[a-fA-F0-9]{10}$");
+    private static final Pattern syntax = Pattern.compile("^[a-f0-9]{10}$");
     @JsonValue
     private final String id;
 

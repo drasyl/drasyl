@@ -92,8 +92,8 @@ public class ClientIT {
         server.awaitOpen();
 
         CompressedKeyPair keyPair = mock(CompressedKeyPair.class);
-        CompressedPublicKey publicKey = CompressedPublicKey.of("0343BC674C4E58A289D3904A16F83177581770D32E3EE0D63B7C75EE2B32C733B1");
-        CompressedPrivateKey privateKey = CompressedPrivateKey.of("0C5D76039113707512C15D23F27C963FA2B636672AE86C66F68E588203556775");
+        CompressedPublicKey publicKey = CompressedPublicKey.of("0343bc674c4e58a289d3904a16f83177581770d32e3ee0d63b7c75ee2b32c733b1");
+        CompressedPrivateKey privateKey = CompressedPrivateKey.of("0c5d76039113707512c15d23f27c963fa2b636672ae86c66f68e588203556775");
 
         when(identityManager.getKeyPair()).thenReturn(keyPair);
         when(keyPair.getPublicKey()).thenReturn(publicKey);
@@ -148,9 +148,9 @@ public class ClientIT {
             TestSession session2 = TestSession.build(server);
             serverSessions.add(session2);
 
-            session1.send(new Join(CompressedPublicKey.of("023E0A51F1830F5EC7DECDB428A63992FADD682513E82DC9594E259EDD9398EDF3"), Set.of()),
+            session1.send(new Join(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of()),
                     Welcome.class).subscribe(response -> lock.countDown());
-            session2.send(new Join(CompressedPublicKey.of("0340A4F2ADBDDEEDC8F9ACE30E3F18713A3405F43F4871B4BAC9624FE80D2056A7"), Set.of()),
+            session2.send(new Join(CompressedPublicKey.of("0340a4f2adbddeedc8f9ace30e3f18713a3405f43f4871b4bac9624fe80d2056a7"), Set.of()),
                     Welcome.class).subscribe(response -> lock.countDown());
 
             lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
@@ -382,9 +382,9 @@ public class ClientIT {
             TestSession session2 = TestSession.build(server);
             serverSessions.add(session2);
 
-            session1.send(new Join(CompressedPublicKey.of("023E0A51F1830F5EC7DECDB428A63992FADD682513E82DC9594E259EDD9398EDF3"), Set.of()),
+            session1.send(new Join(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of()),
                     Welcome.class).blockingGet();
-            session2.send(new Join(CompressedPublicKey.of("023E0A51F1830F5EC7DECDB428A63992FADD682513E82DC9594E259EDD9398EDF3"), Set.of()),
+            session2.send(new Join(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of()),
                     org.drasyl.core.common.messages.NodeServerException.class).subscribe(response -> {
                 Assert.assertEquals("This client has already an open "
                         + "session with this node server. Can't open more sockets.", response.getException());
@@ -412,7 +412,7 @@ public class ClientIT {
             TestSession session = TestSession.buildAutoJoin(server);
             serverSessions.add(session);
 
-            session.send(new Join(CompressedPublicKey.of("023E0A51F1830F5EC7DECDB428A63992FADD682513E82DC9594E259EDD9398EDF3"), Set.of()), org.drasyl.core.common.messages.NodeServerException.class)
+            session.send(new Join(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of()), org.drasyl.core.common.messages.NodeServerException.class)
                     .subscribe(response -> {
                         Assert.assertEquals("This client has already an open "
                                 + "session with this node server. No need to authenticate twice.", response.getException());

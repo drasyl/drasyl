@@ -37,7 +37,7 @@ class HexUtilTest {
 
         assertArrayEquals(byteArray, HexUtil.fromString(byteAsString));
         assertArrayEquals(byteArray, HexUtil.fromString(byteAsString.toLowerCase()));
-        assertEquals("4F00100D", byteAsString);
+        assertEquals("4f00100d", byteAsString);
     }
 
     @Test
