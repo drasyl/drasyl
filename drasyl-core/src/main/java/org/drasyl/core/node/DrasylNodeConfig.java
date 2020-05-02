@@ -39,17 +39,17 @@ public class DrasylNodeConfig {
     //======================================== Config Paths ========================================
     private static final String DRASYL_IDENTITY_PATH = "drasyl.identity.path";
     private static final String DRASYL_USER_AGENT = "drasyl.user-agent";
-    private static final String DRASYL_ENTRY_POINTS = "drasyl.entry_points";
+    private static final String DRASYL_ENTRY_POINTS = "drasyl.entry-points";
     private static final String SERVER_BIND_HOST = "drasyl.server.bind-host";
     private static final String SERVER_BIND_PORT = "drasyl.server.bind-port";
     private static final String SERVER_IDLE_RETRIES = "drasyl.server.idle.retries";
     private static final String SERVER_IDLE_TIMEOUT = "drasyl.server.idle.timeout";
-    private static final String SERVER_FLUSH_BUFFER_SIZE = "drasyl.server.flush_buffer_size";
+    private static final String SERVER_FLUSH_BUFFER_SIZE = "drasyl.server.flush-buffer-size";
     private static final String SERVER_SSL_ENABLED = "drasyl.server.ssl.enabled";
     private static final String SERVER_SSL_PROTOCOLS = "drasyl.server.ssl.protocols";
-    private static final String SERVER_MAX_HANDSHAKE_TIMEOUT = "drasyl.server.max_handshake_timeout";
-    private static final String SERVER_CHANNEL_INITIALIZER = "drasyl.server.channel_initializer";
-    private static final String SERVER_MAX_CONTENT_LENGTH = "drasyl.server.max_content_length";
+    private static final String SERVER_MAX_HANDSHAKE_TIMEOUT = "drasyl.server.max-handshake-timeout";
+    private static final String SERVER_CHANNEL_INITIALIZER = "drasyl.server.channel-initializer";
+    private static final String SERVER_MAX_CONTENT_LENGTH = "drasyl.server.max-content-length";
     private static final String SERVER_ENTRY_POINT = "drasyl.server.entry_point";
     private final Config config;
     //======================================= Config Values ========================================

@@ -81,7 +81,7 @@
             </vs-col>
 
             <vs-col vs-lg="3" vs-sm="4" vs-xs="6">
-                <vs-list-item icon="thumbs_up_down" title="Handshake Timeout" :subtitle="numberWithCommas(configs.max_handshake_timeout)"></vs-list-item>
+                <vs-list-item icon="thumbs_up_down" title="Handshake Timeout" :subtitle="numberWithCommas(configs.max-handshake-timeout)"></vs-list-item>
             </vs-col>
 
             <vs-col vs-lg="3" vs-sm="4" vs-xs="6">
@@ -101,7 +101,7 @@
             </vs-col>
 
             <vs-col vs-lg="3" vs-sm="4" vs-xs="6">
-                <vs-list-item icon="data_usage" title="Flush Buffer Size" :subtitle="numberWithCommas(configs.flush_buffer_size)"></vs-list-item>
+                <vs-list-item icon="data_usage" title="Flush Buffer Size" :subtitle="numberWithCommas(configs.flush-buffer-size)"></vs-list-item>
             </vs-col>
 
             <vs-col vs-lg="3" vs-sm="4" vs-xs="6">
