@@ -9,7 +9,7 @@ cache:
     - .m2/repository
 
 maven-verify:
-  stage: test
+  stage: build
   script:
     - 'mvn $MAVEN_CLI_OPTS verify sonar:sonar'
     - mv drasyl-cli/target/drasyl-*.zip .
@@ -28,7 +28,7 @@ maven-verify:
       - "drasyl-*.zip"
 
 maven-deploy:
-  stage: deploy
+  stage: build
   script:
     - 'mvn $MAVEN_CLI_OPTS deploy sonar:sonar'
     - mv drasyl-cli/target/drasyl-*.zip .
