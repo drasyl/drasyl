@@ -47,10 +47,12 @@ public class ServerActionJoin extends Join implements ServerAction {
         Objects.requireNonNull(nodeServer);
 
         Identity peerIdentity = Identity.of(this.getPublicKey());
-        PeerInformation peerInformation = nodeServer.getPeersManager().addChildren(peerIdentity);
+        PeerInformation peerInformation = new PeerInformation();
         peerInformation.setPublicKey(this.getPublicKey());
         peerInformation.addPeerConnection(session);
         peerInformation.addEndpoint(this.getEndpoints());
+        nodeServer.getPeersManager().addPeer(peerIdentity, peerInformation);
+        nodeServer.getPeersManager().addChildren(peerIdentity);
 
         session.send(new Response<>(new Welcome(nodeServer.getMyIdentity().getKeyPair().getPublicKey(), nodeServer.getEntryPoints()), this.getMessageID()));
     }
