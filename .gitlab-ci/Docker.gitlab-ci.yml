@@ -1,5 +1,5 @@
 .docker: &docker
-  stage: .post
+  stage: docker
   # Official docker image.
   image: docker:latest
   services:

@@ -1,3 +1,8 @@
+stages:
+  - build
+  - docker
+  - deploy
+
 include:
   - local: /.gitlab-ci/Maven.gitlab-ci.yml # we have to use our own template, since GitLab's template uses JDK8, but we need JDK11
   #  - template: Dependency-Scanning.gitlab-ci.yml
@@ -5,6 +10,7 @@ include:
   - local: /.gitlab-ci/Docker.gitlab-ci.yml
 #  - template: License-Management.gitlab-ci.yml
 #  - template: SAST.gitlab-ci.yml
+  - local: /.gitlab-ci/Deployments.gitlab-ci.yml
 
 #license_management:
 #  variables:

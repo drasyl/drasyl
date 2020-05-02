@@ -1,0 +1,119 @@
+variables:
+  APP_HOST: env.drasyl.org
+
+.deploy-base: &deploy-base
+  stage: deploy
+  image: innoq/gitlabci-docker-compose:alpine
+  script:
+    - sh ./prepare-environment-docker-compose.sh > docker-compose.yml
+    - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
+    - docker-compose pull
+    - docker-compose --project-name ${CI_PROJECT_NAME}-${CI_PROJECT_ID}-${CI_ENVIRONMENT_SLUG} up -d --remove-orphans
+  # We don't need cache for stop a environment
+  cache: {}
+
+.stop-base: &stop-base
+  stage: deploy
+  image: innoq/gitlabci-docker-compose:alpine
+  before_script:
+    - apk add --no-cache git
+    - git clone -n $CI_REPOSITORY_URL $CI_PROJECT_NAME
+    - cd $CI_PROJECT_NAME
+    - git checkout $CI_COMMIT_SHA
+  script:
+    - sh ./prepare-environment-docker-compose.sh > docker-compose.yml
+    - docker-compose --project-name ${CI_PROJECT_NAME}-${CI_PROJECT_ID}-${CI_ENVIRONMENT_SLUG} down
+  # We don't need cache for stop a environment
+  cache: {}
+
+deploy_review:
+  <<: *deploy-base
+  variables:
+    APP_IMAGE: "${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_SLUG}"
+    APP_DEPLOY_HOST: "${CI_ENVIRONMENT_SLUG}.${APP_HOST}"
+    RELAY_UID: "${CI_PROJECT_NAME}-${CI_PROJECT_ID}-${CI_COMMIT_REF_SLUG}"
+    RELAY_MONITORING_TOKEN: test
+  environment:
+    name: review/$CI_COMMIT_REF_NAME
+    url: https://$CI_ENVIRONMENT_SLUG.$APP_HOST
+    on_stop: stop_review
+  except:
+    - master
+  tags:
+    - review
+  # We don't need cache for deploy a review
+  cache: {}
+
+stop_review:
+  <<: *deploy-base
+  variables:
+    GIT_STRATEGY: none
+    APP_IMAGE: "${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_SLUG}"
+  except:
+    - master
+  when: manual
+  environment:
+    name: review/$CI_COMMIT_REF_NAME
+    action: stop
+  tags:
+    - review
+  # We don't need cache for stop a review
+  cache: {}
+
+deploy_staging:
+  <<: *deploy-base
+  variables:
+    APP_IMAGE: "${CI_REGISTRY_IMAGE}:latest"
+    APP_DEPLOY_HOST: "staging.${APP_HOST}"
+    RELAY_UID: staging
+  environment:
+    name: staging
+    url: https://staging.$APP_HOST
+  only:
+    - master
+  tags:
+    - staging
+
+stop_staging:
+  <<: *stop-base
+  variables:
+    GIT_STRATEGY: none
+    APP_IMAGE: "${CI_REGISTRY_IMAGE}:latest"
+  only:
+    - master
+  when: manual
+  environment:
+    name: staging
+    action: stop
+  tags:
+    - staging
+
+deploy_production:
+  <<: *deploy-base
+  variables:
+    APP_IMAGE: "${CI_REGISTRY_IMAGE}:latest"
+    APP_DEPLOY_HOST: "production.${APP_HOST}"
+    RELAY_UID: production
+  environment:
+    name: production
+    url: https://$APP_HOST
+    on_stop: stop_production
+  only:
+    - master
+  when: manual
+  tags:
+    - production
+
+stop_production:
+  <<: *stop-base
+  variables:
+    GIT_STRATEGY: none
+    APP_IMAGE: "${CI_REGISTRY_IMAGE}:latest"
+  only:
+    - master
+  when: manual
+  environment:
+    name: production
+    action: stop
+  tags:
+    - production
