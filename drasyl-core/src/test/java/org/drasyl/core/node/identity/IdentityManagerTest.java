@@ -19,6 +19,7 @@
 package org.drasyl.core.node.identity;
 
 import com.google.common.io.Files;
+import org.drasyl.core.models.DrasylException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
@@ -27,8 +28,7 @@ import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 
 class IdentityManagerTest {
     @Test
@@ -44,6 +44,15 @@ class IdentityManagerTest {
         identityManager.loadOrCreateIdentity();
 
         assertEquals(Identity.of("0229041b27"), identityManager.getIdentity());
+    }
+
+    @Test
+    public void loadOrCreateIdentityShouldThrowExceptionIfPathDoesNotExist(@TempDir Path dir) {
+        Path path = Paths.get(dir.toString(), "non-existing", "my-identity.json");
+
+        IdentityManager identityManager = new IdentityManager(path);
+
+        assertThrows(IdentityManagerException.class, () -> identityManager.loadOrCreateIdentity());
     }
 
     @Test
