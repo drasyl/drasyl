@@ -63,7 +63,6 @@ class ServerActionJoinTest {
 
         when(compressedPublicKey.toString()).thenReturn(IdentityTestHelper.random().getId());
         when(nodeServer.getPeersManager()).thenReturn(peersManager);
-        when(peersManager.addChildren(any(Identity.class))).thenReturn(peerInformation);
         when(nodeServer.getConfig()).thenReturn(new DrasylNodeConfig(ConfigFactory.load()));
         when(nodeServer.getMyIdentity()).thenReturn(identityManager);
         when(identityManager.getKeyPair()).thenReturn(keyPair);
@@ -76,12 +75,15 @@ class ServerActionJoinTest {
         ServerActionJoin message = new ServerActionJoin(compressedPublicKey, Set.of());
         message.onMessage(session, nodeServer);
 
-        verify(peersManager, times(1)).addChildren(Identity.of(compressedPublicKey));
-        verify(peerInformation, times(1)).setPublicKey(message.getPublicKey());
-        verify(peerInformation, times(1)).addPeerConnection(session);
-        verify(peerInformation, times(1)).addEndpoint(message.getEndpoints());
+        PeerInformation myPeerInformation = new PeerInformation();
+        myPeerInformation.setPublicKey(message.getPublicKey());
+        myPeerInformation.addPeerConnection(session);
+        myPeerInformation.addEndpoint(message.getEndpoints());
 
-        verify(session, times(1)).send(any(Response.class));
+        verify(peersManager).addPeer(Identity.of(compressedPublicKey), myPeerInformation);
+        verify(peersManager).addChildren(Identity.of(compressedPublicKey));
+
+        verify(session).send(any(Response.class));
     }
 
     @Test

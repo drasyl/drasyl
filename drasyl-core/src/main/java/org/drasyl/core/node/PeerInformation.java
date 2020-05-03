@@ -156,4 +156,23 @@ public class PeerInformation {
             lock.writeLock().unlock();
         }
     }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        PeerInformation that = (PeerInformation) o;
+        return Objects.equals(endpoints, that.endpoints) &&
+                Objects.equals(connections, that.connections) &&
+                Objects.equals(publicKey, that.publicKey);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(endpoints, connections, publicKey);
+    }
 }

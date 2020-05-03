@@ -14,6 +14,7 @@ import org.drasyl.core.node.identity.IdentityManager;
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static io.netty.handler.codec.http.HttpHeaderNames.SERVER;
 import static io.netty.handler.codec.http.HttpMethod.GET;
+import static io.netty.handler.codec.http.HttpMethod.HEAD;
 import static io.netty.handler.codec.http.HttpResponseStatus.*;
 
 /**
@@ -36,6 +37,13 @@ public class WebSocketMissingUpgradeErrorPageHandler extends SimpleChannelInboun
             return;
         }
 
+        // response with node information on HEAD request
+        if (HEAD.equals(req.method())) {
+            Identity identity = identityManager.getIdentity();
+            generateHeaders(ctx, req, identity, OK);
+            return;
+        }
+
         // allow only GET request
         if (!GET.equals(req.method())) {
             sendHttpResponse(ctx, new DefaultFullHttpResponse(req.protocolVersion(), FORBIDDEN,
@@ -46,18 +54,22 @@ public class WebSocketMissingUpgradeErrorPageHandler extends SimpleChannelInboun
         if ("/".equals(req.uri()) || "/index.html".equals(req.uri()) || "/index.htm".equals(req.uri())) {
             // display custom bad request error page for root path
             Identity identity = identityManager.getIdentity();
-            ByteBuf content = getContent(identity);
-            FullHttpResponse res = new DefaultFullHttpResponse(req.protocolVersion(), BAD_REQUEST, content);
-            res.headers().set("x-identity", identity.getId());
-            res.headers().set(CONTENT_TYPE, "text/html; charset=UTF-8");
-            HttpUtil.setContentLength(res, content.readableBytes());
-            sendHttpResponse(ctx, res);
+            generateHeaders(ctx, req, identity, BAD_REQUEST);
         }
         else {
             // return "not found" for all other pathes
             sendHttpResponse(ctx, new DefaultFullHttpResponse(req.protocolVersion(), NOT_FOUND,
                     ctx.alloc().buffer(0)));
         }
+    }
+
+    private static void generateHeaders(ChannelHandlerContext ctx, FullHttpRequest req, Identity identity, HttpResponseStatus status) {
+        ByteBuf content = getContent(identity);
+        FullHttpResponse res = new DefaultFullHttpResponse(req.protocolVersion(), status, content);
+        res.headers().set("x-identity", identity.getId());
+        res.headers().set(CONTENT_TYPE, "text/html; charset=UTF-8");
+        HttpUtil.setContentLength(res, content.readableBytes());
+        sendHttpResponse(ctx, res);
     }
 
     private static void sendHttpResponse(ChannelHandlerContext ctx,
