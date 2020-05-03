@@ -93,12 +93,12 @@ public final class TestHelper {
      */
     public static void giveRelayServerEnv(Procedure procedure, DrasylNodeConfig config, NodeServer server,
                                           boolean closeAfterProcedure) throws NodeServerException {
-        TestHelper.waitUntilNetworkAvailable(config.getServerEntryPoint().getPort());
+        TestHelper.waitUntilNetworkAvailable(config.getServerBindPort());
         server.open();
 
         with().pollInSameThread().await().pollDelay(0, TimeUnit.NANOSECONDS).atMost(Durations.FIVE_MINUTES)
                 .until(() -> {
-                    return NetworkTool.alive("127.0.0.1", server.getConfig().getServerEntryPoint().getPort());
+                    return NetworkTool.alive("127.0.0.1", server.getConfig().getServerBindPort());
                 });
 
         procedure.execute();

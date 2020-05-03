@@ -34,31 +34,37 @@ import org.drasyl.core.node.PeerInformation;
 import org.drasyl.core.node.PeersManager;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.node.identity.IdentityManager;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.InetSocketAddress;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
+import java.util.stream.Collectors;
 
 @SuppressWarnings({ "squid:S00107" })
 public class NodeServer implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(NodeServer.class);
-    private final CompletableFuture<Void> startedFuture;
-    private final CompletableFuture<Void> stoppedFuture;
     public final EventLoopGroup workerGroup;
     public final EventLoopGroup bossGroup;
+    public final ServerBootstrap serverBootstrap;
+    private final CompletableFuture<Void> startedFuture;
+    private final CompletableFuture<Void> stoppedFuture;
     private final List<Runnable> beforeCloseListeners;
     private final IdentityManager identityManager;
-    public final ServerBootstrap serverBootstrap;
     private final PeersManager peersManager;
     private final DrasylNodeConfig config;
     private final Messenger messenger;
     private Channel serverChannel;
     private NodeServerBootstrap nodeServerBootstrap;
     private boolean started;
+    private int actualPort;
+    private Set<URI> actualEndpoints;
 
     /**
      * Starts a node server for forwarding messages to child peers.<br> Default Port: 22527
@@ -90,7 +96,7 @@ public class NodeServer implements AutoCloseable {
         this(identityManager, messenger, peersManager, config,
                 null, new ServerBootstrap(),
                 new NioEventLoopGroup(Math.min(1, ForkJoinPool.commonPool().getParallelism() - 1)), new NioEventLoopGroup(1), new ArrayList<>(),
-                new CompletableFuture<>(), new CompletableFuture<>(), null, false);
+                new CompletableFuture<>(), new CompletableFuture<>(), null, false, -1, new HashSet<>());
 
         overrideUA();
 
@@ -99,7 +105,8 @@ public class NodeServer implements AutoCloseable {
         LOG.info("Started node server with the following configurations: \n {}", config);
     }
 
-    NodeServer(IdentityManager identityManager, Messenger messenger,
+    NodeServer(IdentityManager identityManager,
+               Messenger messenger,
                PeersManager peersManager,
                DrasylNodeConfig config,
                Channel serverChannel,
@@ -109,7 +116,10 @@ public class NodeServer implements AutoCloseable {
                List<Runnable> beforeCloseListeners,
                CompletableFuture<Void> startedFuture,
                CompletableFuture<Void> stoppedFuture,
-               NodeServerBootstrap nodeServerBootstrap, boolean started) {
+               NodeServerBootstrap nodeServerBootstrap,
+               boolean started,
+               int actualPort,
+               Set<URI> actualEndpoints) {
         this.identityManager = identityManager;
         this.peersManager = peersManager;
         this.config = config;
@@ -123,6 +133,8 @@ public class NodeServer implements AutoCloseable {
         this.nodeServerBootstrap = nodeServerBootstrap;
         this.started = started;
         this.messenger = messenger;
+        this.actualPort = actualPort;
+        this.actualEndpoints = actualEndpoints;
     }
 
     /**
@@ -148,14 +160,7 @@ public class NodeServer implements AutoCloseable {
      * @return the entry points
      */
     public Set<URI> getEntryPoints() {
-        return config.getEntryPoints();
-    }
-
-    /**
-     * @return the server entry point
-     */
-    public URI getEntryPoint() {
-        return config.getServerEntryPoint();
+        return actualEndpoints;
     }
 
     /**
@@ -222,25 +227,16 @@ public class NodeServer implements AutoCloseable {
         new Thread(this::openServerChannel).start();
     }
 
-    /**
-     * Wait till relay server is stopped.
-     */
-    public void awaitClose() throws NodeServerException {
-        try {
-            stoppedFuture.get();
-        }
-        catch (InterruptedException e) {
-            LOG.warn("Thread got interrupted", e);
-            Thread.currentThread().interrupt();
-        }
-        catch (ExecutionException e) {
-            throw new NodeServerException(e.getCause());
-        }
-    }
-
     void openServerChannel() {
         try {
             serverChannel = nodeServerBootstrap.getChannel();
+
+            InetSocketAddress socketAddress = (InetSocketAddress) serverChannel.localAddress();
+            actualPort = socketAddress.getPort();
+            actualEndpoints = config.getServerEndpoints().stream()
+                    .map(a -> overridePort(URI.create(a), getPort()))
+                    .collect(Collectors.toSet());
+
             startedFuture.complete(null);
             serverChannel.closeFuture().sync();
         }
@@ -251,6 +247,32 @@ public class NodeServer implements AutoCloseable {
         finally {
             close();
         }
+    }
+
+    /**
+     * This method sets the port in <code>uri</code> to <code>port</code> and returns the resulting
+     * URI.
+     *
+     * @param uri
+     * @param port
+     * @return
+     */
+    private URI overridePort(URI uri, int port) {
+        try {
+            return new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), port, uri.getPath(), uri.getQuery(), uri.getFragment());
+        }
+        catch (URISyntaxException e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Returns the actual bind port used by this server.
+     *
+     * @return
+     */
+    public int getPort() {
+        return actualPort;
     }
 
     /**
@@ -276,5 +298,21 @@ public class NodeServer implements AutoCloseable {
         }
 
         stoppedFuture.complete(null);
+    }
+
+    /**
+     * Wait till relay server is stopped.
+     */
+    public void awaitClose() throws NodeServerException {
+        try {
+            stoppedFuture.get();
+        }
+        catch (InterruptedException e) {
+            LOG.warn("Thread got interrupted", e);
+            Thread.currentThread().interrupt();
+        }
+        catch (ExecutionException e) {
+            throw new NodeServerException(e.getCause());
+        }
     }
 }

@@ -26,10 +26,12 @@ import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.PrintWriter;
-import java.net.ServerSocket;
-import java.net.Socket;
-import java.net.URL;
+import java.net.*;
 import java.nio.charset.StandardCharsets;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Set;
 
 public final class NetworkTool {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
@@ -155,5 +157,64 @@ public final class NetworkTool {
      */
     private static boolean isEmpty(final CharSequence cs) {
         return cs == null || cs.length() == 0;
+    }
+
+    /**
+     * Returns a list of the IP addresses of all network interfaces of the local computer. If no IP
+     * addresses can be obtained, 127.0.0.1 is returned.
+     *
+     * @return
+     */
+    public static Set<String> getAddresses() {
+        try {
+            Set<String> addresses = new HashSet<>();
+
+            Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();
+            while (ifaces.hasMoreElements()) {
+                NetworkInterface iface = ifaces.nextElement();
+
+                if (!iface.isUp() || iface.isLoopback() || iface.isPointToPoint()) {
+                    continue;
+                }
+
+                Enumeration<InetAddress> ifaceAddresses = iface.getInetAddresses();
+                while (ifaceAddresses.hasMoreElements()) {
+                    InetAddress ifaceAddress = ifaceAddresses.nextElement();
+                    String address = getAddressByInetAddress(ifaceAddress);
+                    if (address != null) {
+                        addresses.add(address);
+                    }
+                }
+            }
+
+            return addresses;
+        }
+        catch (SocketException e) {
+            return new HashSet<>(Collections.singletonList("127.0.0.1"));
+        }
+    }
+
+    private static String getAddressByInetAddress(InetAddress ifaceAddress) {
+        if (ifaceAddress.isLoopbackAddress() || ifaceAddress.isLinkLocalAddress() || ifaceAddress.isMulticastAddress()) {
+            return null;
+        }
+
+        if (ifaceAddress instanceof Inet4Address) {
+            return ifaceAddress.getHostAddress();
+        }
+        else if (ifaceAddress instanceof Inet6Address) {
+            String hostAddress = ifaceAddress.getHostAddress();
+
+            // remove scope
+            int percent = hostAddress.indexOf('%');
+            if (percent != -1) {
+                hostAddress = hostAddress.substring(0, percent);
+            }
+
+            return "[" + hostAddress + "]";
+        }
+        else {
+            return null;
+        }
     }
 }

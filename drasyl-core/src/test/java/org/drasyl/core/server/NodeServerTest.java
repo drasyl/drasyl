@@ -36,9 +36,9 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -95,8 +95,7 @@ class NodeServerTest {
         when(serverBootstrap.childOption(any(), any())).thenReturn(serverBootstrap);
         when(bossGroup.shutdownGracefully()).thenReturn(future);
         when(workerGroup.shutdownGracefully()).thenReturn(future);
-        when(config.getEntryPoints()).thenReturn(Set.of(new URI("ws://localhost:22527/")));
-        when(config.getServerEntryPoint()).thenReturn(new URI("ws://localhost:22527/"));
+        when(config.getServerEndpoints()).thenReturn(Set.of("ws://localhost:22527/"));
         when(nodeServerBootstrap.getChannel()).thenReturn(serverChannel);
         when(serverChannel.closeFuture()).thenReturn(channelFuture);
 
@@ -113,7 +112,7 @@ class NodeServerTest {
     void runShouldSetRunningToTrue() throws NodeServerException {
         NodeServer server = new NodeServer(identityManager, messenger, peersManager,
                 config, serverChannel, serverBootstrap, workerGroup, bossGroup,
-                beforeCloseListeners, startedFuture, stoppedFuture, nodeServerBootstrap, running);
+                beforeCloseListeners, startedFuture, stoppedFuture, nodeServerBootstrap, running, -1, new HashSet<>());
         server.open();
 
         assertTrue(server.getStarted());
@@ -123,7 +122,7 @@ class NodeServerTest {
     void runShouldHandleDuplicateCalls() throws NodeServerException {
         NodeServer server = new NodeServer(identityManager, messenger, peersManager,
                 config, serverChannel, serverBootstrap, workerGroup, bossGroup,
-                beforeCloseListeners, startedFuture, stoppedFuture, nodeServerBootstrap, false);
+                beforeCloseListeners, startedFuture, stoppedFuture, nodeServerBootstrap, false, -1, new HashSet<>());
         server.open();
 
         assertThrows(NodeServerException.class, server::open);
@@ -133,7 +132,7 @@ class NodeServerTest {
     void runShouldNotifyAboutSuccessfulStart() {
         NodeServer server = new NodeServer(identityManager, messenger, peersManager,
                 config, serverChannel, serverBootstrap, workerGroup, bossGroup,
-                beforeCloseListeners, startedFuture, stoppedFuture, nodeServerBootstrap, false);
+                beforeCloseListeners, startedFuture, stoppedFuture, nodeServerBootstrap, false, -1, new HashSet<>());
         server.openServerChannel();
 
         assertTrue(server.getStartedFuture().isDone());
@@ -143,7 +142,7 @@ class NodeServerTest {
     void runShouldNotifyAboutFailedStart() throws InterruptedException {
         NodeServer server = new NodeServer(identityManager, messenger, peersManager,
                 config, serverChannel, serverBootstrap, workerGroup, bossGroup,
-                beforeCloseListeners, startedFuture, stoppedFuture, nodeServerBootstrap, false);
+                beforeCloseListeners, startedFuture, stoppedFuture, nodeServerBootstrap, false, -1, new HashSet<>());
 
         when(nodeServerBootstrap.getChannel()).thenThrow(new InterruptedException());
         server.openServerChannel();
@@ -155,7 +154,7 @@ class NodeServerTest {
     void sendShouldPassMessageToMessenger() throws DrasylException {
         NodeServer server = new NodeServer(identityManager, messenger, peersManager,
                 config, serverChannel, serverBootstrap, workerGroup, bossGroup,
-                beforeCloseListeners, startedFuture, stoppedFuture, nodeServerBootstrap, false);
+                beforeCloseListeners, startedFuture, stoppedFuture, nodeServerBootstrap, false, -1, new HashSet<>());
 
         server.send(message);
 
@@ -166,7 +165,7 @@ class NodeServerTest {
     void getStoppedFutureShouldNotifyAboutStop() {
         NodeServer server = new NodeServer(identityManager, messenger, peersManager,
                 config, serverChannel, serverBootstrap, workerGroup, bossGroup,
-                beforeCloseListeners, startedFuture, stoppedFuture, nodeServerBootstrap, false);
+                beforeCloseListeners, startedFuture, stoppedFuture, nodeServerBootstrap, false, -1, new HashSet<>());
         server.close();
 
         assertTrue(server.getStoppedFuture().isDone());
@@ -183,7 +182,6 @@ class NodeServerTest {
         assertNotNull(server.getStartedFuture());
         assertNotNull(server.getStoppedFuture());
         assertNotNull(server.getEntryPoints());
-        assertNotNull(server.getEntryPoint());
         assertFalse(server.getStarted());
     }
 }

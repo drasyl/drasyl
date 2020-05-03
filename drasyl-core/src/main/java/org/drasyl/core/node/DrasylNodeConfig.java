@@ -22,51 +22,47 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
 import org.drasyl.core.common.tools.NetworkTool;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 public class DrasylNodeConfig {
-    private static final Logger LOG = LoggerFactory.getLogger(DrasylNodeConfig.class);
     //======================================== Config Paths ========================================
-    private static final String DRASYL_IDENTITY_PATH = "drasyl.identity.path";
-    private static final String DRASYL_USER_AGENT = "drasyl.user-agent";
-    private static final String DRASYL_ENTRY_POINTS = "drasyl.entry-points";
+    private static final String IDENTITY_PATH = "drasyl.identity.path";
+    private static final String USER_AGENT = "drasyl.user-agent";
+    private static final String MAX_CONTENT_LENGTH = "drasyl.max-content-length";
+    private static final String FLUSH_BUFFER_SIZE = "drasyl.flush-buffer-size";
+    private static final String SERVER_ENABLED = "drasyl.server.enabled";
     private static final String SERVER_BIND_HOST = "drasyl.server.bind-host";
     private static final String SERVER_BIND_PORT = "drasyl.server.bind-port";
+    private static final String SERVER_ENDPOINTS = "drasyl.server.endpoints";
     private static final String SERVER_IDLE_RETRIES = "drasyl.server.idle.retries";
     private static final String SERVER_IDLE_TIMEOUT = "drasyl.server.idle.timeout";
-    private static final String SERVER_FLUSH_BUFFER_SIZE = "drasyl.server.flush-buffer-size";
     private static final String SERVER_SSL_ENABLED = "drasyl.server.ssl.enabled";
     private static final String SERVER_SSL_PROTOCOLS = "drasyl.server.ssl.protocols";
     private static final String SERVER_MAX_HANDSHAKE_TIMEOUT = "drasyl.server.max-handshake-timeout";
     private static final String SERVER_CHANNEL_INITIALIZER = "drasyl.server.channel-initializer";
-    private static final String SERVER_MAX_CONTENT_LENGTH = "drasyl.server.max-content-length";
-    private static final String SERVER_ENTRY_POINT = "drasyl.server.entry_point";
     private final Config config;
     //======================================= Config Values ========================================
     private final Path identityPath;
     private final String userAgent;
     private final String serverBindHost;
+    private final boolean serverEnabled;
     private final int serverBindPort;
     private final int serverIdleRetries;
     private final Duration serverIdleTimeout;
-    private final int serverFlushBufferSize;
+    private final int flushBufferSize;
     private final boolean serverSSLEnabled;
     private final List<String> serverSSLProtocols;
     private final Duration serverHandshakeTimeout;
-    private final Set<URI> entryPoints;
+    private final Set<String> serverEndpoints;
     private final String serverChannelInitializer;
-    private final int serverMaxContentLength;
-    private final URI serverEntryPoint;
+    private final int maxContentLength;
 
     /**
      * Creates a new config for a drasyl node.
@@ -79,43 +75,31 @@ public class DrasylNodeConfig {
         config.checkValid(ConfigFactory.defaultReference(), "drasyl");
 
         // init
-        this.userAgent = config.getString(DRASYL_USER_AGENT);
+        this.userAgent = config.getString(USER_AGENT);
 
-        var idPath = config.getString(DRASYL_IDENTITY_PATH);
-        if (idPath.equals("")) {
-            this.identityPath = Paths.get("drasylNodeIdentity.json");
-        }
-        else {
-            this.identityPath = Paths.get(idPath);
-        }
+        var idPath = config.getString(IDENTITY_PATH);
+        this.identityPath = Paths.get(idPath);
 
         // Init server config
+        this.serverEnabled = config.getBoolean(SERVER_ENABLED);
         this.serverBindHost = config.getString(SERVER_BIND_HOST);
         this.serverBindPort = config.getInt(SERVER_BIND_PORT);
         this.serverIdleRetries = config.getInt(SERVER_IDLE_RETRIES);
         this.serverIdleTimeout = config.getDuration(SERVER_IDLE_TIMEOUT);
-        this.serverFlushBufferSize = config.getInt(SERVER_FLUSH_BUFFER_SIZE);
+        this.flushBufferSize = config.getInt(FLUSH_BUFFER_SIZE);
         this.serverHandshakeTimeout = config.getDuration(SERVER_MAX_HANDSHAKE_TIMEOUT);
-        this.entryPoints = new HashSet<>();
         this.serverChannelInitializer = config.getString(SERVER_CHANNEL_INITIALIZER);
-        this.serverMaxContentLength = (int) Math.min(config.getMemorySize(SERVER_MAX_CONTENT_LENGTH).toBytes(), Integer.MAX_VALUE);
+        this.maxContentLength = (int) Math.min(config.getMemorySize(MAX_CONTENT_LENGTH).toBytes(), Integer.MAX_VALUE);
 
         this.serverSSLEnabled = config.getBoolean(SERVER_SSL_ENABLED);
         this.serverSSLProtocols = config.getStringList(SERVER_SSL_PROTOCOLS);
-        String protocol = serverSSLEnabled ? "wss://" : "ws://";
 
-        if (config.hasPath(DRASYL_ENTRY_POINTS)) {
-            config.getStringList(DRASYL_ENTRY_POINTS).forEach(uri -> this.entryPoints.add(URI.create(uri)));
+        if (!config.getStringList(SERVER_ENDPOINTS).isEmpty()) {
+            this.serverEndpoints = new HashSet<>(config.getStringList(SERVER_ENDPOINTS));
         }
         else {
-            this.entryPoints.add(URI.create(protocol + initExternalIP() + ":22527/"));
-        }
-
-        if (config.hasPath(SERVER_ENTRY_POINT)) {
-            this.serverEntryPoint = URI.create(config.getString(SERVER_ENTRY_POINT));
-        }
-        else {
-            this.serverEntryPoint = URI.create(protocol + initExternalIP() + ":22527/");
+            String scheme = serverSSLEnabled ? "wss" : "ws";
+            this.serverEndpoints = NetworkTool.getAddresses().stream().map(a -> scheme + "://" + a + ":" + serverBindPort).collect(Collectors.toSet());
         }
     }
 
@@ -124,31 +108,32 @@ public class DrasylNodeConfig {
                      Path identityPath,
                      String userAgent,
                      String serverBindHost,
+                     boolean serverEnabled,
                      int serverBindPort,
                      int serverIdleRetries,
                      Duration serverIdleTimeout,
-                     int serverFlushBufferSize,
+                     int flushBufferSize,
                      boolean serverSSLEnabled,
                      List<String> serverSSLProtocols,
                      Duration serverHandshakeTimeout,
-                     Set<URI> entryPoints,
+                     Set<String> serverEndpoints,
                      String serverChannelInitializer,
-                     int serverMaxContentLength, URI serverEntryPoint) {
+                     int maxContentLength) {
         this.config = config;
         this.identityPath = identityPath;
         this.userAgent = userAgent;
         this.serverBindHost = serverBindHost;
+        this.serverEnabled = serverEnabled;
         this.serverBindPort = serverBindPort;
         this.serverIdleRetries = serverIdleRetries;
         this.serverIdleTimeout = serverIdleTimeout;
-        this.serverFlushBufferSize = serverFlushBufferSize;
+        this.flushBufferSize = flushBufferSize;
         this.serverSSLEnabled = serverSSLEnabled;
         this.serverSSLProtocols = serverSSLProtocols;
         this.serverHandshakeTimeout = serverHandshakeTimeout;
-        this.entryPoints = entryPoints;
+        this.serverEndpoints = serverEndpoints;
         this.serverChannelInitializer = serverChannelInitializer;
-        this.serverMaxContentLength = serverMaxContentLength;
-        this.serverEntryPoint = serverEntryPoint;
+        this.maxContentLength = maxContentLength;
     }
 
     public String getServerBindHost() {
@@ -171,21 +156,13 @@ public class DrasylNodeConfig {
         return identityPath;
     }
 
-    private String initExternalIP() {
-        String extIP = "localhost";
-        try {
-            extIP = NetworkTool.getExternalIPAddress();
-        }
-        catch (IOException e) {
-            LOG.error("External IP request unsuccessful: ", e);
-        }
-
-        return extIP;
-    }
-
     @Override
     public String toString() {
         return "NodeServerConfig [config=" + config.getConfig("drasyl") + "]";
+    }
+
+    public boolean isServerEnabled() {
+        return serverEnabled;
     }
 
     public boolean getServerSSLEnabled() {
@@ -200,8 +177,8 @@ public class DrasylNodeConfig {
         return serverIdleTimeout;
     }
 
-    public int getServerFlushBufferSize() {
-        return serverFlushBufferSize;
+    public int getFlushBufferSize() {
+        return flushBufferSize;
     }
 
     public String[] getServerSSLProtocols() {
@@ -212,19 +189,15 @@ public class DrasylNodeConfig {
         return serverHandshakeTimeout;
     }
 
-    public Set<URI> getEntryPoints() {
-        return entryPoints;
+    public Set<String> getServerEndpoints() {
+        return serverEndpoints;
     }
 
     public String getServerChannelInitializer() {
         return serverChannelInitializer;
     }
 
-    public int getServerMaxContentLength() {
-        return serverMaxContentLength;
-    }
-
-    public URI getServerEntryPoint() {
-        return serverEntryPoint;
+    public int getMaxContentLength() {
+        return maxContentLength;
     }
 }

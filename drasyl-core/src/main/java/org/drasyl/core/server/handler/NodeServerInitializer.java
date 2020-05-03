@@ -48,7 +48,7 @@ public class NodeServerInitializer extends DefaultSessionInitializer {
     private final NodeServer server;
 
     public NodeServerInitializer(NodeServer server) {
-        super(server.getConfig().getServerFlushBufferSize(), server.getConfig().getServerIdleTimeout(),
+        super(server.getConfig().getFlushBufferSize(), server.getConfig().getServerIdleTimeout(),
                 server.getConfig().getServerIdleRetries());
         this.server = server;
     }
@@ -79,7 +79,7 @@ public class NodeServerInitializer extends DefaultSessionInitializer {
     @Override
     protected void beforeMarshalStage(ChannelPipeline pipeline) {
         pipeline.addLast(new HttpServerCodec());
-        pipeline.addLast(new HttpObjectAggregator(server.getConfig().getServerMaxContentLength()));
+        pipeline.addLast(new HttpObjectAggregator(65536));
         pipeline.addLast(new WebSocketServerCompressionHandler());
         pipeline.addLast(new WebSocketMissingUpgradeErrorPageHandler(server.getMyIdentity()));
         pipeline.addLast(new WebSocketServerProtocolHandler("/", null, true));

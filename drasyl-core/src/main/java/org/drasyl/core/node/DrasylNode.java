@@ -132,11 +132,13 @@ public abstract class DrasylNode {
 
             // FIXME: unregister from super peer first (if registered)...
 
-            // ...then shut down the local server...
-            LOG.info("Stop Server at {}:{}", config.getServerBindHost(), config.getServerBindPort());
-            server.close();
-            server.awaitClose();
-            LOG.info("Server stopped at {}:{}", config.getServerBindHost(), config.getServerBindPort());
+            if (config.isServerEnabled()) {
+                // ...then shut down the local server...
+                LOG.info("Stop Server listening at {}:{}", config.getServerBindHost(), server.getPort());
+                server.close();
+                server.awaitClose();
+                LOG.info("Server stopped", config.getServerBindHost());
+            }
 
             // shutdown sequence completed
             onEvent(new Event(NODE_NORMAL_TERMINATION, new Node(identityManager.getIdentity())));
@@ -158,10 +160,13 @@ public abstract class DrasylNode {
             LOG.info("Using Identity '{}'", identityManager.getIdentity());
             Sentry.getContext().setUser(new User(identityManager.getIdentity().getId(), null, null, null));
 
-            // ...then the local server may have to be started so that the node can react to incoming messages...
-            server.open();
-            server.awaitOpen();
-            LOG.info("Server started at {}:{}", config.getServerBindHost(), config.getServerBindPort());
+            if (config.isServerEnabled()) {
+                // ...then the local server may have to be started so that the node can react to incoming messages...
+                LOG.info("Start Server");
+                server.open();
+                server.awaitOpen();
+                LOG.info("Server is now listening at {}:{}", config.getServerBindHost(), server.getPort());
+            }
 
             // FIXME: ...last, the server should register with a super peer if configured
 
