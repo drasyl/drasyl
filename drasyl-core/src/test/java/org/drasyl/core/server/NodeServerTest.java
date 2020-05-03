@@ -172,7 +172,7 @@ class NodeServerTest {
 
     @Test
     void correctObjectCreation() throws DrasylException {
-        NodeServer server = new NodeServer(identityManager, messenger, peersManager);
+        NodeServer server = new NodeServer(identityManager, peersManager, messenger);
 
         assertNotNull(server.getBossGroup());
         assertNotNull(server.getConfig());

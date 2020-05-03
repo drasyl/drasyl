@@ -18,48 +18,41 @@
  */
 package org.drasyl.core.node.identity;
 
-import org.drasyl.core.models.CompressedKeyPair;
-import org.drasyl.core.models.DrasylException;
-import org.drasyl.core.node.identity.IdentityManager;
+import com.google.common.io.Files;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 
 import java.io.IOException;
+import java.nio.charset.Charset;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.verify;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 
 class IdentityManagerTest {
-
     @Test
-    public void testKeyPairCreation(@TempDir Path tempDir) throws DrasylException {
-        var keyPairFile = Paths.get(tempDir.toString(), "keyPair.json");
-        IdentityManager identityManager1 = new IdentityManager(keyPairFile);
-        CompressedKeyPair keyPair = identityManager1.getKeyPair();
-        IdentityManager identityManager2 = new IdentityManager(keyPairFile);
+    public void loadOrCreateIdentityShouldLoadIdentityIfFileIsPresent(@TempDir Path dir) throws IOException, IdentityManagerException {
+        // create existing file with identity
+        Path path = Paths.get(dir.toString(), "my-identity.json");
+        Files.write("{\n" +
+                "  \"publicKey\" : \"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\n" +
+                "  \"privateKey\" : \"0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d\"\n" +
+                "}", path.toFile(), Charset.defaultCharset());
 
-        assertTrue(keyPairFile.toFile().exists());
-        assertEquals(keyPair, identityManager2.getKeyPair());
-        assertEquals(identityManager1.getIdentity(), identityManager2.getIdentity());
+        IdentityManager identityManager = new IdentityManager(path);
+        identityManager.loadOrCreateIdentity();
+
+        assertEquals(Identity.of("0229041b27"), identityManager.getIdentity());
     }
 
     @Test
-    public void shouldFailOnNonExistingPath(@TempDir Path tempDir) throws IOException, DrasylException {
-        var invalidFile = Paths.get(tempDir.toString(), "keyPair.json").toFile();
-        invalidFile.createNewFile();
-        assertThrows(DrasylException.class, () -> new IdentityManager(Path.of("/to/something/that/doesnt/exist/file.json")));
-        assertThrows(DrasylException.class, () -> new IdentityManager(invalidFile.toPath()));
-    }
+    public void loadOrCreateIdentityShouldCreateNewIdentityIfFileIsAbsent(@TempDir Path dir) throws IdentityManagerException {
+        Path path = Paths.get(dir.toString(), "my-identity.json");
 
-    @Test
-    void renew(@TempDir Path tempDir) throws DrasylException {
-        var keyPairFile = Paths.get(tempDir.toString(), "keyPair.json");
-        IdentityManager identityManager = new IdentityManager(keyPairFile);
-        CompressedKeyPair keyPair = identityManager.getKeyPair();
-        identityManager.renew();
+        IdentityManager identityManager = new IdentityManager(path);
+        identityManager.loadOrCreateIdentity();
 
-        assertNotEquals(keyPair, identityManager.getKeyPair());
+        assertNotNull(identityManager.getIdentity());
     }
 }

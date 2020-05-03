@@ -80,7 +80,7 @@ public class ClientIT {
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
         identityManager = mock(IdentityManager.class);
         PeersManager peersManager = new PeersManager();
-        Messenger messenger = new Messenger(node, identityManager, peersManager);
+        Messenger messenger = new Messenger(identityManager, peersManager);
 
         DrasylNodeConfig config = new DrasylNodeConfig(
                 ConfigFactory.load("configs/ClientTest.conf"));

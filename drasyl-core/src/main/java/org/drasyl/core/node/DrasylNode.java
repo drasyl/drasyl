@@ -25,6 +25,7 @@ import org.drasyl.core.common.messages.Message;
 import org.drasyl.core.models.Code;
 import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.models.Event;
+import org.drasyl.core.models.Node;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.node.identity.IdentityManager;
 import org.drasyl.core.server.NodeServer;
@@ -34,14 +35,22 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Properties;
 
+import static org.drasyl.core.models.Code.*;
+
 public abstract class DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);
+
+    static {
+        // https://github.com/netty/netty/issues/7817
+        System.setProperty("io.netty.tryReflectionSetAccessible", "true");
+    }
+
     private final DrasylNodeConfig config;
-    private IdentityManager identityManager;
-    private PeersManager peersManager;
+    private final IdentityManager identityManager;
+    private final Messenger messenger;
+    private final NodeServer server;
+    private final PeersManager peersManager;
     private boolean isStarted;
-    private NodeServer server;
-    private Messenger messenger;
 
     public DrasylNode() throws DrasylException {
         this(ConfigFactory.load());
@@ -50,7 +59,10 @@ public abstract class DrasylNode {
     public DrasylNode(Config config) throws DrasylException {
         try {
             this.config = new DrasylNodeConfig(config);
+            this.identityManager = new IdentityManager(this.config.getIdentityPath());
             this.peersManager = new PeersManager();
+            this.messenger = new Messenger(identityManager, peersManager);
+            this.server = new NodeServer(identityManager, peersManager, messenger);
         }
         catch (ConfigException e) {
             throw new DrasylException("Couldn't load config: \n" + e.getMessage());
@@ -67,6 +79,10 @@ public abstract class DrasylNode {
         this.isStarted = isStarted;
         this.server = server;
         this.messenger = messenger;
+    }
+
+    public synchronized void send(String recipient, byte[] payload) throws DrasylException {
+        send(Identity.of(recipient), payload);
     }
 
     /**
@@ -87,14 +103,16 @@ public abstract class DrasylNode {
      */
     public synchronized void send(Identity recipient, byte[] payload) throws DrasylException {
         if (identityManager.getIdentity().equals(recipient)) {
-            onEvent(new Event(Code.MESSAGE, null, null, payload));
+            onEvent(new Event(Code.MESSAGE, payload));
         }
         else {
             messenger.send(new Message(identityManager.getIdentity(), recipient, payload));
         }
     }
 
-    public synchronized void send(String recipient, byte[] payload) throws DrasylException {
+    public abstract void onEvent(Event event);
+
+    public synchronized void send(String recipient, String payload) throws DrasylException {
         send(Identity.of(recipient), payload);
     }
 
@@ -102,28 +120,51 @@ public abstract class DrasylNode {
         send(recipient, payload.getBytes());
     }
 
-    public synchronized void send(String recipient, String payload) throws DrasylException {
-        send(Identity.of(recipient), payload);
+    public void shutdown() throws DrasylException {
+        if (isStarted) {
+            LOG.info("Stop drasyl Node with Identity {}", identityManager.getIdentity());
+
+            // mark the node as offline, so that the local application will (hopefully) no longer try to send messages
+            onEvent(new Event(NODE_OFFLINE, new Node(identityManager.getIdentity())));
+
+            // FIXME: unregister from super peer first (if registered)...
+
+            // ...then shut down the local server...
+            LOG.info("Stop Server at {}:{}", config.getServerBindHost(), config.getServerBindPort());
+            server.close();
+            server.awaitClose();
+            LOG.info("Server stopped at {}:{}", config.getServerBindHost(), config.getServerBindPort());
+
+            // shutdown sequence completed
+            onEvent(new Event(NODE_NORMAL_TERMINATION, new Node(identityManager.getIdentity())));
+
+            LOG.info("drasyl Node stopped");
+        }
+        else {
+            throw new DrasylException("This node is already shut down.");
+        }
     }
 
-    public abstract void onEvent(Event event);
-
     public void start() throws DrasylException {
-        // https://github.com/netty/netty/issues/7817
-        System.setProperty("io.netty.tryReflectionSetAccessible", "true");
-
         if (!isStarted) {
-            LOG.info("Start drasyl Node (v.{})", DrasylNode.getVersion());
             isStarted = true;
-            identityManager = new IdentityManager(config.getIdentityPath());
-            LOG.debug("Using identity '{}'", identityManager.getIdentity());
+            LOG.info("Starting drasyl Node (v.{})...", DrasylNode.getVersion());
 
-            messenger = new Messenger(this, identityManager, peersManager);
+            // first of all it must be ensured that the node has an identity...
+            identityManager.loadOrCreateIdentity();
+            LOG.info("Using Identity '{}'", identityManager.getIdentity());
 
-            server = new NodeServer(identityManager, messenger, peersManager);
+            // ...then the local server may have to be started so that the node can react to incoming messages...
             server.open();
             server.awaitOpen();
             LOG.info("Server is listening at {}:{}", config.getServerBindHost(), server.getPort());
+
+            // FIXME: ...last, the server should register with a super peer if configured
+
+            // start sequence completed. node should now (hopefully) be online
+            onEvent(new Event(NODE_ONLINE, new Node(identityManager.getIdentity())));
+
+            LOG.info("drasyl Node with Identity {} started", identityManager.getIdentity());
         }
         else {
             throw new DrasylException("This node is already started.");
@@ -131,7 +172,8 @@ public abstract class DrasylNode {
     }
 
     /**
-     * Returns the version of the bide. If this is not possible, <code>null</code> is returned.
+     * Returns the version of the node. If the version could not be read, <code>null</code> is
+     * returned.
      */
     public static String getVersion() {
         final Properties properties = new Properties();
@@ -142,53 +184,5 @@ public abstract class DrasylNode {
         catch (IOException e) {
             return null;
         }
-    }
-
-    public static void main(String[] args) throws DrasylException {
-        // create node
-        DrasylNode node = new DrasylNode() {
-            @Override
-            public void onEvent(Event event) {
-                System.out.println("Event received: " + event);
-
-                switch (event.getCode()) {
-                    case NODE_ONLINE:
-                        System.out.println("Node is online with the following Id: " + event.getNode().getAddress());
-                        break;
-                    case NODE_OFFLINE:
-                        System.out.println("Node is offline");
-                        break;
-                    case PEER_P2P:
-                        System.out.println("Node can now sendMSG messages directly to " + event.getPeer().getAddress());
-                        break;
-                    case PEER_RELAY:
-                        System.out.println("Node can now sendMSG messages via a relay to " + event.getPeer().getAddress());
-                        break;
-                }
-            }
-        };
-
-//        // variante 1: Warte synchron bis node sendebereit ist und schicke dann nachricht
-//        while (!node.isOnline()) {
-//            Thread.sleep(1 * 1000L);
-//        }
-//
-//        Message message = null;
-//        node.sendMSG(message);
-//
-//        // variante 2: Warte asynchron bis ndoe sendebereit ist und schicke dann nachricht
-//        node.doOnOnline(() -> {
-//            Message message = null;
-//            node.sendMSG(message);
-//        });
-
-        node.start();
-    }
-
-    public void shutdown() throws DrasylException {
-        LOG.info("Stop Server listening at {}:{}");
-        server.close();
-        server.awaitClose();
-        LOG.info("Server stopped");
     }
 }
