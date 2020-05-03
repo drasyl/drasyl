@@ -5,7 +5,7 @@ ADD ./drasyl-*.zip .
 RUN unzip -qq ./drasyl-*.zip && \
     rm ./drasyl-*.zip
 
-FROM openjdk:11-jre-slim
+FROM kroeb/slim-jre-11-with-curl:latest
 
 RUN mkdir /usr/local/share/drasyl && \
     ln -s ../share/drasyl/bin/drasyl /usr/local/bin/drasyl
