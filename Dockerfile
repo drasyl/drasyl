@@ -5,18 +5,17 @@ ADD ./drasyl-*.zip .
 RUN unzip -qq ./drasyl-*.zip && \
     rm ./drasyl-*.zip
 
-FROM kroeb/slim-jre-11-with-curl:latest
+FROM git.informatik.uni-hamburg.de:4567/sane/sane-build-images:jre-11-curl-7.64.0
 
 RUN mkdir /usr/local/share/drasyl && \
     ln -s ../share/drasyl/bin/drasyl /usr/local/bin/drasyl
 
 COPY --from=build ./drasyl-* /usr/local/share/drasyl/
 
-# http
 EXPOSE 22527
 
 ENTRYPOINT ["drasyl"]
 
 HEALTHCHECK --start-period=15s \
     CMD curl http://localhost:22527 2>&1 \
-        | grep -q 'not a WebSocket handshake request: missing upgrade'
+        | grep -q 'Not a WebSocket Handshake Request: Missing Upgrade'

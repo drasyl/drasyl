@@ -34,7 +34,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * This class provides the identity of the  node. This is required for signing and encryption of
+ * This class provides the identity of the node. This is required for signing and encryption of
  * sent messages.
  */
 public class IdentityManager {

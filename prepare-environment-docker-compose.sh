@@ -14,6 +14,8 @@ services:
     container_name: $CI_PROJECT_NAME-$CI_PROJECT_ID-$CI_COMMIT_REF_SLUG
     environment:
       CONFIG_FORCE_drasyl_entry__points_0: wss://${APP_DEPLOY_HOST}
+      SENTRY_DNS: ${SENTRY_DNS}
+      SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT}
     networks:
       - default
       - proxy
