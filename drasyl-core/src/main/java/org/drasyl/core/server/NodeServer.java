@@ -34,11 +34,13 @@ import org.drasyl.core.node.PeerInformation;
 import org.drasyl.core.node.PeersManager;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.node.identity.IdentityManager;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -232,7 +234,7 @@ public class NodeServer implements AutoCloseable {
             InetSocketAddress socketAddress = (InetSocketAddress) serverChannel.localAddress();
             actualPort = socketAddress.getPort();
             actualEndpoints = config.getServerEndpoints().stream()
-                    .map(a -> URI.create(a.replace(":" + config.getServerBindPort(), ":" + getPort())))
+                    .map(a -> overridePort(URI.create(a), getPort()))
                     .collect(Collectors.toSet());
 
             startedFuture.complete(null);
@@ -244,6 +246,23 @@ public class NodeServer implements AutoCloseable {
         }
         finally {
             close();
+        }
+    }
+
+    /**
+     * This method sets the port in <code>uri</code> to <code>port</code> and returns the resulting
+     * URI.
+     *
+     * @param uri
+     * @param port
+     * @return
+     */
+    private URI overridePort(URI uri, int port) {
+        try {
+            return new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), port, uri.getPath(), uri.getQuery(), uri.getFragment());
+        }
+        catch (URISyntaxException e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
         }
     }
 
