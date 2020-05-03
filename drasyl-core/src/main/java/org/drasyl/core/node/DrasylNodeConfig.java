@@ -33,20 +33,20 @@ import java.util.stream.Collectors;
 
 public class DrasylNodeConfig {
     //======================================== Config Paths ========================================
-    private static final String DRASYL_IDENTITY_PATH = "drasyl.identity.path";
-    private static final String DRASYL_USER_AGENT = "drasyl.user-agent";
+    private static final String IDENTITY_PATH = "drasyl.identity.path";
+    private static final String USER_AGENT = "drasyl.user-agent";
+    private static final String MAX_CONTENT_LENGTH = "drasyl.max-content-length";
+    private static final String FLUSH_BUFFER_SIZE = "drasyl.flush-buffer-size";
     private static final String SERVER_ENABLED = "drasyl.server.enabled";
     private static final String SERVER_BIND_HOST = "drasyl.server.bind-host";
     private static final String SERVER_BIND_PORT = "drasyl.server.bind-port";
-    private static final String DRASYL_SERVER_ENDPOINTS = "drasyl.server.endpoints";
+    private static final String SERVER_ENDPOINTS = "drasyl.server.endpoints";
     private static final String SERVER_IDLE_RETRIES = "drasyl.server.idle.retries";
     private static final String SERVER_IDLE_TIMEOUT = "drasyl.server.idle.timeout";
-    private static final String SERVER_FLUSH_BUFFER_SIZE = "drasyl.server.flush-buffer-size";
     private static final String SERVER_SSL_ENABLED = "drasyl.server.ssl.enabled";
     private static final String SERVER_SSL_PROTOCOLS = "drasyl.server.ssl.protocols";
     private static final String SERVER_MAX_HANDSHAKE_TIMEOUT = "drasyl.server.max-handshake-timeout";
     private static final String SERVER_CHANNEL_INITIALIZER = "drasyl.server.channel-initializer";
-    private static final String SERVER_MAX_CONTENT_LENGTH = "drasyl.server.max-content-length";
     private final Config config;
     //======================================= Config Values ========================================
     private final Path identityPath;
@@ -56,13 +56,13 @@ public class DrasylNodeConfig {
     private final int serverBindPort;
     private final int serverIdleRetries;
     private final Duration serverIdleTimeout;
-    private final int serverFlushBufferSize;
+    private final int flushBufferSize;
     private final boolean serverSSLEnabled;
     private final List<String> serverSSLProtocols;
     private final Duration serverHandshakeTimeout;
     private final Set<String> serverEndpoints;
     private final String serverChannelInitializer;
-    private final int serverMaxContentLength;
+    private final int maxContentLength;
 
     /**
      * Creates a new config for a drasyl node.
@@ -75,9 +75,9 @@ public class DrasylNodeConfig {
         config.checkValid(ConfigFactory.defaultReference(), "drasyl");
 
         // init
-        this.userAgent = config.getString(DRASYL_USER_AGENT);
+        this.userAgent = config.getString(USER_AGENT);
 
-        var idPath = config.getString(DRASYL_IDENTITY_PATH);
+        var idPath = config.getString(IDENTITY_PATH);
         this.identityPath = Paths.get(idPath);
 
         // Init server config
@@ -86,16 +86,16 @@ public class DrasylNodeConfig {
         this.serverBindPort = config.getInt(SERVER_BIND_PORT);
         this.serverIdleRetries = config.getInt(SERVER_IDLE_RETRIES);
         this.serverIdleTimeout = config.getDuration(SERVER_IDLE_TIMEOUT);
-        this.serverFlushBufferSize = config.getInt(SERVER_FLUSH_BUFFER_SIZE);
+        this.flushBufferSize = config.getInt(FLUSH_BUFFER_SIZE);
         this.serverHandshakeTimeout = config.getDuration(SERVER_MAX_HANDSHAKE_TIMEOUT);
         this.serverChannelInitializer = config.getString(SERVER_CHANNEL_INITIALIZER);
-        this.serverMaxContentLength = (int) Math.min(config.getMemorySize(SERVER_MAX_CONTENT_LENGTH).toBytes(), Integer.MAX_VALUE);
+        this.maxContentLength = (int) Math.min(config.getMemorySize(MAX_CONTENT_LENGTH).toBytes(), Integer.MAX_VALUE);
 
         this.serverSSLEnabled = config.getBoolean(SERVER_SSL_ENABLED);
         this.serverSSLProtocols = config.getStringList(SERVER_SSL_PROTOCOLS);
 
-        if (!config.getStringList(DRASYL_SERVER_ENDPOINTS).isEmpty()) {
-            this.serverEndpoints = new HashSet<>(config.getStringList(DRASYL_SERVER_ENDPOINTS));
+        if (!config.getStringList(SERVER_ENDPOINTS).isEmpty()) {
+            this.serverEndpoints = new HashSet<>(config.getStringList(SERVER_ENDPOINTS));
         }
         else {
             String scheme = serverSSLEnabled ? "wss" : "ws";
@@ -112,13 +112,13 @@ public class DrasylNodeConfig {
                      int serverBindPort,
                      int serverIdleRetries,
                      Duration serverIdleTimeout,
-                     int serverFlushBufferSize,
+                     int flushBufferSize,
                      boolean serverSSLEnabled,
                      List<String> serverSSLProtocols,
                      Duration serverHandshakeTimeout,
                      Set<String> serverEndpoints,
                      String serverChannelInitializer,
-                     int serverMaxContentLength) {
+                     int maxContentLength) {
         this.config = config;
         this.identityPath = identityPath;
         this.userAgent = userAgent;
@@ -127,13 +127,13 @@ public class DrasylNodeConfig {
         this.serverBindPort = serverBindPort;
         this.serverIdleRetries = serverIdleRetries;
         this.serverIdleTimeout = serverIdleTimeout;
-        this.serverFlushBufferSize = serverFlushBufferSize;
+        this.flushBufferSize = flushBufferSize;
         this.serverSSLEnabled = serverSSLEnabled;
         this.serverSSLProtocols = serverSSLProtocols;
         this.serverHandshakeTimeout = serverHandshakeTimeout;
         this.serverEndpoints = serverEndpoints;
         this.serverChannelInitializer = serverChannelInitializer;
-        this.serverMaxContentLength = serverMaxContentLength;
+        this.maxContentLength = maxContentLength;
     }
 
     public String getServerBindHost() {
@@ -177,8 +177,8 @@ public class DrasylNodeConfig {
         return serverIdleTimeout;
     }
 
-    public int getServerFlushBufferSize() {
-        return serverFlushBufferSize;
+    public int getFlushBufferSize() {
+        return flushBufferSize;
     }
 
     public String[] getServerSSLProtocols() {
@@ -197,7 +197,7 @@ public class DrasylNodeConfig {
         return serverChannelInitializer;
     }
 
-    public int getServerMaxContentLength() {
-        return serverMaxContentLength;
+    public int getMaxContentLength() {
+        return maxContentLength;
     }
 }
