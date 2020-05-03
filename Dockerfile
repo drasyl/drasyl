@@ -5,7 +5,7 @@ ADD ./drasyl-*.zip .
 RUN unzip -qq ./drasyl-*.zip && \
     rm ./drasyl-*.zip
 
-FROM kroeb/slim-jre-11-with-curl:latest
+FROM git.informatik.uni-hamburg.de:4567/sane/sane-build-images:jre-11-curl-7.64.0
 
 RUN mkdir /usr/local/share/drasyl && \
     ln -s ../share/drasyl/bin/drasyl /usr/local/bin/drasyl
