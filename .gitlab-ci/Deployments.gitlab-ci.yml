@@ -44,7 +44,7 @@ deploy_review:
   cache: {}
 
 stop_review:
-  <<: *deploy-base
+  <<: *stop-base
   variables:
     GIT_STRATEGY: none
     APP_IMAGE: "${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_SLUG}"
