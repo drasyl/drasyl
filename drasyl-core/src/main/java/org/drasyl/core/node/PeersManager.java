@@ -111,6 +111,13 @@ public class PeersManager {
         try {
             lock.writeLock().lock();
 
+            if (superPeer == identity) {
+                throw new IllegalArgumentException("Peer is cannot be removed. It is defined as Super Peer");
+            }
+            if (children.contains(identity)) {
+                throw new IllegalArgumentException("Peer is cannot be removed. It is defined as Children");
+            }
+
             return peers.remove(identity);
         }
         finally {
@@ -124,8 +131,19 @@ public class PeersManager {
         try {
             lock.writeLock().lock();
 
-            for (int i = 0; i < identities.length; i++) {
-                peers.remove(identities[i]);
+            // validate
+            for (Identity identity : identities) {
+                if (superPeer == identity) {
+                    throw new IllegalArgumentException("Peer is cannot be removed. It is defined as Super Peer");
+                }
+                if (children.contains(identity)) {
+                    throw new IllegalArgumentException("Peer is cannot be removed. It is defined as Children");
+                }
+            }
+
+            // remove
+            for (Identity identity : identities) {
+                peers.remove(identity);
             }
         }
         finally {
@@ -157,13 +175,21 @@ public class PeersManager {
         }
     }
 
-    public boolean addChildren(Identity identity) {
-        requireNonNull(identity);
+    public boolean addChildren(Identity... identities) {
+        requireNonNull(identities);
 
         try {
             lock.writeLock().lock();
 
-            return children.add(identity);
+            // validate
+            for (Identity identity : identities) {
+                if (!peers.containsKey(identity)) {
+                    throw new IllegalArgumentException("Peer cannot be set as a child. There are no Peer Information available");
+                }
+            }
+
+            // add
+            return children.addAll(List.of(identities));
         }
         finally {
             lock.writeLock().unlock();
@@ -218,13 +244,17 @@ public class PeersManager {
         }
     }
 
-    public void setSuperPeer(Identity superPeer) {
-        requireNonNull(superPeer);
+    public void setSuperPeer(Identity identity) {
+        requireNonNull(identity);
 
         try {
             lock.writeLock().lock();
 
-            this.superPeer = superPeer;
+            if (!peers.containsKey(identity)) {
+                throw new IllegalArgumentException("Peer cannot be set as a Super Peer. There are no Peer Information available");
+            }
+
+            this.superPeer = identity;
         }
         finally {
             lock.writeLock().unlock();

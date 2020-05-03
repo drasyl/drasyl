@@ -100,7 +100,6 @@ class PeersManagerTest {
         verify(writeLock).unlock();
     }
 
-    // FIXME: reject, if peer still has a relation
     @Test
     void removePeerShouldRemovePeerFromListOfKnownPeers() {
         PeersManager manager = new PeersManager(lock, peers, children, superPeer);
@@ -112,7 +111,24 @@ class PeersManagerTest {
         verify(writeLock).unlock();
     }
 
-    // FIXME: reject, if peer still has a relation
+    @Test
+    void removePeerShouldThrowExceptionIfGivenPeerIsSuperPeer() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            PeersManager manager = new PeersManager(lock, peers, children, superPeer);
+
+            manager.removePeer(superPeer);
+        });
+    }
+
+    @Test
+    void removePeerShouldThrowExceptionIfGivenPeerIsChildren() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            PeersManager manager = new PeersManager(lock, peers, Set.of(identity), superPeer);
+
+            manager.removePeer(identity);
+        });
+    }
+
     @Test
     void removePeersShouldRemoveGivenPeersFromListOfKnownPeers() {
         PeersManager manager = new PeersManager(lock, peers, children, superPeer);
@@ -122,6 +138,24 @@ class PeersManagerTest {
         verify(peers).remove(identity);
         verify(writeLock).lock();
         verify(writeLock).unlock();
+    }
+
+    @Test
+    void removePeersShouldThrowExceptionIfGivenPeersContainSuperPeer() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            PeersManager manager = new PeersManager(lock, peers, children, superPeer);
+
+            manager.removePeers(superPeer);
+        });
+    }
+
+    @Test
+    void removePeersShouldThrowExceptionIfGivenPeersContainChildren() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            PeersManager manager = new PeersManager(lock, peers, Set.of(identity), superPeer);
+
+            manager.removePeers(identity);
+        });
     }
 
     @Test
@@ -154,16 +188,24 @@ class PeersManagerTest {
         verify(readLock).unlock();
     }
 
-    // FIXME: reject if no information on the peer is available
     @Test
     void addChildrenShouldAddChildrenToListOfChildren() {
-        PeersManager manager = new PeersManager(lock, peers, children, superPeer);
+        PeersManager manager = new PeersManager(lock, Map.of(identity, peer), children, superPeer);
 
         manager.addChildren(identity);
 
-        verify(children).add(identity);
+        verify(children).addAll(List.of(identity));
         verify(writeLock).lock();
         verify(writeLock).unlock();
+    }
+
+    @Test
+    void addChildrenShouldThrowExceptionWhenChildrenIsNotKnown() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            PeersManager manager = new PeersManager(lock, Map.of(), children, superPeer);
+
+            manager.addChildren(identity);
+        });
     }
 
     @Test
@@ -204,7 +246,6 @@ class PeersManagerTest {
         verify(readLock).unlock();
     }
 
-    // FIXME: reject if no information on the peer is available
     @Test
     void setSuperPeerShouldSetGivenIdentityAsSuperPeer() {
         PeersManager manager = new PeersManager(lock, Map.of(superPeer, peer), children, null);
@@ -214,6 +255,15 @@ class PeersManagerTest {
         assertEquals(superPeer, manager.getSuperPeer());
         verify(readLock).lock();
         verify(readLock).unlock();
+    }
+
+    @Test
+    void setSuperPeerShouldThrowExceptionWhenSuperPeerIsNotKnown() {
+        assertThrows(IllegalArgumentException.class, () -> {
+            PeersManager manager = new PeersManager(lock, Map.of(), children, superPeer);
+
+            manager.setSuperPeer(identity);
+        });
     }
 
     @Test
