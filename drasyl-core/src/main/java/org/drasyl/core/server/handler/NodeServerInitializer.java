@@ -79,7 +79,7 @@ public class NodeServerInitializer extends DefaultSessionInitializer {
     @Override
     protected void beforeMarshalStage(ChannelPipeline pipeline) {
         pipeline.addLast(new HttpServerCodec());
-        pipeline.addLast(new HttpObjectAggregator(server.getConfig().getMaxContentLength()));
+        pipeline.addLast(new HttpObjectAggregator(65536));
         pipeline.addLast(new WebSocketServerCompressionHandler());
         pipeline.addLast(new WebSocketMissingUpgradeErrorPageHandler(server.getMyIdentity()));
         pipeline.addLast(new WebSocketServerProtocolHandler("/", null, true));
