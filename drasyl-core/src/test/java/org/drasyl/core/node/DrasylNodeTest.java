@@ -23,6 +23,8 @@ import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.models.Event;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.models.Node;
+import org.drasyl.core.node.identity.IdentityManager;
+import org.drasyl.core.server.NodeServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -62,7 +64,7 @@ public class DrasylNodeTest {
         });
         drasylNode.start();
 
-        verify(drasylNode).onEvent(new Event(NODE_ONLINE, node, null, new byte[]{}));
+        verify(drasylNode).onEvent(new Event(NODE_ONLINE, node));
     }
 
     @Test
@@ -76,7 +78,7 @@ public class DrasylNodeTest {
         });
         drasylNode.start();
 
-        verify(drasylNode).onEvent(new Event(NODE_IDENTITY_COLLISION, node, null, new byte[]{}));
+        verify(drasylNode).onEvent(new Event(NODE_IDENTITY_COLLISION, node));
     }
 
     @Test
@@ -104,7 +106,7 @@ public class DrasylNodeTest {
         });
         drasylNode.shutdown();
 
-        verify(drasylNode).onEvent(new Event(NODE_NORMAL_TERMINATION, node, null, new byte[]{}));
+        verify(drasylNode).onEvent(new Event(NODE_NORMAL_TERMINATION, node));
     }
 
     @Test
@@ -118,7 +120,7 @@ public class DrasylNodeTest {
         });
         drasylNode.shutdown();
 
-        verify(drasylNode).onEvent(new Event(NODE_DEREGISTER_FAILED, node, null, new byte[]{}));
+        verify(drasylNode).onEvent(new Event(NODE_DEREGISTER_FAILED, node));
     }
 
     @Test
@@ -159,7 +161,7 @@ public class DrasylNodeTest {
             }
         });
 
-        verify(drasylNode).onEvent(new Event(NODE_OFFLINE, node, null, new byte[]{}));
+        verify(drasylNode).onEvent(new Event(NODE_OFFLINE, node));
     }
 
     @Test
@@ -172,7 +174,7 @@ public class DrasylNodeTest {
             }
         });
 
-        verify(drasylNode).onEvent(new Event(NODE_ONLINE, node, null, new byte[]{}));
+        verify(drasylNode).onEvent(new Event(NODE_ONLINE, node));
     }
 
     @Test
@@ -185,7 +187,7 @@ public class DrasylNodeTest {
             }
         });
 
-        verify(drasylNode).onEvent(new Event(NODE_UNRECOVERABLE_ERROR, node, null, new byte[]{}));
+        verify(drasylNode).onEvent(new Event(NODE_UNRECOVERABLE_ERROR, node));
     }
 
     @Test
@@ -198,7 +200,7 @@ public class DrasylNodeTest {
             }
         });
 
-        verify(drasylNode).onEvent(new Event(MESSAGE, null, null, message));
+        verify(drasylNode).onEvent(new Event(MESSAGE, message));
     }
 
     @Test

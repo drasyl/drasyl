@@ -34,6 +34,39 @@ public class Event {
         this.message = message;
     }
 
+    public Event(Code code, Node node) {
+        if (!code.isNodeEvent()) {
+            throw new IllegalArgumentException("Given code must refer to a node!");
+        }
+
+        this.code = code;
+        this.node = node;
+        peer = null;
+        message = null;
+    }
+
+    public Event(Code code, Peer peer) {
+        if (!code.isPeerEvent()) {
+            throw new IllegalArgumentException("Given code must refer to a peer!");
+        }
+
+        this.code = code;
+        node = null;
+        this.peer = peer;
+        message = null;
+    }
+
+    public Event(Code code, byte[] message) {
+        if (!code.isMessageEvent()) {
+            throw new IllegalArgumentException("Given code must refer to a message!");
+        }
+
+        this.code = code;
+        node = null;
+        peer = null;
+        this.message = message;
+    }
+
     public Code getCode() {
         return code;
     }
