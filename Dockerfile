@@ -12,11 +12,10 @@ RUN mkdir /usr/local/share/drasyl && \
 
 COPY --from=build ./drasyl-* /usr/local/share/drasyl/
 
-# http
 EXPOSE 22527
 
 ENTRYPOINT ["drasyl"]
 
 HEALTHCHECK --start-period=15s \
     CMD curl http://localhost:22527 2>&1 \
-        | grep -q 'not a WebSocket handshake request: missing upgrade'
+        | grep -q 'Not a WebSocket Handshake Request: Missing Upgrade'
