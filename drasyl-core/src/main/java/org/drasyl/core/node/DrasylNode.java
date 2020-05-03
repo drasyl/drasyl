@@ -27,6 +27,7 @@ import org.drasyl.core.common.messages.Message;
 import org.drasyl.core.models.Code;
 import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.models.Event;
+import org.drasyl.core.models.Node;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.node.identity.IdentityManager;
 import org.drasyl.core.server.NodeServer;
@@ -36,6 +37,8 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.util.Map;
 import java.util.Properties;
+
+import static org.drasyl.core.models.Code.*;
 
 public abstract class DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);
@@ -131,6 +134,10 @@ public abstract class DrasylNode {
             server.open();
             server.awaitOpen();
             LOG.info("Server started at {}:{}", config.getServerBindHost(), config.getServerBindPort());
+
+            // FIXME: connect to super peer
+
+            onEvent(new Event(NODE_ONLINE, new Node(identityManager.getIdentity())));
         }
         else {
             throw new DrasylException("This node is already started.");
@@ -197,5 +204,11 @@ public abstract class DrasylNode {
         server.close();
         server.awaitClose();
         LOG.debug("Server stopped at {}:{}", config.getServerBindHost(), config.getServerBindPort());
+
+        onEvent(new Event(NODE_OFFLINE, new Node(identityManager.getIdentity())));
+
+        // FIXME: disconnect from super peer
+
+        onEvent(new Event(NODE_NORMAL_TERMINATION, new Node(identityManager.getIdentity())));
     }
 }

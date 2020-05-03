@@ -26,6 +26,16 @@ public class Node extends AbstractNode {
         super(address);
     }
 
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        return super.equals(o);
+    }
+
     public static Node of(Identity address) {
         return new Node(address);
     }

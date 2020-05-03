@@ -16,12 +16,13 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.core.models;
 
 public enum Code {
     /**
-     * This event signals that the node has successfully registered with the super peer.
+     * This event signals that the node has successfully registered with the super peer. If a node
+     * has been configured with no super peer (e.g. if it is a root node), the event is immediately
+     * emitted.
      */
     NODE_ONLINE,
 
@@ -31,8 +32,7 @@ public enum Code {
     NODE_OFFLINE,
 
     /**
-     * This events signals that the identity is already being used by another node on the
-     * network.
+     * This events signals that the identity is already being used by another node on the network.
      */
     NODE_IDENTITY_COLLISION,
 
@@ -64,5 +64,35 @@ public enum Code {
     /**
      * This event signals that the node has received a message addressed to it.
      */
-    MESSAGE
+    MESSAGE;
+
+    /**
+     * Returns <code>true</code> if this code refers to a node. Otherwise <code>false</code> is
+     * returned.
+     *
+     * @return
+     */
+    public boolean isNodeEvent() {
+        return this.name().startsWith("NODE_");
+    }
+
+    /**
+     * Returns <code>true</code> if this code refers to a peer. Otherwise <code>false</code> is
+     * returned.
+     *
+     * @return
+     */
+    public boolean isPeerEvent() {
+        return this.name().startsWith("PEER_");
+    }
+
+    /**
+     * Returns <code>true</code> if this code refers to a message. Otherwise <code>false</code> is
+     * returned.
+     *
+     * @return
+     */
+    public boolean isMessageEvent() {
+        return this.name().startsWith("MESSAGE_");
+    }
 }
