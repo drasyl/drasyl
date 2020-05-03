@@ -77,7 +77,6 @@ class PeersManagerTest {
         verify(readLock).unlock();
     }
 
-    // TODO: we should discuss whether we should allow or deny overwriting existing peer information. or should information even be mixed?
     @Test
     void addPeerShouldAddPeerToListOfKnownPeers() {
         PeersManager manager = new PeersManager(lock, peers, children, superPeer);
