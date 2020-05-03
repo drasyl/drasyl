@@ -69,6 +69,8 @@ public class PeersManager {
     }
 
     public boolean isPeer(Identity identity) {
+        requireNonNull(identity);
+
         try {
             lock.readLock().lock();
 
@@ -82,6 +84,7 @@ public class PeersManager {
     public void addPeer(Identity identity,
                         PeerInformation peerInformation) {
         requireNonNull(identity);
+        requireNonNull(peerInformation);
 
         try {
             lock.writeLock().lock();
