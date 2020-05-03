@@ -113,7 +113,7 @@ public abstract class DrasylNode {
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
 
         if (!isStarted) {
-            LOG.info("Try starting a drasyl node (v.{})...", DrasylNode.getVersion());
+            LOG.info("Start drasyl Node (v.{})", DrasylNode.getVersion());
             isStarted = true;
             identityManager = new IdentityManager(config.getIdentityPath());
             LOG.debug("Using identity '{}'", identityManager.getIdentity());
@@ -123,7 +123,7 @@ public abstract class DrasylNode {
             server = new NodeServer(identityManager, messenger, peersManager);
             server.open();
             server.awaitOpen();
-            LOG.info("Server started at {}:{}", config.getServerBindHost(), config.getServerBindPort());
+            LOG.info("Server is listening at {}:{}", config.getServerBindHost(), server.getPort());
         }
         else {
             throw new DrasylException("This node is already started.");
@@ -186,9 +186,9 @@ public abstract class DrasylNode {
     }
 
     public void shutdown() throws DrasylException {
-        LOG.info("Stop Server at {}:{}", config.getServerBindHost(), config.getServerBindPort());
+        LOG.info("Stop Server listening at {}:{}");
         server.close();
         server.awaitClose();
-        LOG.debug("Server stopped at {}:{}", config.getServerBindHost(), config.getServerBindPort());
+        LOG.info("Server stopped");
     }
 }

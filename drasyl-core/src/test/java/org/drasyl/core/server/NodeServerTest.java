@@ -36,7 +36,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
 import java.util.List;
@@ -95,8 +94,7 @@ class NodeServerTest {
         when(serverBootstrap.childOption(any(), any())).thenReturn(serverBootstrap);
         when(bossGroup.shutdownGracefully()).thenReturn(future);
         when(workerGroup.shutdownGracefully()).thenReturn(future);
-        when(config.getEntryPoints()).thenReturn(Set.of(new URI("ws://localhost:22527/")));
-        when(config.getServerEntryPoint()).thenReturn(new URI("ws://localhost:22527/"));
+        when(config.getServerEndpoints()).thenReturn(Set.of("ws://localhost:22527/"));
         when(nodeServerBootstrap.getChannel()).thenReturn(serverChannel);
         when(serverChannel.closeFuture()).thenReturn(channelFuture);
 
@@ -183,7 +181,6 @@ class NodeServerTest {
         assertNotNull(server.getStartedFuture());
         assertNotNull(server.getStoppedFuture());
         assertNotNull(server.getEntryPoints());
-        assertNotNull(server.getEntryPoint());
         assertFalse(server.getStarted());
     }
 }

@@ -70,7 +70,8 @@ public class TestSession extends ServerSession {
      * Creates a new session to the given server with a random identity
      */
     public static TestSession build(NodeServer server) throws ExecutionException, InterruptedException {
-        return build(server.getConfig().getServerEntryPoint(),
+        URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
+        return build(serverEntryPoint,
                 TestHelper.random(), true, server.workerGroup);
     }
 
@@ -79,7 +80,8 @@ public class TestSession extends ServerSession {
      */
     public static TestSession build(NodeServer server, boolean pingPong) throws ExecutionException,
             InterruptedException {
-        return build(server.getConfig().getServerEntryPoint(),
+        URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
+        return build(serverEntryPoint,
                 TestHelper.random(), pingPong, server.workerGroup);
     }
 
@@ -88,7 +90,8 @@ public class TestSession extends ServerSession {
      */
     public static TestSession build(NodeServer server,
                                     Identity uid) throws ExecutionException, InterruptedException {
-        return build(server.getConfig().getServerEntryPoint(), uid, true, server.workerGroup);
+        URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
+        return build(serverEntryPoint, uid, true, server.workerGroup);
     }
 
     /**
@@ -98,7 +101,8 @@ public class TestSession extends ServerSession {
             InterruptedException, CryptoException {
         KeyPair keyPair = Crypto.generateKeys();
         CompressedPublicKey publicKey = CompressedPublicKey.of(keyPair.getPublic());
-        TestSession session = build(server.getConfig().getServerEntryPoint(), Identity.of(publicKey), true, server.workerGroup);
+        URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
+        TestSession session = build(serverEntryPoint, Identity.of(publicKey), true, server.workerGroup);
         session.send(new Join(publicKey, Set.of()), Welcome.class).blockingGet();
 
         return session;

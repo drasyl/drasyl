@@ -87,7 +87,7 @@ public class ClientIT {
 
         server = new NodeServer(identityManager, messenger, peersManager, config);
 
-        TestHelper.waitUntilNetworkAvailable(config.getServerEntryPoint().getPort());
+        TestHelper.waitUntilNetworkAvailable(config.getServerBindPort());
         server.open();
         server.awaitOpen();
 
