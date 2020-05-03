@@ -31,28 +31,30 @@ import static java.util.Objects.requireNonNull;
 /**
  * This class contains information about other peers. This includes the identities, public keys,
  * available interfaces, connections or relations (e.g. direct/relayed connection, super peer,
- * child, grandchild).
+ * child, grandchild). Before a relation is set for a peer, it must be ensured that its information
+ * is available. Likewise, the information may not be removed from a peer if the peer still has a
+ * relation
  *
  * <p>
  * This class is optimized for concurrent access and is thread-safe.
  * </p>
  */
 public class PeersManager {
-    private final ReadWriteLock lock = new ReentrantReadWriteLock(true);
+    private final ReadWriteLock lock;
     private final Map<Identity, PeerInformation> peers;
     private final Set<Identity> children;
     private Identity superPeer;
 
     public PeersManager() {
-        this(new HashMap<>(), null, new HashSet<>());
+        this(new ReentrantReadWriteLock(true), new HashMap<>(), new HashSet<>(), null);
     }
 
-    PeersManager(Map<Identity, PeerInformation> peers,
-                 Identity superPeer,
-                 Set<Identity> children) {
+    PeersManager(ReadWriteLock lock, Map<Identity, PeerInformation> peers,
+                 Set<Identity> children, Identity superPeer) {
+        this.lock = lock;
         this.peers = peers;
-        this.superPeer = superPeer;
         this.children = children;
+        this.superPeer = superPeer;
     }
 
     public Map<Identity, PeerInformation> getPeers() {
@@ -185,7 +187,7 @@ public class PeersManager {
         try {
             lock.readLock().lock();
 
-            return getPeer(getSuperPeer());
+            return peers.get(superPeer);
         }
         finally {
             lock.readLock().unlock();
@@ -235,7 +237,7 @@ public class PeersManager {
         try {
             lock.readLock().lock();
 
-            return Objects.equals(getSuperPeer(), identity);
+            return Objects.equals(superPeer, identity);
         }
         finally {
             lock.readLock().unlock();
