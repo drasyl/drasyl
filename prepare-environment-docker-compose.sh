@@ -12,6 +12,7 @@ services:
     image: $APP_IMAGE
     restart: always
     container_name: $CI_PROJECT_NAME-$CI_PROJECT_ID-$CI_COMMIT_REF_SLUG
+    hostname: ${APP_DEPLOY_HOST}
     environment:
       CONFIG_FORCE_drasyl_entry__points_0: wss://${APP_DEPLOY_HOST}
       SENTRY_DNS: ${SENTRY_DNS}
