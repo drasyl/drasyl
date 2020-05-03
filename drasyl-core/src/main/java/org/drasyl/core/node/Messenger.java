@@ -30,29 +30,23 @@ import java.util.Optional;
 public class Messenger {
     private final IdentityManager identityManager;
     private final PeersManager peersManager;
-    private final DrasylNode drasylNode;
 
-    public Messenger(DrasylNode drasylNode, IdentityManager identityManager, PeersManager peersManager) {
+    public Messenger(IdentityManager identityManager,
+                     PeersManager peersManager) {
         this.identityManager = identityManager;
         this.peersManager = peersManager;
-        this.drasylNode = drasylNode;
     }
 
     public void send(Message message) throws DrasylException {
-        if(identityManager.getIdentity().equals(message.getRecipient())) {
-            drasylNode.onEvent(new Event(Code.MESSAGE, null, null, message.getPayload()));
+        try {
+            sendToClient(message);
         }
-        else {
+        catch (ClientNotFoundException e) {
             try {
-                sendToClient(message);
+                sendToSuperPeer(message);
             }
-            catch (ClientNotFoundException e) {
-                try {
-                    sendToSuperPeer(message);
-                }
-                catch (NoSuperPeerException ex) {
-                    throw new DrasylException("Unable to send message: " + message.toString());
-                }
+            catch (NoSuperPeerException ex) {
+                throw new DrasylException("Unable to send message: " + message.toString());
             }
         }
     }
