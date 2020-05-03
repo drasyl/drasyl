@@ -122,6 +122,8 @@ public abstract class DrasylNode {
 
     public void shutdown() throws DrasylException {
         if (isStarted) {
+            LOG.info("Stop drasyl Node with Identity {}", identityManager.getIdentity());
+
             // mark the node as offline, so that the local application will (hopefully) no longer try to send messages
             onEvent(new Event(NODE_OFFLINE, new Node(identityManager.getIdentity())));
 
@@ -131,10 +133,12 @@ public abstract class DrasylNode {
             LOG.info("Stop Server at {}:{}", config.getServerBindHost(), config.getServerBindPort());
             server.close();
             server.awaitClose();
-            LOG.debug("Server stopped at {}:{}", config.getServerBindHost(), config.getServerBindPort());
+            LOG.info("Server stopped at {}:{}", config.getServerBindHost(), config.getServerBindPort());
 
             // shutdown sequence completed
             onEvent(new Event(NODE_NORMAL_TERMINATION, new Node(identityManager.getIdentity())));
+
+            LOG.info("drasyl Node stopped");
         }
         else {
             throw new DrasylException("This node is already shut down.");
@@ -148,7 +152,7 @@ public abstract class DrasylNode {
 
             // first of all it must be ensured that the node has an identity...
             identityManager.loadOrCreateIdentity();
-            LOG.debug("Using Identity '{}'", identityManager.getIdentity());
+            LOG.info("Using Identity '{}'", identityManager.getIdentity());
 
             // ...then the local server may have to be started so that the node can react to incoming messages...
             server.open();
@@ -159,6 +163,8 @@ public abstract class DrasylNode {
 
             // start sequence completed. node should now (hopefully) be online
             onEvent(new Event(NODE_ONLINE, new Node(identityManager.getIdentity())));
+
+            LOG.info("drasyl Node with Identity {} started", identityManager.getIdentity());
         }
         else {
             throw new DrasylException("This node is already started.");
