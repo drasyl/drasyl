@@ -18,6 +18,7 @@
  */
 package org.drasyl.core.node.identity;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.drasyl.core.models.Code;
 import org.drasyl.core.models.CompressedKeyPair;
@@ -33,14 +34,15 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * This class manages the identity/KeyPair of a node.
+ * This class provides the identity of the  node. This is required for signing and encryption of
+ * sent messages.
  */
 public class IdentityManager {
     private static final Logger LOG = LoggerFactory.getLogger(IdentityManager.class);
-    private static final ObjectMapper objectMapper = new ObjectMapper();
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
+    private final Path path;
     private CompressedKeyPair keyPair;
     private Identity identity;
-    private final Path path;
 
     /**
      * Manages the identity at the specified file path. If there is no identity at this file path
@@ -48,15 +50,8 @@ public class IdentityManager {
      *
      * @param path path to the identity
      */
-    public IdentityManager(Path path) throws DrasylException {
+    public IdentityManager(Path path) {
         this.path = path.toAbsolutePath();
-
-        if (path.toFile().exists() && path.toFile().isFile()) {
-            load();
-        }
-        else {
-            renew();
-        }
     }
 
     IdentityManager(CompressedKeyPair keyPair, Identity identity, Path path) {
@@ -65,30 +60,92 @@ public class IdentityManager {
         this.path = path;
     }
 
+    public void loadOrCreateIdentity() throws IdentityManagerException {
+        if (isIdentityFilePresent(path)) {
+            this.keyPair = readIdentityFile(path);
+        }
+        else {
+            CompressedKeyPair keyPair = generateIdentity();
+            writeIdentityFile(path, keyPair);
+            this.keyPair = keyPair;
+        }
+
+        this.identity = Identity.of(keyPair.getPublicKey());
+    }
+
     /**
-     * This function irrevocably replaces the old identity with a new one. Required if the super
-     * peer reports {@link Code#NODE_IDENTITY_COLLISION}.
+     * Returns <code>true</code> if the identity file <code>path</code> exists. Otherwise
+     * <code>false</code> is returned.
+     *
+     * @param path
+     * @return
      */
-    public void renew() throws DrasylException {
+    private static boolean isIdentityFilePresent(Path path) {
+        return path.toFile().exists() && path.toFile().isFile();
+    }
+
+    /**
+     * Reads the identity from <code>path</code>. Throws <code>IdentityManagerException</code> if
+     * file cannot be read or file has unexpected content.
+     *
+     * @param path
+     * @return
+     * @throws IdentityManagerException
+     */
+    private static CompressedKeyPair readIdentityFile(Path path) throws IdentityManagerException {
+        try {
+            LOG.debug("Read identity from file '{}'", path);
+            return OBJECT_MAPPER.readValue(path.toFile(), CompressedKeyPair.class);
+        }
+        catch (JsonProcessingException e) {
+            throw new IdentityManagerException("Unable to load identity from file '" + path + "': " + e.getMessage());
+        }
+        catch (IOException e) {
+            throw new IdentityManagerException("Unable to access identity file '" + path + "': " + e.getMessage());
+        }
+    }
+
+    /**
+     * Generates a new random identity.
+     *
+     * @return
+     * @throws IdentityManagerException
+     */
+    private static CompressedKeyPair generateIdentity() throws IdentityManagerException {
+        try {
+            var newKeyPair = Crypto.generateKeys();
+            return CompressedKeyPair.of(newKeyPair.getPublic(), newKeyPair.getPrivate());
+        }
+        catch (CryptoException e) {
+            throw new IdentityManagerException("Unable to generate new identity: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Writes the identity <code>keyPair</code> to the file <code>path</code>. Attention: If
+     * <code>path</code> already contains an identity, it will be overwritten without warning.
+     *
+     * @param path
+     * @param keyPair
+     * @throws IdentityManagerException
+     */
+    private static void writeIdentityFile(Path path,
+                                          CompressedKeyPair keyPair) throws IdentityManagerException {
         File file = path.toFile();
 
         if (Files.isDirectory(path) || !file.getParentFile().exists()) {
-            throw new DrasylException("Identity path (" + path.toString() + ") points not to a file.");
-        }
-        else if (file.exists() && !file.canRead()) {
-            throw new DrasylException("No read permission on identity file.");
+            throw new IdentityManagerException("Identity path '" + path + "' is a directory or path does not exist");
         }
         else if (file.exists() && !file.canWrite()) {
-            throw new DrasylException("No write permission on identity file.");
+            throw new IdentityManagerException("Identity path '" + path + "' is not writable");
         }
         else {
-            LOG.debug("No identity present. Generate a new one at file {}", path);
-            generate();
+            LOG.debug("Write identity to file '{}'", path);
             try {
-                IdentityManager.objectMapper.writerWithDefaultPrettyPrinter().writeValue(file, keyPair);
+                IdentityManager.OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValue(file, keyPair);
             }
             catch (IOException e) {
-                throw new DrasylException("Can't save identity file. "+e.getMessage());
+                throw new IdentityManagerException("Unable to write identity to file '" + path + "': " + e.getMessage());
             }
         }
     }
@@ -105,27 +162,5 @@ public class IdentityManager {
      */
     public CompressedKeyPair getKeyPair() {
         return keyPair;
-    }
-
-    private void load() throws DrasylException {
-        try {
-        LOG.debug("Load existing identity from file {}", path);
-            this.keyPair = IdentityManager.objectMapper.readValue(path.toFile(), CompressedKeyPair.class);
-            this.identity = Identity.of(keyPair.getPublicKey());
-        }
-        catch (IOException e) {
-            throw new DrasylException("Can't load identity (" + path.toAbsolutePath() + "). " + e.getMessage());
-        }
-    }
-
-    private void generate() {
-        try {
-            var newKeyPair = Crypto.generateKeys();
-            this.keyPair = CompressedKeyPair.of(newKeyPair.getPublic(), newKeyPair.getPrivate());
-            this.identity = Identity.of(keyPair.getPublicKey());
-        }
-        catch (CryptoException e) {
-            LOG.error("Fatal Error on identity creation.", e);
-        }
     }
 }

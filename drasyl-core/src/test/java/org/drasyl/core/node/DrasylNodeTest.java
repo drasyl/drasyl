@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.core.node;
 
 import org.drasyl.core.models.DrasylException;
@@ -31,22 +30,34 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.drasyl.core.models.Code.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.Mockito.*;
 
-@Disabled("currently not yet implemented")
 public class DrasylNodeTest {
+    private DrasylNodeConfig config;
+    private IdentityManager identityManager;
+    private Messenger messenger;
+    private NodeServer server;
+    private PeersManager peersManager;
     private Node node;
     private Event event;
     private byte[] message;
     private Identity recipient;
+    private Identity identity;
 
     @BeforeEach
     void setUp() {
+        config = mock(DrasylNodeConfig.class);
+        identityManager = mock(IdentityManager.class);
+        messenger = mock(Messenger.class);
+        server = mock(NodeServer.class);
+        peersManager = mock(PeersManager.class);
         event = mock(Event.class);
         node = mock(Node.class);
         recipient = mock(Identity.class);
         message = new byte[]{ 0x4f };
+        identity = mock(Identity.class);
     }
 
     @AfterEach
@@ -55,23 +66,24 @@ public class DrasylNodeTest {
 
     @Test
     public void startShouldEmitOnlineEventOnSuccessfulSuperPeerRegistration() throws DrasylException {
-        // FIXME: mock behaviour here
+        when(identityManager.getIdentity()).thenReturn(identity);
 
-        DrasylNode drasylNode = spy(new DrasylNode() {
+        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, false, server, messenger) {
             @Override
             public void onEvent(Event event) {
             }
         });
         drasylNode.start();
 
-        verify(drasylNode).onEvent(new Event(NODE_ONLINE, node));
+        verify(drasylNode).onEvent(new Event(NODE_ONLINE, new Node(identity)));
     }
 
+    @Disabled("currently not yet implemented")
     @Test
     public void startShouldEmitIdentityCollisionEventIfIdentityIsAlreadyUsedByAnotherNode() throws DrasylException {
         // FIXME: mock behaviour here
 
-        DrasylNode drasylNode = spy(new DrasylNode() {
+        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, false, server, messenger) {
             @Override
             public void onEvent(Event event) {
             }
@@ -82,38 +94,37 @@ public class DrasylNodeTest {
     }
 
     @Test
-    public void startShouldNotEmitAnyEventsIfNodeHasAlreadyBeenStarted() throws DrasylException {
-        // FIXME: mock behaviour here
-
-        DrasylNode drasylNode = spy(new DrasylNode() {
-            @Override
-            public void onEvent(Event event) {
-            }
+    public void startShouldThrowExceptionIfNodeHasAlreadyBeenStarted() {
+        assertThrows(DrasylException.class, () -> {
+            DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, true, server, messenger) {
+                @Override
+                public void onEvent(Event event) {
+                }
+            });
+            drasylNode.start();
         });
-        drasylNode.start();
-
-        verify(drasylNode, times(0)).onEvent(any());
     }
 
     @Test
     public void shutdownShouldEmitNormalTerminationEventOnSuccessfulSuperPeerDeregistration() throws DrasylException {
-        // FIXME: mock behaviour here
+        when(identityManager.getIdentity()).thenReturn(identity);
 
-        DrasylNode drasylNode = spy(new DrasylNode() {
+        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, true, server, messenger) {
             @Override
             public void onEvent(Event event) {
             }
         });
         drasylNode.shutdown();
 
-        verify(drasylNode).onEvent(new Event(NODE_NORMAL_TERMINATION, node));
+        verify(drasylNode).onEvent(new Event(NODE_NORMAL_TERMINATION, new Node(identity)));
     }
 
+    @Disabled("currently not yet implemented")
     @Test
     public void shutdownShouldEmitDeregisterFailedEventIfDeregistrationFromSuperPeerFailed() throws DrasylException {
         // FIXME: mock behaviour here
 
-        DrasylNode drasylNode = spy(new DrasylNode() {
+        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, false, server, messenger) {
             @Override
             public void onEvent(Event event) {
             }
@@ -124,38 +135,23 @@ public class DrasylNodeTest {
     }
 
     @Test
-    public void shutdownShouldNotEmitAnyEventsIfNodeHasAlreadyBeenShutDown() throws DrasylException {
-        // FIXME: mock behaviour here
-
-        DrasylNode drasylNode = spy(new DrasylNode() {
-            @Override
-            public void onEvent(Event event) {
-            }
+    public void shutdownShouldThrowExceptionIfNodeHasAlreadyBeenShutDown() throws DrasylException {
+        assertThrows(DrasylException.class, () -> {
+            DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, false, server, messenger) {
+                @Override
+                public void onEvent(Event event) {
+                }
+            });
+            drasylNode.shutdown();
         });
-        drasylNode.shutdown();
-
-        verify(drasylNode, times(0)).onEvent(any());
     }
 
-    @Test
-    public void onEventShouldBeCalledForEveryEmittedEvent() throws DrasylException {
-        // FIXME: mock behaviour here
-
-        DrasylNode drasylNode = spy(new DrasylNode() {
-            @Override
-            public void onEvent(Event event) {
-            }
-        });
-        drasylNode.shutdown();
-
-        verify(drasylNode).onEvent(event);
-    }
-
+    @Disabled("currently not yet implemented")
     @Test
     public void onEventShouldEmitOfflineEventIfConnectionToSuperPeerIsLost() throws DrasylException {
         // FIXME: mock behaviour here
 
-        DrasylNode drasylNode = spy(new DrasylNode() {
+        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, false, server, messenger) {
             @Override
             public void onEvent(Event event) {
             }
@@ -164,11 +160,12 @@ public class DrasylNodeTest {
         verify(drasylNode).onEvent(new Event(NODE_OFFLINE, node));
     }
 
+    @Disabled("currently not yet implemented")
     @Test
     public void onEventShouldEmitOnlineEventIfBrokenConnectionToSuperPeerReestablished() throws DrasylException {
         // FIXME: mock behaviour here
 
-        DrasylNode drasylNode = spy(new DrasylNode() {
+        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, false, server, messenger) {
             @Override
             public void onEvent(Event event) {
             }
@@ -177,11 +174,12 @@ public class DrasylNodeTest {
         verify(drasylNode).onEvent(new Event(NODE_ONLINE, node));
     }
 
+    @Disabled("currently not yet implemented")
     @Test
     public void onEventShouldEmitUnrecoverableErrorEventIfConnectionToSuperPeerCouldNotReestablished() throws DrasylException {
         // FIXME: mock behaviour here
 
-        DrasylNode drasylNode = spy(new DrasylNode() {
+        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, false, server, messenger) {
             @Override
             public void onEvent(Event event) {
             }
@@ -190,11 +188,12 @@ public class DrasylNodeTest {
         verify(drasylNode).onEvent(new Event(NODE_UNRECOVERABLE_ERROR, node));
     }
 
+    @Disabled("currently not yet implemented")
     @Test
-    public void onMessageShouldBeCalledForEveryIncomingMessage() throws DrasylException {
+    public void onEventShouldEmitMessageEventForEveryIncomingMessage() throws DrasylException {
         // FIXME: mock behaviour here
 
-        DrasylNode drasylNode = spy(new DrasylNode() {
+        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, false, server, messenger) {
             @Override
             public void onEvent(Event event) {
             }
@@ -204,16 +203,30 @@ public class DrasylNodeTest {
     }
 
     @Test
-    public void sendShouldSendTheMessageToTheRecipient() throws DrasylException {
-        // FIXME: mock behaviour here
+    public void sendShouldSendTheMessageToItself() throws DrasylException {
+        when(identityManager.getIdentity()).thenReturn(identity);
 
-        DrasylNode drasylNode = spy(new DrasylNode() {
+        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, false, server, messenger) {
+            @Override
+            public void onEvent(Event event) {
+            }
+        });
+        drasylNode.send(identity, message);
+
+        verify(drasylNode).onEvent(new Event(MESSAGE, message));
+    }
+
+    @Test
+    public void sendShouldSendTheMessageToOtherRecipient() throws DrasylException {
+        when(identityManager.getIdentity()).thenReturn(identity);
+
+        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, false, server, messenger) {
             @Override
             public void onEvent(Event event) {
             }
         });
         drasylNode.send(recipient, message);
 
-        fail("make sure that DrasylNode has processed the message correctly");
+        verify(messenger).send(any());
     }
 }

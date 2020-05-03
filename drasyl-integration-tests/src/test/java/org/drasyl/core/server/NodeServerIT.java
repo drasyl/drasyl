@@ -28,8 +28,6 @@ import org.drasyl.core.node.identity.IdentityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.net.URISyntaxException;
-
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -49,7 +47,7 @@ class NodeServerIT {
 
     @Test
     public void shouldOpenAndCloseGracefully() throws DrasylException {
-        NodeServer server = new NodeServer(identityManager, messenger, peersManager);
+        NodeServer server = new NodeServer(identityManager, peersManager, messenger);
         server.open();
         server.awaitOpen();
         server.close();
