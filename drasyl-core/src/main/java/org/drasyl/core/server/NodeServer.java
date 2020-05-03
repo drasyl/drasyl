@@ -61,6 +61,8 @@ public class NodeServer implements AutoCloseable {
     private Channel serverChannel;
     private NodeServerBootstrap nodeServerBootstrap;
     private boolean started;
+    private int actualPort;
+    private Set<URI> actualEndpoints;
 
     /**
      * Starts a node server for forwarding messages to child peers.<br> Default Port: 22527
@@ -92,7 +94,7 @@ public class NodeServer implements AutoCloseable {
         this(identityManager, messenger, peersManager, config,
                 null, new ServerBootstrap(),
                 new NioEventLoopGroup(Math.min(1, ForkJoinPool.commonPool().getParallelism() - 1)), new NioEventLoopGroup(1), new ArrayList<>(),
-                new CompletableFuture<>(), new CompletableFuture<>(), null, false);
+                new CompletableFuture<>(), new CompletableFuture<>(), null, false, -1, new HashSet<>());
 
         overrideUA();
 
@@ -101,7 +103,8 @@ public class NodeServer implements AutoCloseable {
         LOG.info("Started node server with the following configurations: \n {}", config);
     }
 
-    NodeServer(IdentityManager identityManager, Messenger messenger,
+    NodeServer(IdentityManager identityManager,
+               Messenger messenger,
                PeersManager peersManager,
                DrasylNodeConfig config,
                Channel serverChannel,
@@ -111,7 +114,10 @@ public class NodeServer implements AutoCloseable {
                List<Runnable> beforeCloseListeners,
                CompletableFuture<Void> startedFuture,
                CompletableFuture<Void> stoppedFuture,
-               NodeServerBootstrap nodeServerBootstrap, boolean started) {
+               NodeServerBootstrap nodeServerBootstrap,
+               boolean started,
+               int actualPort,
+               Set<URI> actualEndpoints) {
         this.identityManager = identityManager;
         this.peersManager = peersManager;
         this.config = config;
@@ -125,6 +131,8 @@ public class NodeServer implements AutoCloseable {
         this.nodeServerBootstrap = nodeServerBootstrap;
         this.started = started;
         this.messenger = messenger;
+        this.actualPort = actualPort;
+        this.actualEndpoints = actualEndpoints;
     }
 
     /**
@@ -150,14 +158,7 @@ public class NodeServer implements AutoCloseable {
      * @return the entry points
      */
     public Set<URI> getEntryPoints() {
-        if (getPort() != -1) {
-            return config.getServerEndpoints().stream()
-                    .map(a -> URI.create(a.replace(":" + config.getServerBindPort(), ":" + getPort())))
-                    .collect(Collectors.toSet());
-        }
-        else {
-            return Set.of();
-        }
+        return actualEndpoints;
     }
 
     /**
@@ -229,6 +230,12 @@ public class NodeServer implements AutoCloseable {
             serverChannel = nodeServerBootstrap.getChannel();
             startedFuture.complete(null);
             serverChannel.closeFuture().sync();
+
+            InetSocketAddress socketAddress = (InetSocketAddress) serverChannel.localAddress();
+            actualPort = socketAddress.getPort();
+            actualEndpoints = config.getServerEndpoints().stream()
+                    .map(a -> URI.create(a.replace(":" + config.getServerBindPort(), ":" + getPort())))
+                    .collect(Collectors.toSet());
         }
         catch (Exception e) {
             startedFuture.completeExceptionally(e);
@@ -237,6 +244,15 @@ public class NodeServer implements AutoCloseable {
         finally {
             close();
         }
+    }
+
+    /**
+     * Returns the actual bind port used by this server.
+     *
+     * @return
+     */
+    public int getPort() {
+        return actualPort;
     }
 
     /**
@@ -277,21 +293,6 @@ public class NodeServer implements AutoCloseable {
         }
         catch (ExecutionException e) {
             throw new NodeServerException(e.getCause());
-        }
-    }
-
-    /**
-     * Returns the actual bind port used by this server.
-     *
-     * @return
-     */
-    public int getPort() {
-        if (serverChannel != null) {
-            InetSocketAddress socketAddress = (InetSocketAddress) serverChannel.localAddress();
-            return socketAddress.getPort();
-        }
-        else {
-            return -1;
         }
     }
 }
