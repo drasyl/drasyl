@@ -19,4 +19,4 @@ ENTRYPOINT ["drasyl"]
 
 HEALTHCHECK --start-period=15s \
     CMD curl http://localhost:22527 2>&1 \
-        | grep -q 'Not a WebSocket Handshake Request: Missing Upgrade'
+        | grep -q 'not a WebSocket handshake request: missing upgrade'
