@@ -228,14 +228,15 @@ public class NodeServer implements AutoCloseable {
     void openServerChannel() {
         try {
             serverChannel = nodeServerBootstrap.getChannel();
-            startedFuture.complete(null);
-            serverChannel.closeFuture().sync();
 
             InetSocketAddress socketAddress = (InetSocketAddress) serverChannel.localAddress();
             actualPort = socketAddress.getPort();
             actualEndpoints = config.getServerEndpoints().stream()
                     .map(a -> URI.create(a.replace(":" + config.getServerBindPort(), ":" + getPort())))
                     .collect(Collectors.toSet());
+
+            startedFuture.complete(null);
+            serverChannel.closeFuture().sync();
         }
         catch (Exception e) {
             startedFuture.completeExceptionally(e);
