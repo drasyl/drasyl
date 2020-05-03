@@ -81,6 +81,7 @@ public class NodeServerInitializer extends DefaultSessionInitializer {
         pipeline.addLast(new HttpServerCodec());
         pipeline.addLast(new HttpObjectAggregator(server.getConfig().getServerMaxContentLength()));
         pipeline.addLast(new WebSocketServerCompressionHandler());
+        pipeline.addLast(new WebSocketMissingUpgradeErrorPageHandler(server.getMyIdentity()));
         pipeline.addLast(new WebSocketServerProtocolHandler("/", null, true));
     }
 
