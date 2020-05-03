@@ -64,8 +64,7 @@ public class NodeServer implements AutoCloseable {
      * Starts a node server for forwarding messages to child peers.<br> Default Port: 22527
      */
     public NodeServer(IdentityManager identityManager,
-                      Messenger messenger,
-                      PeersManager peersManager) throws DrasylException {
+                      PeersManager peersManager, Messenger messenger) throws DrasylException {
         this(identityManager, messenger, peersManager, ConfigFactory.load());
     }
 

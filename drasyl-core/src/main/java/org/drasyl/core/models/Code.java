@@ -93,6 +93,6 @@ public enum Code {
      * @return
      */
     public boolean isMessageEvent() {
-        return this.name().startsWith("MESSAGE_");
+        return this.name().equals("MESSAGE");
     }
 }

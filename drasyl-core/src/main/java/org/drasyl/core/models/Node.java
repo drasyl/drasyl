@@ -16,28 +16,34 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.core.models;
 
 import org.drasyl.core.node.identity.Identity;
 
-public class Node extends AbstractNode {
+import java.util.Objects;
+
+public class Node {
+    private final Identity address;
+
     public Node(Identity address) {
-        super(address);
+        this.address = address;
     }
 
     @Override
     public int hashCode() {
-        return super.hashCode();
+        return Objects.hash(address);
     }
 
     @Override
     public boolean equals(Object o) {
-        return super.equals(o);
-    }
-
-    public static Node of(Identity address) {
-        return new Node(address);
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Node node = (Node) o;
+        return Objects.equals(address, node.address);
     }
 
     @Override
@@ -45,5 +51,13 @@ public class Node extends AbstractNode {
         return "Node{" +
                 "address=" + getAddress() +
                 '}';
+    }
+
+    public Identity getAddress() {
+        return address;
+    }
+
+    public static Node of(Identity address) {
+        return new Node(address);
     }
 }
