@@ -24,6 +24,7 @@ import com.typesafe.config.ConfigFactory;
 import io.sentry.Sentry;
 import io.sentry.event.User;
 import org.drasyl.core.common.messages.Message;
+import org.drasyl.core.common.models.Pair;
 import org.drasyl.core.models.Code;
 import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.models.Event;
@@ -106,7 +107,7 @@ public abstract class DrasylNode {
      */
     public synchronized void send(Identity recipient, byte[] payload) throws DrasylException {
         if (identityManager.getIdentity().equals(recipient)) {
-            onEvent(new Event(Code.MESSAGE, payload));
+            onEvent(new Event(Code.MESSAGE, Pair.of(recipient, payload)));
         }
         else {
             messenger.send(new Message(identityManager.getIdentity(), recipient, payload));
