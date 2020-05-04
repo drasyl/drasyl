@@ -18,6 +18,9 @@
  */
 package org.drasyl.core.models;
 
+import org.drasyl.core.common.models.Pair;
+import org.drasyl.core.node.identity.Identity;
+
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -25,9 +28,9 @@ public class Event {
     private final Code code;
     private final Node node;
     private final Peer peer;
-    private final byte[] message;
+    private final Pair<Identity, byte[]> message;
 
-    public Event(Code code, Node node, Peer peer, byte[] message) {
+    public Event(Code code, Node node, Peer peer, Pair<Identity, byte[]> message) {
         this.code = code;
         this.node = node;
         this.peer = peer;
@@ -56,7 +59,7 @@ public class Event {
         message = null;
     }
 
-    public Event(Code code, byte[] message) {
+    public Event(Code code, Pair<Identity, byte[]> message) {
         if (!code.isMessageEvent()) {
             throw new IllegalArgumentException("Given code must refer to a message!");
         }
@@ -79,15 +82,13 @@ public class Event {
         return peer;
     }
 
-    public byte[] getMessage() {
+    public Pair<Identity, byte[]> getMessage() {
         return message;
     }
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(code, node, peer);
-        result = 31 * result + Arrays.hashCode(message);
-        return result;
+        return Objects.hash(code, node, peer, message);
     }
 
     @Override
@@ -102,7 +103,7 @@ public class Event {
         return code == event.code &&
                 Objects.equals(node, event.node) &&
                 Objects.equals(peer, event.peer) &&
-                Arrays.equals(message, event.message);
+                Objects.equals(message, event.message);
     }
 
     @Override
@@ -111,7 +112,7 @@ public class Event {
                 "code=" + code +
                 ", node=" + node +
                 ", peer=" + peer +
-                ", message=" + Arrays.toString(message) +
+                ", message=" + message +
                 '}';
     }
 }

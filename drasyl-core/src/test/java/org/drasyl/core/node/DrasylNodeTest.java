@@ -18,6 +18,7 @@
  */
 package org.drasyl.core.node;
 
+import org.drasyl.core.common.models.Pair;
 import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.models.Event;
 import org.drasyl.core.node.identity.Identity;
@@ -42,8 +43,10 @@ public class DrasylNodeTest {
     private PeersManager peersManager;
     private Node node;
     private Event event;
-    private byte[] message;
+    private Pair<Identity, byte[]> message;
     private Identity recipient;
+    private Identity sender;
+    private byte[] payload;
     private Identity identity;
 
     @BeforeEach
@@ -56,7 +59,9 @@ public class DrasylNodeTest {
         event = mock(Event.class);
         node = mock(Node.class);
         recipient = mock(Identity.class);
-        message = new byte[]{ 0x4f };
+        sender = mock(Identity.class);
+        payload = new byte[]{ 0x4f };
+        message = Pair.of(sender, payload);
         identity = mock(Identity.class);
     }
 
@@ -211,9 +216,9 @@ public class DrasylNodeTest {
             public void onEvent(Event event) {
             }
         });
-        drasylNode.send(identity, message);
+        drasylNode.send(identity, payload);
 
-        verify(drasylNode).onEvent(new Event(MESSAGE, message));
+        verify(drasylNode).onEvent(new Event(MESSAGE, Pair.of(identity, payload)));
     }
 
     @Test
@@ -225,7 +230,7 @@ public class DrasylNodeTest {
             public void onEvent(Event event) {
             }
         });
-        drasylNode.send(recipient, message);
+        drasylNode.send(recipient, payload);
 
         verify(messenger).send(any());
     }
