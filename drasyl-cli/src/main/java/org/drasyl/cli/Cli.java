@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.cli;
 
 import ch.qos.logback.classic.Level;
@@ -27,6 +26,8 @@ import org.drasyl.core.models.Event;
 import org.drasyl.core.node.DrasylNode;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.concurrent.CompletionException;
 
 class Cli {
     private static final Logger log = LoggerFactory.getLogger(Cli.class);
@@ -84,12 +85,7 @@ class Cli {
     void shutdown() {
         if (node != null) {
             log.info("Shutdown Drasyl Node");
-            try {
-                node.shutdown();
-            }
-            catch (DrasylException e) {
-                // ignore
-            }
+            node.shutdown().join();
         }
     }
 
@@ -154,9 +150,7 @@ class Cli {
                     log.info("Event received: {}", event);
                 }
             };
-            node.start();
-
-            // TODO: block and wait, while node is running
+            node.start().join();
         }
         catch (DrasylException e) {
             throw new CliException(e);

@@ -31,13 +31,20 @@ import org.drasyl.core.models.Event;
 import org.drasyl.core.models.Node;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.node.identity.IdentityManager;
+import org.drasyl.core.node.identity.IdentityManagerException;
 import org.drasyl.core.server.NodeServer;
+import org.drasyl.core.server.NodeServerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
 import java.util.Properties;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import static java.util.concurrent.CompletableFuture.failedFuture;
+import static java.util.concurrent.CompletableFuture.runAsync;
 import static org.drasyl.core.models.Code.*;
 
 public abstract class DrasylNode {
@@ -49,11 +56,13 @@ public abstract class DrasylNode {
     }
 
     private final DrasylNodeConfig config;
-    private IdentityManager identityManager;
-    private PeersManager peersManager;
-    private boolean isStarted;
-    private NodeServer server;
-    private Messenger messenger;
+    private final IdentityManager identityManager;
+    private final PeersManager peersManager;
+    private final Messenger messenger;
+    private final NodeServer server;
+    private final AtomicBoolean started;
+    private CompletableFuture<Void> startSequence;
+    private CompletableFuture<Void> shutdownSequence;
 
     public DrasylNode() throws DrasylException {
         this(ConfigFactory.load());
@@ -66,6 +75,9 @@ public abstract class DrasylNode {
             this.peersManager = new PeersManager();
             this.messenger = new Messenger(identityManager, peersManager);
             this.server = new NodeServer(identityManager, peersManager, messenger);
+            this.started = new AtomicBoolean();
+            this.startSequence = new CompletableFuture<>();
+            this.shutdownSequence = new CompletableFuture<>();
         }
         catch (ConfigException e) {
             throw new DrasylException("Couldn't load config: \n" + e.getMessage());
@@ -74,14 +86,20 @@ public abstract class DrasylNode {
 
     DrasylNode(DrasylNodeConfig config,
                IdentityManager identityManager,
-               PeersManager peersManager, boolean isStarted,
-               NodeServer server, Messenger messenger) {
+               PeersManager peersManager,
+               NodeServer server,
+               Messenger messenger,
+               AtomicBoolean started,
+               CompletableFuture<Void> startSequence,
+               CompletableFuture<Void> shutdownSequence) {
         this.config = config;
         this.identityManager = identityManager;
         this.peersManager = peersManager;
-        this.isStarted = isStarted;
         this.server = server;
         this.messenger = messenger;
+        this.started = started;
+        this.startSequence = startSequence;
+        this.shutdownSequence = shutdownSequence;
     }
 
     public synchronized void send(String recipient, byte[] payload) throws DrasylException {
@@ -123,62 +141,139 @@ public abstract class DrasylNode {
         send(recipient, payload.getBytes());
     }
 
-    public void shutdown() throws DrasylException {
-        if (isStarted) {
-            LOG.info("Stop drasyl Node with Identity {}", identityManager.getIdentity());
+    /**
+     * Shut the Drasyl node down.
+     * <p>
+     * If there is a connection to a Super Peer, our node will deregister from that Super Peer.
+     * <p>
+     * If the local server has been started, it will now be stopped.
+     * <p>
+     * If a super peer has been configured, a client is started which connects to this super peer.
+     * Our node uses the Super Peer to discover and communicate with other nodes.
+     * <p>
+     * This method returns a future, which complements if all shutdown steps have been completed.
+     *
+     * @return
+     */
+    public CompletableFuture<Void> shutdown() {
+        if (started.compareAndSet(true, false)) {
+            // The shutdown of the node includes up to two phases, which are performed sequentially
+            // 1st Phase: Stop Super Peer Client (if started)
+            // 2nd Phase: Stop local server (if started)
+            LOG.info("Shutdown drasyl Node with Identity '{}'...", identityManager.getIdentity().getId());
+            shutdownSequence = runAsync(this::loadIdentity)
+                    .thenRun(this::stopSuperPeerClient)
+                    .thenRun(this::stopServer)
+                    .whenComplete((r, e) -> {
+                        if (e == null) {
+                            onEvent(new Event(NODE_NORMAL_TERMINATION, new Node(identityManager.getIdentity())));
+                            LOG.info("drasyl Node with Identity '{}' has shut down", identityManager.getIdentity().getId());
+                        }
+                        else {
+                            started.set(false);
 
-            // mark the node as offline, so that the local application will (hopefully) no longer try to send messages
-            onEvent(new Event(NODE_OFFLINE, new Node(identityManager.getIdentity())));
-
-            // FIXME: unregister from super peer first (if registered)...
-
-            if (config.isServerEnabled()) {
-                // ...then shut down the local server...
-                LOG.info("Stop Server listening at {}:{}", config.getServerBindHost(), server.getPort());
-                server.close();
-                server.awaitClose();
-                LOG.info("Server stopped", config.getServerBindHost());
-            }
-
-            // shutdown sequence completed
-            onEvent(new Event(NODE_NORMAL_TERMINATION, new Node(identityManager.getIdentity())));
-
-            LOG.info("drasyl Node stopped");
+                            // passthrough exception
+                            if (e instanceof CompletionException) {
+                                throw (CompletionException) e;
+                            }
+                            else {
+                                throw new CompletionException(e);
+                            }
+                        }
+                    });
         }
-        else {
-            throw new DrasylException("This node is already shut down.");
+
+        return shutdownSequence;
+    }
+
+    private void loadIdentity() {
+        try {
+            identityManager.loadOrCreateIdentity();
+            LOG.debug("Using Identity '{}'", identityManager.getIdentity());
+            Sentry.getContext().setUser(new User(identityManager.getIdentity().getId(), null, null, null));
+        }
+        catch (IdentityManagerException e) {
+            throw new CompletionException(e);
         }
     }
 
-    public void start() throws DrasylException {
-        if (!isStarted) {
-            isStarted = true;
-            LOG.info("Starting drasyl Node v{}...", DrasylNode.getVersion());
-            LOG.debug("The following configuration will be used:\n{}", config);
+    /**
+     * Should unregister from the Super Peer and stop the client. Should do nothing if the client is
+     * not registered or not started.
+     */
+    private void stopSuperPeerClient() {
+        // FIXME: implement
+    }
 
-            // first of all it must be ensured that the node has an identity...
-            identityManager.loadOrCreateIdentity();
-            LOG.info("Using Identity '{}'", identityManager.getIdentity());
-            Sentry.getContext().setUser(new User(identityManager.getIdentity().getId(), null, null, null));
-
-            if (config.isServerEnabled()) {
-                // ...then the local server may have to be started so that the node can react to incoming messages...
-                LOG.info("Start Server");
-                server.open();
-                server.awaitOpen();
-                LOG.info("Server is now listening at {}:{}", config.getServerBindHost(), server.getPort());
+    /**
+     * This method should stop the server. If the server is not running, the method should do
+     * nothing.
+     */
+    private void stopServer() {
+        if (config.isServerEnabled()) {
+            try {
+                LOG.info("Stop Server listening at {}:{}...", config.getServerBindHost(), server.getPort());
+                server.close();
+                server.awaitClose();
+                LOG.info("Server stopped");
             }
-
-            // FIXME: ...last, the server should register with a super peer if configured
-
-            // start sequence completed. node should now (hopefully) be online
-            onEvent(new Event(NODE_ONLINE, new Node(identityManager.getIdentity())));
-
-            LOG.info("drasyl Node with Identity {} started", identityManager.getIdentity());
+            catch (NodeServerException e) {
+                throw new CompletionException(e);
+            }
         }
-        else {
-            throw new DrasylException("This node is already started.");
+    }
+
+    /**
+     * Start the Drasyl node.
+     * <p>
+     * First, the identity of the node is loaded. If none exists, a new one is generated.
+     * <p>
+     * If activated, a local server is started. This allows other nodes to discover our node.
+     * <p>
+     * If a super peer has been configured, a client is started which connects to this super peer.
+     * Our node uses the Super Peer to discover and communicate with other nodes.
+     * <p>
+     * This method returns a future, which complements if all components necessary for the operation
+     * have been started.
+     *
+     * @return
+     */
+    public CompletableFuture<Void> start() {
+        if (started.compareAndSet(false, true)) {
+            // The start of the node includes up to three phases, which are performed sequentially
+            // 1st Phase: Load identity (and create if necessary)
+            // 2nd Phase: Start local server (if enabled)
+            // 3rd Phase: Start Super Peer Client (if declared)
+            LOG.info("Start drasyl Node v{}...", DrasylNode.getVersion());
+            LOG.debug("The following configuration will be used:\n{}", config);
+            startSequence = runAsync(this::loadIdentity)
+                    .thenRun(this::startServer)
+                    .thenRun(this::startSuperPeerClient)
+                    .whenComplete((r, e) -> {
+                        if (e == null) {
+                            LOG.info("drasyl Node with Identity '{}' has started", identityManager.getIdentity().getId());
+                        }
+                        else {
+                            LOG.info("Could not start drasyl Node: {}", e.getMessage());
+                            LOG.info("Stop all running components...");
+                            this.stopServer();
+                            this.stopSuperPeerClient();
+
+                            LOG.info("All components stopped");
+                            started.set(false);
+
+                            // passthrough exception
+                            if (e instanceof CompletionException) {
+                                throw (CompletionException) e;
+                            }
+                            else {
+                                throw new CompletionException(e);
+                            }
+                        }
+                    });
         }
+
+        return startSequence;
     }
 
     /**
@@ -194,5 +289,32 @@ public abstract class DrasylNode {
         catch (IOException e) {
             return null;
         }
+    }
+
+    /**
+     * If activated, the local server should be started in this method. Method should block and wait
+     * until the server is running.
+     */
+    private void startServer() {
+        if (config.isServerEnabled()) {
+            try {
+                LOG.debug("Start Server...");
+                server.open();
+                server.awaitOpen();
+                LOG.debug("Server is now listening at {}:{}", config.getServerBindHost(), server.getPort());
+            }
+            catch (NodeServerException e) {
+                throw new CompletionException(e);
+            }
+        }
+    }
+
+    /**
+     * Method should wait until client has been started, but not until client has registered with
+     * the super peer.
+     */
+    private void startSuperPeerClient() {
+        // FIXME: implement
+        throw new CompletionException(new Exception("not implemented"));
     }
 }
