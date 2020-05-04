@@ -5,7 +5,6 @@ import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.*;
 import io.netty.handler.codec.http.*;
-import io.netty.handler.ssl.SslHandler;
 import io.netty.util.CharsetUtil;
 import org.drasyl.core.node.DrasylNode;
 import org.drasyl.core.node.identity.Identity;
@@ -99,20 +98,5 @@ public class WebSocketMissingUpgradeErrorPageHandler extends SimpleChannelInboun
                         "<hr>\n" +
                         "<address>drasyl/" + DrasylNode.getVersion() + " with Identity " + identity.getId() + "</address>\n" +
                         "</body></html>\n", CharsetUtil.UTF_8);
-    }
-
-    @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        cause.printStackTrace();
-        ctx.close();
-    }
-
-    private static String getWebSocketLocation(ChannelPipeline cp, HttpRequest req, String path) {
-        String protocol = "ws";
-        if (cp.get(SslHandler.class) != null) {
-            // SSL in use so use Secure WebSockets
-            protocol = "wss";
-        }
-        return protocol + "://" + req.headers().get(HttpHeaderNames.HOST) + path;
     }
 }

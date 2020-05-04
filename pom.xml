@@ -275,7 +275,7 @@
         <hamcrest.version>2.2</hamcrest.version>
         <bouncycastle.version>1.64</bouncycastle.version>
         <awaitility.version>4.0.2</awaitility.version>
-        <netty.version>4.1.44.Final</netty.version>
+        <netty.version>4.1.49.Final</netty.version>
         <guava.version>28.1-jre</guava.version>
         <rxjava.version>3.0.1</rxjava.version>
         <sentry.version>1.7.27</sentry.version>
