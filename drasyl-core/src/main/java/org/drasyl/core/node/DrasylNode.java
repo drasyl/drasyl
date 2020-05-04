@@ -36,7 +36,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.util.Map;
 import java.util.Properties;
 
 import static org.drasyl.core.models.Code.*;
@@ -63,7 +62,7 @@ public abstract class DrasylNode {
     public DrasylNode(Config config) throws DrasylException {
         try {
             this.config = new DrasylNodeConfig(config);
-            this.identityManager = new IdentityManager(this.config.getIdentityPath());
+            this.identityManager = new IdentityManager(this.config);
             this.peersManager = new PeersManager();
             this.messenger = new Messenger(identityManager, peersManager);
             this.server = new NodeServer(identityManager, peersManager, messenger);

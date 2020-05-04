@@ -14,6 +14,8 @@ services:
     container_name: $CI_PROJECT_NAME-$CI_PROJECT_ID-$CI_COMMIT_REF_SLUG
     hostname: ${APP_DEPLOY_HOST}
     environment:
+      CONFIG_FORCE_drasyl_identity_public__key: $DRASYL_PUBLIC_KEY
+      CONFIG_FORCE_drasyl_identity_private__key: $DRASYL_PRIVATE_KEY
       CONFIG_FORCE_drasyl_entry__points_0: wss://${APP_DEPLOY_HOST}
       SENTRY_DNS: ${SENTRY_DNS}
       SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT}

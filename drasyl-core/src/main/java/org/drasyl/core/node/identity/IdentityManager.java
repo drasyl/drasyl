@@ -20,9 +20,8 @@ package org.drasyl.core.node.identity;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.drasyl.core.models.Code;
 import org.drasyl.core.models.CompressedKeyPair;
-import org.drasyl.core.models.DrasylException;
+import org.drasyl.core.node.DrasylNodeConfig;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.slf4j.Logger;
@@ -34,40 +33,54 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 /**
- * This class provides the identity of the node. This is required for signing and encryption of
- * sent messages.
+ * This class provides the identity of the node. Messages to the node are addressed to the identity.
+ * In a future release, messages will be signed and encrypted with public-private key pairs
+ * contained in the identity.
  */
 public class IdentityManager {
     private static final Logger LOG = LoggerFactory.getLogger(IdentityManager.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    private final Path path;
+    private final DrasylNodeConfig config;
     private CompressedKeyPair keyPair;
     private Identity identity;
 
     /**
      * Manages the identity at the specified file path. If there is no identity at this file path
      * yet, a new one is created.
-     *
-     * @param path path to the identity
      */
-    public IdentityManager(Path path) {
-        this.path = path.toAbsolutePath();
+    public IdentityManager(DrasylNodeConfig config) {
+        this(config, null, null);
     }
 
-    IdentityManager(CompressedKeyPair keyPair, Identity identity, Path path) {
+    IdentityManager(DrasylNodeConfig config, CompressedKeyPair keyPair, Identity identity) {
+        this.config = config;
         this.keyPair = keyPair;
         this.identity = identity;
-        this.path = path;
     }
 
     public void loadOrCreateIdentity() throws IdentityManagerException {
-        if (isIdentityFilePresent(path)) {
-            this.keyPair = readIdentityFile(path);
+        if (!config.getIdentityPublicKey().isEmpty() || !config.getIdentityPrivateKey().isEmpty()) {
+            LOG.debug("Load identity specified in config");
+            try {
+                this.keyPair = CompressedKeyPair.of(config.getIdentityPublicKey(), config.getIdentityPrivateKey());
+            }
+            catch (IllegalArgumentException | CryptoException e) {
+                throw new IdentityManagerException("Identity read from configuration seems invalid: " + e.getMessage());
+            }
         }
         else {
-            CompressedKeyPair keyPair = generateIdentity();
-            writeIdentityFile(path, keyPair);
-            this.keyPair = keyPair;
+            Path path = config.getIdentityPath();
+
+            if (isIdentityFilePresent(path)) {
+                LOG.debug("Read identity from file '{}'", path);
+                this.keyPair = readIdentityFile(path);
+            }
+            else {
+                LOG.debug("No identity present. Generate a new one and write to file '{}'", path);
+                CompressedKeyPair keyPair = generateIdentity();
+                writeIdentityFile(path, keyPair);
+                this.keyPair = keyPair;
+            }
         }
 
         this.identity = Identity.of(keyPair.getPublicKey());
@@ -94,7 +107,6 @@ public class IdentityManager {
      */
     private static CompressedKeyPair readIdentityFile(Path path) throws IdentityManagerException {
         try {
-            LOG.debug("Read identity from file '{}'", path);
             return OBJECT_MAPPER.readValue(path.toFile(), CompressedKeyPair.class);
         }
         catch (JsonProcessingException e) {
@@ -140,7 +152,6 @@ public class IdentityManager {
             throw new IdentityManagerException("Identity path '" + path + "' is not writable");
         }
         else {
-            LOG.debug("Write identity to file '{}'", path);
             try {
                 IdentityManager.OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValue(file, keyPair);
             }

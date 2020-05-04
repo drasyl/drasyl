@@ -22,17 +22,22 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
 import org.drasyl.core.common.tools.NetworkTool;
+import org.drasyl.core.models.CompressedPrivateKey;
+import org.drasyl.core.models.CompressedPublicKey;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.stream.Collectors;
 
 public class DrasylNodeConfig {
     //======================================== Config Paths ========================================
+    private static final String IDENTITY_PUBLIC_KEY = "drasyl.identity.public-key";
+    private static final String IDENTITY_PRIVATE_KEY = "drasyl.identity.private-key";
     private static final String IDENTITY_PATH = "drasyl.identity.path";
     private static final String USER_AGENT = "drasyl.user-agent";
     private static final String MAX_CONTENT_LENGTH = "drasyl.max-content-length";
@@ -47,8 +52,9 @@ public class DrasylNodeConfig {
     private static final String SERVER_SSL_PROTOCOLS = "drasyl.server.ssl.protocols";
     private static final String SERVER_MAX_HANDSHAKE_TIMEOUT = "drasyl.server.max-handshake-timeout";
     private static final String SERVER_CHANNEL_INITIALIZER = "drasyl.server.channel-initializer";
-    private final Config config;
     //======================================= Config Values ========================================
+    private final String identityPublicKey;
+    private final String identityPrivateKey;
     private final Path identityPath;
     private final String userAgent;
     private final String serverBindHost;
@@ -71,14 +77,15 @@ public class DrasylNodeConfig {
      * @throws ConfigException if the given config is invalid
      */
     public DrasylNodeConfig(Config config) {
-        this.config = config;
         config.checkValid(ConfigFactory.defaultReference(), "drasyl");
 
         // init
         this.userAgent = config.getString(USER_AGENT);
 
-        var idPath = config.getString(IDENTITY_PATH);
-        this.identityPath = Paths.get(idPath);
+        // init identity config
+        this.identityPublicKey = config.getString(IDENTITY_PUBLIC_KEY);
+        this.identityPrivateKey = config.getString(IDENTITY_PRIVATE_KEY);
+        this.identityPath = Paths.get(config.getString(IDENTITY_PATH));
 
         // Init server config
         this.serverEnabled = config.getBoolean(SERVER_ENABLED);
@@ -104,7 +111,8 @@ public class DrasylNodeConfig {
     }
 
     @SuppressWarnings({ "java:S107" })
-    DrasylNodeConfig(Config config,
+    DrasylNodeConfig(String identityPublicKey,
+                     String identityPrivateKey,
                      Path identityPath,
                      String userAgent,
                      String serverBindHost,
@@ -119,7 +127,8 @@ public class DrasylNodeConfig {
                      Set<String> serverEndpoints,
                      String serverChannelInitializer,
                      int maxContentLength) {
-        this.config = config;
+        this.identityPublicKey = identityPublicKey;
+        this.identityPrivateKey = identityPrivateKey;
         this.identityPath = identityPath;
         this.userAgent = userAgent;
         this.serverBindHost = serverBindHost;
@@ -148,17 +157,16 @@ public class DrasylNodeConfig {
         return this.userAgent;
     }
 
-    public Config getConfig() {
-        return this.config;
+    public String getIdentityPublicKey() {
+        return identityPublicKey;
+    }
+
+    public String getIdentityPrivateKey() {
+        return identityPrivateKey;
     }
 
     public Path getIdentityPath() {
         return identityPath;
-    }
-
-    @Override
-    public String toString() {
-        return "NodeServerConfig [config=" + config.getConfig("drasyl") + "]";
     }
 
     public boolean isServerEnabled() {
@@ -199,5 +207,81 @@ public class DrasylNodeConfig {
 
     public int getMaxContentLength() {
         return maxContentLength;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(identityPublicKey, identityPrivateKey, identityPath, userAgent, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, maxContentLength);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        DrasylNodeConfig that = (DrasylNodeConfig) o;
+        return serverEnabled == that.serverEnabled &&
+                serverBindPort == that.serverBindPort &&
+                serverIdleRetries == that.serverIdleRetries &&
+                flushBufferSize == that.flushBufferSize &&
+                serverSSLEnabled == that.serverSSLEnabled &&
+                maxContentLength == that.maxContentLength &&
+                Objects.equals(identityPublicKey, that.identityPublicKey) &&
+                Objects.equals(identityPrivateKey, that.identityPrivateKey) &&
+                Objects.equals(identityPath, that.identityPath) &&
+                Objects.equals(userAgent, that.userAgent) &&
+                Objects.equals(serverBindHost, that.serverBindHost) &&
+                Objects.equals(serverIdleTimeout, that.serverIdleTimeout) &&
+                Objects.equals(serverSSLProtocols, that.serverSSLProtocols) &&
+                Objects.equals(serverHandshakeTimeout, that.serverHandshakeTimeout) &&
+                Objects.equals(serverEndpoints, that.serverEndpoints) &&
+                Objects.equals(serverChannelInitializer, that.serverChannelInitializer);
+    }
+
+    @Override
+    public String toString() {
+        return "DrasylNodeConfig{" +
+                "identityPublicKey='" + identityPublicKey + '\'' +
+                ", identityPrivateKey='" + maskSecret(identityPrivateKey) + '\'' +
+                ", identityPath=" + identityPath +
+                ", userAgent='" + userAgent + '\'' +
+                ", serverBindHost='" + serverBindHost + '\'' +
+                ", serverEnabled=" + serverEnabled +
+                ", serverBindPort=" + serverBindPort +
+                ", serverIdleRetries=" + serverIdleRetries +
+                ", serverIdleTimeout=" + serverIdleTimeout +
+                ", flushBufferSize=" + flushBufferSize +
+                ", serverSSLEnabled=" + serverSSLEnabled +
+                ", serverSSLProtocols=" + serverSSLProtocols +
+                ", serverHandshakeTimeout=" + serverHandshakeTimeout +
+                ", serverEndpoints=" + serverEndpoints +
+                ", serverChannelInitializer='" + serverChannelInitializer + '\'' +
+                ", maxContentLength=" + maxContentLength +
+                '}';
+    }
+
+    /**
+     * This method replaces each character in the return of toString() with a asterisk. Can be used
+     * to mask secrets.
+     *
+     * @param secret
+     * @return
+     */
+    private static String maskSecret(Object secret) {
+        if (secret != null) {
+            String secretStr = secret.toString();
+            if (secretStr != null) {
+                return "*".repeat(secretStr.length());
+            }
+            else {
+                return null;
+            }
+        }
+        else {
+            return null;
+        }
     }
 }
