@@ -17,6 +17,7 @@ services:
       CONFIG_FORCE_drasyl_entry__points_0: wss://${APP_DEPLOY_HOST}
       SENTRY_DNS: ${SENTRY_DNS}
       SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT}
+    command: --loglevel debug
     networks:
       - default
       - proxy
