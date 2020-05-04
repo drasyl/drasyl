@@ -315,6 +315,5 @@ public abstract class DrasylNode {
      */
     private void startSuperPeerClient() {
         // FIXME: implement
-        throw new CompletionException(new Exception("not implemented"));
     }
 }
