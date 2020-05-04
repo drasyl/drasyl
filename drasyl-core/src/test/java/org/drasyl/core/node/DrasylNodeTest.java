@@ -89,7 +89,21 @@ public class DrasylNodeTest {
     }
 
     @Test
-    public void shutdownShouldEmitNormalTerminationEventOnSuccessfulShutdown() {
+    public void shartShouldEmitUpEventOnSuccessfulStart() {
+        when(identityManager.getIdentity()).thenReturn(identity);
+
+        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, server, messenger, new AtomicBoolean(false), startSequence, shutdownSequence) {
+            @Override
+            public void onEvent(Event event) {
+            }
+        });
+        drasylNode.start().join();
+
+        verify(drasylNode).onEvent(new Event(NODE_UP, new Node(identity)));
+    }
+
+    @Test
+    public void shutdownShouldEmitDownAndNormalTerminationEventOnSuccessfulShutdown() {
         when(identityManager.getIdentity()).thenReturn(identity);
 
         DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, server, messenger, new AtomicBoolean(true), startSequence, shutdownSequence) {
@@ -99,6 +113,7 @@ public class DrasylNodeTest {
         });
         drasylNode.shutdown().join();
 
+        verify(drasylNode).onEvent(new Event(NODE_DOWN, new Node(identity)));
         verify(drasylNode).onEvent(new Event(NODE_NORMAL_TERMINATION, new Node(identity)));
     }
 
