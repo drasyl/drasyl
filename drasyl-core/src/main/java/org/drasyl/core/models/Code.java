@@ -20,6 +20,16 @@ package org.drasyl.core.models;
 
 public enum Code {
     /**
+     * This event signals that the node has been started.
+     */
+    NODE_UP,
+
+    /**
+     * This event signals that the node is shut down.
+     */
+    NODE_DOWN,
+
+    /**
      * This event signals that the node has successfully registered with the super peer. If a node
      * has been configured with no super peer (e.g. if it is a root node), the event is immediately
      * emitted.
@@ -40,11 +50,6 @@ public enum Code {
      * This events signals that the node has terminated normally.
      */
     NODE_NORMAL_TERMINATION,
-
-    /**
-     * This events signals that the node was not able to deregistrer from super peer.
-     */
-    NODE_DEREGISTER_FAILED,
 
     /**
      * This events signals that the node encountered an unrecoverable error.

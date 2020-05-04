@@ -160,6 +160,7 @@ public abstract class DrasylNode {
             // The shutdown of the node includes up to two phases, which are performed sequentially
             // 1st Phase: Stop Super Peer Client (if started)
             // 2nd Phase: Stop local server (if started)
+            onEvent(new Event(NODE_DOWN, new Node(identityManager.getIdentity())));
             LOG.info("Shutdown drasyl Node with Identity '{}'...", identityManager.getIdentity().getId());
             shutdownSequence = runAsync(this::loadIdentity)
                     .thenRun(this::stopSuperPeerClient)
@@ -251,6 +252,7 @@ public abstract class DrasylNode {
                     .thenRun(this::startSuperPeerClient)
                     .whenComplete((r, e) -> {
                         if (e == null) {
+                            onEvent(new Event(NODE_UP, new Node(identityManager.getIdentity())));
                             LOG.info("drasyl Node with Identity '{}' has started", identityManager.getIdentity().getId());
                         }
                         else {
