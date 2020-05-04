@@ -19,41 +19,56 @@
 
 package org.drasyl.core.common.models;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.hasProperty;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
-
 import org.junit.jupiter.api.Test;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 public class PairTest {
-
     @Test
-    public void equalsTest() {
-        Pair<String, String> pair1 = Pair.of("test1", "test2");
+    public void firstShouldReturnFirstElement() {
+        Pair pair = Pair.of(10, "beers");
 
-        assertEquals(Pair.of("test1", "test2"), pair1);
-        assertEquals(Pair.of("test1", "test2").hashCode(), pair1.hashCode());
+        assertEquals(10, pair.first());
+    }
+    @Test
+    public void secondShouldReturnSecondElement() {
+        Pair pair = Pair.of(10, "beers");
 
-        assertNotEquals(Pair.of("test2", "test1"), pair1);
-        assertNotEquals(Pair.of("test2", "test1").hashCode(), pair1.hashCode());
-        assertNotEquals(null, pair1);
-        assertNotEquals("bla", pair1);
-
-        pair1.toString();
+        assertEquals("beers", pair.second());
     }
 
     @Test
-    public void nullParamTest() {
-        assertEquals(null, Pair.of(null, "bla").getLeft());
-        assertEquals(null, Pair.of("bla", null).getRight());
-        assertThat(Pair.of(null, null), allOf(hasProperty("left", equalTo(null)), hasProperty("right", equalTo(null))));
+    public void equalsShouldRecognizeEqualPairs() {
+        Pair pairA = Pair.of(5, "beers");
+        Pair pairB = Pair.of(5, "beers");
+        Pair pairC = Pair.of(null, "shots");
+
+        assertTrue(pairA.equals(pairA));
+        assertTrue(pairA.equals(pairB));
+        assertTrue(pairB.equals(pairA));
+        assertFalse(pairA.equals(null));
+        assertFalse(pairA.equals(pairC));
+        assertFalse(pairC.equals(pairA));
     }
 
     @Test
-    public void correctOrderTest() {
-        assertThat(Pair.of("test", 2), allOf(hasProperty("left", equalTo("test")), hasProperty("right", equalTo(2))));
+    public void hashCodeShouldRecognizeEqualPairs() {
+        Pair pairA = Pair.of(5, "beers");
+        Pair pairB = Pair.of(5, "beers");
+        Pair pairC = Pair.of(10, "shots");
+
+        assertEquals(pairA.hashCode(), pairB.hashCode());
+        assertNotEquals(pairA.hashCode(), pairC.hashCode());
+        assertNotEquals(pairB.hashCode(), pairC.hashCode());
+    }
+
+    @Test
+    void toStringShouldReturnCorrectString() {
+        String string = Pair.of(5, "beers").toString();
+
+        assertEquals("Pair{first=5, second=beers}", string);
     }
 }

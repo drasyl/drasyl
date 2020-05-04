@@ -145,8 +145,8 @@ public class ServerSession implements PeerConnection {
     public void setResponse(Response<? extends IMessage> response) {
         Pair<Class<? extends IMessage>, SingleEmitter<IMessage>> emitterPair = emitters.get(response.getMsgID());
 
-        if (emitterPair != null && emitterPair.getLeft().isInstance(response.getMessage()) && emitterPair.getRight() != null) {
-            emitterPair.getRight().onSuccess(response.getMessage());
+        if (emitterPair != null && emitterPair.first().isInstance(response.getMessage()) && emitterPair.second() != null) {
+            emitterPair.second().onSuccess(response.getMessage());
             emitters.remove(response.getMsgID());
         }
     }
