@@ -133,7 +133,7 @@ public class IdentityManager {
                                           CompressedKeyPair keyPair) throws IdentityManagerException {
         File file = path.toFile();
 
-        if (Files.isDirectory(path) || !file.getParentFile().exists()) {
+        if (Files.isDirectory(path) || (file.getParentFile() != null && !file.getParentFile().exists())) {
             throw new IdentityManagerException("Identity path '" + path + "' is a directory or path does not exist");
         }
         else if (file.exists() && !file.canWrite()) {
