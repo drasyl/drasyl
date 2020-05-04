@@ -154,7 +154,8 @@ public abstract class DrasylNode {
     public void start() throws DrasylException {
         if (!isStarted) {
             isStarted = true;
-            LOG.info("Starting drasyl Node (v.{})...", DrasylNode.getVersion());
+            LOG.info("Starting drasyl Node v{}...", DrasylNode.getVersion());
+            LOG.debug("The following configuration will be used:\n{}", config);
 
             // first of all it must be ensured that the node has an identity...
             identityManager.loadOrCreateIdentity();

@@ -101,8 +101,6 @@ public class NodeServer implements AutoCloseable {
         overrideUA();
 
         nodeServerBootstrap = new NodeServerBootstrap(this, serverBootstrap, config);
-
-        LOG.info("Started node server with the following configurations: \n {}", config);
     }
 
     NodeServer(IdentityManager identityManager,
