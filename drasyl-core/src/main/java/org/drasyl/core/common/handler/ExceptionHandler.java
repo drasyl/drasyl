@@ -19,9 +19,7 @@
 
 package org.drasyl.core.common.handler;
 
-import io.netty.channel.ChannelDuplexHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
+import io.netty.channel.*;
 import org.drasyl.core.common.messages.NodeServerException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -75,6 +73,28 @@ public class ExceptionHandler extends ChannelDuplexHandler {
         this.exceptionListener = new ChannelExceptionListener();
         this.handledCause = null;
         this.rethrowExceptions = rethrowExceptions;
+    }
+
+    @Override
+    public void bind(ChannelHandlerContext ctx, SocketAddress localAddress,
+                     ChannelPromise promise) throws Exception {
+        ctx.bind(localAddress, exceptionListener.getListener(promise, ctx));
+    }
+
+    @Override
+    public void disconnect(ChannelHandlerContext ctx, ChannelPromise promise)
+            throws Exception {
+        ctx.disconnect(exceptionListener.getListener(promise, ctx));
+    }
+
+    @Override
+    public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+        ctx.close(exceptionListener.getListener(promise, ctx));
+    }
+
+    @Override
+    public void deregister(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+        ctx.deregister(exceptionListener.getListener(promise, ctx));
     }
 
     @Override

@@ -84,7 +84,7 @@ public abstract class ClientInitializer extends DefaultSessionInitializer {
         });
 
         pipeline.addLast(new HttpClientCodec(),
-            new HttpObjectAggregator(maxContentLength),
+            new HttpObjectAggregator(65536),
             webSocketClientHandler);
     }
 
