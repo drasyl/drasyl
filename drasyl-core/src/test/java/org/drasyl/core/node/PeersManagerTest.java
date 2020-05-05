@@ -2,6 +2,7 @@ package org.drasyl.core.node;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import org.drasyl.core.common.models.Pair;
 import org.drasyl.core.node.identity.Identity;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -219,15 +220,6 @@ class PeersManagerTest {
     }
 
     @Test
-    void getSuperPeerInformationShouldReturnInformationOfTheSuperPeer() {
-        PeersManager manager = new PeersManager(lock, Map.of(superPeer, peer), children, superPeer);
-
-        assertEquals(peer, manager.getSuperPeerInformation());
-        verify(readLock).lock();
-        verify(readLock).unlock();
-    }
-
-    @Test
     void getPeerShouldReturnInformationOfGivenPeer() {
         PeersManager manager = new PeersManager(lock, Map.of(identity, peer), children, superPeer);
 
@@ -237,10 +229,10 @@ class PeersManagerTest {
     }
 
     @Test
-    void getSuperPeerShouldReturnIdentityOfTheSuperPeer() {
-        PeersManager manager = new PeersManager(lock, peers, children, superPeer);
+    void getSuperPeerShouldReturnIdentityAndInformationOfTheSuperPeer() {
+        PeersManager manager = new PeersManager(lock,  Map.of(superPeer, peer), children, superPeer);
 
-        assertEquals(superPeer, manager.getSuperPeer());
+        assertEquals(Pair.of(superPeer, peer), manager.getSuperPeer());
         verify(readLock).lock();
         verify(readLock).unlock();
     }
@@ -251,7 +243,7 @@ class PeersManagerTest {
 
         manager.setSuperPeer(superPeer);
 
-        assertEquals(superPeer, manager.getSuperPeer());
+        assertEquals(Pair.of(superPeer, peer), manager.getSuperPeer());
         verify(readLock).lock();
         verify(readLock).unlock();
     }

@@ -42,6 +42,7 @@ import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static org.drasyl.core.models.Code.*;
@@ -72,7 +73,7 @@ public abstract class DrasylNode {
             this.config = new DrasylNodeConfig(config);
             this.identityManager = new IdentityManager(this.config);
             this.peersManager = new PeersManager();
-            this.messenger = new Messenger(identityManager, peersManager);
+            this.messenger = new Messenger(identityManager, peersManager, this::onEvent);
             this.server = new NodeServer(identityManager, messenger, peersManager);
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
@@ -122,12 +123,7 @@ public abstract class DrasylNode {
      * @throws DrasylException
      */
     public synchronized void send(Identity recipient, byte[] payload) throws DrasylException {
-        if (identityManager.getIdentity().equals(recipient)) {
-            onEvent(new Event(Code.MESSAGE, Pair.of(recipient, payload)));
-        }
-        else {
-            messenger.send(new Message(identityManager.getIdentity(), recipient, payload));
-        }
+        messenger.send(new Message(identityManager.getIdentity(), recipient, payload));
     }
 
     public abstract void onEvent(Event event);

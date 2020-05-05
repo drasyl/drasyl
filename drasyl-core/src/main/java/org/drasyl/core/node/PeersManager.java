@@ -20,6 +20,7 @@ package org.drasyl.core.node;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import org.drasyl.core.common.models.Pair;
 import org.drasyl.core.node.identity.Identity;
 
 import java.util.*;
@@ -212,17 +213,6 @@ public class PeersManager {
         }
     }
 
-    public PeerInformation getSuperPeerInformation() {
-        try {
-            lock.readLock().lock();
-
-            return peers.get(superPeer);
-        }
-        finally {
-            lock.readLock().unlock();
-        }
-    }
-
     public PeerInformation getPeer(Identity identity) {
         requireNonNull(identity);
 
@@ -236,11 +226,22 @@ public class PeersManager {
         }
     }
 
-    public Identity getSuperPeer() {
+    /**
+     * Returns identity and information about Super Peer. If no Super Peer is defined, then
+     * <code>null</code> is returned.
+     *
+     * @return
+     */
+    public Pair<Identity, PeerInformation> getSuperPeer() {
         try {
             lock.readLock().lock();
 
-            return superPeer;
+            if (superPeer == null) {
+                return null;
+            }
+            else {
+                return Pair.of(superPeer, peers.get(superPeer));
+            }
         }
         finally {
             lock.readLock().unlock();

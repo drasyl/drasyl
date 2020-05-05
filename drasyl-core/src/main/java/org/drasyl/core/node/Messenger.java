@@ -16,37 +16,51 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.core.node;
 
 import org.drasyl.core.common.messages.Message;
+import org.drasyl.core.common.models.Pair;
 import org.drasyl.core.models.Code;
 import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.models.Event;
+import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.node.identity.IdentityManager;
 
 import java.util.Optional;
+import java.util.function.Consumer;
 
+/**
+ * The Messenger is responsible for sending messages to the recipient. Depending on the recipient,
+ * the message is sent to the application, a client or the super peer.
+ */
 public class Messenger {
     private final IdentityManager identityManager;
     private final PeersManager peersManager;
+    private final Consumer<Event> onEvent;
 
     public Messenger(IdentityManager identityManager,
-                     PeersManager peersManager) {
+                     PeersManager peersManager, Consumer<Event> onEvent) {
         this.identityManager = identityManager;
         this.peersManager = peersManager;
+        this.onEvent = onEvent;
     }
 
     public void send(Message message) throws DrasylException {
-        try {
-            sendToClient(message);
+        if (identityManager.getIdentity().equals(message.getRecipient())) {
+            // Our node is the receiver, create message event
+            onEvent.accept(new Event(Code.MESSAGE, Pair.of(message.getRecipient(), message.getPayload())));
         }
-        catch (ClientNotFoundException e) {
+        else {
             try {
-                sendToSuperPeer(message);
+                sendToClient(message);
             }
-            catch (NoSuperPeerException ex) {
-                throw new DrasylException("Unable to send message: " + message.toString());
+            catch (ClientNotFoundException e) {
+                try {
+                    sendToSuperPeer(message);
+                }
+                catch (NoSuperPeerException ex) {
+                    throw new DrasylException("Unable to send message: " + message.toString());
+                }
             }
         }
     }
@@ -54,14 +68,22 @@ public class Messenger {
     private void sendToClient(Message message) throws ClientNotFoundException {
         Optional<PeerInformation> peerInformation = Optional.ofNullable(peersManager.getPeer(message.getRecipient()));
 
-        if(peerInformation.isPresent()) {
+        if (peerInformation.isPresent()) {
             peerInformation.get().getConnections().iterator().next().send(message);
-        } else {
+        }
+        else {
             throw new ClientNotFoundException("Can't found client: '" + message.getRecipient() + "'");
         }
     }
 
     private void sendToSuperPeer(Message message) throws NoSuperPeerException {
-        // FIXME: implement
+        Optional<Pair<Identity, PeerInformation>> superPeer = Optional.ofNullable(peersManager.getSuperPeer());
+
+        if (superPeer.isPresent()) {
+            superPeer.get().second().getConnections().iterator().next().send(message);
+        }
+        else {
+            throw new NoSuperPeerException();
+        }
     }
 }

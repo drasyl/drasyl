@@ -128,21 +128,7 @@ public class DrasylNodeTest {
     }
 
     @Test
-    public void sendShouldSendTheMessageToItself() throws DrasylException {
-        when(identityManager.getIdentity()).thenReturn(identity);
-
-        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, server, messenger, started, startSequence, shutdownSequence) {
-            @Override
-            public void onEvent(Event event) {
-            }
-        });
-        drasylNode.send(identity, payload);
-
-        verify(drasylNode).onEvent(new Event(MESSAGE, Pair.of(identity, payload)));
-    }
-
-    @Test
-    public void sendShouldSendTheMessageToOtherRecipient() throws DrasylException {
+    public void sendShouldCallMessenger() throws DrasylException {
         when(identityManager.getIdentity()).thenReturn(identity);
 
         DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, server, messenger, started, startSequence, shutdownSequence) {
