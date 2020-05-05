@@ -34,7 +34,6 @@ import org.drasyl.core.node.PeerInformation;
 import org.drasyl.core.node.PeersManager;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.node.identity.IdentityManager;
-import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,9 +42,11 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+
+import static java.util.concurrent.CompletableFuture.runAsync;
 
 @SuppressWarnings({ "squid:S00107" })
 public class NodeServer implements AutoCloseable {
@@ -53,16 +54,14 @@ public class NodeServer implements AutoCloseable {
     public final EventLoopGroup workerGroup;
     public final EventLoopGroup bossGroup;
     public final ServerBootstrap serverBootstrap;
-    private final CompletableFuture<Void> startedFuture;
-    private final CompletableFuture<Void> stoppedFuture;
     private final List<Runnable> beforeCloseListeners;
     private final IdentityManager identityManager;
     private final PeersManager peersManager;
     private final DrasylNodeConfig config;
     private final Messenger messenger;
+    private final AtomicBoolean opened;
     private Channel serverChannel;
     private NodeServerBootstrap nodeServerBootstrap;
-    private boolean started;
     private int actualPort;
     private Set<URI> actualEndpoints;
 
@@ -70,7 +69,8 @@ public class NodeServer implements AutoCloseable {
      * Starts a node server for forwarding messages to child peers.<br> Default Port: 22527
      */
     public NodeServer(IdentityManager identityManager,
-                      PeersManager peersManager, Messenger messenger) throws DrasylException {
+                      Messenger messenger,
+                      PeersManager peersManager) throws DrasylException {
         this(identityManager, messenger, peersManager, ConfigFactory.load());
     }
 
@@ -96,7 +96,7 @@ public class NodeServer implements AutoCloseable {
         this(identityManager, messenger, peersManager, config,
                 null, new ServerBootstrap(),
                 new NioEventLoopGroup(Math.min(1, ForkJoinPool.commonPool().getParallelism() - 1)), new NioEventLoopGroup(1), new ArrayList<>(),
-                new CompletableFuture<>(), new CompletableFuture<>(), null, false, -1, new HashSet<>());
+                new CompletableFuture<>(), new CompletableFuture<>(), null, new AtomicBoolean(false), -1, new HashSet<>());
 
         overrideUA();
 
@@ -115,7 +115,7 @@ public class NodeServer implements AutoCloseable {
                CompletableFuture<Void> startedFuture,
                CompletableFuture<Void> stoppedFuture,
                NodeServerBootstrap nodeServerBootstrap,
-               boolean started,
+               AtomicBoolean opened,
                int actualPort,
                Set<URI> actualEndpoints) {
         this.identityManager = identityManager;
@@ -126,10 +126,8 @@ public class NodeServer implements AutoCloseable {
         this.workerGroup = workerGroup;
         this.bossGroup = bossGroup;
         this.beforeCloseListeners = beforeCloseListeners;
-        this.startedFuture = startedFuture;
-        this.stoppedFuture = stoppedFuture;
         this.nodeServerBootstrap = nodeServerBootstrap;
-        this.started = started;
+        this.opened = opened;
         this.messenger = messenger;
         this.actualPort = actualPort;
         this.actualEndpoints = actualEndpoints;
@@ -181,32 +179,8 @@ public class NodeServer implements AutoCloseable {
         return workerGroup;
     }
 
-    public CompletableFuture<Void> getStartedFuture() {
-        return startedFuture;
-    }
-
-    public CompletableFuture<Void> getStoppedFuture() {
-        return stoppedFuture;
-    }
-
-    public boolean getStarted() {
-        return started;
-    }
-
-    /**
-     * Wait till relay server is started and ready to accept connections.
-     */
-    public void awaitOpen() throws NodeServerException {
-        try {
-            startedFuture.get();
-        }
-        catch (InterruptedException e) {
-            LOG.warn("Thread got interrupted", e);
-            Thread.currentThread().interrupt();
-        }
-        catch (ExecutionException e) {
-            throw new NodeServerException(e.getCause());
-        }
+    public boolean isOpen() {
+        return opened.get();
     }
 
     public IdentityManager getMyIdentity() {
@@ -216,17 +190,8 @@ public class NodeServer implements AutoCloseable {
     /**
      * Starts the relay server.
      */
-    public synchronized void open() throws NodeServerException {
-        if (started) {
-            throw new NodeServerException("Server is already started!");
-        }
-
-        started = true;
-        new Thread(this::openServerChannel).start();
-    }
-
-    void openServerChannel() {
-        try {
+    public void open() throws NodeServerException {
+        if (opened.compareAndSet(false, true)) {
             serverChannel = nodeServerBootstrap.getChannel();
 
             InetSocketAddress socketAddress = (InetSocketAddress) serverChannel.localAddress();
@@ -234,16 +199,6 @@ public class NodeServer implements AutoCloseable {
             actualEndpoints = config.getServerEndpoints().stream()
                     .map(a -> overridePort(URI.create(a), getPort()))
                     .collect(Collectors.toSet());
-
-            startedFuture.complete(null);
-            serverChannel.closeFuture().sync();
-        }
-        catch (Exception e) {
-            startedFuture.completeExceptionally(e);
-            LOG.error("", e);
-        }
-        finally {
-            close();
         }
     }
 
@@ -266,8 +221,6 @@ public class NodeServer implements AutoCloseable {
 
     /**
      * Returns the actual bind port used by this server.
-     *
-     * @return
      */
     public int getPort() {
         return actualPort;
@@ -278,39 +231,23 @@ public class NodeServer implements AutoCloseable {
      */
     @Override
     public void close() {
-        beforeCloseListeners.forEach(Runnable::run);
+        if (opened.compareAndSet(true, false)) {
+            beforeCloseListeners.forEach(Runnable::run);
 
-        Map<Identity, PeerInformation> localPeers = new HashMap<>(peersManager.getPeers());
-        localPeers.keySet().retainAll(peersManager.getChildren());
+            Map<Identity, PeerInformation> localPeers = new HashMap<>(peersManager.getPeers());
+            localPeers.keySet().retainAll(peersManager.getChildren());
 
-        localPeers.forEach((id, peer) -> peer.getConnections().forEach(con -> {
-            if (con != null) {
-                con.close();
+            localPeers.forEach((id, peer) -> peer.getConnections().forEach(con -> {
+                if (con != null) {
+                    con.close();
+                }
+            }));
+
+            bossGroup.shutdownGracefully().syncUninterruptibly();
+            workerGroup.shutdownGracefully().syncUninterruptibly();
+            if (serverChannel != null && serverChannel.isOpen()) {
+                serverChannel.closeFuture().syncUninterruptibly();
             }
-        }));
-
-        bossGroup.shutdownGracefully().syncUninterruptibly();
-        workerGroup.shutdownGracefully().syncUninterruptibly();
-        if (serverChannel != null && serverChannel.isOpen()) {
-            serverChannel.closeFuture().syncUninterruptibly();
-        }
-
-        stoppedFuture.complete(null);
-    }
-
-    /**
-     * Wait till relay server is stopped.
-     */
-    public void awaitClose() throws NodeServerException {
-        try {
-            stoppedFuture.get();
-        }
-        catch (InterruptedException e) {
-            LOG.warn("Thread got interrupted", e);
-            Thread.currentThread().interrupt();
-        }
-        catch (ExecutionException e) {
-            throw new NodeServerException(e.getCause());
         }
     }
 }

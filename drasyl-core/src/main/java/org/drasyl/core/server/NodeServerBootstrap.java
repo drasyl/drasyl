@@ -55,15 +55,20 @@ public class NodeServerBootstrap {
         }
     }
 
-    public Channel getChannel() throws InterruptedException {
-        return serverBootstrap
-                .group(nodeServer.bossGroup, nodeServer.workerGroup)
-                .channel(NioServerSocketChannel.class)
+    public Channel getChannel() throws NodeServerException {
+        try {
+            return serverBootstrap
+                    .group(nodeServer.bossGroup, nodeServer.workerGroup)
+                    .channel(NioServerSocketChannel.class)
 //                .handler(new LoggingHandler(LogLevel.INFO))
-                .childHandler(relayServerInitializer)
-                .bind(config.getServerBindHost(), config.getServerBindPort())
-                .sync()
-                .channel();
+                    .childHandler(relayServerInitializer)
+                    .bind(config.getServerBindHost(), config.getServerBindPort())
+                    .syncUninterruptibly()
+                    .channel();
+        }
+        catch (IllegalArgumentException e) {
+            throw new NodeServerException("Unable to get channel: " + e.getMessage());
+        }
     }
 
     private ChannelInitializer<SocketChannel> getChannelInitializer(NodeServer relay, String className) throws ClassNotFoundException,
