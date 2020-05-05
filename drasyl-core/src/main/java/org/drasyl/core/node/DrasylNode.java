@@ -43,7 +43,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static java.util.concurrent.CompletableFuture.failedFuture;
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static org.drasyl.core.models.Code.*;
 
@@ -74,7 +73,7 @@ public abstract class DrasylNode {
             this.identityManager = new IdentityManager(this.config);
             this.peersManager = new PeersManager();
             this.messenger = new Messenger(identityManager, peersManager);
-            this.server = new NodeServer(identityManager, peersManager, messenger);
+            this.server = new NodeServer(identityManager, messenger, peersManager);
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = new CompletableFuture<>();
@@ -212,15 +211,9 @@ public abstract class DrasylNode {
      */
     private void stopServer() {
         if (config.isServerEnabled()) {
-            try {
-                LOG.info("Stop Server listening at {}:{}...", config.getServerBindHost(), server.getPort());
-                server.close();
-                server.awaitClose();
-                LOG.info("Server stopped");
-            }
-            catch (NodeServerException e) {
-                throw new CompletionException(e);
-            }
+            LOG.info("Stop Server listening at {}:{}...", config.getServerBindHost(), server.getPort());
+            server.close();
+            LOG.info("Server stopped");
         }
     }
 
@@ -302,7 +295,6 @@ public abstract class DrasylNode {
             try {
                 LOG.debug("Start Server...");
                 server.open();
-                server.awaitOpen();
                 LOG.debug("Server is now listening at {}:{}", config.getServerBindHost(), server.getPort());
             }
             catch (NodeServerException e) {

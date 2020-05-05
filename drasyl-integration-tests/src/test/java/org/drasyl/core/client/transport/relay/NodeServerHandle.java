@@ -5,12 +5,11 @@ import org.drasyl.core.node.Messenger;
 import org.drasyl.core.node.PeersManager;
 import org.drasyl.core.node.identity.IdentityManager;
 import org.drasyl.core.server.NodeServer;
-import org.drasyl.core.server.NodeServerException;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import org.drasyl.core.server.NodeServerException;
 
 import java.net.InetSocketAddress;
-import java.net.URISyntaxException;
 
 public class NodeServerHandle {
     private final Config config;
@@ -41,12 +40,10 @@ public class NodeServerHandle {
 
     void start() throws NodeServerException {
         server.open();
-        server.awaitOpen();
     }
 
-    void shutdown() throws NodeServerException {
+    void shutdown() {
         server.close();
-        server.awaitClose();
     }
 
     public Config getConfig() {

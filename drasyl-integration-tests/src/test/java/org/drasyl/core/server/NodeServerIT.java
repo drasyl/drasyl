@@ -31,7 +31,6 @@ import org.drasyl.core.models.CompressedKeyPair;
 import org.drasyl.core.models.CompressedPrivateKey;
 import org.drasyl.core.models.CompressedPublicKey;
 import org.drasyl.core.models.DrasylException;
-import org.drasyl.core.node.DrasylNode;
 import org.drasyl.core.node.DrasylNodeConfig;
 import org.drasyl.core.node.Messenger;
 import org.drasyl.core.node.PeersManager;
@@ -82,7 +81,6 @@ public class NodeServerIT {
 
     @BeforeEach
     public void setup() throws DrasylException, CryptoException {
-        DrasylNode node = mock(DrasylNode.class);
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
         identityManager = mock(IdentityManager.class);
         PeersManager peersManager = new PeersManager();
@@ -95,7 +93,6 @@ public class NodeServerIT {
 
         TestHelper.waitUntilNetworkAvailable(config.getServerBindPort());
         server.open();
-        server.awaitOpen();
 
         CompressedKeyPair keyPair = mock(CompressedKeyPair.class);
         CompressedPublicKey publicKey = CompressedPublicKey.of("0343bc674c4e58a289d3904a16f83177581770d32e3ee0d63b7c75ee2b32c733b1");
@@ -108,12 +105,11 @@ public class NodeServerIT {
     }
 
     @AfterEach
-    public void cleanUp() throws org.drasyl.core.server.NodeServerException {
+    public void cleanUp() {
         serverSessions.forEach(s -> s.send(new Leave()));
         serverSessions.clear();
 
         server.close();
-        server.awaitClose();
     }
 
     @Test
@@ -623,22 +619,21 @@ public class NodeServerIT {
     }
 
     @Test
-    public void shouldOpenAndCloseGracefully() throws DrasylException {
-        NodeServer server = new NodeServer(identityManager, mock(PeersManager.class), mock(Messenger.class));
-        server.open();
-        server.awaitOpen();
-        server.close();
-        server.awaitClose();
+    public void shouldOpenAndCloseGracefully() throws DrasylException, ExecutionException, InterruptedException {
+        NodeServer server = new NodeServer(identityManager, mock(Messenger.class), mock(PeersManager.class));
 
-        assertTrue(server.getStoppedFuture().isDone());
+        server.open();
+        server.close();
+
+        assertTrue(true);
     }
 
     @Test
-    public void startShouldFailIfInvalidPortIsGiven() throws DrasylException {
+    public void openShouldFailIfInvalidPortIsGiven() throws DrasylException {
         Config config =
                 ConfigFactory.parseString("drasyl.server.bind-port = 72522").withFallback(ConfigFactory.load());
         NodeServer server = new NodeServer(identityManager, mock(Messenger.class), mock(PeersManager.class), config);
-        server.open();
-        assertThrows(org.drasyl.core.server.NodeServerException.class, server::awaitOpen);
+
+        assertThrows(NodeServerException.class, () -> server.open());
     }
 }
