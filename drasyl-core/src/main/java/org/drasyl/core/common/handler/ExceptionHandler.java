@@ -33,6 +33,7 @@ import java.util.Objects;
  */
 public class ExceptionHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ExceptionHandler.class);
+    public static final String EXCEPTION_HANDLER = "exceptionHandler";
     private final ChannelExceptionListener exceptionListener;
     Throwable handledCause;
     private final boolean rethrowExceptions;

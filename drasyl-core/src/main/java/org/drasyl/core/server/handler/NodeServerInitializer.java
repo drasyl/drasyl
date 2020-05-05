@@ -39,6 +39,14 @@ import org.slf4j.LoggerFactory;
 import javax.net.ssl.SSLException;
 import java.security.cert.CertificateException;
 
+import static org.drasyl.core.common.handler.ExceptionHandler.EXCEPTION_HANDLER;
+import static org.drasyl.core.common.handler.LeaveHandler.LEAVE_HANDLER;
+import static org.drasyl.core.common.handler.codec.message.MessageDecoder.MESSAGE_DECODER;
+import static org.drasyl.core.common.handler.codec.message.MessageEncoder.MESSAGE_ENCODER;
+import static org.drasyl.core.server.handler.JoinHandler.JOIN_GUARD;
+import static org.drasyl.core.server.handler.KillOnExceptionHandler.KILL_SWITCH;
+import static org.drasyl.core.server.handler.ServerSessionHandler.HANDLER;
+
 /**
  * Creates a newly configured {@link ChannelPipeline} for the node server.
  */
@@ -72,8 +80,8 @@ public class NodeServerInitializer extends DefaultSessionInitializer {
     @Override
     protected void pojoMarshalStage(ChannelPipeline pipeline) {
         // From String to Message
-        pipeline.addLast("messageDecoder", ServerActionMessageDecoder.INSTANCE);
-        pipeline.addLast("messageEncoder", MessageEncoder.INSTANCE);
+        pipeline.addLast(MESSAGE_DECODER, ServerActionMessageDecoder.INSTANCE);
+        pipeline.addLast(MESSAGE_ENCODER, MessageEncoder.INSTANCE);
     }
 
     @Override
@@ -88,24 +96,24 @@ public class NodeServerInitializer extends DefaultSessionInitializer {
     @Override
     protected void customStage(ChannelPipeline pipeline) {
         // Leave handler
-        pipeline.addLast("leaveHandler", LeaveHandler.INSTANCE);
+        pipeline.addLast(LEAVE_HANDLER, LeaveHandler.INSTANCE);
 
         // Guards
-        pipeline.addLast("joinGuard", new JoinHandler(server.getConfig().getServerHandshakeTimeout().toMillis()));
+        pipeline.addLast(JOIN_GUARD, new JoinHandler(server.getConfig().getServerHandshakeTimeout().toMillis()));
 
         // Server handler
-        pipeline.addLast("handler", new ServerSessionHandler(this.server));
+        pipeline.addLast(HANDLER, new ServerSessionHandler(this.server));
     }
 
     @Override
     protected void exceptionStage(ChannelPipeline pipeline) {
         // Catch Errors
-        pipeline.addLast("exceptionHandler", new ExceptionHandler(true));
+        pipeline.addLast(EXCEPTION_HANDLER, new ExceptionHandler(true));
     }
 
     @Override
     protected void afterExceptionStage(ChannelPipeline pipeline) {
         // Kill if Client is not initialized
-        pipeline.addLast("killSwitch", new KillOnExceptionHandler(server));
+        pipeline.addLast(KILL_SWITCH, new KillOnExceptionHandler(server));
     }
 }

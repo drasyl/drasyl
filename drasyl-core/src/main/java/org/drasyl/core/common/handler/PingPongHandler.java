@@ -35,6 +35,7 @@ import io.netty.util.ReferenceCountUtil;
  * also ask periodically for a {@link Pong} from the peer.
  */
 public class PingPongHandler extends SimpleChannelInboundHandler<IMessage> {
+    public static final String PING_PONG_HANDLER = "pingPongHandler";
     protected final short retries;
     protected short counter;
 

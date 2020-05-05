@@ -39,6 +39,7 @@ public class MessageEncoder extends MessageToMessageEncoder<IMessage> {
     private static final Logger LOG = LoggerFactory.getLogger(MessageEncoder.class);
     public static final MessageEncoder INSTANCE = new MessageEncoder();
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+    public static final String MESSAGE_ENCODER = "messageEncoder";
 
     private MessageEncoder() {
     }
