@@ -36,12 +36,8 @@ public class KillOnExceptionHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        if (server.getPeersManager().getPeers().values().stream().noneMatch(
-                peerInformation -> peerInformation.getConnections().stream().anyMatch(
-                        con -> con.getConnectionId().equals(ctx.channel().id().asLongText())))) {
-            ctx.writeAndFlush(new NodeServerException(
-                    "Exception occurred during initialization stage. The connection will shut down."));
-            ctx.close();
-        }
+        ctx.writeAndFlush(new NodeServerException(
+                "Exception occurred during initialization stage. The connection will shut down."));
+        ctx.close();
     }
 }

@@ -59,30 +59,13 @@ class KillOnExceptionHandlerTest {
         when(channelId.asLongText()).thenReturn(id);
     }
 
-    // throw exception and kill connection
     @Test
-    void exceptionCaught() {
+    void exceptionCaughtShouldWriteExceptionToChannelAndThenCloseIt() {
         when(peersManager.getPeers()).thenReturn(Map.of());
         KillOnExceptionHandler handler = new KillOnExceptionHandler(nodeServer);
         handler.exceptionCaught(ctx, cause);
 
         verify(ctx, times(1)).writeAndFlush(any(NodeServerException.class));
         verify(ctx, times(1)).close();
-    }
-
-    // do nothing
-    @Test
-    void exceptionCaughtInitializedChannels() {
-        PeerInformation peerInformation = new PeerInformation();
-        PeerConnection peerConnection = mock(PeerConnection.class);
-        peerInformation.addPeerConnection(peerConnection);
-        when(peerConnection.getConnectionId()).thenReturn(id);
-
-        when(peersManager.getPeers()).thenReturn(Map.of(IdentityTestHelper.random(), peerInformation));
-        KillOnExceptionHandler handler = new KillOnExceptionHandler(nodeServer);
-        handler.exceptionCaught(ctx, cause);
-
-        verify(ctx, never()).writeAndFlush(any(NodeServerException.class));
-        verify(ctx, never()).close();
     }
 }

@@ -39,6 +39,8 @@ import java.net.URISyntaxException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+import static org.drasyl.core.server.handler.KillOnExceptionHandler.KILL_SWITCH;
+
 /**
  * This handler mange in-/oncoming messages and pass them to the correct sub-function. It also
  * creates a new {@link ServerSession} object if a {@link Join} has pass the {@link JoinHandler}
@@ -139,6 +141,7 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<ServerActi
                 serverSession = new ServerSession(ctx.channel(), uri, identity,
                         Optional.ofNullable(jm.getUserAgent()).orElse("U/A"));
                 sessionReadyFuture.complete(serverSession);
+                ctx.pipeline().remove(KILL_SWITCH);
                 LOG.debug("Create new channel {}, for ServerSession {}", ctx.channel().id(), serverSession);
             }
             else {
