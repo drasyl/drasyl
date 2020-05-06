@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 public class LeaveHandler extends SimpleChannelInboundHandler<Leave> {
     private static final Logger LOG = LoggerFactory.getLogger(LeaveHandler.class);
     public static final LeaveHandler INSTANCE = new LeaveHandler();
+    public static final String LEAVE_HANDLER = "leaveHandler";
 
     private LeaveHandler() {
     }

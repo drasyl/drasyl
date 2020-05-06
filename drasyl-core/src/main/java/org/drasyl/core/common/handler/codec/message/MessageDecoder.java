@@ -42,6 +42,7 @@ public class MessageDecoder extends MessageToMessageDecoder<TextWebSocketFrame> 
     private static final Logger LOG = LoggerFactory.getLogger(MessageDecoder.class);
     public static final MessageDecoder INSTANCE = new MessageDecoder();
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+    public static final String MESSAGE_DECODER = "messageDecoder";
 
     private MessageDecoder() {
     }

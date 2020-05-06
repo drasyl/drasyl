@@ -46,6 +46,7 @@ import java.util.concurrent.CompletableFuture;
  */
 public class ServerSessionHandler extends SimpleChannelInboundHandler<ServerAction> {
     private static final Logger LOG = LoggerFactory.getLogger(ServerSessionHandler.class);
+    public static final String HANDLER = "handler";
     private final NodeServer server;
     private final CompletableFuture<ServerSession> sessionReadyFuture;
     private ServerSession serverSession;

@@ -27,6 +27,7 @@ import org.drasyl.core.server.NodeServer;
  * This handler closes the channel if an exception occurs during initialization stage.
  */
 public class KillOnExceptionHandler extends ChannelInboundHandlerAdapter {
+    public static final String KILL_SWITCH = "killSwitch";
     private final NodeServer server;
 
     public KillOnExceptionHandler(NodeServer server) {

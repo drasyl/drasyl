@@ -48,6 +48,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import static org.drasyl.core.common.handler.ExceptionHandler.EXCEPTION_HANDLER;
+import static org.drasyl.core.common.handler.codec.message.MessageDecoder.MESSAGE_DECODER;
+import static org.drasyl.core.common.handler.codec.message.MessageEncoder.MESSAGE_ENCODER;
+
 /**
  * This factory produces outbound netty connections.
  */
@@ -323,20 +327,20 @@ public class OutboundConnectionFactory {
             @Override
             protected void exceptionStage(ChannelPipeline pipeline) {
                 // Catch Errors
-                pipeline.addLast("exceptionHandler", new ExceptionHandler(false));
+                pipeline.addLast(EXCEPTION_HANDLER, new ExceptionHandler(false));
             }
 
             @Override
             protected void pojoMarshalStage(ChannelPipeline pipeline) {
                 // From String to Message
                 if (relayToRelayCon) {
-                    pipeline.addLast("messageDecoder", ServerActionMessageDecoder.INSTANCE);
+                    pipeline.addLast(MESSAGE_DECODER, ServerActionMessageDecoder.INSTANCE);
                 }
                 else {
-                    pipeline.addLast("messageDecoder", MessageDecoder.INSTANCE);
+                    pipeline.addLast(MESSAGE_DECODER, MessageDecoder.INSTANCE);
                 }
 
-                pipeline.addLast("messageEncoder", MessageEncoder.INSTANCE);
+                pipeline.addLast(MESSAGE_ENCODER, MessageEncoder.INSTANCE);
             }
         };
     }

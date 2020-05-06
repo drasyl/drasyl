@@ -39,6 +39,7 @@ import java.util.concurrent.TimeUnit;
  */
 public class JoinHandler extends SimpleChannelDuplexHandler<IMessage, IMessage> {
     private static final Logger LOG = LoggerFactory.getLogger(JoinHandler.class);
+    public static final String JOIN_GUARD = "joinGuard";
     protected volatile boolean authenticated;
     private ScheduledFuture<?> timeoutFuture;
     private final long timeout;

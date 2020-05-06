@@ -32,6 +32,10 @@ import io.netty.handler.timeout.IdleStateHandler;
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 
+import static org.drasyl.core.common.handler.PingPongHandler.PING_PONG_HANDLER;
+import static org.drasyl.core.common.handler.codec.message.MessageDecoder.MESSAGE_DECODER;
+import static org.drasyl.core.common.handler.codec.message.MessageEncoder.MESSAGE_ENCODER;
+
 /**
  * Creates a newly configured {@link ChannelPipeline} for a new channel for a ServerSession to or from a relay server.
  *
@@ -40,6 +44,7 @@ import java.util.concurrent.TimeUnit;
  * </p>
  */
 public abstract class DefaultSessionInitializer extends ChannelInitializer<SocketChannel> {
+    public static final String IDLE_EVENT = "idleEvent";
     private final int flushBufferSize;
     private final Duration readIdleTimeout;
     private final int pingPongRetries;
@@ -133,8 +138,8 @@ public abstract class DefaultSessionInitializer extends ChannelInitializer<Socke
      */
     protected void pojoMarshalStage(ChannelPipeline pipeline) {
         // From String to Message
-        pipeline.addLast("messageDecoder", MessageDecoder.INSTANCE);
-        pipeline.addLast("messageEncoder", MessageEncoder.INSTANCE);
+        pipeline.addLast(MESSAGE_DECODER, MessageDecoder.INSTANCE);
+        pipeline.addLast(MESSAGE_ENCODER, MessageEncoder.INSTANCE);
     }
 
     /**
@@ -145,8 +150,8 @@ public abstract class DefaultSessionInitializer extends ChannelInitializer<Socke
     protected void idleStage(ChannelPipeline pipeline) {
         // Add handler to emit idle event for ping/pong requests
         if (!readIdleTimeout.isZero())
-            pipeline.addLast("idleEvent", new IdleStateHandler(readIdleTimeout.toMillis(), 0, 0, TimeUnit.MILLISECONDS));
-        pipeline.addLast("pingPongHandler", new PingPongHandler(pingPongRetries));
+            pipeline.addLast(IDLE_EVENT, new IdleStateHandler(readIdleTimeout.toMillis(), 0, 0, TimeUnit.MILLISECONDS));
+        pipeline.addLast(PING_PONG_HANDLER, new PingPongHandler(pingPongRetries));
     }
 
     /**
