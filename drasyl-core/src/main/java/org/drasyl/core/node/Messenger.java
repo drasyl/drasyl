@@ -48,7 +48,7 @@ public class Messenger {
     public void send(Message message) throws DrasylException {
         if (identityManager.getIdentity().equals(message.getRecipient())) {
             // Our node is the receiver, create message event
-            onEvent.accept(new Event(Code.MESSAGE, Pair.of(message.getRecipient(), message.getPayload())));
+            onEvent.accept(new Event(Code.MESSAGE, Pair.of(message.getSender(), message.getPayload())));
         }
         else {
             try {
