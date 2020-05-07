@@ -636,4 +636,37 @@ public class NodeServerIT {
 
         assertThrows(NodeServerException.class, () -> server.open());
     }
+
+    @Test
+    public void serverShouldSayByeOnClose() {
+        TestHelper.println("STARTING serverShouldSayByeOnClose()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+
+        try {
+            CountDownLatch lock = new CountDownLatch(2);
+
+            TestSession session = TestSession.build(server);
+            serverSessions.add(session);
+
+            session.addListener(message -> {
+                if(message instanceof Leave) {
+                    lock.countDown();
+                }
+            });
+
+            session.send(new Join(identityManager.getKeyPair().getPublicKey(), Set.of()),
+                    Welcome.class).blockingSubscribe(response -> {
+                lock.countDown();
+            });
+
+            server.close();
+
+            lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
+            assertEquals(0, lock.getCount());
+        }
+        catch (InterruptedException | ExecutionException e) {
+            fail("Exception occurred during the test.");
+        }
+
+        TestHelper.println("FINISHED serverShouldSayByeOnClose()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+    }
 }

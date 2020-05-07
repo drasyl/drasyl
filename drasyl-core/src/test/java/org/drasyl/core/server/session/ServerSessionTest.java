@@ -79,6 +79,7 @@ class ServerSessionTest {
         when(channel.isOpen()).thenReturn(true);
         when(message.getMessageID()).thenReturn(msgID);
         when(channel.close()).thenReturn(channelFuture);
+        when(channel.writeAndFlush(any())).thenReturn(channelFuture);
     }
 
     @AfterEach
@@ -167,10 +168,10 @@ class ServerSessionTest {
 
         serverSession.close();
 
-        verify(channel, times(1)).flush();
-        verify(channel, times(1)).close();
-        verify(emitters, times(1)).clear();
-        verify(channelFuture, times(1)).addListener(any());
+        verify(channel).flush();
+        verify(emitters).clear();
+        verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
+        verify(channel).writeAndFlush(any(Leave.class));
         serverSession.isClosed().subscribe(() -> assertTrue(true));
     }
 
