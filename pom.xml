@@ -271,7 +271,7 @@
         <akka.version>2.5.23</akka.version>
         <akka.http.version>10.0.10</akka.http.version>
         <mockito.version>3.2.4</mockito.version>
-        <jackson.version>2.9.10</jackson.version>
+        <jackson.version>2.9.10.4</jackson.version>
         <hamcrest.version>2.2</hamcrest.version>
         <bouncycastle.version>1.64</bouncycastle.version>
         <awaitility.version>4.0.2</awaitility.version>
