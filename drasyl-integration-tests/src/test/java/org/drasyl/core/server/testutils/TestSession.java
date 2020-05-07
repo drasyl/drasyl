@@ -49,6 +49,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public class TestSession extends ServerSession {
+    private final static Logger LOG = LoggerFactory.getLogger(TestSession.class);
+
     public interface IResponseListener<T> {
         /**
          * Notifies about an event.
@@ -59,7 +61,6 @@ public class TestSession extends ServerSession {
     }
 
     protected final List<IResponseListener<IMessage>> listeners;
-    private static final Logger LOG = LoggerFactory.getLogger(TestSession.class);
 
     public TestSession(Channel channel, URI targetSystem, Identity clientUID) {
         super(channel, targetSystem, clientUID, "JUnit-Test");
@@ -172,8 +173,9 @@ public class TestSession extends ServerSession {
      * @param message incoming message
      */
     public void receiveMessage(IMessage message) {
-        if (isClosed)
+        if (isClosed) {
             return;
+        }
 
         if (message instanceof Response) {
             Response<IMessage> response = (Response<IMessage>) message;
@@ -192,5 +194,10 @@ public class TestSession extends ServerSession {
      */
     public void addListener(IResponseListener<IMessage> listener) {
         listeners.add(listener);
+    }
+
+    @Override
+    protected Logger getLogger() {
+        return LOG;
     }
 }

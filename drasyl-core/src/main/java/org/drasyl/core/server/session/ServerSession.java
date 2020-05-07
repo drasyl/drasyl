@@ -26,6 +26,7 @@ import io.reactivex.rxjava3.core.CompletableEmitter;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.core.SingleEmitter;
 import org.drasyl.core.common.messages.IMessage;
+import org.drasyl.core.common.messages.Leave;
 import org.drasyl.core.common.messages.Response;
 import org.drasyl.core.common.models.Pair;
 import org.drasyl.core.node.PeerConnection;
@@ -81,10 +82,11 @@ public class ServerSession implements PeerConnection {
         myChannel.closeFuture().addListener((ChannelFutureListener) future -> { //NOSONAR
             String msg = "The client and its associated channel";
             if (future.isSuccess()) {
-                LOG.debug("{} {} {} have been closed successfully.", self, msg, future.channel().id());
+                getLogger().debug("{} {} {} have been closed successfully.", self, msg, future.channel().id());
+                closedCompletableEmitter.onComplete();
             }
             else {
-                LOG.error("{} {} {} could not be closed: ", self, msg, future.channel().id(), future.cause());
+                getLogger().error("{} {} {} could not be closed: ", self, msg, future.channel().id(), future.cause());
             }
 
             close();
@@ -122,7 +124,7 @@ public class ServerSession implements PeerConnection {
             myChannel.writeAndFlush(message);
         }
         else {
-            LOG.info("[{} Can't send message {}", self, message);
+            getLogger().info("[{} Can't send message {}", self, message);
         }
     }
 
@@ -172,7 +174,8 @@ public class ServerSession implements PeerConnection {
             isClosed = true;
             myChannel.flush();
             emitters.clear();
-            myChannel.close().addListener(listener -> closedCompletableEmitter.onComplete());
+            myChannel.writeAndFlush(new Leave())
+                    .addListener(ChannelFutureListener.CLOSE);
         }
     }
 
@@ -205,5 +208,12 @@ public class ServerSession implements PeerConnection {
     @Override
     public String toString() {
         return MessageFormat.format("[S:{0}/C:{1}]", myid, getConnectionId());
+    }
+
+    /**
+     * Returns the correct logger. Is needed for sub-classes.
+     */
+    protected Logger getLogger() {
+        return LOG;
     }
 }
