@@ -1,5 +1,6 @@
 package org.drasyl.core.client.transport.relay;
 
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.node.Messenger;
 import org.drasyl.core.node.PeersManager;
@@ -34,7 +35,8 @@ public class NodeServerHandle {
 
         this.config = ConfigFactory.parseString(builder.toString());
 
-        server = new NodeServer(identityManager, messenger, peersManager, this.config);
+        // FIXME: Don't do this, use some shared threads!
+        server = new NodeServer(identityManager, messenger, peersManager, this.config, new NioEventLoopGroup(), new NioEventLoopGroup(1));
 
     }
 

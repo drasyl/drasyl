@@ -19,20 +19,20 @@
 package org.drasyl.core.server.actions.messages;
 
 import org.drasyl.core.common.messages.Reject;
+import org.drasyl.core.node.connections.ClientConnection;
 import org.drasyl.core.server.NodeServer;
 import org.drasyl.core.server.actions.ServerAction;
-import org.drasyl.core.server.session.ServerSession;
 
 public class ServerActionReject extends Reject implements ServerAction {
     @Override
-    public void onMessage(ServerSession session,
+    public void onMessage(ClientConnection session,
                           NodeServer nodeServer) {
         // This message does not comes to the server
     }
 
     @Override
     public void onResponse(String responseMsgID,
-                           ServerSession session,
+                           ClientConnection session,
                            NodeServer nodeServer) {
         // This message does not comes as response to the node server
     }

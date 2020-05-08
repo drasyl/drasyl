@@ -23,10 +23,10 @@ import org.drasyl.core.common.messages.Response;
 import org.drasyl.core.common.messages.Welcome;
 import org.drasyl.core.models.CompressedPublicKey;
 import org.drasyl.core.node.PeerInformation;
+import org.drasyl.core.node.connections.ClientConnection;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.server.NodeServer;
 import org.drasyl.core.server.actions.ServerAction;
-import org.drasyl.core.server.session.ServerSession;
 
 import java.net.URI;
 import java.util.Objects;
@@ -42,7 +42,7 @@ public class ServerActionJoin extends Join implements ServerAction {
     }
 
     @Override
-    public void onMessage(ServerSession session, NodeServer nodeServer) {
+    public void onMessage(ClientConnection session, NodeServer nodeServer) {
         Objects.requireNonNull(session);
         Objects.requireNonNull(nodeServer);
 
@@ -58,7 +58,7 @@ public class ServerActionJoin extends Join implements ServerAction {
     }
 
     @Override
-    public void onResponse(String responseMsgID, ServerSession session, NodeServer nodeServer) {
+    public void onResponse(String responseMsgID, ClientConnection session, NodeServer nodeServer) {
         // This message does not come as response to the node server
     }
 }

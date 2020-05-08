@@ -19,9 +19,9 @@
 package org.drasyl.core.server.actions.messages;
 
 import org.drasyl.core.common.messages.Response;
+import org.drasyl.core.node.connections.ClientConnection;
 import org.drasyl.core.server.NodeServer;
 import org.drasyl.core.server.actions.ServerAction;
-import org.drasyl.core.server.session.ServerSession;
 
 public class ServerActionResponse<T extends ServerAction> extends Response<T> implements ServerAction {
     ServerActionResponse() {
@@ -33,12 +33,12 @@ public class ServerActionResponse<T extends ServerAction> extends Response<T> im
     }
 
     @Override
-    public void onMessage(ServerSession session, NodeServer nodeServer) {
+    public void onMessage(ClientConnection session, NodeServer nodeServer) {
         this.getMessage().onResponse(this.getMsgID(), session, nodeServer);
     }
 
     @Override
-    public void onResponse(String responseMsgID, ServerSession session, NodeServer nodeServer) {
+    public void onResponse(String responseMsgID, ClientConnection session, NodeServer nodeServer) {
         // LOL, no
     }
 }

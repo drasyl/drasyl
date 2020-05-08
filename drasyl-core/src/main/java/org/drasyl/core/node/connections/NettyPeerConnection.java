@@ -16,20 +16,17 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.core.server.session;
+package org.drasyl.core.node.connections;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
-import io.reactivex.rxjava3.core.Completable;
-import io.reactivex.rxjava3.core.CompletableEmitter;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.core.SingleEmitter;
 import org.drasyl.core.common.messages.IMessage;
 import org.drasyl.core.common.messages.Leave;
 import org.drasyl.core.common.messages.Response;
 import org.drasyl.core.common.models.Pair;
-import org.drasyl.core.node.PeerConnection;
 import org.drasyl.core.node.identity.Identity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,34 +34,35 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 import java.text.MessageFormat;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * The {@link ServerSession} object models the clients of a drasyl node server.
+ * The {@link NettyPeerConnection} object models an in- or outbound connection by netty.
  */
 @SuppressWarnings({ "squid:S00107" })
-public class ServerSession implements PeerConnection {
-    private static final Logger LOG = LoggerFactory.getLogger(ServerSession.class);
+public abstract class NettyPeerConnection implements PeerConnection {
+    private static final Logger LOG = LoggerFactory.getLogger(NettyPeerConnection.class);
     protected final ConcurrentHashMap<String, Pair<Class<? extends IMessage>, SingleEmitter<IMessage>>> emitters;
-    protected final ServerSession self = this; //NOSONAR
+    protected final NettyPeerConnection self = this; //NOSONAR
     protected final Channel myChannel;
     protected final String userAgent;
-    protected final Identity myid;
-    private final URI endpoint;
-    protected volatile AtomicBoolean isClosed;
-    protected Completable closedCompletable;
-    protected CompletableEmitter closedCompletableEmitter;
+    protected final Identity identity;
+    protected final URI endpoint;
+    protected AtomicBoolean isClosed;
+    protected CompletableFuture<Boolean> closedCompletable;
+    protected ChannelFutureListener channelCloseFutureListener;
 
     /**
      * Creates a new connection with an unknown User-Agent.
      *
      * @param channel  channel of the connection
      * @param endpoint the URI of the target system
-     * @param myid     the identity of this {@link ServerSession}
+     * @param identity the identity of this {@link ClientConnection}
      */
-    public ServerSession(Channel channel, URI endpoint, Identity myid) {
-        this(channel, endpoint, myid, "U/A");
+    public NettyPeerConnection(Channel channel, URI endpoint, Identity identity) {
+        this(channel, endpoint, identity, "U/A");
     }
 
     /**
@@ -72,44 +70,42 @@ public class ServerSession implements PeerConnection {
      *
      * @param channel   channel of the connection
      * @param endpoint  the URI of the target system
-     * @param myid      the identity of this {@link ServerSession}
+     * @param identity  the identity of this {@link ClientConnection}
      * @param userAgent the User-Agent string
      */
-    public ServerSession(Channel channel, URI endpoint, Identity myid, String userAgent) {
-        this(channel, userAgent, myid, endpoint, new AtomicBoolean(false), new ConcurrentHashMap<>(), null, null);
+    public NettyPeerConnection(Channel channel, URI endpoint, Identity identity, String userAgent) {
+        this(channel, userAgent, identity, endpoint, new AtomicBoolean(false), new ConcurrentHashMap<>(), new CompletableFuture<>());
 
-        closedCompletable = Completable.create(emitter -> closedCompletableEmitter = emitter);
-
-        myChannel.closeFuture().addListener((ChannelFutureListener) future -> { //NOSONAR
+        channelCloseFutureListener = future -> {
             String msg = "The client and its associated channel";
             if (future.isSuccess()) {
                 getLogger().debug("{} {} {} have been closed successfully.", self, msg, future.channel().id());
-                closedCompletableEmitter.onComplete();
+                closedCompletable.complete(true);
             }
             else {
                 getLogger().error("{} {} {} could not be closed: ", self, msg, future.channel().id(), future.cause());
             }
 
             close();
-        });
+        };
+
+        myChannel.closeFuture().addListener(channelCloseFutureListener);
     }
 
-    ServerSession(Channel myChannel,
-                  String userAgent,
-                  Identity myid,
-                  URI endpoint,
-                  AtomicBoolean isClosed,
-                  ConcurrentHashMap<String, Pair<Class<? extends IMessage>, SingleEmitter<IMessage>>> emitters,
-                  Completable closedCompletable,
-                  CompletableEmitter closedCompletableEmitter) {
+    protected NettyPeerConnection(Channel myChannel,
+                                  String userAgent,
+                                  Identity identity,
+                                  URI endpoint,
+                                  AtomicBoolean isClosed,
+                                  ConcurrentHashMap<String, Pair<Class<? extends IMessage>, SingleEmitter<IMessage>>> emitters,
+                                  CompletableFuture<Boolean> closedCompletable) {
+        this.emitters = emitters;
         this.myChannel = myChannel;
         this.userAgent = userAgent;
-        this.myid = myid;
+        this.identity = identity;
         this.endpoint = endpoint;
         this.isClosed = isClosed;
-        this.emitters = emitters;
         this.closedCompletable = closedCompletable;
-        this.closedCompletableEmitter = closedCompletableEmitter;
     }
 
     /**
@@ -166,7 +162,7 @@ public class ServerSession implements PeerConnection {
 
     @Override
     public Identity getIdentity() {
-        return this.myid;
+        return this.identity;
     }
 
     @Override
@@ -180,7 +176,7 @@ public class ServerSession implements PeerConnection {
     }
 
     @Override
-    public Completable isClosed() {
+    public CompletableFuture<Boolean> isClosed() {
         return closedCompletable;
     }
 
@@ -191,7 +187,7 @@ public class ServerSession implements PeerConnection {
 
     @Override
     public String toString() {
-        return MessageFormat.format("[S:{0}/C:{1}]", myid, getConnectionId());
+        return MessageFormat.format("[Identity:{0}/Channel:{1}]", identity, getConnectionId());
     }
 
     /**
@@ -209,12 +205,12 @@ public class ServerSession implements PeerConnection {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        ServerSession that = (ServerSession) o;
-        return Objects.equals(myid, that.myid);
+        NettyPeerConnection that = (NettyPeerConnection) o;
+        return Objects.equals(identity, that.identity);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(myid);
+        return Objects.hash(identity);
     }
 }

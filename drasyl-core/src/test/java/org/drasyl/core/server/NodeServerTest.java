@@ -49,7 +49,6 @@ import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
 class NodeServerTest {
@@ -156,7 +155,7 @@ class NodeServerTest {
 
     @Test
     void correctObjectCreation() throws DrasylException {
-        NodeServer server = new NodeServer(identityManager, messenger, peersManager);
+        NodeServer server = new NodeServer(identityManager, messenger, peersManager, workerGroup, bossGroup);
 
         assertNotNull(server.getBossGroup());
         assertNotNull(server.getConfig());
@@ -172,7 +171,8 @@ class NodeServerTest {
                 config, serverChannel, serverBootstrap, workerGroup, bossGroup,
                 beforeCloseListeners, startedFuture, stoppedFuture, nodeServerBootstrap, new AtomicBoolean(false), -1, new HashSet<>());
 
-        Runnable r = () -> {};
+        Runnable r = () -> {
+        };
         server.addBeforeCloseListener(r);
         assertThat(beforeCloseListeners, hasItem(is(r)));
         assertEquals(1, beforeCloseListeners.size());

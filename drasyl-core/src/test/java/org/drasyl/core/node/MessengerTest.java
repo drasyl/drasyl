@@ -23,6 +23,7 @@ import org.drasyl.core.common.models.Pair;
 import org.drasyl.core.models.Code;
 import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.models.Event;
+import org.drasyl.core.node.connections.PeerConnection;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.node.identity.IdentityManager;
 import org.junit.jupiter.api.BeforeEach;
