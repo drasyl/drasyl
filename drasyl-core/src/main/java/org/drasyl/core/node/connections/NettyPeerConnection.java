@@ -29,7 +29,6 @@ import org.drasyl.core.common.messages.Response;
 import org.drasyl.core.common.models.Pair;
 import org.drasyl.core.node.identity.Identity;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.text.MessageFormat;
@@ -42,8 +41,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * The {@link NettyPeerConnection} object models an in- or outbound connection by netty.
  */
 @SuppressWarnings({ "squid:S00107" })
-public class NettyPeerConnection implements PeerConnection {
-    private static final Logger LOG = LoggerFactory.getLogger(NettyPeerConnection.class);
+public abstract class NettyPeerConnection implements PeerConnection {
     protected final ConcurrentHashMap<String, Pair<Class<? extends IMessage>, SingleEmitter<IMessage>>> emitters;
     protected final NettyPeerConnection self = this; //NOSONAR
     protected final Channel myChannel;
@@ -193,9 +191,7 @@ public class NettyPeerConnection implements PeerConnection {
     /**
      * Returns the correct logger. Is needed for sub-classes.
      */
-    protected Logger getLogger() {
-        return LOG;
-    }
+    protected abstract Logger getLogger();
 
     @Override
     public boolean equals(Object o) {

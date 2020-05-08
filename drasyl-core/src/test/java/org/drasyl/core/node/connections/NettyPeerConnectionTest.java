@@ -89,7 +89,7 @@ class NettyPeerConnectionTest {
     }
 
     @ParameterizedTest
-    @ValueSource(classes = { NettyPeerConnection.class, ClientConnection.class })
+    @ValueSource(classes = { ClientConnection.class })
     void sendMessageShouldSendMessageToUnderlyingChannel(Class<NettyPeerConnection> clazz) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         NettyPeerConnection peerConnection = clazz.getDeclaredConstructor(Channel.class, String.class,
                 Identity.class, URI.class, AtomicBoolean.class,
@@ -101,7 +101,7 @@ class NettyPeerConnectionTest {
     }
 
     @ParameterizedTest
-    @ValueSource(classes = { NettyPeerConnection.class, ClientConnection.class })
+    @ValueSource(classes = { ClientConnection.class })
     void sendMessageWithResponseShouldSendMessageToUnderlyingChannelAndAddASingle(Class<NettyPeerConnection> clazz) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         NettyPeerConnection peerConnection = clazz.getDeclaredConstructor(Channel.class, String.class,
                 Identity.class, URI.class, AtomicBoolean.class,
@@ -119,7 +119,7 @@ class NettyPeerConnectionTest {
     }
 
     @ParameterizedTest
-    @ValueSource(classes = { NettyPeerConnection.class, ClientConnection.class })
+    @ValueSource(classes = { ClientConnection.class })
     void sendNothingIfSessionIsTerminated(Class<NettyPeerConnection> clazz) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         NettyPeerConnection peerConnection = clazz.getDeclaredConstructor(Channel.class, String.class,
                 Identity.class, URI.class, AtomicBoolean.class,
@@ -137,7 +137,7 @@ class NettyPeerConnectionTest {
     }
 
     @ParameterizedTest
-    @ValueSource(classes = { NettyPeerConnection.class, ClientConnection.class })
+    @ValueSource(classes = { ClientConnection.class })
     void setResponseShouldCompleteTheSingle(Class<NettyPeerConnection> clazz) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         SingleEmitter<IMessage> singleEmitter = mock(SingleEmitter.class);
 
@@ -159,7 +159,7 @@ class NettyPeerConnectionTest {
     }
 
     @ParameterizedTest
-    @ValueSource(classes = { NettyPeerConnection.class, ClientConnection.class })
+    @ValueSource(classes = { ClientConnection.class })
     void setResponseShouldDoNothingIfSingleDoesNotExists(Class<NettyPeerConnection> clazz) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         NettyPeerConnection peerConnection = clazz.getDeclaredConstructor(Channel.class, String.class,
                 Identity.class, URI.class, AtomicBoolean.class,
@@ -178,7 +178,7 @@ class NettyPeerConnectionTest {
     }
 
     @ParameterizedTest
-    @ValueSource(classes = { NettyPeerConnection.class, ClientConnection.class })
+    @ValueSource(classes = { ClientConnection.class })
     void closeShouldFreeMemory(Class<NettyPeerConnection> clazz) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         NettyPeerConnection peerConnection = clazz.getDeclaredConstructor(Channel.class, String.class,
                 Identity.class, URI.class, AtomicBoolean.class,
@@ -195,7 +195,7 @@ class NettyPeerConnectionTest {
     }
 
     @ParameterizedTest
-    @ValueSource(classes = { NettyPeerConnection.class, ClientConnection.class })
+    @ValueSource(classes = { ClientConnection.class })
     void sessionCreationShouldRegisterACloseListener(Class<NettyPeerConnection> clazz) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         NettyPeerConnection peerConnection = clazz.getDeclaredConstructor(Channel.class, URI.class, Identity.class)
                 .newInstance(channel, endpoint, myid);
@@ -205,7 +205,7 @@ class NettyPeerConnectionTest {
     }
 
     @ParameterizedTest
-    @ValueSource(classes = { NettyPeerConnection.class, ClientConnection.class })
+    @ValueSource(classes = { ClientConnection.class })
     void closeListenerShouldWorkOnClose(Class<NettyPeerConnection> clazz) throws Exception {
         when(channelFuture.isSuccess()).thenReturn(true);
 
@@ -224,7 +224,7 @@ class NettyPeerConnectionTest {
     }
 
     @ParameterizedTest
-    @ValueSource(classes = { NettyPeerConnection.class, ClientConnection.class })
+    @ValueSource(classes = { ClientConnection.class })
     void closeListenerOnFailure(Class<NettyPeerConnection> clazz) throws Exception {
         Exception e = mock(Exception.class);
         when(channelFuture.isSuccess()).thenReturn(false);
@@ -245,7 +245,7 @@ class NettyPeerConnectionTest {
     }
 
     @ParameterizedTest
-    @ValueSource(classes = { NettyPeerConnection.class, ClientConnection.class })
+    @ValueSource(classes = { ClientConnection.class })
     void equalsAndHashCodeTest(Class<NettyPeerConnection> clazz) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         NettyPeerConnection peerConnection = clazz.getDeclaredConstructor(Channel.class, String.class,
                 Identity.class, URI.class, AtomicBoolean.class,
@@ -260,7 +260,7 @@ class NettyPeerConnectionTest {
     }
 
     @ParameterizedTest
-    @ValueSource(classes = { NettyPeerConnection.class, ClientConnection.class })
+    @ValueSource(classes = { ClientConnection.class })
     void getterTest(Class<NettyPeerConnection> clazz) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         NettyPeerConnection peerConnection = clazz.getDeclaredConstructor(Channel.class, String.class,
                 Identity.class, URI.class, AtomicBoolean.class,

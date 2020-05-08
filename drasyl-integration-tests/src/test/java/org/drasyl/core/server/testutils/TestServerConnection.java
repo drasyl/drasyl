@@ -32,7 +32,7 @@ import org.drasyl.core.models.CompressedPublicKey;
 import org.drasyl.core.node.connections.NettyPeerConnection;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.server.NodeServer;
-import org.drasyl.core.server.connections.OutboundConnectionFactory;
+import org.drasyl.core.node.connections.OutboundConnectionFactory;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.slf4j.Logger;
