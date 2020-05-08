@@ -159,7 +159,7 @@ public class TestSession extends ServerSession {
     }
 
     public void sendRawString(final String string) {
-        if (string != null && !isClosed && myChannel.isOpen()) {
+        if (string != null && !isClosed.get() && myChannel.isOpen()) {
             myChannel.writeAndFlush(new TextWebSocketFrame(string));
         }
         else {
@@ -173,7 +173,7 @@ public class TestSession extends ServerSession {
      * @param message incoming message
      */
     public void receiveMessage(IMessage message) {
-        if (isClosed) {
+        if (isClosed.get()) {
             return;
         }
 

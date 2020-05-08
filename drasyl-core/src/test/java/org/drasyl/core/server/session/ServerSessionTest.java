@@ -40,6 +40,7 @@ import org.junit.jupiter.api.Test;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -53,7 +54,7 @@ class ServerSessionTest {
     private NodeServerException exceptionMessage;
     private IMessage message;
     private ChannelFuture channelFuture;
-    private boolean isClosed;
+    private AtomicBoolean isClosed;
     private String msgID;
     private Completable closedCompletable;
     private CompletableEmitter closedCompletableEmitter;
@@ -69,7 +70,7 @@ class ServerSessionTest {
         message = mock(IMessage.class);
         channelFuture = mock(ChannelFuture.class);
         ChannelId channelId = mock(ChannelId.class);
-        isClosed = false;
+        isClosed = mock(AtomicBoolean.class);
         msgID = Crypto.randomString(16);
         closedCompletable = mock(Completable.class);
         closedCompletableEmitter = mock(CompletableEmitter.class);
@@ -114,7 +115,7 @@ class ServerSessionTest {
     @Test
     void sendNothingIfSessionIsTerminated() {
         ServerSession serverSession = new ServerSession(channel, userAgent, myid,
-                endpoint, true, emitters, closedCompletable, closedCompletableEmitter);
+                endpoint, new AtomicBoolean(true), emitters, closedCompletable, closedCompletableEmitter);
 
         serverSession.send(message, Leave.class).subscribe(onSuccess -> {
         }, onError -> {
@@ -164,7 +165,7 @@ class ServerSessionTest {
     @Test
     void closeShouldFreeMemory() {
         ServerSession serverSession = new ServerSession(channel, userAgent, myid,
-                endpoint, isClosed, emitters, closedCompletable, closedCompletableEmitter);
+                endpoint, new AtomicBoolean(false), emitters, closedCompletable, closedCompletableEmitter);
 
         serverSession.close();
 

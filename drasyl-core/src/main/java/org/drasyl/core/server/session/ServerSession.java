@@ -38,6 +38,7 @@ import java.net.URI;
 import java.text.MessageFormat;
 import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * The {@link ServerSession} object models the clients of a drasyl node server.
@@ -51,7 +52,7 @@ public class ServerSession implements PeerConnection {
     protected final String userAgent;
     protected final Identity myid;
     private final URI endpoint;
-    protected volatile boolean isClosed;
+    protected volatile AtomicBoolean isClosed;
     protected Completable closedCompletable;
     protected CompletableEmitter closedCompletableEmitter;
 
@@ -75,7 +76,7 @@ public class ServerSession implements PeerConnection {
      * @param userAgent the User-Agent string
      */
     public ServerSession(Channel channel, URI endpoint, Identity myid, String userAgent) {
-        this(channel, userAgent, myid, endpoint, false, new ConcurrentHashMap<>(), null, null);
+        this(channel, userAgent, myid, endpoint, new AtomicBoolean(false), new ConcurrentHashMap<>(), null, null);
 
         closedCompletable = Completable.create(emitter -> closedCompletableEmitter = emitter);
 
@@ -97,7 +98,7 @@ public class ServerSession implements PeerConnection {
                   String userAgent,
                   Identity myid,
                   URI endpoint,
-                  boolean isClosed,
+                  AtomicBoolean isClosed,
                   ConcurrentHashMap<String, Pair<Class<? extends IMessage>, SingleEmitter<IMessage>>> emitters,
                   Completable closedCompletable,
                   CompletableEmitter closedCompletableEmitter) {
@@ -120,7 +121,7 @@ public class ServerSession implements PeerConnection {
 
     @Override
     public void send(IMessage message) {
-        if (message != null && !isClosed && myChannel.isOpen()) {
+        if (message != null && !isClosed.get() && myChannel.isOpen()) {
             myChannel.writeAndFlush(message);
         }
         else {
@@ -133,7 +134,7 @@ public class ServerSession implements PeerConnection {
     public <T extends IMessage> Single<T> send(IMessage message,
                                                Class<T> responseClass) {
         return (Single<T>) Single.<IMessage>create(emitter -> {
-            if (isClosed) {
+            if (isClosed.get()) {
                 emitter.onError(new IllegalStateException("This connection is already prompt to close."));
             }
             else if (!emitters.containsKey(message.getMessageID())) {
@@ -170,8 +171,7 @@ public class ServerSession implements PeerConnection {
 
     @Override
     public void close() {
-        if (!isClosed) {
-            isClosed = true;
+        if (isClosed.compareAndSet(false, true)) {
             myChannel.flush();
             emitters.clear();
             myChannel.writeAndFlush(new Leave())
