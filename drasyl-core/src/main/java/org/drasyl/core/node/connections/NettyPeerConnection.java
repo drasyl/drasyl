@@ -42,7 +42,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * The {@link NettyPeerConnection} object models an in- or outbound connection by netty.
  */
 @SuppressWarnings({ "squid:S00107" })
-public abstract class NettyPeerConnection implements PeerConnection {
+public class NettyPeerConnection implements PeerConnection {
     private static final Logger LOG = LoggerFactory.getLogger(NettyPeerConnection.class);
     protected final ConcurrentHashMap<String, Pair<Class<? extends IMessage>, SingleEmitter<IMessage>>> emitters;
     protected final NettyPeerConnection self = this; //NOSONAR

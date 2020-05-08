@@ -409,9 +409,9 @@ public class NodeServerIT {
             lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
             assertEquals(0, lock.getCount());
             //FIXME: Replace with CompletableFuture
-//            assertTrue(session1.isClosed().blockingAwait(10, TimeUnit.SECONDS));
+            assertTrue(session1.isClosed().get(10, TimeUnit.SECONDS));
         }
-        catch (InterruptedException | ExecutionException | CryptoException e) {
+        catch (InterruptedException | ExecutionException | CryptoException | TimeoutException e) {
             e.printStackTrace();
             fail("Exception occurred during the test.");
         }
