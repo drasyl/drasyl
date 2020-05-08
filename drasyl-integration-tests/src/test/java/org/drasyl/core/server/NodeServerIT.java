@@ -393,7 +393,9 @@ public class NodeServerIT {
                     Welcome.class).blockingGet();
 
             lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
-            assertTrue(session1.isClosed().blockingAwait(10, TimeUnit.SECONDS));
+            assertEquals(0, lock.getCount());
+            //FIXME: Replace with CompletableFuture
+//            assertTrue(session1.isClosed().blockingAwait(10, TimeUnit.SECONDS));
         }
         catch (InterruptedException | ExecutionException | CryptoException e) {
             e.printStackTrace();

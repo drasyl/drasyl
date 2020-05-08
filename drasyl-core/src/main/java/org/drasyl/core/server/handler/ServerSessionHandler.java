@@ -100,9 +100,9 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<ServerActi
      */
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, ServerAction msg) throws Exception {
-        createSession(ctx, msg);
-
         ctx.executor().submit(() -> {
+            createSession(ctx, msg);
+
             if (serverSession != null) {
                 msg.onMessage(serverSession, server);
             }
@@ -134,7 +134,7 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<ServerActi
                 if (existingServerSessionOptional.isPresent()) {
                     PeerConnection existingServerSession = existingServerSessionOptional.get();
                     LOG.debug("There is an existing Session for Node '{}'. Replace and close existing Session '{}' before adding new Session", identity, existingServerSession);
-                    peerInformation.getConnections().remove(existingServerSession);
+                    peerInformation.removePeerConnection(existingServerSession);
                     existingServerSession.close();
                 }
             }
