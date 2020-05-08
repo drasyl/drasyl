@@ -34,7 +34,8 @@ import org.drasyl.crypto.Signable;
         @JsonSubTypes.Type(value = Pong.class, name = "Pong"),
         @JsonSubTypes.Type(value = RequestClientsStocktaking.class, name = "RequestClientsStocktaking"),
         @JsonSubTypes.Type(value = Response.class, name = "Response"),
-        @JsonSubTypes.Type(value = Status.class, name = "Status")
+        @JsonSubTypes.Type(value = Status.class, name = "Status"),
+        @JsonSubTypes.Type(value = Reject.class, name = "Reject")
 })
 public interface IMessage extends Signable {
     String getMessageID();

@@ -84,7 +84,8 @@ public class NodeServerIT {
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
         identityManager = mock(IdentityManager.class);
         PeersManager peersManager = new PeersManager();
-        Messenger messenger = new Messenger(identityManager, peersManager, event -> {});
+        Messenger messenger = new Messenger(identityManager, peersManager, event -> {
+        });
 
         config = new DrasylNodeConfig(
                 ConfigFactory.load("configs/ClientTest.conf"));
@@ -648,15 +649,13 @@ public class NodeServerIT {
             serverSessions.add(session);
 
             session.addListener(message -> {
-                if(message instanceof Leave) {
+                if (message instanceof Leave) {
                     lock.countDown();
                 }
             });
 
             session.send(new Join(identityManager.getKeyPair().getPublicKey(), Set.of()),
-                    Welcome.class).blockingSubscribe(response -> {
-                lock.countDown();
-            });
+                    Welcome.class).blockingSubscribe(response -> lock.countDown());
 
             server.close();
 
@@ -668,5 +667,47 @@ public class NodeServerIT {
         }
 
         TestHelper.println("FINISHED serverShouldSayByeOnClose()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+    }
+
+    @Test
+    public void serverShouldNotAllowNewConnectionsOnClose() {
+        TestHelper.println("STARTING serverShouldNotAllowNewConnectionsOnClose()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+
+        try {
+            CountDownLatch lock = new CountDownLatch(2);
+
+            TestSession session = TestSession.build(server);
+            serverSessions.add(session);
+            TestSession session2 = TestSession.build(server);
+            serverSessions.add(session2);
+
+            session2.addListener(message -> {
+                if (message instanceof Reject) {
+                    lock.countDown();
+                }
+            });
+
+            session.send(new Join(identityManager.getKeyPair().getPublicKey(), Set.of()),
+                    Welcome.class).blockingSubscribe(response -> lock.countDown());
+
+            server.addBeforeCloseListener(() -> {
+                try {
+                    session2.send(new Join(CompressedPublicKey.of("0340a4f2adbddeedc8f9ace30e3f18713a3405f43f4871b4bac9624fe80d2056a7"), Set.of()));
+                }
+                catch (CryptoException e) {
+                    e.printStackTrace();
+                }
+            });
+
+            server.close();
+
+            lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
+            assertEquals(0, lock.getCount());
+        }
+        catch (InterruptedException | ExecutionException e) {
+            fail("Exception occurred during the test.");
+        }
+
+        TestHelper.println("FINISHED serverShouldNotAllowNewConnectionsOnClose()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
     }
 }

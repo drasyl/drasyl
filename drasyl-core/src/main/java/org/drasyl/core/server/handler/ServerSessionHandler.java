@@ -39,6 +39,7 @@ import java.net.URISyntaxException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+import static org.drasyl.core.common.handler.ConnectionGuardHandler.CONNECTION_GUARD;
 import static org.drasyl.core.server.handler.KillOnExceptionHandler.KILL_SWITCH;
 
 /**
@@ -142,6 +143,7 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<ServerActi
                         Optional.ofNullable(jm.getUserAgent()).orElse("U/A"));
                 sessionReadyFuture.complete(serverSession);
                 ctx.pipeline().remove(KILL_SWITCH);
+                ctx.pipeline().remove(CONNECTION_GUARD);
                 LOG.debug("Create new channel {}, for ServerSession {}", ctx.channel().id(), serverSession);
             }
             else {

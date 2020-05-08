@@ -19,9 +19,9 @@
 package org.drasyl.core.common.messages;
 
 /**
- * A message representing a termination of a connection.
+ * A message representing a rejection of a connection.
  */
-public class Leave extends AbstractMessage implements UnrestrictedPassableMessage {
+public class Reject extends AbstractMessage implements UnrestrictedPassableMessage {
     @Override
     public boolean equals(Object o) {
         return super.equals(o);

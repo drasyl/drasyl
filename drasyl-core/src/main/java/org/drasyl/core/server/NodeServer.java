@@ -46,8 +46,6 @@ import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
-import static java.util.concurrent.CompletableFuture.runAsync;
-
 @SuppressWarnings({ "squid:S00107" })
 public class NodeServer implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(NodeServer.class);
@@ -224,6 +222,24 @@ public class NodeServer implements AutoCloseable {
      */
     public int getPort() {
         return actualPort;
+    }
+
+    /**
+     * Adds a Runnable to the beforeCloseListeners List.
+     *
+     * @param runnable runnable that should be executed before close
+     */
+    public void addBeforeCloseListener(Runnable runnable) {
+        beforeCloseListeners.add(runnable);
+    }
+
+    /**
+     * Removes a Runnable from the beforeCloseListeners List.
+     *
+     * @param runnable runnable that should be removed
+     */
+    public void removeBeforeCloseListener(Runnable runnable) {
+        beforeCloseListeners.remove(runnable);
     }
 
     /**
