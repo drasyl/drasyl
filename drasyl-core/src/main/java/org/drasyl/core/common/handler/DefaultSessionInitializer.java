@@ -37,7 +37,7 @@ import static org.drasyl.core.common.handler.codec.message.MessageDecoder.MESSAG
 import static org.drasyl.core.common.handler.codec.message.MessageEncoder.MESSAGE_ENCODER;
 
 /**
- * Creates a newly configured {@link ChannelPipeline} for a new channel for a ServerSession to or from a relay server.
+ * Creates a newly configured {@link ChannelPipeline} for a new channel for a ClientConnection to or from a relay server.
  *
  * <p>
  * <b>Note: You have to add a websocket handler by yourself to the {@link #beforeMarshalStage(ChannelPipeline)}</b>

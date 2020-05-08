@@ -16,15 +16,15 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.core.node;
+package org.drasyl.core.node.connections;
 
-import io.reactivex.rxjava3.core.Completable;
 import io.reactivex.rxjava3.core.Single;
 import org.drasyl.core.common.messages.IMessage;
 import org.drasyl.core.common.messages.Response;
 import org.drasyl.core.node.identity.Identity;
 
 import java.net.URI;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * A {@link PeerConnection} object represents a connection to another peer, e.g. local or remote.
@@ -81,10 +81,10 @@ public interface PeerConnection extends AutoCloseable {
     void close();
 
     /**
-     * This {@link Comparable} becomes complete as soon as this connection has been closed
+     * This {@link CompletableFuture} becomes complete as soon as this connection has been closed
      * successfully.
      */
-    Completable isClosed();
+    CompletableFuture<Boolean> isClosed();
 
     /**
      * Returns a unique identifier of this connection, so that this return value can be used to sort

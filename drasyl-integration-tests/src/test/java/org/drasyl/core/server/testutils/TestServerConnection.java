@@ -29,10 +29,10 @@ import org.drasyl.core.common.messages.Join;
 import org.drasyl.core.common.messages.Response;
 import org.drasyl.core.common.messages.Welcome;
 import org.drasyl.core.models.CompressedPublicKey;
+import org.drasyl.core.node.connections.NettyPeerConnection;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.server.NodeServer;
 import org.drasyl.core.server.connections.OutboundConnectionFactory;
-import org.drasyl.core.server.session.ServerSession;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.slf4j.Logger;
@@ -48,8 +48,8 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
-public class TestSession extends ServerSession {
-    private final static Logger LOG = LoggerFactory.getLogger(TestSession.class);
+public class TestServerConnection extends NettyPeerConnection {
+    private final static Logger LOG = LoggerFactory.getLogger(TestServerConnection.class);
 
     public interface IResponseListener<T> {
         /**
@@ -62,7 +62,7 @@ public class TestSession extends ServerSession {
 
     protected final List<IResponseListener<IMessage>> listeners;
 
-    public TestSession(Channel channel, URI targetSystem, Identity clientUID) {
+    public TestServerConnection(Channel channel, URI targetSystem, Identity clientUID) {
         super(channel, targetSystem, clientUID, "JUnit-Test");
         listeners = Collections.synchronizedList(new ArrayList<>());
     }
@@ -70,7 +70,7 @@ public class TestSession extends ServerSession {
     /**
      * Creates a new session to the given server with a random identity
      */
-    public static TestSession build(NodeServer server) throws ExecutionException, InterruptedException {
+    public static TestServerConnection build(NodeServer server) throws ExecutionException, InterruptedException {
         URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
         return build(serverEntryPoint,
                 TestHelper.random(), true, server.workerGroup);
@@ -79,7 +79,8 @@ public class TestSession extends ServerSession {
     /**
      * Creates a new session to the given server.
      */
-    public static TestSession build(NodeServer server, boolean pingPong) throws ExecutionException,
+    public static TestServerConnection build(NodeServer server,
+                                             boolean pingPong) throws ExecutionException,
             InterruptedException {
         URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
         return build(serverEntryPoint,
@@ -89,8 +90,8 @@ public class TestSession extends ServerSession {
     /**
      * Creates a new session to the given server.
      */
-    public static TestSession build(NodeServer server,
-                                    Identity uid) throws ExecutionException, InterruptedException {
+    public static TestServerConnection build(NodeServer server,
+                                             Identity uid) throws ExecutionException, InterruptedException {
         URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
         return build(serverEntryPoint, uid, true, server.workerGroup);
     }
@@ -98,12 +99,12 @@ public class TestSession extends ServerSession {
     /**
      * Creates a new session with the given sessionUID and joins the given server.
      */
-    public static TestSession buildAutoJoin(NodeServer server) throws ExecutionException,
+    public static TestServerConnection buildAutoJoin(NodeServer server) throws ExecutionException,
             InterruptedException, CryptoException {
         KeyPair keyPair = Crypto.generateKeys();
         CompressedPublicKey publicKey = CompressedPublicKey.of(keyPair.getPublic());
         URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
-        TestSession session = build(serverEntryPoint, Identity.of(publicKey), true, server.workerGroup);
+        TestServerConnection session = build(serverEntryPoint, Identity.of(publicKey), true, server.workerGroup);
         session.send(new Join(publicKey, Set.of()), Welcome.class).blockingGet();
 
         return session;
@@ -112,12 +113,12 @@ public class TestSession extends ServerSession {
     /**
      * Creates a new session.
      */
-    public static TestSession build(URI targetSystem,
-                                    Identity uid,
-                                    boolean pingPong,
-                                    EventLoopGroup eventLoopGroup) throws InterruptedException,
+    public static TestServerConnection build(URI targetSystem,
+                                             Identity uid,
+                                             boolean pingPong,
+                                             EventLoopGroup eventLoopGroup) throws InterruptedException,
             ExecutionException {
-        CompletableFuture<TestSession> future = new CompletableFuture<>();
+        CompletableFuture<TestServerConnection> future = new CompletableFuture<>();
 
         if (eventLoopGroup == null) {
             eventLoopGroup = new NioEventLoopGroup();
@@ -125,11 +126,11 @@ public class TestSession extends ServerSession {
 
         OutboundConnectionFactory factory = new OutboundConnectionFactory(targetSystem, eventLoopGroup)
                 .handler(new SimpleChannelInboundHandler<IMessage>() {
-                    TestSession session;
+                    TestServerConnection session;
 
                     @Override
                     public void handlerAdded(final ChannelHandlerContext ctx) {
-                        session = new TestSession(ctx.channel(), targetSystem, uid);
+                        session = new TestServerConnection(ctx.channel(), targetSystem, uid);
                         future.complete(session);
                     }
 
@@ -152,9 +153,9 @@ public class TestSession extends ServerSession {
     /**
      * Creates a new session.
      */
-    public static TestSession build(URI targetSystem,
-                                    Identity uid,
-                                    boolean pingPong) throws ExecutionException, InterruptedException {
+    public static TestServerConnection build(URI targetSystem,
+                                             Identity uid,
+                                             boolean pingPong) throws ExecutionException, InterruptedException {
         return build(targetSystem, uid, pingPong, null);
     }
 

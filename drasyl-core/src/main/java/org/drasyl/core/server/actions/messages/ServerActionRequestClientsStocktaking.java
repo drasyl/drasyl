@@ -23,17 +23,17 @@ import org.drasyl.core.common.messages.RequestClientsStocktaking;
 import org.drasyl.core.common.messages.Response;
 import org.drasyl.core.server.NodeServer;
 import org.drasyl.core.server.actions.ServerAction;
-import org.drasyl.core.server.session.ServerSession;
+import org.drasyl.core.node.connections.ClientConnection;
 
 public class ServerActionRequestClientsStocktaking extends RequestClientsStocktaking implements ServerAction {
     @Override
-    public void onMessage(ServerSession session, NodeServer nodeServer) {
+    public void onMessage(ClientConnection session, NodeServer nodeServer) {
         session.send(new Response<>(new ClientsStocktaking(nodeServer.getPeersManager().getChildren()),
                 this.getMessageID()));
     }
 
     @Override
-    public void onResponse(String responseMsgID, ServerSession session, NodeServer nodeServer) {
+    public void onResponse(String responseMsgID, ClientConnection session, NodeServer nodeServer) {
         // This message does not comes as response to the node server
     }
 }

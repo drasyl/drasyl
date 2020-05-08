@@ -28,7 +28,7 @@ import org.drasyl.core.node.PeersManager;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.node.identity.IdentityTestHelper;
 import org.drasyl.core.server.NodeServer;
-import org.drasyl.core.server.session.ServerSession;
+import org.drasyl.core.node.connections.ClientConnection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -42,7 +42,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.mockito.Mockito.*;
 
 class ServerActionRequestClientsStocktakingTest {
-    private ServerSession serverSession;
+    private ClientConnection clientConnection;
     private NodeServer server;
     private String responseMsgID;
     private PeersManager peersManager;
@@ -53,7 +53,7 @@ class ServerActionRequestClientsStocktakingTest {
     void setUp() throws DrasylException {
         MockitoAnnotations.initMocks(this);
 
-        serverSession = mock(ServerSession.class);
+        clientConnection = mock(ClientConnection.class);
         server = mock(NodeServer.class);
         peersManager = mock(PeersManager.class);
 
@@ -73,9 +73,9 @@ class ServerActionRequestClientsStocktakingTest {
 
         when(peersManager.getChildren()).thenReturn(clients);
 
-        message.onMessage(serverSession, server);
+        message.onMessage(clientConnection, server);
 
-        verify(serverSession).send(captor.capture());
+        verify(clientConnection).send(captor.capture());
 
         ClientsStocktaking asm = captor.getValue().getMessage();
         assertThat(asm.getIdentities(), containsInAnyOrder(identity1, identity2));
@@ -85,9 +85,9 @@ class ServerActionRequestClientsStocktakingTest {
     void onResponse() {
         ServerActionRequestClientsStocktaking message = new ServerActionRequestClientsStocktaking();
 
-        message.onResponse(responseMsgID, serverSession, server);
+        message.onResponse(responseMsgID, clientConnection, server);
 
-        verifyNoInteractions(serverSession);
+        verifyNoInteractions(clientConnection);
         verifyNoInteractions(server);
     }
 }

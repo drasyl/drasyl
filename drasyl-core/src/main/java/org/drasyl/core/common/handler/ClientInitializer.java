@@ -33,7 +33,7 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Creates a newly configured {@link ChannelPipeline} for a ServerSession to a node server.
+ * Creates a newly configured {@link ChannelPipeline} for a ClientConnection to a node server.
  */
 public abstract class ClientInitializer extends DefaultSessionInitializer {
     private static final Logger LOG = LoggerFactory.getLogger(ClientInitializer.class);
