@@ -18,7 +18,6 @@
  */
 package org.drasyl.core.common.handler;
 
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
@@ -49,7 +48,8 @@ public class ConnectionGuardHandler extends SimpleChannelInboundHandler<IMessage
         }
         else {
             try {
-                ctx.writeAndFlush(new Reject()).addListener(ChannelFutureListener.CLOSE);
+                ctx.writeAndFlush(new Reject());
+                ctx.close();
                 LOG.debug("ConnectionGuard blocked creation of channel {}.", ctx.channel().id());
             }
             finally {

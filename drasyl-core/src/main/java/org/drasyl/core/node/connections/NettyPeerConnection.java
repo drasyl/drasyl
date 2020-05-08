@@ -168,8 +168,8 @@ public abstract class NettyPeerConnection implements PeerConnection {
         if (isClosed.compareAndSet(false, true)) {
             myChannel.flush();
             emitters.clear();
-            myChannel.writeAndFlush(new Leave())
-                    .addListener(ChannelFutureListener.CLOSE);
+            myChannel.writeAndFlush(new Leave());
+            myChannel.close();
         }
     }
 
@@ -185,7 +185,7 @@ public abstract class NettyPeerConnection implements PeerConnection {
 
     @Override
     public String toString() {
-        return MessageFormat.format("[Identity:{0}/Channel:{1}]", identity, getConnectionId());
+        return MessageFormat.format("[{0}/Channel:{1}]", identity, myChannel.id().asShortText());
     }
 
     /**

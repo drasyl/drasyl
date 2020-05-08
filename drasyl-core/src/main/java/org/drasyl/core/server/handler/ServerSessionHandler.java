@@ -69,8 +69,8 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<ServerActi
      * given future, when the {@link ClientConnection} was created.
      *
      * @param server               a reference to this node server instance
-     * @param uri                  the {@link URI} of the newly created {@link ClientConnection}, null
-     *                             to let this class guess the correct IP
+     * @param uri                  the {@link URI} of the newly created {@link ClientConnection},
+     *                             null to let this class guess the correct IP
      * @param sessionReadyListener the future, that should be completed a clientConnection creation
      */
     public ServerSessionHandler(NodeServer server,
@@ -98,9 +98,8 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<ServerActi
      */
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, ServerAction msg) throws Exception {
-        createSession(ctx, msg);
-
         ctx.executor().submit(() -> {
+            createSession(ctx, msg);
             if (clientConnection != null) {
                 msg.onMessage(clientConnection, server);
             }

@@ -189,8 +189,8 @@ class NettyPeerConnectionTest {
 
         verify(channel).flush();
         verify(emitters).clear();
-        verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
         verify(channel).writeAndFlush(any(Leave.class));
+        verify(channel).close();
         peerConnection.isClosed().whenComplete((suc, err) -> assertTrue(true));
     }
 
@@ -214,11 +214,11 @@ class NettyPeerConnectionTest {
 
         peerConnection.channelCloseFutureListener.operationComplete(channelFuture);
 
-        verify(channelFuture, times(2)).addListener(any(ChannelFutureListener.class));
+        verify(channelFuture).addListener(any(ChannelFutureListener.class));
         assertEquals(peerConnection.getCloseFuture(), channelFuture);
         verify(channelFuture).isSuccess();
         verify(channel).flush();
-        verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
+        verify(channel).close();
         verify(channel).writeAndFlush(any(Leave.class));
         peerConnection.isClosed().whenComplete((suc, err) -> assertTrue(true));
     }
@@ -235,11 +235,11 @@ class NettyPeerConnectionTest {
 
         peerConnection.channelCloseFutureListener.operationComplete(channelFuture);
 
-        verify(channelFuture, times(2)).addListener(any(ChannelFutureListener.class));
+        verify(channelFuture).addListener(any(ChannelFutureListener.class));
         assertEquals(peerConnection.getCloseFuture(), channelFuture);
         verify(channelFuture).isSuccess();
         verify(channel).flush();
-        verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
+        verify(channel).close();
         verify(channel).writeAndFlush(any(Leave.class));
         peerConnection.isClosed().whenComplete((suc, err) -> assertTrue(true));
     }
