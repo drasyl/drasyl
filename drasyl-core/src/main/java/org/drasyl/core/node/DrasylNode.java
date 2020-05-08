@@ -21,11 +21,13 @@ package org.drasyl.core.node;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.sentry.Sentry;
 import io.sentry.event.User;
+import org.drasyl.core.client.SuperPeerClient;
+import org.drasyl.core.client.SuperPeerClientException;
 import org.drasyl.core.common.messages.Message;
-import org.drasyl.core.common.models.Pair;
-import org.drasyl.core.models.Code;
 import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.models.Event;
 import org.drasyl.core.models.Node;
@@ -38,21 +40,33 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
 import java.util.Properties;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static org.drasyl.core.models.Code.*;
 
+@SuppressWarnings({ "java:S107" })
 public abstract class DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);
+    private static final List<DrasylNode> INSTANCES;
+    private static final EventLoopGroup WORKER_GROUP;
+    private static final EventLoopGroup BOSS_GROUP;
 
     static {
+        // https://github.com/netty/netty/issues/7817
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
         Sentry.getStoredClient().setRelease(DrasylNode.getVersion());
+        INSTANCES = Collections.synchronizedList(new ArrayList<>());
+        // https://github.com/netty/netty/issues/639#issuecomment-9263566
+        WORKER_GROUP = new NioEventLoopGroup(Math.min(2, ForkJoinPool.commonPool().getParallelism() * 2 / 3 - 2));
+        BOSS_GROUP = new NioEventLoopGroup(2);
     }
 
     private final DrasylNodeConfig config;
@@ -60,6 +74,7 @@ public abstract class DrasylNode {
     private final PeersManager peersManager;
     private final Messenger messenger;
     private final NodeServer server;
+    private final SuperPeerClient superPeerClient;
     private final AtomicBoolean started;
     private CompletableFuture<Void> startSequence;
     private CompletableFuture<Void> shutdownSequence;
@@ -74,7 +89,8 @@ public abstract class DrasylNode {
             this.identityManager = new IdentityManager(this.config);
             this.peersManager = new PeersManager();
             this.messenger = new Messenger(identityManager, peersManager, this::onEvent);
-            this.server = new NodeServer(identityManager, messenger, peersManager);
+            this.server = new NodeServer(identityManager, messenger, peersManager, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP);
+            this.superPeerClient = new SuperPeerClient(this.config, identityManager, peersManager, messenger);
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = new CompletableFuture<>();
@@ -87,16 +103,18 @@ public abstract class DrasylNode {
     DrasylNode(DrasylNodeConfig config,
                IdentityManager identityManager,
                PeersManager peersManager,
-               NodeServer server,
                Messenger messenger,
+               NodeServer server,
+               SuperPeerClient superPeerClient,
                AtomicBoolean started,
                CompletableFuture<Void> startSequence,
                CompletableFuture<Void> shutdownSequence) {
         this.config = config;
         this.identityManager = identityManager;
         this.peersManager = peersManager;
-        this.server = server;
         this.messenger = messenger;
+        this.server = server;
+        this.superPeerClient = superPeerClient;
         this.started = started;
         this.startSequence = startSequence;
         this.shutdownSequence = shutdownSequence;
@@ -118,9 +136,9 @@ public abstract class DrasylNode {
      * <p>
      * If this is also not possible, an exception is thrown.
      *
-     * @param recipient
-     * @param payload
-     * @throws DrasylException
+     * @param recipient the recipient of a message
+     * @param payload   the payload of a message
+     * @throws DrasylException if an error occurs during the processing
      */
     public synchronized void send(Identity recipient, byte[] payload) throws DrasylException {
         messenger.send(new Message(identityManager.getIdentity(), recipient, payload));
@@ -143,15 +161,16 @@ public abstract class DrasylNode {
      * <p>
      * If the local server has been started, it will now be stopped.
      * <p>
-     * If a super peer has been configured, a client is started which connects to this super peer.
-     * Our node uses the Super Peer to discover and communicate with other nodes.
+     * This method does not stop the shared threads. To kill the shared threads, you have to call
+     * the {@link #irrevocablyTerminate()} method.
      * <p>
-     * This method returns a future, which complements if all shutdown steps have been completed.
      *
-     * @return
+     * @return this method returns a future, which complements if all shutdown steps have been
+     * completed.
      */
     public CompletableFuture<Void> shutdown() {
         if (started.compareAndSet(true, false)) {
+            DrasylNode self = this;
             // The shutdown of the node includes up to two phases, which are performed sequentially
             // 1st Phase: Stop Super Peer Client (if started)
             // 2nd Phase: Stop local server (if started)
@@ -161,20 +180,25 @@ public abstract class DrasylNode {
                     .thenRun(this::stopSuperPeerClient)
                     .thenRun(this::stopServer)
                     .whenComplete((r, e) -> {
-                        if (e == null) {
-                            onEvent(new Event(NODE_NORMAL_TERMINATION, new Node(identityManager.getIdentity())));
-                            LOG.info("drasyl Node with Identity '{}' has shut down", identityManager.getIdentity().getId());
-                        }
-                        else {
-                            started.set(false);
-
-                            // passthrough exception
-                            if (e instanceof CompletionException) {
-                                throw (CompletionException) e;
+                        try {
+                            if (e == null) {
+                                onEvent(new Event(NODE_NORMAL_TERMINATION, new Node(identityManager.getIdentity())));
+                                LOG.info("drasyl Node with Identity '{}' has shut down", identityManager.getIdentity().getId());
                             }
                             else {
-                                throw new CompletionException(e);
+                                started.set(false);
+
+                                // passthrough exception
+                                if (e instanceof CompletionException) {
+                                    throw (CompletionException) e;
+                                }
+                                else {
+                                    throw new CompletionException(e);
+                                }
                             }
+                        }
+                        finally {
+                            INSTANCES.remove(self);
                         }
                     });
         }
@@ -194,11 +218,31 @@ public abstract class DrasylNode {
     }
 
     /**
+     * This method stops the shared threads ({@link EventLoopGroup}s), but only if none {@link
+     * DrasylNode} is using them anymore.
+     *
+     * <p>
+     * <b>This operation cannot be undone. After performing this operation, no new DrasylNodes can
+     * be created!</b>
+     * </p>
+     */
+    public static void irrevocablyTerminate() {
+        if (INSTANCES.isEmpty()) {
+            BOSS_GROUP.shutdownGracefully().syncUninterruptibly();
+            WORKER_GROUP.shutdownGracefully().syncUninterruptibly();
+        }
+    }
+
+    /**
      * Should unregister from the Super Peer and stop the client. Should do nothing if the client is
      * not registered or not started.
      */
     private void stopSuperPeerClient() {
-        // FIXME: implement
+        if (config.hasSuperPeer()) {
+            LOG.info("Stop Super Peer Client...");
+            superPeerClient.close();
+            LOG.info("Super Peer Client stopped");
+        }
     }
 
     /**
@@ -223,13 +267,13 @@ public abstract class DrasylNode {
      * If a super peer has been configured, a client is started which connects to this super peer.
      * Our node uses the Super Peer to discover and communicate with other nodes.
      * <p>
-     * This method returns a future, which complements if all components necessary for the operation
-     * have been started.
      *
-     * @return
+     * @return this method returns a future, which complements if all components necessary for the
+     * operation have been started.
      */
     public CompletableFuture<Void> start() {
         if (started.compareAndSet(false, true)) {
+            INSTANCES.add(this);
             // The start of the node includes up to three phases, which are performed sequentially
             // 1st Phase: Load identity (and create if necessary)
             // 2nd Phase: Start local server (if enabled)
@@ -304,6 +348,15 @@ public abstract class DrasylNode {
      * the super peer.
      */
     private void startSuperPeerClient() {
-        // FIXME: implement
+        if (config.hasSuperPeer()) {
+            try {
+                LOG.debug("Start Super Peer Client...");
+                superPeerClient.open();
+                LOG.debug("Super Peer started");
+            }
+            catch (SuperPeerClientException e) {
+                throw new CompletionException(e);
+            }
+        }
     }
 }

@@ -25,9 +25,9 @@ import org.drasyl.core.common.messages.Status;
 import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.node.DrasylNodeConfig;
 import org.drasyl.core.node.PeersManager;
+import org.drasyl.core.node.connections.ClientConnection;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.server.NodeServer;
-import org.drasyl.core.server.session.ServerSession;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,7 +38,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class ServerActionMessageTest {
-    private ServerSession serverSession;
+    private ClientConnection clientConnection;
     private NodeServer nodeServer;
     private String responseMsgID;
     private Identity localUID, remoteUID;
@@ -46,7 +46,7 @@ class ServerActionMessageTest {
 
     @BeforeEach
     void setUp() throws DrasylException {
-        serverSession = mock(ServerSession.class);
+        clientConnection = mock(ClientConnection.class);
         nodeServer = mock(NodeServer.class);
         PeersManager peersManager = mock(PeersManager.class);
 
@@ -63,9 +63,9 @@ class ServerActionMessageTest {
     public void onMessagePeerFoundTest() throws DrasylException {
         ServerActionMessage message = new ServerActionMessage(localUID, remoteUID, blob);
 
-        message.onMessage(serverSession, nodeServer);
+        message.onMessage(clientConnection, nodeServer);
 
-        verify(serverSession).send(new Response<>(Status.OK, message.getMessageID()));
+        verify(clientConnection).send(new Response<>(Status.OK, message.getMessageID()));
         verify(nodeServer, times(1)).send(any(Message.class));
     }
 
@@ -75,9 +75,9 @@ class ServerActionMessageTest {
 
         ServerActionMessage message = new ServerActionMessage(localUID, remoteUID, blob);
 
-        message.onMessage(serverSession, nodeServer);
+        message.onMessage(clientConnection, nodeServer);
 
-        verify(serverSession).send(new Response<>(Status.NOT_FOUND, message.getMessageID()));
+        verify(clientConnection).send(new Response<>(Status.NOT_FOUND, message.getMessageID()));
     }
 
     @Test
@@ -86,9 +86,9 @@ class ServerActionMessageTest {
 
         ServerActionMessage message = new ServerActionMessage(localUID, remoteUID, blob);
 
-        message.onMessage(serverSession, nodeServer);
+        message.onMessage(clientConnection, nodeServer);
 
-        verify(serverSession).send(new Response<>(Status.OK, message.getMessageID()));
+        verify(clientConnection).send(new Response<>(Status.OK, message.getMessageID()));
         verify(nodeServer, times(1)).send(arg.capture());
 
         assertEquals(message, arg.getValue());
@@ -103,10 +103,10 @@ class ServerActionMessageTest {
         });
 
         Assertions.assertThrows(NullPointerException.class, () -> {
-            message.onMessage(serverSession, null);
+            message.onMessage(clientConnection, null);
         });
 
-        verify(serverSession, never()).send(any());
+        verify(clientConnection, never()).send(any());
         verify(nodeServer, never()).send(any());
     }
 
@@ -114,9 +114,9 @@ class ServerActionMessageTest {
     void onResponse() {
         ServerActionMessage message = new ServerActionMessage();
 
-        message.onResponse(responseMsgID, serverSession, nodeServer);
+        message.onResponse(responseMsgID, clientConnection, nodeServer);
 
-        verifyNoInteractions(serverSession);
+        verifyNoInteractions(clientConnection);
         verifyNoInteractions(nodeServer);
     }
 }

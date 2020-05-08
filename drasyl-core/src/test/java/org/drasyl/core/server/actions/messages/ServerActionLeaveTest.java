@@ -20,20 +20,20 @@ package org.drasyl.core.server.actions.messages;
 
 import org.drasyl.core.common.messages.Response;
 import org.drasyl.core.server.NodeServer;
-import org.drasyl.core.server.session.ServerSession;
+import org.drasyl.core.node.connections.ClientConnection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.mockito.Mockito.*;
 
 class ServerActionLeaveTest {
-    private ServerSession serverSession;
+    private ClientConnection clientConnection;
     private NodeServer server;
     private String responseMsgID;
 
     @BeforeEach
     void setUp() {
-        serverSession = mock(ServerSession.class);
+        clientConnection = mock(ClientConnection.class);
         server = mock(NodeServer.class);
 
         responseMsgID = "id";
@@ -43,10 +43,10 @@ class ServerActionLeaveTest {
     void onMessage() {
         ServerActionLeave message = new ServerActionLeave();
 
-        message.onMessage(serverSession, server);
+        message.onMessage(clientConnection, server);
 
-        verify(serverSession, times(1)).send(any(Response.class));
-        verify(serverSession, times(1)).close();
+        verify(clientConnection, times(1)).send(any(Response.class));
+        verify(clientConnection, times(1)).close();
         verifyNoInteractions(server);
     }
 
@@ -54,9 +54,9 @@ class ServerActionLeaveTest {
     void onResponse() {
         ServerActionLeave message = new ServerActionLeave();
 
-        message.onResponse(responseMsgID, serverSession, server);
+        message.onResponse(responseMsgID, clientConnection, server);
 
-        verifyNoInteractions(serverSession);
+        verifyNoInteractions(clientConnection);
         verifyNoInteractions(server);
     }
 }

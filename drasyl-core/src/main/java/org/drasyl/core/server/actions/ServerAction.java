@@ -21,9 +21,9 @@ package org.drasyl.core.server.actions;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.drasyl.core.common.messages.IMessage;
+import org.drasyl.core.node.connections.ClientConnection;
 import org.drasyl.core.server.NodeServer;
 import org.drasyl.core.server.actions.messages.*;
-import org.drasyl.core.server.session.ServerSession;
 
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME, property = "type")
 @JsonSubTypes({
@@ -42,12 +42,12 @@ public interface ServerAction extends IMessage {
     /**
      * Handles incoming messages and passes them to the correct sub-function.
      */
-    void onMessage(ServerSession session, NodeServer nodeServer);
+    void onMessage(ClientConnection session, NodeServer nodeServer);
 
     /**
      * Handles incoming responses and passes them to the correct sub-function.
      *
      * @param responseMsgID the id of the corresponding message
      */
-    void onResponse(String responseMsgID, ServerSession session, NodeServer nodeServer);
+    void onResponse(String responseMsgID, ClientConnection session, NodeServer nodeServer);
 }

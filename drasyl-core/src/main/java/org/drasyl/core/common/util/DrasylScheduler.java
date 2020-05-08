@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.core.common.util;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
@@ -41,8 +40,8 @@ public class DrasylScheduler {
                 .setNameFormat("Drasyl-ThreadPool-%d")
                 .build();
         Executor executor = new ThreadPoolExecutor(
-                Math.min(1, ForkJoinPool.commonPool().getParallelism() / 2 - 1),  //corePoolSize
-                Math.min(1, ForkJoinPool.commonPool().getParallelism() - 1),  //maximumPoolSize
+                Math.min(1, ForkJoinPool.commonPool().getParallelism() / 3),  //corePoolSize
+                Math.min(2, ForkJoinPool.commonPool().getParallelism() / 3),  //maximumPoolSize
                 60L, TimeUnit.MILLISECONDS, //keepAliveTime, unit
                 new LinkedBlockingQueue<>(1000),  //workQueue
                 threadFactory

@@ -21,6 +21,7 @@ package org.drasyl.core.node;
 
 import com.google.common.collect.ImmutableSet;
 import org.drasyl.core.models.CompressedPublicKey;
+import org.drasyl.core.node.connections.PeerConnection;
 
 import java.net.URI;
 import java.util.Collection;

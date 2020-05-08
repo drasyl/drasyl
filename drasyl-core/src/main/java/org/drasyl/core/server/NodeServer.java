@@ -23,7 +23,6 @@ import com.typesafe.config.ConfigFactory;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.core.common.messages.IMessage;
 import org.drasyl.core.common.messages.Message;
 import org.drasyl.core.common.messages.UserAgentMessage;
@@ -34,21 +33,17 @@ import org.drasyl.core.node.PeerInformation;
 import org.drasyl.core.node.PeersManager;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.node.identity.IdentityManager;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.*;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 @SuppressWarnings({ "squid:S00107" })
 public class NodeServer implements AutoCloseable {
-    private static final Logger LOG = LoggerFactory.getLogger(NodeServer.class);
     public final EventLoopGroup workerGroup;
     public final EventLoopGroup bossGroup;
     public final ServerBootstrap serverBootstrap;
@@ -65,18 +60,20 @@ public class NodeServer implements AutoCloseable {
 
     /**
      * Starts a node server for forwarding messages to child peers.<br> Default Port: 22527
+     *
+     * @param identityManager the identity manager
+     * @param messenger       the messenger object
+     * @param peersManager    the peers manager
+     * @param workerGroup     netty shared worker group
+     * @param bossGroup       netty shared boss group
+     * @throws DrasylException if the loaded default config is invalid
      */
     public NodeServer(IdentityManager identityManager,
                       Messenger messenger,
-                      PeersManager peersManager) throws DrasylException {
-        this(identityManager, messenger, peersManager, ConfigFactory.load());
-    }
-
-    public NodeServer(IdentityManager identityManager,
-                      Messenger messenger,
                       PeersManager peersManager,
-                      Config config) throws DrasylException {
-        this(identityManager, messenger, peersManager, new DrasylNodeConfig(config));
+                      EventLoopGroup workerGroup,
+                      EventLoopGroup bossGroup) throws DrasylException {
+        this(identityManager, messenger, peersManager, ConfigFactory.load(), workerGroup, bossGroup);
     }
 
     /**
@@ -86,14 +83,38 @@ public class NodeServer implements AutoCloseable {
      * @param messenger       the messenger object
      * @param peersManager    the peers manager
      * @param config          config that should be used
+     * @param workerGroup     netty shared worker group
+     * @param bossGroup       netty shared boss group
+     * @throws DrasylException if the given config is invalid
      */
     public NodeServer(IdentityManager identityManager,
                       Messenger messenger,
                       PeersManager peersManager,
-                      DrasylNodeConfig config) throws NodeServerException {
+                      Config config,
+                      EventLoopGroup workerGroup,
+                      EventLoopGroup bossGroup) throws DrasylException {
+        this(identityManager, messenger, peersManager, new DrasylNodeConfig(config), workerGroup, bossGroup);
+    }
+
+    /**
+     * Node server for forwarding messages to child peers.
+     *
+     * @param identityManager the identity manager
+     * @param messenger       the messenger object
+     * @param peersManager    the peers manager
+     * @param config          config that should be used
+     * @param workerGroup     netty shared worker group
+     * @param bossGroup       netty shared boss group
+     */
+    public NodeServer(IdentityManager identityManager,
+                      Messenger messenger,
+                      PeersManager peersManager,
+                      DrasylNodeConfig config,
+                      EventLoopGroup workerGroup,
+                      EventLoopGroup bossGroup) throws NodeServerException {
         this(identityManager, messenger, peersManager, config,
                 null, new ServerBootstrap(),
-                new NioEventLoopGroup(Math.min(1, ForkJoinPool.commonPool().getParallelism() - 1)), new NioEventLoopGroup(1), new ArrayList<>(),
+                workerGroup, bossGroup, new ArrayList<>(),
                 new CompletableFuture<>(), new CompletableFuture<>(), null, new AtomicBoolean(false), -1, new HashSet<>());
 
         overrideUA();
@@ -259,10 +280,8 @@ public class NodeServer implements AutoCloseable {
                 }
             }));
 
-            bossGroup.shutdownGracefully().syncUninterruptibly();
-            workerGroup.shutdownGracefully().syncUninterruptibly();
             if (serverChannel != null && serverChannel.isOpen()) {
-                serverChannel.closeFuture().syncUninterruptibly();
+                serverChannel.close().syncUninterruptibly();
             }
         }
     }

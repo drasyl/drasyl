@@ -86,6 +86,7 @@ class Cli {
         if (node != null) {
             log.info("Shutdown Drasyl Node");
             node.shutdown().join();
+            node.irrevocablyTerminate();
         }
     }
 
