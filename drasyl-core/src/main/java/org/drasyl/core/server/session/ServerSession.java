@@ -190,22 +190,6 @@ public class ServerSession implements PeerConnection {
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(myid);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (o instanceof ServerSession) {
-            ServerSession c2 = (ServerSession) o;
-
-            return Objects.equals(getConnectionId(), c2.getConnectionId());
-        }
-
-        return false;
-    }
-
-    @Override
     public String toString() {
         return MessageFormat.format("[S:{0}/C:{1}]", myid, getConnectionId());
     }
@@ -215,5 +199,22 @@ public class ServerSession implements PeerConnection {
      */
     protected Logger getLogger() {
         return LOG;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        ServerSession that = (ServerSession) o;
+        return Objects.equals(myid, that.myid);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(myid);
     }
 }

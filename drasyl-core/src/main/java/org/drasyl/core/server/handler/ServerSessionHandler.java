@@ -26,6 +26,8 @@ import org.drasyl.core.common.messages.IMessage;
 import org.drasyl.core.common.messages.Join;
 import org.drasyl.core.common.messages.NodeServerException;
 import org.drasyl.core.common.messages.Response;
+import org.drasyl.core.node.PeerConnection;
+import org.drasyl.core.node.PeerInformation;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.server.NodeServer;
 import org.drasyl.core.server.actions.ServerAction;
@@ -124,35 +126,34 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<ServerActi
             Identity identity = Identity.of(jm.getPublicKey());
             Channel myChannel = ctx.channel();
 
-            boolean alreadyOpenConnection = server.getPeersManager().getChildren().contains(identity);
-            if (!alreadyOpenConnection && server.getPeersManager().getPeer(identity) != null) {
-                alreadyOpenConnection = server.getPeersManager().getPeer(identity).getConnections().stream().anyMatch(peerConnection -> peerConnection.getConnectionId().equals(myChannel.id().asLongText()));
-            }
+            // close and remove any existing sessions that may exist
+            PeerInformation peerInformation = server.getPeersManager().getPeer(identity);
+            if (peerInformation != null) {
+                Optional<PeerConnection> existingServerSessionOptional = peerInformation.getConnections().stream().filter(peerConnection -> peerConnection instanceof ServerSession && peerConnection.getIdentity().equals(identity)).findFirst();
 
-            if (!alreadyOpenConnection) {
-                if (uri == null) {
-                    try {
-                        uri = getRemoteAddr(myChannel);
-                    }
-                    catch (URISyntaxException e) {
-                        LOG.error("Cannot determine URI: ", e);
-                    }
+                if (existingServerSessionOptional.isPresent()) {
+                    PeerConnection existingServerSession = existingServerSessionOptional.get();
+                    LOG.debug("There is an existing Session for Node '{}'. Replace and close existing Session '{}' before adding new Session", identity, existingServerSession);
+                    peerInformation.getConnections().remove(existingServerSession);
+                    existingServerSession.close();
                 }
+            }
 
-                serverSession = new ServerSession(ctx.channel(), uri, identity,
-                        Optional.ofNullable(jm.getUserAgent()).orElse("U/A"));
-                sessionReadyFuture.complete(serverSession);
-                ctx.pipeline().remove(KILL_SWITCH);
-                ctx.pipeline().remove(CONNECTION_GUARD);
-                LOG.debug("Create new channel {}, for ServerSession {}", ctx.channel().id(), serverSession);
+            if (uri == null) {
+                try {
+                    uri = getRemoteAddr(myChannel);
+                }
+                catch (URISyntaxException e) {
+                    LOG.error("Cannot determine URI: ", e);
+                }
             }
-            else {
-                ctx.writeAndFlush(new Response<>(
-                        new NodeServerException(
-                                "This client has already an open session with this node server. Can't open more sockets."),
-                        jm.getMessageID()));
-                ctx.close();
-            }
+
+            serverSession = new ServerSession(ctx.channel(), uri, identity,
+                    Optional.ofNullable(jm.getUserAgent()).orElse("U/A"));
+            sessionReadyFuture.complete(serverSession);
+            ctx.pipeline().remove(KILL_SWITCH);
+            ctx.pipeline().remove(CONNECTION_GUARD);
+            LOG.debug("Create new channel {}, for ServerSession {}", ctx.channel().id(), serverSession);
         }
     }
 
