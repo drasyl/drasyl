@@ -16,19 +16,24 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.core.common.messages;
+package org.drasyl.core.server.actions.messages;
 
-/**
- * A message representing a termination of a connection.
- */
-public class Leave extends AbstractMessage implements UnrestrictedPassableMessage {
+import org.drasyl.core.common.messages.Reject;
+import org.drasyl.core.server.NodeServer;
+import org.drasyl.core.server.actions.ServerAction;
+import org.drasyl.core.server.session.ServerSession;
+
+public class ServerActionReject extends Reject implements ServerAction {
     @Override
-    public boolean equals(Object o) {
-        return super.equals(o);
+    public void onMessage(ServerSession session,
+                          NodeServer nodeServer) {
+        // This message does not comes to the server
     }
 
     @Override
-    public int hashCode() {
-        return super.hashCode();
+    public void onResponse(String responseMsgID,
+                           ServerSession session,
+                           NodeServer nodeServer) {
+        // This message does not comes as response to the node server
     }
 }

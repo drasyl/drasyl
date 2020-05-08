@@ -22,36 +22,46 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.core.common.messages.Leave;
-import org.drasyl.core.common.messages.Response;
+import org.drasyl.core.common.messages.IMessage;
+import org.drasyl.core.common.messages.Reject;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-class LeaveHandlerTest {
+class ConnectionGuardHandlerTest {
     private ChannelHandlerContext ctx;
     private ChannelFuture channelFuture;
-    private LeaveHandler handler;
-    private Leave msg;
+    private IMessage message;
 
     @BeforeEach
     void setUp() {
         ctx = mock(ChannelHandlerContext.class);
-        handler = LeaveHandler.INSTANCE;
         Channel channel = mock(Channel.class);
         channelFuture = mock(ChannelFuture.class);
-        msg = new Leave();
+        message = mock(IMessage.class);
 
         when(ctx.channel()).thenReturn(channel);
         when(ctx.writeAndFlush(any())).thenReturn(channelFuture);
     }
 
     @Test
-    void channelRead0() throws Exception {
-        handler.channelRead0(ctx, msg);
+    void shouldFireOnOpenGuard() {
+        ConnectionGuardHandler handler = new ConnectionGuardHandler(() -> true);
 
-        verify(ctx).writeAndFlush(any(Response.class));
+        handler.channelRead0(ctx, message);
+
+        verify(ctx).fireChannelRead(message);
+    }
+
+    @Test
+    void shouldCloseConnectionOnClosedGuard() {
+        ConnectionGuardHandler handler = new ConnectionGuardHandler(() -> false);
+
+        handler.channelRead0(ctx, message);
+
+        verify(ctx).writeAndFlush(isA(Reject.class));
         verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
     }
 }

@@ -45,6 +45,8 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.hamcrest.Matchers.hasItem;
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -162,5 +164,19 @@ class NodeServerTest {
         assertNotNull(server.getPeersManager());
         assertNotNull(server.getEntryPoints());
         assertFalse(server.isOpen());
+    }
+
+    @Test
+    void addRemoveBeforeListenerShouldAddRemoveTheRunnable() {
+        NodeServer server = new NodeServer(identityManager, messenger, peersManager,
+                config, serverChannel, serverBootstrap, workerGroup, bossGroup,
+                beforeCloseListeners, startedFuture, stoppedFuture, nodeServerBootstrap, new AtomicBoolean(false), -1, new HashSet<>());
+
+        Runnable r = () -> {};
+        server.addBeforeCloseListener(r);
+        assertThat(beforeCloseListeners, hasItem(is(r)));
+        assertEquals(1, beforeCloseListeners.size());
+        server.removeBeforeCloseListener(r);
+        assertEquals(0, beforeCloseListeners.size());
     }
 }

@@ -16,16 +16,16 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.core.common.handler;
 
-import org.drasyl.core.common.messages.Leave;
-import org.drasyl.core.common.messages.Response;
-import org.drasyl.core.common.messages.Status;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
+import org.drasyl.core.common.messages.Leave;
+import org.drasyl.core.common.messages.Response;
+import org.drasyl.core.common.messages.Status;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,9 +43,12 @@ public class LeaveHandler extends SimpleChannelInboundHandler<Leave> {
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Leave msg) throws Exception {
-        ctx.writeAndFlush(new Response(Status.OK, msg.getMessageID()));
-        ReferenceCountUtil.release(msg);
-        ctx.channel().close();
-        LOG.debug("{} received LeaveMessage. Fire channel close.", ctx.channel().id());
+        try {
+            ctx.writeAndFlush(new Response<>(Status.OK, msg.getMessageID())).addListener(ChannelFutureListener.CLOSE);
+            LOG.debug("{} received LeaveMessage. Fire channel close.", ctx.channel().id());
+        }
+        finally {
+            ReferenceCountUtil.release(msg);
+        }
     }
 }

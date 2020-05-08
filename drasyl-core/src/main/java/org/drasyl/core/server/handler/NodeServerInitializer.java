@@ -27,6 +27,7 @@ import io.netty.handler.codec.http.websocketx.extensions.compression.WebSocketSe
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
+import org.drasyl.core.common.handler.ConnectionGuardHandler;
 import org.drasyl.core.common.handler.DefaultSessionInitializer;
 import org.drasyl.core.common.handler.ExceptionHandler;
 import org.drasyl.core.common.handler.LeaveHandler;
@@ -46,6 +47,7 @@ import static org.drasyl.core.common.handler.codec.message.MessageEncoder.MESSAG
 import static org.drasyl.core.server.handler.JoinHandler.JOIN_GUARD;
 import static org.drasyl.core.server.handler.KillOnExceptionHandler.KILL_SWITCH;
 import static org.drasyl.core.server.handler.ServerSessionHandler.HANDLER;
+import static org.drasyl.core.common.handler.ConnectionGuardHandler.CONNECTION_GUARD;
 
 /**
  * Creates a newly configured {@link ChannelPipeline} for the node server.
@@ -91,6 +93,11 @@ public class NodeServerInitializer extends DefaultSessionInitializer {
         pipeline.addLast(new WebSocketServerCompressionHandler());
         pipeline.addLast(new WebSocketMissingUpgradeErrorPageHandler(server.getMyIdentity()));
         pipeline.addLast(new WebSocketServerProtocolHandler("/", null, true));
+    }
+
+    @Override
+    protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
+        pipeline.addLast(CONNECTION_GUARD, new ConnectionGuardHandler(server::isOpen));
     }
 
     @Override

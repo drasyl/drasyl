@@ -35,7 +35,8 @@ import org.drasyl.core.server.session.ServerSession;
         @JsonSubTypes.Type(value = ServerActionRequestClientsStocktaking.class, name = "RequestClientsStocktaking"),
         @JsonSubTypes.Type(value = ServerActionJoin.class, name = "Join"),
         @JsonSubTypes.Type(value = ServerActionResponse.class, name = "Response"),
-        @JsonSubTypes.Type(value = ServerActionStatus.class, name = "Status")
+        @JsonSubTypes.Type(value = ServerActionStatus.class, name = "Status"),
+        @JsonSubTypes.Type(value = ServerActionReject.class, name = "Reject")
 })
 public interface ServerAction extends IMessage {
     /**
