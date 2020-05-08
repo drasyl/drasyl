@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.core.server.connections;
+package org.drasyl.core.node.connections;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;

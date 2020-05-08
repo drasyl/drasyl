@@ -29,7 +29,6 @@ import org.drasyl.core.common.messages.Response;
 import org.drasyl.core.common.models.Pair;
 import org.drasyl.core.node.identity.Identity;
 import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.text.MessageFormat;
@@ -42,8 +41,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * The {@link NettyPeerConnection} object models an in- or outbound connection by netty.
  */
 @SuppressWarnings({ "squid:S00107" })
-public class NettyPeerConnection implements PeerConnection {
-    private static final Logger LOG = LoggerFactory.getLogger(NettyPeerConnection.class);
+public abstract class NettyPeerConnection implements PeerConnection {
     protected final ConcurrentHashMap<String, Pair<Class<? extends IMessage>, SingleEmitter<IMessage>>> emitters;
     protected final NettyPeerConnection self = this; //NOSONAR
     protected final Channel myChannel;
@@ -170,8 +168,8 @@ public class NettyPeerConnection implements PeerConnection {
         if (isClosed.compareAndSet(false, true)) {
             myChannel.flush();
             emitters.clear();
-            myChannel.writeAndFlush(new Leave())
-                    .addListener(ChannelFutureListener.CLOSE);
+            myChannel.writeAndFlush(new Leave());
+            myChannel.close();
         }
     }
 
@@ -186,30 +184,29 @@ public class NettyPeerConnection implements PeerConnection {
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(getConnectionId());
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (o instanceof NettyPeerConnection) {
-            NettyPeerConnection c2 = (NettyPeerConnection) o;
-
-            return Objects.equals(getConnectionId(), c2.getConnectionId());
-        }
-
-        return false;
-    }
-
-    @Override
     public String toString() {
-        return MessageFormat.format("[Identity:{0}/Channel:{1}]", identity, getConnectionId());
+        return MessageFormat.format("[{0}/Channel:{1}]", identity, myChannel.id().asShortText());
     }
 
     /**
      * Returns the correct logger. Is needed for sub-classes.
      */
-    protected Logger getLogger() {
-        return LOG;
+    protected abstract Logger getLogger();
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        NettyPeerConnection that = (NettyPeerConnection) o;
+        return Objects.equals(identity, that.identity);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(identity);
     }
 }

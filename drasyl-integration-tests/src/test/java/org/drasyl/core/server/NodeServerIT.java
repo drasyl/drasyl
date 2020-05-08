@@ -385,7 +385,7 @@ public class NodeServerIT {
     }
 
     @Test
-    public void multipleHandshakeWithSameIDTest() {
+    public void newSessionWithSameIdentityShouldReplaceAndCloseExistingSession() {
         TestHelper.println("STARTING multipleHandshakeWithSameIDTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
 
         CountDownLatch lock = new CountDownLatch(1);
@@ -398,17 +398,19 @@ public class NodeServerIT {
 
             session1.send(new Join(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of()),
                     Welcome.class).blockingGet();
-            session2.send(new Join(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of()),
-                    org.drasyl.core.common.messages.NodeServerException.class).subscribe(response -> {
-                Assert.assertEquals("This client has already an open "
-                        + "session with this node server. Can't open more sockets.", response.getException());
-                lock.countDown();
+            session1.addListener(message -> {
+                if (message instanceof Leave) {
+                    lock.countDown();
+                }
             });
+            session2.send(new Join(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of()),
+                    Welcome.class).blockingGet();
 
             lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
             assertEquals(0, lock.getCount());
+            assertTrue(session1.isClosed().get(10, TimeUnit.SECONDS));
         }
-        catch (InterruptedException | ExecutionException | CryptoException e) {
+        catch (InterruptedException | ExecutionException | CryptoException | TimeoutException e) {
             e.printStackTrace();
             fail("Exception occurred during the test.");
         }

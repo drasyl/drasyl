@@ -73,19 +73,20 @@ public class ClientConnection extends NettyPeerConnection {
     }
 
     @Override
-    public int hashCode() {
-        return super.hashCode();
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        ClientConnection that = (ClientConnection) o;
+        return Objects.equals(identity, that.identity);
     }
 
     @Override
-    public boolean equals(Object o) {
-        if (o instanceof ClientConnection) {
-            ClientConnection c2 = (ClientConnection) o;
-
-            return Objects.equals(getConnectionId(), c2.getConnectionId());
-        }
-
-        return false;
+    public int hashCode() {
+        return Objects.hash(identity);
     }
 
     @Override
