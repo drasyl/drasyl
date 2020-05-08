@@ -408,7 +408,6 @@ public class NodeServerIT {
 
             lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
             assertEquals(0, lock.getCount());
-            //FIXME: Replace with CompletableFuture
             assertTrue(session1.isClosed().get(10, TimeUnit.SECONDS));
         }
         catch (InterruptedException | ExecutionException | CryptoException | TimeoutException e) {
