@@ -33,7 +33,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import org.drasyl.core.common.tools.NetworkTool;
-import org.drasyl.core.common.util.function.Procedure;
 
 public final class TestHelper {
     private static final Logger LOG = LoggerFactory.getLogger(TestHelper.class);
@@ -79,7 +78,7 @@ public final class TestHelper {
      * @param procedure the procedure
      * @param config    the relay server config
      */
-    public static void giveRelayServerEnv(Procedure procedure, DrasylNodeConfig config, NodeServer relay) throws NodeServerException {
+    public static void giveRelayServerEnv(Runnable procedure, DrasylNodeConfig config, NodeServer relay) throws NodeServerException {
         giveRelayServerEnv(procedure, config, relay, true);
     }
 
@@ -91,7 +90,7 @@ public final class TestHelper {
      * @param closeAfterProcedure if the NodeServer should automatically shutdown
      *                            after execution
      */
-    public static void giveRelayServerEnv(Procedure procedure, DrasylNodeConfig config, NodeServer server,
+    public static void giveRelayServerEnv(Runnable procedure, DrasylNodeConfig config, NodeServer server,
                                           boolean closeAfterProcedure) throws NodeServerException {
         TestHelper.waitUntilNetworkAvailable(config.getServerBindPort());
         server.open();
@@ -101,7 +100,7 @@ public final class TestHelper {
                     return NetworkTool.alive("127.0.0.1", server.getConfig().getServerBindPort());
                 });
 
-        procedure.execute();
+        procedure.run();
 
         if (closeAfterProcedure)
             server.close();

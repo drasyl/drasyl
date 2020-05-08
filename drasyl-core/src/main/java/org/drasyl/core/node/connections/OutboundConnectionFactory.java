@@ -34,7 +34,6 @@ import org.drasyl.core.common.handler.DefaultSessionInitializer;
 import org.drasyl.core.common.handler.ExceptionHandler;
 import org.drasyl.core.common.handler.codec.message.MessageDecoder;
 import org.drasyl.core.common.handler.codec.message.MessageEncoder;
-import org.drasyl.core.common.util.function.Procedure;
 import org.drasyl.core.server.handler.codec.message.ServerActionMessageDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +59,7 @@ public class OutboundConnectionFactory {
     private static final Logger LOG = LoggerFactory.getLogger(OutboundConnectionFactory.class);
     private final CompletableFuture<Void> channelReadyFuture;
     private final List<ChannelHandler> handler;
-    private Procedure shutdownProcedure;
+    private Runnable shutdownProcedure;
     private ChannelHandler initializer;
     private EventLoopGroup eventGroup;
     private final List<String> sslProtocols;
@@ -75,7 +74,7 @@ public class OutboundConnectionFactory {
 
     private OutboundConnectionFactory(URI target,
                                       ChannelInitializer<SocketChannel> initializer,
-                                      Procedure shutdownProcedure,
+                                      Runnable shutdownProcedure,
                                       SslContext sslCtx,
                                       List<ChannelHandler> handler,
                                       List<String> sslProtocols,
@@ -228,12 +227,12 @@ public class OutboundConnectionFactory {
     }
 
     /**
-     * Adds the given {@link Procedure} to the close listener.
+     * Adds the given {@link Runnable} to the close listener.
      *
      * @param procedure the procedure
      * @return {@link OutboundConnectionFactory} with the changed property
      */
-    public OutboundConnectionFactory shutdownProcedure(Procedure procedure) {
+    public OutboundConnectionFactory shutdownProcedure(Runnable procedure) {
         this.shutdownProcedure = procedure;
 
         return this;
@@ -293,7 +292,7 @@ public class OutboundConnectionFactory {
 
         ch.closeFuture().addListener(future -> {
             LOG.debug("OutboundConnection for {} was closed.", uri, future.cause());
-            shutdownProcedure.execute();
+            shutdownProcedure.run();
         });
 
         return ch;
