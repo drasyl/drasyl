@@ -20,20 +20,20 @@ package org.drasyl.core.server.actions.messages;
 
 import org.drasyl.core.common.messages.Response;
 import org.drasyl.core.server.NodeServer;
-import org.drasyl.core.server.session.ServerSession;
+import org.drasyl.core.node.connections.ClientConnection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.mockito.Mockito.*;
 
 class ServerActionNodeServerExceptionTest {
-    private ServerSession serverSession;
+    private ClientConnection clientConnection;
     private NodeServer nodeServer;
     private String responseMsgID;
 
     @BeforeEach
     void setUp() {
-        serverSession = mock(ServerSession.class);
+        clientConnection = mock(ClientConnection.class);
         nodeServer = mock(NodeServer.class);
 
         responseMsgID = "id";
@@ -43,9 +43,9 @@ class ServerActionNodeServerExceptionTest {
     void onMessage() {
         ServerActionException message = new ServerActionException();
 
-        message.onMessage(serverSession, nodeServer);
+        message.onMessage(clientConnection, nodeServer);
 
-        verify(serverSession, times(1)).send(any(Response.class));
+        verify(clientConnection, times(1)).send(any(Response.class));
         verifyNoInteractions(nodeServer);
     }
 
@@ -53,9 +53,9 @@ class ServerActionNodeServerExceptionTest {
     void onResponse() {
         ServerActionException message = new ServerActionException();
 
-        message.onResponse(responseMsgID, serverSession, nodeServer);
+        message.onResponse(responseMsgID, clientConnection, nodeServer);
 
-        verify(serverSession, times(1)).setResponse(any(Response.class));
+        verify(clientConnection, times(1)).setResponse(any(Response.class));
         verifyNoInteractions(nodeServer);
     }
 }

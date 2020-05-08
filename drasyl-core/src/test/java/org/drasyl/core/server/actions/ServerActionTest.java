@@ -21,7 +21,7 @@ package org.drasyl.core.server.actions;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.drasyl.core.common.messages.Response;
 import org.drasyl.core.server.NodeServer;
-import org.drasyl.core.server.session.ServerSession;
+import org.drasyl.core.node.connections.ClientConnection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -31,12 +31,12 @@ import static org.mockito.Mockito.*;
 
 class ServerActionTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
-    private ServerSession serverSession;
+    private ClientConnection clientConnection;
     private NodeServer server;
 
     @BeforeEach
     void setUp() {
-        serverSession = mock(ServerSession.class);
+        clientConnection = mock(ClientConnection.class);
         server = mock(NodeServer.class);
     }
 
@@ -46,8 +46,8 @@ class ServerActionTest {
                 "\"messageID\":\"37519A0114C0F3A04588FB53\",\"exception\":\"bla\"}\n";
 
         ServerAction message = JSON_MAPPER.readValue(msg, ServerAction.class);
-        message.onMessage(serverSession, server);
+        message.onMessage(clientConnection, server);
 
-        verify(serverSession, times(1)).send(any(Response.class));
+        verify(clientConnection, times(1)).send(any(Response.class));
     }
 }

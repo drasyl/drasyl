@@ -19,7 +19,7 @@
 package org.drasyl.core.server.actions.messages;
 
 import org.drasyl.core.server.NodeServer;
-import org.drasyl.core.server.session.ServerSession;
+import org.drasyl.core.node.connections.ClientConnection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -27,13 +27,13 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verifyNoInteractions;
 
 class ServerActionRejectTest {
-    private ServerSession serverSession;
+    private ClientConnection clientConnection;
     private NodeServer server;
     private String responseMsgID;
 
     @BeforeEach
     void setUp() {
-        serverSession = mock(ServerSession.class);
+        clientConnection = mock(ClientConnection.class);
         server = mock(NodeServer.class);
 
         responseMsgID = "id";
@@ -43,9 +43,9 @@ class ServerActionRejectTest {
     void onMessage() {
         ServerActionReject message = new ServerActionReject();
 
-        message.onMessage(serverSession, server);
+        message.onMessage(clientConnection, server);
 
-        verifyNoInteractions(serverSession);
+        verifyNoInteractions(clientConnection);
         verifyNoInteractions(server);
     }
 
@@ -53,9 +53,9 @@ class ServerActionRejectTest {
     void onResponse() {
         ServerActionReject message = new ServerActionReject();
 
-        message.onResponse(responseMsgID, serverSession, server);
+        message.onResponse(responseMsgID, clientConnection, server);
 
-        verifyNoInteractions(serverSession);
+        verifyNoInteractions(clientConnection);
         verifyNoInteractions(server);
     }
 }

@@ -24,14 +24,12 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.core.common.messages.IMessage;
 import org.drasyl.core.common.messages.Join;
-import org.drasyl.core.common.messages.NodeServerException;
-import org.drasyl.core.common.messages.Response;
-import org.drasyl.core.node.PeerConnection;
 import org.drasyl.core.node.PeerInformation;
+import org.drasyl.core.node.connections.ClientConnection;
+import org.drasyl.core.node.connections.PeerConnection;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.server.NodeServer;
 import org.drasyl.core.server.actions.ServerAction;
-import org.drasyl.core.server.session.ServerSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -46,15 +44,15 @@ import static org.drasyl.core.server.handler.KillOnExceptionHandler.KILL_SWITCH;
 
 /**
  * This handler mange in-/oncoming messages and pass them to the correct sub-function. It also
- * creates a new {@link ServerSession} object if a {@link Join} has pass the {@link JoinHandler}
+ * creates a new {@link ClientConnection} object if a {@link Join} has pass the {@link JoinHandler}
  * guard.
  */
 public class ServerSessionHandler extends SimpleChannelInboundHandler<ServerAction> {
     private static final Logger LOG = LoggerFactory.getLogger(ServerSessionHandler.class);
     public static final String HANDLER = "handler";
     private final NodeServer server;
-    private final CompletableFuture<ServerSession> sessionReadyFuture;
-    private ServerSession serverSession;
+    private final CompletableFuture<ClientConnection> sessionReadyFuture;
+    private ClientConnection clientConnection;
     private URI uri;
 
     /**
@@ -68,29 +66,29 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<ServerActi
 
     /**
      * Creates a new instance of this {@link io.netty.channel.ChannelHandler} and completes the
-     * given future, when the {@link ServerSession} was created.
+     * given future, when the {@link ClientConnection} was created.
      *
      * @param server               a reference to this node server instance
-     * @param uri                  the {@link URI} of the newly created {@link ServerSession}, null
+     * @param uri                  the {@link URI} of the newly created {@link ClientConnection}, null
      *                             to let this class guess the correct IP
-     * @param sessionReadyListener the future, that should be completed a serverSession creation
+     * @param sessionReadyListener the future, that should be completed a clientConnection creation
      */
     public ServerSessionHandler(NodeServer server,
                                 URI uri,
-                                CompletableFuture<ServerSession> sessionReadyListener) {
+                                CompletableFuture<ClientConnection> sessionReadyListener) {
         this.sessionReadyFuture = sessionReadyListener;
         this.server = server;
         this.uri = uri;
     }
 
     /*
-     * Adds a listener to the channel close event, to remove the serverSession from various lists.
+     * Adds a listener to the channel close event, to remove the clientConnection from various lists.
      */
     @Override
     public void handlerAdded(final ChannelHandlerContext ctx) {
         ctx.channel().closeFuture().addListener(future -> {
-            if (serverSession != null) {
-                server.getPeersManager().getPeer(serverSession.getIdentity()).removePeerConnection(serverSession);
+            if (clientConnection != null) {
+                server.getPeersManager().getPeer(clientConnection.getIdentity()).removePeerConnection(clientConnection);
             }
         });
     }
@@ -100,11 +98,11 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<ServerActi
      */
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, ServerAction msg) throws Exception {
-        ctx.executor().submit(() -> {
-            createSession(ctx, msg);
+        createSession(ctx, msg);
 
-            if (serverSession != null) {
-                msg.onMessage(serverSession, server);
+        ctx.executor().submit(() -> {
+            if (clientConnection != null) {
+                msg.onMessage(clientConnection, server);
             }
         }).addListener(future -> {
             if (!future.isSuccess()) {
@@ -115,13 +113,13 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<ServerActi
     }
 
     /**
-     * Creates a serverSession, if not already there.
+     * Creates a clientConnection, if not already there.
      *
      * @param ctx channel handler context
      * @param msg probably a {@link Join}
      */
     private void createSession(final ChannelHandlerContext ctx, IMessage msg) {
-        if (msg instanceof Join && serverSession == null) {
+        if (msg instanceof Join && clientConnection == null) {
             Join jm = (Join) msg;
             Identity identity = Identity.of(jm.getPublicKey());
             Channel myChannel = ctx.channel();
@@ -129,7 +127,7 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<ServerActi
             // close and remove any existing sessions that may exist
             PeerInformation peerInformation = server.getPeersManager().getPeer(identity);
             if (peerInformation != null) {
-                Optional<PeerConnection> existingServerSessionOptional = peerInformation.getConnections().stream().filter(peerConnection -> peerConnection instanceof ServerSession && peerConnection.getIdentity().equals(identity)).findFirst();
+                Optional<PeerConnection> existingServerSessionOptional = peerInformation.getConnections().stream().filter(peerConnection -> peerConnection instanceof ClientConnection && peerConnection.getIdentity().equals(identity)).findFirst();
 
                 if (existingServerSessionOptional.isPresent()) {
                     PeerConnection existingServerSession = existingServerSessionOptional.get();
@@ -148,12 +146,12 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<ServerActi
                 }
             }
 
-            serverSession = new ServerSession(ctx.channel(), uri, identity,
+            clientConnection = new ClientConnection(ctx.channel(), uri, identity,
                     Optional.ofNullable(jm.getUserAgent()).orElse("U/A"));
-            sessionReadyFuture.complete(serverSession);
+            sessionReadyFuture.complete(clientConnection);
             ctx.pipeline().remove(KILL_SWITCH);
             ctx.pipeline().remove(CONNECTION_GUARD);
-            LOG.debug("Create new channel {}, for ServerSession {}", ctx.channel().id(), serverSession);
+            LOG.debug("Create new channel {}, for ClientConnection {}", ctx.channel().id(), clientConnection);
         }
     }
 

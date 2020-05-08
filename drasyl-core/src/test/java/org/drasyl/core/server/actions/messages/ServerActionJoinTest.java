@@ -30,7 +30,7 @@ import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.node.identity.IdentityManager;
 import org.drasyl.core.node.identity.IdentityTestHelper;
 import org.drasyl.core.server.NodeServer;
-import org.drasyl.core.server.session.ServerSession;
+import org.drasyl.core.node.connections.ClientConnection;
 import org.drasyl.crypto.Crypto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,7 +44,7 @@ import static org.mockito.Mockito.*;
 
 class ServerActionJoinTest {
     private NodeServer nodeServer;
-    private ServerSession session;
+    private ClientConnection session;
     private PeersManager peersManager;
     private CompressedPublicKey compressedPublicKey;
     private PeerInformation peerInformation;
@@ -53,7 +53,7 @@ class ServerActionJoinTest {
     void setUp() throws DrasylException {
         MockitoAnnotations.initMocks(this);
         nodeServer = mock(NodeServer.class);
-        session = mock(ServerSession.class);
+        session = mock(ClientConnection.class);
         peersManager = mock(PeersManager.class);
         peerInformation = mock(PeerInformation.class);
         compressedPublicKey = mock(CompressedPublicKey.class);

@@ -25,6 +25,8 @@ import ch.qos.logback.core.read.ListAppender;
 import com.google.common.collect.ImmutableList;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
 import org.awaitility.Durations;
 import org.drasyl.core.common.messages.*;
 import org.drasyl.core.models.CompressedKeyPair;
@@ -34,20 +36,19 @@ import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.node.DrasylNodeConfig;
 import org.drasyl.core.node.Messenger;
 import org.drasyl.core.node.PeersManager;
+import org.drasyl.core.node.connections.ClientConnection;
+import org.drasyl.core.node.connections.NettyPeerConnection;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.node.identity.IdentityManager;
-import org.drasyl.core.server.session.ServerSession;
 import org.drasyl.core.server.testutils.ANSI_COLOR;
 import org.drasyl.core.server.testutils.BetterArrayList;
 import org.drasyl.core.server.testutils.TestHelper;
-import org.drasyl.core.server.testutils.TestSession;
+import org.drasyl.core.server.testutils.TestServerConnection;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.junit.Assert;
 import org.junit.Ignore;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import org.slf4j.LoggerFactory;
@@ -57,6 +58,7 @@ import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import static org.awaitility.Awaitility.with;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -76,8 +78,22 @@ public class NodeServerIT {
     private IdentityManager identityManager;
     public static final long TIMEOUT = 10000L;
     private NodeServer server;
-    private final BetterArrayList<ServerSession> serverSessions = new BetterArrayList<>();
+    private final BetterArrayList<NettyPeerConnection> clientConnections = new BetterArrayList<>();
     DrasylNodeConfig config;
+    private static EventLoopGroup workerGroup;
+    private static EventLoopGroup bossGroup;
+
+    @BeforeAll
+    public static void beforeAll() {
+        workerGroup = new NioEventLoopGroup();
+        bossGroup = new NioEventLoopGroup(1);
+    }
+
+    @AfterAll
+    public static void afterAll() {
+        workerGroup.shutdownGracefully().syncUninterruptibly();
+        bossGroup.shutdownGracefully().syncUninterruptibly();
+    }
 
     @BeforeEach
     public void setup() throws DrasylException, CryptoException {
@@ -90,7 +106,7 @@ public class NodeServerIT {
         config = new DrasylNodeConfig(
                 ConfigFactory.load("configs/ClientTest.conf"));
 
-        server = new NodeServer(identityManager, messenger, peersManager, config);
+        server = new NodeServer(identityManager, messenger, peersManager, config, workerGroup, bossGroup);
 
         TestHelper.waitUntilNetworkAvailable(config.getServerBindPort());
         server.open();
@@ -107,8 +123,8 @@ public class NodeServerIT {
 
     @AfterEach
     public void cleanUp() {
-        serverSessions.forEach(s -> s.send(new Leave()));
-        serverSessions.clear();
+        clientConnections.forEach(s -> s.send(new Leave()));
+        clientConnections.clear();
 
         server.close();
     }
@@ -120,8 +136,8 @@ public class NodeServerIT {
         try {
             CountDownLatch lock = new CountDownLatch(1);
 
-            TestSession session = TestSession.build(server);
-            serverSessions.add(session);
+            TestServerConnection session = TestServerConnection.build(server);
+            clientConnections.add(session);
 
             session.send(new Join(identityManager.getKeyPair().getPublicKey(), Set.of()),
                     Welcome.class).blockingSubscribe(response -> {
@@ -146,10 +162,10 @@ public class NodeServerIT {
         CountDownLatch lock = new CountDownLatch(2);
 
         try {
-            TestSession session1 = TestSession.build(server);
-            serverSessions.add(session1);
-            TestSession session2 = TestSession.build(server);
-            serverSessions.add(session2);
+            TestServerConnection session1 = TestServerConnection.build(server);
+            clientConnections.add(session1);
+            TestServerConnection session2 = TestServerConnection.build(server);
+            clientConnections.add(session2);
 
             session1.send(new Join(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of()),
                     Welcome.class).subscribe(response -> lock.countDown());
@@ -174,10 +190,10 @@ public class NodeServerIT {
         CountDownLatch lock = new CountDownLatch(1);
 
         try {
-            TestSession session1 = TestSession.buildAutoJoin(server);
-            serverSessions.add(session1);
-            TestSession session2 = TestSession.buildAutoJoin(server);
-            serverSessions.add(session2);
+            TestServerConnection session1 = TestServerConnection.buildAutoJoin(server);
+            clientConnections.add(session1);
+            TestServerConnection session2 = TestServerConnection.buildAutoJoin(server);
+            clientConnections.add(session2);
 
             with().pollInSameThread().await().pollDelay(0, TimeUnit.NANOSECONDS).atMost(Durations.FIVE_MINUTES)
                     .until(() -> server.getPeersManager().getChildren().size() >= 2);
@@ -205,10 +221,10 @@ public class NodeServerIT {
         CountDownLatch lock = new CountDownLatch(2);
 
         try {
-            TestSession session1 = TestSession.buildAutoJoin(server);
-            serverSessions.add(session1);
-            TestSession session2 = TestSession.buildAutoJoin(server);
-            serverSessions.add(session2);
+            TestServerConnection session1 = TestServerConnection.buildAutoJoin(server);
+            clientConnections.add(session1);
+            TestServerConnection session2 = TestServerConnection.buildAutoJoin(server);
+            clientConnections.add(session2);
 
             Message msg = new Message(session1.getIdentity(), session2.getIdentity(), new byte[]{
                     0x00,
@@ -243,10 +259,10 @@ public class NodeServerIT {
         CountDownLatch lock = new CountDownLatch(2);
 
         try {
-            TestSession session1 = TestSession.buildAutoJoin(server);
-            serverSessions.add(session1);
-            TestSession session2 = TestSession.buildAutoJoin(server);
-            serverSessions.add(session1);
+            TestServerConnection session1 = TestServerConnection.buildAutoJoin(server);
+            clientConnections.add(session1);
+            TestServerConnection session2 = TestServerConnection.buildAutoJoin(server);
+            clientConnections.add(session1);
 
             Message msg = new Message(session1.getIdentity(), session2.getIdentity(), new byte[]{});
 
@@ -276,8 +292,8 @@ public class NodeServerIT {
         CountDownLatch lock = new CountDownLatch(1);
 
         try {
-            TestSession session = TestSession.build(server);
-            serverSessions.add(session);
+            TestServerConnection session = TestServerConnection.build(server);
+            clientConnections.add(session);
 
             session.addListener(message -> {
                 if (message instanceof org.drasyl.core.common.messages.NodeServerException) {
@@ -294,9 +310,9 @@ public class NodeServerIT {
             lock.await(server.getConfig().getServerHandshakeTimeout().toMillis() + 2000, TimeUnit.MILLISECONDS);
             assertEquals(0, lock.getCount());
 
-            assertTrue(session.isClosed().blockingAwait(10, TimeUnit.SECONDS));
+            assertTrue(session.isClosed().get(10, TimeUnit.SECONDS));
         }
-        catch (InterruptedException | ExecutionException e) {
+        catch (InterruptedException | ExecutionException | TimeoutException e) {
             e.printStackTrace();
             fail("Exception occurred during the test.");
         }
@@ -307,18 +323,16 @@ public class NodeServerIT {
     @Test
     public void timeoutNegativeTest() {
         TestHelper.println("STARTING timeoutNegativeTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
-        Logger clientLogger = (Logger) LoggerFactory.getLogger(ServerSession.class);
+        Logger clientLogger = (Logger) LoggerFactory.getLogger(ClientConnection.class);
         ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
         listAppender.start();
         clientLogger.addAppender(listAppender);
 
         try {
-            TestSession session = TestSession.buildAutoJoin(server);
-            serverSessions.add(session);
+            TestServerConnection session = TestServerConnection.buildAutoJoin(server);
+            clientConnections.add(session);
 
-            session.addListener(message -> {
-                assertThat(message, is(not(instanceOf(org.drasyl.core.common.messages.NodeServerException.class))));
-            });
+            session.addListener(message -> assertThat(message, is(not(instanceOf(org.drasyl.core.common.messages.NodeServerException.class)))));
 
             // Wait until timeout
             Thread.sleep(server.getConfig().getServerHandshakeTimeout().toMillis() + 2000);// NOSONAR
@@ -342,8 +356,8 @@ public class NodeServerIT {
         CountDownLatch lock = new CountDownLatch(2);
 
         try {
-            TestSession session = TestSession.build(server);
-            serverSessions.add(session);
+            TestServerConnection session = TestServerConnection.build(server);
+            clientConnections.add(session);
 
             session.addListener(message -> {
                 if (message instanceof org.drasyl.core.common.messages.NodeServerException) {
@@ -377,10 +391,10 @@ public class NodeServerIT {
         CountDownLatch lock = new CountDownLatch(1);
 
         try {
-            TestSession session1 = TestSession.build(server);
-            serverSessions.add(session1);
-            TestSession session2 = TestSession.build(server);
-            serverSessions.add(session2);
+            TestServerConnection session1 = TestServerConnection.build(server);
+            clientConnections.add(session1);
+            TestServerConnection session2 = TestServerConnection.build(server);
+            clientConnections.add(session2);
 
             session1.send(new Join(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of()),
                     Welcome.class).blockingGet();
@@ -412,8 +426,8 @@ public class NodeServerIT {
         CountDownLatch lock = new CountDownLatch(1);
 
         try {
-            TestSession session = TestSession.buildAutoJoin(server);
-            serverSessions.add(session);
+            TestServerConnection session = TestServerConnection.buildAutoJoin(server);
+            clientConnections.add(session);
 
             session.send(new Join(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of()), org.drasyl.core.common.messages.NodeServerException.class)
                     .subscribe(response -> {
@@ -438,8 +452,8 @@ public class NodeServerIT {
 
         CountDownLatch lock = new CountDownLatch(2);
         try {
-            TestSession session = TestSession.build(server, false);
-            serverSessions.add(session);
+            TestServerConnection session = TestServerConnection.build(server, false);
+            clientConnections.add(session);
 
             session.addListener(message -> {
                 if (message instanceof org.drasyl.core.common.messages.NodeServerException) {
@@ -472,12 +486,10 @@ public class NodeServerIT {
         TestHelper.println("STARTING idleTimoutNegativeTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
 
         try {
-            TestSession session = TestSession.buildAutoJoin(server);
-            serverSessions.add(session);
+            TestServerConnection session = TestServerConnection.buildAutoJoin(server);
+            clientConnections.add(session);
 
-            session.addListener(message -> {
-                assertThat(message, is(not(instanceOf(org.drasyl.core.common.messages.NodeServerException.class))));
-            });
+            session.addListener(message -> assertThat(message, is(not(instanceOf(org.drasyl.core.common.messages.NodeServerException.class)))));
 
             // Wait until timeout
             Thread.sleep(server.getConfig().getServerIdleTimeout().toMillis() * (server.getConfig().getServerIdleRetries() + 1) + 1000);// NOSONAR
@@ -495,8 +507,8 @@ public class NodeServerIT {
 
         CountDownLatch lock = new CountDownLatch(1);
         try {
-            TestSession session = TestSession.build(server, false);
-            serverSessions.add(session);
+            TestServerConnection session = TestServerConnection.build(server, false);
+            clientConnections.add(session);
 
             session.addListener(message -> {
                 if (message instanceof Pong) {
@@ -522,8 +534,8 @@ public class NodeServerIT {
         CountDownLatch lock = new CountDownLatch(1);
 
         try {
-            TestSession session = TestSession.build(server);
-            serverSessions.add(session);
+            TestServerConnection session = TestServerConnection.build(server);
+            clientConnections.add(session);
 
             Response<org.drasyl.core.common.messages.NodeServerException> msg = new Response<>(new org.drasyl.core.common.messages.NodeServerException("Test"), Crypto.randomString(12));
 
@@ -551,10 +563,10 @@ public class NodeServerIT {
         CountDownLatch lock = new CountDownLatch(2);
 
         try {
-            TestSession session1 = TestSession.buildAutoJoin(server);
-            serverSessions.add(session1);
-            TestSession session2 = TestSession.buildAutoJoin(server);
-            serverSessions.add(session2);
+            TestServerConnection session1 = TestServerConnection.buildAutoJoin(server);
+            clientConnections.add(session1);
+            TestServerConnection session2 = TestServerConnection.buildAutoJoin(server);
+            clientConnections.add(session2);
 
             byte[] bigPayload = new byte[config.getMaxContentLength()];
             new Random().nextBytes(bigPayload);
@@ -588,10 +600,10 @@ public class NodeServerIT {
         CountDownLatch lock = new CountDownLatch(2);
 
         try {
-            TestSession session1 = TestSession.buildAutoJoin(server);
-            serverSessions.add(session1);
-            TestSession session2 = TestSession.buildAutoJoin(server);
-            serverSessions.add(session2);
+            TestServerConnection session1 = TestServerConnection.buildAutoJoin(server);
+            clientConnections.add(session1);
+            TestServerConnection session2 = TestServerConnection.buildAutoJoin(server);
+            clientConnections.add(session2);
 
             byte[] bigPayload = new byte[config.getMaxContentLength() + 1];
             new Random().nextBytes(bigPayload);
@@ -623,8 +635,8 @@ public class NodeServerIT {
     }
 
     @Test
-    public void shouldOpenAndCloseGracefully() throws DrasylException, ExecutionException, InterruptedException {
-        NodeServer server = new NodeServer(identityManager, mock(Messenger.class), mock(PeersManager.class));
+    public void shouldOpenAndCloseGracefully() throws DrasylException {
+        NodeServer server = new NodeServer(identityManager, mock(Messenger.class), mock(PeersManager.class), workerGroup, bossGroup);
 
         server.open();
         server.close();
@@ -636,9 +648,9 @@ public class NodeServerIT {
     public void openShouldFailIfInvalidPortIsGiven() throws DrasylException {
         Config config =
                 ConfigFactory.parseString("drasyl.server.bind-port = 72522").withFallback(ConfigFactory.load());
-        NodeServer server = new NodeServer(identityManager, mock(Messenger.class), mock(PeersManager.class), config);
+        NodeServer server = new NodeServer(identityManager, mock(Messenger.class), mock(PeersManager.class), config, workerGroup, bossGroup);
 
-        assertThrows(NodeServerException.class, () -> server.open());
+        assertThrows(NodeServerException.class, server::open);
     }
 
     @Test
@@ -648,8 +660,8 @@ public class NodeServerIT {
         try {
             CountDownLatch lock = new CountDownLatch(2);
 
-            TestSession session = TestSession.build(server);
-            serverSessions.add(session);
+            TestServerConnection session = TestServerConnection.build(server);
+            clientConnections.add(session);
 
             session.addListener(message -> {
                 if (message instanceof Leave) {
@@ -679,10 +691,10 @@ public class NodeServerIT {
         try {
             CountDownLatch lock = new CountDownLatch(2);
 
-            TestSession session = TestSession.build(server);
-            serverSessions.add(session);
-            TestSession session2 = TestSession.build(server);
-            serverSessions.add(session2);
+            TestServerConnection session = TestServerConnection.build(server);
+            clientConnections.add(session);
+            TestServerConnection session2 = TestServerConnection.build(server);
+            clientConnections.add(session2);
 
             session2.addListener(message -> {
                 if (message instanceof Reject) {

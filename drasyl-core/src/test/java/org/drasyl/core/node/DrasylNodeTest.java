@@ -18,6 +18,8 @@
  */
 package org.drasyl.core.node;
 
+import net.bytebuddy.implementation.bind.annotation.Super;
+import org.drasyl.core.client.SuperPeerClient;
 import org.drasyl.core.common.models.Pair;
 import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.models.Event;
@@ -54,6 +56,7 @@ public class DrasylNodeTest {
     private AtomicBoolean started;
     private CompletableFuture<Void> startSequence;
     private CompletableFuture<Void> shutdownSequence;
+    private SuperPeerClient superPeerClient;
 
     @BeforeEach
     void setUp() {
@@ -72,6 +75,7 @@ public class DrasylNodeTest {
         started = mock(AtomicBoolean.class);
         startSequence = mock(CompletableFuture.class);
         shutdownSequence = mock(CompletableFuture.class);
+        superPeerClient = mock(SuperPeerClient.class);
     }
 
     @AfterEach
@@ -80,7 +84,7 @@ public class DrasylNodeTest {
 
     @Test
     public void startShouldReturnSameFutureIfStartHasAlreadyBeenTriggered() {
-        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, server, messenger, new AtomicBoolean(true), startSequence, shutdownSequence) {
+        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, server, superPeerClient, new AtomicBoolean(true), startSequence, shutdownSequence) {
             @Override
             public void onEvent(Event event) {
             }
@@ -92,7 +96,7 @@ public class DrasylNodeTest {
     public void shartShouldEmitUpEventOnSuccessfulStart() {
         when(identityManager.getIdentity()).thenReturn(identity);
 
-        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, server, messenger, new AtomicBoolean(false), startSequence, shutdownSequence) {
+        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, server, superPeerClient, new AtomicBoolean(false), startSequence, shutdownSequence) {
             @Override
             public void onEvent(Event event) {
             }
@@ -106,7 +110,7 @@ public class DrasylNodeTest {
     public void shutdownShouldEmitDownAndNormalTerminationEventOnSuccessfulShutdown() {
         when(identityManager.getIdentity()).thenReturn(identity);
 
-        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, server, messenger, new AtomicBoolean(true), startSequence, shutdownSequence) {
+        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, server, superPeerClient, new AtomicBoolean(true), startSequence, shutdownSequence) {
             @Override
             public void onEvent(Event event) {
             }
@@ -119,7 +123,7 @@ public class DrasylNodeTest {
 
     @Test
     public void shutdownShouldReturnSameFutureIfShutdownHasAlreadyBeenTriggered() {
-        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, server, messenger, new AtomicBoolean(false), startSequence, shutdownSequence) {
+        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, server, superPeerClient, new AtomicBoolean(false), startSequence, shutdownSequence) {
             @Override
             public void onEvent(Event event) {
             }
@@ -131,7 +135,7 @@ public class DrasylNodeTest {
     public void sendShouldCallMessenger() throws DrasylException {
         when(identityManager.getIdentity()).thenReturn(identity);
 
-        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, server, messenger, started, startSequence, shutdownSequence) {
+        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, server, superPeerClient, started, startSequence, shutdownSequence) {
             @Override
             public void onEvent(Event event) {
             }

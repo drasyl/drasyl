@@ -13,7 +13,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class DrasylNodeConfigTest {
     private String identityPublicKey;
@@ -32,6 +31,9 @@ class DrasylNodeConfigTest {
     private Set<String> serverEndpoints;
     private String serverChannelInitializer;
     private int maxContentLength;
+    private Set<String> superPeerEndpoints;
+    private String superPeerPublicKey;
+    private List<Duration> superPeerRetryDelays;
 
     @BeforeEach
     void setUp() {
@@ -51,6 +53,9 @@ class DrasylNodeConfigTest {
         serverEndpoints = mock(Set.class);
         serverChannelInitializer = "org.drasyl.core.server.handler.NodeServerInitializer";
         maxContentLength = 1024;
+        superPeerEndpoints = mock(Set.class);
+        superPeerPublicKey = "";
+        superPeerRetryDelays = mock(List.class);
     }
 
     @AfterEach
@@ -61,7 +66,7 @@ class DrasylNodeConfigTest {
     void toStringShouldMaskSecrets() {
         identityPrivateKey = "07e98a2f8162a4002825f810c0fbd69b0c42bd9cb4f74a21bc7807bc5acb4f5f";
 
-        DrasylNodeConfig config = new DrasylNodeConfig(identityPublicKey, identityPrivateKey, identityPath, userAgent, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, maxContentLength);
+        DrasylNodeConfig config = new DrasylNodeConfig(identityPublicKey, identityPrivateKey, identityPath, userAgent, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, maxContentLength, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays);
 
         assertThat(config.toString(), not(containsString(identityPrivateKey)));
     }

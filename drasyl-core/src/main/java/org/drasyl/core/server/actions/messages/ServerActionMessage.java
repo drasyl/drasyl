@@ -22,10 +22,10 @@ import org.drasyl.core.common.messages.Message;
 import org.drasyl.core.common.messages.Response;
 import org.drasyl.core.common.messages.Status;
 import org.drasyl.core.models.DrasylException;
+import org.drasyl.core.node.connections.ClientConnection;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.server.NodeServer;
 import org.drasyl.core.server.actions.ServerAction;
-import org.drasyl.core.server.session.ServerSession;
 
 import java.util.Objects;
 
@@ -39,7 +39,7 @@ public class ServerActionMessage extends Message implements ServerAction {
     }
 
     @Override
-    public void onMessage(ServerSession session, NodeServer nodeServer) {
+    public void onMessage(ClientConnection session, NodeServer nodeServer) {
         Objects.requireNonNull(session);
         Objects.requireNonNull(nodeServer);
 
@@ -53,7 +53,7 @@ public class ServerActionMessage extends Message implements ServerAction {
     }
 
     @Override
-    public void onResponse(String responseMsgID, ServerSession session, NodeServer nodeServer) {
+    public void onResponse(String responseMsgID, ClientConnection session, NodeServer nodeServer) {
         // This message does not comes as response to the relay server
     }
 }

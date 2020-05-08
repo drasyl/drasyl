@@ -20,8 +20,8 @@ package org.drasyl.core.server.actions.messages;
 
 import org.drasyl.core.common.messages.Response;
 import org.drasyl.core.common.messages.Status;
+import org.drasyl.core.node.connections.ClientConnection;
 import org.drasyl.core.server.NodeServer;
-import org.drasyl.core.server.session.ServerSession;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -30,13 +30,13 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.*;
 
 class ServerActionStatusTest {
-    private ServerSession serverSession;
+    private ClientConnection clientConnection;
     private NodeServer server;
     private String responseMsgID;
 
     @BeforeEach
     void setUp() {
-        serverSession = mock(ServerSession.class);
+        clientConnection = mock(ClientConnection.class);
         server = mock(NodeServer.class);
 
         responseMsgID = "id";
@@ -46,19 +46,19 @@ class ServerActionStatusTest {
     void onMessage() {
         ServerActionStatus status = new ServerActionStatus();
 
-        status.onMessage(serverSession, server);
+        status.onMessage(clientConnection, server);
 
-        verify(serverSession).send(eq(new Response<>(Status.NOT_IMPLEMENTED, status.getMessageID())));
-        verify(serverSession, never()).setResponse(any());
+        verify(clientConnection).send(eq(new Response<>(Status.NOT_IMPLEMENTED, status.getMessageID())));
+        verify(clientConnection, never()).setResponse(any());
     }
 
     @Test
     void onResponse() {
         ServerActionStatus status = new ServerActionStatus();
 
-        status.onResponse(responseMsgID, serverSession, server);
+        status.onResponse(responseMsgID, clientConnection, server);
 
-        verify(serverSession).setResponse(any(Response.class));
-        verify(serverSession, never()).send(any());
+        verify(clientConnection).setResponse(any(Response.class));
+        verify(clientConnection, never()).send(any());
     }
 }

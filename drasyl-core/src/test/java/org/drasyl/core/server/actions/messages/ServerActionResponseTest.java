@@ -18,23 +18,23 @@
  */
 package org.drasyl.core.server.actions.messages;
 
+import org.drasyl.core.node.connections.ClientConnection;
 import org.drasyl.core.server.NodeServer;
 import org.drasyl.core.server.actions.ServerAction;
-import org.drasyl.core.server.session.ServerSession;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.mockito.Mockito.*;
 
 class ServerActionResponseTest {
-    private ServerSession serverSession;
+    private ClientConnection clientConnection;
     private NodeServer relay;
     private String responseMsgID;
     private ServerAction msg;
 
     @BeforeEach
     void setUp() {
-        serverSession = mock(ServerSession.class);
+        clientConnection = mock(ClientConnection.class);
         relay = mock(NodeServer.class);
         msg = mock(ServerAction.class);
 
@@ -45,18 +45,18 @@ class ServerActionResponseTest {
     void onMessage() {
         var message = new ServerActionResponse<>(msg, responseMsgID);
 
-        message.onMessage(serverSession, relay);
+        message.onMessage(clientConnection, relay);
 
-        verify(msg, times(1)).onResponse(responseMsgID, serverSession, relay);
+        verify(msg, times(1)).onResponse(responseMsgID, clientConnection, relay);
     }
 
     @Test
     void onResponse() {
         var message = new ServerActionResponse();
 
-        message.onResponse(responseMsgID, serverSession, relay);
+        message.onResponse(responseMsgID, clientConnection, relay);
 
-        verifyNoInteractions(serverSession);
+        verifyNoInteractions(clientConnection);
         verifyNoInteractions(relay);
     }
 }

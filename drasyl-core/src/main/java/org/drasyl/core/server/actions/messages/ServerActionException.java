@@ -21,9 +21,9 @@ package org.drasyl.core.server.actions.messages;
 import org.drasyl.core.common.messages.NodeServerException;
 import org.drasyl.core.common.messages.Response;
 import org.drasyl.core.common.messages.Status;
+import org.drasyl.core.node.connections.ClientConnection;
 import org.drasyl.core.server.NodeServer;
 import org.drasyl.core.server.actions.ServerAction;
-import org.drasyl.core.server.session.ServerSession;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,13 +32,13 @@ public class ServerActionException extends NodeServerException implements Server
     private static final Logger LOG = LoggerFactory.getLogger(ServerActionException.class);
 
     @Override
-    public void onMessage(ServerSession session, NodeServer nodeServer) {
+    public void onMessage(ClientConnection session, NodeServer nodeServer) {
         LOG.error("Received exception message: {}", this.getException());
         session.send(new Response<>(Status.OK, this.getMessageID()));
     }
 
     @Override
-    public void onResponse(String responseMsgID, ServerSession session, NodeServer nodeServer) {
+    public void onResponse(String responseMsgID, ClientConnection session, NodeServer nodeServer) {
         session.setResponse(new Response<>(this, responseMsgID));
         LOG.error("Received response with exception message: {}", this.getException());
     }
