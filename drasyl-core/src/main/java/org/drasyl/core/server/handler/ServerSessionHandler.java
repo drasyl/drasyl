@@ -22,14 +22,15 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
-import org.drasyl.core.common.messages.IMessage;
-import org.drasyl.core.common.messages.Join;
+import org.drasyl.core.common.message.JoinMessage;
+import org.drasyl.core.common.message.Message;
+import org.drasyl.core.common.message.action.MessageAction;
+import org.drasyl.core.common.message.action.ServerMessageAction;
 import org.drasyl.core.node.PeerInformation;
 import org.drasyl.core.node.connections.ClientConnection;
 import org.drasyl.core.node.connections.PeerConnection;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.server.NodeServer;
-import org.drasyl.core.server.actions.ServerAction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,10 +45,10 @@ import static org.drasyl.core.server.handler.KillOnExceptionHandler.KILL_SWITCH;
 
 /**
  * This handler mange in-/oncoming messages and pass them to the correct sub-function. It also
- * creates a new {@link ClientConnection} object if a {@link Join} has pass the {@link JoinHandler}
+ * creates a new {@link ClientConnection} object if a {@link JoinMessage} has pass the {@link JoinHandler}
  * guard.
  */
-public class ServerSessionHandler extends SimpleChannelInboundHandler<ServerAction> {
+public class ServerSessionHandler extends SimpleChannelInboundHandler<Message> {
     private static final Logger LOG = LoggerFactory.getLogger(ServerSessionHandler.class);
     public static final String HANDLER = "handler";
     private final NodeServer server;
@@ -97,11 +98,17 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<ServerActi
      * Reads an incoming message and pass it to the correct sub-function.
      */
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, ServerAction msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
         ctx.executor().submit(() -> {
             createSession(ctx, msg);
             if (clientConnection != null) {
-                msg.onMessage(clientConnection, server);
+                MessageAction action = msg.getAction();
+                if (action instanceof ServerMessageAction) {
+                    ((ServerMessageAction) action).onMessageServer(clientConnection, server);
+                }
+                else {
+                    LOG.debug("Could not process the message {}", msg);
+                }
             }
         }).addListener(future -> {
             if (!future.isSuccess()) {
@@ -115,11 +122,11 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<ServerActi
      * Creates a clientConnection, if not already there.
      *
      * @param ctx channel handler context
-     * @param msg probably a {@link Join}
+     * @param msg probably a {@link JoinMessage}
      */
-    private void createSession(final ChannelHandlerContext ctx, IMessage msg) {
-        if (msg instanceof Join && clientConnection == null) {
-            Join jm = (Join) msg;
+    private void createSession(final ChannelHandlerContext ctx, Message msg) {
+        if (msg instanceof JoinMessage && clientConnection == null) {
+            JoinMessage jm = (JoinMessage) msg;
             Identity identity = Identity.of(jm.getPublicKey());
             Channel myChannel = ctx.channel();
 

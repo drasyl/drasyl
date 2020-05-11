@@ -24,10 +24,10 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
-import org.drasyl.core.common.messages.IMessage;
-import org.drasyl.core.common.messages.Join;
-import org.drasyl.core.common.messages.Response;
-import org.drasyl.core.common.messages.Welcome;
+import org.drasyl.core.common.message.Message;
+import org.drasyl.core.common.message.JoinMessage;
+import org.drasyl.core.common.message.ResponseMessage;
+import org.drasyl.core.common.message.WelcomeMessage;
 import org.drasyl.core.models.CompressedPublicKey;
 import org.drasyl.core.node.connections.NettyPeerConnection;
 import org.drasyl.core.node.identity.Identity;
@@ -60,7 +60,7 @@ public class TestServerConnection extends NettyPeerConnection {
         void emitEvent(T event);
     }
 
-    protected final List<IResponseListener<IMessage>> listeners;
+    protected final List<IResponseListener<Message>> listeners;
 
     public TestServerConnection(Channel channel, URI targetSystem, Identity clientUID) {
         super(channel, targetSystem, clientUID, "JUnit-Test");
@@ -105,7 +105,7 @@ public class TestServerConnection extends NettyPeerConnection {
         CompressedPublicKey publicKey = CompressedPublicKey.of(keyPair.getPublic());
         URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
         TestServerConnection session = build(serverEntryPoint, Identity.of(publicKey), true, server.workerGroup);
-        session.send(new Join(publicKey, Set.of()), Welcome.class).blockingGet();
+        session.send(new JoinMessage(publicKey, Set.of()), WelcomeMessage.class).blockingGet();
 
         return session;
     }
@@ -125,7 +125,7 @@ public class TestServerConnection extends NettyPeerConnection {
         }
 
         OutboundConnectionFactory factory = new OutboundConnectionFactory(targetSystem, eventLoopGroup)
-                .handler(new SimpleChannelInboundHandler<IMessage>() {
+                .handler(new SimpleChannelInboundHandler<Message>() {
                     TestServerConnection session;
 
                     @Override
@@ -136,7 +136,7 @@ public class TestServerConnection extends NettyPeerConnection {
 
                     @Override
                     protected void channelRead0(ChannelHandlerContext ctx,
-                                                IMessage msg) throws Exception {
+                                                Message msg) throws Exception {
                         session.receiveMessage(msg);
                     }
                 })
@@ -164,7 +164,7 @@ public class TestServerConnection extends NettyPeerConnection {
             myChannel.writeAndFlush(new TextWebSocketFrame(string));
         }
         else {
-            LOG.info("[{} Can't send message {}", self, string);
+            LOG.info("[{} Can't send message {}", TestServerConnection.this, string);
         }
     }
 
@@ -173,17 +173,17 @@ public class TestServerConnection extends NettyPeerConnection {
      *
      * @param message incoming message
      */
-    public void receiveMessage(IMessage message) {
+    public void receiveMessage(Message message) {
         if (isClosed.get()) {
             return;
         }
 
-        if (message instanceof Response) {
-            Response<IMessage> response = (Response<IMessage>) message;
+        if (message instanceof ResponseMessage) {
+            ResponseMessage<Message> response = (ResponseMessage<Message>) message;
             setResponse(response);
         }
 
-        for (IResponseListener<IMessage> listener : listeners) {
+        for (IResponseListener<Message> listener : listeners) {
             listener.emitEvent(message);
         }
     }
@@ -193,7 +193,7 @@ public class TestServerConnection extends NettyPeerConnection {
      *
      * @param listener Listener to be called at an event
      */
-    public void addListener(IResponseListener<IMessage> listener) {
+    public void addListener(IResponseListener<Message> listener) {
         listeners.add(listener);
     }
 

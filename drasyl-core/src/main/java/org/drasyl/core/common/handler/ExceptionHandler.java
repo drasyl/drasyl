@@ -20,7 +20,7 @@
 package org.drasyl.core.common.handler;
 
 import io.netty.channel.*;
-import org.drasyl.core.common.messages.NodeServerException;
+import org.drasyl.core.common.message.NodeServerExceptionMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,7 +29,7 @@ import java.nio.channels.ClosedChannelException;
 import java.util.Objects;
 
 /**
- * This handler listens to exceptions on the pipeline and throws them as {@link NodeServerException} to the peer.
+ * This handler listens to exceptions on the pipeline and throws them as {@link NodeServerExceptionMessage} to the peer.
  */
 public class ExceptionHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ExceptionHandler.class);
@@ -131,7 +131,7 @@ public class ExceptionHandler extends ChannelDuplexHandler {
         handledCause = e;
 
         if (ctx.channel().isWritable()) {
-            ctx.writeAndFlush(new NodeServerException(e));
+            ctx.writeAndFlush(new NodeServerExceptionMessage(e));
         }
         LOG.debug("", e);
     }

@@ -20,7 +20,7 @@ package org.drasyl.core.node.connections;
 
 import io.netty.channel.Channel;
 import io.reactivex.rxjava3.core.SingleEmitter;
-import org.drasyl.core.common.messages.IMessage;
+import org.drasyl.core.common.message.Message;
 import org.drasyl.core.common.models.Pair;
 import org.drasyl.core.node.identity.Identity;
 import org.slf4j.Logger;
@@ -67,7 +67,7 @@ public class ClientConnection extends NettyPeerConnection {
                                Identity identity,
                                URI endpoint,
                                AtomicBoolean isClosed,
-                               ConcurrentHashMap<String, Pair<Class<? extends IMessage>, SingleEmitter<IMessage>>> emitters,
+                               ConcurrentHashMap<String, Pair<Class<? extends Message>, SingleEmitter<Message>>> emitters,
                                CompletableFuture<Boolean> closedCompletable) {
         super(myChannel, userAgent, identity, endpoint, isClosed, emitters, closedCompletable);
     }

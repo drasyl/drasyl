@@ -1,9 +1,9 @@
 package org.drasyl.core.client.transport.relay.handler;
 
-import org.drasyl.core.common.messages.Join;
-import org.drasyl.core.common.messages.IMessage;
-import org.drasyl.core.common.messages.NodeServerException;
-import org.drasyl.core.common.messages.Welcome;
+import org.drasyl.core.common.message.JoinMessage;
+import org.drasyl.core.common.message.Message;
+import org.drasyl.core.common.message.NodeServerExceptionMessage;
+import org.drasyl.core.common.message.WelcomeMessage;
 import io.netty.channel.ChannelException;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
@@ -23,28 +23,28 @@ import java.util.function.Function;
 import static java.util.Objects.requireNonNull;
 
 /**
- * This handler sends a {@link Join} to the relay once connection is established and waits for confirmation. The
- * confirmation is indicated by an ({@link Welcome}) from the relay.<br>
+ * This handler sends a {@link JoinMessage} to the relay once connection is established and waits for confirmation. The
+ * confirmation is indicated by an ({@link WelcomeMessage}) from the relay.<br>
  * If the confirmation response does not arrive within a certain period of time, the join request is assumed to have
  * failed.
  */
-public class RelayJoinHandler extends SimpleChannelInboundHandler<IMessage> implements Function<CompletableFuture<Void>, RelayJoinHandler> {
+public class RelayJoinHandler extends SimpleChannelInboundHandler<Message> implements Function<CompletableFuture<Void>, RelayJoinHandler> {
     private static final Logger LOG = LoggerFactory.getLogger(RelayJoinHandler.class);
 
     private final Duration timeout;
-    private final Request<Join> joinRequest;
+    private final Request<JoinMessage> joinRequest;
     private ChannelPromise joinFuture;
     private ScheduledFuture<?> timeoutSchedule;
     private CompletableFuture<Void> channelReadyFuture;
 
     public RelayJoinHandler(CompressedPublicKey publicKey, Set<URI> endpoints, Duration timeout) {
         this(
-                new Request<>(new Join(publicKey, endpoints)),
+                new Request<>(new JoinMessage(publicKey, endpoints)),
                 timeout, CompletableFuture.completedFuture(null)
         );
     }
 
-    RelayJoinHandler(Request<Join> joinRequest, Duration timeout, CompletableFuture<Void> channelReadyFuture) {
+    RelayJoinHandler(Request<JoinMessage> joinRequest, Duration timeout, CompletableFuture<Void> channelReadyFuture) {
         this.joinRequest = requireNonNull(joinRequest);
         this.timeout = requireNonNull(timeout);
         this.channelReadyFuture = channelReadyFuture;
@@ -57,7 +57,7 @@ public class RelayJoinHandler extends SimpleChannelInboundHandler<IMessage> impl
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, IMessage message) {
+    protected void channelRead0(ChannelHandlerContext ctx, Message message) {
         ctx.fireChannelRead(message);
     }
 
@@ -71,10 +71,10 @@ public class RelayJoinHandler extends SimpleChannelInboundHandler<IMessage> impl
                 LOG.debug("Send join request to relay.");
                 ctx.writeAndFlush(joinRequest);
                 joinRequest.getResponse().thenAccept(message -> {
-                    if (message instanceof Welcome) {
+                    if (message instanceof WelcomeMessage) {
                         confirmJoin(ctx);
-                    } else if (message instanceof NodeServerException) {
-                        failJoin(new RelayJoinException(((NodeServerException) message).getException()));
+                    } else if (message instanceof NodeServerExceptionMessage) {
+                        failJoin(new RelayJoinException(((NodeServerExceptionMessage) message).getException()));
                     }
                 });
             }

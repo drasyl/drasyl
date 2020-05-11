@@ -19,7 +19,7 @@
 
 package org.drasyl.core.common.handler;
 
-import org.drasyl.core.common.messages.NodeServerException;
+import org.drasyl.core.common.message.NodeServerExceptionMessage;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
@@ -62,7 +62,7 @@ class ExceptionHandlerTest {
         ExceptionHandler handler = new ExceptionHandler(listener, null, false);
         handler.write(ctx, msg, promise);
 
-        verify(ctx, times(1)).write(msg,
+        verify(ctx).write(msg,
                 listener.getListener(promise, ctx));
     }
 
@@ -72,7 +72,7 @@ class ExceptionHandlerTest {
         ExceptionHandler handler = new ExceptionHandler();
         handler.connect(ctx, address, address, promise);
 
-        verify(ctx, times(1)).connect(address, address,
+        verify(ctx).connect(address, address,
                 listener.getListener(promise, ctx));
     }
 
@@ -83,7 +83,7 @@ class ExceptionHandlerTest {
         handler.exceptionCaught(ctx, cause);
 
         assertEquals(cause, handler.handledCause);
-        verify(ctx, times(1)).writeAndFlush(any(NodeServerException.class));
+        verify(ctx).writeAndFlush(any(NodeServerExceptionMessage.class));
     }
 
     // do nothing
@@ -93,7 +93,7 @@ class ExceptionHandlerTest {
         handler.exceptionCaught(ctx, new ClosedChannelException());
 
         assertNull(handler.handledCause);
-        verify(ctx, never()).writeAndFlush(any(NodeServerException.class));
+        verify(ctx, never()).writeAndFlush(any(NodeServerExceptionMessage.class));
     }
 
     // sendMSG the exception as exception message and pass to the next handler in the pipeline
@@ -103,8 +103,8 @@ class ExceptionHandlerTest {
         handler.exceptionCaught(ctx, cause);
 
         assertEquals(cause, handler.handledCause);
-        verify(ctx, times(1)).writeAndFlush(any(NodeServerException.class));
-        verify(ctx, times(1)).fireExceptionCaught(cause);
+        verify(ctx).writeAndFlush(any(NodeServerExceptionMessage.class));
+        verify(ctx).fireExceptionCaught(cause);
     }
 
     // only rethrow to next pipeline
@@ -114,7 +114,7 @@ class ExceptionHandlerTest {
         handler.exceptionCaught(ctx, cause);
 
         assertEquals(cause, handler.handledCause);
-        verify(ctx, never()).writeAndFlush(any(NodeServerException.class));
-        verify(ctx, times(1)).fireExceptionCaught(cause);
+        verify(ctx, never()).writeAndFlush(any(NodeServerExceptionMessage.class));
+        verify(ctx).fireExceptionCaught(cause);
     }
 }

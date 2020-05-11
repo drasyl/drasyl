@@ -19,7 +19,7 @@
 
 package org.drasyl.core.common.tools;
 
-import org.drasyl.core.common.messages.Leave;
+import org.drasyl.core.common.message.LeaveMessage;
 import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.BufferedReader;
@@ -130,7 +130,7 @@ public final class NetworkTool {
 
         try (Socket s = new Socket(host, port)) {
             PrintWriter out = new PrintWriter(s.getOutputStream(), true, StandardCharsets.UTF_8);
-            out.println(JSON_MAPPER.writeValueAsString(new Leave()));
+            out.println(JSON_MAPPER.writeValueAsString(new LeaveMessage()));
 
             return true;
         } catch (IOException e) {

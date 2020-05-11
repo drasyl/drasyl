@@ -19,7 +19,7 @@
 
 package org.drasyl.core.common.handler.codec.message;
 
-import org.drasyl.core.common.messages.Leave;
+import org.drasyl.core.common.message.LeaveMessage;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.DecoderException;
@@ -41,17 +41,17 @@ class MessageDecoderTest {
     }
 
     @Test
-    void deserializeFromJson() {
-        String json = "{\"type\":\"Leave\",\"messageID\":\"123\"}";
+    void writeInboundShouldDeserializeJsonStringToMessageObject() {
+        String json = "{\"@type\":\"" + LeaveMessage.class.getSimpleName() + "\",\"id\":\"123\"}";
 
         channel.writeInbound(new TextWebSocketFrame(json));
         channel.flush();
 
-        assertThat(channel.readInbound(), instanceOf(Leave.class));
+        assertThat(channel.readInbound(), instanceOf(LeaveMessage.class));
     }
 
     @Test
-    void deserializeFromInvalidJson() {
+    void writeInboundShouldThrowExceptionIfDeserializationFail() {
         String json = "invalid";
 
         assertThrows(DecoderException.class, () -> {

@@ -27,7 +27,7 @@ import io.sentry.Sentry;
 import io.sentry.event.User;
 import org.drasyl.core.client.SuperPeerClient;
 import org.drasyl.core.client.SuperPeerClientException;
-import org.drasyl.core.common.messages.Message;
+import org.drasyl.core.common.message.ApplicationMessage;
 import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.models.Event;
 import org.drasyl.core.models.Node;
@@ -141,7 +141,7 @@ public abstract class DrasylNode {
      * @throws DrasylException if an error occurs during the processing
      */
     public synchronized void send(Identity recipient, byte[] payload) throws DrasylException {
-        messenger.send(new Message(identityManager.getIdentity(), recipient, payload));
+        messenger.send(new ApplicationMessage(identityManager.getIdentity(), recipient, payload));
     }
 
     public abstract void onEvent(Event event);

@@ -58,21 +58,21 @@ public class DefaultRetryStrategyTest {
     public void testNextChannel() throws InterruptedException, ExecutionException, TimeoutException {
         CompletableFuture<P2PTransportChannel> channelFuture = strategy.nextChannel(channel);
 
-        verify(channel, times(1)).shutdown();
-        verify(retryAgent, times(1)).retry();
+        verify(channel).shutdown();
+        verify(retryAgent).retry();
         verify(supplier, times(0)).get();
         shutdownFuture.complete(null);
 
-        verify(channel, times(1)).shutdown();
-        verify(retryAgent, times(1)).retry();
+        verify(channel).shutdown();
+        verify(retryAgent).retry();
         verify(supplier, times(0)).get();
         verify(channel2, times(0)).start();
         retryFuture.complete(null);
 
-        verify(channel, times(1)).shutdown();
-        verify(retryAgent, times(1)).retry();
-        verify(supplier, times(1)).get();
-        verify(channel2, times(1)).start();
+        verify(channel).shutdown();
+        verify(retryAgent).retry();
+        verify(supplier).get();
+        verify(channel2).start();
         startFuture.complete(null);
 
         P2PTransportChannel c = channelFuture.getNow(null);

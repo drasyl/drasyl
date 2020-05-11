@@ -23,10 +23,10 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelId;
 import io.reactivex.rxjava3.core.SingleEmitter;
-import org.drasyl.core.common.messages.IMessage;
-import org.drasyl.core.common.messages.Leave;
-import org.drasyl.core.common.messages.NodeServerException;
-import org.drasyl.core.common.messages.Response;
+import org.drasyl.core.common.message.Message;
+import org.drasyl.core.common.message.LeaveMessage;
+import org.drasyl.core.common.message.NodeServerExceptionMessage;
+import org.drasyl.core.common.message.ResponseMessage;
 import org.drasyl.core.common.models.Pair;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.node.identity.IdentityTestHelper;
@@ -47,13 +47,13 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class NettyPeerConnectionTest {
-    private ConcurrentHashMap<String, Pair<Class<? extends IMessage>, SingleEmitter<IMessage>>> emitters;
+    private ConcurrentHashMap<String, Pair<Class<? extends Message>, SingleEmitter<Message>>> emitters;
     private Channel channel;
     private URI endpoint;
     private Identity myid;
     private String userAgent;
-    private NodeServerException exceptionMessage;
-    private IMessage message;
+    private NodeServerExceptionMessage exceptionMessage;
+    private Message message;
     private ChannelFuture channelFuture;
     private AtomicBoolean isClosed;
     private String msgID;
@@ -66,8 +66,8 @@ class NettyPeerConnectionTest {
         endpoint = new URI("ws://localhost:22527/");
         myid = IdentityTestHelper.random();
         userAgent = "";
-        exceptionMessage = mock(NodeServerException.class);
-        message = mock(IMessage.class);
+        exceptionMessage = mock(NodeServerExceptionMessage.class);
+        message = mock(Message.class);
         channelFuture = mock(ChannelFuture.class);
         ChannelId channelId = mock(ChannelId.class);
         isClosed = mock(AtomicBoolean.class);
@@ -77,7 +77,7 @@ class NettyPeerConnectionTest {
         when(channel.closeFuture()).thenReturn(channelFuture);
         when(channel.id()).thenReturn(channelId);
         when(channel.isOpen()).thenReturn(true);
-        when(message.getMessageID()).thenReturn(msgID);
+        when(message.getId()).thenReturn(msgID);
         when(channel.close()).thenReturn(channelFuture);
         when(channel.writeAndFlush(any())).thenReturn(channelFuture);
         when(channelFuture.channel()).thenReturn(channel);
@@ -108,13 +108,11 @@ class NettyPeerConnectionTest {
                 ConcurrentHashMap.class, CompletableFuture.class).newInstance(channel, userAgent, myid,
                 endpoint, isClosed, emitters, closedCompletable);
 
-        peerConnection.send(message, Leave.class).subscribe(onSuccess -> {
+        peerConnection.send(message, LeaveMessage.class).subscribe(onSuccess -> {
         }, onError -> {
         });
 
-        when(emitters.containsKey(message.getMessageID())).thenReturn(false);
-
-        verify(emitters).put(eq(message.getMessageID()), any(Pair.class));
+        verify(emitters).putIfAbsent(eq(message.getId()), any(Pair.class));
         verify(channel).writeAndFlush(eq(message));
     }
 
@@ -126,36 +124,35 @@ class NettyPeerConnectionTest {
                 ConcurrentHashMap.class, CompletableFuture.class).newInstance(channel, userAgent, myid,
                 endpoint, new AtomicBoolean(true), emitters, closedCompletable);
 
-        peerConnection.send(message, Leave.class).subscribe(onSuccess -> {
+        peerConnection.send(message, LeaveMessage.class).subscribe(onSuccess -> {
         }, onError -> {
         });
         peerConnection.send(message);
         peerConnection.send(exceptionMessage);
-        peerConnection.send(new Response<>(exceptionMessage, msgID));
+        peerConnection.send(new ResponseMessage<>(exceptionMessage, msgID));
 
-        verify(channel, never()).writeAndFlush(any(IMessage.class));
+        verify(channel, never()).writeAndFlush(any(Message.class));
     }
 
     @ParameterizedTest
     @ValueSource(classes = { ClientConnection.class })
     void setResponseShouldCompleteTheSingle(Class<NettyPeerConnection> clazz) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
-        SingleEmitter<IMessage> singleEmitter = mock(SingleEmitter.class);
+        SingleEmitter<Message> singleEmitter = mock(SingleEmitter.class);
 
         NettyPeerConnection peerConnection = clazz.getDeclaredConstructor(Channel.class, String.class,
                 Identity.class, URI.class, AtomicBoolean.class,
                 ConcurrentHashMap.class, CompletableFuture.class).newInstance(channel, userAgent, myid,
                 endpoint, isClosed, emitters, closedCompletable);
 
-        when(emitters.get(message.getMessageID())).thenReturn(Pair.of(IMessage.class, singleEmitter));
+        when(emitters.remove(message.getId())).thenReturn(Pair.of(Message.class, singleEmitter));
 
-        peerConnection.send(message, IMessage.class).subscribe(onSuccess -> {
+        peerConnection.send(message, Message.class).subscribe(onSuccess -> {
         }, onError -> {
         });
-        peerConnection.setResponse(new Response<>(message, message.getMessageID()));
+        peerConnection.setResponse(new ResponseMessage<>(message, message.getId()));
 
-        verify(emitters).get(eq(message.getMessageID()));
         verify(singleEmitter).onSuccess(eq(message));
-        verify(emitters).remove(eq(message.getMessageID()));
+        verify(emitters).remove(eq(message.getId()));
     }
 
     @ParameterizedTest
@@ -166,15 +163,12 @@ class NettyPeerConnectionTest {
                 ConcurrentHashMap.class, CompletableFuture.class).newInstance(channel, userAgent, myid,
                 endpoint, isClosed, emitters, closedCompletable);
 
-        when(emitters.get(message.getMessageID())).thenReturn(null);
-
-        peerConnection.send(message, Leave.class).subscribe(onSuccess -> {
+        peerConnection.send(message, LeaveMessage.class).subscribe(onSuccess -> {
         }, onError -> {
         });
-        peerConnection.setResponse(new Response<>(message, message.getMessageID()));
+        peerConnection.setResponse(new ResponseMessage<>(message, message.getId()));
 
-        verify(emitters).get(eq(message.getMessageID()));
-        verify(emitters, never()).remove(any());
+        verify(emitters).remove(eq(message.getId()));
     }
 
     @ParameterizedTest
@@ -189,7 +183,7 @@ class NettyPeerConnectionTest {
 
         verify(channel).flush();
         verify(emitters).clear();
-        verify(channel).writeAndFlush(any(Leave.class));
+        verify(channel).writeAndFlush(any(LeaveMessage.class));
         verify(channel).close();
         peerConnection.isClosed().whenComplete((suc, err) -> assertTrue(true));
     }
@@ -219,7 +213,7 @@ class NettyPeerConnectionTest {
         verify(channelFuture).isSuccess();
         verify(channel).flush();
         verify(channel).close();
-        verify(channel).writeAndFlush(any(Leave.class));
+        verify(channel).writeAndFlush(any(LeaveMessage.class));
         peerConnection.isClosed().whenComplete((suc, err) -> assertTrue(true));
     }
 
@@ -240,7 +234,7 @@ class NettyPeerConnectionTest {
         verify(channelFuture).isSuccess();
         verify(channel).flush();
         verify(channel).close();
-        verify(channel).writeAndFlush(any(Leave.class));
+        verify(channel).writeAndFlush(any(LeaveMessage.class));
         peerConnection.isClosed().whenComplete((suc, err) -> assertTrue(true));
     }
 

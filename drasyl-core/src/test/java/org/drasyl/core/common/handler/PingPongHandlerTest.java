@@ -16,15 +16,14 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.core.common.handler;
 
-import org.drasyl.core.common.messages.NodeServerException;
+import org.drasyl.core.common.message.NodeServerExceptionMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.drasyl.core.common.messages.Leave;
-import org.drasyl.core.common.messages.Ping;
-import org.drasyl.core.common.messages.Pong;
+import org.drasyl.core.common.message.LeaveMessage;
+import org.drasyl.core.common.message.PingMessage;
+import org.drasyl.core.common.message.PongMessage;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -38,6 +37,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 class PingPongHandlerTest {
     private ChannelHandlerContext ctx;
     private IdleStateEvent evt;
@@ -49,72 +50,65 @@ class PingPongHandlerTest {
         when(evt.state()).thenReturn(IdleState.READER_IDLE);
     }
 
-    // should sendMSG a ping message if count threshold not reached
     @Test
-    void testUserEventTriggeredChannelHandlerContextPing() throws Exception {
-        PingPongHandler handler = new PingPongHandler((short) 1, (short) 0);
+    void userEventTriggeredShouldSendPingMessageIfThresholdNotReached() throws Exception {
+        PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
         handler.userEventTriggered(ctx, evt);
 
-        verify(ctx, times(1)).writeAndFlush(any(Ping.class));
+        verify(ctx).writeAndFlush(any(PingMessage.class));
     }
 
-    // should respond with exception message if count threshold is reached
     @Test
-    void testUserEventTriggeredChannelHandlerContextThresholdReached() throws Exception {
-        PingPongHandler handler = new PingPongHandler((short) 1, (short) 2);
+    void userEventTriggeredShouldSendExceptionMessageIfThresholdIsReached() throws Exception {
+        PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(2));
         handler.userEventTriggered(ctx, evt);
 
-        verify(ctx, times(1)).writeAndFlush(any(NodeServerException.class));
+        verify(ctx).writeAndFlush(any(NodeServerExceptionMessage.class));
     }
 
-    // should sendMSG a ping message if count threshold not reached, simulates 3 tries in a row without corresponding
-    // pong message
     @Test
-    void testUserEventTriggeredChannelHandlerContextCorrectCount() throws Exception {
-        PingPongHandler handler = new PingPongHandler((short) 2, (short) 0);
+    void userEventTriggeredShouldSendCorrectNumberOfPingMessages() throws Exception {
+        PingPongHandler handler = new PingPongHandler((short) 2, new AtomicInteger(0));
 
-        for (int i = 0; i < 3; i++)
+        for (int i = 0; i < 3; i++) {
             handler.userEventTriggered(ctx, evt);
+        }
 
-        assertEquals((short) 3, handler.counter);
-        verify(ctx, times(3)).writeAndFlush(any(Ping.class));
+        assertEquals(3, handler.counter.get());
+        verify(ctx, times(3)).writeAndFlush(any(PingMessage.class));
     }
 
-    // should do nothing, because this is not the correct event
     @Test
-    void testUserEventTriggeredFalseEvent() throws Exception {
+    void userEventTriggeredShouldIgnoreUnrelatedEvents() throws Exception {
         when(evt.state()).thenReturn(IdleState.WRITER_IDLE);
-        PingPongHandler handler = new PingPongHandler((short) 1, (short) 0);
+        PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
         handler.userEventTriggered(ctx, evt);
 
         verify(ctx, never()).writeAndFlush(any());
     }
 
-    // should respond with a pong message
     @Test
-    void testChannelRead0PingMessage() throws Exception {
-        PingPongHandler handler = new PingPongHandler((short) 1, (short) 0);
-        handler.channelRead0(ctx, new Ping());
+    void channelRead0ShouldReplyWithPongMessageToPingMessage() throws Exception {
+        PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
+        handler.channelRead0(ctx, new PingMessage());
 
-        verify(ctx, times(1)).writeAndFlush(any(Pong.class));
+        verify(ctx).writeAndFlush(any(PongMessage.class));
     }
 
-    // should reset the counter
     @Test
-    void testChannelRead0PongMessage() throws Exception {
-        PingPongHandler handler = new PingPongHandler((short) 1, (short) 0);
-        handler.channelRead0(ctx, new Pong());
+    void channelRead0ShouldResetCounterIfPingMessageReceived() throws Exception {
+        PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
+        handler.channelRead0(ctx, new PongMessage());
 
-        assertEquals((short) 0, handler.counter);
+        assertEquals(0, handler.counter.get());
     }
 
-    // should pass the message to the next handler in the pipeline
     @Test
-    void testChannelRead0FireChannelRead() throws Exception {
-        PingPongHandler handler = new PingPongHandler((short) 1, (short) 0);
-        handler.channelRead0(ctx, new Leave());
+    void channelRead0ShouldPassThroughAllUnrelatedMessages() throws Exception {
+        PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
+        handler.channelRead0(ctx, new LeaveMessage());
 
-        assertEquals((short) 0, handler.counter);
-        verify(ctx, times(1)).fireChannelRead(any(Leave.class));
+        assertEquals(0, handler.counter.get());
+        verify(ctx).fireChannelRead(any(LeaveMessage.class));
     }
 }

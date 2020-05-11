@@ -19,7 +19,7 @@
 
 package org.drasyl.core.common.handler.codec.message;
 
-import org.drasyl.core.common.messages.IMessage;
+import org.drasyl.core.common.message.Message;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.ChannelHandler.Sharable;
@@ -32,10 +32,10 @@ import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import java.util.List;
 
 /**
- * Encodes a {@link IMessage} into a {@link String} object.
+ * Encodes a {@link Message} into a {@link String} object.
  */
 @Sharable
-public class MessageEncoder extends MessageToMessageEncoder<IMessage> {
+public class MessageEncoder extends MessageToMessageEncoder<Message> {
     private static final Logger LOG = LoggerFactory.getLogger(MessageEncoder.class);
     public static final MessageEncoder INSTANCE = new MessageEncoder();
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
@@ -45,7 +45,7 @@ public class MessageEncoder extends MessageToMessageEncoder<IMessage> {
     }
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, IMessage msg, List<Object> out) {
+    protected void encode(ChannelHandlerContext ctx, Message msg, List<Object> out) {
         if (LOG.isDebugEnabled())
             LOG.debug("[{}]: Send message '{}'", ctx.channel().id().asShortText(), msg);
 

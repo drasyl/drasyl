@@ -15,7 +15,7 @@ import org.drasyl.core.client.transport.handler.EnvelopeMessageHandler;
 import org.drasyl.core.client.transport.relay.handler.RelayJoinHandler;
 import org.drasyl.core.client.transport.relay.handler.RelayMessageHandler;
 import org.drasyl.core.client.transport.relay.handler.RelayP2PTransportChannelInitializer;
-import org.drasyl.core.common.messages.Leave;
+import org.drasyl.core.common.message.LeaveMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -103,7 +103,7 @@ public class RelayP2PTransportChannel implements P2PTransportChannel {
     @Override
     public CompletableFuture<Void> shutdown() {
         if (nettyChannel != null) {
-            nettyChannel.writeAndFlush(new Leave());
+            nettyChannel.writeAndFlush(new LeaveMessage());
             return closeFuture();
         }
         return CompletableFuture.completedFuture(null);

@@ -54,7 +54,7 @@ public class P2PTransportTest {
 
         transport.start();
 
-        verify(eventPublisher, times(1)).notifyListeners(any(P2PTransportListenEvent.class));
+        verify(eventPublisher).notifyListeners(any(P2PTransportListenEvent.class));
     }
 
     @Test(expected = P2PTransportException.class)
@@ -67,7 +67,7 @@ public class P2PTransportTest {
 
         transport.start();
 
-        verify(eventPublisher, times(1)).notifyListeners(any(P2PTransportErrorEvent.class));
+        verify(eventPublisher).notifyListeners(any(P2PTransportErrorEvent.class));
     }
 
     @Test(expected = P2PTransportException.class)
@@ -80,7 +80,7 @@ public class P2PTransportTest {
 
         transport.start();
 
-//        verify(eventPublisher, times(1)).notifyListeners(any(P2PTransportErrorEvent.class));
+//        verify(eventPublisher).notifyListeners(any(P2PTransportErrorEvent.class));
     }
 
     @Test

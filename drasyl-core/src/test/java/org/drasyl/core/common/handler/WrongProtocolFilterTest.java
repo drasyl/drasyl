@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.core.common.handler;
 
 import io.netty.channel.ChannelHandlerContext;
@@ -34,9 +33,8 @@ class WrongProtocolFilterTest {
         ctx = mock(ChannelHandlerContext.class);
     }
 
-    // should throw IllegalArgumentException on every matching string
     @Test
-    void channelRead0ThrowExceptionOnMatch() {
+    void channelRead0ShouldThrowExceptionIfClientApparentlyUsingWrongProtocol() {
         WrongProtocolFilter filter = WrongProtocolFilter.INSTANCE;
 
         WrongProtocolFilter.FILTER.forEach(input -> {
@@ -47,12 +45,11 @@ class WrongProtocolFilterTest {
         });
     }
 
-    // should pass the string to the next handler in the pipeline
     @Test
-    void channelRead0PassWhenNoMatch() throws Exception {
+    void channelRead0ShouldPassThroughMessageIfClientApparentlyUsingCorrectProtocol() throws Exception {
         WrongProtocolFilter filter = WrongProtocolFilter.INSTANCE;
 
         filter.channelRead0(ctx, "Test");
-        verify(ctx, times(1)).fireChannelRead("Test");
+        verify(ctx).fireChannelRead("Test");
     }
 }

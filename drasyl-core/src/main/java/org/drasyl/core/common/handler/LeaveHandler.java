@@ -23,17 +23,17 @@ import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
-import org.drasyl.core.common.messages.Leave;
-import org.drasyl.core.common.messages.Response;
-import org.drasyl.core.common.messages.Status;
+import org.drasyl.core.common.message.LeaveMessage;
+import org.drasyl.core.common.message.ResponseMessage;
+import org.drasyl.core.common.message.StatusMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * Fires a channel wide close event, when a {@link Leave} received.
+ * Fires a channel wide close event, when a {@link LeaveMessage} received.
  */
 @Sharable
-public class LeaveHandler extends SimpleChannelInboundHandler<Leave> {
+public class LeaveHandler extends SimpleChannelInboundHandler<LeaveMessage> {
     private static final Logger LOG = LoggerFactory.getLogger(LeaveHandler.class);
     public static final LeaveHandler INSTANCE = new LeaveHandler();
     public static final String LEAVE_HANDLER = "leaveHandler";
@@ -42,9 +42,9 @@ public class LeaveHandler extends SimpleChannelInboundHandler<Leave> {
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Leave msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, LeaveMessage msg) throws Exception {
         try {
-            ctx.writeAndFlush(new Response<>(Status.OK, msg.getMessageID())).addListener(ChannelFutureListener.CLOSE);
+            ctx.writeAndFlush(new ResponseMessage<>(StatusMessage.OK, msg.getId())).addListener(ChannelFutureListener.CLOSE);
             LOG.debug("{} received LeaveMessage. Fire channel close.", ctx.channel().id());
         }
         finally {

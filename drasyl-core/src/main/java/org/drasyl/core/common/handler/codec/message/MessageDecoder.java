@@ -19,7 +19,7 @@
 
 package org.drasyl.core.common.handler.codec.message;
 
-import org.drasyl.core.common.messages.IMessage;
+import org.drasyl.core.common.message.Message;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
@@ -35,7 +35,7 @@ import java.util.List;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Decodes a {@link String} into a {@link IMessage} object.
+ * Decodes a {@link String} into a {@link Message} object.
  */
 @Sharable
 public class MessageDecoder extends MessageToMessageDecoder<TextWebSocketFrame> implements ChannelInboundHandler {
@@ -53,7 +53,7 @@ public class MessageDecoder extends MessageToMessageDecoder<TextWebSocketFrame> 
             LOG.debug("[{}]: Receive message '{}'", ctx.channel().id().asShortText(), msg.text());
 
         try {
-            IMessage message = requireNonNull(JSON_MAPPER.readValue(msg.text(), IMessage.class));
+            Message message = requireNonNull(JSON_MAPPER.readValue(msg.text(), Message.class));
             out.add(message);
         } catch (IOException e) {
             throw new IllegalArgumentException("Your request was not a valid Message Object: '" + msg.text() + "'");

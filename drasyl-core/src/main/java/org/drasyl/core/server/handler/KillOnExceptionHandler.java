@@ -20,7 +20,7 @@ package org.drasyl.core.server.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
-import org.drasyl.core.common.messages.NodeServerException;
+import org.drasyl.core.common.message.NodeServerExceptionMessage;
 import org.drasyl.core.server.NodeServer;
 
 /**
@@ -36,7 +36,7 @@ public class KillOnExceptionHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        ctx.writeAndFlush(new NodeServerException(
+        ctx.writeAndFlush(new NodeServerExceptionMessage(
                 "Exception occurred during initialization stage. The connection will shut down."));
         ctx.close();
     }

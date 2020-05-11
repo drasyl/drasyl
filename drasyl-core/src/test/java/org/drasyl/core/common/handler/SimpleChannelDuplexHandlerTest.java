@@ -83,8 +83,8 @@ class SimpleChannelDuplexHandlerTest {
         handler.write(ctx, o, promise);
         handler.channelRead(ctx, i);
 
-        verify(ctx, times(1)).write(o, promise);
-        verify(ctx, times(1)).fireChannelRead(i);
+        verify(ctx).write(o, promise);
+        verify(ctx).fireChannelRead(i);
     }
 
     @Test
@@ -92,7 +92,7 @@ class SimpleChannelDuplexHandlerTest {
         var handler = mock(SimpleChannelDuplexHandler.class, InvocationOnMock::callRealMethod);
         handler.bind(ctx, socketAddress, promise);
 
-        verify(ctx, times(1)).bind(socketAddress, promise);
+        verify(ctx).bind(socketAddress, promise);
     }
 
     @Test
@@ -100,7 +100,7 @@ class SimpleChannelDuplexHandlerTest {
         var handler = mock(SimpleChannelDuplexHandler.class, InvocationOnMock::callRealMethod);
         handler.connect(ctx, socketAddress, socketAddress, promise);
 
-        verify(ctx, times(1)).connect(socketAddress, socketAddress, promise);
+        verify(ctx).connect(socketAddress, socketAddress, promise);
     }
 
     @Test
@@ -108,7 +108,7 @@ class SimpleChannelDuplexHandlerTest {
         var handler = mock(SimpleChannelDuplexHandler.class, InvocationOnMock::callRealMethod);
         handler.disconnect(ctx, promise);
 
-        verify(ctx, times(1)).disconnect(promise);
+        verify(ctx).disconnect(promise);
     }
 
     @Test
@@ -116,7 +116,7 @@ class SimpleChannelDuplexHandlerTest {
         var handler = mock(SimpleChannelDuplexHandler.class, InvocationOnMock::callRealMethod);
         handler.close(ctx, promise);
 
-        verify(ctx, times(1)).close(promise);
+        verify(ctx).close(promise);
     }
 
     @Test
@@ -124,7 +124,7 @@ class SimpleChannelDuplexHandlerTest {
         var handler = mock(SimpleChannelDuplexHandler.class, InvocationOnMock::callRealMethod);
         handler.deregister(ctx, promise);
 
-        verify(ctx, times(1)).deregister(promise);
+        verify(ctx).deregister(promise);
     }
 
     @Test
@@ -132,7 +132,7 @@ class SimpleChannelDuplexHandlerTest {
         var handler = mock(SimpleChannelDuplexHandler.class, InvocationOnMock::callRealMethod);
         handler.read(ctx);
 
-        verify(ctx, times(1)).read();
+        verify(ctx).read();
     }
 
     @Test
@@ -140,6 +140,6 @@ class SimpleChannelDuplexHandlerTest {
         var handler = mock(SimpleChannelDuplexHandler.class, InvocationOnMock::callRealMethod);
         handler.flush(ctx);
 
-        verify(ctx, times(1)).flush();
+        verify(ctx).flush();
     }
 }

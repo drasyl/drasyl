@@ -2,8 +2,8 @@ package org.drasyl.core.client.transport.relay.handler;
 
 import org.drasyl.core.client.transport.InboundMessageEnvelope;
 import org.drasyl.core.client.transport.direct.messages.AkkaMessage;
-import org.drasyl.core.common.messages.Message;
-import org.drasyl.core.common.messages.IMessage;
+import org.drasyl.core.common.message.ApplicationMessage;
+import org.drasyl.core.common.message.Message;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.drasyl.core.node.identity.Identity;
 import org.junit.After;
@@ -46,7 +46,7 @@ public class RelayMessageHandlerTest {
         channel.writeOutbound(akkaMessage);
         channel.flush();
 
-        assertThat(channel.readInbound(), instanceOf(Message.class));
+        assertThat(channel.readInbound(), instanceOf(ApplicationMessage.class));
     }
 
     @Test
@@ -54,7 +54,7 @@ public class RelayMessageHandlerTest {
         Identity fromAddress = Identity.of("foo");
         Identity toAddress = Identity.of("bar");
         byte[] blob = new byte[0];
-        IMessage message = new Message(fromAddress, toAddress, blob);
+        Message message = new ApplicationMessage(fromAddress, toAddress, blob);
 
         channel.writeInbound(message);
         channel.flush();
