@@ -117,8 +117,6 @@ public class NodeServer implements AutoCloseable {
                 workerGroup, bossGroup, new ArrayList<>(),
                 new CompletableFuture<>(), new CompletableFuture<>(), null, new AtomicBoolean(false), -1, new HashSet<>());
 
-        overrideUA();
-
         nodeServerBootstrap = new NodeServerBootstrap(this, serverBootstrap, config);
     }
 
@@ -150,14 +148,6 @@ public class NodeServer implements AutoCloseable {
         this.messenger = messenger;
         this.actualPort = actualPort;
         this.actualEndpoints = actualEndpoints;
-    }
-
-    /**
-     * Overrides the default UA of the {@link Message Message} object.
-     */
-    @SuppressWarnings({ "squid:S2696" })
-    private void overrideUA() {
-        AbstractMessageWithUserAgent.userAgentGenerator = () -> AbstractMessageWithUserAgent.defaultUserAgentGenerator.get() + " " + config.getUserAgent();
     }
 
     public void send(ApplicationMessage message) throws DrasylException {
