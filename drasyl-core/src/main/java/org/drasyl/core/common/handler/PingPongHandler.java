@@ -19,10 +19,10 @@
 
 package org.drasyl.core.common.handler;
 
-import org.drasyl.core.common.messages.NodeServerException;
-import org.drasyl.core.common.messages.IMessage;
-import org.drasyl.core.common.messages.Ping;
-import org.drasyl.core.common.messages.Pong;
+import org.drasyl.core.common.message.NodeServerExceptionMessage;
+import org.drasyl.core.common.message.Message;
+import org.drasyl.core.common.message.PingMessage;
+import org.drasyl.core.common.message.PongMessage;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
@@ -30,22 +30,24 @@ import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.ReferenceCountUtil;
 
+import java.util.concurrent.atomic.AtomicInteger;
+
 /**
- * This handler answers automatically to {@link Ping}. When a {@link IdleStateHandler} is registered, it's
- * also ask periodically for a {@link Pong} from the peer.
+ * This handler answers automatically to {@link PingMessage}. When a {@link IdleStateHandler} is registered, it's
+ * also ask periodically for a {@link PongMessage} from the peer.
  */
-public class PingPongHandler extends SimpleChannelInboundHandler<IMessage> {
+public class PingPongHandler extends SimpleChannelInboundHandler<Message> {
     public static final String PING_PONG_HANDLER = "pingPongHandler";
     protected final short retries;
-    protected short counter;
+    protected final AtomicInteger counter;
 
-    PingPongHandler(short retries, short counter) {
+    PingPongHandler(short retries, AtomicInteger counter) {
         this.retries = retries;
         this.counter = counter;
     }
 
     private PingPongHandler(short retries) {
-        this(retries, (short) 0);
+        this(retries, new AtomicInteger(0));
     }
 
     /**
@@ -67,25 +69,24 @@ public class PingPongHandler extends SimpleChannelInboundHandler<IMessage> {
         if (evt instanceof IdleStateEvent) {
             IdleStateEvent e = (IdleStateEvent) evt;
             if (e.state() == IdleState.READER_IDLE) {
-                if (counter > retries) {
-                    ctx.writeAndFlush(new NodeServerException(
+                if (counter.getAndIncrement() > retries) {
+                    ctx.writeAndFlush(new NodeServerExceptionMessage(
                             "Max retries for ping/pong requests reached. Connection will be closed."));
                     ctx.close();
                 } else {
-                    ctx.writeAndFlush(new Ping());
+                    ctx.writeAndFlush(new PingMessage());
                 }
-                counter++;
             }
         }
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, IMessage msg) throws Exception {
-        if (msg instanceof Ping) {
-            ctx.writeAndFlush(new Pong());
+    protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
+        if (msg instanceof PingMessage) {
+            ctx.writeAndFlush(new PongMessage());
             ReferenceCountUtil.release(msg);
-        } else if (msg instanceof Pong) {
-            counter = 0;
+        } else if (msg instanceof PongMessage) {
+            counter.set(0);
         } else {
             ctx.fireChannelRead(msg);
         }

@@ -77,7 +77,7 @@ class ClientInitializerTest {
 
         initializer.beforeMarshalStage(pipeline);
 
-        verify(pipeline, times(1)).addLast(any(HttpClientCodec.class), any(HttpObjectAggregator.class),
+        verify(pipeline).addLast(any(HttpClientCodec.class), any(HttpObjectAggregator.class),
                 any(WebSocketClientHandler.class));
     }
 

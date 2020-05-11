@@ -23,9 +23,9 @@ import com.typesafe.config.ConfigFactory;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
-import org.drasyl.core.common.messages.IMessage;
-import org.drasyl.core.common.messages.Message;
-import org.drasyl.core.common.messages.UserAgentMessage;
+import org.drasyl.core.common.message.Message;
+import org.drasyl.core.common.message.ApplicationMessage;
+import org.drasyl.core.common.message.AbstractMessageWithUserAgent;
 import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.node.DrasylNodeConfig;
 import org.drasyl.core.node.Messenger;
@@ -153,14 +153,14 @@ public class NodeServer implements AutoCloseable {
     }
 
     /**
-     * Overrides the default UA of the {@link IMessage Message} object.
+     * Overrides the default UA of the {@link Message Message} object.
      */
     @SuppressWarnings({ "squid:S2696" })
     private void overrideUA() {
-        UserAgentMessage.userAgentGenerator = () -> UserAgentMessage.defaultUserAgentGenerator.get() + " " + config.getUserAgent();
+        AbstractMessageWithUserAgent.userAgentGenerator = () -> AbstractMessageWithUserAgent.defaultUserAgentGenerator.get() + " " + config.getUserAgent();
     }
 
-    public void send(Message message) throws DrasylException {
+    public void send(ApplicationMessage message) throws DrasylException {
         messenger.send(message);
     }
 

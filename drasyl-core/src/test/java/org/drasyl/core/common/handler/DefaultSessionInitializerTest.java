@@ -61,42 +61,42 @@ class DefaultSessionInitializerTest {
     void initChannel() {
         classUnderTest.initChannel(ch);
 
-        verify(classUnderTest, times(1)).beforeSslStage(ch);
-        verify(classUnderTest, times(1)).sslStage(ch);
-        verify(classUnderTest, times(1)).afterSslStage(ch);
+        verify(classUnderTest).beforeSslStage(ch);
+        verify(classUnderTest).sslStage(ch);
+        verify(classUnderTest).afterSslStage(ch);
 
-        verify(classUnderTest, times(1)).beforeBufferStage(pipeline);
-        verify(classUnderTest, times(1)).bufferStage(pipeline);
-        verify(classUnderTest, times(1)).afterBufferStage(pipeline);
+        verify(classUnderTest).beforeBufferStage(pipeline);
+        verify(classUnderTest).bufferStage(pipeline);
+        verify(classUnderTest).afterBufferStage(pipeline);
 
-        verify(classUnderTest, times(1)).beforeMarshalStage(pipeline);
-        verify(classUnderTest, times(1)).marshalStage(pipeline);
-        verify(classUnderTest, times(1)).afterMarshalStage(pipeline);
+        verify(classUnderTest).beforeMarshalStage(pipeline);
+        verify(classUnderTest).marshalStage(pipeline);
+        verify(classUnderTest).afterMarshalStage(pipeline);
 
-        verify(classUnderTest, times(1)).beforeFilterStage(pipeline);
-        verify(classUnderTest, times(1)).filterStage(pipeline);
-        verify(classUnderTest, times(1)).afterFilterStage(pipeline);
+        verify(classUnderTest).beforeFilterStage(pipeline);
+        verify(classUnderTest).filterStage(pipeline);
+        verify(classUnderTest).afterFilterStage(pipeline);
 
-        verify(classUnderTest, times(1)).beforePojoMarshalStage(pipeline);
-        verify(classUnderTest, times(1)).pojoMarshalStage(pipeline);
-        verify(classUnderTest, times(1)).afterPojoMarshalStage(pipeline);
+        verify(classUnderTest).beforePojoMarshalStage(pipeline);
+        verify(classUnderTest).pojoMarshalStage(pipeline);
+        verify(classUnderTest).afterPojoMarshalStage(pipeline);
 
-        verify(classUnderTest, times(1)).beforeIdleStage(pipeline);
-        verify(classUnderTest, times(1)).idleStage(pipeline);
-        verify(classUnderTest, times(1)).afterIdleStage(pipeline);
+        verify(classUnderTest).beforeIdleStage(pipeline);
+        verify(classUnderTest).idleStage(pipeline);
+        verify(classUnderTest).afterIdleStage(pipeline);
 
-        verify(classUnderTest, times(1)).customStage(pipeline);
+        verify(classUnderTest).customStage(pipeline);
 
-        verify(classUnderTest, times(1)).beforeExceptionStage(pipeline);
-        verify(classUnderTest, times(1)).exceptionStage(pipeline);
-        verify(classUnderTest, times(1)).afterExceptionStage(pipeline);
+        verify(classUnderTest).beforeExceptionStage(pipeline);
+        verify(classUnderTest).exceptionStage(pipeline);
+        verify(classUnderTest).afterExceptionStage(pipeline);
     }
 
     @Test
     void testSslStage() {
         classUnderTest.sslStage(ch);
 
-        verify(pipeline, times(1)).addLast("sslHandler", sslHandler);
+        verify(pipeline).addLast("sslHandler", sslHandler);
     }
 
     @Test
@@ -111,15 +111,15 @@ class DefaultSessionInitializerTest {
     void testBufferStage() {
         classUnderTest.bufferStage(pipeline);
 
-        verify(pipeline, times(1)).addLast(any(FlushConsolidationHandler.class));
+        verify(pipeline).addLast(any(FlushConsolidationHandler.class));
     }
 
     @Test
     void testPojoMarshalStage() {
         classUnderTest.pojoMarshalStage(pipeline);
 
-        verify(pipeline, times(1)).addLast(eq("messageDecoder"), any(MessageDecoder.class));
-        verify(pipeline, times(1)).addLast(eq("messageEncoder"), any(MessageEncoder.class));
+        verify(pipeline).addLast(eq("messageDecoder"), any(MessageDecoder.class));
+        verify(pipeline).addLast(eq("messageEncoder"), any(MessageEncoder.class));
     }
 
     @Test
@@ -143,8 +143,8 @@ class DefaultSessionInitializerTest {
 
         classUnderTest.idleStage(pipeline);
 
-        verify(pipeline, times(1)).addLast(eq("idleEvent"), any(IdleStateHandler.class));
-        verify(pipeline, times(1)).addLast(eq("pingPongHandler"), any(PingPongHandler.class));
+        verify(pipeline).addLast(eq("idleEvent"), any(IdleStateHandler.class));
+        verify(pipeline).addLast(eq("pingPongHandler"), any(PingPongHandler.class));
     }
 
     @Test
@@ -152,6 +152,6 @@ class DefaultSessionInitializerTest {
         classUnderTest.idleStage(pipeline);
 
         verify(pipeline, never()).addLast(eq("idleEvent"), any(IdleStateHandler.class));
-        verify(pipeline, times(1)).addLast(eq("pingPongHandler"), any(PingPongHandler.class));
+        verify(pipeline).addLast(eq("pingPongHandler"), any(PingPongHandler.class));
     }
 }

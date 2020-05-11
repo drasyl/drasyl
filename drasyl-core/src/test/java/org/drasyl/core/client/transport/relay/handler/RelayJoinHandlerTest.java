@@ -1,9 +1,9 @@
 package org.drasyl.core.client.transport.relay.handler;
 
-import org.drasyl.core.common.messages.Welcome;
-import org.drasyl.core.common.messages.NodeServerException;
-import org.drasyl.core.common.messages.Join;
-import org.drasyl.core.common.messages.Response;
+import org.drasyl.core.common.message.WelcomeMessage;
+import org.drasyl.core.common.message.NodeServerExceptionMessage;
+import org.drasyl.core.common.message.JoinMessage;
+import org.drasyl.core.common.message.ResponseMessage;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.junit.Before;
 import org.junit.Test;
@@ -17,20 +17,20 @@ import static org.mockito.Mockito.*;
 
 public class RelayJoinHandlerTest {
     private Duration duration;
-    private Request<Join> joinRequest;
-    private Welcome welcome;
-    private NodeServerException NodeServerException;
+    private Request<JoinMessage> joinRequest;
+    private WelcomeMessage welcome;
+    private NodeServerExceptionMessage NodeServerException;
     private RelayJoinHandler handler;
     private EmbeddedChannel channel;
-    private Response response;
+    private ResponseMessage response;
 
     @Before
     public void setUp() {
         joinRequest = mock(Request.class);
         duration = Duration.ofSeconds(1);
-        welcome = mock(Welcome.class);
-        NodeServerException = mock(NodeServerException.class);
-        response = mock(Response.class);
+        welcome = mock(WelcomeMessage.class);
+        NodeServerException = mock(NodeServerExceptionMessage.class);
+        response = mock(ResponseMessage.class);
         handler = new RelayJoinHandler(joinRequest, duration, CompletableFuture.completedFuture(null));
     }
 

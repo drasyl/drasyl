@@ -19,8 +19,8 @@
 package org.drasyl.core.node.connections;
 
 import io.reactivex.rxjava3.core.Single;
-import org.drasyl.core.common.messages.IMessage;
-import org.drasyl.core.common.messages.Response;
+import org.drasyl.core.common.message.Message;
+import org.drasyl.core.common.message.ResponseMessage;
 import org.drasyl.core.node.identity.Identity;
 
 import java.net.URI;
@@ -37,7 +37,7 @@ public interface PeerConnection extends AutoCloseable {
      *
      * @param message message that should be sent
      */
-    void send(IMessage message);
+    void send(Message message);
 
     /**
      * Sends a message to the peer and returns a {@link Single} object for potential responses to
@@ -46,17 +46,17 @@ public interface PeerConnection extends AutoCloseable {
      * @param message       message that should be sent
      * @param responseClass the class of the response object, to avoid * ClassCastExceptions
      * @param <T>           the type of the response
-     * @return a {@link Single} object that can be fulfilled with a {@link IMessage response} to the
+     * @return a {@link Single} object that can be fulfilled with a {@link Message response} to the
      * * message
      */
-    <T extends IMessage> Single<T> send(IMessage message, Class<T> responseClass);
+    <T extends Message> Single<T> send(Message message, Class<T> responseClass);
 
     /**
-     * Sets the result of a {@link Single} object from a {@link #send(IMessage, Class)} call.
+     * Sets the result of a {@link Single} object from a {@link #send(Message, Class)} call.
      *
      * @param response the response
      */
-    void setResponse(Response<? extends IMessage> response);
+    void setResponse(ResponseMessage<? extends Message> response);
 
     /**
      * Returns the User-Agent string.

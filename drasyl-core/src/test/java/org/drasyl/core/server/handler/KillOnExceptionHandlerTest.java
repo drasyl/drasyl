@@ -21,7 +21,7 @@ package org.drasyl.core.server.handler;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelId;
-import org.drasyl.core.common.messages.NodeServerException;
+import org.drasyl.core.common.message.NodeServerExceptionMessage;
 import org.drasyl.core.node.PeersManager;
 import org.drasyl.core.server.NodeServer;
 import org.drasyl.crypto.Crypto;
@@ -62,7 +62,7 @@ class KillOnExceptionHandlerTest {
         KillOnExceptionHandler handler = new KillOnExceptionHandler(nodeServer);
         handler.exceptionCaught(ctx, cause);
 
-        verify(ctx, times(1)).writeAndFlush(any(NodeServerException.class));
-        verify(ctx, times(1)).close();
+        verify(ctx).writeAndFlush(any(NodeServerExceptionMessage.class));
+        verify(ctx).close();
     }
 }

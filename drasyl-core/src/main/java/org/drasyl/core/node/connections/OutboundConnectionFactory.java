@@ -34,7 +34,6 @@ import org.drasyl.core.common.handler.DefaultSessionInitializer;
 import org.drasyl.core.common.handler.ExceptionHandler;
 import org.drasyl.core.common.handler.codec.message.MessageDecoder;
 import org.drasyl.core.common.handler.codec.message.MessageEncoder;
-import org.drasyl.core.server.handler.codec.message.ServerActionMessageDecoder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -342,12 +341,7 @@ public class OutboundConnectionFactory {
             @Override
             protected void pojoMarshalStage(ChannelPipeline pipeline) {
                 // From String to Message
-                if (relayToRelayCon) {
-                    pipeline.addLast(MESSAGE_DECODER, ServerActionMessageDecoder.INSTANCE);
-                }
-                else {
-                    pipeline.addLast(MESSAGE_DECODER, MessageDecoder.INSTANCE);
-                }
+                pipeline.addLast(MESSAGE_DECODER, MessageDecoder.INSTANCE);
 
                 pipeline.addLast(MESSAGE_ENCODER, MessageEncoder.INSTANCE);
             }

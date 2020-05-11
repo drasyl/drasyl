@@ -28,7 +28,7 @@ import com.typesafe.config.ConfigFactory;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.awaitility.Durations;
-import org.drasyl.core.common.messages.*;
+import org.drasyl.core.common.message.*;
 import org.drasyl.core.models.CompressedKeyPair;
 import org.drasyl.core.models.CompressedPrivateKey;
 import org.drasyl.core.models.CompressedPublicKey;
@@ -123,7 +123,7 @@ public class NodeServerIT {
 
     @AfterEach
     public void cleanUp() {
-        clientConnections.forEach(s -> s.send(new Leave()));
+        clientConnections.forEach(s -> s.send(new LeaveMessage()));
         clientConnections.clear();
 
         server.close();
@@ -139,10 +139,10 @@ public class NodeServerIT {
             TestServerConnection session = TestServerConnection.build(server);
             clientConnections.add(session);
 
-            session.send(new Join(identityManager.getKeyPair().getPublicKey(), Set.of()),
-                    Welcome.class).blockingSubscribe(response -> {
+            session.send(new JoinMessage(identityManager.getKeyPair().getPublicKey(), Set.of()),
+                    WelcomeMessage.class).blockingSubscribe(response -> {
                 lock.countDown();
-                session.send(new Leave());
+                session.send(new LeaveMessage());
             });
 
             lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
@@ -167,10 +167,10 @@ public class NodeServerIT {
             TestServerConnection session2 = TestServerConnection.build(server);
             clientConnections.add(session2);
 
-            session1.send(new Join(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of()),
-                    Welcome.class).subscribe(response -> lock.countDown());
-            session2.send(new Join(CompressedPublicKey.of("0340a4f2adbddeedc8f9ace30e3f18713a3405f43f4871b4bac9624fe80d2056a7"), Set.of()),
-                    Welcome.class).subscribe(response -> lock.countDown());
+            session1.send(new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of()),
+                    WelcomeMessage.class).subscribe(response -> lock.countDown());
+            session2.send(new JoinMessage(CompressedPublicKey.of("0340a4f2adbddeedc8f9ace30e3f18713a3405f43f4871b4bac9624fe80d2056a7"), Set.of()),
+                    WelcomeMessage.class).subscribe(response -> lock.countDown());
 
             lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
             assertEquals(0, lock.getCount());
@@ -198,7 +198,7 @@ public class NodeServerIT {
             with().pollInSameThread().await().pollDelay(0, TimeUnit.NANOSECONDS).atMost(Durations.FIVE_MINUTES)
                     .until(() -> server.getPeersManager().getChildren().size() >= 2);
 
-            session1.send(new RequestClientsStocktaking(), ClientsStocktaking.class).subscribe(response -> {
+            session1.send(new RequestClientsStocktakingMessage(), ClientsStocktakingMessage.class).subscribe(response -> {
                 assertTrue(response.getIdentities().contains(session1.getIdentity()));
                 assertTrue(response.getIdentities().contains(session2.getIdentity()));
                 lock.countDown();
@@ -226,21 +226,21 @@ public class NodeServerIT {
             TestServerConnection session2 = TestServerConnection.buildAutoJoin(server);
             clientConnections.add(session2);
 
-            Message msg = new Message(session1.getIdentity(), session2.getIdentity(), new byte[]{
+            ApplicationMessage msg = new ApplicationMessage(session1.getIdentity(), session2.getIdentity(), new byte[]{
                     0x00,
                     0x01,
                     0x02
             });
 
             session2.addListener(message -> {
-                if (message instanceof Message) {
-                    Message f = (Message) message;
+                if (message instanceof ApplicationMessage) {
+                    ApplicationMessage f = (ApplicationMessage) message;
                     lock.countDown();
                     assertEquals(msg, f);
                 }
             });
 
-            session1.send(msg, Status.class).subscribe(response -> lock.countDown());
+            session1.send(msg, StatusMessage.class).subscribe(response -> lock.countDown());
 
             lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
             assertEquals(0, lock.getCount());
@@ -264,17 +264,17 @@ public class NodeServerIT {
             TestServerConnection session2 = TestServerConnection.buildAutoJoin(server);
             clientConnections.add(session1);
 
-            Message msg = new Message(session1.getIdentity(), session2.getIdentity(), new byte[]{});
+            ApplicationMessage msg = new ApplicationMessage(session1.getIdentity(), session2.getIdentity(), new byte[]{});
 
             session2.addListener(message -> {
-                if (message instanceof Message) {
-                    Message f = (Message) message;
+                if (message instanceof ApplicationMessage) {
+                    ApplicationMessage f = (ApplicationMessage) message;
                     lock.countDown();
                     assertEquals(msg, f);
                 }
             });
 
-            session1.send(msg, Status.class).subscribe(response -> lock.countDown());
+            session1.send(msg, StatusMessage.class).subscribe(response -> lock.countDown());
 
             lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
             assertEquals(0, lock.getCount());
@@ -296,8 +296,8 @@ public class NodeServerIT {
             clientConnections.add(session);
 
             session.addListener(message -> {
-                if (message instanceof org.drasyl.core.common.messages.NodeServerException) {
-                    org.drasyl.core.common.messages.NodeServerException e = (org.drasyl.core.common.messages.NodeServerException) message;
+                if (message instanceof NodeServerExceptionMessage) {
+                    NodeServerExceptionMessage e = (NodeServerExceptionMessage) message;
 
                     assertEquals(
                             "Handshake did not take place successfully in "
@@ -332,7 +332,7 @@ public class NodeServerIT {
             TestServerConnection session = TestServerConnection.buildAutoJoin(server);
             clientConnections.add(session);
 
-            session.addListener(message -> assertThat(message, is(not(instanceOf(org.drasyl.core.common.messages.NodeServerException.class)))));
+            session.addListener(message -> assertThat(message, is(not(instanceOf(NodeServerExceptionMessage.class)))));
 
             // Wait until timeout
             Thread.sleep(server.getConfig().getServerHandshakeTimeout().toMillis() + 2000);// NOSONAR
@@ -360,8 +360,8 @@ public class NodeServerIT {
             clientConnections.add(session);
 
             session.addListener(message -> {
-                if (message instanceof org.drasyl.core.common.messages.NodeServerException) {
-                    org.drasyl.core.common.messages.NodeServerException e = (org.drasyl.core.common.messages.NodeServerException) message;
+                if (message instanceof NodeServerExceptionMessage) {
+                    NodeServerExceptionMessage e = (NodeServerExceptionMessage) message;
 
                     assertThat(e.getException(), anyOf(
                             equalTo("java.lang.IllegalArgumentException: Your request was not a valid Message Object: 'invalid message'"),
@@ -396,15 +396,15 @@ public class NodeServerIT {
             TestServerConnection session2 = TestServerConnection.build(server);
             clientConnections.add(session2);
 
-            session1.send(new Join(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of()),
-                    Welcome.class).blockingGet();
+            session1.send(new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of()),
+                    WelcomeMessage.class).blockingGet();
             session1.addListener(message -> {
-                if (message instanceof Leave) {
+                if (message instanceof LeaveMessage) {
                     lock.countDown();
                 }
             });
-            session2.send(new Join(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of()),
-                    Welcome.class).blockingGet();
+            session2.send(new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of()),
+                    WelcomeMessage.class).blockingGet();
 
             lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
             assertEquals(0, lock.getCount());
@@ -428,7 +428,7 @@ public class NodeServerIT {
             TestServerConnection session = TestServerConnection.buildAutoJoin(server);
             clientConnections.add(session);
 
-            session.send(new Join(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of()), org.drasyl.core.common.messages.NodeServerException.class)
+            session.send(new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of()), NodeServerExceptionMessage.class)
                     .subscribe(response -> {
                         Assert.assertEquals("This client has already an open "
                                 + "session with this node server. No need to authenticate twice.", response.getException());
@@ -455,14 +455,14 @@ public class NodeServerIT {
             clientConnections.add(session);
 
             session.addListener(message -> {
-                if (message instanceof org.drasyl.core.common.messages.NodeServerException) {
-                    org.drasyl.core.common.messages.NodeServerException m = (org.drasyl.core.common.messages.NodeServerException) message;
+                if (message instanceof NodeServerExceptionMessage) {
+                    NodeServerExceptionMessage m = (NodeServerExceptionMessage) message;
                     assertThat(m.getException(),
                             is(equalTo("Max retries for ping/pong requests reached. Connection will be closed.")));
                     lock.countDown();
                 }
 
-                if (message instanceof Ping) {
+                if (message instanceof PingMessage) {
                     lock.countDown();
                 }
             });
@@ -488,7 +488,7 @@ public class NodeServerIT {
             TestServerConnection session = TestServerConnection.buildAutoJoin(server);
             clientConnections.add(session);
 
-            session.addListener(message -> assertThat(message, is(not(instanceOf(org.drasyl.core.common.messages.NodeServerException.class)))));
+            session.addListener(message -> assertThat(message, is(not(instanceOf(NodeServerExceptionMessage.class)))));
 
             // Wait until timeout
             Thread.sleep(server.getConfig().getServerIdleTimeout().toMillis() * (server.getConfig().getServerIdleRetries() + 1) + 1000);// NOSONAR
@@ -510,12 +510,12 @@ public class NodeServerIT {
             clientConnections.add(session);
 
             session.addListener(message -> {
-                if (message instanceof Pong) {
+                if (message instanceof PongMessage) {
                     lock.countDown();
                 }
             });
 
-            session.send(new Ping());
+            session.send(new PingMessage());
 
             lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
             assertEquals(0, lock.getCount());
@@ -536,11 +536,11 @@ public class NodeServerIT {
             TestServerConnection session = TestServerConnection.build(server);
             clientConnections.add(session);
 
-            Response<org.drasyl.core.common.messages.NodeServerException> msg = new Response<>(new org.drasyl.core.common.messages.NodeServerException("Test"), Crypto.randomString(12));
+            ResponseMessage<NodeServerExceptionMessage> msg = new ResponseMessage<>(new NodeServerExceptionMessage("Test"), Crypto.randomString(12));
 
-            session.send(msg, Status.class).subscribe(response -> {
+            session.send(msg, StatusMessage.class).subscribe(response -> {
                 assertThat(response, anyOf(
-                        equalTo(Status.FORBIDDEN)));
+                        equalTo(StatusMessage.FORBIDDEN)));
 
                 lock.countDown();
             });
@@ -570,17 +570,17 @@ public class NodeServerIT {
             byte[] bigPayload = new byte[config.getMaxContentLength()];
             new Random().nextBytes(bigPayload);
 
-            Message msg = new Message(session1.getIdentity(), session2.getIdentity(), bigPayload);
+            ApplicationMessage msg = new ApplicationMessage(session1.getIdentity(), session2.getIdentity(), bigPayload);
 
             session2.addListener(message -> {
-                if (message instanceof Message) {
-                    Message f = (Message) message;
+                if (message instanceof ApplicationMessage) {
+                    ApplicationMessage f = (ApplicationMessage) message;
                     lock.countDown();
                     assertEquals(msg, f);
                 }
             });
 
-            session1.send(msg, Status.class).subscribe(response -> lock.countDown());
+            session1.send(msg, StatusMessage.class).subscribe(response -> lock.countDown());
 
             lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
             assertEquals(0, lock.getCount());
@@ -607,10 +607,10 @@ public class NodeServerIT {
             byte[] bigPayload = new byte[config.getMaxContentLength() + 1];
             new Random().nextBytes(bigPayload);
 
-            Message msg = new Message(session1.getIdentity(), session2.getIdentity(), bigPayload);
+            ApplicationMessage msg = new ApplicationMessage(session1.getIdentity(), session2.getIdentity(), bigPayload);
 
             session2.addListener(message -> {
-                if (message instanceof Message) {
+                if (message instanceof ApplicationMessage) {
                     fail("The message should not arrive!");
                 }
             });
@@ -621,7 +621,7 @@ public class NodeServerIT {
                 }
             });
 
-            session1.send(msg, Status.class).subscribe(response -> lock.countDown());
+            session1.send(msg, StatusMessage.class).subscribe(response -> lock.countDown());
 
             lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
             assertEquals(0, lock.getCount());
@@ -663,13 +663,13 @@ public class NodeServerIT {
             clientConnections.add(session);
 
             session.addListener(message -> {
-                if (message instanceof Leave) {
+                if (message instanceof LeaveMessage) {
                     lock.countDown();
                 }
             });
 
-            session.send(new Join(identityManager.getKeyPair().getPublicKey(), Set.of()),
-                    Welcome.class).blockingSubscribe(response -> lock.countDown());
+            session.send(new JoinMessage(identityManager.getKeyPair().getPublicKey(), Set.of()),
+                    WelcomeMessage.class).blockingSubscribe(response -> lock.countDown());
 
             server.close();
 
@@ -696,17 +696,17 @@ public class NodeServerIT {
             clientConnections.add(session2);
 
             session2.addListener(message -> {
-                if (message instanceof Reject) {
+                if (message instanceof RejectMessage) {
                     lock.countDown();
                 }
             });
 
-            session.send(new Join(identityManager.getKeyPair().getPublicKey(), Set.of()),
-                    Welcome.class).blockingSubscribe(response -> lock.countDown());
+            session.send(new JoinMessage(identityManager.getKeyPair().getPublicKey(), Set.of()),
+                    WelcomeMessage.class).blockingSubscribe(response -> lock.countDown());
 
             server.addBeforeCloseListener(() -> {
                 try {
-                    session2.send(new Join(CompressedPublicKey.of("0340a4f2adbddeedc8f9ace30e3f18713a3405f43f4871b4bac9624fe80d2056a7"), Set.of()));
+                    session2.send(new JoinMessage(CompressedPublicKey.of("0340a4f2adbddeedc8f9ace30e3f18713a3405f43f4871b4bac9624fe80d2056a7"), Set.of()));
                 }
                 catch (CryptoException e) {
                     e.printStackTrace();

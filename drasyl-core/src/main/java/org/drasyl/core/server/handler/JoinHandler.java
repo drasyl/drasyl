@@ -23,32 +23,33 @@ import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.core.common.handler.SimpleChannelDuplexHandler;
-import org.drasyl.core.common.messages.*;
+import org.drasyl.core.common.message.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * Acts as a guard for in- and outbound connections. A session is only created, when a {@link Join}
- * was received. Outgoing messages are dropped unless a {@link Join} was received. Every other
- * incoming message is also dropped unless a {@link Join} was received.
+ * Acts as a guard for in- and outbound connections. A session is only created, when a {@link JoinMessage}
+ * was received. Outgoing messages are dropped unless a {@link JoinMessage} was received. Every other
+ * incoming message is also dropped unless a {@link JoinMessage} was received.
  * <p>
- * If a {@link Join} was not received in {@link org.drasyl.core.node.DrasylNodeConfig#getServerHandshakeTimeout()}
+ * If a {@link JoinMessage} was not received in {@link org.drasyl.core.node.DrasylNodeConfig#getServerHandshakeTimeout()}
  * the connection will be closed.
  */
-public class JoinHandler extends SimpleChannelDuplexHandler<IMessage, IMessage> {
+public class JoinHandler extends SimpleChannelDuplexHandler<Message, Message> {
     private static final Logger LOG = LoggerFactory.getLogger(JoinHandler.class);
     public static final String JOIN_GUARD = "joinGuard";
-    protected volatile boolean authenticated;
+    protected volatile AtomicBoolean authenticated;
     private ScheduledFuture<?> timeoutFuture;
     private final long timeout;
 
     public JoinHandler(long timeout) {
-        this(false, timeout, null);
+        this(new AtomicBoolean(false), timeout, null);
     }
 
-    JoinHandler(boolean authenticated, long timeout, ScheduledFuture<?> timeoutFuture) {
+    JoinHandler(AtomicBoolean authenticated, long timeout, ScheduledFuture<?> timeoutFuture) {
         this.timeoutFuture = timeoutFuture;
         this.authenticated = authenticated;
         this.timeout = timeout;
@@ -60,8 +61,8 @@ public class JoinHandler extends SimpleChannelDuplexHandler<IMessage, IMessage> 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         timeoutFuture = ctx.executor().schedule(() -> {
-            if (!timeoutFuture.isCancelled() && !authenticated) {
-                ctx.writeAndFlush(new NodeServerException("Handshake did not take place successfully in " + timeout + " ms. " +
+            if (!timeoutFuture.isCancelled() && !authenticated.get()) {
+                ctx.writeAndFlush(new NodeServerExceptionMessage("Handshake did not take place successfully in " + timeout + " ms. " +
                         "Connection is closed."));
                 ctx.close();
                 LOG.debug("{} Handshake did not take place successfully in {} ms. "
@@ -79,8 +80,8 @@ public class JoinHandler extends SimpleChannelDuplexHandler<IMessage, IMessage> 
     }
 
     @Override
-    protected void channelWrite0(ChannelHandlerContext ctx, IMessage msg) throws Exception {
-        if (authenticated) {
+    protected void channelWrite0(ChannelHandlerContext ctx, Message msg) throws Exception {
+        if (authenticated.get()) {
             ctx.write(msg);
         }
         else {
@@ -96,24 +97,23 @@ public class JoinHandler extends SimpleChannelDuplexHandler<IMessage, IMessage> 
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, IMessage request) throws Exception {
-        if (authenticated) {
-            if (request instanceof Join) {
-                ctx.writeAndFlush(new Response<>(new NodeServerException("This client has already an open "
-                        + "session with this node server. No need to authenticate twice."), request.getMessageID()));
+    protected void channelRead0(ChannelHandlerContext ctx, Message request) throws Exception {
+        if (authenticated.get()) {
+            if (request instanceof JoinMessage) {
+                ctx.writeAndFlush(new ResponseMessage<>(new NodeServerExceptionMessage("This client has already an open "
+                        + "session with this node server. No need to authenticate twice."), request.getId()));
                 ReferenceCountUtil.release(request);
             }
             else {
                 ctx.fireChannelRead(request);
             }
         }
-        else if (request instanceof Join) {
-            authenticated = true;
+        else if (request instanceof JoinMessage && authenticated.compareAndSet(false, true)) {
             timeoutFuture.cancel(true);
             ctx.fireChannelRead(request);
         }
         else {
-            ctx.writeAndFlush(new Response<>(Status.FORBIDDEN, request.getMessageID()));
+            ctx.writeAndFlush(new ResponseMessage<>(StatusMessage.FORBIDDEN, request.getId()));
             ReferenceCountUtil.release(request);
             LOG.debug("[{}] Client is not authenticated. Inbound message was dropped: '{}'",
                     ctx, request);

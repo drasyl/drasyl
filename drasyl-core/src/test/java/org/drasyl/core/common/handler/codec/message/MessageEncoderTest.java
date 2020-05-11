@@ -21,34 +21,30 @@ package org.drasyl.core.common.handler.codec.message;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
-import org.drasyl.core.common.messages.IMessage;
-import org.drasyl.core.common.messages.Leave;
+import org.drasyl.core.common.message.Message;
+import org.drasyl.core.common.message.LeaveMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class MessageEncoderTest {
-    private IMessage message;
+    private Message message;
     private EmbeddedChannel channel;
 
     @BeforeEach
     void setUp() {
-        message = new Leave();
+        message = new LeaveMessage();
         ChannelHandler handler = MessageEncoder.INSTANCE;
         channel = new EmbeddedChannel(handler);
     }
 
     @Test
-    void serializedMessageToJson() {
+    void writeOutboundShouldSerializeMessageObjectToJsonString() {
         channel.writeOutbound(message);
         channel.flush();
 
-        String json =
-                "{\"type\":\"" + message.getClass().getSimpleName() + "\",\"messageID\":\"" + message.getMessageID() +
-                        "\",\"signature\":null}";
-
-        TextWebSocketFrame outbound = channel.readOutbound();
-        assertEquals(json, outbound.text());
+        String json = "{\"@type\":\"" + message.getClass().getSimpleName() + "\",\"id\":\"" + message.getId() + "\"}";
+        assertEquals(json, ((TextWebSocketFrame) channel.readOutbound()).text());
     }
 }

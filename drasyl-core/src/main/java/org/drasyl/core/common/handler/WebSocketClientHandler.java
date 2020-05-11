@@ -26,21 +26,25 @@ import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketHandshakeException;
-import org.drasyl.core.common.messages.IMessage;
+import org.drasyl.core.common.message.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 
-public class WebSocketClientHandler extends SimpleChannelDuplexHandler<Object, IMessage> {
+public class WebSocketClientHandler extends SimpleChannelDuplexHandler<Object, Message> {
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketClientHandler.class);
     private final WebSocketClientHandshaker handshaker;
     private final CompletableFuture<Void> handshakeFuture;
 
     public WebSocketClientHandler(WebSocketClientHandshaker handshaker) {
+        this(handshaker, new CompletableFuture<>());
+    }
+
+    WebSocketClientHandler(WebSocketClientHandshaker handshaker, CompletableFuture<Void> handshakeFuture) {
         this.handshaker = handshaker;
-        this.handshakeFuture = new CompletableFuture<>();
+        this.handshakeFuture = handshakeFuture;
     }
 
     public CompletableFuture<Void> handshakeFuture() {
@@ -60,8 +64,8 @@ public class WebSocketClientHandler extends SimpleChannelDuplexHandler<Object, I
     }
 
     @Override
-    protected void channelWrite0(ChannelHandlerContext ctx, IMessage msg) throws Exception {
-        handshakeFuture.get();
+    protected void channelWrite0(ChannelHandlerContext ctx, Message msg) {
+        handshakeFuture.join();
         ctx.write(msg);
     }
 

@@ -23,9 +23,9 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.core.SingleEmitter;
-import org.drasyl.core.common.messages.IMessage;
-import org.drasyl.core.common.messages.Leave;
-import org.drasyl.core.common.messages.Response;
+import org.drasyl.core.common.message.Message;
+import org.drasyl.core.common.message.LeaveMessage;
+import org.drasyl.core.common.message.ResponseMessage;
 import org.drasyl.core.common.models.Pair;
 import org.drasyl.core.node.identity.Identity;
 import org.slf4j.Logger;
@@ -42,8 +42,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @SuppressWarnings({ "squid:S00107" })
 public abstract class NettyPeerConnection implements PeerConnection {
-    protected final ConcurrentHashMap<String, Pair<Class<? extends IMessage>, SingleEmitter<IMessage>>> emitters;
-    protected final NettyPeerConnection self = this; //NOSONAR
+    protected final ConcurrentHashMap<String, Pair<Class<? extends Message>, SingleEmitter<Message>>> emitters;
     protected final Channel myChannel;
     protected final String userAgent;
     protected final Identity identity;
@@ -77,11 +76,11 @@ public abstract class NettyPeerConnection implements PeerConnection {
         channelCloseFutureListener = future -> {
             String msg = "The client and its associated channel";
             if (future.isSuccess()) {
-                getLogger().debug("{} {} {} have been closed successfully.", self, msg, future.channel().id());
+                getLogger().debug("{} {} {} have been closed successfully.", NettyPeerConnection.this, msg, future.channel().id());
                 closedCompletable.complete(true);
             }
             else {
-                getLogger().error("{} {} {} could not be closed: ", self, msg, future.channel().id(), future.cause());
+                getLogger().error("{} {} {} could not be closed: ", NettyPeerConnection.this, msg, future.channel().id(), future.cause());
             }
 
             close();
@@ -95,7 +94,7 @@ public abstract class NettyPeerConnection implements PeerConnection {
                                   Identity identity,
                                   URI endpoint,
                                   AtomicBoolean isClosed,
-                                  ConcurrentHashMap<String, Pair<Class<? extends IMessage>, SingleEmitter<IMessage>>> emitters,
+                                  ConcurrentHashMap<String, Pair<Class<? extends Message>, SingleEmitter<Message>>> emitters,
                                   CompletableFuture<Boolean> closedCompletable) {
         this.emitters = emitters;
         this.myChannel = myChannel;
@@ -114,37 +113,34 @@ public abstract class NettyPeerConnection implements PeerConnection {
     }
 
     @Override
-    public void send(IMessage message) {
+    public void send(Message message) {
         if (message != null && !isClosed.get() && myChannel.isOpen()) {
             myChannel.writeAndFlush(message);
         }
         else {
-            getLogger().info("[{} Can't send message {}", self, message);
+            getLogger().info("[{} Can't send message {}", NettyPeerConnection.this, message);
         }
     }
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T extends IMessage> Single<T> send(IMessage message,
-                                               Class<T> responseClass) {
-        return (Single<T>) Single.<IMessage>create(emitter -> {
+    public <T extends Message> Single<T> send(Message message,
+                                              Class<T> responseClass) {
+        return (Single<T>) Single.<Message>create(emitter -> {
             if (isClosed.get()) {
                 emitter.onError(new IllegalStateException("This connection is already prompt to close."));
             }
-            else if (!emitters.containsKey(message.getMessageID())) {
-                emitters.put(message.getMessageID(), Pair.of(responseClass, emitter));
+            else if (emitters.putIfAbsent(message.getId(), Pair.of(responseClass, emitter)) == null) {
                 send(message);
             }
         });
     }
 
     @Override
-    public void setResponse(Response<? extends IMessage> response) {
-        Pair<Class<? extends IMessage>, SingleEmitter<IMessage>> emitterPair = emitters.get(response.getMsgID());
-
-        if (emitterPair != null && emitterPair.first().isInstance(response.getMessage()) && emitterPair.second() != null) {
-            emitterPair.second().onSuccess(response.getMessage());
-            emitters.remove(response.getMsgID());
+    public void setResponse(ResponseMessage<? extends Message> response) {
+        Pair<Class<? extends Message>, SingleEmitter<Message>> pair = emitters.remove(response.getCorrespondingId());
+        if (pair != null) {
+            pair.second().onSuccess(response.getMessage());
         }
     }
 
@@ -168,7 +164,7 @@ public abstract class NettyPeerConnection implements PeerConnection {
         if (isClosed.compareAndSet(false, true)) {
             myChannel.flush();
             emitters.clear();
-            myChannel.writeAndFlush(new Leave());
+            myChannel.writeAndFlush(new LeaveMessage());
             myChannel.close();
         }
     }

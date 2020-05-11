@@ -23,7 +23,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.Future;
-import org.drasyl.core.common.messages.Message;
+import org.drasyl.core.common.message.ApplicationMessage;
 import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.node.DrasylNodeConfig;
 import org.drasyl.core.node.Messenger;
@@ -63,7 +63,7 @@ class NodeServerTest {
     private List<Runnable> beforeCloseListeners;
     private CompletableFuture<Void> startedFuture;
     private CompletableFuture<Void> stoppedFuture;
-    private Message message;
+    private ApplicationMessage message;
     private NodeServerBootstrap nodeServerBootstrap;
 
     @BeforeEach
@@ -83,7 +83,7 @@ class NodeServerTest {
         nodeServerBootstrap = mock(NodeServerBootstrap.class);
         ChannelFuture channelFuture = mock(ChannelFuture.class);
 
-        message = mock(Message.class);
+        message = mock(ApplicationMessage.class);
         String msgID = Crypto.randomString(16);
         Identity identity1 = IdentityTestHelper.random();
         Identity identity2 = IdentityTestHelper.random();
@@ -101,7 +101,7 @@ class NodeServerTest {
 
         when(message.getSender()).thenReturn(identity1);
         when(message.getRecipient()).thenReturn(identity2);
-        when(message.getMessageID()).thenReturn(msgID);
+        when(message.getId()).thenReturn(msgID);
     }
 
     @AfterEach
@@ -139,7 +139,7 @@ class NodeServerTest {
 
         server.send(message);
 
-        verify(messenger, times(1)).send(message);
+        verify(messenger).send(message);
     }
 
     @Test

@@ -1,0 +1,104 @@
+/*
+ * Copyright (c) 2020.
+ *
+ * This file is part of drasyl.
+ *
+ *  drasyl is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  drasyl is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.drasyl.core.common.message;
+
+import org.drasyl.core.common.message.action.MessageAction;
+import org.drasyl.core.common.message.action.NodeServerExceptionMessageAction;
+
+import java.util.Objects;
+
+/**
+ * A message representing an exception. Such an exception should always be handled.
+ */
+@SuppressWarnings({ "squid:S2166" })
+public class NodeServerExceptionMessage extends AbstractMessage<NodeServerExceptionMessage> implements UnrestrictedPassableMessage {
+    private final String exception;
+
+    protected NodeServerExceptionMessage() {
+        exception = null;
+    }
+
+    /**
+     * Creates a new exception message.
+     *
+     * @param exception the exception
+     */
+    public NodeServerExceptionMessage(Exception exception) {
+        this(exception.getMessage());
+    }
+
+    /**
+     * Creates a new exception message.
+     *
+     * @param exception the exception as String
+     */
+    public NodeServerExceptionMessage(String exception) {
+        this.exception = Objects.requireNonNull(exception);
+    }
+
+    /**
+     * Creates a new exception message.
+     *
+     * @param exception the exception
+     */
+    public NodeServerExceptionMessage(Throwable exception) {
+        this(exception.getMessage());
+    }
+
+    /**
+     * @return the exception
+     */
+    public String getException() {
+        return exception;
+    }
+
+    @Override
+    public MessageAction<NodeServerExceptionMessage> getAction() {
+        return new NodeServerExceptionMessageAction(this);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), exception);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        if (!super.equals(o)) {
+            return false;
+        }
+        NodeServerExceptionMessage that = (NodeServerExceptionMessage) o;
+        return Objects.equals(exception, that.exception);
+    }
+
+    @Override
+    public String toString() {
+        return "NodeServerExceptionMessage{" +
+                "exception='" + exception + '\'' +
+                ", id='" + id + '\'' +
+                ", signature=" + signature +
+                '}';
+    }
+}

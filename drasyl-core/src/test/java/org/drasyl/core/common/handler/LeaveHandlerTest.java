@@ -22,8 +22,8 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.core.common.messages.Leave;
-import org.drasyl.core.common.messages.Response;
+import org.drasyl.core.common.message.LeaveMessage;
+import org.drasyl.core.common.message.ResponseMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -33,7 +33,7 @@ class LeaveHandlerTest {
     private ChannelHandlerContext ctx;
     private ChannelFuture channelFuture;
     private LeaveHandler handler;
-    private Leave msg;
+    private LeaveMessage msg;
 
     @BeforeEach
     void setUp() {
@@ -41,17 +41,17 @@ class LeaveHandlerTest {
         handler = LeaveHandler.INSTANCE;
         Channel channel = mock(Channel.class);
         channelFuture = mock(ChannelFuture.class);
-        msg = new Leave();
+        msg = new LeaveMessage();
 
         when(ctx.channel()).thenReturn(channel);
         when(ctx.writeAndFlush(any())).thenReturn(channelFuture);
     }
 
     @Test
-    void channelRead0() throws Exception {
+    void channelRead0ShouldSendResponseOkAndThenCloseChannel() throws Exception {
         handler.channelRead0(ctx, msg);
 
-        verify(ctx).writeAndFlush(any(Response.class));
+        verify(ctx).writeAndFlush(any(ResponseMessage.class));
         verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
     }
 }

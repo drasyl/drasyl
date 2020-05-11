@@ -21,8 +21,8 @@ package org.drasyl.core.common.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
-import org.drasyl.core.common.messages.IMessage;
-import org.drasyl.core.common.messages.Reject;
+import org.drasyl.core.common.message.Message;
+import org.drasyl.core.common.message.RejectMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -32,7 +32,7 @@ import java.util.function.BooleanSupplier;
  * This handler acts as a channel creation guard. A new channel should not be created, if the {@code
  * isOpenSupplier} returns false.
  */
-public class ConnectionGuardHandler extends SimpleChannelInboundHandler<IMessage> {
+public class ConnectionGuardHandler extends SimpleChannelInboundHandler<Message> {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionGuardHandler.class);
     public static final String CONNECTION_GUARD = "connectionGuard";
     private final BooleanSupplier isOpenSupplier;
@@ -42,13 +42,13 @@ public class ConnectionGuardHandler extends SimpleChannelInboundHandler<IMessage
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, IMessage msg) {
+    protected void channelRead0(ChannelHandlerContext ctx, Message msg) {
         if (isOpenSupplier.getAsBoolean()) {
             ctx.fireChannelRead(msg);
         }
         else {
             try {
-                ctx.writeAndFlush(new Reject());
+                ctx.writeAndFlush(new RejectMessage());
                 ctx.close();
                 LOG.debug("ConnectionGuard blocked creation of channel {}.", ctx.channel().id());
             }

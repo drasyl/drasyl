@@ -20,8 +20,8 @@ package org.drasyl.core.common.handler;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.core.common.messages.IMessage;
-import org.drasyl.core.common.messages.Reject;
+import org.drasyl.core.common.message.Message;
+import org.drasyl.core.common.message.RejectMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -29,13 +29,13 @@ import static org.mockito.Mockito.*;
 
 class ConnectionGuardHandlerTest {
     private ChannelHandlerContext ctx;
-    private IMessage message;
+    private Message message;
 
     @BeforeEach
     void setUp() {
         ctx = mock(ChannelHandlerContext.class);
         Channel channel = mock(Channel.class);
-        message = mock(IMessage.class);
+        message = mock(Message.class);
 
         when(ctx.channel()).thenReturn(channel);
     }
@@ -55,7 +55,7 @@ class ConnectionGuardHandlerTest {
 
         handler.channelRead0(ctx, message);
 
-        verify(ctx).writeAndFlush(isA(Reject.class));
+        verify(ctx).writeAndFlush(isA(RejectMessage.class));
         verify(ctx).close();
     }
 }

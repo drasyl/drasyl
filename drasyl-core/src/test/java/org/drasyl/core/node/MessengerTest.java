@@ -18,7 +18,7 @@
  */
 package org.drasyl.core.node;
 
-import org.drasyl.core.common.messages.Message;
+import org.drasyl.core.common.message.ApplicationMessage;
 import org.drasyl.core.common.models.Pair;
 import org.drasyl.core.models.Code;
 import org.drasyl.core.models.DrasylException;
@@ -62,7 +62,7 @@ class MessengerTest {
         when(identityManager.getIdentity()).thenReturn(recipient);
 
         Messenger messenger = new Messenger(identityManager, peersManager, onEvent);
-        messenger.send(new Message(sender, recipient, payload));
+        messenger.send(new ApplicationMessage(sender, recipient, payload));
 
         verify(onEvent).accept(new Event(Code.MESSAGE, Pair.of(sender, payload)));
     }
@@ -73,7 +73,7 @@ class MessengerTest {
         when(peersManager.getPeer(recipient)).thenReturn(peerInformation);
         when(peerInformation.getConnections()).thenReturn(Set.of(peerConnection));
 
-        Message message = new Message(sender, recipient, payload);
+        ApplicationMessage message = new ApplicationMessage(sender, recipient, payload);
         Messenger messenger = new Messenger(identityManager, peersManager, onEvent);
         messenger.send(message);
 
@@ -87,7 +87,7 @@ class MessengerTest {
         when(peersManager.getSuperPeer()).thenReturn(Pair.of(mock(Identity.class), peerInformation));
         when(peerInformation.getConnections()).thenReturn(Set.of(peerConnection));
 
-        Message message = new Message(sender, recipient, payload);
+        ApplicationMessage message = new ApplicationMessage(sender, recipient, payload);
         Messenger messenger = new Messenger(identityManager, peersManager, onEvent);
         messenger.send(message);
 
@@ -100,7 +100,7 @@ class MessengerTest {
 
         Messenger messenger = new Messenger(identityManager, peersManager, onEvent);
         assertThrows(DrasylException.class, () -> {
-            messenger.send(new Message(sender, recipient, payload));
+            messenger.send(new ApplicationMessage(sender, recipient, payload));
         });
     }
 }

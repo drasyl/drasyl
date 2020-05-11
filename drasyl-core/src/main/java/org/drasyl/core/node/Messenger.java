@@ -18,7 +18,7 @@
  */
 package org.drasyl.core.node;
 
-import org.drasyl.core.common.messages.Message;
+import org.drasyl.core.common.message.ApplicationMessage;
 import org.drasyl.core.common.models.Pair;
 import org.drasyl.core.models.Code;
 import org.drasyl.core.models.DrasylException;
@@ -45,7 +45,7 @@ public class Messenger {
         this.onEvent = onEvent;
     }
 
-    public void send(Message message) throws DrasylException {
+    public void send(ApplicationMessage message) throws DrasylException {
         if (identityManager.getIdentity().equals(message.getRecipient())) {
             // Our node is the receiver, create message event
             onEvent.accept(new Event(Code.MESSAGE, Pair.of(message.getSender(), message.getPayload())));
@@ -65,7 +65,7 @@ public class Messenger {
         }
     }
 
-    private void sendToClient(Message message) throws ClientNotFoundException {
+    private void sendToClient(ApplicationMessage message) throws ClientNotFoundException {
         Optional<PeerInformation> peerInformation = Optional.ofNullable(peersManager.getPeer(message.getRecipient()));
 
         if (peerInformation.isPresent()) {
@@ -76,7 +76,7 @@ public class Messenger {
         }
     }
 
-    private void sendToSuperPeer(Message message) throws NoSuperPeerException {
+    private void sendToSuperPeer(ApplicationMessage message) throws NoSuperPeerException {
         Optional<Pair<Identity, PeerInformation>> superPeer = Optional.ofNullable(peersManager.getSuperPeer());
 
         if (superPeer.isPresent()) {
