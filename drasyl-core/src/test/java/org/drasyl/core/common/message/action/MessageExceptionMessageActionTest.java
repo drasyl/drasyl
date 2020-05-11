@@ -1,19 +1,18 @@
 package org.drasyl.core.common.message.action;
 
-import org.drasyl.core.common.message.NodeServerExceptionMessage;
+import org.drasyl.core.common.message.MessageExceptionMessage;
 import org.drasyl.core.common.message.ResponseMessage;
 import org.drasyl.core.common.message.StatusMessage;
 import org.drasyl.core.node.connections.ClientConnection;
 import org.drasyl.core.server.NodeServer;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-class NodeServerExceptionMessageActionTest {
-    private NodeServerExceptionMessage message;
+class MessageExceptionMessageActionTest {
+    private MessageExceptionMessage message;
     private ClientConnection clientConnection;
     private NodeServer nodeServer;
     private String correspondingId;
@@ -21,7 +20,7 @@ class NodeServerExceptionMessageActionTest {
 
     @BeforeEach
     void setUp() {
-        message = mock(NodeServerExceptionMessage.class);
+        message = mock(MessageExceptionMessage.class);
         clientConnection = mock(ClientConnection.class);
         nodeServer = mock(NodeServer.class);
         correspondingId = "correspondingId";
@@ -32,7 +31,7 @@ class NodeServerExceptionMessageActionTest {
 
     @Test
     void onMessageServerShouldShouldSendResponseOk() {
-        NodeServerExceptionMessageAction action = new NodeServerExceptionMessageAction(message);
+        MessageExceptionMessageAction action = new MessageExceptionMessageAction(message);
 
         action.onMessageServer(clientConnection, nodeServer);
 
@@ -42,7 +41,7 @@ class NodeServerExceptionMessageActionTest {
 
     @Test
     void onResponseServerShouldShouldSetResponseOk() {
-        NodeServerExceptionMessageAction action = new NodeServerExceptionMessageAction(message);
+        MessageExceptionMessageAction action = new MessageExceptionMessageAction(message);
 
         action.onResponseServer(correspondingId, clientConnection, nodeServer);
 

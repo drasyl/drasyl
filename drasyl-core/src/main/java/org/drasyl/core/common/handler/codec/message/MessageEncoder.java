@@ -47,7 +47,7 @@ public class MessageEncoder extends MessageToMessageEncoder<Message> {
     @Override
     protected void encode(ChannelHandlerContext ctx, Message msg, List<Object> out) {
         if (LOG.isDebugEnabled())
-            LOG.debug("[{}]: Send message '{}'", ctx.channel().id().asShortText(), msg);
+            LOG.debug("[{}]: Send Message '{}'", ctx.channel().id().asShortText(), msg);
 
         try {
             String json = JSON_MAPPER.writeValueAsString(msg);
@@ -55,7 +55,8 @@ public class MessageEncoder extends MessageToMessageEncoder<Message> {
             out.add(new TextWebSocketFrame(json));
         }
         catch (JsonProcessingException e) {
-            throw new IllegalArgumentException("Your request was not a valid Message Object: '" + msg + "'");
+            LOG.warn("[{}]: Invalid Message '{}'", ctx.channel().id().asShortText(), msg);
+            throw new IllegalArgumentException("Your request dit not contain a valid Message: " + e.getMessage());
         }
     }
 }

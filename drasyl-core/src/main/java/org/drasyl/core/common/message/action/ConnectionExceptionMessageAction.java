@@ -1,6 +1,7 @@
 package org.drasyl.core.common.message.action;
 
-import org.drasyl.core.common.message.NodeServerExceptionMessage;
+import org.drasyl.core.common.message.ConnectionExceptionMessage;
+import org.drasyl.core.common.message.MessageExceptionMessage;
 import org.drasyl.core.common.message.ResponseMessage;
 import org.drasyl.core.common.message.StatusMessage;
 import org.drasyl.core.node.connections.ClientConnection;
@@ -8,10 +9,10 @@ import org.drasyl.core.server.NodeServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-public class NodeServerExceptionMessageAction extends AbstractMessageAction<NodeServerExceptionMessage> implements RespondableServerMessageAction<NodeServerExceptionMessage> {
-    private static final Logger LOG = LoggerFactory.getLogger(NodeServerExceptionMessageAction.class);
+public class ConnectionExceptionMessageAction extends AbstractMessageAction<ConnectionExceptionMessage> implements RespondableServerMessageAction<ConnectionExceptionMessage> {
+    private static final Logger LOG = LoggerFactory.getLogger(ConnectionExceptionMessageAction.class);
 
-    public NodeServerExceptionMessageAction(NodeServerExceptionMessage message) {
+    public ConnectionExceptionMessageAction(ConnectionExceptionMessage message) {
         super(message);
     }
 

@@ -18,12 +18,9 @@
  */
 package org.drasyl.core.common.handler;
 
-import org.drasyl.core.common.message.NodeServerExceptionMessage;
+import org.drasyl.core.common.message.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.drasyl.core.common.message.LeaveMessage;
-import org.drasyl.core.common.message.PingMessage;
-import org.drasyl.core.common.message.PongMessage;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
@@ -63,7 +60,7 @@ class PingPongHandlerTest {
         PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(2));
         handler.userEventTriggered(ctx, evt);
 
-        verify(ctx).writeAndFlush(any(NodeServerExceptionMessage.class));
+        verify(ctx).writeAndFlush(any(ConnectionExceptionMessage.class));
     }
 
     @Test

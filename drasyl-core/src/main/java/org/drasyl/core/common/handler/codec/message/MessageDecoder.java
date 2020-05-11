@@ -50,13 +50,14 @@ public class MessageDecoder extends MessageToMessageDecoder<TextWebSocketFrame> 
     @Override
     protected void decode(ChannelHandlerContext ctx, TextWebSocketFrame msg, List<Object> out) {
         if (LOG.isDebugEnabled())
-            LOG.debug("[{}]: Receive message '{}'", ctx.channel().id().asShortText(), msg.text());
+            LOG.debug("[{}]: Receive Message '{}'", ctx.channel().id().asShortText(), msg.text());
 
         try {
             Message message = requireNonNull(JSON_MAPPER.readValue(msg.text(), Message.class));
             out.add(message);
         } catch (IOException e) {
-            throw new IllegalArgumentException("Your request was not a valid Message Object: '" + msg.text() + "'");
+            LOG.warn("[{}]: Invalid Message: '{}'", ctx.channel().id().asShortText(), msg.text());
+            throw new IllegalArgumentException("Your request dit not contain a valid Message: " + e.getMessage());
         }
     }
 }

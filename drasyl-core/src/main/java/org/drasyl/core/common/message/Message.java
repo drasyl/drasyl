@@ -33,9 +33,10 @@ import org.drasyl.crypto.Signable;
 @JsonSubTypes({
         @JsonSubTypes.Type(value = ApplicationMessage.class),
         @JsonSubTypes.Type(value = ClientsStocktakingMessage.class),
+        @JsonSubTypes.Type(value = ConnectionExceptionMessage.class),
         @JsonSubTypes.Type(value = JoinMessage.class),
         @JsonSubTypes.Type(value = LeaveMessage.class),
-        @JsonSubTypes.Type(value = NodeServerExceptionMessage.class),
+        @JsonSubTypes.Type(value = MessageExceptionMessage.class),
         @JsonSubTypes.Type(value = PingMessage.class),
         @JsonSubTypes.Type(value = PongMessage.class),
         @JsonSubTypes.Type(value = RejectMessage.class),

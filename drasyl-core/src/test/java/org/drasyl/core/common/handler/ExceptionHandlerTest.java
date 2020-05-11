@@ -19,7 +19,7 @@
 
 package org.drasyl.core.common.handler;
 
-import org.drasyl.core.common.message.NodeServerExceptionMessage;
+import org.drasyl.core.common.message.MessageExceptionMessage;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
@@ -83,7 +83,7 @@ class ExceptionHandlerTest {
         handler.exceptionCaught(ctx, cause);
 
         assertEquals(cause, handler.handledCause);
-        verify(ctx).writeAndFlush(any(NodeServerExceptionMessage.class));
+        verify(ctx).writeAndFlush(any(MessageExceptionMessage.class));
     }
 
     // do nothing
@@ -93,7 +93,7 @@ class ExceptionHandlerTest {
         handler.exceptionCaught(ctx, new ClosedChannelException());
 
         assertNull(handler.handledCause);
-        verify(ctx, never()).writeAndFlush(any(NodeServerExceptionMessage.class));
+        verify(ctx, never()).writeAndFlush(any(MessageExceptionMessage.class));
     }
 
     // sendMSG the exception as exception message and pass to the next handler in the pipeline
@@ -103,7 +103,7 @@ class ExceptionHandlerTest {
         handler.exceptionCaught(ctx, cause);
 
         assertEquals(cause, handler.handledCause);
-        verify(ctx).writeAndFlush(any(NodeServerExceptionMessage.class));
+        verify(ctx).writeAndFlush(any(MessageExceptionMessage.class));
         verify(ctx).fireExceptionCaught(cause);
     }
 
@@ -114,7 +114,7 @@ class ExceptionHandlerTest {
         handler.exceptionCaught(ctx, cause);
 
         assertEquals(cause, handler.handledCause);
-        verify(ctx, never()).writeAndFlush(any(NodeServerExceptionMessage.class));
+        verify(ctx, never()).writeAndFlush(any(MessageExceptionMessage.class));
         verify(ctx).fireExceptionCaught(cause);
     }
 }

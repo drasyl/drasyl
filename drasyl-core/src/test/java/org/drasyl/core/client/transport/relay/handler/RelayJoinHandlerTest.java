@@ -1,7 +1,7 @@
 package org.drasyl.core.client.transport.relay.handler;
 
 import org.drasyl.core.common.message.WelcomeMessage;
-import org.drasyl.core.common.message.NodeServerExceptionMessage;
+import org.drasyl.core.common.message.MessageExceptionMessage;
 import org.drasyl.core.common.message.JoinMessage;
 import org.drasyl.core.common.message.ResponseMessage;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -19,7 +19,7 @@ public class RelayJoinHandlerTest {
     private Duration duration;
     private Request<JoinMessage> joinRequest;
     private WelcomeMessage welcome;
-    private NodeServerExceptionMessage NodeServerException;
+    private MessageExceptionMessage NodeServerException;
     private RelayJoinHandler handler;
     private EmbeddedChannel channel;
     private ResponseMessage response;
@@ -29,7 +29,7 @@ public class RelayJoinHandlerTest {
         joinRequest = mock(Request.class);
         duration = Duration.ofSeconds(1);
         welcome = mock(WelcomeMessage.class);
-        NodeServerException = mock(NodeServerExceptionMessage.class);
+        NodeServerException = mock(MessageExceptionMessage.class);
         response = mock(ResponseMessage.class);
         handler = new RelayJoinHandler(joinRequest, duration, CompletableFuture.completedFuture(null));
     }

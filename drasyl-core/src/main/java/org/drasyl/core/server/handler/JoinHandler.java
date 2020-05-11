@@ -62,7 +62,7 @@ public class JoinHandler extends SimpleChannelDuplexHandler<Message, Message> {
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         timeoutFuture = ctx.executor().schedule(() -> {
             if (!timeoutFuture.isCancelled() && !authenticated.get()) {
-                ctx.writeAndFlush(new NodeServerExceptionMessage("Handshake did not take place successfully in " + timeout + " ms. " +
+                ctx.writeAndFlush(new MessageExceptionMessage("Handshake did not take place successfully in " + timeout + " ms. " +
                         "Connection is closed."));
                 ctx.close();
                 LOG.debug("{} Handshake did not take place successfully in {} ms. "
@@ -100,7 +100,7 @@ public class JoinHandler extends SimpleChannelDuplexHandler<Message, Message> {
     protected void channelRead0(ChannelHandlerContext ctx, Message request) throws Exception {
         if (authenticated.get()) {
             if (request instanceof JoinMessage) {
-                ctx.writeAndFlush(new ResponseMessage<>(new NodeServerExceptionMessage("This client has already an open "
+                ctx.writeAndFlush(new ResponseMessage<>(new MessageExceptionMessage("This client has already an open "
                         + "session with this node server. No need to authenticate twice."), request.getId()));
                 ReferenceCountUtil.release(request);
             }

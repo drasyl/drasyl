@@ -4,7 +4,7 @@ import org.drasyl.core.client.transport.direct.messages.AkkaMessage;
 import org.drasyl.core.common.handler.SimpleChannelDuplexHandler;
 import org.drasyl.core.common.message.ApplicationMessage;
 import org.drasyl.core.common.message.Message;
-import org.drasyl.core.common.message.NodeServerExceptionMessage;
+import org.drasyl.core.common.message.MessageExceptionMessage;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.core.node.identity.Identity;
 import org.slf4j.Logger;
@@ -42,8 +42,8 @@ public class RelayMessageHandler extends SimpleChannelDuplexHandler<Message, Akk
                     fMsg.getRecipient().getId()
             ));
         }
-        else if (message instanceof NodeServerExceptionMessage) {
-            throw new RelayMessageHandlerException(((NodeServerExceptionMessage) message).getException());
+        else if (message instanceof MessageExceptionMessage) {
+            throw new RelayMessageHandlerException(((MessageExceptionMessage) message).getException());
         }
         else {
             log.debug("Discard unknown received message: {}", message);

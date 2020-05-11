@@ -46,7 +46,6 @@ import org.drasyl.core.server.testutils.TestHelper;
 import org.drasyl.core.server.testutils.TestServerConnection;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
-import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.parallel.Execution;
@@ -296,8 +295,8 @@ public class NodeServerIT {
             clientConnections.add(session);
 
             session.addListener(message -> {
-                if (message instanceof NodeServerExceptionMessage) {
-                    NodeServerExceptionMessage e = (NodeServerExceptionMessage) message;
+                if (message instanceof MessageExceptionMessage) {
+                    MessageExceptionMessage e = (MessageExceptionMessage) message;
 
                     assertEquals(
                             "Handshake did not take place successfully in "
@@ -332,7 +331,7 @@ public class NodeServerIT {
             TestServerConnection session = TestServerConnection.buildAutoJoin(server);
             clientConnections.add(session);
 
-            session.addListener(message -> assertThat(message, is(not(instanceOf(NodeServerExceptionMessage.class)))));
+            session.addListener(message -> assertThat(message, is(not(instanceOf(MessageExceptionMessage.class)))));
 
             // Wait until timeout
             Thread.sleep(server.getConfig().getServerHandshakeTimeout().toMillis() + 2000);// NOSONAR
@@ -360,13 +359,18 @@ public class NodeServerIT {
             clientConnections.add(session);
 
             session.addListener(message -> {
-                if (message instanceof NodeServerExceptionMessage) {
-                    NodeServerExceptionMessage e = (NodeServerExceptionMessage) message;
+                if (message instanceof MessageExceptionMessage) {
+                    MessageExceptionMessage e = (MessageExceptionMessage) message;
 
-                    assertThat(e.getException(), anyOf(
-                            equalTo("java.lang.IllegalArgumentException: Your request was not a valid Message Object: 'invalid message'"),
-                            equalTo("Exception occurred during initialization stage. The connection will shut down.")
-                    ));
+                    assertEquals("java.lang.IllegalArgumentException: Your request dit not contain a valid Message: Unrecognized token 'invalid': was expecting ('true', 'false' or 'null')\n" +
+                            " at [Source: (String)\"invalid message\"; line: 1, column: 8]", e.getException());
+
+                    lock.countDown();
+                }
+                if (message instanceof ConnectionExceptionMessage) {
+                    ConnectionExceptionMessage e = (ConnectionExceptionMessage) message;
+
+                    assertEquals("Exception occurred during initialization stage. The connection will shut down.", e.getException());
 
                     lock.countDown();
                 }
@@ -428,7 +432,7 @@ public class NodeServerIT {
             TestServerConnection session = TestServerConnection.buildAutoJoin(server);
             clientConnections.add(session);
 
-            session.send(new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of()), NodeServerExceptionMessage.class)
+            session.send(new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of()), MessageExceptionMessage.class)
                     .subscribe(response -> {
                         Assert.assertEquals("This client has already an open "
                                 + "session with this node server. No need to authenticate twice.", response.getException());
@@ -455,8 +459,8 @@ public class NodeServerIT {
             clientConnections.add(session);
 
             session.addListener(message -> {
-                if (message instanceof NodeServerExceptionMessage) {
-                    NodeServerExceptionMessage m = (NodeServerExceptionMessage) message;
+                if (message instanceof MessageExceptionMessage) {
+                    MessageExceptionMessage m = (MessageExceptionMessage) message;
                     assertThat(m.getException(),
                             is(equalTo("Max retries for ping/pong requests reached. Connection will be closed.")));
                     lock.countDown();
@@ -488,7 +492,7 @@ public class NodeServerIT {
             TestServerConnection session = TestServerConnection.buildAutoJoin(server);
             clientConnections.add(session);
 
-            session.addListener(message -> assertThat(message, is(not(instanceOf(NodeServerExceptionMessage.class)))));
+            session.addListener(message -> assertThat(message, is(not(instanceOf(MessageExceptionMessage.class)))));
 
             // Wait until timeout
             Thread.sleep(server.getConfig().getServerIdleTimeout().toMillis() * (server.getConfig().getServerIdleRetries() + 1) + 1000);// NOSONAR
@@ -536,7 +540,7 @@ public class NodeServerIT {
             TestServerConnection session = TestServerConnection.build(server);
             clientConnections.add(session);
 
-            ResponseMessage<NodeServerExceptionMessage> msg = new ResponseMessage<>(new NodeServerExceptionMessage("Test"), Crypto.randomString(12));
+            ResponseMessage<MessageExceptionMessage> msg = new ResponseMessage<>(new MessageExceptionMessage("Test"), Crypto.randomString(12));
 
             session.send(msg, StatusMessage.class).subscribe(response -> {
                 assertThat(response, anyOf(

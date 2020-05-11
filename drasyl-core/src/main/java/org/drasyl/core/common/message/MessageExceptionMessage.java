@@ -19,18 +19,18 @@
 package org.drasyl.core.common.message;
 
 import org.drasyl.core.common.message.action.MessageAction;
-import org.drasyl.core.common.message.action.NodeServerExceptionMessageAction;
+import org.drasyl.core.common.message.action.MessageExceptionMessageAction;
 
 import java.util.Objects;
 
 /**
- * A message representing an exception. Such an exception should always be handled.
+ * A message representing an exception that refers to a message. Such an exception should always be handled.
  */
 @SuppressWarnings({ "squid:S2166" })
-public class NodeServerExceptionMessage extends AbstractMessage<NodeServerExceptionMessage> implements UnrestrictedPassableMessage {
+public class MessageExceptionMessage extends AbstractMessage<MessageExceptionMessage> implements UnrestrictedPassableMessage {
     private final String exception;
 
-    protected NodeServerExceptionMessage() {
+    protected MessageExceptionMessage() {
         exception = null;
     }
 
@@ -39,7 +39,7 @@ public class NodeServerExceptionMessage extends AbstractMessage<NodeServerExcept
      *
      * @param exception the exception
      */
-    public NodeServerExceptionMessage(Exception exception) {
+    public MessageExceptionMessage(Exception exception) {
         this(exception.getMessage());
     }
 
@@ -48,7 +48,7 @@ public class NodeServerExceptionMessage extends AbstractMessage<NodeServerExcept
      *
      * @param exception the exception as String
      */
-    public NodeServerExceptionMessage(String exception) {
+    public MessageExceptionMessage(String exception) {
         this.exception = Objects.requireNonNull(exception);
     }
 
@@ -57,7 +57,7 @@ public class NodeServerExceptionMessage extends AbstractMessage<NodeServerExcept
      *
      * @param exception the exception
      */
-    public NodeServerExceptionMessage(Throwable exception) {
+    public MessageExceptionMessage(Throwable exception) {
         this(exception.getMessage());
     }
 
@@ -69,8 +69,8 @@ public class NodeServerExceptionMessage extends AbstractMessage<NodeServerExcept
     }
 
     @Override
-    public MessageAction<NodeServerExceptionMessage> getAction() {
-        return new NodeServerExceptionMessageAction(this);
+    public MessageAction<MessageExceptionMessage> getAction() {
+        return new MessageExceptionMessageAction(this);
     }
 
     @Override
@@ -89,13 +89,13 @@ public class NodeServerExceptionMessage extends AbstractMessage<NodeServerExcept
         if (!super.equals(o)) {
             return false;
         }
-        NodeServerExceptionMessage that = (NodeServerExceptionMessage) o;
+        MessageExceptionMessage that = (MessageExceptionMessage) o;
         return Objects.equals(exception, that.exception);
     }
 
     @Override
     public String toString() {
-        return "NodeServerExceptionMessage{" +
+        return "MessageExceptionMessage{" +
                 "exception='" + exception + '\'' +
                 ", id='" + id + '\'' +
                 ", signature=" + signature +

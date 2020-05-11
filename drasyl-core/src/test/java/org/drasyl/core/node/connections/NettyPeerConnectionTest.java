@@ -25,7 +25,7 @@ import io.netty.channel.ChannelId;
 import io.reactivex.rxjava3.core.SingleEmitter;
 import org.drasyl.core.common.message.Message;
 import org.drasyl.core.common.message.LeaveMessage;
-import org.drasyl.core.common.message.NodeServerExceptionMessage;
+import org.drasyl.core.common.message.MessageExceptionMessage;
 import org.drasyl.core.common.message.ResponseMessage;
 import org.drasyl.core.common.models.Pair;
 import org.drasyl.core.node.identity.Identity;
@@ -52,7 +52,7 @@ class NettyPeerConnectionTest {
     private URI endpoint;
     private Identity myid;
     private String userAgent;
-    private NodeServerExceptionMessage exceptionMessage;
+    private MessageExceptionMessage messageExceptionMessage;
     private Message message;
     private ChannelFuture channelFuture;
     private AtomicBoolean isClosed;
@@ -66,7 +66,7 @@ class NettyPeerConnectionTest {
         endpoint = new URI("ws://localhost:22527/");
         myid = IdentityTestHelper.random();
         userAgent = "";
-        exceptionMessage = mock(NodeServerExceptionMessage.class);
+        messageExceptionMessage = mock(MessageExceptionMessage.class);
         message = mock(Message.class);
         channelFuture = mock(ChannelFuture.class);
         ChannelId channelId = mock(ChannelId.class);
@@ -128,8 +128,8 @@ class NettyPeerConnectionTest {
         }, onError -> {
         });
         peerConnection.send(message);
-        peerConnection.send(exceptionMessage);
-        peerConnection.send(new ResponseMessage<>(exceptionMessage, msgID));
+        peerConnection.send(messageExceptionMessage);
+        peerConnection.send(new ResponseMessage<>(messageExceptionMessage, msgID));
 
         verify(channel, never()).writeAndFlush(any(Message.class));
     }

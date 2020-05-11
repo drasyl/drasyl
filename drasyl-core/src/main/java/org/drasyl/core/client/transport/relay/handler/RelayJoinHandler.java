@@ -2,7 +2,7 @@ package org.drasyl.core.client.transport.relay.handler;
 
 import org.drasyl.core.common.message.JoinMessage;
 import org.drasyl.core.common.message.Message;
-import org.drasyl.core.common.message.NodeServerExceptionMessage;
+import org.drasyl.core.common.message.MessageExceptionMessage;
 import org.drasyl.core.common.message.WelcomeMessage;
 import io.netty.channel.ChannelException;
 import io.netty.channel.ChannelHandlerContext;
@@ -73,8 +73,8 @@ public class RelayJoinHandler extends SimpleChannelInboundHandler<Message> imple
                 joinRequest.getResponse().thenAccept(message -> {
                     if (message instanceof WelcomeMessage) {
                         confirmJoin(ctx);
-                    } else if (message instanceof NodeServerExceptionMessage) {
-                        failJoin(new RelayJoinException(((NodeServerExceptionMessage) message).getException()));
+                    } else if (message instanceof MessageExceptionMessage) {
+                        failJoin(new RelayJoinException(((MessageExceptionMessage) message).getException()));
                     }
                 });
             }

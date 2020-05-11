@@ -19,10 +19,7 @@
 
 package org.drasyl.core.common.handler;
 
-import org.drasyl.core.common.message.NodeServerExceptionMessage;
-import org.drasyl.core.common.message.Message;
-import org.drasyl.core.common.message.PingMessage;
-import org.drasyl.core.common.message.PongMessage;
+import org.drasyl.core.common.message.*;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
@@ -70,8 +67,8 @@ public class PingPongHandler extends SimpleChannelInboundHandler<Message> {
             IdleStateEvent e = (IdleStateEvent) evt;
             if (e.state() == IdleState.READER_IDLE) {
                 if (counter.getAndIncrement() > retries) {
-                    ctx.writeAndFlush(new NodeServerExceptionMessage(
-                            "Max retries for ping/pong requests reached. Connection will be closed."));
+                    ctx.writeAndFlush(new ConnectionExceptionMessage(
+                            "Too many PingMessages were not answered with a PongMessage. Connection will be closed."));
                     ctx.close();
                 } else {
                     ctx.writeAndFlush(new PingMessage());
