@@ -81,6 +81,7 @@ public class NodeServerIT {
     DrasylNodeConfig config;
     private static EventLoopGroup workerGroup;
     private static EventLoopGroup bossGroup;
+    private Messenger messenger;
 
     @BeforeAll
     public static void beforeAll() {
@@ -99,7 +100,7 @@ public class NodeServerIT {
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
         identityManager = mock(IdentityManager.class);
         PeersManager peersManager = new PeersManager();
-        Messenger messenger = new Messenger(identityManager, peersManager, event -> {
+        messenger = new Messenger(identityManager, peersManager, event -> {
         });
 
         config = new DrasylNodeConfig(
@@ -639,7 +640,7 @@ public class NodeServerIT {
 
     @Test
     public void shouldOpenAndCloseGracefully() throws DrasylException {
-        NodeServer server = new NodeServer(identityManager, mock(Messenger.class), mock(PeersManager.class), workerGroup, bossGroup);
+        NodeServer server = new NodeServer(identityManager, messenger, mock(PeersManager.class), workerGroup, bossGroup);
 
         server.open();
         server.close();

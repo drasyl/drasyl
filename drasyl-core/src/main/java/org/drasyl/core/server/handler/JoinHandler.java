@@ -65,7 +65,7 @@ public class JoinHandler extends SimpleChannelDuplexHandler<Message, Message> {
                 ctx.writeAndFlush(new MessageExceptionMessage("Handshake did not take place successfully in " + timeout + " ms. " +
                         "Connection is closed."));
                 ctx.close();
-                LOG.debug("{} Handshake did not take place successfully in {} ms. "
+                LOG.debug("[{}]: Handshake did not take place successfully in {} ms. "
                         + "Connection is closed.", ctx.channel().id(), timeout);
             }
         }, timeout, TimeUnit.MILLISECONDS);

@@ -148,7 +148,7 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<Message> {
                     uri = getRemoteAddr(myChannel);
                 }
                 catch (URISyntaxException e) {
-                    LOG.error("Cannot determine URI: ", e);
+                    LOG.error("[{}]: Cannot determine URI: {}", ctx.channel().id().asShortText(), e.getMessage());
                 }
             }
 
@@ -157,7 +157,7 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<Message> {
             sessionReadyFuture.complete(clientConnection);
             ctx.pipeline().remove(KILL_SWITCH);
             ctx.pipeline().remove(CONNECTION_GUARD);
-            LOG.debug("Create new channel {}, for ClientConnection {}", ctx.channel().id(), clientConnection);
+            LOG.debug("[{}]: Create new channel {}, for ClientConnection {}", ctx.channel().id().asShortText(), ctx.channel().id(), clientConnection);
         }
     }
 
