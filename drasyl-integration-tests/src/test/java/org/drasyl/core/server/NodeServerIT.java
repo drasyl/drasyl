@@ -434,7 +434,7 @@ public class NodeServerIT {
 
             session.send(new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of()), MessageExceptionMessage.class)
                     .subscribe(response -> {
-                        Assert.assertEquals("This client has already an open "
+                        assertEquals("This client has already an open "
                                 + "session with this node server. No need to authenticate twice.", response.getException());
                         lock.countDown();
                     });
