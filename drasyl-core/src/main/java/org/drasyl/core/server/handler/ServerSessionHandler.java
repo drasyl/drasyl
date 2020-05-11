@@ -89,7 +89,7 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<Message> {
     public void handlerAdded(final ChannelHandlerContext ctx) {
         ctx.channel().closeFuture().addListener(future -> {
             if (clientConnection != null) {
-                server.getPeersManager().getPeer(clientConnection.getIdentity()).removePeerConnection(clientConnection);
+                server.getMessenger().getConnectionsManager().closeConnection(clientConnection);
             }
         });
     }
@@ -129,19 +129,6 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<Message> {
             JoinMessage jm = (JoinMessage) msg;
             Identity identity = Identity.of(jm.getPublicKey());
             Channel myChannel = ctx.channel();
-
-            // close and remove any existing sessions that may exist
-            PeerInformation peerInformation = server.getPeersManager().getPeer(identity);
-            if (peerInformation != null) {
-                Optional<PeerConnection> existingServerSessionOptional = peerInformation.getConnections().stream().filter(peerConnection -> peerConnection instanceof ClientConnection && peerConnection.getIdentity().equals(identity)).findFirst();
-
-                if (existingServerSessionOptional.isPresent()) {
-                    PeerConnection existingServerSession = existingServerSessionOptional.get();
-                    LOG.debug("There is an existing Session for Node '{}'. Replace and close existing Session '{}' before adding new Session", identity, existingServerSession);
-                    peerInformation.removePeerConnection(existingServerSession);
-                    existingServerSession.close();
-                }
-            }
 
             if (uri == null) {
                 try {

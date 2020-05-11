@@ -33,6 +33,7 @@ import org.drasyl.core.models.CompressedKeyPair;
 import org.drasyl.core.models.CompressedPrivateKey;
 import org.drasyl.core.models.CompressedPublicKey;
 import org.drasyl.core.models.DrasylException;
+import org.drasyl.core.node.ConnectionsManager;
 import org.drasyl.core.node.DrasylNodeConfig;
 import org.drasyl.core.node.Messenger;
 import org.drasyl.core.node.PeersManager;
@@ -100,8 +101,8 @@ public class NodeServerIT {
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
         identityManager = mock(IdentityManager.class);
         PeersManager peersManager = new PeersManager();
-        messenger = new Messenger(identityManager, peersManager, event -> {
-        });
+        ConnectionsManager connectionsManager = new ConnectionsManager();
+        messenger = new Messenger(identityManager, event -> {}, connectionsManager);
 
         config = new DrasylNodeConfig(
                 ConfigFactory.load("configs/ClientTest.conf"));

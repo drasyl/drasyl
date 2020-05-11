@@ -22,9 +22,13 @@ public class JoinMessageAction extends AbstractMessageAction<JoinMessage> implem
         requireNonNull(nodeServer);
 
         Identity peerIdentity = Identity.of(message.getPublicKey());
+
+        // store connection
+        nodeServer.getMessenger().getConnectionsManager().addConnection(session);
+
+        // store peer information
         PeerInformation peerInformation = new PeerInformation();
         peerInformation.setPublicKey(message.getPublicKey());
-        peerInformation.addPeerConnection(session);
         peerInformation.addEndpoint(message.getEndpoints());
         nodeServer.getPeersManager().addPeer(peerIdentity, peerInformation);
         nodeServer.getPeersManager().addChildren(peerIdentity);
