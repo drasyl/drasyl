@@ -7,9 +7,7 @@ import org.drasyl.core.common.message.StatusMessage;
 import org.drasyl.core.common.message.WelcomeMessage;
 import org.drasyl.core.models.CompressedKeyPair;
 import org.drasyl.core.models.CompressedPublicKey;
-import org.drasyl.core.node.DrasylNodeConfig;
-import org.drasyl.core.node.PeerInformation;
-import org.drasyl.core.node.PeersManager;
+import org.drasyl.core.node.*;
 import org.drasyl.core.node.connections.ClientConnection;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.node.identity.IdentityManager;
@@ -35,6 +33,8 @@ class JoinMessageActionTest {
     private String id;
     private IdentityManager identityManager;
     private CompressedKeyPair keyPair;
+    private Messenger messenger;
+    private ConnectionsManager connectionsManager;
 
     @BeforeEach
     void setUp() {
@@ -48,6 +48,8 @@ class JoinMessageActionTest {
 
         identityManager = mock(IdentityManager.class);
         keyPair = mock(CompressedKeyPair.class);
+        messenger = mock(Messenger.class);
+        connectionsManager = mock(ConnectionsManager.class);
 
         when(compressedPublicKey.toString()).thenReturn(IdentityTestHelper.random().getId());
         when(nodeServer.getPeersManager()).thenReturn(peersManager);
@@ -55,6 +57,8 @@ class JoinMessageActionTest {
         when(identityManager.getKeyPair()).thenReturn(keyPair);
         when(keyPair.getPublicKey()).thenReturn(compressedPublicKey);
         when(nodeServer.getEntryPoints()).thenReturn(Set.of(URI.create("ws://testURI")));
+        when(nodeServer.getMessenger()).thenReturn(messenger);
+        when(messenger.getConnectionsManager()).thenReturn(connectionsManager);
     }
 
     @Test
@@ -68,7 +72,6 @@ class JoinMessageActionTest {
 
         PeerInformation myPeerInformation = new PeerInformation();
         myPeerInformation.setPublicKey(message.getPublicKey());
-        myPeerInformation.addPeerConnection(session);
         myPeerInformation.addEndpoint(message.getEndpoints());
 
         verify(peersManager).addPeer(Identity.of(compressedPublicKey), myPeerInformation);

@@ -88,7 +88,7 @@ public abstract class DrasylNode {
             this.config = new DrasylNodeConfig(config);
             this.identityManager = new IdentityManager(this.config);
             this.peersManager = new PeersManager();
-            this.messenger = new Messenger(identityManager, peersManager, this::onEvent);
+            this.messenger = new Messenger(identityManager, this::onEvent);
             this.server = new NodeServer(identityManager, messenger, peersManager, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP);
             this.superPeerClient = new SuperPeerClient(this.config, identityManager, peersManager, messenger);
             this.started = new AtomicBoolean();

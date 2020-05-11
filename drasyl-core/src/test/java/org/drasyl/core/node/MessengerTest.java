@@ -37,68 +37,64 @@ import static org.mockito.Mockito.*;
 
 class MessengerTest {
     private IdentityManager identityManager;
-    private PeersManager peersManager;
     private Consumer<Event> onEvent;
     private Identity sender;
     private Identity recipient;
     private byte[] payload;
-    private PeerInformation peerInformation;
     private PeerConnection peerConnection;
+    private ConnectionsManager connectionsManager;
 
     @BeforeEach
     void setUp() {
         identityManager = mock(IdentityManager.class);
-        peersManager = mock(PeersManager.class);
         onEvent = mock(Consumer.class);
         sender = mock(Identity.class);
         recipient = mock(Identity.class);
         payload = new byte[]{ 0x4f };
-        peerInformation = mock(PeerInformation.class);
         peerConnection = mock(PeerConnection.class);
+        connectionsManager = mock(ConnectionsManager.class);
     }
 
     @Test
-    public void sendShouldSendTheMessageToItself() throws DrasylException {
+    public void sendShouldHandleMessagesAddressedToItSelf() throws DrasylException {
         when(identityManager.getIdentity()).thenReturn(recipient);
 
-        Messenger messenger = new Messenger(identityManager, peersManager, onEvent);
+        Messenger messenger = new Messenger(identityManager, onEvent, connectionsManager);
         messenger.send(new ApplicationMessage(sender, recipient, payload));
 
         verify(onEvent).accept(new Event(Code.MESSAGE, Pair.of(sender, payload)));
     }
 
     @Test
-    public void sendShouldSendTheMessageToOtherRecipientLocally() throws DrasylException {
+    public void sendShouldHandleMessagesAddressedToClients() throws DrasylException {
         when(identityManager.getIdentity()).thenReturn(sender);
-        when(peersManager.getPeer(recipient)).thenReturn(peerInformation);
-        when(peerInformation.getConnections()).thenReturn(Set.of(peerConnection));
+        when(connectionsManager.getConnection(any())).thenReturn(peerConnection);
 
         ApplicationMessage message = new ApplicationMessage(sender, recipient, payload);
-        Messenger messenger = new Messenger(identityManager, peersManager, onEvent);
+        Messenger messenger = new Messenger(identityManager, onEvent, connectionsManager);
         messenger.send(message);
 
         verify(peerConnection).send(message);
     }
 
     @Test
-    public void sendShouldSendTheMessageToOtherRecipientRemotely() throws DrasylException {
+    public void sendShouldHandleMessagesAddressedToUnknownClientsWithSuperPeerPresent() throws DrasylException {
         when(identityManager.getIdentity()).thenReturn(sender);
-        when(peersManager.getPeer(recipient)).thenReturn(null);
-        when(peersManager.getSuperPeer()).thenReturn(Pair.of(mock(Identity.class), peerInformation));
-        when(peerInformation.getConnections()).thenReturn(Set.of(peerConnection));
+        when(connectionsManager.getConnection(any())).thenReturn(null).thenReturn(peerConnection);
 
         ApplicationMessage message = new ApplicationMessage(sender, recipient, payload);
-        Messenger messenger = new Messenger(identityManager, peersManager, onEvent);
+        Messenger messenger = new Messenger(identityManager, onEvent, connectionsManager);
         messenger.send(message);
 
         verify(peerConnection).send(message);
     }
 
     @Test
-    public void sendShouldSendFailIfSuperIsNotAvailable() {
+    public void sendShouldFailForMessagesAddressedToUnknownClientsWithNoSuperPeerPresent() {
         when(identityManager.getIdentity()).thenReturn(sender);
+        when(connectionsManager.getConnection(any())).thenReturn(null).thenReturn(null);
 
-        Messenger messenger = new Messenger(identityManager, peersManager, onEvent);
+        Messenger messenger = new Messenger(identityManager, onEvent, connectionsManager);
         assertThrows(DrasylException.class, () -> {
             messenger.send(new ApplicationMessage(sender, recipient, payload));
         });

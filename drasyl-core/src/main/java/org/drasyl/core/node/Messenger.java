@@ -23,11 +23,14 @@ import org.drasyl.core.common.models.Pair;
 import org.drasyl.core.models.Code;
 import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.models.Event;
-import org.drasyl.core.node.identity.Identity;
+import org.drasyl.core.node.connections.PeerConnection;
 import org.drasyl.core.node.identity.IdentityManager;
 
+import java.util.Collection;
 import java.util.Optional;
 import java.util.function.Consumer;
+
+import static java.util.Optional.ofNullable;
 
 /**
  * The Messenger is responsible for sending messages to the recipient. Depending on the recipient,
@@ -35,17 +38,28 @@ import java.util.function.Consumer;
  */
 public class Messenger {
     private final IdentityManager identityManager;
-    private final PeersManager peersManager;
     private final Consumer<Event> onEvent;
+    private final ConnectionsManager connectionsManager;
 
     public Messenger(IdentityManager identityManager,
-                     PeersManager peersManager, Consumer<Event> onEvent) {
+                     Consumer<Event> onEvent,
+                     ConnectionsManager connectionsManager) {
         this.identityManager = identityManager;
-        this.peersManager = peersManager;
         this.onEvent = onEvent;
+        this.connectionsManager = connectionsManager;
+    }
+
+    public Messenger(IdentityManager identityManager, Consumer<Event> onEvent) {
+        this(identityManager, onEvent, new ConnectionsManager());
+    }
+
+    public ConnectionsManager getConnectionsManager() {
+        return connectionsManager;
     }
 
     public void send(ApplicationMessage message) throws DrasylException {
+        // TODO: Use PeerConnection for sending to our node. Then we would have a common interface
+        //  for sending to our Peer, Clients and the Super Peer
         if (identityManager.getIdentity().equals(message.getRecipient())) {
             // Our node is the receiver, create message event
             onEvent.accept(new Event(Code.MESSAGE, Pair.of(message.getSender(), message.getPayload())));
@@ -66,10 +80,10 @@ public class Messenger {
     }
 
     private void sendToClient(ApplicationMessage message) throws ClientNotFoundException {
-        Optional<PeerInformation> peerInformation = Optional.ofNullable(peersManager.getPeer(message.getRecipient()));
+        Optional<PeerConnection> connection = ofNullable(this.connectionsManager.getConnection(message.getRecipient()));
 
-        if (peerInformation.isPresent()) {
-            peerInformation.get().getConnections().iterator().next().send(message);
+        if (connection.isPresent()) {
+            connection.get().send(message);
         }
         else {
             throw new ClientNotFoundException("Can't found client: '" + message.getRecipient() + "'");
@@ -77,10 +91,10 @@ public class Messenger {
     }
 
     private void sendToSuperPeer(ApplicationMessage message) throws NoSuperPeerException {
-        Optional<Pair<Identity, PeerInformation>> superPeer = Optional.ofNullable(peersManager.getSuperPeer());
+        Optional<PeerConnection> connection = ofNullable(this.connectionsManager.getConnection(message.getRecipient()));
 
-        if (superPeer.isPresent()) {
-            superPeer.get().second().getConnections().iterator().next().send(message);
+        if (connection.isPresent()) {
+            connection.get().send(message);
         }
         else {
             throw new NoSuperPeerException();

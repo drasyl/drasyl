@@ -27,11 +27,8 @@ import org.drasyl.core.common.message.Message;
 import org.drasyl.core.common.message.ApplicationMessage;
 import org.drasyl.core.common.message.AbstractMessageWithUserAgent;
 import org.drasyl.core.models.DrasylException;
-import org.drasyl.core.node.DrasylNodeConfig;
-import org.drasyl.core.node.Messenger;
-import org.drasyl.core.node.PeerInformation;
-import org.drasyl.core.node.PeersManager;
-import org.drasyl.core.node.identity.Identity;
+import org.drasyl.core.node.*;
+import org.drasyl.core.node.connections.ClientConnection;
 import org.drasyl.core.node.identity.IdentityManager;
 
 import java.net.InetSocketAddress;
@@ -150,6 +147,10 @@ public class NodeServer implements AutoCloseable {
         this.actualEndpoints = actualEndpoints;
     }
 
+    public Messenger getMessenger() {
+        return messenger;
+    }
+
     public void send(ApplicationMessage message) throws DrasylException {
         messenger.send(message);
     }
@@ -261,14 +262,7 @@ public class NodeServer implements AutoCloseable {
         if (opened.compareAndSet(true, false)) {
             beforeCloseListeners.forEach(Runnable::run);
 
-            Map<Identity, PeerInformation> localPeers = new HashMap<>(peersManager.getPeers());
-            localPeers.keySet().retainAll(peersManager.getChildren());
-
-            localPeers.forEach((id, peer) -> peer.getConnections().forEach(con -> {
-                if (con != null) {
-                    con.close();
-                }
-            }));
+            messenger.getConnectionsManager().closeConnectionsOfType(ClientConnection.class);
 
             if (serverChannel != null && serverChannel.isOpen()) {
                 serverChannel.close().syncUninterruptibly();

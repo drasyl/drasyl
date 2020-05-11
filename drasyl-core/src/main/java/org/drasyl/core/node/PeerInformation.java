@@ -42,7 +42,6 @@ public class PeerInformation {
     private final ReadWriteLock lock = new ReentrantReadWriteLock(true);
 
     private final Set<URI> endpoints;
-    private final Set<PeerConnection> connections;
     private CompressedPublicKey publicKey;
 
     public PeerInformation() {
@@ -52,42 +51,7 @@ public class PeerInformation {
     PeerInformation(Set<URI> endpoints,
                     Set<PeerConnection> connections, CompressedPublicKey publicKey) {
         this.endpoints = endpoints;
-        this.connections = connections;
         this.publicKey = publicKey;
-    }
-
-    public Set<PeerConnection> getConnections() {
-        try {
-            lock.readLock().lock();
-
-            return ImmutableSet.copyOf(connections);
-        } finally {
-            lock.readLock().unlock();
-        }
-    }
-
-    public boolean addPeerConnection(PeerConnection... connections) {
-        Objects.requireNonNull(connections);
-
-        try {
-            lock.writeLock().lock();
-
-            return this.connections.addAll(Set.of(connections));
-        } finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    public boolean removePeerConnection(PeerConnection... connections) {
-        Objects.requireNonNull(connections);
-
-        try {
-            lock.writeLock().lock();
-
-            return this.connections.removeAll(Set.of(connections));
-        } finally {
-            lock.writeLock().unlock();
-        }
     }
 
     public Set<URI> getEndpoints() {
@@ -168,12 +132,19 @@ public class PeerInformation {
         }
         PeerInformation that = (PeerInformation) o;
         return Objects.equals(endpoints, that.endpoints) &&
-                Objects.equals(connections, that.connections) &&
                 Objects.equals(publicKey, that.publicKey);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(endpoints, connections, publicKey);
+        return Objects.hash(endpoints, publicKey);
+    }
+
+    @Override
+    public String toString() {
+        return "PeerInformation{" +
+                "endpoints=" + endpoints +
+                ", publicKey=" + publicKey +
+                '}';
     }
 }
