@@ -45,12 +45,12 @@ public class ApplicationMessage extends AbstractMessage<ApplicationMessage> {
         this.payload = null;
     }
 
-    protected ApplicationMessage(String msgID,
-                                 Signature signature,
-                                 Identity recipient,
-                                 Identity sender,
-                                 byte[] payload) {
-        super(msgID);
+    ApplicationMessage(String id,
+                       Signature signature,
+                       Identity recipient,
+                       Identity sender,
+                       byte[] payload) {
+        super(id);
         setSignature(signature);
         this.recipient = recipient;
         this.sender = sender;
@@ -88,13 +88,6 @@ public class ApplicationMessage extends AbstractMessage<ApplicationMessage> {
     }
 
     @Override
-    public int hashCode() {
-        int result = Objects.hash(super.hashCode(), recipient, sender);
-        result = 31 * result + Arrays.hashCode(payload);
-        return result;
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
@@ -110,6 +103,12 @@ public class ApplicationMessage extends AbstractMessage<ApplicationMessage> {
                 Arrays.equals(payload, message.payload);
     }
 
+    @Override
+    public int hashCode() {
+        int result = Objects.hash(super.hashCode(), recipient, sender);
+        result = 31 * result + Arrays.hashCode(payload);
+        return result;
+    }
 
     @Override
     public String toString() {

@@ -26,6 +26,7 @@ import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.node.identity.IdentityTestHelper;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.crypto.Signature;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -38,6 +39,7 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Mockito.mock;
 
 public class ApplicationMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
@@ -45,7 +47,9 @@ public class ApplicationMessageTest {
     CompressedPublicKey senderPubKey;
     Identity sender;
     Identity recipient;
-    ApplicationMessage message;
+    private String id;
+    private Signature signature;
+    private ApplicationMessage message;
 
     @BeforeEach
     void setUp() throws CryptoException {
@@ -53,74 +57,54 @@ public class ApplicationMessageTest {
         senderPubKey = CompressedPublicKey.of(keyPair.getPublic());
         sender = Identity.of(senderPubKey);
         recipient = IdentityTestHelper.random();
-        message = new ApplicationMessage(sender, recipient, new byte[]{ 0x00, 0x01, 0x02 });
-        Crypto.sign(keyPair.getPrivate(), message);
+        id = "id";
+        signature = mock(Signature.class);
     }
 
     @Test
     public void toJson() throws JsonProcessingException {
+        message = new ApplicationMessage(sender, recipient, new byte[]{ 0x00, 0x01, 0x02 });
+
         assertThatJson(JSON_MAPPER.writeValueAsString(message))
                 .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo("{\"@type\":\"ApplicationMessage\",\"id\":\"" + message.getId() + "\",\"sender\":\"" + sender.getId() + "\",\"recipient\":\"" + recipient.getId() + "\",\"payload\":\"AAEC\",\"signature\":{\"bytes\":\"" + new String(Base64.getEncoder().encode(message.getSignature().getBytes())) + "\"}}");
-
-        System.out.println(JSON_MAPPER.writeValueAsString(message));
-
-        // Ignore toString()
-        message.toString();
+                .isEqualTo("{\"@type\":\"ApplicationMessage\",\"id\":\"" + message.getId() + "\",\"sender\":\"" + sender.getId() + "\",\"recipient\":\"" + recipient.getId() + "\",\"payload\":\"AAEC\"}");
     }
 
     @Test
     public void fromJson() throws IOException {
-        String json = "{\"@type\":\"ApplicationMessage\",\"id\":\"" + message.getId() + "\",\"sender\":\"" + sender.getId() + "\",\"recipient\":\"" + recipient.getId() + "\",\"payload\":\"AAEC\",\"signature\":{\"bytes\":\"" + new String(Base64.getEncoder().encode(message.getSignature().getBytes())) + "\"}}";
+        String json = "{\"@type\":\"ApplicationMessage\",\"id\":\"" + id + "\",\"sender\":\"" + sender.getId() + "\",\"recipient\":\"" + recipient.getId() + "\",\"payload\":\"AAEC\"}";
 
-        ApplicationMessage msg = JSON_MAPPER.readValue(json, ApplicationMessage.class);
+        ApplicationMessage message = JSON_MAPPER.readValue(json, ApplicationMessage.class);
 
-        assertThat(msg, instanceOf(ApplicationMessage.class));
-        assertTrue(Crypto.verifySignature(keyPair.getPublic(), msg));
+        assertThat(message, instanceOf(ApplicationMessage.class));
     }
 
     @Test
     public void nullTest() {
-        assertThrows(NullPointerException.class, () -> {
-            new ApplicationMessage(null, recipient, new byte[]{});
-        }, "Message requires a sender");
+        assertThrows(NullPointerException.class, () -> new ApplicationMessage(null, recipient, new byte[]{}), "Message requires a sender");
 
-        assertThrows(NullPointerException.class, () -> {
-            new ApplicationMessage(sender, null, new byte[]{});
-        }, "Message requires a recipient");
+        assertThrows(NullPointerException.class, () -> new ApplicationMessage(sender, null, new byte[]{}), "Message requires a recipient");
 
-        assertThrows(NullPointerException.class, () -> {
-            new ApplicationMessage(sender, recipient, null);
-        }, "Message requires a payload");
+        assertThrows(NullPointerException.class, () -> new ApplicationMessage(sender, recipient, null), "Message requires a payload");
 
-        assertThrows(NullPointerException.class, () -> {
-            new ApplicationMessage(null, null, null);
-        }, "Message requires a sender, a recipient and a payload");
+        assertThrows(NullPointerException.class, () -> new ApplicationMessage(null, null, null), "Message requires a sender, a recipient and a payload");
     }
 
     @Test
-    void testNotEqualsBecauseOfDifferentIds() throws CryptoException {
+    void equalsNotSameBecauseOfDifferentPayload() {
         ApplicationMessage message1 = new ApplicationMessage(sender, recipient, new byte[]{ 0x00, 0x01, 0x02 });
         ApplicationMessage message2 = new ApplicationMessage(sender, recipient, new byte[]{ 0x00, 0x01, 0x02 });
         ApplicationMessage message3 = new ApplicationMessage(sender, recipient, new byte[]{ 0x03, 0x02, 0x01 });
-
-        Crypto.sign(keyPair.getPrivate(), message1);
-        Crypto.sign(keyPair.getPrivate(), message2);
-        Crypto.sign(keyPair.getPrivate(), message3);
 
         assertNotEquals(message1, message2);
         assertNotEquals(message2, message3);
     }
 
     @Test
-    void testHashCode() throws CryptoException {
-        ApplicationMessage message1 = new ApplicationMessage(sender, recipient, new byte[]{ 0x00, 0x01, 0x02 });
-        ApplicationMessage message2 = new ApplicationMessage(sender, recipient, new byte[]{ 0x00, 0x01, 0x02 });
-        ApplicationMessage message3 = new ApplicationMessage(sender, recipient, new byte[]{ 0x03, 0x02, 0x01 });
-
-        Crypto.sign(keyPair.getPrivate(), message1);
-        Crypto.sign(keyPair.getPrivate(), message2);
-        Crypto.sign(keyPair.getPrivate(), message3);
+    void hashCodeNotSameBecauseOfDifferentPayload() {
+        ApplicationMessage message1 = new ApplicationMessage(id, signature, recipient, sender, new byte[]{ 0x00, 0x01, 0x02 });
+        ApplicationMessage message2 = new ApplicationMessage(id, signature, recipient, sender, new byte[]{ 0x00, 0x01, 0x02 });
+        ApplicationMessage message3 = new ApplicationMessage(id, signature, recipient, sender, new byte[]{ 0x03, 0x02, 0x01 });
 
         assertEquals(message1.hashCode(), message2.hashCode());
         assertNotEquals(message2.hashCode(), message3.hashCode());
