@@ -164,7 +164,7 @@ public abstract class NettyPeerConnection implements PeerConnection {
         if (isClosed.compareAndSet(false, true)) {
             myChannel.flush();
             emitters.clear();
-            myChannel.writeAndFlush(new LeaveMessage());
+            myChannel.writeAndFlush(new LeaveMessage("Server is shutting down."));
             myChannel.close();
         }
     }
