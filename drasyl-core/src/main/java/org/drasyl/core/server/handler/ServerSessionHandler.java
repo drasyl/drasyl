@@ -24,6 +24,8 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.core.common.message.JoinMessage;
 import org.drasyl.core.common.message.Message;
+import org.drasyl.core.common.message.RequestMessage;
+import org.drasyl.core.common.message.ResponseMessage;
 import org.drasyl.core.common.message.action.MessageAction;
 import org.drasyl.core.common.message.action.ServerMessageAction;
 import org.drasyl.core.node.PeerInformation;
@@ -37,6 +39,7 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.Comparator;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -55,6 +58,13 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<Message> {
     private final CompletableFuture<ClientConnection> sessionReadyFuture;
     private ClientConnection clientConnection;
     private URI uri;
+
+    ServerSessionHandler(NodeServer server, CompletableFuture<ClientConnection> sessionReadyFuture, ClientConnection clientConnection, URI uri) {
+        this.server = server;
+        this.sessionReadyFuture = sessionReadyFuture;
+        this.clientConnection = clientConnection;
+        this.uri = uri;
+    }
 
     /**
      * Creates a new instance of this {@link io.netty.channel.ChannelHandler}
@@ -77,9 +87,7 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<Message> {
     public ServerSessionHandler(NodeServer server,
                                 URI uri,
                                 CompletableFuture<ClientConnection> sessionReadyListener) {
-        this.sessionReadyFuture = sessionReadyListener;
-        this.server = server;
-        this.uri = uri;
+        this(server, sessionReadyListener, null, uri);
     }
 
     /*
@@ -102,6 +110,10 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<Message> {
         ctx.executor().submit(() -> {
             createSession(ctx, msg);
             if (clientConnection != null) {
+                if (msg instanceof ResponseMessage) {
+                    clientConnection.setResponse((ResponseMessage<?, ?>) msg);
+                }
+
                 MessageAction action = msg.getAction();
                 if (action instanceof ServerMessageAction) {
                     ((ServerMessageAction) action).onMessageServer(clientConnection, server);
