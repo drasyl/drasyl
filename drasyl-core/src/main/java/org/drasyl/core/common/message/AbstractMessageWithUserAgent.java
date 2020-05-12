@@ -70,7 +70,7 @@ public abstract class AbstractMessageWithUserAgent<T extends Message> extends Ab
         if (!super.equals(o)) {
             return false;
         }
-        AbstractMessageWithUserAgent that = (AbstractMessageWithUserAgent) o;
+        AbstractMessageWithUserAgent<?> that = (AbstractMessageWithUserAgent<?>) o;
         return Objects.equals(userAgent, that.userAgent);
     }
 
