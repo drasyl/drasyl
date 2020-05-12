@@ -39,11 +39,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 class PingPongHandlerTest {
     private ChannelHandlerContext ctx;
     private IdleStateEvent evt;
+    private String correspondingId;
 
     @BeforeEach
     void setUp() throws Exception {
         ctx = mock(ChannelHandlerContext.class);
         evt = mock(IdleStateEvent.class);
+        correspondingId = "correspondingId";
+
         when(evt.state()).thenReturn(IdleState.READER_IDLE);
     }
 
@@ -95,7 +98,7 @@ class PingPongHandlerTest {
     @Test
     void channelRead0ShouldResetCounterIfPingMessageReceived() throws Exception {
         PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
-        handler.channelRead0(ctx, new PongMessage());
+        handler.channelRead0(ctx, new PongMessage(correspondingId));
 
         assertEquals(0, handler.counter.get());
     }

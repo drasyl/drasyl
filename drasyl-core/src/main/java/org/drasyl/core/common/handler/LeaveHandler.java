@@ -24,10 +24,11 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.core.common.message.LeaveMessage;
-import org.drasyl.core.common.message.ResponseMessage;
 import org.drasyl.core.common.message.StatusMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import static org.drasyl.core.common.message.StatusMessage.Code.STATUS_OK;
 
 /**
  * Fires a channel wide close event, when a {@link LeaveMessage} received.
@@ -44,7 +45,7 @@ public class LeaveHandler extends SimpleChannelInboundHandler<LeaveMessage> {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, LeaveMessage msg) throws Exception {
         try {
-            ctx.writeAndFlush(new ResponseMessage<>(StatusMessage.OK, msg.getId())).addListener(ChannelFutureListener.CLOSE);
+            ctx.writeAndFlush(new StatusMessage(STATUS_OK, msg.getId())).addListener(ChannelFutureListener.CLOSE);
             LOG.debug("{} received LeaveMessage. Fire channel close.", ctx.channel().id());
         }
         finally {

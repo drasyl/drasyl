@@ -3,7 +3,6 @@ package org.drasyl.core.common.message.action;
 import com.typesafe.config.ConfigFactory;
 import org.drasyl.core.common.message.ClientsStocktakingMessage;
 import org.drasyl.core.common.message.RequestClientsStocktakingMessage;
-import org.drasyl.core.common.message.ResponseMessage;
 import org.drasyl.core.node.DrasylNodeConfig;
 import org.drasyl.core.node.PeersManager;
 import org.drasyl.core.node.connections.ClientConnection;
@@ -26,7 +25,7 @@ class RequestClientsStocktakingMessageActionTest {
     private NodeServer server;
     private PeersManager peersManager;
     @Captor
-    private ArgumentCaptor<ResponseMessage<ClientsStocktakingMessage>> captor;
+    private ArgumentCaptor<ClientsStocktakingMessage> captor;
     private RequestClientsStocktakingMessage message;
     private String id;
     private Identity identity1;
@@ -58,7 +57,7 @@ class RequestClientsStocktakingMessageActionTest {
 
         verify(clientConnection).send(captor.capture());
 
-        ClientsStocktakingMessage asm = captor.getValue().getMessage();
+        ClientsStocktakingMessage asm = captor.getValue();
         assertThat(asm.getIdentities(), containsInAnyOrder(identity1, identity2));
     }
 }

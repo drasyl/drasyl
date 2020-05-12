@@ -9,7 +9,7 @@ import java.util.Objects;
  * A message representing an exception that refers to a connection. The connection should be
  * terminated after such a message. Such an exception should always be handled.
  */
-public class ConnectionExceptionMessage extends AbstractMessage<ConnectionExceptionMessage> implements UnrestrictedPassableMessage {
+public class ConnectionExceptionMessage extends AbstractMessage<ConnectionExceptionMessage> implements RequestMessage<ConnectionExceptionMessage>, UnrestrictedPassableMessage {
     private final String exception;
 
     protected ConnectionExceptionMessage() {

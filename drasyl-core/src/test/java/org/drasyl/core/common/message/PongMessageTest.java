@@ -21,6 +21,7 @@ package org.drasyl.core.common.message;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.javacrumbs.jsonunit.core.Option;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -32,14 +33,20 @@ import static org.junit.Assert.assertEquals;
 
 public class PongMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+    private String correspondingId;
+
+    @BeforeEach
+    void setUp() {
+        correspondingId = "correspondingId";
+    }
 
     @Test
     public void toJson() throws JsonProcessingException {
-        PongMessage message = new PongMessage();
+        PongMessage message = new PongMessage(correspondingId);
 
         assertThatJson(JSON_MAPPER.writeValueAsString(message))
                 .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo("{\"@type\":\"PongMessage\",\"id\":\"" + message.getId() + "\"}");
+                .isEqualTo("{\"@type\":\"PongMessage\",\"id\":\"" + message.getId() + "\",\"correspondingId\":\"correspondingId\"}");
 
         // Ignore toString()
         message.toString();
@@ -54,16 +61,16 @@ public class PongMessageTest {
 
     @Test
     void testEquals() {
-        PongMessage message1 = new PongMessage();
-        PongMessage message2 = new PongMessage();
+        PongMessage message1 = new PongMessage(correspondingId);
+        PongMessage message2 = new PongMessage(correspondingId);
 
         assertEquals(message1, message2);
     }
 
     @Test
     void testHashCode() {
-        PongMessage message1 = new PongMessage();
-        PongMessage message2 = new PongMessage();
+        PongMessage message1 = new PongMessage(correspondingId);
+        PongMessage message2 = new PongMessage(correspondingId);
 
         assertEquals(message1.hashCode(), message2.hashCode());
     }

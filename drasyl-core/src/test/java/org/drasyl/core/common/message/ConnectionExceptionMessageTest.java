@@ -4,6 +4,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.javacrumbs.jsonunit.core.Option;
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -16,6 +17,12 @@ import static org.junit.Assert.assertNotEquals;
 
 public class ConnectionExceptionMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+    private String correspondingId;
+
+    @BeforeEach
+    void setUp() {
+        correspondingId = "correspondingId";
+    }
 
     @Test
     public void toJson() throws JsonProcessingException {
@@ -56,9 +63,9 @@ public class ConnectionExceptionMessageTest {
 
     @Test
     void testHashCode() {
-        MessageExceptionMessage message1 = new MessageExceptionMessage("something horrible has happened");
-        MessageExceptionMessage message2 = new MessageExceptionMessage("something horrible has happened");
-        MessageExceptionMessage message3 = new MessageExceptionMessage("something dreadful has happened");
+        MessageExceptionMessage message1 = new MessageExceptionMessage("something horrible has happened", correspondingId);
+        MessageExceptionMessage message2 = new MessageExceptionMessage("something horrible has happened", correspondingId);
+        MessageExceptionMessage message3 = new MessageExceptionMessage("something dreadful has happened", correspondingId);
 
         assertEquals(message1.hashCode(), message2.hashCode());
         assertNotEquals(message2.hashCode(), message3.hashCode());

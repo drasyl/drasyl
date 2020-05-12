@@ -23,10 +23,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelId;
 import io.reactivex.rxjava3.core.SingleEmitter;
-import org.drasyl.core.common.message.Message;
-import org.drasyl.core.common.message.LeaveMessage;
-import org.drasyl.core.common.message.MessageExceptionMessage;
-import org.drasyl.core.common.message.ResponseMessage;
+import org.drasyl.core.common.message.*;
 import org.drasyl.core.common.models.Pair;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.node.identity.IdentityTestHelper;
@@ -58,6 +55,7 @@ class NettyPeerConnectionTest {
     private AtomicBoolean isClosed;
     private String msgID;
     private CompletableFuture<Boolean> closedCompletable;
+    private ResponseMessage responseMessage;
 
     @BeforeEach
     void setUp() throws URISyntaxException {
@@ -73,6 +71,7 @@ class NettyPeerConnectionTest {
         isClosed = mock(AtomicBoolean.class);
         msgID = Crypto.randomString(16);
         closedCompletable = mock(CompletableFuture.class);
+        responseMessage = mock(ResponseMessage.class);
 
         when(channel.closeFuture()).thenReturn(channelFuture);
         when(channel.id()).thenReturn(channelId);
@@ -124,12 +123,14 @@ class NettyPeerConnectionTest {
                 ConcurrentHashMap.class, CompletableFuture.class).newInstance(channel, userAgent, myid,
                 endpoint, new AtomicBoolean(true), emitters, closedCompletable);
 
+        when(responseMessage.getCorrespondingId()).thenReturn(msgID);
+
         peerConnection.send(message, LeaveMessage.class).subscribe(onSuccess -> {
         }, onError -> {
         });
         peerConnection.send(message);
         peerConnection.send(messageExceptionMessage);
-        peerConnection.send(new ResponseMessage<>(messageExceptionMessage, msgID));
+        peerConnection.send(responseMessage);
 
         verify(channel, never()).writeAndFlush(any(Message.class));
     }
@@ -145,13 +146,14 @@ class NettyPeerConnectionTest {
                 endpoint, isClosed, emitters, closedCompletable);
 
         when(emitters.remove(message.getId())).thenReturn(Pair.of(Message.class, singleEmitter));
+        when(responseMessage.getCorrespondingId()).thenReturn(msgID);
 
         peerConnection.send(message, Message.class).subscribe(onSuccess -> {
         }, onError -> {
         });
-        peerConnection.setResponse(new ResponseMessage<>(message, message.getId()));
+        peerConnection.setResponse(responseMessage);
 
-        verify(singleEmitter).onSuccess(eq(message));
+        verify(singleEmitter).onSuccess(eq(responseMessage));
         verify(emitters).remove(eq(message.getId()));
     }
 
@@ -163,10 +165,12 @@ class NettyPeerConnectionTest {
                 ConcurrentHashMap.class, CompletableFuture.class).newInstance(channel, userAgent, myid,
                 endpoint, isClosed, emitters, closedCompletable);
 
+        when(responseMessage.getCorrespondingId()).thenReturn(msgID);
+
         peerConnection.send(message, LeaveMessage.class).subscribe(onSuccess -> {
         }, onError -> {
         });
-        peerConnection.setResponse(new ResponseMessage<>(message, message.getId()));
+        peerConnection.setResponse(responseMessage);
 
         verify(emitters).remove(eq(message.getId()));
     }

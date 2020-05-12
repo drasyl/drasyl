@@ -18,11 +18,16 @@
  */
 package org.drasyl.core.common.message;
 
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonValue;
 import org.drasyl.core.common.message.action.MessageAction;
 import org.drasyl.core.common.message.action.StatusMessageAction;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Status that representing a HTTP/1.1 response status code, defined in RFC 7231 section 6 (<a href=
@@ -71,75 +76,30 @@ import java.util.Objects;
  * </ul>
  * </p>
  */
-public class StatusMessage extends AbstractMessage<StatusMessage> {
-    // -------- constants --------
-    // -------- 1xx (Informational) --------
-    public static final StatusMessage CONTINUE = new StatusMessage(100);
-    public static final StatusMessage SWITCHING_PROTOCOLS = new StatusMessage(101);
-    // -------- 2xx (Successful) --------
-    public static final StatusMessage OK = new StatusMessage(200);
-    public static final StatusMessage CREATED = new StatusMessage(201);
-    public static final StatusMessage ACCEPTED = new StatusMessage(202);
-    public static final StatusMessage NON_AUTHORITATIVE_INFORMATION = new StatusMessage(203);
-    public static final StatusMessage NO_CONTENT = new StatusMessage(204);
-    public static final StatusMessage RESET_CONTENT = new StatusMessage(205);
-    public static final StatusMessage PARTIAL_CONTENT = new StatusMessage(206);
-    // -------- 3xx (Redirection) --------
-    public static final StatusMessage MULTIPLE_CHOICES = new StatusMessage(300);
-    public static final StatusMessage MOVED_PERMANENTLY = new StatusMessage(301);
-    public static final StatusMessage FOUND = new StatusMessage(302);
-    public static final StatusMessage SEE_OTHER = new StatusMessage(303);
-    public static final StatusMessage NOT_MODIFIED = new StatusMessage(304);
-    public static final StatusMessage USE_PROXY = new StatusMessage(305);
-    public static final StatusMessage TEMPORARY_REDIRECT = new StatusMessage(307);
-    // -------- 4xx (Client Error) --------
-    public static final StatusMessage BAD_REQUEST = new StatusMessage(400);
-    public static final StatusMessage UNAUTHORIZED = new StatusMessage(401);
-    public static final StatusMessage PAYMENT_REQUIRED = new StatusMessage(402);
-    public static final StatusMessage FORBIDDEN = new StatusMessage(403);
-    public static final StatusMessage NOT_FOUND = new StatusMessage(404);
-    public static final StatusMessage METHOD_NOT_ALLOWED = new StatusMessage(405);
-    public static final StatusMessage NOT_ACCEPTABLE = new StatusMessage(406);
-    public static final StatusMessage PROXY_AUTHENTICATION_REQUIRED = new StatusMessage(407);
-    public static final StatusMessage REQUEST_TIMEOUT = new StatusMessage(408);
-    public static final StatusMessage CONFLICT = new StatusMessage(409);
-    public static final StatusMessage GONE = new StatusMessage(410);
-    public static final StatusMessage LENGTH_REQUIRED = new StatusMessage(411);
-    public static final StatusMessage PRECONDITION_FAILED = new StatusMessage(412);
-    public static final StatusMessage PAYLOAD_TOO_LARGE = new StatusMessage(413);
-    public static final StatusMessage URI_TOO_LONG = new StatusMessage(414);
-    public static final StatusMessage UNSUPPORTED_MEDIA_TYPE = new StatusMessage(415);
-    public static final StatusMessage RANGE_NOT_SATISFIABLE = new StatusMessage(416);
-    public static final StatusMessage EXPECTATION_FAILED = new StatusMessage(417);
-    public static final StatusMessage UPGRADE_REQUIRED = new StatusMessage(426);
-    // -------- 5xx (Server Error) --------
-    public static final StatusMessage INTERNAL_SERVER_ERROR = new StatusMessage(500);
-    public static final StatusMessage NOT_IMPLEMENTED = new StatusMessage(501);
-    public static final StatusMessage BAD_GATEWAY = new StatusMessage(502);
-    public static final StatusMessage SERVICE_UNAVAILABLE = new StatusMessage(503);
-    public static final StatusMessage GATEWAY_TIMEOUT = new StatusMessage(504);
-    public static final StatusMessage HTTP_VERSION_NOT_SUPPORTED = new StatusMessage(505);
-    // -------- attributes --------
-    @JsonProperty("status")
-    private final short statusCode;
+public class StatusMessage extends AbstractResponseMessage<RequestMessage, StatusMessage> {
+    private final Code code;
 
     protected StatusMessage() {
-        statusCode = 0;
+        super("");
+        code = null;
     }
 
     // -------- methods --------
 
     /**
-     * Creates an immutable status object.
+     * Creates an immutable code object.
      *
-     * @param status HTTP status code
-     * @throws IllegalArgumentException if the status isn't a valid status code
+     * @param code            HTTP code code
+     * @param correspondingId
+     * @throws IllegalArgumentException if the code isn't a valid code code
      */
-    public StatusMessage(int status) {
-        if (status < 0 || status > 999) {
-            throw new IllegalArgumentException("The status-code element must be a positive three-digit integer.");
-        }
-        this.statusCode = (short) status;
+    public StatusMessage(Code code, String correspondingId) {
+        super(correspondingId);
+        this.code = requireNonNull(code);
+    }
+
+    public StatusMessage(int code, String correspondingId) {
+        this(Code.from(code), correspondingId);
     }
 
     /**
@@ -147,18 +107,13 @@ public class StatusMessage extends AbstractMessage<StatusMessage> {
      *
      * @return HTTP status code
      */
-    public int getStatus() {
-        return statusCode;
+    public Code getCode() {
+        return code;
     }
 
     @Override
     public MessageAction<StatusMessage> getAction() {
         return new StatusMessageAction(this);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), statusCode);
     }
 
     @Override
@@ -172,16 +127,95 @@ public class StatusMessage extends AbstractMessage<StatusMessage> {
         if (!super.equals(o)) {
             return false;
         }
-        StatusMessage status = (StatusMessage) o;
-        return statusCode == status.statusCode;
+        StatusMessage that = (StatusMessage) o;
+        return code == that.code;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), code);
     }
 
     @Override
     public String toString() {
         return "StatusMessage{" +
-                "statusCode=" + statusCode +
+                "code=" + code +
+                ", correspondingId='" + correspondingId + '\'' +
                 ", id='" + id + '\'' +
                 ", signature=" + signature +
                 '}';
+    }
+
+    public enum Code {
+        // -------- 1xx (Informational) --------
+        STATUS_CONTINUE(100),
+        STATUS_SWITCHING_PROTOCOLS(101),
+        // -------- 2xx (Successful) --------
+        STATUS_OK(200),
+        STATUS_CREATED(201),
+        STATUS_ACCEPTED(202),
+        STATUS_NON_AUTHORITATIVE_INFORMATION(203),
+        STATUS_NO_CONTENT(204),
+        STATUS_RESET_CONTENT(205),
+        STATUS_PARTIAL_CONTENT(206),
+        // -------- 3xx (Redirection) --------
+        STATUS_MULTIPLE_CHOICES(300),
+        STATUS_MOVED_PERMANENTLY(301),
+        STATUS_FOUND(302),
+        STATUS_SEE_OTHER(303),
+        STATUS_NOT_MODIFIED(304),
+        STATUS_USE_PROXY(305),
+        STATUS_TEMPORARY_REDIRECT(307),
+        // -------- 4xx (Client Error) --------
+        STATUS_BAD_REQUEST(400),
+        STATUS_UNAUTHORIZED(401),
+        STATUS_PAYMENT_REQUIRED(402),
+        STATUS_FORBIDDEN(403),
+        STATUS_NOT_FOUND(404),
+        STATUS_METHOD_NOT_ALLOWED(405),
+        STATUS_NOT_ACCEPTABLE(406),
+        STATUS_PROXY_AUTHENTICATION_REQUIRED(407),
+        STATUS_REQUEST_TIMEOUT(408),
+        STATUS_CONFLICT(409),
+        STATUS_GONE(410),
+        STATUS_LENGTH_REQUIRED(411),
+        STATUS_PRECONDITION_FAILED(412),
+        STATUS_PAYLOAD_TOO_LARGE(413),
+        STATUS_URI_TOO_LONG(414),
+        STATUS_UNSUPPORTED_MEDIA_TYPE(415),
+        STATUS_RANGE_NOT_SATISFIABLE(416),
+        STATUS_EXPECTATION_FAILED(417),
+        STATUS_UPGRADE_REQUIRED(426),
+        // -------- 5xx (Server Error) --------
+        STATUS_INTERNAL_SERVER_ERROR(500),
+        STATUS_NOT_IMPLEMENTED(501),
+        STATUS_BAD_GATEWAY(502),
+        STATUS_SERVICE_UNAVAILABLE(503),
+        STATUS_GATEWAY_TIMEOUT(504),
+        STATUS_HTTP_VERSION_NOT_SUPPORTED(505);
+
+        private static final Map<Integer, Code> codes = new HashMap<>();
+
+        static {
+            for (Code code : Code.values()) {
+                codes.put(code.getNumber(), code);
+            }
+        }
+
+        private final int code;
+
+        Code(int code) {
+            this.code = code;
+        }
+
+        @JsonValue
+        public int getNumber() {
+            return code;
+        }
+
+        @JsonCreator
+        public static Code from(int code) {
+            return codes.get(code);
+        }
     }
 }

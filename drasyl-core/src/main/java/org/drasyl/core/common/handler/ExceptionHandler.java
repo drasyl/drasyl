@@ -131,7 +131,8 @@ public class ExceptionHandler extends ChannelDuplexHandler {
         handledCause = e;
 
         if (ctx.channel().isWritable()) {
-            ctx.writeAndFlush(new MessageExceptionMessage(e));
+            // TODO: set correspondingId !?
+            ctx.writeAndFlush(new MessageExceptionMessage(e, ""));
         }
         LOG.debug("", e);
     }

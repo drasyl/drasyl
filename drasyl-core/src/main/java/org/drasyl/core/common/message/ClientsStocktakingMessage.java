@@ -36,10 +36,11 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * Containing all connected clients of the node
  */
-public class ClientsStocktakingMessage extends AbstractMessage<ClientsStocktakingMessage> {
+public class ClientsStocktakingMessage extends AbstractResponseMessage<RequestClientsStocktakingMessage, ClientsStocktakingMessage> {
     private final Collection<Identity> identities;
 
     ClientsStocktakingMessage() {
+        super(null);
         identities = null;
     }
 
@@ -47,8 +48,11 @@ public class ClientsStocktakingMessage extends AbstractMessage<ClientsStocktakin
      * Creates a new ClientsStocktakingMessage.
      *
      * @param identities list of all connected clients of the node
+     * @param correspondingId
      */
-    public ClientsStocktakingMessage(Collection<Identity> identities) {
+    public ClientsStocktakingMessage(Collection<Identity> identities,
+                                     String correspondingId) {
+        super(correspondingId);
         this.identities = requireNonNull(identities);
     }
 
@@ -88,6 +92,7 @@ public class ClientsStocktakingMessage extends AbstractMessage<ClientsStocktakin
     public String toString() {
         return "ClientsStocktakingMessage{" +
                 "identities=" + identities +
+                ", correspondingId='" + correspondingId + '\'' +
                 ", id='" + id + '\'' +
                 ", signature=" + signature +
                 '}';

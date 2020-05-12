@@ -42,6 +42,7 @@ public class WelcomeMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
     private CompressedPublicKey publicKey;
     private Set<URI> endpoints;
+    private String correspondingId;
 
     @BeforeEach
     void setUp() throws CryptoException {
@@ -49,6 +50,7 @@ public class WelcomeMessageTest {
         KeyPair keyPair = Crypto.generateKeys();
         publicKey = CompressedPublicKey.of(keyPair.getPublic());
         endpoints = Set.of(URI.create("ws://test"));
+        correspondingId = "correspondingId";
     }
 
     @AfterEach
@@ -58,11 +60,11 @@ public class WelcomeMessageTest {
 
     @Test
     public void toJson() throws JsonProcessingException {
-        WelcomeMessage message = new WelcomeMessage(publicKey, endpoints);
+        WelcomeMessage message = new WelcomeMessage(publicKey, endpoints, correspondingId);
 
         assertThatJson(JSON_MAPPER.writeValueAsString(message))
                 .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo("{\"@type\":\"WelcomeMessage\",\"id\":\"" + message.getId() + "\",\"userAgent\":\"\",\"publicKey\":\"" + publicKey.getCompressedKey() + "\",\"endpoints\":[\"ws://test\"]}");
+                .isEqualTo("{\"@type\":\"WelcomeMessage\",\"id\":\"" + message.getId() + "\",\"userAgent\":\"\",\"publicKey\":\"" + publicKey.getCompressedKey() + "\",\"endpoints\":[\"ws://test\"],\"correspondingId\":\"correspondingId\"}");
 
         // Ignore toString()
         message.toString();
@@ -77,16 +79,16 @@ public class WelcomeMessageTest {
 
     @Test
     void testEquals() {
-        WelcomeMessage message1 = new WelcomeMessage(publicKey, endpoints);
-        WelcomeMessage message2 = new WelcomeMessage(publicKey, endpoints);
+        WelcomeMessage message1 = new WelcomeMessage(publicKey, endpoints, correspondingId);
+        WelcomeMessage message2 = new WelcomeMessage(publicKey, endpoints, correspondingId);
 
         assertEquals(message1, message2);
     }
 
     @Test
     void testHashCode() {
-        WelcomeMessage message1 = new WelcomeMessage(publicKey, endpoints);
-        WelcomeMessage message2 = new WelcomeMessage(publicKey, endpoints);
+        WelcomeMessage message1 = new WelcomeMessage(publicKey, endpoints, correspondingId);
+        WelcomeMessage message2 = new WelcomeMessage(publicKey, endpoints, correspondingId);
 
         assertEquals(message1.hashCode(), message2.hashCode());
     }

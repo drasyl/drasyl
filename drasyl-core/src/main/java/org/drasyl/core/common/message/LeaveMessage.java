@@ -18,7 +18,6 @@
  */
 package org.drasyl.core.common.message;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.drasyl.core.common.message.action.LeaveMessageAction;
 import org.drasyl.core.common.message.action.MessageAction;
@@ -28,7 +27,7 @@ import java.util.Objects;
 /**
  * A message representing a termination of a connection.
  */
-public class LeaveMessage extends AbstractMessage<LeaveMessage> implements UnrestrictedPassableMessage {
+public class LeaveMessage extends AbstractMessage<LeaveMessage> implements RequestMessage<LeaveMessage>, UnrestrictedPassableMessage {
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     private final String reason;
 

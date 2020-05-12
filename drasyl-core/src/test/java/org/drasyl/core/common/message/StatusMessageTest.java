@@ -21,75 +21,50 @@ package org.drasyl.core.common.message;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.javacrumbs.jsonunit.core.Option;
-import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
+import static org.drasyl.core.common.message.StatusMessage.Code.STATUS_FORBIDDEN;
+import static org.drasyl.core.common.message.StatusMessage.Code.STATUS_OK;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class StatusMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+    private String correspondingId;
 
-    @Test
-    public void equalsTest() {
-        StatusMessage s1 = StatusMessage.OK;
-        StatusMessage s2 = new StatusMessage(200);
-
-        assertEquals(s1, s2);
-        assertEquals(StatusMessage.OK, s1);
-        assertEquals(s2, s2);
-        assertEquals(200, s1.getStatus());
-        assertEquals(200, s2.getStatus());
-        assertEquals(s1.hashCode(), s2.hashCode());
-
-        assertNotEquals(StatusMessage.INTERNAL_SERVER_ERROR, s1);
-        assertNotEquals(StatusMessage.INTERNAL_SERVER_ERROR, s2);
-        assertNotEquals(StatusMessage.INTERNAL_SERVER_ERROR.getStatus(), s1.getStatus());
-        assertNotEquals(StatusMessage.INTERNAL_SERVER_ERROR.getStatus(), s2.getStatus());
-        assertNotEquals("200", s1);
-        assertNotEquals(null, s1);
-
-        // Ignore toString() in the coverage report
-        s1.toString();
-    }
-
-    @Test
-    public void outOfRangeTest() {
-        Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            new StatusMessage(1000);
-        });
-
-        Assertions.assertThrows(IllegalArgumentException.class, () -> {
-            new StatusMessage(-1);
-        });
+    @BeforeEach
+    void setUp() {
+        correspondingId = "correspondingId";
     }
 
     @Test
     public void toJson() throws JsonProcessingException {
-        StatusMessage message = StatusMessage.OK;
+        StatusMessage message = new StatusMessage(STATUS_OK, correspondingId);
 
         assertThatJson(JSON_MAPPER.writeValueAsString(message))
                 .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo("{\"@type\":\"StatusMessage\",\"id\":\"" + message.getId() + "\",\"status\":200}");
+                .isEqualTo("{\"@type\":\"StatusMessage\",\"id\":\"" + message.getId() + "\",\"correspondingId\":\"correspondingId\",\"code\":200}");
     }
 
     @Test
     public void fromJson() throws IOException {
-        String json = "{\"@type\":\"StatusMessage\",\"id\":\"205E5ECE2F3F1E744D951658\",\"status\":200}";
+        String json = "{\"@type\":\"StatusMessage\",\"id\":\"205E5ECE2F3F1E744D951658\",\"code\":200}";
 
         assertThat(JSON_MAPPER.readValue(json, Message.class), instanceOf(StatusMessage.class));
     }
 
     @Test
     void testEquals() {
-        StatusMessage message1 = StatusMessage.OK;
-        StatusMessage message2 = StatusMessage.OK;
-        StatusMessage message3 = StatusMessage.NOT_FOUND;
+        StatusMessage message1 = new StatusMessage(STATUS_OK, correspondingId);
+        StatusMessage message2 = new StatusMessage(STATUS_OK.getNumber(), correspondingId);
+        StatusMessage message3 = new StatusMessage(STATUS_FORBIDDEN, correspondingId);
 
         assertEquals(message1, message2);
         assertNotEquals(message2, message3);
@@ -97,9 +72,9 @@ public class StatusMessageTest {
 
     @Test
     void testHashCode() {
-        StatusMessage message1 = StatusMessage.OK;
-        StatusMessage message2 = StatusMessage.OK;
-        StatusMessage message3 = StatusMessage.NOT_FOUND;
+        StatusMessage message1 = new StatusMessage(STATUS_OK, correspondingId);
+        StatusMessage message2 = new StatusMessage(STATUS_OK.getNumber(), correspondingId);
+        StatusMessage message3 = new StatusMessage(STATUS_FORBIDDEN, correspondingId);
 
         assertEquals(message1.hashCode(), message2.hashCode());
         assertNotEquals(message2.hashCode(), message3.hashCode());

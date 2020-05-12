@@ -18,6 +18,7 @@
  */
 package org.drasyl.core.common.message;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.drasyl.core.common.message.action.MessageAction;
 import org.drasyl.core.common.message.action.WelcomeMessageAction;
 import org.drasyl.core.models.CompressedPublicKey;
@@ -32,24 +33,31 @@ import static java.util.Objects.requireNonNull;
  * A message representing the welcome message of the node server, including fallback information and
  * the public key of the node server.
  */
-public class WelcomeMessage extends AbstractMessageWithUserAgent<WelcomeMessage> {
+public class WelcomeMessage extends AbstractMessageWithUserAgent<WelcomeMessage> implements ResponseMessage<JoinMessage, WelcomeMessage> {
     private final CompressedPublicKey publicKey;
     private final Set<URI> endpoints;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private final String correspondingId;
 
     protected WelcomeMessage() {
         publicKey = null;
         endpoints = null;
+        correspondingId = null;
     }
 
     /**
      * Creates new welcome message.
      *
-     * @param publicKey the public key of the node server
-     * @param endpoints the endpoints of the node server
+     * @param publicKey       the public key of the node server
+     * @param endpoints       the endpoints of the node server
+     * @param correspondingId
      */
-    public WelcomeMessage(CompressedPublicKey publicKey, Set<URI> endpoints) {
+    public WelcomeMessage(CompressedPublicKey publicKey,
+                          Set<URI> endpoints,
+                          String correspondingId) {
         this.publicKey = requireNonNull(publicKey);
         this.endpoints = requireNonNull(endpoints);
+        this.correspondingId = correspondingId;
     }
 
     public CompressedPublicKey getPublicKey() {
@@ -66,8 +74,13 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent<WelcomeMessage>
     }
 
     @Override
+    public String getCorrespondingId() {
+        return correspondingId;
+    }
+
+    @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), publicKey, endpoints);
+        return Objects.hash(super.hashCode(), publicKey, endpoints, correspondingId);
     }
 
     @Override
@@ -81,9 +94,10 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent<WelcomeMessage>
         if (!super.equals(o)) {
             return false;
         }
-        WelcomeMessage welcome = (WelcomeMessage) o;
-        return Objects.equals(publicKey, welcome.publicKey) &&
-                Objects.equals(endpoints, welcome.endpoints);
+        WelcomeMessage that = (WelcomeMessage) o;
+        return Objects.equals(publicKey, that.publicKey) &&
+                Objects.equals(endpoints, that.endpoints) &&
+                Objects.equals(correspondingId, that.correspondingId);
     }
 
     @Override
@@ -91,6 +105,7 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent<WelcomeMessage>
         return "WelcomeMessage{" +
                 "publicKey=" + publicKey +
                 ", endpoints=" + endpoints +
+                ", correspondingId='" + correspondingId + '\'' +
                 ", id='" + id + '\'' +
                 ", signature=" + signature +
                 '}';

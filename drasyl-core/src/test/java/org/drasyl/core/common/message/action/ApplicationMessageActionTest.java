@@ -2,7 +2,6 @@ package org.drasyl.core.common.message.action;
 
 import com.typesafe.config.ConfigFactory;
 import org.drasyl.core.common.message.ApplicationMessage;
-import org.drasyl.core.common.message.ResponseMessage;
 import org.drasyl.core.common.message.StatusMessage;
 import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.node.DrasylNodeConfig;
@@ -10,10 +9,11 @@ import org.drasyl.core.node.PeersManager;
 import org.drasyl.core.node.connections.ClientConnection;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.server.NodeServer;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.drasyl.core.common.message.StatusMessage.Code.STATUS_NOT_FOUND;
+import static org.drasyl.core.common.message.StatusMessage.Code.STATUS_OK;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -48,22 +48,22 @@ class ApplicationMessageActionTest {
     }
 
     @Test
-    void onMessageServerShouldSendResponseOkIfMessageCouldBeSent() throws DrasylException {
+    void onMessageServerShouldSendStatusOkIfMessageCouldBeSent() throws DrasylException {
         ApplicationMessageAction action = new ApplicationMessageAction(message);
         action.onMessageServer(clientConnection, nodeServer);
 
-        verify(clientConnection).send(new ResponseMessage<>(StatusMessage.OK, message.getId()));
+        verify(clientConnection).send(new StatusMessage(STATUS_OK, message.getId()));
         verify(nodeServer).send(message);
     }
 
     @Test
-    public void onMessageServerShouldSendResponseNotFoundIfMessageCouldNotBeSent() throws DrasylException {
+    public void onMessageServerShouldSendStatusNotFoundIfMessageCouldNotBeSent() throws DrasylException {
         doThrow(DrasylException.class).when(nodeServer).send(any());
 
         ApplicationMessageAction action = new ApplicationMessageAction(message);
         action.onMessageServer(clientConnection, nodeServer);
 
-        verify(clientConnection).send(new ResponseMessage<>(StatusMessage.NOT_FOUND, message.getId()));
+        verify(clientConnection).send(new StatusMessage(STATUS_NOT_FOUND, message.getId()));
     }
 
     @Test

@@ -27,7 +27,7 @@ import org.drasyl.core.common.message.action.RequestClientsStocktakingMessageAct
  * Response of this request is a {@link ResponseMessage} object that has a {@link ClientsStocktakingMessage}
  * message.
  */
-public class RequestClientsStocktakingMessage extends AbstractMessage<RequestClientsStocktakingMessage> {
+public class RequestClientsStocktakingMessage extends AbstractMessage<RequestClientsStocktakingMessage> implements RequestMessage<RequestClientsStocktakingMessage> {
     @Override
     public MessageAction<RequestClientsStocktakingMessage> getAction() {
         return new RequestClientsStocktakingMessageAction(this);

@@ -1,7 +1,6 @@
 package org.drasyl.core.common.message.action;
 
 import org.drasyl.core.common.message.JoinMessage;
-import org.drasyl.core.common.message.ResponseMessage;
 import org.drasyl.core.common.message.WelcomeMessage;
 import org.drasyl.core.node.PeerInformation;
 import org.drasyl.core.node.connections.ClientConnection;
@@ -33,6 +32,6 @@ public class JoinMessageAction extends AbstractMessageAction<JoinMessage> implem
         nodeServer.getPeersManager().addPeer(peerIdentity, peerInformation);
         nodeServer.getPeersManager().addChildren(peerIdentity);
 
-        session.send(new ResponseMessage<>(new WelcomeMessage(nodeServer.getMyIdentity().getKeyPair().getPublicKey(), nodeServer.getEntryPoints()), message.getId()));
+        session.send(new WelcomeMessage(nodeServer.getMyIdentity().getKeyPair().getPublicKey(), nodeServer.getEntryPoints(), message.getId()));
     }
 }

@@ -34,7 +34,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * A message that is sent by an application running on drasyl.
  */
-public class ApplicationMessage extends AbstractMessage<ApplicationMessage> {
+public class ApplicationMessage extends AbstractMessage<ApplicationMessage> implements RequestMessage<ApplicationMessage> {
     private final Identity recipient;
     private final Identity sender;
     private final byte[] payload;

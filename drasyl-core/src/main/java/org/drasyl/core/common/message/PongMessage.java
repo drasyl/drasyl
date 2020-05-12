@@ -24,7 +24,15 @@ import org.drasyl.core.common.message.action.PongMessageAction;
 /**
  * A message representing a PONG response.
  */
-public class PongMessage extends AbstractMessage<PongMessage> implements UnrestrictedPassableMessage {
+public class PongMessage extends AbstractResponseMessage<PingMessage, PongMessage> implements UnrestrictedPassableMessage {
+    public PongMessage(String correspondingId) {
+        super(correspondingId);
+    }
+
+    protected PongMessage() {
+        super(null);
+    }
+
     @Override
     public MessageAction<PongMessage> getAction() {
         return new PongMessageAction(this);
@@ -33,7 +41,8 @@ public class PongMessage extends AbstractMessage<PongMessage> implements Unrestr
     @Override
     public String toString() {
         return "PongMessage{" +
-                "id='" + id + '\'' +
+                "correspondingId='" + correspondingId + '\'' +
+                ", id='" + id + '\'' +
                 ", signature=" + signature +
                 '}';
     }

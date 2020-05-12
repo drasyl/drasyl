@@ -19,8 +19,9 @@
 package org.drasyl.core.node.connections;
 
 import io.reactivex.rxjava3.core.Single;
-import org.drasyl.core.common.message.Message;
 import org.drasyl.core.common.message.ResponseMessage;
+import org.drasyl.core.common.message.Message;
+import org.drasyl.core.common.message.RequestMessage;
 import org.drasyl.core.node.identity.Identity;
 
 import java.net.URI;
@@ -56,7 +57,7 @@ public interface PeerConnection extends AutoCloseable {
      *
      * @param response the response
      */
-    void setResponse(ResponseMessage<? extends Message> response);
+    void setResponse(ResponseMessage<? extends RequestMessage, ? extends Message> response);
 
     /**
      * Returns the User-Agent string.

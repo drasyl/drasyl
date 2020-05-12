@@ -21,7 +21,7 @@ package org.drasyl.core.common.message;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.javacrumbs.jsonunit.core.Option;
-import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -31,17 +31,24 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class MessageExceptionMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+    private String correspondingId;
+
+    @BeforeEach
+    void setUp() {
+        correspondingId = "correspondingId";
+    }
 
     @Test
     public void toJson() throws JsonProcessingException {
-        MessageExceptionMessage message = new MessageExceptionMessage("something horrible has happened");
+        MessageExceptionMessage message = new MessageExceptionMessage("something horrible has happened", correspondingId);
 
         assertThatJson(JSON_MAPPER.writeValueAsString(message))
                 .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo("{\"@type\":\"" + message.getClass().getSimpleName() + "\",\"id\":\"" + message.getId() + "\",\"exception\":\"something horrible has happened\"}");
+                .isEqualTo("{\"@type\":\"" + message.getClass().getSimpleName() + "\",\"id\":\"" + message.getId() + "\",\"correspondingId\":\"correspondingId\",\"exception\":\"something horrible has happened\"}");
 
         // Ignore toString()
         message.toString();
@@ -57,16 +64,16 @@ public class MessageExceptionMessageTest {
 
     @Test
     public void nullTest() {
-        Assertions.assertThrows(NullPointerException.class, () -> new MessageExceptionMessage((String) null), "NodeServerException requires an exception");
+        assertThrows(NullPointerException.class, () -> new MessageExceptionMessage((String) null, correspondingId), "NodeServerException requires an exception");
 
-        Assertions.assertThrows(NullPointerException.class, () -> new MessageExceptionMessage((Exception) null), "NodeServerException requires an exception");
+        assertThrows(NullPointerException.class, () -> new MessageExceptionMessage((Exception) null, ""), "NodeServerException requires an exception");
     }
 
     @Test
     void testEquals() {
-        MessageExceptionMessage message1 = new MessageExceptionMessage("something horrible has happened");
-        MessageExceptionMessage message2 = new MessageExceptionMessage("something horrible has happened");
-        MessageExceptionMessage message3 = new MessageExceptionMessage("something dreadful has happened");
+        MessageExceptionMessage message1 = new MessageExceptionMessage("something horrible has happened", correspondingId);
+        MessageExceptionMessage message2 = new MessageExceptionMessage("something horrible has happened", correspondingId);
+        MessageExceptionMessage message3 = new MessageExceptionMessage("something dreadful has happened", correspondingId);
 
         assertEquals(message1, message2);
         assertNotEquals(message2, message3);
@@ -74,9 +81,9 @@ public class MessageExceptionMessageTest {
 
     @Test
     void testHashCode() {
-        MessageExceptionMessage message1 = new MessageExceptionMessage("something horrible has happened");
-        MessageExceptionMessage message2 = new MessageExceptionMessage("something horrible has happened");
-        MessageExceptionMessage message3 = new MessageExceptionMessage("something dreadful has happened");
+        MessageExceptionMessage message1 = new MessageExceptionMessage("something horrible has happened", correspondingId);
+        MessageExceptionMessage message2 = new MessageExceptionMessage("something horrible has happened", correspondingId);
+        MessageExceptionMessage message3 = new MessageExceptionMessage("something dreadful has happened", correspondingId);
 
         assertEquals(message1.hashCode(), message2.hashCode());
         assertNotEquals(message2.hashCode(), message3.hashCode());

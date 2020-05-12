@@ -27,10 +27,11 @@ import java.util.Objects;
  * A message representing an exception that refers to a message. Such an exception should always be handled.
  */
 @SuppressWarnings({ "squid:S2166" })
-public class MessageExceptionMessage extends AbstractMessage<MessageExceptionMessage> implements UnrestrictedPassableMessage {
+public class MessageExceptionMessage extends AbstractResponseMessage<RequestMessage, MessageExceptionMessage> implements UnrestrictedPassableMessage {
     private final String exception;
 
     protected MessageExceptionMessage() {
+        super(null);
         exception = null;
     }
 
@@ -38,17 +39,20 @@ public class MessageExceptionMessage extends AbstractMessage<MessageExceptionMes
      * Creates a new exception message.
      *
      * @param exception the exception
+     * @param correspondingId
      */
-    public MessageExceptionMessage(Exception exception) {
-        this(exception.getMessage());
+    public MessageExceptionMessage(Exception exception, String correspondingId) {
+        this(exception.getMessage(), correspondingId);
     }
 
     /**
      * Creates a new exception message.
      *
      * @param exception the exception as String
+     * @param correspondingId
      */
-    public MessageExceptionMessage(String exception) {
+    public MessageExceptionMessage(String exception, String correspondingId) {
+        super(correspondingId);
         this.exception = Objects.requireNonNull(exception);
     }
 
@@ -56,9 +60,10 @@ public class MessageExceptionMessage extends AbstractMessage<MessageExceptionMes
      * Creates a new exception message.
      *
      * @param exception the exception
+     * @param correspondingId
      */
-    public MessageExceptionMessage(Throwable exception) {
-        this(exception.getMessage());
+    public MessageExceptionMessage(Throwable exception, String correspondingId) {
+        this(exception.getMessage(), correspondingId);
     }
 
     /**
@@ -97,6 +102,7 @@ public class MessageExceptionMessage extends AbstractMessage<MessageExceptionMes
     public String toString() {
         return "MessageExceptionMessage{" +
                 "exception='" + exception + '\'' +
+                ", correspondingId='" + correspondingId + '\'' +
                 ", id='" + id + '\'' +
                 ", signature=" + signature +
                 '}';
