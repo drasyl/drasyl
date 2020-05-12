@@ -18,29 +18,59 @@
  */
 package org.drasyl.core.common.message;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.drasyl.core.common.message.action.LeaveMessageAction;
 import org.drasyl.core.common.message.action.MessageAction;
+
+import java.util.Objects;
 
 /**
  * A message representing a termination of a connection.
  */
 public class LeaveMessage extends AbstractMessage<LeaveMessage> implements UnrestrictedPassableMessage {
-    @Override
-    public int hashCode() {
-        return super.hashCode();
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    private final String reason;
+
+    public LeaveMessage() {
+        this("");
+    }
+
+    public LeaveMessage(String reason) {
+        this.reason = reason;
     }
 
     @Override
     public boolean equals(Object o) {
-        return super.equals(o);
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        if (!super.equals(o)) {
+            return false;
+        }
+        LeaveMessage that = (LeaveMessage) o;
+        return Objects.equals(reason, that.reason);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), reason);
     }
 
     @Override
     public String toString() {
         return "LeaveMessage{" +
-                "id='" + id + '\'' +
+                "reason='" + reason + '\'' +
+                ", id='" + id + '\'' +
                 ", signature=" + signature +
                 '}';
+    }
+
+    public String getReason() {
+        return reason;
     }
 
     @Override
