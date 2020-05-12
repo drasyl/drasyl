@@ -124,7 +124,7 @@ class DefaultSessionInitializerTest {
 
     @Test
     void testIdleStage() {
-        DefaultSessionInitializer classUnderTest = new DefaultSessionInitializer(1, Duration.ofMillis(1L), 1) {
+        DefaultSessionInitializer classUnderTest = new DefaultSessionInitializer(1, Duration.ofMillis(1L), (short) 1) {
             @Override
             protected SslHandler generateSslContext(SocketChannel ch) {
                 return null;

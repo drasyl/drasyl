@@ -22,6 +22,9 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
 import org.drasyl.core.common.tools.NetworkTool;
+import org.drasyl.core.models.DrasylException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -33,6 +36,7 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 public class DrasylNodeConfig {
+    private static final Logger LOG = LoggerFactory.getLogger(DrasylNodeConfig.class);
     //======================================== Config Paths ========================================
     private static final String IDENTITY_PUBLIC_KEY = "drasyl.identity.public-key";
     private static final String IDENTITY_PRIVATE_KEY = "drasyl.identity.private-key";
@@ -53,6 +57,7 @@ public class DrasylNodeConfig {
     private static final String SUPER_PEER_ENDPOINTS = "drasyl.super-peer.endpoints";
     private static final String SUPER_PEER_PUBLIC_KEY = "drasyl.super-peer.public-key";
     private static final String SUPER_PEER_RETRY_DELAYS = "drasyl.super-peer.retry-delays";
+    private static short minShortValue;
     //======================================= Config Values ========================================
     private final String identityPublicKey;
     private final String identityPrivateKey;
@@ -61,7 +66,7 @@ public class DrasylNodeConfig {
     private final String serverBindHost;
     private final boolean serverEnabled;
     private final int serverBindPort;
-    private final int serverIdleRetries;
+    private final short serverIdleRetries;
     private final Duration serverIdleTimeout;
     private final int flushBufferSize;
     private final boolean serverSSLEnabled;
@@ -95,7 +100,7 @@ public class DrasylNodeConfig {
         this.serverEnabled = config.getBoolean(SERVER_ENABLED);
         this.serverBindHost = config.getString(SERVER_BIND_HOST);
         this.serverBindPort = config.getInt(SERVER_BIND_PORT);
-        this.serverIdleRetries = config.getInt(SERVER_IDLE_RETRIES);
+        this.serverIdleRetries = getShort(config, SERVER_IDLE_RETRIES);
         this.serverIdleTimeout = config.getDuration(SERVER_IDLE_TIMEOUT);
         this.flushBufferSize = config.getInt(FLUSH_BUFFER_SIZE);
         this.serverHandshakeTimeout = config.getDuration(SERVER_MAX_HANDSHAKE_TIMEOUT);
@@ -127,7 +132,7 @@ public class DrasylNodeConfig {
                      String serverBindHost,
                      boolean serverEnabled,
                      int serverBindPort,
-                     int serverIdleRetries,
+                     short serverIdleRetries,
                      Duration serverIdleTimeout,
                      int flushBufferSize,
                      boolean serverSSLEnabled,
@@ -192,7 +197,7 @@ public class DrasylNodeConfig {
         return serverSSLEnabled;
     }
 
-    public int getServerIdleRetries() {
+    public short getServerIdleRetries() {
         return serverIdleRetries;
     }
 
@@ -224,12 +229,12 @@ public class DrasylNodeConfig {
         return maxContentLength;
     }
 
-    public Set<String> getSuperPeerEndpoints() {
-        return superPeerEndpoints;
-    }
-
     public boolean hasSuperPeer() {
         return !getSuperPeerEndpoints().isEmpty();
+    }
+
+    public Set<String> getSuperPeerEndpoints() {
+        return superPeerEndpoints;
     }
 
     public String getSuperPeerPublicKey() {
@@ -320,5 +325,22 @@ public class DrasylNodeConfig {
         else {
             return null;
         }
+    }
+
+    /**
+     * Gets the short at the given path. Similar to {@link Config}, an exception is thrown for an
+     * out-of-range value.
+     *
+     * @param config
+     * @param path
+     * @return
+     */
+    private static short getShort(Config config, String path) {
+        int integerValue = config.getInt(path);
+        if (integerValue > Short.MAX_VALUE || integerValue < Short.MIN_VALUE) {
+            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "short", "out-of-range-value " + integerValue);
+        }
+
+        return (short) integerValue;
     }
 }
