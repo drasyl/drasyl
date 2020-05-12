@@ -66,7 +66,7 @@ public class OutboundConnectionFactory {
     private SslContext sslCtx;
     private final URI uri;
     private Duration idleTimeout;
-    private int idleRetries;
+    private short idleRetries;
     private boolean ssl;
     private int maxContentLength;
     private boolean relayToRelayCon;
@@ -195,7 +195,7 @@ public class OutboundConnectionFactory {
      * @param retries amount of retries
      * @return {@link OutboundConnectionFactory} with the changed property
      */
-    public OutboundConnectionFactory idleRetries(int retries) {
+    public OutboundConnectionFactory idleRetries(short retries) {
         this.idleRetries = retries;
 
         return this;

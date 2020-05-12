@@ -22,7 +22,7 @@ class DrasylNodeConfigTest {
     private String serverBindHost;
     private boolean serverEnabled;
     private int serverBindPort;
-    private int serverIdleRetries;
+    private short serverIdleRetries;
     private Duration serverIdleTimeout;
     private int flushBufferSize;
     private boolean serverSSLEnabled;

@@ -43,7 +43,10 @@ public class PingPongHandler extends SimpleChannelInboundHandler<Message> {
         this.counter = counter;
     }
 
-    private PingPongHandler(short retries) {
+    /**
+     * PingPongHandler with {@code retries} retries, until channel is closed.
+     */
+    public PingPongHandler(short retries) {
         this(retries, new AtomicInteger(0));
     }
 
@@ -51,14 +54,7 @@ public class PingPongHandler extends SimpleChannelInboundHandler<Message> {
      * PingPongHandler with {@code 3} retries, until channel is closed.
      */
     public PingPongHandler() {
-        this(3);
-    }
-
-    /**
-     * PingPongHandler with {@code retries} retries, until channel is closed.
-     */
-    public PingPongHandler(int retries) {
-        this((short) Math.max(1, Math.min(retries, Short.MAX_VALUE)));
+        this((short) 3);
     }
 
     @Override

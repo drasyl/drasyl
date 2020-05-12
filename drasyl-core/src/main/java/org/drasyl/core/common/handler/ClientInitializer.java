@@ -42,7 +42,7 @@ public abstract class ClientInitializer extends DefaultSessionInitializer {
     private final int maxContentLength;
     private final URI target;
 
-    protected ClientInitializer(int flushBufferSize, Duration readIdleTimeout, int pingPongRetries,
+    protected ClientInitializer(int flushBufferSize, Duration readIdleTimeout, short pingPongRetries,
                                 int maxContentLength, URI target,
                                 CompletableFuture<Void> channelReadyFuture) {
         super(flushBufferSize, readIdleTimeout, pingPongRetries);
@@ -63,7 +63,7 @@ public abstract class ClientInitializer extends DefaultSessionInitializer {
      * @param maxContentLength The maximum length of the aggregated content in bytes that a message can have
      * @param target           the target URI
      */
-    public ClientInitializer(int flushBufferSize, Duration readIdleTimeout, int pingPongRetries,
+    public ClientInitializer(int flushBufferSize, Duration readIdleTimeout, short pingPongRetries,
                              int maxContentLength, URI target) {
         this(flushBufferSize, readIdleTimeout, pingPongRetries,
                 maxContentLength, target, new CompletableFuture<>());

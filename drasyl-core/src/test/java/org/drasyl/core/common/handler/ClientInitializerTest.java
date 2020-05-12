@@ -41,7 +41,7 @@ import static org.mockito.Mockito.*;
 class ClientInitializerTest {
     private int flushBufferSize;
     private Duration readIdleTimeout;
-    private int pingPongRetries;
+    private short pingPongRetries;
     private int maxContentLength;
     private URI ipAddress;
     private CompletableFuture<Void> channelReadyFuture;

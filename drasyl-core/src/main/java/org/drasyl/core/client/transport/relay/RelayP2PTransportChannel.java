@@ -60,7 +60,7 @@ public class RelayP2PTransportChannel implements P2PTransportChannel {
                         shutdownFuture.completeExceptionally(new P2PTransportChannelException("An error has occurred in the connection to the relay server. Close connection: " + cause.getMessage(), cause));
                         ctx.close();
                     }
-                }, 256, Duration.ofMinutes(1), 3,1000000, properties.getRelayUrl()
+                }, 256, Duration.ofMinutes(1), (short) 3,1000000, properties.getRelayUrl()
         );
         // .addLast(new EnvelopeMessageHandler(system, transport.getProvider(), transport.defaultAddress()))
         //                                .addLast(new RelayMessageHandler())

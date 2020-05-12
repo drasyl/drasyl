@@ -47,9 +47,9 @@ public abstract class DefaultSessionInitializer extends ChannelInitializer<Socke
     public static final String IDLE_EVENT = "idleEvent";
     private final int flushBufferSize;
     private final Duration readIdleTimeout;
-    private final int pingPongRetries;
+    private final short pingPongRetries;
 
-    protected DefaultSessionInitializer(int flushBufferSize, Duration readIdleTimeout, int pingPongRetries) {
+    protected DefaultSessionInitializer(int flushBufferSize, Duration readIdleTimeout, short pingPongRetries) {
         this.flushBufferSize = flushBufferSize;
         this.readIdleTimeout = readIdleTimeout;
         this.pingPongRetries = pingPongRetries;

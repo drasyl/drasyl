@@ -35,7 +35,7 @@ public class RelayP2PTransportChannelInitializer extends ClientInitializer {
                                                RelayMessageHandler relayMessageHandler,
                                                RelayJoinHandler joinHandlerSupplier,
                                                SimpleChannelInboundHandler<InboundMessageEnvelope> inboundHandler,
-                                               int flushBufferSize, Duration readIdleTimeout, int pingPongRetries,
+                                               int flushBufferSize, Duration readIdleTimeout, short pingPongRetries,
                                                int maxContentLength, URI target) {
         super(flushBufferSize, readIdleTimeout, pingPongRetries, maxContentLength, target);
         this.envelopeMessageHandler = envelopeMessageHandler;

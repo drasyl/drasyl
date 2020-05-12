@@ -142,7 +142,7 @@ public class TestServerConnection extends NettyPeerConnection {
                 })
                 .ssl(true)
                 .idleTimeout(Duration.ZERO)
-                .idleRetries(Integer.MAX_VALUE)
+                .idleRetries(Short.MAX_VALUE)
                 .pingPong(pingPong);
 
         factory.build();
