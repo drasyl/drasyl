@@ -61,6 +61,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import static org.awaitility.Awaitility.with;
+import static org.drasyl.core.common.message.StatusMessage.Code.STATUS_FORBIDDEN;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
@@ -83,6 +84,7 @@ public class NodeServerIT {
     private static EventLoopGroup workerGroup;
     private static EventLoopGroup bossGroup;
     private Messenger messenger;
+    private String correspondingId;
 
     @BeforeAll
     public static void beforeAll() {
@@ -111,6 +113,8 @@ public class NodeServerIT {
 
         TestHelper.waitUntilNetworkAvailable(config.getServerBindPort());
         server.open();
+
+        correspondingId = "correspondingId";
 
         CompressedKeyPair keyPair = mock(CompressedKeyPair.class);
         CompressedPublicKey publicKey = CompressedPublicKey.of("0343bc674c4e58a289d3904a16f83177581770d32e3ee0d63b7c75ee2b32c733b1");
@@ -297,8 +301,8 @@ public class NodeServerIT {
             clientConnections.add(session);
 
             session.addListener(message -> {
-                if (message instanceof MessageExceptionMessage) {
-                    MessageExceptionMessage e = (MessageExceptionMessage) message;
+                if (message instanceof ConnectionExceptionMessage) {
+                    ConnectionExceptionMessage e = (ConnectionExceptionMessage) message;
 
                     assertEquals(
                             "Handshake did not take place successfully in "
@@ -542,11 +546,11 @@ public class NodeServerIT {
             TestServerConnection session = TestServerConnection.build(server);
             clientConnections.add(session);
 
-            ResponseMessage<MessageExceptionMessage> msg = new ResponseMessage<>(new MessageExceptionMessage("Test"), Crypto.randomString(12));
+            ResponseMessage<RequestMessage, MessageExceptionMessage> msg = new MessageExceptionMessage("Test", Crypto.randomString(12));
 
             session.send(msg, StatusMessage.class).subscribe(response -> {
-                assertThat(response, anyOf(
-                        equalTo(StatusMessage.FORBIDDEN)));
+                assertThat(response.getCode(), anyOf(
+                        equalTo(STATUS_FORBIDDEN)));
 
                 lock.countDown();
             });

@@ -24,7 +24,15 @@ import org.drasyl.core.common.message.action.RejectMessageAction;
 /**
  * A message representing a rejection of a connection.
  */
-public class RejectMessage extends AbstractMessage<RejectMessage> implements UnrestrictedPassableMessage {
+public class RejectMessage extends AbstractResponseMessage<RequestMessage, RejectMessage> implements UnrestrictedPassableMessage {
+    public RejectMessage(String correspondingId) {
+        super(correspondingId);
+    }
+
+    protected RejectMessage() {
+        super("");
+    }
+
     @Override
     public int hashCode() {
         return super.hashCode();
@@ -36,15 +44,16 @@ public class RejectMessage extends AbstractMessage<RejectMessage> implements Unr
     }
 
     @Override
-    public String toString() {
-        return "RejectMessage{" +
-                "id='" + id + '\'' +
-                ", signature=" + signature +
-                '}';
+    public MessageAction<RejectMessage> getAction() {
+        return new RejectMessageAction(this);
     }
 
     @Override
-    public MessageAction<RejectMessage> getAction() {
-        return new RejectMessageAction(this);
+    public String toString() {
+        return "RejectMessage{" +
+                "correspondingId='" + correspondingId + '\'' +
+                ", id='" + id + '\'' +
+                ", signature=" + signature +
+                '}';
     }
 }

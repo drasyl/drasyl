@@ -24,7 +24,7 @@ import org.drasyl.core.common.message.action.PingMessageAction;
 /**
  * A message representing a PING request.
  */
-public class PingMessage extends AbstractMessage<PingMessage> implements UnrestrictedPassableMessage {
+public class PingMessage extends AbstractMessage<PingMessage> implements RequestMessage<PingMessage>, UnrestrictedPassableMessage {
     @Override
     public MessageAction<PingMessage> getAction() {
         return new PingMessageAction(this);

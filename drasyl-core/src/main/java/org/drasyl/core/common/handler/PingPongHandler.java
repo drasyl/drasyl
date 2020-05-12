@@ -76,7 +76,7 @@ public class PingPongHandler extends SimpleChannelInboundHandler<Message> {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
         if (msg instanceof PingMessage) {
-            ctx.writeAndFlush(new PongMessage());
+            ctx.writeAndFlush(new PongMessage(msg.getId()));
             ReferenceCountUtil.release(msg);
         } else if (msg instanceof PongMessage) {
             counter.set(0);

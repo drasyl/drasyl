@@ -21,6 +21,7 @@ package org.drasyl.core.common.message;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.javacrumbs.jsonunit.core.Option;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -32,14 +33,20 @@ import static org.junit.Assert.assertEquals;
 
 class RejectMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+    private String correspondingId;
+
+    @BeforeEach
+    void setUp() {
+        correspondingId = "correspondingId";
+    }
 
     @Test
     public void toJson() throws JsonProcessingException {
-        RejectMessage message = new RejectMessage();
+        RejectMessage message = new RejectMessage(correspondingId);
 
         assertThatJson(JSON_MAPPER.writeValueAsString(message))
                 .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo("{\"@type\":\"RejectMessage\",\"id\":\"" + message.getId() + "\"}");
+                .isEqualTo("{\"@type\":\"RejectMessage\",\"id\":\"" + message.getId() + "\",\"correspondingId\":\"correspondingId\"}");
 
         // Ignore toString()
         message.toString();
@@ -54,16 +61,16 @@ class RejectMessageTest {
 
     @Test
     void testEquals() {
-        RejectMessage message1 = new RejectMessage();
-        RejectMessage message2 = new RejectMessage();
+        RejectMessage message1 = new RejectMessage(correspondingId);
+        RejectMessage message2 = new RejectMessage(correspondingId);
 
         assertEquals(message1, message2);
     }
 
     @Test
     void testHashCode() {
-        RejectMessage message1 = new RejectMessage();
-        RejectMessage message2 = new RejectMessage();
+        RejectMessage message1 = new RejectMessage(correspondingId);
+        RejectMessage message2 = new RejectMessage(correspondingId);
 
         assertEquals(message1.hashCode(), message2.hashCode());
     }

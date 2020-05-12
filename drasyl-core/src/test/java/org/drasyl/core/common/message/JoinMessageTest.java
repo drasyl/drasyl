@@ -39,6 +39,7 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class JoinMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
@@ -79,17 +80,11 @@ public class JoinMessageTest {
 
     @Test
     public void nullTest() {
-        Assertions.assertThrows(NullPointerException.class, () -> {
-            new JoinMessage(null, endpoints);
-        }, "Join requires a public key");
+        assertThrows(NullPointerException.class, () -> new JoinMessage(null, endpoints), "Join requires a public key");
 
-        Assertions.assertThrows(NullPointerException.class, () -> {
-            new JoinMessage(publicKey, null);
-        }, "Join requires endpoints");
+        assertThrows(NullPointerException.class, () -> new JoinMessage(publicKey, null), "Join requires endpoints");
 
-        Assertions.assertThrows(NullPointerException.class, () -> {
-            new JoinMessage(null, null);
-        }, "Join requires a public key and endpoints");
+        assertThrows(NullPointerException.class, () -> new JoinMessage(null, null), "Join requires a public key and endpoints");
     }
 
     @Test

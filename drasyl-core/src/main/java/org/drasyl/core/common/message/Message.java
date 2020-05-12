@@ -41,7 +41,6 @@ import org.drasyl.crypto.Signable;
         @JsonSubTypes.Type(value = PongMessage.class),
         @JsonSubTypes.Type(value = RejectMessage.class),
         @JsonSubTypes.Type(value = RequestClientsStocktakingMessage.class),
-        @JsonSubTypes.Type(value = ResponseMessage.class),
         @JsonSubTypes.Type(value = StatusMessage.class),
         @JsonSubTypes.Type(value = WelcomeMessage.class),
 })

@@ -20,15 +20,19 @@ package org.drasyl.core.server.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.core.common.message.*;
 import org.drasyl.core.models.CompressedPublicKey;
+import org.junit.Ignore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.drasyl.core.common.message.StatusMessage.Code.STATUS_FORBIDDEN;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
@@ -39,6 +43,7 @@ class JoinHandlerTest {
     private ChannelPromise promise;
     private Message msg;
     private CompressedPublicKey publicKey;
+    private EventExecutor eventExecutor;
 
     @BeforeEach
     void setUp() {
@@ -47,6 +52,25 @@ class JoinHandlerTest {
         timeoutFuture = mock(ScheduledFuture.class);
         msg = new LeaveMessage();
         publicKey = mock(CompressedPublicKey.class);
+        eventExecutor = mock(EventExecutor.class);
+    }
+
+    // FIXME: fix test
+    @Ignore
+    void channelActiveShouldThrowExceptionAndCloseChannelOnTimeout() throws Exception {
+        when(ctx.executor()).thenReturn(eventExecutor);
+        when(eventExecutor.schedule(any(Runnable.class), any(), any(TimeUnit.class))).then(invocation -> {
+            Runnable runnable = invocation.getArgument(0, Runnable.class);
+            runnable.run();
+            return mock(ScheduledFuture.class);
+        });
+
+        JoinHandler handler = new JoinHandler(new AtomicBoolean(false), 1L, timeoutFuture);
+
+        handler.channelActive(ctx);
+
+        verify(ctx).writeAndFlush(any(ConnectionExceptionMessage.class));
+        verify(ctx).close();
     }
 
     @Test
@@ -88,12 +112,12 @@ class JoinHandlerTest {
     }
 
     @Test
-    void channelRead0ShouldReplyWithResponseForbiddenForNonJoinMessageIfNotAuthenticated() throws Exception {
+    void channelRead0ShouldReplyWithStatusForbiddenForNonJoinMessageIfNotAuthenticated() throws Exception {
         JoinHandler handler = new JoinHandler(new AtomicBoolean(false), 1L, timeoutFuture);
 
         handler.channelRead0(ctx, msg);
 
-        verify(ctx).writeAndFlush(any(ResponseMessage.class));
+        verify(ctx).writeAndFlush(new StatusMessage(STATUS_FORBIDDEN, msg.getId()));
         verify(ctx, never()).fireChannelRead(any(Message.class));
     }
 
@@ -104,7 +128,7 @@ class JoinHandlerTest {
 
         handler.channelRead0(ctx, msg);
 
-        verify(ctx, never()).writeAndFlush(any(ResponseMessage.class));
+        verify(ctx, never()).writeAndFlush(any(Message.class));
         verify(timeoutFuture).cancel(true);
         verify(ctx).fireChannelRead(any(JoinMessage.class));
         assertTrue(handler.authenticated.get());
@@ -117,7 +141,7 @@ class JoinHandlerTest {
 
         handler.channelRead0(ctx, msg);
 
-        verify(ctx).writeAndFlush(any(ResponseMessage.class));
+        verify(ctx).writeAndFlush(any(MessageExceptionMessage.class));
         verify(timeoutFuture, never()).cancel(true);
         verify(ctx, never()).fireChannelRead(any(JoinMessage.class));
         assertTrue(handler.authenticated.get());
@@ -129,7 +153,7 @@ class JoinHandlerTest {
 
         handler.channelRead0(ctx, msg);
 
-        verify(ctx, never()).writeAndFlush(any(ResponseMessage.class));
+        verify(ctx, never()).writeAndFlush(any(Message.class));
         verify(timeoutFuture, never()).cancel(true);
         verify(ctx, never()).fireChannelRead(any(JoinMessage.class));
         assertTrue(handler.authenticated.get());

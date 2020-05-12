@@ -24,10 +24,7 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
-import org.drasyl.core.common.message.JoinMessage;
-import org.drasyl.core.common.message.Message;
-import org.drasyl.core.common.message.ResponseMessage;
-import org.drasyl.core.common.message.WelcomeMessage;
+import org.drasyl.core.common.message.*;
 import org.drasyl.core.models.CompressedPublicKey;
 import org.drasyl.core.node.connections.NettyPeerConnection;
 import org.drasyl.core.node.connections.OutboundConnectionFactory;
@@ -179,7 +176,7 @@ public class TestServerConnection extends NettyPeerConnection {
         }
 
         if (message instanceof ResponseMessage) {
-            ResponseMessage<Message> response = (ResponseMessage<Message>) message;
+            ResponseMessage<RequestMessage,Message> response = (ResponseMessage<RequestMessage,Message>) message;
             setResponse(response);
         }
 

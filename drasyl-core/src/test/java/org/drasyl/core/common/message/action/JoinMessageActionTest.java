@@ -1,9 +1,6 @@
 package org.drasyl.core.common.message.action;
 
-import com.typesafe.config.ConfigFactory;
 import org.drasyl.core.common.message.JoinMessage;
-import org.drasyl.core.common.message.ResponseMessage;
-import org.drasyl.core.common.message.StatusMessage;
 import org.drasyl.core.common.message.WelcomeMessage;
 import org.drasyl.core.models.CompressedKeyPair;
 import org.drasyl.core.models.CompressedPublicKey;
@@ -13,7 +10,6 @@ import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.node.identity.IdentityManager;
 import org.drasyl.core.node.identity.IdentityTestHelper;
 import org.drasyl.core.server.NodeServer;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockitoAnnotations;
@@ -35,6 +31,7 @@ class JoinMessageActionTest {
     private CompressedKeyPair keyPair;
     private Messenger messenger;
     private ConnectionsManager connectionsManager;
+    private String correspondingId;
 
     @BeforeEach
     void setUp() {
@@ -45,6 +42,7 @@ class JoinMessageActionTest {
         peersManager = mock(PeersManager.class);
         compressedPublicKey = mock(CompressedPublicKey.class);
         id = "id";
+        correspondingId = "correspondingId";
 
         identityManager = mock(IdentityManager.class);
         keyPair = mock(CompressedKeyPair.class);
@@ -77,6 +75,6 @@ class JoinMessageActionTest {
         verify(peersManager).addPeer(Identity.of(compressedPublicKey), myPeerInformation);
         verify(peersManager).addChildren(Identity.of(compressedPublicKey));
 
-        verify(session).send(new ResponseMessage<>(new WelcomeMessage(nodeServer.getMyIdentity().getKeyPair().getPublicKey(), nodeServer.getEntryPoints()), message.getId()));
+        verify(session).send(new WelcomeMessage(nodeServer.getMyIdentity().getKeyPair().getPublicKey(), nodeServer.getEntryPoints(), id));
     }
 }

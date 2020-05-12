@@ -23,9 +23,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.core.SingleEmitter;
-import org.drasyl.core.common.message.Message;
-import org.drasyl.core.common.message.LeaveMessage;
-import org.drasyl.core.common.message.ResponseMessage;
+import org.drasyl.core.common.message.*;
 import org.drasyl.core.common.models.Pair;
 import org.drasyl.core.node.identity.Identity;
 import org.slf4j.Logger;
@@ -137,10 +135,10 @@ public abstract class NettyPeerConnection implements PeerConnection {
     }
 
     @Override
-    public void setResponse(ResponseMessage<? extends Message> response) {
+    public void setResponse(ResponseMessage<? extends RequestMessage, ? extends Message> response) {
         Pair<Class<? extends Message>, SingleEmitter<Message>> pair = emitters.remove(response.getCorrespondingId());
         if (pair != null) {
-            pair.second().onSuccess(response.getMessage());
+            pair.second().onSuccess(response);
         }
     }
 

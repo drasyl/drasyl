@@ -1,8 +1,8 @@
 package org.drasyl.core.client.transport.relay.handler;
 
 import org.drasyl.core.common.handler.SimpleChannelDuplexHandler;
-import org.drasyl.core.common.message.Message;
 import org.drasyl.core.common.message.ResponseMessage;
+import org.drasyl.core.common.message.Message;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
 import org.slf4j.Logger;
@@ -30,16 +30,15 @@ public class RelayRequestHandler extends SimpleChannelDuplexHandler<ResponseMess
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, ResponseMessage response) {
-        Message message = response.getMessage();
         String messageID = response.getCorrespondingId();
         Request request = requests.remove(messageID);
         if (request != null) {
-            log.debug("Received response for id {}: {}", messageID, message);
-            request.completeRequest(message);
+            log.debug("Received response for id {}: {}", messageID, response);
+            request.completeRequest(response);
             ctx.fireChannelRead(response);
         }
         else {
-            log.debug("Unknown response with id {} received: ", messageID, message);
+            log.debug("Unknown response with id {} received: ", messageID, response);
             ReferenceCountUtil.release(response);
         }
     }

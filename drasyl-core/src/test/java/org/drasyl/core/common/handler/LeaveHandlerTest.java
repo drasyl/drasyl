@@ -23,10 +23,11 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.core.common.message.LeaveMessage;
-import org.drasyl.core.common.message.ResponseMessage;
+import org.drasyl.core.common.message.StatusMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.drasyl.core.common.message.StatusMessage.Code.STATUS_OK;
 import static org.mockito.Mockito.*;
 
 class LeaveHandlerTest {
@@ -48,10 +49,10 @@ class LeaveHandlerTest {
     }
 
     @Test
-    void channelRead0ShouldSendResponseOkAndThenCloseChannel() throws Exception {
+    void channelRead0ShouldSendStatusOkAndThenCloseChannel() throws Exception {
         handler.channelRead0(ctx, msg);
 
-        verify(ctx).writeAndFlush(any(ResponseMessage.class));
+        verify(ctx).writeAndFlush(new StatusMessage(STATUS_OK, msg.getId()));
         verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
     }
 }

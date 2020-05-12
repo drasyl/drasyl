@@ -30,6 +30,8 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.drasyl.core.common.message.StatusMessage.Code.STATUS_FORBIDDEN;
+
 /**
  * Acts as a guard for in- and outbound connections. A session is only created, when a {@link JoinMessage}
  * was received. Outgoing messages are dropped unless a {@link JoinMessage} was received. Every other
@@ -62,7 +64,7 @@ public class JoinHandler extends SimpleChannelDuplexHandler<Message, Message> {
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         timeoutFuture = ctx.executor().schedule(() -> {
             if (!timeoutFuture.isCancelled() && !authenticated.get()) {
-                ctx.writeAndFlush(new MessageExceptionMessage("Handshake did not take place successfully in " + timeout + " ms. " +
+                ctx.writeAndFlush(new ConnectionExceptionMessage("Handshake did not take place successfully in " + timeout + " ms. " +
                         "Connection is closed."));
                 ctx.close();
                 LOG.debug("[{}]: Handshake did not take place successfully in {} ms. "
@@ -100,8 +102,8 @@ public class JoinHandler extends SimpleChannelDuplexHandler<Message, Message> {
     protected void channelRead0(ChannelHandlerContext ctx, Message request) throws Exception {
         if (authenticated.get()) {
             if (request instanceof JoinMessage) {
-                ctx.writeAndFlush(new ResponseMessage<>(new MessageExceptionMessage("This client has already an open "
-                        + "session with this node server. No need to authenticate twice."), request.getId()));
+                ctx.writeAndFlush(new MessageExceptionMessage("This client has already an open "
+                        + "session with this node server. No need to authenticate twice.", request.getId()));
                 ReferenceCountUtil.release(request);
             }
             else {
@@ -113,7 +115,7 @@ public class JoinHandler extends SimpleChannelDuplexHandler<Message, Message> {
             ctx.fireChannelRead(request);
         }
         else {
-            ctx.writeAndFlush(new ResponseMessage<>(StatusMessage.FORBIDDEN, request.getId()));
+            ctx.writeAndFlush(new StatusMessage(STATUS_FORBIDDEN, request.getId()));
             ReferenceCountUtil.release(request);
             LOG.debug("[{}] Client is not authenticated. Inbound message was dropped: '{}'",
                     ctx, request);

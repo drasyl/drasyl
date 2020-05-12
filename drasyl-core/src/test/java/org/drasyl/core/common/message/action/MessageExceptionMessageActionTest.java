@@ -1,13 +1,13 @@
 package org.drasyl.core.common.message.action;
 
 import org.drasyl.core.common.message.MessageExceptionMessage;
-import org.drasyl.core.common.message.ResponseMessage;
 import org.drasyl.core.common.message.StatusMessage;
 import org.drasyl.core.node.connections.ClientConnection;
 import org.drasyl.core.server.NodeServer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.drasyl.core.common.message.StatusMessage.Code.STATUS_OK;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -30,22 +30,12 @@ class MessageExceptionMessageActionTest {
     }
 
     @Test
-    void onMessageServerShouldShouldSendResponseOk() {
+    void onMessageServerShouldShouldSetResponse() {
         MessageExceptionMessageAction action = new MessageExceptionMessageAction(message);
 
         action.onMessageServer(clientConnection, nodeServer);
 
-        verify(clientConnection).send(new ResponseMessage<>(StatusMessage.OK, message.getId()));
-        verifyNoInteractions(nodeServer);
-    }
-
-    @Test
-    void onResponseServerShouldShouldSetResponseOk() {
-        MessageExceptionMessageAction action = new MessageExceptionMessageAction(message);
-
-        action.onResponseServer(correspondingId, clientConnection, nodeServer);
-
-        verify(clientConnection).setResponse(new ResponseMessage<>(message, correspondingId));
+        verify(clientConnection).setResponse(message);
         verifyNoInteractions(nodeServer);
     }
 }

@@ -2,7 +2,6 @@ package org.drasyl.core.common.message.action;
 
 import org.drasyl.core.client.SuperPeerClient;
 import org.drasyl.core.common.message.Message;
-import org.drasyl.core.common.message.ResponseMessage;
 
 /**
  * This class describes how a client has to respond when receiving a {@link ResponseMessage} for Message of

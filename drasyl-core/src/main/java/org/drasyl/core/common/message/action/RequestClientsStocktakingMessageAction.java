@@ -2,7 +2,6 @@ package org.drasyl.core.common.message.action;
 
 import org.drasyl.core.common.message.ClientsStocktakingMessage;
 import org.drasyl.core.common.message.RequestClientsStocktakingMessage;
-import org.drasyl.core.common.message.ResponseMessage;
 import org.drasyl.core.node.connections.ClientConnection;
 import org.drasyl.core.server.NodeServer;
 
@@ -14,7 +13,6 @@ public class RequestClientsStocktakingMessageAction extends AbstractMessageActio
     @Override
     public void onMessageServer(ClientConnection session,
                                 NodeServer nodeServer) {
-        session.send(new ResponseMessage<>(new ClientsStocktakingMessage(nodeServer.getPeersManager().getChildren()),
-                message.getId()));
+        session.send(new ClientsStocktakingMessage(nodeServer.getPeersManager().getChildren(), message.getId()));
     }
 }

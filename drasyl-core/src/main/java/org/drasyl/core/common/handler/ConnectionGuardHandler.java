@@ -48,7 +48,7 @@ public class ConnectionGuardHandler extends SimpleChannelInboundHandler<Message>
         }
         else {
             try {
-                ctx.writeAndFlush(new RejectMessage());
+                ctx.writeAndFlush(new RejectMessage(msg.getId()));
                 ctx.close();
                 LOG.debug("ConnectionGuard blocked creation of channel {}.", ctx.channel().id());
             }
