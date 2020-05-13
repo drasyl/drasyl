@@ -5,5 +5,5 @@ package org.drasyl.core.common.message;
  *
  * @param <T>
  */
-public interface RequestMessage<T extends Message> extends Message<T> {
+public interface RequestMessage<T extends Message<?>> extends Message<T> {
 }

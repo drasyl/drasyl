@@ -18,6 +18,7 @@
  */
 package org.drasyl.core.server.handler;
 
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
@@ -33,9 +34,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.drasyl.core.common.message.StatusMessage.Code.STATUS_FORBIDDEN;
 
 /**
- * Acts as a guard for in- and outbound connections. A session is only created, when a {@link JoinMessage}
- * was received. Outgoing messages are dropped unless a {@link JoinMessage} was received. Every other
- * incoming message is also dropped unless a {@link JoinMessage} was received.
+ * Acts as a guard for in- and outbound connections. A session is only created, when a {@link
+ * JoinMessage} was received. Outgoing messages are dropped unless a {@link JoinMessage} was
+ * received. Every other incoming message is also dropped unless a {@link JoinMessage} was
+ * received.
  * <p>
  * If a {@link JoinMessage} was not received in {@link org.drasyl.core.node.DrasylNodeConfig#getServerHandshakeTimeout()}
  * the connection will be closed.
@@ -43,7 +45,7 @@ import static org.drasyl.core.common.message.StatusMessage.Code.STATUS_FORBIDDEN
 public class JoinHandler extends SimpleChannelDuplexHandler<Message, Message> {
     private static final Logger LOG = LoggerFactory.getLogger(JoinHandler.class);
     public static final String JOIN_GUARD = "joinGuard";
-    protected volatile AtomicBoolean authenticated;
+    protected AtomicBoolean authenticated;
     private ScheduledFuture<?> timeoutFuture;
     private final long timeout;
 
@@ -65,8 +67,7 @@ public class JoinHandler extends SimpleChannelDuplexHandler<Message, Message> {
         timeoutFuture = ctx.executor().schedule(() -> {
             if (!timeoutFuture.isCancelled() && !authenticated.get()) {
                 ctx.writeAndFlush(new ConnectionExceptionMessage("Handshake did not take place successfully in " + timeout + " ms. " +
-                        "Connection is closed."));
-                ctx.close();
+                        "Connection is closed.")).addListener(ChannelFutureListener.CLOSE);
                 LOG.debug("[{}]: Handshake did not take place successfully in {} ms. "
                         + "Connection is closed.", ctx.channel().id(), timeout);
             }
@@ -82,13 +83,15 @@ public class JoinHandler extends SimpleChannelDuplexHandler<Message, Message> {
     }
 
     @Override
-    protected void channelWrite0(ChannelHandlerContext ctx, Message msg) throws Exception {
+    protected void channelWrite0(ChannelHandlerContext ctx,
+                                 Message msg,
+                                 ChannelPromise promise) throws Exception {
         if (authenticated.get()) {
-            ctx.write(msg);
+            ctx.write(msg, promise);
         }
         else {
             if (msg instanceof UnrestrictedPassableMessage) {
-                ctx.write(msg);
+                ctx.write(msg, promise);
             }
             else {
                 ReferenceCountUtil.release(msg);

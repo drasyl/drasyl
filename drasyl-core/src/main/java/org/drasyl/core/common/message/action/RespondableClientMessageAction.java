@@ -9,7 +9,7 @@ import org.drasyl.core.common.message.Message;
  *
  * @param <T>
  */
-public interface RespondableClientMessageAction<T extends Message> extends ClientMessageAction<T> {
+public interface RespondableClientMessageAction<T extends Message<?>> extends ClientMessageAction<T> {
     /**
      * Describes how the Client <code>superPeerClient</code> should react when a response for a
      * {@link Message} of type <code>T</code> is received from Server in the connection

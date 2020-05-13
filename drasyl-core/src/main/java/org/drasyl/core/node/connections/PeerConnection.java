@@ -19,9 +19,9 @@
 package org.drasyl.core.node.connections;
 
 import io.reactivex.rxjava3.core.Single;
-import org.drasyl.core.common.message.ResponseMessage;
 import org.drasyl.core.common.message.Message;
 import org.drasyl.core.common.message.RequestMessage;
+import org.drasyl.core.common.message.ResponseMessage;
 import org.drasyl.core.node.identity.Identity;
 
 import java.net.URI;
@@ -38,7 +38,7 @@ public interface PeerConnection extends AutoCloseable {
      *
      * @param message message that should be sent
      */
-    void send(Message message);
+    void send(Message<?> message);
 
     /**
      * Sends a message to the peer and returns a {@link Single} object for potential responses to
@@ -50,14 +50,16 @@ public interface PeerConnection extends AutoCloseable {
      * @return a {@link Single} object that can be fulfilled with a {@link Message response} to the
      * * message
      */
-    <T extends Message> Single<T> send(Message message, Class<T> responseClass);
+    <T extends ResponseMessage<? extends RequestMessage<?>, ? extends Message<?>>> Single<T> send(
+            RequestMessage<?> message,
+            Class<T> responseClass);
 
     /**
-     * Sets the result of a {@link Single} object from a {@link #send(Message, Class)} call.
+     * Sets the result of a {@link Single} object from a {@link #send(RequestMessage, Class)} call.
      *
      * @param response the response
      */
-    void setResponse(ResponseMessage<? extends RequestMessage, ? extends Message> response);
+    void setResponse(ResponseMessage<? extends RequestMessage<?>, ? extends Message<?>> response);
 
     /**
      * Returns the User-Agent string.
@@ -86,10 +88,4 @@ public interface PeerConnection extends AutoCloseable {
      * successfully.
      */
     CompletableFuture<Boolean> isClosed();
-
-    /**
-     * Returns a unique identifier of this connection, so that this return value can be used to sort
-     * in lists.
-     */
-    String getConnectionId();
 }

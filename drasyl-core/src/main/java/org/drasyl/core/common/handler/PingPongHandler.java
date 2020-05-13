@@ -16,22 +16,25 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.core.common.handler;
 
-import org.drasyl.core.common.message.*;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.ReferenceCountUtil;
+import org.drasyl.core.common.message.ConnectionExceptionMessage;
+import org.drasyl.core.common.message.Message;
+import org.drasyl.core.common.message.PingMessage;
+import org.drasyl.core.common.message.PongMessage;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * This handler answers automatically to {@link PingMessage}. When a {@link IdleStateHandler} is registered, it's
- * also ask periodically for a {@link PongMessage} from the peer.
+ * This handler answers automatically to {@link PingMessage}. When a {@link IdleStateHandler} is
+ * registered, it's also ask periodically for a {@link PongMessage} from the peer.
  */
 public class PingPongHandler extends SimpleChannelInboundHandler<Message> {
     public static final String PING_PONG_HANDLER = "pingPongHandler";
@@ -64,9 +67,9 @@ public class PingPongHandler extends SimpleChannelInboundHandler<Message> {
             if (e.state() == IdleState.READER_IDLE) {
                 if (counter.getAndIncrement() > retries) {
                     ctx.writeAndFlush(new ConnectionExceptionMessage(
-                            "Too many PingMessages were not answered with a PongMessage. Connection will be closed."));
-                    ctx.close();
-                } else {
+                            "Too many PingMessages were not answered with a PongMessage. Connection will be closed.")).addListener(ChannelFutureListener.CLOSE);
+                }
+                else {
                     ctx.writeAndFlush(new PingMessage());
                 }
             }
@@ -78,9 +81,11 @@ public class PingPongHandler extends SimpleChannelInboundHandler<Message> {
         if (msg instanceof PingMessage) {
             ctx.writeAndFlush(new PongMessage(msg.getId()));
             ReferenceCountUtil.release(msg);
-        } else if (msg instanceof PongMessage) {
+        }
+        else if (msg instanceof PongMessage) {
             counter.set(0);
-        } else {
+        }
+        else {
             ctx.fireChannelRead(msg);
         }
     }

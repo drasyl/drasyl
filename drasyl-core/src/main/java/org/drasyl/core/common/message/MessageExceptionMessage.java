@@ -24,10 +24,11 @@ import org.drasyl.core.common.message.action.MessageExceptionMessageAction;
 import java.util.Objects;
 
 /**
- * A message representing an exception that refers to a message. Such an exception should always be handled.
+ * A message representing an exception that refers to a message. Such an exception should always be
+ * handled.
  */
 @SuppressWarnings({ "squid:S2166" })
-public class MessageExceptionMessage extends AbstractResponseMessage<RequestMessage, MessageExceptionMessage> implements UnrestrictedPassableMessage {
+public class MessageExceptionMessage extends AbstractResponseMessage<RequestMessage<?>, MessageExceptionMessage> implements UnrestrictedPassableMessage {
     private final String exception;
 
     protected MessageExceptionMessage() {
@@ -79,11 +80,6 @@ public class MessageExceptionMessage extends AbstractResponseMessage<RequestMess
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), exception);
-    }
-
-    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
@@ -96,6 +92,11 @@ public class MessageExceptionMessage extends AbstractResponseMessage<RequestMess
         }
         MessageExceptionMessage that = (MessageExceptionMessage) o;
         return Objects.equals(exception, that.exception);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), exception);
     }
 
     @Override

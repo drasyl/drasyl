@@ -28,9 +28,7 @@ import org.drasyl.core.common.message.RequestMessage;
 import org.drasyl.core.common.message.ResponseMessage;
 import org.drasyl.core.common.message.action.MessageAction;
 import org.drasyl.core.common.message.action.ServerMessageAction;
-import org.drasyl.core.node.PeerInformation;
 import org.drasyl.core.node.connections.ClientConnection;
-import org.drasyl.core.node.connections.PeerConnection;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.server.NodeServer;
 import org.slf4j.Logger;
@@ -39,7 +37,6 @@ import org.slf4j.LoggerFactory;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.Comparator;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -48,8 +45,8 @@ import static org.drasyl.core.server.handler.KillOnExceptionHandler.KILL_SWITCH;
 
 /**
  * This handler mange in-/oncoming messages and pass them to the correct sub-function. It also
- * creates a new {@link ClientConnection} object if a {@link JoinMessage} has pass the {@link JoinHandler}
- * guard.
+ * creates a new {@link ClientConnection} object if a {@link JoinMessage} has pass the {@link
+ * JoinHandler} guard.
  */
 public class ServerSessionHandler extends SimpleChannelInboundHandler<Message> {
     private static final Logger LOG = LoggerFactory.getLogger(ServerSessionHandler.class);
@@ -59,7 +56,10 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<Message> {
     private ClientConnection clientConnection;
     private URI uri;
 
-    ServerSessionHandler(NodeServer server, CompletableFuture<ClientConnection> sessionReadyFuture, ClientConnection clientConnection, URI uri) {
+    ServerSessionHandler(NodeServer server,
+                         CompletableFuture<ClientConnection> sessionReadyFuture,
+                         ClientConnection clientConnection,
+                         URI uri) {
         this.server = server;
         this.sessionReadyFuture = sessionReadyFuture;
         this.clientConnection = clientConnection;
@@ -111,12 +111,12 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<Message> {
             createSession(ctx, msg);
             if (clientConnection != null) {
                 if (msg instanceof ResponseMessage) {
-                    clientConnection.setResponse((ResponseMessage<?, ?>) msg);
+                    clientConnection.setResponse((ResponseMessage<? extends RequestMessage<?>, ? extends Message<?>>) msg);
                 }
 
-                MessageAction action = msg.getAction();
+                MessageAction<?> action = msg.getAction();
                 if (action instanceof ServerMessageAction) {
-                    ((ServerMessageAction) action).onMessageServer(clientConnection, server);
+                    ((ServerMessageAction<?>) action).onMessageServer(clientConnection, server);
                 }
                 else {
                     LOG.debug("Could not process the message {}", msg);
@@ -136,7 +136,7 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<Message> {
      * @param ctx channel handler context
      * @param msg probably a {@link JoinMessage}
      */
-    private void createSession(final ChannelHandlerContext ctx, Message msg) {
+    private void createSession(final ChannelHandlerContext ctx, Message<?> msg) {
         if (msg instanceof JoinMessage && clientConnection == null) {
             JoinMessage jm = (JoinMessage) msg;
             Identity identity = Identity.of(jm.getPublicKey());
@@ -156,7 +156,9 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<Message> {
             sessionReadyFuture.complete(clientConnection);
             ctx.pipeline().remove(KILL_SWITCH);
             ctx.pipeline().remove(CONNECTION_GUARD);
-            LOG.debug("[{}]: Create new channel {}, for ClientConnection {}", ctx.channel().id().asShortText(), ctx.channel().id(), clientConnection);
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("[{}]: Create new channel {}, for ClientConnection {}", ctx.channel().id().asShortText(), ctx.channel().id(), clientConnection);
+            }
         }
     }
 

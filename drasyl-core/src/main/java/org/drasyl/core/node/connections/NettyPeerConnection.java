@@ -23,7 +23,10 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.core.SingleEmitter;
-import org.drasyl.core.common.message.*;
+import org.drasyl.core.common.message.LeaveMessage;
+import org.drasyl.core.common.message.Message;
+import org.drasyl.core.common.message.RequestMessage;
+import org.drasyl.core.common.message.ResponseMessage;
 import org.drasyl.core.common.models.Pair;
 import org.drasyl.core.node.identity.Identity;
 import org.slf4j.Logger;
@@ -40,7 +43,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @SuppressWarnings({ "squid:S00107" })
 public abstract class NettyPeerConnection implements PeerConnection {
-    protected final ConcurrentHashMap<String, Pair<Class<? extends Message>, SingleEmitter<Message>>> emitters;
+    protected final ConcurrentHashMap<String, Pair<Class<? extends ResponseMessage<?, ?>>, SingleEmitter<ResponseMessage<?, ?>>>> emitters;
     protected final Channel myChannel;
     protected final String userAgent;
     protected final Identity identity;
@@ -80,8 +83,6 @@ public abstract class NettyPeerConnection implements PeerConnection {
             else {
                 getLogger().error("{} {} {} could not be closed: ", NettyPeerConnection.this, msg, future.channel().id(), future.cause());
             }
-
-            close();
         };
 
         myChannel.closeFuture().addListener(channelCloseFutureListener);
@@ -92,7 +93,7 @@ public abstract class NettyPeerConnection implements PeerConnection {
                                   Identity identity,
                                   URI endpoint,
                                   AtomicBoolean isClosed,
-                                  ConcurrentHashMap<String, Pair<Class<? extends Message>, SingleEmitter<Message>>> emitters,
+                                  ConcurrentHashMap<String, Pair<Class<? extends ResponseMessage<?, ?>>, SingleEmitter<ResponseMessage<?, ?>>>> emitters,
                                   CompletableFuture<Boolean> closedCompletable) {
         this.emitters = emitters;
         this.myChannel = myChannel;
@@ -111,7 +112,7 @@ public abstract class NettyPeerConnection implements PeerConnection {
     }
 
     @Override
-    public void send(Message message) {
+    public void send(Message<?> message) {
         if (message != null && !isClosed.get() && myChannel.isOpen()) {
             myChannel.writeAndFlush(message);
         }
@@ -122,9 +123,10 @@ public abstract class NettyPeerConnection implements PeerConnection {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T extends Message> Single<T> send(Message message,
-                                              Class<T> responseClass) {
-        return (Single<T>) Single.<Message>create(emitter -> {
+    public <T extends ResponseMessage<? extends RequestMessage<?>, ? extends Message<?>>> Single<T> send(
+            RequestMessage<?> message,
+            Class<T> responseClass) {
+        return (Single<T>) Single.<ResponseMessage<?, ?>>create(emitter -> {
             if (isClosed.get()) {
                 emitter.onError(new IllegalStateException("This connection is already prompt to close."));
             }
@@ -135,9 +137,9 @@ public abstract class NettyPeerConnection implements PeerConnection {
     }
 
     @Override
-    public void setResponse(ResponseMessage<? extends RequestMessage, ? extends Message> response) {
-        Pair<Class<? extends Message>, SingleEmitter<Message>> pair = emitters.remove(response.getCorrespondingId());
-        if (pair != null) {
+    public void setResponse(ResponseMessage<? extends RequestMessage<?>, ? extends Message<?>> response) {
+        Pair<Class<? extends ResponseMessage<?, ?>>, SingleEmitter<ResponseMessage<?, ?>>> pair = emitters.remove(response.getCorrespondingId());
+        if (pair != null && pair.first().isInstance(response)) {
             pair.second().onSuccess(response);
         }
     }
@@ -160,21 +162,14 @@ public abstract class NettyPeerConnection implements PeerConnection {
     @Override
     public void close() {
         if (isClosed.compareAndSet(false, true)) {
-            myChannel.flush();
             emitters.clear();
-            myChannel.writeAndFlush(new LeaveMessage());
-            myChannel.close();
+            myChannel.writeAndFlush(new LeaveMessage()).addListener(ChannelFutureListener.CLOSE);
         }
     }
 
     @Override
     public CompletableFuture<Boolean> isClosed() {
         return closedCompletable;
-    }
-
-    @Override
-    public String getConnectionId() {
-        return myChannel.id().asLongText();
     }
 
     @Override

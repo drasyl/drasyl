@@ -57,7 +57,7 @@ public class TestServerConnection extends NettyPeerConnection {
         void emitEvent(T event);
     }
 
-    protected final List<IResponseListener<Message>> listeners;
+    protected final List<IResponseListener<Message<?>>> listeners;
 
     public TestServerConnection(Channel channel, URI targetSystem, Identity clientUID) {
         super(channel, targetSystem, clientUID, "JUnit-Test");
@@ -170,17 +170,17 @@ public class TestServerConnection extends NettyPeerConnection {
      *
      * @param message incoming message
      */
-    public void receiveMessage(Message message) {
+    public void receiveMessage(Message<?> message) {
         if (isClosed.get()) {
             return;
         }
 
         if (message instanceof ResponseMessage) {
-            ResponseMessage<RequestMessage,Message> response = (ResponseMessage<RequestMessage,Message>) message;
+            ResponseMessage<RequestMessage<?>, Message<?>> response = (ResponseMessage<RequestMessage<?>, Message<?>>) message;
             setResponse(response);
         }
 
-        for (IResponseListener<Message> listener : listeners) {
+        for (IResponseListener<Message<?>> listener : listeners) {
             listener.emitEvent(message);
         }
     }
@@ -190,7 +190,7 @@ public class TestServerConnection extends NettyPeerConnection {
      *
      * @param listener Listener to be called at an event
      */
-    public void addListener(IResponseListener<Message> listener) {
+    public void addListener(IResponseListener<Message<?>> listener) {
         listeners.add(listener);
     }
 

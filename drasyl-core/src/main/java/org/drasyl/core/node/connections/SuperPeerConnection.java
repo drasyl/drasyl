@@ -32,12 +32,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-/**
- * The {@link ClientConnection} object models the clients of a drasyl node server.
- */
-@SuppressWarnings({ "squid:S00107" })
-public class ClientConnection extends NettyPeerConnection {
-    private static final Logger LOG = LoggerFactory.getLogger(ClientConnection.class);
+public class SuperPeerConnection extends NettyPeerConnection {
+    private static final Logger LOG = LoggerFactory.getLogger(SuperPeerConnection.class);
 
     /**
      * Creates a new connection with an unknown User-Agent.
@@ -46,7 +42,9 @@ public class ClientConnection extends NettyPeerConnection {
      * @param endpoint the URI of the target system
      * @param identity the identity of this {@link ClientConnection}
      */
-    public ClientConnection(Channel channel, URI endpoint, Identity identity) {
+    public SuperPeerConnection(Channel channel,
+                               URI endpoint,
+                               Identity identity) {
         super(channel, endpoint, identity);
     }
 
@@ -58,11 +56,14 @@ public class ClientConnection extends NettyPeerConnection {
      * @param identity  the identity of this {@link ClientConnection}
      * @param userAgent the User-Agent string
      */
-    public ClientConnection(Channel channel, URI endpoint, Identity identity, String userAgent) {
+    public SuperPeerConnection(Channel channel,
+                               URI endpoint,
+                               Identity identity,
+                               String userAgent) {
         super(channel, endpoint, identity, userAgent);
     }
 
-    protected ClientConnection(Channel myChannel,
+    public SuperPeerConnection(Channel myChannel,
                                String userAgent,
                                Identity identity,
                                URI endpoint,
@@ -73,6 +74,11 @@ public class ClientConnection extends NettyPeerConnection {
     }
 
     @Override
+    protected Logger getLogger() {
+        return LOG;
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
@@ -80,17 +86,12 @@ public class ClientConnection extends NettyPeerConnection {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        ClientConnection that = (ClientConnection) o;
+        SuperPeerConnection that = (SuperPeerConnection) o;
         return Objects.equals(identity, that.identity);
     }
 
     @Override
     public int hashCode() {
         return Objects.hash(identity);
-    }
-
-    @Override
-    protected Logger getLogger() {
-        return LOG;
     }
 }

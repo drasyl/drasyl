@@ -18,6 +18,7 @@
  */
 package org.drasyl.core.common.handler;
 
+import io.netty.channel.ChannelFuture;
 import org.drasyl.core.common.message.*;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -28,7 +29,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.never;
+import io.netty.channel.ChannelFutureListener;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.timeout.IdleState;
@@ -36,18 +37,24 @@ import io.netty.handler.timeout.IdleStateEvent;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.*;
+
 class PingPongHandlerTest {
     private ChannelHandlerContext ctx;
     private IdleStateEvent evt;
     private String correspondingId;
+    private ChannelFuture channelFuture;
 
     @BeforeEach
     void setUp() throws Exception {
         ctx = mock(ChannelHandlerContext.class);
         evt = mock(IdleStateEvent.class);
+        channelFuture = mock(ChannelFuture.class);
         correspondingId = "correspondingId";
 
         when(evt.state()).thenReturn(IdleState.READER_IDLE);
+        when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
     }
 
     @Test
@@ -64,6 +71,7 @@ class PingPongHandlerTest {
         handler.userEventTriggered(ctx, evt);
 
         verify(ctx).writeAndFlush(any(ConnectionExceptionMessage.class));
+        verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
     }
 
     @Test

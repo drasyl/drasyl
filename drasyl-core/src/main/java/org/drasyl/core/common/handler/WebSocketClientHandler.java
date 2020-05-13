@@ -21,6 +21,7 @@ package org.drasyl.core.common.handler;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.http.FullHttpResponse;
 import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
@@ -64,7 +65,9 @@ public class WebSocketClientHandler extends SimpleChannelDuplexHandler<Object, M
     }
 
     @Override
-    protected void channelWrite0(ChannelHandlerContext ctx, Message msg) {
+    protected void channelWrite0(ChannelHandlerContext ctx,
+                                 Message msg,
+                                 ChannelPromise promise) {
         handshakeFuture.join();
         ctx.write(msg);
     }

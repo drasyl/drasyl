@@ -50,7 +50,9 @@ class SimpleChannelDuplexHandlerTest {
     void testWrite0AndRead0() throws Exception {
         var handler = new SimpleChannelDuplexHandler<Integer, String>() {
             @Override
-            protected void channelWrite0(ChannelHandlerContext ctx, String msg) throws Exception {
+            protected void channelWrite0(ChannelHandlerContext ctx,
+                                         String msg,
+                                         ChannelPromise promise) throws Exception {
                 assertEquals(o, msg);
             }
 
@@ -71,7 +73,9 @@ class SimpleChannelDuplexHandlerTest {
         var handler = new SimpleChannelDuplexHandler<>(Exception.class,
                 Number.class) {
             @Override
-            protected void channelWrite0(ChannelHandlerContext ctx, Number msg) throws Exception {
+            protected void channelWrite0(ChannelHandlerContext ctx,
+                                         Number msg,
+                                         ChannelPromise promise) throws Exception {
                 fail("this should not be triggered!");
             }
 

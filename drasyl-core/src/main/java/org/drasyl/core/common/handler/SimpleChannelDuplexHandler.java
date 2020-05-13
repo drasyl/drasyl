@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.core.common.handler;
 
 import io.netty.channel.*;
@@ -48,30 +47,31 @@ import java.net.SocketAddress;
  *     }
  * </pre>
  * <p>
- * Be aware that depending of the constructor parameters it will release all handled messages by passing them to
- * {@link ReferenceCountUtil#release(Object)}. In this case you may need to use
- * {@link ReferenceCountUtil#retain(Object)} if you pass the object to the next handler in the {@link ChannelPipeline}.
+ * Be aware that depending of the constructor parameters it will release all handled messages by
+ * passing them to {@link ReferenceCountUtil#release(Object)}. In this case you may need to use
+ * {@link ReferenceCountUtil#retain(Object)} if you pass the object to the next handler in the
+ * {@link ChannelPipeline}.
  */
 public abstract class SimpleChannelDuplexHandler<I, O> extends SimpleChannelInboundHandler<I> implements ChannelOutboundHandler {
     private final TypeParameterMatcher outboundMatcher;
     private final boolean outboundAutoRelease;
 
     /**
-     * see {@link #SimpleChannelDuplexHandler(boolean, boolean)} with {@code true} as boolean parameters.
+     * see {@link #SimpleChannelDuplexHandler(boolean, boolean)} with {@code true} as boolean
+     * parameters.
      */
     protected SimpleChannelDuplexHandler() {
         this(true, true);
     }
 
     /**
-     * Create a new instance which will try to detect the types to match out of the types parameter of the class.
+     * Create a new instance which will try to detect the types to match out of the types parameter
+     * of the class.
      *
-     * @param inboundAutoRelease  {@code true} if inbound handled messages should be released automatically by passing
-     *                            them to
-     *                            {@link ReferenceCountUtil#release(Object)}.
-     * @param outboundAutoRelease {@code true} if outbound handled messages should be released automatically by passing
-     *                            them to
-     *                            {@link ReferenceCountUtil#release(Object)}.
+     * @param inboundAutoRelease  {@code true} if inbound handled messages should be released
+     *                            automatically by passing them to {@link ReferenceCountUtil#release(Object)}.
+     * @param outboundAutoRelease {@code true} if outbound handled messages should be released
+     *                            automatically by passing them to {@link ReferenceCountUtil#release(Object)}.
      */
     protected SimpleChannelDuplexHandler(boolean inboundAutoRelease, boolean outboundAutoRelease) {
         super(inboundAutoRelease);
@@ -80,7 +80,8 @@ public abstract class SimpleChannelDuplexHandler<I, O> extends SimpleChannelInbo
     }
 
     /**
-     * see {@link #SimpleChannelDuplexHandler(Class, Class, boolean, boolean)} with {@code true} as boolean values.
+     * see {@link #SimpleChannelDuplexHandler(Class, Class, boolean, boolean)} with {@code true} as
+     * boolean values.
      */
     protected SimpleChannelDuplexHandler(Class<? extends I> inboundMessageType,
                                          Class<? extends O> outboundMessageType) {
@@ -92,41 +93,45 @@ public abstract class SimpleChannelDuplexHandler<I, O> extends SimpleChannelInbo
      *
      * @param inboundMessageType  The type of messages to match
      * @param outboundMessageType The type of messages to match
-     * @param inboundAutoRelease  {@code true} if inbound handled messages should be released automatically by passing
-     *                            them to
-     *                            {@link ReferenceCountUtil#release(Object)}.
-     * @param outboundAutoRelease {@code true} if outbound handled messages should be released automatically by passing
-     *                            them to
-     *                            {@link ReferenceCountUtil#release(Object)}.
+     * @param inboundAutoRelease  {@code true} if inbound handled messages should be released
+     *                            automatically by passing them to {@link ReferenceCountUtil#release(Object)}.
+     * @param outboundAutoRelease {@code true} if outbound handled messages should be released
+     *                            automatically by passing them to {@link ReferenceCountUtil#release(Object)}.
      */
     protected SimpleChannelDuplexHandler(Class<? extends I> inboundMessageType,
-                                         Class<? extends O> outboundMessageType, boolean inboundAutoRelease, boolean outboundAutoRelease) {
+                                         Class<? extends O> outboundMessageType,
+                                         boolean inboundAutoRelease,
+                                         boolean outboundAutoRelease) {
         super(inboundMessageType, inboundAutoRelease);
         this.outboundAutoRelease = outboundAutoRelease;
         this.outboundMatcher = TypeParameterMatcher.get(outboundMessageType);
     }
 
     /**
-     * Returns {@code true} if the given message should be handled. If {@code false} it will be passed to the next
-     * {@link ChannelOutboundHandler} in the {@link ChannelPipeline}.
+     * Returns {@code true} if the given message should be handled. If {@code false} it will be
+     * passed to the next {@link ChannelOutboundHandler} in the {@link ChannelPipeline}.
      */
     public boolean acceptOutboundMessage(Object msg) {
         return outboundMatcher.match(msg);
     }
 
     @Override
-    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) throws Exception {
+    public void write(ChannelHandlerContext ctx,
+                      Object msg,
+                      ChannelPromise promise) throws Exception {
         boolean release = true;
         try {
             if (acceptOutboundMessage(msg)) {
                 @SuppressWarnings("unchecked")
                 O omsg = (O) msg;
-                channelWrite0(ctx, omsg);
-            } else {
+                channelWrite0(ctx, omsg, promise);
+            }
+            else {
                 release = false;
                 ctx.write(msg, promise);
             }
-        } finally {
+        }
+        finally {
             if (outboundAutoRelease && release) {
                 ReferenceCountUtil.release(msg);
             }
@@ -136,12 +141,15 @@ public abstract class SimpleChannelDuplexHandler<I, O> extends SimpleChannelInbo
     /**
      * Is called for each message of type {@link O} on outbound channel.
      *
-     * @param ctx the {@link ChannelHandlerContext} which this {@link SimpleChannelDuplexHandler}
-     *            belongs to
-     * @param msg the message to handle
+     * @param ctx     the {@link ChannelHandlerContext} which this {@link SimpleChannelDuplexHandler}
+     *                belongs to
+     * @param msg     the message to handle
+     * @param promise the corresponding promise
      * @throws Exception is thrown if an error occurred
      */
-    protected abstract void channelWrite0(ChannelHandlerContext ctx, O msg) throws Exception; //NOSONAR
+    protected abstract void channelWrite0(ChannelHandlerContext ctx,
+                                          O msg,
+                                          ChannelPromise promise) throws Exception; //NOSONAR
 
     /**
      * Is called for each message of type {@link I} on inbound channel.

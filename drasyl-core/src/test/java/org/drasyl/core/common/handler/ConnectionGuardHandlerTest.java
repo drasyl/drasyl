@@ -19,6 +19,8 @@
 package org.drasyl.core.common.handler;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.core.common.message.Message;
 import org.drasyl.core.common.message.RejectMessage;
@@ -30,14 +32,17 @@ import static org.mockito.Mockito.*;
 class ConnectionGuardHandlerTest {
     private ChannelHandlerContext ctx;
     private Message message;
+    private ChannelFuture channelFuture;
 
     @BeforeEach
     void setUp() {
         ctx = mock(ChannelHandlerContext.class);
         Channel channel = mock(Channel.class);
+        channelFuture = mock(ChannelFuture.class);
         message = mock(Message.class);
 
         when(ctx.channel()).thenReturn(channel);
+        when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
     }
 
     @Test
@@ -56,6 +61,6 @@ class ConnectionGuardHandlerTest {
         handler.channelRead0(ctx, message);
 
         verify(ctx).writeAndFlush(isA(RejectMessage.class));
-        verify(ctx).close();
+        verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
     }
 }

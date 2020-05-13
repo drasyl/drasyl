@@ -27,7 +27,7 @@ import java.util.Objects;
 /**
  * Message that represents a message from one node to another one.
  */
-public abstract class AbstractMessage<T extends Message> implements Message<T> {
+public abstract class AbstractMessage<T extends Message<?>> implements Message<T> {
     protected final String id;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     protected Signature signature;
