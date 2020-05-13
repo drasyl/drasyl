@@ -18,26 +18,23 @@
  */
 package org.drasyl.core.node;
 
-import net.bytebuddy.implementation.bind.annotation.Super;
 import org.drasyl.core.client.SuperPeerClient;
 import org.drasyl.core.common.models.Pair;
 import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.models.Event;
-import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.models.Node;
+import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.node.identity.IdentityManager;
 import org.drasyl.core.server.NodeServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.drasyl.core.models.Code.*;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 public class DrasylNodeTest {

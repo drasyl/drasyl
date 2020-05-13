@@ -19,16 +19,10 @@
 package org.drasyl.core.node;
 
 import org.drasyl.core.common.message.ApplicationMessage;
-import org.drasyl.core.common.models.Pair;
-import org.drasyl.core.models.Code;
 import org.drasyl.core.models.DrasylException;
-import org.drasyl.core.models.Event;
 import org.drasyl.core.node.connections.PeerConnection;
-import org.drasyl.core.node.identity.IdentityManager;
 
-import java.util.Collection;
 import java.util.Optional;
-import java.util.function.Consumer;
 
 import static java.util.Optional.ofNullable;
 
@@ -37,20 +31,14 @@ import static java.util.Optional.ofNullable;
  * the message is sent to the application, a client or the super peer.
  */
 public class Messenger {
-    private final IdentityManager identityManager;
-    private final Consumer<Event> onEvent;
     private final ConnectionsManager connectionsManager;
 
-    public Messenger(IdentityManager identityManager,
-                     Consumer<Event> onEvent,
-                     ConnectionsManager connectionsManager) {
-        this.identityManager = identityManager;
-        this.onEvent = onEvent;
+    public Messenger(ConnectionsManager connectionsManager) {
         this.connectionsManager = connectionsManager;
     }
 
-    public Messenger(IdentityManager identityManager, Consumer<Event> onEvent) {
-        this(identityManager, onEvent, new ConnectionsManager());
+    public Messenger() {
+        this(new ConnectionsManager());
     }
 
     public ConnectionsManager getConnectionsManager() {
@@ -58,23 +46,15 @@ public class Messenger {
     }
 
     public void send(ApplicationMessage message) throws DrasylException {
-        // TODO: Use PeerConnection for sending to our node. Then we would have a common interface
-        //  for sending to our Peer, Clients and the Super Peer
-        if (identityManager.getIdentity().equals(message.getRecipient())) {
-            // Our node is the receiver, create message event
-            onEvent.accept(new Event(Code.MESSAGE, Pair.of(message.getSender(), message.getPayload())));
+        try {
+            sendToClient(message);
         }
-        else {
+        catch (ClientNotFoundException e) {
             try {
-                sendToClient(message);
+                sendToSuperPeer(message);
             }
-            catch (ClientNotFoundException e) {
-                try {
-                    sendToSuperPeer(message);
-                }
-                catch (NoSuperPeerException ex) {
-                    throw new DrasylException("Unable to send message: " + message.toString());
-                }
+            catch (NoSuperPeerException ex) {
+                throw new DrasylException("Unable to send message: " + message.toString());
             }
         }
     }
