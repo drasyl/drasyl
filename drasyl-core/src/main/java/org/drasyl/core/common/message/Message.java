@@ -54,7 +54,7 @@ public interface Message<T extends Message> extends Signable {
     String getId();
 
     /**
-     * Returns a MesssageAction object that describes how a server or client should process received
+     * Returns a {@link MessageAction} object that describes how a server or client should process received
      * messages.
      *
      * @return
