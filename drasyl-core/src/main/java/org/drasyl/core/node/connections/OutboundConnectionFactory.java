@@ -69,7 +69,6 @@ public class OutboundConnectionFactory {
     private short idleRetries;
     private boolean ssl;
     private int maxContentLength;
-    private boolean relayToRelayCon;
 
     private OutboundConnectionFactory(URI target,
                                       ChannelInitializer<SocketChannel> initializer,
@@ -78,8 +77,7 @@ public class OutboundConnectionFactory {
                                       List<ChannelHandler> handler,
                                       List<String> sslProtocols,
                                       EventLoopGroup eventGroup,
-                                      int maxContentLength,
-                                      boolean relayToRelayCon) {
+                                      int maxContentLength) {
         this.uri = target;
         this.initializer = initializer;
         this.shutdownProcedure = shutdownProcedure;
@@ -89,7 +87,6 @@ public class OutboundConnectionFactory {
         this.eventGroup = eventGroup;
         this.maxContentLength = maxContentLength;
         this.channelReadyFuture = new CompletableFuture<>();
-        this.relayToRelayCon = relayToRelayCon;
     }
 
     /**
@@ -99,7 +96,7 @@ public class OutboundConnectionFactory {
      */
     public OutboundConnectionFactory(URI target, EventLoopGroup eventGroup) {
         this(target, null, () -> {
-        }, null, new ArrayList<>(), Collections.singletonList("TLSv1.3"), eventGroup, 1000000, false);
+        }, null, new ArrayList<>(), Collections.singletonList("TLSv1.3"), eventGroup, 1000000);
     }
 
     /**
@@ -110,18 +107,6 @@ public class OutboundConnectionFactory {
      */
     public OutboundConnectionFactory maxContentLength(int maxContentLength) {
         this.maxContentLength = maxContentLength;
-
-        return this;
-    }
-
-    /**
-     * Sets init this {@link OutboundConnectionFactory} as relay to relay connection.
-     *
-     * @param relayToRelayCon if true this is a relay to relay connection
-     * @return {@link OutboundConnectionFactory} with the changed property
-     */
-    public OutboundConnectionFactory relayCon(boolean relayToRelayCon) {
-        this.relayToRelayCon = relayToRelayCon;
 
         return this;
     }
@@ -342,7 +327,6 @@ public class OutboundConnectionFactory {
             protected void pojoMarshalStage(ChannelPipeline pipeline) {
                 // From String to Message
                 pipeline.addLast(MESSAGE_DECODER, MessageDecoder.INSTANCE);
-
                 pipeline.addLast(MESSAGE_ENCODER, MessageEncoder.INSTANCE);
             }
         };

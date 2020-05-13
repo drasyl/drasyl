@@ -8,5 +8,5 @@ import org.drasyl.core.common.message.Message;
  *
  * @param <T>
  */
-public interface MessageAction<T extends Message> {
+public interface MessageAction<T extends Message<?>> {
 }

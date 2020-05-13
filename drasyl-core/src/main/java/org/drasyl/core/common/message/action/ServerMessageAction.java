@@ -10,7 +10,7 @@ import org.drasyl.core.server.NodeServer;
  *
  * @param <T>
  */
-public interface ServerMessageAction<T extends Message> extends MessageAction<T> {
+public interface ServerMessageAction<T extends Message<?>> extends MessageAction<T> {
     /**
      * Describes how the Server <code>nodeServer</code> should react when a {@link Message} of
      * type

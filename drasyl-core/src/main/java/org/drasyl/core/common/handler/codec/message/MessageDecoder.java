@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.core.common.handler.codec.message;
 
 import org.drasyl.core.common.message.Message;
@@ -39,23 +38,25 @@ import static java.util.Objects.requireNonNull;
  */
 @Sharable
 public class MessageDecoder extends MessageToMessageDecoder<TextWebSocketFrame> implements ChannelInboundHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(MessageDecoder.class);
     public static final MessageDecoder INSTANCE = new MessageDecoder();
-    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
     public static final String MESSAGE_DECODER = "messageDecoder";
+    private static final Logger LOG = LoggerFactory.getLogger(MessageDecoder.class);
+    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
     private MessageDecoder() {
     }
 
     @Override
     protected void decode(ChannelHandlerContext ctx, TextWebSocketFrame msg, List<Object> out) {
-        if (LOG.isDebugEnabled())
+        if (LOG.isDebugEnabled()) {
             LOG.debug("[{}]: Receive Message '{}'", ctx.channel().id().asShortText(), msg.text());
+        }
 
         try {
             Message message = requireNonNull(JSON_MAPPER.readValue(msg.text(), Message.class));
             out.add(message);
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             LOG.warn("[{}]: Invalid Message: '{}'", ctx.channel().id().asShortText(), msg.text());
             throw new IllegalArgumentException("Your request dit not contain a valid Message: " + e.getMessage());
         }

@@ -40,6 +40,7 @@ import org.slf4j.LoggerFactory;
 import javax.net.ssl.SSLException;
 import java.security.cert.CertificateException;
 
+import static org.drasyl.core.common.handler.ConnectionGuardHandler.CONNECTION_GUARD;
 import static org.drasyl.core.common.handler.ExceptionHandler.EXCEPTION_HANDLER;
 import static org.drasyl.core.common.handler.LeaveHandler.LEAVE_HANDLER;
 import static org.drasyl.core.common.handler.codec.message.MessageDecoder.MESSAGE_DECODER;
@@ -47,7 +48,6 @@ import static org.drasyl.core.common.handler.codec.message.MessageEncoder.MESSAG
 import static org.drasyl.core.server.handler.JoinHandler.JOIN_GUARD;
 import static org.drasyl.core.server.handler.KillOnExceptionHandler.KILL_SWITCH;
 import static org.drasyl.core.server.handler.ServerSessionHandler.HANDLER;
-import static org.drasyl.core.common.handler.ConnectionGuardHandler.CONNECTION_GUARD;
 
 /**
  * Creates a newly configured {@link ChannelPipeline} for the node server.
@@ -121,6 +121,6 @@ public class NodeServerInitializer extends DefaultSessionInitializer {
     @Override
     protected void afterExceptionStage(ChannelPipeline pipeline) {
         // Kill if Client is not initialized
-        pipeline.addLast(KILL_SWITCH, new KillOnExceptionHandler(server));
+        pipeline.addLast(KILL_SWITCH, KillOnExceptionHandler.INSTANCE);
     }
 }

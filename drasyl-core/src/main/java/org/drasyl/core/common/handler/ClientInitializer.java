@@ -89,7 +89,7 @@ public abstract class ClientInitializer extends DefaultSessionInitializer {
     }
 
     /**
-     * A future is returned if the handshake was successful and the channel is ready to receive and sendMSG messages.
+     * A future is returned if the handshake was successful and the channel is ready to receive and send messages.
      * <p>
      * The future may fail if a connection could not be established.
      */

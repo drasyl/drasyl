@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.core.server.testutils;
 
 import static org.awaitility.Awaitility.with;
@@ -28,11 +27,15 @@ import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.server.NodeServer;
 import org.drasyl.core.server.NodeServerException;
 import org.awaitility.Durations;
+import org.drasyl.core.common.tools.NetworkTool;
+import org.drasyl.core.node.identity.Identity;
 import org.drasyl.crypto.Crypto;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import org.drasyl.core.common.tools.NetworkTool;
+import java.util.concurrent.TimeUnit;
+
+import static org.awaitility.Awaitility.with;
 
 public final class TestHelper {
     private static final Logger LOG = LoggerFactory.getLogger(TestHelper.class);
@@ -66,9 +69,7 @@ public final class TestHelper {
      */
     public static void waitUntilNetworkAvailable(int port) {
         with().pollInSameThread().await().pollDelay(0, TimeUnit.NANOSECONDS).atMost(Durations.FIVE_MINUTES)
-                .until(() -> {
-                    return NetworkTool.available(port);
-                });
+                .until(() -> NetworkTool.available(port));
     }
 
     /**
@@ -107,6 +108,6 @@ public final class TestHelper {
     }
 
     public static Identity random() {
-            return Identity.of(Crypto.randomString(5));
-        }
+        return Identity.of(Crypto.randomString(5));
+    }
 }

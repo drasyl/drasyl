@@ -546,7 +546,7 @@ public class NodeServerIT {
             TestServerConnection session = TestServerConnection.build(server);
             clientConnections.add(session);
 
-            ResponseMessage<RequestMessage, MessageExceptionMessage> msg = new MessageExceptionMessage("Test", Crypto.randomString(12));
+            RequestMessage<?> msg = new ApplicationMessage(TestHelper.random(), TestHelper.random(), new byte[] {0x00, 0x01});
 
             session.send(msg, StatusMessage.class).subscribe(response -> {
                 assertThat(response.getCode(), anyOf(

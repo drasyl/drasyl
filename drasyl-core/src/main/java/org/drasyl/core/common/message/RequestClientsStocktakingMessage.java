@@ -24,8 +24,8 @@ import org.drasyl.core.common.message.action.RequestClientsStocktakingMessageAct
 /**
  * A message representing a request for an aggregation of all children peers of the node.
  * <p>
- * Response of this request is a {@link ResponseMessage} object that has a {@link ClientsStocktakingMessage}
- * message.
+ * Response of this request is a {@link ResponseMessage} object that has a {@link
+ * ClientsStocktakingMessage} message.
  */
 public class RequestClientsStocktakingMessage extends AbstractMessage<RequestClientsStocktakingMessage> implements RequestMessage<RequestClientsStocktakingMessage> {
     @Override

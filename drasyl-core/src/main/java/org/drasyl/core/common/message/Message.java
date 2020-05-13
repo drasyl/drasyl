@@ -44,7 +44,7 @@ import org.drasyl.crypto.Signable;
         @JsonSubTypes.Type(value = StatusMessage.class),
         @JsonSubTypes.Type(value = WelcomeMessage.class),
 })
-public interface Message<T extends Message> extends Signable {
+public interface Message<T extends Message<?>> extends Signable {
     /**
      * Returns the unique id of this message. Each message generates a random id when it is
      * created.

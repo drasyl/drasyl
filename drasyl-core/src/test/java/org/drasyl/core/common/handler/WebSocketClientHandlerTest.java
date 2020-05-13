@@ -31,6 +31,7 @@ class WebSocketClientHandlerTest {
     private ChannelId channelId;
     private WebSocketFrame webSocketFrame;
     private ChannelPipeline channelPipeline;
+    private ChannelPromise promise;
 
     @BeforeEach
     void setUp() {
@@ -46,13 +47,14 @@ class WebSocketClientHandlerTest {
         channelId = mock(ChannelId.class);
         webSocketFrame = mock(WebSocketFrame.class);
         channelPipeline = mock(ChannelPipeline.class);
+        promise = mock(ChannelPromise.class);
     }
 
     @Test
     void channelWrite0ShouldBlockUntilHandshakeIsDone() throws Exception {
         WebSocketClientHandler handler = new WebSocketClientHandler(handshaker, handshakeFuture);
 
-        handler.channelWrite0(ctx, leaveMessage);
+        handler.channelWrite0(ctx, leaveMessage, promise);
 
         verify(handshakeFuture).join();
     }

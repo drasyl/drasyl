@@ -18,6 +18,8 @@
  */
 package org.drasyl.core.server.handler;
 
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.concurrent.EventExecutor;
@@ -44,6 +46,7 @@ class JoinHandlerTest {
     private Message msg;
     private CompressedPublicKey publicKey;
     private EventExecutor eventExecutor;
+    private ChannelFuture channelFuture;
 
     @BeforeEach
     void setUp() {
@@ -53,6 +56,9 @@ class JoinHandlerTest {
         msg = new LeaveMessage();
         publicKey = mock(CompressedPublicKey.class);
         eventExecutor = mock(EventExecutor.class);
+        channelFuture = mock(ChannelFuture.class);
+
+        when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
     }
 
     // FIXME: fix test
@@ -70,6 +76,7 @@ class JoinHandlerTest {
         handler.channelActive(ctx);
 
         verify(ctx).writeAndFlush(any(ConnectionExceptionMessage.class));
+        verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
         verify(ctx).close();
     }
 
@@ -87,18 +94,18 @@ class JoinHandlerTest {
     void channelWrite0ShouldPassThroughMessageIfAuthenticated() throws Exception {
         JoinHandler handler = new JoinHandler(new AtomicBoolean(true), 1L, timeoutFuture);
 
-        handler.channelWrite0(ctx, msg);
+        handler.channelWrite0(ctx, msg, promise);
 
-        verify(ctx).write(any(LeaveMessage.class));
+        verify(ctx).write(any(LeaveMessage.class), eq(promise));
     }
 
     @Test
     void channelWrite0ShouldPassThroughUnrestrictedMessageIfNotAuthenticated() throws Exception {
         JoinHandler handler = new JoinHandler(1L);
 
-        handler.channelWrite0(ctx, msg);
+        handler.channelWrite0(ctx, msg, promise);
 
-        verify(ctx).write(any(LeaveMessage.class));
+        verify(ctx).write(any(LeaveMessage.class), eq(promise));
     }
 
     @Test
@@ -106,9 +113,9 @@ class JoinHandlerTest {
         JoinHandler handler = new JoinHandler(new AtomicBoolean(false), 1L, timeoutFuture);
         msg = new RequestClientsStocktakingMessage();
 
-        assertThrows(IllegalStateException.class, () -> handler.channelWrite0(ctx, msg));
+        assertThrows(IllegalStateException.class, () -> handler.channelWrite0(ctx, msg, promise));
 
-        verify(ctx, never()).write(any(Message.class));
+        verify(ctx, never()).write(any(Message.class), eq(promise));
     }
 
     @Test

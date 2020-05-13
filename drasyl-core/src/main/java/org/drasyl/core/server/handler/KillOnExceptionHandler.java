@@ -18,27 +18,26 @@
  */
 package org.drasyl.core.server.handler;
 
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.drasyl.core.common.message.ConnectionExceptionMessage;
-import org.drasyl.core.common.message.MessageExceptionMessage;
-import org.drasyl.core.server.NodeServer;
 
 /**
  * This handler closes the channel if an exception occurs during initialization stage.
  */
+@Sharable
 public class KillOnExceptionHandler extends ChannelInboundHandlerAdapter {
+    public static final KillOnExceptionHandler INSTANCE = new KillOnExceptionHandler();
     public static final String KILL_SWITCH = "killSwitch";
-    private final NodeServer server;
 
-    public KillOnExceptionHandler(NodeServer server) {
-        this.server = server;
+    private KillOnExceptionHandler() {
     }
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         ctx.writeAndFlush(new ConnectionExceptionMessage(
-                "Exception occurred during initialization stage. The connection will shut down."));
-        ctx.close();
+                "Exception occurred during initialization stage. The connection will shut down.")).addListener(ChannelFutureListener.CLOSE);
     }
 }

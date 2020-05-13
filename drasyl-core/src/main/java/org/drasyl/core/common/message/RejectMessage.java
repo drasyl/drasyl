@@ -24,7 +24,7 @@ import org.drasyl.core.common.message.action.RejectMessageAction;
 /**
  * A message representing a rejection of a connection.
  */
-public class RejectMessage extends AbstractResponseMessage<RequestMessage, RejectMessage> implements UnrestrictedPassableMessage {
+public class RejectMessage extends AbstractResponseMessage<RequestMessage<?>, RejectMessage> implements UnrestrictedPassableMessage {
     public RejectMessage(String correspondingId) {
         super(correspondingId);
     }

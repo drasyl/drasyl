@@ -4,7 +4,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 
 import java.util.Objects;
 
-public abstract class AbstractResponseMessage<R extends RequestMessage, T extends Message> extends AbstractMessage<T> implements ResponseMessage<R, T> {
+public abstract class AbstractResponseMessage<R extends RequestMessage<?>, T extends Message<?>> extends AbstractMessage<T> implements ResponseMessage<R, T> {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     protected final String correspondingId;
 

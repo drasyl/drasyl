@@ -18,11 +18,9 @@
  */
 package org.drasyl.core.server.handler;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelId;
+import io.netty.channel.*;
 import org.drasyl.core.common.message.ConnectionExceptionMessage;
-import org.drasyl.core.common.message.MessageExceptionMessage;
+import org.drasyl.core.common.message.Message;
 import org.drasyl.core.node.PeersManager;
 import org.drasyl.core.server.NodeServer;
 import org.drasyl.crypto.Crypto;
@@ -40,6 +38,7 @@ class KillOnExceptionHandlerTest {
     private NodeServer nodeServer;
     private Throwable cause;
     private String id;
+    private ChannelFuture channelFuture;
 
     @BeforeEach
     void setUp() {
@@ -50,20 +49,22 @@ class KillOnExceptionHandlerTest {
         cause = mock(Throwable.class);
         ChannelId channelId = mock(ChannelId.class);
         id = Crypto.randomString(3);
+        channelFuture = mock(ChannelFuture.class);
 
         when(nodeServer.getPeersManager()).thenReturn(peersManager);
         when(ctx.channel()).thenReturn(channel);
         when(channel.id()).thenReturn(channelId);
         when(channelId.asLongText()).thenReturn(id);
+        when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
     }
 
     @Test
     void exceptionCaughtShouldWriteExceptionToChannelAndThenCloseIt() {
         when(peersManager.getPeers()).thenReturn(Map.of());
-        KillOnExceptionHandler handler = new KillOnExceptionHandler(nodeServer);
+        KillOnExceptionHandler handler = KillOnExceptionHandler.INSTANCE;
         handler.exceptionCaught(ctx, cause);
 
         verify(ctx).writeAndFlush(any(ConnectionExceptionMessage.class));
-        verify(ctx).close();
+        verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
     }
 }
