@@ -31,6 +31,7 @@ import org.drasyl.core.common.message.ApplicationMessage;
 import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.models.Event;
 import org.drasyl.core.models.Node;
+import org.drasyl.core.node.connections.AutoreferentialPeerConnection;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.node.identity.IdentityManager;
 import org.drasyl.core.node.identity.IdentityManagerException;
@@ -40,6 +41,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -88,12 +90,13 @@ public abstract class DrasylNode {
             this.config = new DrasylNodeConfig(config);
             this.identityManager = new IdentityManager(this.config);
             this.peersManager = new PeersManager();
-            this.messenger = new Messenger(identityManager, this::onEvent);
+            this.messenger = new Messenger();
             this.server = new NodeServer(identityManager, messenger, peersManager, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP);
             this.superPeerClient = new SuperPeerClient(this.config, identityManager, peersManager, messenger, DrasylNode.WORKER_GROUP);
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = new CompletableFuture<>();
+            messenger.getConnectionsManager().addConnection(new AutoreferentialPeerConnection(this::onEvent, identityManager, URI.create("ws://127.0.0.1:" + this.config.getServerBindPort())));
         }
         catch (ConfigException e) {
             throw new DrasylException("Couldn't load config: \n" + e.getMessage());

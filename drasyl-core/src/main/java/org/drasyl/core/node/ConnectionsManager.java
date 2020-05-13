@@ -1,11 +1,15 @@
 package org.drasyl.core.node;
 
+import org.drasyl.core.node.connections.ConnectionComparator;
 import org.drasyl.core.node.connections.PeerConnection;
 import org.drasyl.core.node.identity.Identity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.*;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.stream.Collectors;
@@ -43,8 +47,7 @@ public class ConnectionsManager {
         try {
             lock.readLock().lock();
 
-            // TODO: Use best instead of first connection https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/28
-            Optional<PeerConnection> connection = connections.stream().filter(c -> c.getIdentity().equals(identity)).findFirst();
+            Optional<PeerConnection> connection = connections.stream().filter(c -> c.getIdentity().equals(identity)).min(ConnectionComparator.INSTANCE);
 
             return connection.orElse(null);
         }
@@ -110,7 +113,8 @@ public class ConnectionsManager {
      * @param identity
      * @param clazz
      */
-    public void closeConnectionOfTypeForIdentity(Identity identity, Class<? extends PeerConnection> clazz) {
+    public void closeConnectionOfTypeForIdentity(Identity identity,
+                                                 Class<? extends PeerConnection> clazz) {
         try {
             lock.writeLock().lock();
 

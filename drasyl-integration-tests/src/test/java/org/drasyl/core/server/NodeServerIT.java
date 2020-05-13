@@ -45,7 +45,6 @@ import org.drasyl.core.server.testutils.ANSI_COLOR;
 import org.drasyl.core.server.testutils.BetterArrayList;
 import org.drasyl.core.server.testutils.TestHelper;
 import org.drasyl.core.server.testutils.TestServerConnection;
-import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.junit.Ignore;
 import org.junit.jupiter.api.*;
@@ -84,7 +83,6 @@ public class NodeServerIT {
     private static EventLoopGroup workerGroup;
     private static EventLoopGroup bossGroup;
     private Messenger messenger;
-    private String correspondingId;
 
     @BeforeAll
     public static void beforeAll() {
@@ -104,7 +102,7 @@ public class NodeServerIT {
         identityManager = mock(IdentityManager.class);
         PeersManager peersManager = new PeersManager();
         ConnectionsManager connectionsManager = new ConnectionsManager();
-        messenger = new Messenger(identityManager, event -> {}, connectionsManager);
+        messenger = new Messenger(connectionsManager);
 
         config = new DrasylNodeConfig(
                 ConfigFactory.load("configs/ClientTest.conf"));
@@ -113,8 +111,6 @@ public class NodeServerIT {
 
         TestHelper.waitUntilNetworkAvailable(config.getServerBindPort());
         server.open();
-
-        correspondingId = "correspondingId";
 
         CompressedKeyPair keyPair = mock(CompressedKeyPair.class);
         CompressedPublicKey publicKey = CompressedPublicKey.of("0343bc674c4e58a289d3904a16f83177581770d32e3ee0d63b7c75ee2b32c733b1");
@@ -546,7 +542,10 @@ public class NodeServerIT {
             TestServerConnection session = TestServerConnection.build(server);
             clientConnections.add(session);
 
-            RequestMessage<?> msg = new ApplicationMessage(TestHelper.random(), TestHelper.random(), new byte[] {0x00, 0x01});
+            RequestMessage<?> msg = new ApplicationMessage(TestHelper.random(), TestHelper.random(), new byte[]{
+                    0x00,
+                    0x01
+            });
 
             session.send(msg, StatusMessage.class).subscribe(response -> {
                 assertThat(response.getCode(), anyOf(
