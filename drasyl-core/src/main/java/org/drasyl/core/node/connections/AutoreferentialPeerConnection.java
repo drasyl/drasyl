@@ -23,11 +23,12 @@ import org.drasyl.core.common.message.*;
 import org.drasyl.core.common.models.Pair;
 import org.drasyl.core.models.Code;
 import org.drasyl.core.models.Event;
+import org.drasyl.core.node.ConnectionsManager;
 import org.drasyl.core.node.DrasylNode;
-import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.node.identity.IdentityManager;
 
 import java.net.URI;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -36,9 +37,8 @@ import java.util.function.Consumer;
  * The {@link AutoreferentialPeerConnection} object models an autoreferentially connection of this
  * node.
  */
-public class AutoreferentialPeerConnection implements PeerConnection {
+public class AutoreferentialPeerConnection extends PeerConnection {
     private final Consumer<Event> onEvent;
-    private final IdentityManager identityManager;
     private final URI endpoint;
     protected CompletableFuture<Boolean> closedCompletable;
     protected AtomicBoolean isClosed;
@@ -46,9 +46,9 @@ public class AutoreferentialPeerConnection implements PeerConnection {
     AutoreferentialPeerConnection(Consumer<Event> onEvent,
                                   IdentityManager identityManager, URI endpoint,
                                   CompletableFuture<Boolean> closedCompletable,
-                                  AtomicBoolean isClosed) {
+                                  AtomicBoolean isClosed, ConnectionsManager connectionsManager) {
+        super(identityManager::getIdentity, connectionsManager);
         this.onEvent = onEvent;
-        this.identityManager = identityManager;
         this.endpoint = endpoint;
         this.closedCompletable = closedCompletable;
         this.isClosed = isClosed;
@@ -57,11 +57,16 @@ public class AutoreferentialPeerConnection implements PeerConnection {
     /**
      * Creates a new autoreferentially connection of this node.
      *
-     * @param onEvent reference to {@link DrasylNode#onEvent(Event)}
+     * @param onEvent            reference to {@link DrasylNode#onEvent(Event)}
+     * @param identityManager    reference to {@link IdentityManager}
+     * @param uri                the node endpoint
+     * @param connectionsManager reference to the {@link ConnectionsManager}
      */
     public AutoreferentialPeerConnection(Consumer<Event> onEvent,
-                                         IdentityManager identityManager, URI uri) {
-        this(onEvent, identityManager, uri, new CompletableFuture<>(), new AtomicBoolean(false));
+                                         IdentityManager identityManager,
+                                         URI uri,
+                                         ConnectionsManager connectionsManager) {
+        this(onEvent, identityManager, uri, new CompletableFuture<>(), new AtomicBoolean(false), connectionsManager);
     }
 
     @Override
@@ -107,12 +112,7 @@ public class AutoreferentialPeerConnection implements PeerConnection {
     }
 
     @Override
-    public Identity getIdentity() {
-        return identityManager.getIdentity();
-    }
-
-    @Override
-    public void close() {
+    protected void close() {
         if (isClosed.compareAndSet(false, true)) {
             closedCompletable.complete(true);
         }
@@ -121,5 +121,22 @@ public class AutoreferentialPeerConnection implements PeerConnection {
     @Override
     public CompletableFuture<Boolean> isClosed() {
         return closedCompletable;
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        AutoreferentialPeerConnection that = (AutoreferentialPeerConnection) o;
+        return Objects.equals(getIdentity(), that.getIdentity());
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getIdentity());
     }
 }

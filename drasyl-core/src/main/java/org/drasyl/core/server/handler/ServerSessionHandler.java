@@ -152,7 +152,7 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<Message> {
             }
 
             clientConnection = new ClientConnection(ctx.channel(), uri, identity,
-                    Optional.ofNullable(jm.getUserAgent()).orElse("U/A"));
+                    Optional.ofNullable(jm.getUserAgent()).orElse("U/A"), server.getMessenger().getConnectionsManager());
             sessionReadyFuture.complete(clientConnection);
             ctx.pipeline().remove(KILL_SWITCH);
             ctx.pipeline().remove(CONNECTION_GUARD);

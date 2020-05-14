@@ -28,12 +28,12 @@ import org.drasyl.core.common.message.Message;
 import org.drasyl.core.common.message.RequestMessage;
 import org.drasyl.core.common.message.ResponseMessage;
 import org.drasyl.core.common.models.Pair;
+import org.drasyl.core.node.ConnectionsManager;
 import org.drasyl.core.node.identity.Identity;
 import org.slf4j.Logger;
 
 import java.net.URI;
 import java.text.MessageFormat;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -42,37 +42,46 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * The {@link NettyPeerConnection} object models an in- or outbound connection by netty.
  */
 @SuppressWarnings({ "squid:S00107" })
-public abstract class NettyPeerConnection implements PeerConnection {
+public abstract class NettyPeerConnection extends PeerConnection {
     protected final ConcurrentHashMap<String, Pair<Class<? extends ResponseMessage<?, ?>>, SingleEmitter<ResponseMessage<?, ?>>>> emitters;
     protected final Channel myChannel;
     protected final String userAgent;
-    protected final Identity identity;
     protected final URI endpoint;
     protected AtomicBoolean isClosed;
     protected CompletableFuture<Boolean> closedCompletable;
     protected ChannelFutureListener channelCloseFutureListener;
+    private final String channelID;
 
     /**
      * Creates a new connection with an unknown User-Agent.
      *
-     * @param channel  channel of the connection
-     * @param endpoint the URI of the target system
-     * @param identity the identity of this {@link ClientConnection}
+     * @param channel            channel of the connection
+     * @param endpoint           the URI of the target system
+     * @param identity           the identity of this {@link ClientConnection}
+     * @param connectionsManager reference to the {@link ConnectionsManager}
      */
-    public NettyPeerConnection(Channel channel, URI endpoint, Identity identity) {
-        this(channel, endpoint, identity, "U/A");
+    public NettyPeerConnection(Channel channel,
+                               URI endpoint,
+                               Identity identity,
+                               ConnectionsManager connectionsManager) {
+        this(channel, endpoint, identity, "U/A", connectionsManager);
     }
 
     /**
      * Creates a new connection.
      *
-     * @param channel   channel of the connection
-     * @param endpoint  the URI of the target system
-     * @param identity  the identity of this {@link ClientConnection}
-     * @param userAgent the User-Agent string
+     * @param channel            channel of the connection
+     * @param endpoint           the URI of the target system
+     * @param identity           the identity of this {@link ClientConnection}
+     * @param userAgent          the User-Agent string
+     * @param connectionsManager reference to the {@link ConnectionsManager}
      */
-    public NettyPeerConnection(Channel channel, URI endpoint, Identity identity, String userAgent) {
-        this(channel, userAgent, identity, endpoint, new AtomicBoolean(false), new ConcurrentHashMap<>(), new CompletableFuture<>());
+    public NettyPeerConnection(Channel channel,
+                               URI endpoint,
+                               Identity identity,
+                               String userAgent,
+                               ConnectionsManager connectionsManager) {
+        this(channel, userAgent, identity, endpoint, new AtomicBoolean(false), new ConcurrentHashMap<>(), new CompletableFuture<>(), connectionsManager);
 
         channelCloseFutureListener = future -> {
             String msg = "The client and its associated channel";
@@ -94,14 +103,16 @@ public abstract class NettyPeerConnection implements PeerConnection {
                                   URI endpoint,
                                   AtomicBoolean isClosed,
                                   ConcurrentHashMap<String, Pair<Class<? extends ResponseMessage<?, ?>>, SingleEmitter<ResponseMessage<?, ?>>>> emitters,
-                                  CompletableFuture<Boolean> closedCompletable) {
+                                  CompletableFuture<Boolean> closedCompletable,
+                                  ConnectionsManager connectionsManager) {
+        super(() -> identity, connectionsManager);
         this.emitters = emitters;
         this.myChannel = myChannel;
         this.userAgent = userAgent;
-        this.identity = identity;
         this.endpoint = endpoint;
         this.isClosed = isClosed;
         this.closedCompletable = closedCompletable;
+        this.channelID = myChannel.id().asShortText();
     }
 
     /**
@@ -155,12 +166,7 @@ public abstract class NettyPeerConnection implements PeerConnection {
     }
 
     @Override
-    public Identity getIdentity() {
-        return this.identity;
-    }
-
-    @Override
-    public void close() {
+    protected void close() {
         if (isClosed.compareAndSet(false, true)) {
             emitters.clear();
             myChannel.writeAndFlush(new LeaveMessage()).addListener(ChannelFutureListener.CLOSE);
@@ -174,28 +180,11 @@ public abstract class NettyPeerConnection implements PeerConnection {
 
     @Override
     public String toString() {
-        return MessageFormat.format("[{0}/Channel:{1}]", identity, myChannel.id().asShortText());
+        return MessageFormat.format("[{0}/Channel:{1}]", identitySupplier.get(), channelID);
     }
 
     /**
      * Returns the correct logger. Is needed for sub-classes.
      */
     protected abstract Logger getLogger();
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        NettyPeerConnection that = (NettyPeerConnection) o;
-        return Objects.equals(identity, that.identity);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(identity);
-    }
 }

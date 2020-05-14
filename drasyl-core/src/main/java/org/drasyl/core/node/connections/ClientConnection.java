@@ -22,6 +22,7 @@ import io.netty.channel.Channel;
 import io.reactivex.rxjava3.core.SingleEmitter;
 import org.drasyl.core.common.message.ResponseMessage;
 import org.drasyl.core.common.models.Pair;
+import org.drasyl.core.node.ConnectionsManager;
 import org.drasyl.core.node.identity.Identity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,24 +43,33 @@ public class ClientConnection extends NettyPeerConnection {
     /**
      * Creates a new connection with an unknown User-Agent.
      *
-     * @param channel  channel of the connection
-     * @param endpoint the URI of the target system
-     * @param identity the identity of this {@link ClientConnection}
+     * @param channel            channel of the connection
+     * @param endpoint           the URI of the target system
+     * @param identity           the identity of this {@link ClientConnection}
+     * @param connectionsManager reference to the {@link ConnectionsManager}
      */
-    public ClientConnection(Channel channel, URI endpoint, Identity identity) {
-        super(channel, endpoint, identity);
+    public ClientConnection(Channel channel,
+                            URI endpoint,
+                            Identity identity,
+                            ConnectionsManager connectionsManager) {
+        super(channel, endpoint, identity, connectionsManager);
     }
 
     /**
      * Creates a new connection.
      *
-     * @param channel   channel of the connection
-     * @param endpoint  the URI of the target system
-     * @param identity  the identity of this {@link ClientConnection}
-     * @param userAgent the User-Agent string
+     * @param channel            channel of the connection
+     * @param endpoint           the URI of the target system
+     * @param identity           the identity of this {@link ClientConnection}
+     * @param userAgent          the User-Agent string
+     * @param connectionsManager reference to the {@link ConnectionsManager}
      */
-    public ClientConnection(Channel channel, URI endpoint, Identity identity, String userAgent) {
-        super(channel, endpoint, identity, userAgent);
+    public ClientConnection(Channel channel,
+                            URI endpoint,
+                            Identity identity,
+                            String userAgent,
+                            ConnectionsManager connectionsManager) {
+        super(channel, endpoint, identity, userAgent, connectionsManager);
     }
 
     protected ClientConnection(Channel myChannel,
@@ -68,8 +78,9 @@ public class ClientConnection extends NettyPeerConnection {
                                URI endpoint,
                                AtomicBoolean isClosed,
                                ConcurrentHashMap<String, Pair<Class<? extends ResponseMessage<?, ?>>, SingleEmitter<ResponseMessage<?, ?>>>> emitters,
-                               CompletableFuture<Boolean> closedCompletable) {
-        super(myChannel, userAgent, identity, endpoint, isClosed, emitters, closedCompletable);
+                               CompletableFuture<Boolean> closedCompletable,
+                               ConnectionsManager connectionsManager) {
+        super(myChannel, userAgent, identity, endpoint, isClosed, emitters, closedCompletable, connectionsManager);
     }
 
     @Override
@@ -81,12 +92,12 @@ public class ClientConnection extends NettyPeerConnection {
             return false;
         }
         ClientConnection that = (ClientConnection) o;
-        return Objects.equals(identity, that.identity);
+        return Objects.equals(getIdentity(), that.getIdentity());
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(identity);
+        return Objects.hash(getIdentity());
     }
 
     @Override

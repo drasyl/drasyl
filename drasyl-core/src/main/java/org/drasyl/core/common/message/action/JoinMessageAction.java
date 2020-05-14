@@ -22,9 +22,6 @@ public class JoinMessageAction extends AbstractMessageAction<JoinMessage> implem
 
         Identity peerIdentity = Identity.of(message.getPublicKey());
 
-        // store connection
-        nodeServer.getMessenger().getConnectionsManager().addConnection(session);
-
         // store peer information
         PeerInformation peerInformation = new PeerInformation();
         peerInformation.setPublicKey(message.getPublicKey());

@@ -1,13 +1,14 @@
 package org.drasyl.core.node;
 
+import com.google.common.collect.HashMultimap;
 import org.drasyl.core.node.connections.ConnectionComparator;
 import org.drasyl.core.node.connections.PeerConnection;
 import org.drasyl.core.node.identity.Identity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.HashSet;
-import java.util.Iterator;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -22,16 +23,19 @@ import static java.util.Objects.requireNonNull;
 public class ConnectionsManager {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionsManager.class);
     private final ReadWriteLock lock;
-    private final Set<PeerConnection> connections;
+    private final HashMultimap<Identity, PeerConnection> connections;
+    private final Map<PeerConnection, Runnable> closeProcedures;
 
     public ConnectionsManager() {
-        this(new ReentrantReadWriteLock(true), new HashSet<>());
+        this(new ReentrantReadWriteLock(true), HashMultimap.create(), new HashMap<>());
     }
 
     ConnectionsManager(ReadWriteLock lock,
-                       Set<PeerConnection> connections) {
+                       HashMultimap<Identity, PeerConnection> connections,
+                       Map<PeerConnection, Runnable> closeProcedures) {
         this.lock = requireNonNull(lock);
         this.connections = requireNonNull(connections);
+        this.closeProcedures = requireNonNull(closeProcedures);
     }
 
     /**
@@ -40,14 +44,13 @@ public class ConnectionsManager {
      * <p>
      * The shortest connections (e.g. direct connection) are rated as best.
      *
-     * @param identity
-     * @return
+     * @param identity the identity
      */
     public PeerConnection getConnection(Identity identity) {
         try {
             lock.readLock().lock();
 
-            Optional<PeerConnection> connection = connections.stream().filter(c -> c.getIdentity().equals(identity)).min(ConnectionComparator.INSTANCE);
+            Optional<PeerConnection> connection = connections.get(identity).stream().min(ConnectionComparator.INSTANCE);
 
             return connection.orElse(null);
         }
@@ -63,21 +66,24 @@ public class ConnectionsManager {
      * considered to be " equal" if the node at the other end of the connection and the type of the
      * connection (client, super peer, p2p) are the same.
      *
-     * @param connection
+     * @param connection     the connection
+     * @param closeProcedure the procedure to close this connection
      */
-    public void addConnection(PeerConnection connection) {
+    public void addConnection(PeerConnection connection, Runnable closeProcedure) {
         try {
             lock.writeLock().lock();
 
             LOG.debug("Add Connection '{}' for Node '{}'", connection, connection.getIdentity());
 
-            Optional<PeerConnection> existingConnection = connections.stream().filter(c -> c.getIdentity().equals(connection.getIdentity()) && c.getClass() == connection.getClass()).findFirst();
+            Optional<PeerConnection> existingConnection = connections.get(connection.getIdentity()).stream().filter(c -> c.getClass() == connection.getClass()).findFirst();
             if (existingConnection.isPresent()) {
                 LOG.debug("A Connection of this type already exists for Node '{}'. Replace and close existing Connection '{}' before adding new Connection '{}'", connection.getIdentity(), existingConnection.get(), connection);
-                existingConnection.get().close();
+
+                closeAndRemoveConnection(existingConnection.get());
             }
 
-            connections.add(connection);
+            connections.put(connection.getIdentity(), connection);
+            closeProcedures.put(connection, closeProcedure);
         }
         finally {
             lock.writeLock().unlock();
@@ -87,7 +93,7 @@ public class ConnectionsManager {
     /**
      * Closes and removes <code>connection</code> from the list of available connections.
      *
-     * @param connection
+     * @param connection the connection
      */
     public void closeConnection(PeerConnection connection) {
         try {
@@ -102,26 +108,25 @@ public class ConnectionsManager {
 
     private void closeAndRemoveConnection(PeerConnection connection) {
         LOG.debug("Close and remove Connection '{}' for Node '{}'", connection, connection.getIdentity());
-        connections.remove(connection);
-        connection.close();
+        connections.remove(connection.getIdentity(), connection);
+        Optional.ofNullable(closeProcedures.remove(connection)).ifPresent(Runnable::run);
     }
 
     /**
      * Closes and removes all connections of type <code>clazz</code> for peer with identity
      * <code>identity</code>.
      *
-     * @param identity
-     * @param clazz
+     * @param identity the identity
+     * @param clazz    the class
      */
     public void closeConnectionOfTypeForIdentity(Identity identity,
                                                  Class<? extends PeerConnection> clazz) {
         try {
             lock.writeLock().lock();
 
-            Set<PeerConnection> connectionsOfType = this.connections.stream().filter(c -> c.getIdentity().equals(identity) && c.getClass() == clazz).collect(Collectors.toSet());
-            for (Iterator<PeerConnection> iterator = connectionsOfType.iterator();
-                 iterator.hasNext(); ) {
-                closeAndRemoveConnection(iterator.next());
+            Set<PeerConnection> connectionsOfType = connections.get(identity).stream().filter(c -> c.getClass() == clazz).collect(Collectors.toSet());
+            for (PeerConnection peerConnection : connectionsOfType) {
+                closeAndRemoveConnection(peerConnection);
             }
         }
         finally {
@@ -132,16 +137,15 @@ public class ConnectionsManager {
     /**
      * Closes and removes all connections of type <code>clazz</code>.
      *
-     * @param clazz
+     * @param clazz the class
      */
     public void closeConnectionsOfType(Class<? extends PeerConnection> clazz) {
         try {
             lock.writeLock().lock();
 
-            Set<PeerConnection> connectionsOfType = this.connections.stream().filter(c -> c.getClass() == clazz).collect(Collectors.toSet());
-            for (Iterator<PeerConnection> iterator = connectionsOfType.iterator();
-                 iterator.hasNext(); ) {
-                closeAndRemoveConnection(iterator.next());
+            Set<PeerConnection> connectionsOfType = connections.values().stream().filter(c -> c.getClass() == clazz).collect(Collectors.toSet());
+            for (PeerConnection peerConnection : connectionsOfType) {
+                closeAndRemoveConnection(peerConnection);
             }
         }
         finally {

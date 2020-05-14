@@ -16,6 +16,6 @@ public class LeaveMessageAction extends AbstractMessageAction<LeaveMessage> impl
     public void onMessageServer(ClientConnection session,
                                 NodeServer nodeServer) {
         session.send(new StatusMessage(STATUS_OK, message.getId()));
-        session.close();
+        nodeServer.getMessenger().getConnectionsManager().closeConnection(session);
     }
 }

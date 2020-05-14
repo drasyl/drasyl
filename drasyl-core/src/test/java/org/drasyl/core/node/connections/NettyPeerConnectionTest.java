@@ -25,6 +25,7 @@ import io.netty.channel.ChannelId;
 import io.reactivex.rxjava3.core.SingleEmitter;
 import org.drasyl.core.common.message.*;
 import org.drasyl.core.common.models.Pair;
+import org.drasyl.core.node.ConnectionsManager;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.node.identity.IdentityTestHelper;
 import org.drasyl.crypto.Crypto;
@@ -36,6 +37,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.security.AccessControlException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -56,6 +58,7 @@ class NettyPeerConnectionTest {
     private String msgID;
     private CompletableFuture<Boolean> closedCompletable;
     private ResponseMessage<? extends RequestMessage<?>, ? extends Message<?>> responseMessage;
+    private ConnectionsManager connectionsManager;
 
     @BeforeEach
     void setUp() throws URISyntaxException {
@@ -72,6 +75,7 @@ class NettyPeerConnectionTest {
         msgID = Crypto.randomString(16);
         closedCompletable = mock(CompletableFuture.class);
         responseMessage = mock(StatusMessage.class);
+        connectionsManager = mock(ConnectionsManager.class);
 
         when(channel.closeFuture()).thenReturn(channelFuture);
         when(channel.id()).thenReturn(channelId);
@@ -92,8 +96,8 @@ class NettyPeerConnectionTest {
     void sendMessageShouldSendMessageToUnderlyingChannel(Class<NettyPeerConnection> clazz) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         NettyPeerConnection peerConnection = clazz.getDeclaredConstructor(Channel.class, String.class,
                 Identity.class, URI.class, AtomicBoolean.class,
-                ConcurrentHashMap.class, CompletableFuture.class).newInstance(channel, userAgent, myid,
-                endpoint, isClosed, emitters, closedCompletable);
+                ConcurrentHashMap.class, CompletableFuture.class, ConnectionsManager.class).newInstance(channel, userAgent, myid,
+                endpoint, isClosed, emitters, closedCompletable, connectionsManager);
         peerConnection.send(message);
 
         verify(channel).writeAndFlush(eq(message));
@@ -104,8 +108,8 @@ class NettyPeerConnectionTest {
     void sendMessageWithResponseShouldSendMessageToUnderlyingChannelAndAddASingle(Class<NettyPeerConnection> clazz) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         NettyPeerConnection peerConnection = clazz.getDeclaredConstructor(Channel.class, String.class,
                 Identity.class, URI.class, AtomicBoolean.class,
-                ConcurrentHashMap.class, CompletableFuture.class).newInstance(channel, userAgent, myid,
-                endpoint, isClosed, emitters, closedCompletable);
+                ConcurrentHashMap.class, CompletableFuture.class, ConnectionsManager.class).newInstance(channel, userAgent, myid,
+                endpoint, isClosed, emitters, closedCompletable, connectionsManager);
 
         peerConnection.send(message, StatusMessage.class).subscribe(onSuccess -> {
         }, onError -> {
@@ -120,8 +124,8 @@ class NettyPeerConnectionTest {
     void sendNothingIfSessionIsTerminated(Class<NettyPeerConnection> clazz) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         NettyPeerConnection peerConnection = clazz.getDeclaredConstructor(Channel.class, String.class,
                 Identity.class, URI.class, AtomicBoolean.class,
-                ConcurrentHashMap.class, CompletableFuture.class).newInstance(channel, userAgent, myid,
-                endpoint, new AtomicBoolean(true), emitters, closedCompletable);
+                ConcurrentHashMap.class, CompletableFuture.class, ConnectionsManager.class).newInstance(channel, userAgent, myid,
+                endpoint, new AtomicBoolean(true), emitters, closedCompletable, connectionsManager);
 
         when(responseMessage.getCorrespondingId()).thenReturn(msgID);
 
@@ -142,8 +146,8 @@ class NettyPeerConnectionTest {
 
         NettyPeerConnection peerConnection = clazz.getDeclaredConstructor(Channel.class, String.class,
                 Identity.class, URI.class, AtomicBoolean.class,
-                ConcurrentHashMap.class, CompletableFuture.class).newInstance(channel, userAgent, myid,
-                endpoint, isClosed, emitters, closedCompletable);
+                ConcurrentHashMap.class, CompletableFuture.class, ConnectionsManager.class).newInstance(channel, userAgent, myid,
+                endpoint, isClosed, emitters, closedCompletable, connectionsManager);
 
         when(emitters.remove(message.getId())).thenReturn(Pair.of(StatusMessage.class, singleEmitter));
         when(responseMessage.getCorrespondingId()).thenReturn(msgID);
@@ -162,8 +166,8 @@ class NettyPeerConnectionTest {
     void setResponseShouldDoNothingIfSingleDoesNotExists(Class<NettyPeerConnection> clazz) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         NettyPeerConnection peerConnection = clazz.getDeclaredConstructor(Channel.class, String.class,
                 Identity.class, URI.class, AtomicBoolean.class,
-                ConcurrentHashMap.class, CompletableFuture.class).newInstance(channel, userAgent, myid,
-                endpoint, isClosed, emitters, closedCompletable);
+                ConcurrentHashMap.class, CompletableFuture.class, ConnectionsManager.class).newInstance(channel, userAgent, myid,
+                endpoint, isClosed, emitters, closedCompletable, connectionsManager);
 
         when(responseMessage.getCorrespondingId()).thenReturn(msgID);
 
@@ -178,12 +182,13 @@ class NettyPeerConnectionTest {
     @ParameterizedTest
     @ValueSource(classes = { SuperPeerConnection.class, ClientConnection.class })
     void closeShouldFreeMemory(Class<NettyPeerConnection> clazz) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
+        ConnectionsManager connectionsManager = new ConnectionsManager();
         NettyPeerConnection peerConnection = clazz.getDeclaredConstructor(Channel.class, String.class,
                 Identity.class, URI.class, AtomicBoolean.class,
-                ConcurrentHashMap.class, CompletableFuture.class).newInstance(channel, userAgent, myid,
-                endpoint, isClosed, emitters, closedCompletable);
+                ConcurrentHashMap.class, CompletableFuture.class, ConnectionsManager.class).newInstance(channel, userAgent, myid,
+                endpoint, isClosed, emitters, closedCompletable, connectionsManager);
 
-        peerConnection.close();
+        connectionsManager.closeConnection(peerConnection);
 
         verify(emitters).clear();
         verify(channel).writeAndFlush(any(LeaveMessage.class));
@@ -194,8 +199,8 @@ class NettyPeerConnectionTest {
     @ParameterizedTest
     @ValueSource(classes = { SuperPeerConnection.class, ClientConnection.class })
     void sessionCreationShouldRegisterACloseListener(Class<NettyPeerConnection> clazz) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
-        NettyPeerConnection peerConnection = clazz.getDeclaredConstructor(Channel.class, URI.class, Identity.class)
-                .newInstance(channel, endpoint, myid);
+        NettyPeerConnection peerConnection = clazz.getDeclaredConstructor(Channel.class, URI.class, Identity.class, ConnectionsManager.class)
+                .newInstance(channel, endpoint, myid, connectionsManager);
 
         verify(channelFuture).addListener(any(ChannelFutureListener.class));
         assertEquals(peerConnection.getCloseFuture(), channelFuture);
@@ -206,8 +211,8 @@ class NettyPeerConnectionTest {
     void closeListenerShouldWorkOnClose(Class<NettyPeerConnection> clazz) throws Exception {
         when(channelFuture.isSuccess()).thenReturn(true);
 
-        NettyPeerConnection peerConnection = clazz.getDeclaredConstructor(Channel.class, URI.class, Identity.class)
-                .newInstance(channel, endpoint, myid);
+        NettyPeerConnection peerConnection = clazz.getDeclaredConstructor(Channel.class, URI.class, Identity.class, ConnectionsManager.class)
+                .newInstance(channel, endpoint, myid, connectionsManager);
 
         peerConnection.channelCloseFutureListener.operationComplete(channelFuture);
 
@@ -225,8 +230,8 @@ class NettyPeerConnectionTest {
         when(channelFuture.isSuccess()).thenReturn(false);
         when(channelFuture.cause()).thenReturn(e);
 
-        NettyPeerConnection peerConnection = clazz.getDeclaredConstructor(Channel.class, URI.class, Identity.class)
-                .newInstance(channel, endpoint, myid);
+        NettyPeerConnection peerConnection = clazz.getDeclaredConstructor(Channel.class, URI.class, Identity.class, ConnectionsManager.class)
+                .newInstance(channel, endpoint, myid, connectionsManager);
 
         peerConnection.channelCloseFutureListener.operationComplete(channelFuture);
 
@@ -242,10 +247,10 @@ class NettyPeerConnectionTest {
     void equalsAndHashCodeTest(Class<NettyPeerConnection> clazz) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         NettyPeerConnection peerConnection = clazz.getDeclaredConstructor(Channel.class, String.class,
                 Identity.class, URI.class, AtomicBoolean.class,
-                ConcurrentHashMap.class, CompletableFuture.class).newInstance(channel, userAgent, myid,
-                endpoint, isClosed, emitters, closedCompletable);
-        NettyPeerConnection peerConnection2 = clazz.getDeclaredConstructor(Channel.class, URI.class, Identity.class)
-                .newInstance(channel, endpoint, myid);
+                ConcurrentHashMap.class, CompletableFuture.class, ConnectionsManager.class).newInstance(channel, userAgent, myid,
+                endpoint, isClosed, emitters, closedCompletable, connectionsManager);
+        NettyPeerConnection peerConnection2 = clazz.getDeclaredConstructor(Channel.class, URI.class, Identity.class, ConnectionsManager.class)
+                .newInstance(channel, endpoint, myid, connectionsManager);
 
         assertEquals(peerConnection, peerConnection2);
         assertEquals(peerConnection.hashCode(), peerConnection2.hashCode());
@@ -257,11 +262,14 @@ class NettyPeerConnectionTest {
     void getterTest(Class<NettyPeerConnection> clazz) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         NettyPeerConnection peerConnection = clazz.getDeclaredConstructor(Channel.class, String.class,
                 Identity.class, URI.class, AtomicBoolean.class,
-                ConcurrentHashMap.class, CompletableFuture.class).newInstance(channel, userAgent, myid,
-                endpoint, isClosed, emitters, closedCompletable);
+                ConcurrentHashMap.class, CompletableFuture.class, ConnectionsManager.class).newInstance(channel, userAgent, myid,
+                endpoint, isClosed, emitters, closedCompletable, connectionsManager);
 
         assertEquals(myid, peerConnection.getIdentity());
         assertEquals(endpoint, peerConnection.getEndpoint());
         assertEquals(userAgent, peerConnection.getUserAgent());
+        assertNotEquals(peerConnection, mock(clazz));
+        assertEquals(peerConnection, peerConnection);
+        assertEquals(peerConnection.hashCode(), peerConnection.hashCode());
     }
 }
