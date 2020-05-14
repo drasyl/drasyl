@@ -16,19 +16,16 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.core.common.tools;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.io.IOException;
-import java.net.ServerSocket;
 
 import org.junit.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
+
+import java.io.IOException;
+import java.net.ServerSocket;
+
+import static org.junit.Assert.assertNotEquals;
 
 public class NetworkToolTest {
     @Test
@@ -41,7 +38,8 @@ public class NetworkToolTest {
     public void availablePortTest() {
         try (ServerSocket socket = new ServerSocket(5555)) {
             Assert.assertFalse(NetworkTool.available(5555));
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
         }
 
         Assert.assertTrue(NetworkTool.available(4444));
@@ -70,7 +68,8 @@ public class NetworkToolTest {
     public void aliveTest() {
         try (ServerSocket socket = new ServerSocket(2222)) {
             Assert.assertTrue(NetworkTool.alive("127.0.0.1", 2222));
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
         }
 
         Assert.assertFalse(NetworkTool.alive("127.0.0.1", 3333));

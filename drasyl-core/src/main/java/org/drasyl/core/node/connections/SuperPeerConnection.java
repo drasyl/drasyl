@@ -28,11 +28,11 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+@SuppressWarnings({ "java:S2160" })
 public class SuperPeerConnection extends NettyPeerConnection {
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerConnection.class);
 
@@ -80,22 +80,5 @@ public class SuperPeerConnection extends NettyPeerConnection {
     @Override
     protected Logger getLogger() {
         return LOG;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        SuperPeerConnection that = (SuperPeerConnection) o;
-        return Objects.equals(getIdentity(), that.getIdentity());
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(getIdentity());
     }
 }

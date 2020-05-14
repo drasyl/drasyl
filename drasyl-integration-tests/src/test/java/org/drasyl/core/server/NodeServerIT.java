@@ -38,11 +38,10 @@ import org.drasyl.core.node.DrasylNodeConfig;
 import org.drasyl.core.node.Messenger;
 import org.drasyl.core.node.PeersManager;
 import org.drasyl.core.node.connections.ClientConnection;
-import org.drasyl.core.node.connections.NettyPeerConnection;
+import org.drasyl.core.node.connections.PeerConnection;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.node.identity.IdentityManager;
 import org.drasyl.core.server.testutils.ANSI_COLOR;
-import org.drasyl.core.server.testutils.BetterArrayList;
 import org.drasyl.core.server.testutils.TestHelper;
 import org.drasyl.core.server.testutils.TestServerConnection;
 import org.drasyl.crypto.CryptoException;
@@ -78,7 +77,6 @@ public class NodeServerIT {
     private IdentityManager identityManager;
     public static final long TIMEOUT = 10000L;
     private NodeServer server;
-    private final BetterArrayList<NettyPeerConnection> clientConnections = new BetterArrayList<>();
     DrasylNodeConfig config;
     private static EventLoopGroup workerGroup;
     private static EventLoopGroup bossGroup;
@@ -124,9 +122,6 @@ public class NodeServerIT {
 
     @AfterEach
     public void cleanUp() {
-        clientConnections.forEach(s -> s.send(new LeaveMessage()));
-        clientConnections.clear();
-
         server.close();
     }
 
@@ -138,7 +133,6 @@ public class NodeServerIT {
             CountDownLatch lock = new CountDownLatch(1);
 
             TestServerConnection session = TestServerConnection.build(server);
-            clientConnections.add(session);
 
             session.send(new JoinMessage(identityManager.getKeyPair().getPublicKey(), Set.of()),
                     WelcomeMessage.class).blockingSubscribe(response -> {
@@ -164,9 +158,7 @@ public class NodeServerIT {
 
         try {
             TestServerConnection session1 = TestServerConnection.build(server);
-            clientConnections.add(session1);
             TestServerConnection session2 = TestServerConnection.build(server);
-            clientConnections.add(session2);
 
             session1.send(new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of()),
                     WelcomeMessage.class).subscribe(response -> lock.countDown());
@@ -192,9 +184,7 @@ public class NodeServerIT {
 
         try {
             TestServerConnection session1 = TestServerConnection.buildAutoJoin(server);
-            clientConnections.add(session1);
             TestServerConnection session2 = TestServerConnection.buildAutoJoin(server);
-            clientConnections.add(session2);
 
             with().pollInSameThread().await().pollDelay(0, TimeUnit.NANOSECONDS).atMost(Durations.FIVE_MINUTES)
                     .until(() -> server.getPeersManager().getChildren().size() >= 2);
@@ -223,9 +213,7 @@ public class NodeServerIT {
 
         try {
             TestServerConnection session1 = TestServerConnection.buildAutoJoin(server);
-            clientConnections.add(session1);
             TestServerConnection session2 = TestServerConnection.buildAutoJoin(server);
-            clientConnections.add(session2);
 
             ApplicationMessage msg = new ApplicationMessage(session1.getIdentity(), session2.getIdentity(), new byte[]{
                     0x00,
@@ -261,9 +249,7 @@ public class NodeServerIT {
 
         try {
             TestServerConnection session1 = TestServerConnection.buildAutoJoin(server);
-            clientConnections.add(session1);
             TestServerConnection session2 = TestServerConnection.buildAutoJoin(server);
-            clientConnections.add(session1);
 
             ApplicationMessage msg = new ApplicationMessage(session1.getIdentity(), session2.getIdentity(), new byte[]{});
 
@@ -294,7 +280,6 @@ public class NodeServerIT {
 
         try {
             TestServerConnection session = TestServerConnection.build(server);
-            clientConnections.add(session);
 
             session.addListener(message -> {
                 if (message instanceof ConnectionExceptionMessage) {
@@ -331,7 +316,6 @@ public class NodeServerIT {
 
         try {
             TestServerConnection session = TestServerConnection.buildAutoJoin(server);
-            clientConnections.add(session);
 
             session.addListener(message -> assertThat(message, is(not(instanceOf(MessageExceptionMessage.class)))));
 
@@ -358,7 +342,6 @@ public class NodeServerIT {
 
         try {
             TestServerConnection session = TestServerConnection.build(server);
-            clientConnections.add(session);
 
             session.addListener(message -> {
                 if (message instanceof MessageExceptionMessage) {
@@ -392,21 +375,25 @@ public class NodeServerIT {
 
     @Test
     public void newSessionWithSameIdentityShouldReplaceAndCloseExistingSession() {
-        TestHelper.println("STARTING multipleHandshakeWithSameIDTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+        TestHelper.println("STARTING newSessionWithSameIdentityShouldReplaceAndCloseExistingSession()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
 
         CountDownLatch lock = new CountDownLatch(1);
 
         try {
             TestServerConnection session1 = TestServerConnection.build(server);
-            clientConnections.add(session1);
             TestServerConnection session2 = TestServerConnection.build(server);
-            clientConnections.add(session2);
 
             session1.send(new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of()),
                     WelcomeMessage.class).blockingGet();
             session1.addListener(message -> {
                 if (message instanceof LeaveMessage) {
-                    lock.countDown();
+                    LeaveMessage leave = (LeaveMessage) message;
+                    if (leave.getReason() != null && leave.getReason().equals(PeerConnection.CloseReason.REASON_NEW_SESSION)) {
+                        lock.countDown();
+                    }
+                    else {
+                        fail("This is not an expected reason!");
+                    }
                 }
             });
             session2.send(new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of()),
@@ -415,13 +402,14 @@ public class NodeServerIT {
             lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
             assertEquals(0, lock.getCount());
             assertTrue(session1.isClosed().get(10, TimeUnit.SECONDS));
+            assertFalse(session2.isClosed().isDone());
         }
         catch (InterruptedException | ExecutionException | CryptoException | TimeoutException e) {
             e.printStackTrace();
             fail("Exception occurred during the test.");
         }
 
-        TestHelper.println("FINISHED multipleHandshakeWithSameIDTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+        TestHelper.println("FINISHED newSessionWithSameIdentityShouldReplaceAndCloseExistingSession()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
     }
 
     @Test
@@ -432,7 +420,6 @@ public class NodeServerIT {
 
         try {
             TestServerConnection session = TestServerConnection.buildAutoJoin(server);
-            clientConnections.add(session);
 
             session.send(new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of()), MessageExceptionMessage.class)
                     .subscribe(response -> {
@@ -458,7 +445,6 @@ public class NodeServerIT {
         CountDownLatch lock = new CountDownLatch(2);
         try {
             TestServerConnection session = TestServerConnection.build(server, false);
-            clientConnections.add(session);
 
             session.addListener(message -> {
                 if (message instanceof MessageExceptionMessage) {
@@ -492,7 +478,6 @@ public class NodeServerIT {
 
         try {
             TestServerConnection session = TestServerConnection.buildAutoJoin(server);
-            clientConnections.add(session);
 
             session.addListener(message -> assertThat(message, is(not(instanceOf(MessageExceptionMessage.class)))));
 
@@ -513,7 +498,6 @@ public class NodeServerIT {
         CountDownLatch lock = new CountDownLatch(1);
         try {
             TestServerConnection session = TestServerConnection.build(server, false);
-            clientConnections.add(session);
 
             session.addListener(message -> {
                 if (message instanceof PongMessage) {
@@ -540,7 +524,6 @@ public class NodeServerIT {
 
         try {
             TestServerConnection session = TestServerConnection.build(server);
-            clientConnections.add(session);
 
             RequestMessage<?> msg = new ApplicationMessage(TestHelper.random(), TestHelper.random(), new byte[]{
                     0x00,
@@ -572,9 +555,7 @@ public class NodeServerIT {
 
         try {
             TestServerConnection session1 = TestServerConnection.buildAutoJoin(server);
-            clientConnections.add(session1);
             TestServerConnection session2 = TestServerConnection.buildAutoJoin(server);
-            clientConnections.add(session2);
 
             byte[] bigPayload = new byte[config.getMaxContentLength()];
             new Random().nextBytes(bigPayload);
@@ -609,9 +590,7 @@ public class NodeServerIT {
 
         try {
             TestServerConnection session1 = TestServerConnection.buildAutoJoin(server);
-            clientConnections.add(session1);
             TestServerConnection session2 = TestServerConnection.buildAutoJoin(server);
-            clientConnections.add(session2);
 
             byte[] bigPayload = new byte[config.getMaxContentLength() + 1];
             new Random().nextBytes(bigPayload);
@@ -669,7 +648,6 @@ public class NodeServerIT {
             CountDownLatch lock = new CountDownLatch(2);
 
             TestServerConnection session = TestServerConnection.build(server);
-            clientConnections.add(session);
 
             session.addListener(message -> {
                 if (message instanceof LeaveMessage) {
@@ -700,9 +678,7 @@ public class NodeServerIT {
             CountDownLatch lock = new CountDownLatch(2);
 
             TestServerConnection session = TestServerConnection.build(server);
-            clientConnections.add(session);
             TestServerConnection session2 = TestServerConnection.build(server);
-            clientConnections.add(session2);
 
             session2.addListener(message -> {
                 if (message instanceof RejectMessage) {

@@ -16,11 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.core.common.tools;
-
-import org.drasyl.core.common.message.LeaveMessage;
-import com.fasterxml.jackson.databind.ObjectMapper;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -34,23 +30,24 @@ import java.util.HashSet;
 import java.util.Set;
 
 public final class NetworkTool {
-    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
-
     /**
      * The minimum server port number.
      */
     public static final int MIN_PORT_NUMBER = 0;
-
     /**
      * The maximum server port number.
      */
     public static final int MAX_PORT_NUMBER = 65535;
-
     /**
      * Domains for IP detection.
      */
-    private static final String[] ipCheckTools = {"http://checkip.amazonaws.com", "http://ipv4.icanhazip.com",
-            "http://bot.whatismyipaddress.com", "http://myexternalip.com/raw", "http://ipecho.net/plain"};
+    private static final String[] ipCheckTools = {
+            "http://checkip.amazonaws.com",
+            "http://ipv4.icanhazip.com",
+            "http://bot.whatismyipaddress.com",
+            "http://myexternalip.com/raw",
+            "http://ipecho.net/plain"
+    };
 
     private NetworkTool() {
     }
@@ -74,7 +71,8 @@ public final class NetworkTool {
                         break;
                     }
                 }
-            } catch (IOException e) {
+            }
+            catch (IOException e) {
                 ex = e;
             }
         }
@@ -92,8 +90,7 @@ public final class NetworkTool {
      * Checks to see if a specific port is available.
      *
      * <p>
-     * Source: <a href=
-     * "https://svn.apache.org/viewvc/camel/trunk/components/camel-test/src/main/java/org/apache/camel/test/AvailablePortFinder.java?view=markup#l130">Apache
+     * Source: <a href= "https://svn.apache.org/viewvc/camel/trunk/components/camel-test/src/main/java/org/apache/camel/test/AvailablePortFinder.java?view=markup#l130">Apache
      * camel</a>
      * </p>
      *
@@ -102,14 +99,16 @@ public final class NetworkTool {
      * @throws IllegalArgumentException is thrown if the port number is out of range
      */
     public static boolean available(int port) {
-        if (!isValidPort(port))
+        if (!isValidPort(port)) {
             throw new IllegalArgumentException("Invalid port: " + port);
+        }
 
         try (ServerSocket ss = new ServerSocket(port)) {
             ss.setReuseAddress(true);
 
             return true;
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             // Do nothing
         }
 
@@ -125,15 +124,17 @@ public final class NetworkTool {
      * @throws IllegalArgumentException is thrown if the port number is out of range
      */
     public static boolean alive(String host, int port) {
-        if (!isValidPort(port))
+        if (!isValidPort(port)) {
             throw new IllegalArgumentException("Invalid port: " + port);
+        }
 
         try (Socket s = new Socket(host, port)) {
             PrintWriter out = new PrintWriter(s.getOutputStream(), true, StandardCharsets.UTF_8);
-            out.println(JSON_MAPPER.writeValueAsString(new LeaveMessage()));
+            out.println("GET / HTTP/1.1");
 
             return true;
-        } catch (IOException e) {
+        }
+        catch (IOException e) {
             // Do nothing
         }
 

@@ -21,6 +21,7 @@ package org.drasyl.core.common.message;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.drasyl.core.common.message.action.LeaveMessageAction;
 import org.drasyl.core.common.message.action.MessageAction;
+import org.drasyl.core.node.connections.PeerConnection.CloseReason;
 
 import java.util.Objects;
 
@@ -28,14 +29,14 @@ import java.util.Objects;
  * A message representing a termination of a connection.
  */
 public class LeaveMessage extends AbstractMessage<LeaveMessage> implements RequestMessage<LeaveMessage>, UnrestrictedPassableMessage {
-    @JsonInclude(JsonInclude.Include.NON_EMPTY)
-    private final String reason;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private final CloseReason reason;
 
     public LeaveMessage() {
-        this("");
+        this(null);
     }
 
-    public LeaveMessage(String reason) {
+    public LeaveMessage(CloseReason reason) {
         this.reason = reason;
     }
 
@@ -68,7 +69,7 @@ public class LeaveMessage extends AbstractMessage<LeaveMessage> implements Reque
                 '}';
     }
 
-    public String getReason() {
+    public CloseReason getReason() {
         return reason;
     }
 
