@@ -29,6 +29,7 @@ import org.drasyl.core.common.message.ResponseMessage;
 import org.drasyl.core.common.message.action.MessageAction;
 import org.drasyl.core.common.message.action.ServerMessageAction;
 import org.drasyl.core.node.connections.ClientConnection;
+import org.drasyl.core.node.connections.PeerConnection;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.server.NodeServer;
 import org.slf4j.Logger;
@@ -96,8 +97,8 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<Message> {
     @Override
     public void handlerAdded(final ChannelHandlerContext ctx) {
         ctx.channel().closeFuture().addListener(future -> {
-            if (clientConnection != null) {
-                server.getMessenger().getConnectionsManager().closeConnection(clientConnection);
+            if (clientConnection != null && !clientConnection.isClosed().isDone()) {
+                server.getMessenger().getConnectionsManager().closeConnection(clientConnection, PeerConnection.CloseReason.REASON_INTERNAL_REJECTION);
             }
         });
     }

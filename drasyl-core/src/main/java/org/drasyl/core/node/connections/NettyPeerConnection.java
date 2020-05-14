@@ -34,6 +34,7 @@ import org.slf4j.Logger;
 
 import java.net.URI;
 import java.text.MessageFormat;
+import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -41,7 +42,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * The {@link NettyPeerConnection} object models an in- or outbound connection by netty.
  */
-@SuppressWarnings({ "squid:S00107" })
+@SuppressWarnings({ "squid:S00107", "java:S2160" })
 public abstract class NettyPeerConnection extends PeerConnection {
     protected final ConcurrentHashMap<String, Pair<Class<? extends ResponseMessage<?, ?>>, SingleEmitter<ResponseMessage<?, ?>>>> emitters;
     protected final Channel myChannel;
@@ -166,10 +167,10 @@ public abstract class NettyPeerConnection extends PeerConnection {
     }
 
     @Override
-    protected void close() {
+    protected void close(CloseReason reason) {
         if (isClosed.compareAndSet(false, true)) {
             emitters.clear();
-            myChannel.writeAndFlush(new LeaveMessage()).addListener(ChannelFutureListener.CLOSE);
+            myChannel.writeAndFlush(new LeaveMessage(reason)).addListener(ChannelFutureListener.CLOSE);
         }
     }
 
@@ -187,4 +188,24 @@ public abstract class NettyPeerConnection extends PeerConnection {
      * Returns the correct logger. Is needed for sub-classes.
      */
     protected abstract Logger getLogger();
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        if (!super.equals(o)) {
+            return false;
+        }
+        NettyPeerConnection that = (NettyPeerConnection) o;
+        return Objects.equals(connectionId, that.connectionId);
+    }
+
+    @Override
+    public int hashCode() {
+        return super.hashCode();
+    }
 }

@@ -28,7 +28,6 @@ import org.drasyl.core.node.DrasylNode;
 import org.drasyl.core.node.identity.Identity;
 
 import java.net.URI;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -37,6 +36,7 @@ import java.util.function.Consumer;
  * The {@link AutoreferentialPeerConnection} object models an autoreferentially connection of this
  * node.
  */
+@SuppressWarnings({ "java:S2160" })
 public class AutoreferentialPeerConnection extends PeerConnection {
     private final Consumer<Event> onEvent;
     private final URI endpoint;
@@ -58,7 +58,7 @@ public class AutoreferentialPeerConnection extends PeerConnection {
      * Creates a new autoreferentially connection of this node.
      *
      * @param onEvent            reference to {@link DrasylNode#onEvent(Event)}
-     * @param identity    reference to {@link Identity}
+     * @param identity           reference to {@link Identity}
      * @param uri                the node endpoint
      * @param connectionsManager reference to the {@link ConnectionsManager}
      */
@@ -112,7 +112,7 @@ public class AutoreferentialPeerConnection extends PeerConnection {
     }
 
     @Override
-    protected void close() {
+    protected void close(CloseReason reason) {
         if (isClosed.compareAndSet(false, true)) {
             closedCompletable.complete(true);
         }
@@ -121,22 +121,5 @@ public class AutoreferentialPeerConnection extends PeerConnection {
     @Override
     public CompletableFuture<Boolean> isClosed() {
         return closedCompletable;
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        AutoreferentialPeerConnection that = (AutoreferentialPeerConnection) o;
-        return Objects.equals(getIdentity(), that.getIdentity());
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(getIdentity());
     }
 }

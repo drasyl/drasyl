@@ -1,6 +1,7 @@
 package org.drasyl.core.node;
 
 import com.google.common.collect.HashMultimap;
+import org.drasyl.core.node.connections.PeerConnection.CloseReason;
 import org.drasyl.core.node.connections.PeerConnection;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.crypto.Crypto;
@@ -10,7 +11,10 @@ import org.junit.jupiter.api.Test;
 import java.util.Map;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
+import java.util.function.Consumer;
 
+import static org.drasyl.core.node.connections.PeerConnection.CloseReason.REASON_NEW_SESSION;
+import static org.drasyl.core.node.connections.PeerConnection.CloseReason.REASON_SHUTTING_DOWN;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -19,12 +23,13 @@ class ConnectionsManagerTest {
     private Lock readLock;
     private Lock writeLock;
     private HashMultimap<Identity, PeerConnection> connections;
-    private Map<PeerConnection, Runnable> closeProcedures;
+    private Map<PeerConnection, Consumer<CloseReason>> closeProcedures;
     private Identity identity;
     private PeerConnection peerConnection;
     private PeerConnection peerConnection2;
-    private Runnable runnable1;
-    private Runnable runnable2;
+    private CloseReason reason;
+    private Consumer<CloseReason> runnable1;
+    private Consumer<CloseReason> runnable2;
 
     @BeforeEach
     void setUp() {
@@ -36,8 +41,9 @@ class ConnectionsManagerTest {
         identity = Identity.of(Crypto.randomString(5));
         peerConnection = mock(PeerConnection.class);
         peerConnection2 = mock(PeerConnection.class);
-        runnable1 = mock(Runnable.class);
-        runnable2 = mock(Runnable.class);
+        reason = REASON_SHUTTING_DOWN;
+        runnable1 = mock(Consumer.class);
+        runnable2 = mock(Consumer.class);
 
         when(lock.writeLock()).thenReturn(writeLock);
         when(lock.readLock()).thenReturn(readLock);
@@ -73,7 +79,7 @@ class ConnectionsManagerTest {
         connectionsManager.addConnection(peerConnection, runnable1);
         connectionsManager.addConnection(peerConnection2, runnable2);
 
-        verify(runnable1).run();
+        verify(runnable1).accept(REASON_NEW_SESSION);
         assertTrue(connections.containsEntry(identity, peerConnection2));
         verify(writeLock, times(2)).lock();
         verify(writeLock, times(2)).unlock();
@@ -83,10 +89,10 @@ class ConnectionsManagerTest {
     void closeConnectionShouldCloseAndRemoveFromListOfAllConnections() {
         ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures);
         connectionsManager.addConnection(peerConnection, runnable1);
-        connectionsManager.closeConnection(peerConnection);
+        connectionsManager.closeConnection(peerConnection, reason);
 
         assertFalse(connections.containsEntry(identity, peerConnection));
-        verify(runnable1).run();
+        verify(runnable1).accept(reason);
         verify(writeLock, times(2)).lock();
         verify(writeLock, times(2)).unlock();
     }
@@ -95,10 +101,10 @@ class ConnectionsManagerTest {
     void closeConnectionOfTypeForIdentityShouldCloseAndRemoveAllConnectionsOfGivenTypeForGivenIdentity() {
         ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures);
         connectionsManager.addConnection(peerConnection, runnable1);
-        connectionsManager.closeConnectionOfTypeForIdentity(identity, peerConnection.getClass());
+        connectionsManager.closeConnectionOfTypeForIdentity(identity, peerConnection.getClass(), reason);
 
         assertFalse(connections.containsEntry(identity, peerConnection));
-        verify(runnable1).run();
+        verify(runnable1).accept(reason);
         verify(writeLock, times(2)).lock();
         verify(writeLock, times(2)).unlock();
     }
@@ -107,10 +113,10 @@ class ConnectionsManagerTest {
     void closeConnectionsOfTypeShouldCloseAndRemoveAllConnectionsOfGivenType() {
         ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures);
         connectionsManager.addConnection(peerConnection, runnable1);
-        connectionsManager.closeConnectionsOfType(peerConnection.getClass());
+        connectionsManager.closeConnectionsOfType(peerConnection.getClass(), reason);
 
         assertFalse(connections.containsEntry(identity, peerConnection));
-        verify(runnable1).run();
+        verify(runnable1).accept(reason);
         verify(writeLock, times(2)).lock();
         verify(writeLock, times(2)).unlock();
     }

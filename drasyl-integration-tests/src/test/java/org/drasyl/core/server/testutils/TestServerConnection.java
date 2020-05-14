@@ -46,6 +46,8 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
+import static org.mockito.Mockito.mock;
+
 public class TestServerConnection extends NettyPeerConnection {
     private final static Logger LOG = LoggerFactory.getLogger(TestServerConnection.class);
 
@@ -61,7 +63,7 @@ public class TestServerConnection extends NettyPeerConnection {
     protected final List<IResponseListener<Message<?>>> listeners;
 
     public TestServerConnection(Channel channel, URI targetSystem, Identity clientUID) {
-        super(channel, targetSystem, clientUID, "JUnit-Test", new ConnectionsManager());
+        super(channel, targetSystem, clientUID, "JUnit-Test", mock(ConnectionsManager.class));
         listeners = Collections.synchronizedList(new ArrayList<>());
     }
 

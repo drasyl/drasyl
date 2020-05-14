@@ -26,6 +26,7 @@ import io.reactivex.rxjava3.core.SingleEmitter;
 import org.drasyl.core.common.message.*;
 import org.drasyl.core.common.models.Pair;
 import org.drasyl.core.node.ConnectionsManager;
+import org.drasyl.core.node.connections.PeerConnection.CloseReason;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.node.identity.IdentityTestHelper;
 import org.drasyl.crypto.Crypto;
@@ -37,11 +38,11 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.security.AccessControlException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.drasyl.core.node.connections.PeerConnection.CloseReason.REASON_SHUTTING_DOWN;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -59,6 +60,7 @@ class NettyPeerConnectionTest {
     private CompletableFuture<Boolean> closedCompletable;
     private ResponseMessage<? extends RequestMessage<?>, ? extends Message<?>> responseMessage;
     private ConnectionsManager connectionsManager;
+    private CloseReason reason;
 
     @BeforeEach
     void setUp() throws URISyntaxException {
@@ -76,6 +78,7 @@ class NettyPeerConnectionTest {
         closedCompletable = mock(CompletableFuture.class);
         responseMessage = mock(StatusMessage.class);
         connectionsManager = mock(ConnectionsManager.class);
+        reason = REASON_SHUTTING_DOWN;
 
         when(channel.closeFuture()).thenReturn(channelFuture);
         when(channel.id()).thenReturn(channelId);
@@ -188,7 +191,7 @@ class NettyPeerConnectionTest {
                 ConcurrentHashMap.class, CompletableFuture.class, ConnectionsManager.class).newInstance(channel, userAgent, myid,
                 endpoint, isClosed, emitters, closedCompletable, connectionsManager);
 
-        connectionsManager.closeConnection(peerConnection);
+        connectionsManager.closeConnection(peerConnection, reason);
 
         verify(emitters).clear();
         verify(channel).writeAndFlush(any(LeaveMessage.class));
@@ -252,8 +255,8 @@ class NettyPeerConnectionTest {
         NettyPeerConnection peerConnection2 = clazz.getDeclaredConstructor(Channel.class, URI.class, Identity.class, ConnectionsManager.class)
                 .newInstance(channel, endpoint, myid, connectionsManager);
 
-        assertEquals(peerConnection, peerConnection2);
-        assertEquals(peerConnection.hashCode(), peerConnection2.hashCode());
+        assertNotEquals(peerConnection, peerConnection2);
+        assertNotEquals(peerConnection.hashCode(), peerConnection2.hashCode());
         assertNotEquals(peerConnection, message);
     }
 
@@ -271,5 +274,6 @@ class NettyPeerConnectionTest {
         assertNotEquals(peerConnection, mock(clazz));
         assertEquals(peerConnection, peerConnection);
         assertEquals(peerConnection.hashCode(), peerConnection.hashCode());
+        assertNotNull(peerConnection.getConnectionId());
     }
 }

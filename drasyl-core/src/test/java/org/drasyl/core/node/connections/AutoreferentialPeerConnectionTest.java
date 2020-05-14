@@ -21,8 +21,8 @@ package org.drasyl.core.node.connections;
 import org.drasyl.core.common.message.*;
 import org.drasyl.core.models.Event;
 import org.drasyl.core.node.ConnectionsManager;
+import org.drasyl.core.node.connections.PeerConnection.CloseReason;
 import org.drasyl.core.node.identity.Identity;
-import org.drasyl.core.node.identity.IdentityManager;
 import org.drasyl.crypto.Crypto;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -32,6 +32,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+import static org.drasyl.core.node.connections.PeerConnection.CloseReason.REASON_SHUTTING_DOWN;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -43,6 +44,7 @@ class AutoreferentialPeerConnectionTest {
     private CompletableFuture<Boolean> closedCompletable;
     private AtomicBoolean isClosed;
     private ConnectionsManager connectionsManager;
+    private CloseReason reason;
 
     @BeforeEach
     void setUp() {
@@ -52,6 +54,7 @@ class AutoreferentialPeerConnectionTest {
         closedCompletable = mock(CompletableFuture.class);
         isClosed = mock(AtomicBoolean.class);
         connectionsManager = mock(ConnectionsManager.class);
+        reason = REASON_SHUTTING_DOWN;
     }
 
     @Test
@@ -78,7 +81,7 @@ class AutoreferentialPeerConnectionTest {
                 0x01
         });
 
-        connectionsManager.closeConnection(con);
+        connectionsManager.closeConnection(con, reason);
         con.send(message);
 
         verifyNoInteractions(onEvent);
@@ -126,7 +129,7 @@ class AutoreferentialPeerConnectionTest {
         assertEquals(endpoint, con.getEndpoint());
         assertEquals(identity, con.getIdentity());
         assertEquals(con, con);
-        assertEquals(con, con2);
+        assertNotEquals(con, con2);
         assertNotEquals(con, mock(AutoreferentialPeerConnection.class));
         assertEquals(con.hashCode(), con.hashCode());
     }

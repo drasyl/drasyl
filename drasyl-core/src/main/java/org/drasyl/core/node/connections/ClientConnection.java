@@ -28,7 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
-import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -36,7 +35,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * The {@link ClientConnection} object models the clients of a drasyl node server.
  */
-@SuppressWarnings({ "squid:S00107" })
+@SuppressWarnings({ "squid:S00107", "java:S2160" })
 public class ClientConnection extends NettyPeerConnection {
     private static final Logger LOG = LoggerFactory.getLogger(ClientConnection.class);
 
@@ -81,23 +80,6 @@ public class ClientConnection extends NettyPeerConnection {
                                CompletableFuture<Boolean> closedCompletable,
                                ConnectionsManager connectionsManager) {
         super(myChannel, userAgent, identity, endpoint, isClosed, emitters, closedCompletable, connectionsManager);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        ClientConnection that = (ClientConnection) o;
-        return Objects.equals(getIdentity(), that.getIdentity());
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(getIdentity());
     }
 
     @Override

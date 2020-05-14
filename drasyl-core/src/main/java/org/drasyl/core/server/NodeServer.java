@@ -42,6 +42,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
+import static org.drasyl.core.node.connections.PeerConnection.CloseReason.REASON_SHUTTING_DOWN;
+
 @SuppressWarnings({ "squid:S00107" })
 public class NodeServer implements AutoCloseable {
     public final EventLoopGroup workerGroup;
@@ -265,7 +267,7 @@ public class NodeServer implements AutoCloseable {
         if (opened.compareAndSet(true, false)) {
             beforeCloseListeners.forEach(Runnable::run);
 
-            messenger.getConnectionsManager().closeConnectionsOfType(ClientConnection.class);
+            messenger.getConnectionsManager().closeConnectionsOfType(ClientConnection.class, REASON_SHUTTING_DOWN);
 
             if (serverChannel != null && serverChannel.isOpen()) {
                 serverChannel.close().syncUninterruptibly();
