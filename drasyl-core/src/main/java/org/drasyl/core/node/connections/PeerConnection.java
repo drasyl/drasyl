@@ -27,7 +27,6 @@ import org.drasyl.core.node.identity.Identity;
 
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 
 /**
  * A {@link PeerConnection} object represents a connection to another peer, e.g. local or remote.
@@ -35,11 +34,11 @@ import java.util.function.Supplier;
  * type is abstracted and the same operations are always available.
  */
 public abstract class PeerConnection {
-    protected Supplier<Identity> identitySupplier;
+    protected Identity identity;
 
-    public PeerConnection(Supplier<Identity> identitySupplier,
+    public PeerConnection(Identity identity,
                           ConnectionsManager connectionsManager) {
-        this.identitySupplier = identitySupplier;
+        this.identity = identity;
         connectionsManager.addConnection(this, this::close);
     }
 
@@ -85,7 +84,7 @@ public abstract class PeerConnection {
      * Returns the identity of the peer.
      */
     public Identity getIdentity() {
-        return identitySupplier.get();
+        return identity;
     }
 
     /**

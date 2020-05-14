@@ -105,7 +105,7 @@ public abstract class NettyPeerConnection extends PeerConnection {
                                   ConcurrentHashMap<String, Pair<Class<? extends ResponseMessage<?, ?>>, SingleEmitter<ResponseMessage<?, ?>>>> emitters,
                                   CompletableFuture<Boolean> closedCompletable,
                                   ConnectionsManager connectionsManager) {
-        super(() -> identity, connectionsManager);
+        super(identity, connectionsManager);
         this.emitters = emitters;
         this.myChannel = myChannel;
         this.userAgent = userAgent;
@@ -180,7 +180,7 @@ public abstract class NettyPeerConnection extends PeerConnection {
 
     @Override
     public String toString() {
-        return MessageFormat.format("[{0}/Channel:{1}]", identitySupplier.get(), channelID);
+        return MessageFormat.format("[{0}/Channel:{1}]", identity, channelID);
     }
 
     /**

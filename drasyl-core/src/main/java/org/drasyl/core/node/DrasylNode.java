@@ -96,7 +96,7 @@ public abstract class DrasylNode {
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = new CompletableFuture<>();
-            new AutoreferentialPeerConnection(this::onEvent, identityManager, URI.create("ws://127.0.0.1:" + this.config.getServerBindPort()), messenger.getConnectionsManager());
+            new AutoreferentialPeerConnection(this::onEvent, identityManager.getIdentity(), URI.create("ws://127.0.0.1:" + this.config.getServerBindPort()), messenger.getConnectionsManager());
         }
         catch (ConfigException e) {
             throw new DrasylException("Couldn't load config: \n" + e.getMessage());

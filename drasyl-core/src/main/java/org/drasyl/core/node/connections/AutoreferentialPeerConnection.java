@@ -25,7 +25,7 @@ import org.drasyl.core.models.Code;
 import org.drasyl.core.models.Event;
 import org.drasyl.core.node.ConnectionsManager;
 import org.drasyl.core.node.DrasylNode;
-import org.drasyl.core.node.identity.IdentityManager;
+import org.drasyl.core.node.identity.Identity;
 
 import java.net.URI;
 import java.util.Objects;
@@ -44,10 +44,10 @@ public class AutoreferentialPeerConnection extends PeerConnection {
     protected AtomicBoolean isClosed;
 
     AutoreferentialPeerConnection(Consumer<Event> onEvent,
-                                  IdentityManager identityManager, URI endpoint,
+                                  Identity identity, URI endpoint,
                                   CompletableFuture<Boolean> closedCompletable,
                                   AtomicBoolean isClosed, ConnectionsManager connectionsManager) {
-        super(identityManager::getIdentity, connectionsManager);
+        super(identity, connectionsManager);
         this.onEvent = onEvent;
         this.endpoint = endpoint;
         this.closedCompletable = closedCompletable;
@@ -58,15 +58,15 @@ public class AutoreferentialPeerConnection extends PeerConnection {
      * Creates a new autoreferentially connection of this node.
      *
      * @param onEvent            reference to {@link DrasylNode#onEvent(Event)}
-     * @param identityManager    reference to {@link IdentityManager}
+     * @param identity    reference to {@link Identity}
      * @param uri                the node endpoint
      * @param connectionsManager reference to the {@link ConnectionsManager}
      */
     public AutoreferentialPeerConnection(Consumer<Event> onEvent,
-                                         IdentityManager identityManager,
+                                         Identity identity,
                                          URI uri,
                                          ConnectionsManager connectionsManager) {
-        this(onEvent, identityManager, uri, new CompletableFuture<>(), new AtomicBoolean(false), connectionsManager);
+        this(onEvent, identity, uri, new CompletableFuture<>(), new AtomicBoolean(false), connectionsManager);
     }
 
     @Override
