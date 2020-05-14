@@ -22,23 +22,33 @@ import io.reactivex.rxjava3.core.Single;
 import org.drasyl.core.common.message.Message;
 import org.drasyl.core.common.message.RequestMessage;
 import org.drasyl.core.common.message.ResponseMessage;
+import org.drasyl.core.node.ConnectionsManager;
 import org.drasyl.core.node.identity.Identity;
 
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 /**
  * A {@link PeerConnection} object represents a connection to another peer, e.g. local or remote.
  * For this purpose, this object provides a standardized interface so that the actual connection
  * type is abstracted and the same operations are always available.
  */
-public interface PeerConnection extends AutoCloseable {
+public abstract class PeerConnection {
+    protected Supplier<Identity> identitySupplier;
+
+    public PeerConnection(Supplier<Identity> identitySupplier,
+                          ConnectionsManager connectionsManager) {
+        this.identitySupplier = identitySupplier;
+        connectionsManager.addConnection(this, this::close);
+    }
+
     /**
      * Sends a message to the peer without waiting for any response.
      *
      * @param message message that should be sent
      */
-    void send(Message<?> message);
+    public abstract void send(Message<?> message);
 
     /**
      * Sends a message to the peer and returns a {@link Single} object for potential responses to
@@ -50,7 +60,7 @@ public interface PeerConnection extends AutoCloseable {
      * @return a {@link Single} object that can be fulfilled with a {@link Message response} to the
      * * message
      */
-    <T extends ResponseMessage<? extends RequestMessage<?>, ? extends Message<?>>> Single<T> send(
+    public abstract <T extends ResponseMessage<? extends RequestMessage<?>, ? extends Message<?>>> Single<T> send(
             RequestMessage<?> message,
             Class<T> responseClass);
 
@@ -59,33 +69,34 @@ public interface PeerConnection extends AutoCloseable {
      *
      * @param response the response
      */
-    void setResponse(ResponseMessage<? extends RequestMessage<?>, ? extends Message<?>> response);
+    public abstract void setResponse(ResponseMessage<? extends RequestMessage<?>, ? extends Message<?>> response);
 
     /**
      * Returns the User-Agent string.
      */
-    String getUserAgent();
+    public abstract String getUserAgent();
 
     /**
      * Returns the endpoint of this connection.
      */
-    URI getEndpoint();
+    public abstract URI getEndpoint();
 
     /**
      * Returns the identity of the peer.
      */
-    Identity getIdentity();
+    public Identity getIdentity() {
+        return identitySupplier.get();
+    }
 
     /**
      * Causes the {@link PeerConnection} to close. All pending messages are still processed, but no
      * new messages can be sent after this method has been called.
      */
-    @Override
-    void close();
+    protected abstract void close();
 
     /**
      * This {@link CompletableFuture} becomes complete as soon as this connection has been closed
      * successfully.
      */
-    CompletableFuture<Boolean> isClosed();
+    public abstract CompletableFuture<Boolean> isClosed();
 }

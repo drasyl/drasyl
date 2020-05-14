@@ -2,6 +2,8 @@ package org.drasyl.core.common.message.action;
 
 import org.drasyl.core.common.message.LeaveMessage;
 import org.drasyl.core.common.message.StatusMessage;
+import org.drasyl.core.node.ConnectionsManager;
+import org.drasyl.core.node.Messenger;
 import org.drasyl.core.node.connections.ClientConnection;
 import org.drasyl.core.server.NodeServer;
 import org.junit.jupiter.api.BeforeEach;
@@ -16,6 +18,8 @@ class LeaveMessageActionTest {
     private ClientConnection clientConnection;
     private NodeServer server;
     private String id;
+    private Messenger messenger;
+    private ConnectionsManager connectionsManager;
 
     @BeforeEach
     void setUp() {
@@ -23,8 +27,12 @@ class LeaveMessageActionTest {
         clientConnection = mock(ClientConnection.class);
         server = mock(NodeServer.class);
         id = "id";
+        messenger = mock(Messenger.class);
+        connectionsManager = mock(ConnectionsManager.class);
 
         when(message.getId()).thenReturn(id);
+        when(server.getMessenger()).thenReturn(messenger);
+        when(messenger.getConnectionsManager()).thenReturn(connectionsManager);
     }
 
     @Test
@@ -34,7 +42,6 @@ class LeaveMessageActionTest {
         action.onMessageServer(clientConnection, server);
 
         verify(clientConnection).send(new StatusMessage(STATUS_OK, message.getId()));
-        verify(clientConnection).close();
-        verifyNoInteractions(server);
+        verify(connectionsManager).closeConnection(clientConnection);
     }
 }

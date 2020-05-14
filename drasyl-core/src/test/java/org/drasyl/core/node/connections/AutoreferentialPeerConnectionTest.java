@@ -20,6 +20,7 @@ package org.drasyl.core.node.connections;
 
 import org.drasyl.core.common.message.*;
 import org.drasyl.core.models.Event;
+import org.drasyl.core.node.ConnectionsManager;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.node.identity.IdentityManager;
 import org.drasyl.crypto.Crypto;
@@ -41,6 +42,7 @@ class AutoreferentialPeerConnectionTest {
     private URI endpoint;
     private CompletableFuture<Boolean> closedCompletable;
     private AtomicBoolean isClosed;
+    private ConnectionsManager connectionsManager;
 
     @BeforeEach
     void setUp() {
@@ -49,11 +51,14 @@ class AutoreferentialPeerConnectionTest {
         endpoint = URI.create("ws://127.0.0.1:22527");
         closedCompletable = mock(CompletableFuture.class);
         isClosed = mock(AtomicBoolean.class);
+        connectionsManager = mock(ConnectionsManager.class);
+
+        when(identityManager.getIdentity()).thenReturn(Identity.of(Crypto.randomString(5)));
     }
 
     @Test
     void sendShouldTriggerEvent() {
-        AutoreferentialPeerConnection con = new AutoreferentialPeerConnection(onEvent, identityManager, endpoint, closedCompletable, isClosed);
+        AutoreferentialPeerConnection con = new AutoreferentialPeerConnection(onEvent, identityManager, endpoint, closedCompletable, isClosed, connectionsManager);
 
         ApplicationMessage message = new ApplicationMessage(Identity.of(Crypto.randomString(5)), Identity.of(Crypto.randomString(5)), new byte[]{
                 0x00,
@@ -67,14 +72,15 @@ class AutoreferentialPeerConnectionTest {
 
     @Test
     void sendShouldNotSendIfClosed() {
-        AutoreferentialPeerConnection con = new AutoreferentialPeerConnection(onEvent, identityManager, endpoint, closedCompletable, isClosed);
+        ConnectionsManager connectionsManager = new ConnectionsManager();
+        AutoreferentialPeerConnection con = new AutoreferentialPeerConnection(onEvent, identityManager, endpoint, closedCompletable, isClosed, connectionsManager);
 
         ApplicationMessage message = new ApplicationMessage(Identity.of(Crypto.randomString(5)), Identity.of(Crypto.randomString(5)), new byte[]{
                 0x00,
                 0x01
         });
 
-        con.close();
+        connectionsManager.closeConnection(con);
         con.send(message);
 
         verifyNoInteractions(onEvent);
@@ -85,7 +91,7 @@ class AutoreferentialPeerConnectionTest {
 
     @Test
     void shouldThrowExceptionIfMessageIsNotAnApplicationMessage() {
-        AutoreferentialPeerConnection con = new AutoreferentialPeerConnection(onEvent, identityManager, endpoint, closedCompletable, isClosed);
+        AutoreferentialPeerConnection con = new AutoreferentialPeerConnection(onEvent, identityManager, endpoint, closedCompletable, isClosed, connectionsManager);
 
         assertThrows(IllegalArgumentException.class, () -> con.send(mock(JoinMessage.class), StatusMessage.class));
         verifyNoInteractions(onEvent);
@@ -93,7 +99,7 @@ class AutoreferentialPeerConnectionTest {
 
     @Test
     void shouldReturnStatusSingle() {
-        AutoreferentialPeerConnection con = new AutoreferentialPeerConnection(onEvent, identityManager, endpoint, closedCompletable, isClosed);
+        AutoreferentialPeerConnection con = new AutoreferentialPeerConnection(onEvent, identityManager, endpoint, closedCompletable, isClosed, connectionsManager);
 
         ApplicationMessage message = new ApplicationMessage(Identity.of(Crypto.randomString(5)), Identity.of(Crypto.randomString(5)), new byte[]{
                 0x00,
@@ -106,7 +112,7 @@ class AutoreferentialPeerConnectionTest {
 
     @Test
     void wrongReturnTypeShouldThrowError() {
-        AutoreferentialPeerConnection con = new AutoreferentialPeerConnection(onEvent, identityManager, endpoint, closedCompletable, isClosed);
+        AutoreferentialPeerConnection con = new AutoreferentialPeerConnection(onEvent, identityManager, endpoint, closedCompletable, isClosed, connectionsManager);
 
         assertThrows(IllegalArgumentException.class, () -> con.send(mock(ApplicationMessage.class), RejectMessage.class).blockingGet());
 
@@ -115,16 +121,21 @@ class AutoreferentialPeerConnectionTest {
 
     @Test
     void getterTest() {
-        AutoreferentialPeerConnection con = new AutoreferentialPeerConnection(onEvent, identityManager, endpoint);
+        AutoreferentialPeerConnection con = new AutoreferentialPeerConnection(onEvent, identityManager, endpoint, connectionsManager);
+        AutoreferentialPeerConnection con2 = new AutoreferentialPeerConnection(onEvent, identityManager, endpoint, connectionsManager);
 
         assertEquals(AbstractMessageWithUserAgent.userAgentGenerator.get(), con.getUserAgent());
         assertEquals(endpoint, con.getEndpoint());
         assertEquals(identityManager.getIdentity(), con.getIdentity());
+        assertEquals(con, con);
+        assertEquals(con, con2);
+        assertNotEquals(con, mock(AutoreferentialPeerConnection.class));
+        assertEquals(con.hashCode(), con.hashCode());
     }
 
     @Test
     void doNothingOnSetResponse() {
-        AutoreferentialPeerConnection con = new AutoreferentialPeerConnection(onEvent, identityManager, endpoint, closedCompletable, isClosed);
+        AutoreferentialPeerConnection con = new AutoreferentialPeerConnection(onEvent, identityManager, endpoint, closedCompletable, isClosed, connectionsManager);
         con.setResponse(mock(ResponseMessage.class));
 
         verifyNoInteractions(onEvent);

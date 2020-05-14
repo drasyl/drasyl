@@ -1,27 +1,24 @@
 package org.drasyl.core.server.handler;
 
 import io.netty.channel.ChannelHandler;
-import io.netty.channel.ServerChannel;
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
-import org.drasyl.core.common.handler.codec.message.MessageDecoder;
-import org.drasyl.core.common.message.*;
+import org.drasyl.core.common.message.JoinMessage;
+import org.drasyl.core.common.message.Message;
+import org.drasyl.core.common.message.ResponseMessage;
 import org.drasyl.core.common.message.action.MessageAction;
 import org.drasyl.core.common.message.action.ServerMessageAction;
 import org.drasyl.core.models.CompressedPublicKey;
+import org.drasyl.core.node.ConnectionsManager;
+import org.drasyl.core.node.Messenger;
 import org.drasyl.core.node.connections.ClientConnection;
 import org.drasyl.core.server.NodeServer;
 import org.drasyl.crypto.CryptoException;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class ServerSessionHandlerTest {
@@ -36,6 +33,8 @@ class ServerSessionHandlerTest {
     private ServerMessageAction serverMessageAction;
     private JoinMessage joinMessage;
     private CompressedPublicKey compressedPublicKey;
+    private Messenger messenger;
+    private ConnectionsManager connectionsManager;
 
     @BeforeEach
     void setUp() throws CryptoException {
@@ -49,9 +48,14 @@ class ServerSessionHandlerTest {
         serverMessageAction = mock(ServerMessageAction.class);
         joinMessage = mock(JoinMessage.class);
         compressedPublicKey = CompressedPublicKey.of("030b6adedef11147b3eea4b4f526f1226ffab218f2b81497e5175e6496f7aa929d");
+        messenger = mock(Messenger.class);
+        connectionsManager = mock(ConnectionsManager.class);
 
         ChannelHandler handler = new ServerSessionHandler(nodeServer, completableFuture, clientConnection, uri);
         channel = new EmbeddedChannel(handler);
+
+        when(nodeServer.getMessenger()).thenReturn(messenger);
+        when(messenger.getConnectionsManager()).thenReturn(connectionsManager);
     }
 
     @Test

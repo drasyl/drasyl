@@ -26,6 +26,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import org.drasyl.core.common.message.*;
 import org.drasyl.core.models.CompressedPublicKey;
+import org.drasyl.core.node.ConnectionsManager;
 import org.drasyl.core.node.connections.NettyPeerConnection;
 import org.drasyl.core.node.connections.OutboundConnectionFactory;
 import org.drasyl.core.node.identity.Identity;
@@ -60,7 +61,7 @@ public class TestServerConnection extends NettyPeerConnection {
     protected final List<IResponseListener<Message<?>>> listeners;
 
     public TestServerConnection(Channel channel, URI targetSystem, Identity clientUID) {
-        super(channel, targetSystem, clientUID, "JUnit-Test");
+        super(channel, targetSystem, clientUID, "JUnit-Test", new ConnectionsManager());
         listeners = Collections.synchronizedList(new ArrayList<>());
     }
 
