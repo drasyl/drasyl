@@ -18,16 +18,14 @@
  */
 package org.drasyl.core.server;
 
-import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.spi.ILoggingEvent;
-import ch.qos.logback.core.read.ListAppender;
-import com.google.common.collect.ImmutableList;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
-import org.awaitility.Durations;
+import io.reactivex.rxjava3.annotations.NonNull;
+import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.subjects.ReplaySubject;
+import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.core.common.message.*;
 import org.drasyl.core.models.CompressedKeyPair;
 import org.drasyl.core.models.CompressedPrivateKey;
@@ -37,7 +35,6 @@ import org.drasyl.core.node.ConnectionsManager;
 import org.drasyl.core.node.DrasylNodeConfig;
 import org.drasyl.core.node.Messenger;
 import org.drasyl.core.node.PeersManager;
-import org.drasyl.core.node.connections.ClientConnection;
 import org.drasyl.core.node.connections.PeerConnection;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.node.identity.IdentityManager;
@@ -49,17 +46,20 @@ import org.junit.Ignore;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import org.slf4j.LoggerFactory;
 
+import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.awaitility.Awaitility.with;
+import static org.awaitility.Durations.FIVE_MINUTES;
 import static org.drasyl.core.common.message.StatusMessage.Code.STATUS_FORBIDDEN;
+import static org.drasyl.core.node.connections.PeerConnection.CloseReason.REASON_SHUTTING_DOWN;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
@@ -74,28 +74,18 @@ import static org.mockito.Mockito.when;
 //@NotThreadSafe
 @Execution(ExecutionMode.SAME_THREAD)
 public class NodeServerIT {
-    private IdentityManager identityManager;
     public static final long TIMEOUT = 10000L;
-    private NodeServer server;
-    DrasylNodeConfig config;
     private static EventLoopGroup workerGroup;
     private static EventLoopGroup bossGroup;
+    DrasylNodeConfig config;
+    private IdentityManager identityManager;
+    private NodeServer server;
     private Messenger messenger;
 
-    @BeforeAll
-    public static void beforeAll() {
-        workerGroup = new NioEventLoopGroup();
-        bossGroup = new NioEventLoopGroup(1);
-    }
-
-    @AfterAll
-    public static void afterAll() {
-        workerGroup.shutdownGracefully().syncUninterruptibly();
-        bossGroup.shutdownGracefully().syncUninterruptibly();
-    }
-
     @BeforeEach
-    public void setup() throws DrasylException, CryptoException {
+    public void setup(TestInfo info) throws DrasylException, CryptoException {
+        TestHelper.println("STARTING " + info.getDisplayName(), ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
         identityManager = mock(IdentityManager.class);
         PeersManager peersManager = new PeersManager();
@@ -121,436 +111,252 @@ public class NodeServerIT {
     }
 
     @AfterEach
-    public void cleanUp() {
+    public void cleanUp(TestInfo info) {
         server.close();
+
+        TestHelper.println("FINISHED " + info.getDisplayName(), ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
     }
 
     @Test
-    public void handshakeTest() {
-        TestHelper.println("STARTING handshakeTest2()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+    public void joinMessageShouldBeRespondedWithWelcomeMessage() throws ExecutionException, InterruptedException {
+        // create connection
+        TestServerConnection session = TestServerConnection.build(server);
 
-        try {
-            CountDownLatch lock = new CountDownLatch(1);
+        // send message
+        RequestMessage<?> request = new JoinMessage(identityManager.getKeyPair().getPublicKey(), Set.of());
+        Single<WelcomeMessage> send = session.send(request, WelcomeMessage.class);
 
-            TestServerConnection session = TestServerConnection.build(server);
+        // verify response
+        WelcomeMessage response = send.blockingGet();
 
-            session.send(new JoinMessage(identityManager.getKeyPair().getPublicKey(), Set.of()),
-                    WelcomeMessage.class).blockingSubscribe(response -> {
-                lock.countDown();
-                session.send(new LeaveMessage());
-            });
-
-            lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
-            assertEquals(0, lock.getCount());
-        }
-        catch (InterruptedException | ExecutionException e) {
-            fail("Exception occurred during the test.");
-        }
-
-        TestHelper.println("FINISHED handshakeTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+        assertThat(response, instanceOf(WelcomeMessage.class));
     }
 
     @Test
-    public void multipleHandshakeTest() {
-        TestHelper.println("STARTING multipleHandshakeTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+    public void multipleJoinMessagesShouldBeRespondedWithWelcomeMessage() throws ExecutionException, InterruptedException, CryptoException {
+        // create connections
+        TestServerConnection session1 = TestServerConnection.build(server);
+        TestServerConnection session2 = TestServerConnection.build(server);
 
-        CountDownLatch lock = new CountDownLatch(2);
+        // send messages
+        RequestMessage<?> request1 = new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of());
+        Single<WelcomeMessage> send1 = session1.send(request1, WelcomeMessage.class);
 
-        try {
-            TestServerConnection session1 = TestServerConnection.build(server);
-            TestServerConnection session2 = TestServerConnection.build(server);
+        RequestMessage<?> request2 = new JoinMessage(CompressedPublicKey.of("0340a4f2adbddeedc8f9ace30e3f18713a3405f43f4871b4bac9624fe80d2056a7"), Set.of());
+        Single<WelcomeMessage> send2 = session2.send(request2, WelcomeMessage.class);
 
-            session1.send(new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of()),
-                    WelcomeMessage.class).subscribe(response -> lock.countDown());
-            session2.send(new JoinMessage(CompressedPublicKey.of("0340a4f2adbddeedc8f9ace30e3f18713a3405f43f4871b4bac9624fe80d2056a7"), Set.of()),
-                    WelcomeMessage.class).subscribe(response -> lock.countDown());
+        // verify responses
+        WelcomeMessage response1 = send1.blockingGet();
+        WelcomeMessage response2 = send2.blockingGet();
 
-            lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
-            assertEquals(0, lock.getCount());
-        }
-        catch (InterruptedException | ExecutionException | CryptoException e) {
-            e.printStackTrace();
-            fail("Exception occurred during the test.");
-        }
-
-        TestHelper.println("FINISHED multipleHandshakeTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+        assertThat(response1, instanceOf(WelcomeMessage.class));
+        assertThat(response2, instanceOf(WelcomeMessage.class));
     }
 
     @Test
-    public void getClientsStockingTest() {
-        TestHelper.println("STARTING getClientsStockingTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+    public void requestStocktakingMessageShouldBeRespondedWithStocktakingMessage() throws ExecutionException, InterruptedException, CryptoException {
+        // create connections
+        TestServerConnection session1 = TestServerConnection.buildAutoJoin(server);
+        TestServerConnection session2 = TestServerConnection.buildAutoJoin(server);
 
-        CountDownLatch lock = new CountDownLatch(1);
+        with().pollInSameThread().await().pollDelay(0, NANOSECONDS).atMost(FIVE_MINUTES)
+                .until(() -> server.getPeersManager().getChildren().size() >= 2);
 
-        try {
-            TestServerConnection session1 = TestServerConnection.buildAutoJoin(server);
-            TestServerConnection session2 = TestServerConnection.buildAutoJoin(server);
+        // send message
+        RequestMessage<?> request = new RequestClientsStocktakingMessage();
+        Single<ClientsStocktakingMessage> send = session1.send(request, ClientsStocktakingMessage.class);
 
-            with().pollInSameThread().await().pollDelay(0, TimeUnit.NANOSECONDS).atMost(Durations.FIVE_MINUTES)
-                    .until(() -> server.getPeersManager().getChildren().size() >= 2);
+        // verify response
+        ClientsStocktakingMessage response = send.blockingGet();
 
-            session1.send(new RequestClientsStocktakingMessage(), ClientsStocktakingMessage.class).subscribe(response -> {
-                assertTrue(response.getIdentities().contains(session1.getIdentity()));
-                assertTrue(response.getIdentities().contains(session2.getIdentity()));
-                lock.countDown();
-            });
-
-            lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
-            assertEquals(0, lock.getCount());
-        }
-        catch (InterruptedException | ExecutionException | CryptoException e) {
-            fail("Exception occurred during the test.");
-        }
-
-        TestHelper.println("FINISHED getClientsStockingTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+        assertThat(response, instanceOf(ClientsStocktakingMessage.class));
+        assertThat(response.getIdentities(), containsInAnyOrder(session1.getIdentity(), session2.getIdentity()));
     }
 
     @Test
-    public void forwardTest() {
-        TestHelper.println("STARTING forwardTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+    public void applicationMessageShouldBeForwardedToRecipient() throws ExecutionException, InterruptedException, CryptoException {
+        // create connections
+        TestServerConnection session1 = TestServerConnection.buildAutoJoin(server);
+        TestServerConnection session2 = TestServerConnection.buildAutoJoin(server);
 
-        CountDownLatch lock = new CountDownLatch(2);
+        Subject<Message<?>> receiver2 = session2.receivedMessages();
 
-        try {
-            TestServerConnection session1 = TestServerConnection.buildAutoJoin(server);
-            TestServerConnection session2 = TestServerConnection.buildAutoJoin(server);
+        // send message
+        RequestMessage<?> request = new ApplicationMessage(session1.getIdentity(), session2.getIdentity(), new byte[]{
+                0x00,
+                0x01,
+                0x02
+        });
+        Single<StatusMessage> send1 = session1.send(request, StatusMessage.class);
 
-            ApplicationMessage msg = new ApplicationMessage(session1.getIdentity(), session2.getIdentity(), new byte[]{
-                    0x00,
-                    0x01,
-                    0x02
-            });
+        // verify responses
+        StatusMessage response1 = send1.blockingGet();
+        Message<?> received2 = receiver2.firstElement().blockingGet();
 
-            session2.addListener(message -> {
-                if (message instanceof ApplicationMessage) {
-                    ApplicationMessage f = (ApplicationMessage) message;
-                    lock.countDown();
-                    assertEquals(msg, f);
-                }
-            });
-
-            session1.send(msg, StatusMessage.class).subscribe(response -> lock.countDown());
-
-            lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
-            assertEquals(0, lock.getCount());
-        }
-        catch (InterruptedException | ExecutionException | CryptoException e) {
-            fail("Exception occurred during the test.");
-        }
-
-        TestHelper.println("FINISHED forwardTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+        assertEquals(new StatusMessage(StatusMessage.Code.STATUS_OK, request.getId()), response1);
+        assertEquals(request, received2);
     }
 
     @Test
-    public void emptyBlobTest() {
-        TestHelper.println("STARTING emptyBlobTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+    public void notJoiningClientsShouldBeDroppedAfterTimeout() throws ExecutionException, InterruptedException, CryptoException {
+        // create connection
+        TestServerConnection session = TestServerConnection.build(server);
 
-        CountDownLatch lock = new CountDownLatch(2);
+        Subject<Message<?>> receiver = session.receivedMessages();
 
-        try {
-            TestServerConnection session1 = TestServerConnection.buildAutoJoin(server);
-            TestServerConnection session2 = TestServerConnection.buildAutoJoin(server);
+        // wait for timeout
+        with().pollInSameThread().await().pollDelay(0, NANOSECONDS).atMost(FIVE_MINUTES)
+                .until(() -> session.isClosed().isDone());
 
-            ApplicationMessage msg = new ApplicationMessage(session1.getIdentity(), session2.getIdentity(), new byte[]{});
+        // verify response
+        Message<?> received = receiver.firstElement().blockingGet();
 
-            session2.addListener(message -> {
-                if (message instanceof ApplicationMessage) {
-                    ApplicationMessage f = (ApplicationMessage) message;
-                    lock.countDown();
-                    assertEquals(msg, f);
-                }
-            });
-
-            session1.send(msg, StatusMessage.class).subscribe(response -> lock.countDown());
-
-            lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
-            assertEquals(0, lock.getCount());
-        }
-        catch (InterruptedException | ExecutionException | CryptoException e) {
-            fail("Exception occurred during the test.");
-        }
-
-        TestHelper.println("FINISHED emptyBlobTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+        assertThat(received, instanceOf(ConnectionExceptionMessage.class));
     }
 
     @Test
-    public void timeoutTest() {
-        TestHelper.println("STARTING timeoutTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
-        CountDownLatch lock = new CountDownLatch(1);
+    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+    public void joinedClientsShouldNoBeDroppedAfterTimeout() throws InterruptedException, CryptoException, ExecutionException {
+        // create connection
+        TestServerConnection session = TestServerConnection.buildAutoJoin(server);
 
-        try {
-            TestServerConnection session = TestServerConnection.build(server);
+        ReplaySubject<Message<?>> receiver = session.receivedMessages();
 
-            session.addListener(message -> {
-                if (message instanceof ConnectionExceptionMessage) {
-                    ConnectionExceptionMessage e = (ConnectionExceptionMessage) message;
+        // wait until timeout
+        Thread.sleep(server.getConfig().getServerHandshakeTimeout().plusSeconds(2).toMillis());// NOSONAR
 
-                    assertEquals(
-                            "Handshake did not take place successfully in "
-                                    + server.getConfig().getServerHandshakeTimeout().toMillis() + " ms. Connection is closed.",
-                            e.getException());
-                    lock.countDown();
-                }
-            });
-
-            lock.await(server.getConfig().getServerHandshakeTimeout().toMillis() + 2000, TimeUnit.MILLISECONDS);
-            assertEquals(0, lock.getCount());
-
-            assertTrue(session.isClosed().get(10, TimeUnit.SECONDS));
-        }
-        catch (InterruptedException | ExecutionException | TimeoutException e) {
-            e.printStackTrace();
-            fail("Exception occurred during the test.");
-        }
-
-        TestHelper.println("FINISHED timeoutTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+        // verify session status
+        assertFalse(session.isClosed().isDone());
     }
 
     @Test
-    public void timeoutNegativeTest() {
-        TestHelper.println("STARTING timeoutNegativeTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
-        Logger clientLogger = (Logger) LoggerFactory.getLogger(ClientConnection.class);
-        ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
-        listAppender.start();
-        clientLogger.addAppender(listAppender);
+    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+    public void invalidMessageShouldBeRespondedWithExceptionMessage() throws ExecutionException, InterruptedException {
+        // create connection
+        TestServerConnection session = TestServerConnection.build(server);
 
-        try {
-            TestServerConnection session = TestServerConnection.buildAutoJoin(server);
+        Subject<Message<?>> receiver = session.receivedMessages();
 
-            session.addListener(message -> assertThat(message, is(not(instanceOf(MessageExceptionMessage.class)))));
+        // send message
+        session.sendRawString("invalid message");
 
-            // Wait until timeout
-            Thread.sleep(server.getConfig().getServerHandshakeTimeout().toMillis() + 2000);// NOSONAR
+        // verify response
+        List<Message<?>> received = receiver.take(2).toList().blockingGet();
 
-            for (ILoggingEvent event : ImmutableList.copyOf(listAppender.list)) {
-                if (event.getLevel().equals(Level.INFO)) {
-                    assertNotEquals(event.getMessage(), "{} Handshake did not take place successfully in {} ms. " + "Connection is closed.");
-                }
-            }
-        }
-        catch (InterruptedException | ExecutionException | CryptoException e) {
-            fail("Exception occurred during the test.");
-        }
-
-        TestHelper.println("FINISHED timeoutNegativeTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+        assertThat(received, contains(instanceOf(MessageExceptionMessage.class), instanceOf(ConnectionExceptionMessage.class)));
     }
 
     @Test
-    public void invalidMessageTest() {
-        TestHelper.println("STARTING invalidMessageTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
-        CountDownLatch lock = new CountDownLatch(2);
+    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+    public void newSessionWithSameIdentityShouldReplaceAndCloseExistingSession() throws ExecutionException, InterruptedException, CryptoException {
+        // create connections
+        TestServerConnection session1 = TestServerConnection.build(server);
+        TestServerConnection session2 = TestServerConnection.build(server);
 
-        try {
-            TestServerConnection session = TestServerConnection.build(server);
+        Subject<Message<?>> receiver1 = session1.receivedMessages();
 
-            session.addListener(message -> {
-                if (message instanceof MessageExceptionMessage) {
-                    MessageExceptionMessage e = (MessageExceptionMessage) message;
+        Subject<Message<?>> receiver2 = session2.receivedMessages();
 
-                    assertEquals("java.lang.IllegalArgumentException: Your request dit not contain a valid Message: Unrecognized token 'invalid': was expecting ('true', 'false' or 'null')\n" +
-                            " at [Source: (String)\"invalid message\"; line: 1, column: 8]", e.getException());
+        // send messages
+        CompressedPublicKey publicKey = CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3");
+        RequestMessage<?> request1 = new JoinMessage(publicKey, Set.of());
+        session1.send(request1, WelcomeMessage.class).blockingGet();
 
-                    lock.countDown();
-                }
-                if (message instanceof ConnectionExceptionMessage) {
-                    ConnectionExceptionMessage e = (ConnectionExceptionMessage) message;
+        RequestMessage<?> request2 = new JoinMessage(publicKey, Set.of());
+        session2.send(request2, WelcomeMessage.class).blockingGet();
 
-                    assertEquals("Exception occurred during initialization stage. The connection will shut down.", e.getException());
+        // verify responses
+        List<Message<?>> received1 = receiver1.take(2).toList().blockingGet();
+        @NonNull List<Message<?>> received2 = receiver2.take(1).toList().blockingGet();
 
-                    lock.countDown();
-                }
-            });
-
-            session.sendRawString("invalid message");
-
-            lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
-            assertEquals(0, lock.getCount());
-        }
-        catch (InterruptedException | ExecutionException e) {
-            fail("Exception occurred during the test.");
-        }
-
-        TestHelper.println("FINISHED invalidMessageTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+        assertThat(received1, contains(instanceOf(WelcomeMessage.class), equalTo(new LeaveMessage(PeerConnection.CloseReason.REASON_NEW_SESSION))));
+        assertThat(received2, contains(instanceOf(WelcomeMessage.class)));
     }
 
     @Test
-    public void newSessionWithSameIdentityShouldReplaceAndCloseExistingSession() {
-        TestHelper.println("STARTING newSessionWithSameIdentityShouldReplaceAndCloseExistingSession()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+    public void multipleJoinMessagesWithinSameSessionShouldRespondedWithExceptionMessage() throws ExecutionException, InterruptedException, CryptoException {
+        // create connection
+        TestServerConnection session = TestServerConnection.buildAutoJoin(server);
 
-        CountDownLatch lock = new CountDownLatch(1);
+        // send message
+        RequestMessage<?> request = new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of());
+        Single<MessageExceptionMessage> send = session.send(request, MessageExceptionMessage.class);
 
-        try {
-            TestServerConnection session1 = TestServerConnection.build(server);
-            TestServerConnection session2 = TestServerConnection.build(server);
+        // verify response
+        Message<?> response = send.blockingGet();
 
-            session1.send(new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of()),
-                    WelcomeMessage.class).blockingGet();
-            session1.addListener(message -> {
-                if (message instanceof LeaveMessage) {
-                    LeaveMessage leave = (LeaveMessage) message;
-                    if (leave.getReason() != null && leave.getReason().equals(PeerConnection.CloseReason.REASON_NEW_SESSION)) {
-                        lock.countDown();
-                    }
-                    else {
-                        fail("This is not an expected reason!");
-                    }
-                }
-            });
-            session2.send(new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of()),
-                    WelcomeMessage.class).blockingGet();
-
-            lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
-            assertEquals(0, lock.getCount());
-            assertTrue(session1.isClosed().get(10, TimeUnit.SECONDS));
-            assertFalse(session2.isClosed().isDone());
-        }
-        catch (InterruptedException | ExecutionException | CryptoException | TimeoutException e) {
-            e.printStackTrace();
-            fail("Exception occurred during the test.");
-        }
-
-        TestHelper.println("FINISHED newSessionWithSameIdentityShouldReplaceAndCloseExistingSession()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+        assertThat(response, instanceOf(MessageExceptionMessage.class));
     }
 
     @Test
-    public void multipleHandshakeWithObjectTest() {
-        TestHelper.println("STARTING multipleHandshakeWithObjectTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+    public void clientsNotSendingPongMessageShouldBeDroppedAfterTimeout() throws ExecutionException, InterruptedException {
+        TestServerConnection session = TestServerConnection.build(server, false);
 
-        CountDownLatch lock = new CountDownLatch(1);
+        Subject<Message<?>> receiver = session.receivedMessages();
 
-        try {
-            TestServerConnection session = TestServerConnection.buildAutoJoin(server);
+        // wait until timeout
+        Thread.sleep(server.getConfig().getServerIdleTimeout().toMillis() * (server.getConfig().getServerIdleRetries() + 1) + 1000);// NOSONAR
 
-            session.send(new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of()), MessageExceptionMessage.class)
-                    .subscribe(response -> {
-                        assertEquals("This client has already an open "
-                                + "session with this node server. No need to authenticate twice.", response.getException());
-                        lock.countDown();
-                    });
+        // verify responses
+        List<Message<?>> received = receiver.take(3).toList().blockingGet();
 
-            lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
-            assertEquals(0, lock.getCount());
-        }
-        catch (InterruptedException | ExecutionException | CryptoException e) {
-            fail("Exception occurred during the test.");
-        }
-
-        TestHelper.println("FINISHED multipleHandshakeWithObjectTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+        assertThat(received, contains(instanceOf(PingMessage.class), instanceOf(PingMessage.class), instanceOf(ConnectionExceptionMessage.class)));
     }
 
     @Test
-    public void idleTimoutTest() {
-        TestHelper.println("STARTING idleTimoutTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+    public void clientsSendingPongMessageShouldNotBeDroppedAfterTimeout() throws ExecutionException, InterruptedException, CryptoException {
+        TestServerConnection session = TestServerConnection.buildAutoJoin(server);
 
-        CountDownLatch lock = new CountDownLatch(2);
-        try {
-            TestServerConnection session = TestServerConnection.build(server, false);
+        // wait until timeout
+        Thread.sleep(server.getConfig().getServerIdleTimeout().toMillis() * (server.getConfig().getServerIdleRetries() + 1) + 1000);// NOSONAR
 
-            session.addListener(message -> {
-                if (message instanceof MessageExceptionMessage) {
-                    MessageExceptionMessage m = (MessageExceptionMessage) message;
-                    assertThat(m.getException(),
-                            is(equalTo("Max retries for ping/pong requests reached. Connection will be closed.")));
-                    lock.countDown();
-                }
-
-                if (message instanceof PingMessage) {
-                    lock.countDown();
-                }
-            });
-
-            // Wait until timeout
-            Thread.sleep(server.getConfig().getServerIdleTimeout().toMillis() * (server.getConfig().getServerIdleRetries() + 1) + 1000);// NOSONAR
-
-            lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
-            assertEquals(0, lock.getCount());
-        }
-        catch (InterruptedException | ExecutionException e) {
-            fail("Exception occurred during the test.");
-        }
-
-        TestHelper.println("FINISHED idleTimoutTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+        // verify session status
+        assertFalse(session.isClosed().isDone());
     }
 
     @Test
-    public void idleTimoutNegativeTest() {
-        TestHelper.println("STARTING idleTimoutNegativeTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+    public void pingMessageShouldBeRespondedWithPongMessage() throws ExecutionException, InterruptedException {
+        TestServerConnection session = TestServerConnection.build(server, false);
 
-        try {
-            TestServerConnection session = TestServerConnection.buildAutoJoin(server);
+        // send messages
+        RequestMessage<?> request = new PingMessage();
+        Single<PongMessage> send = session.send(request, PongMessage.class);
 
-            session.addListener(message -> assertThat(message, is(not(instanceOf(MessageExceptionMessage.class)))));
+        // verify responses
+        Message<?> response = send.blockingGet();
 
-            // Wait until timeout
-            Thread.sleep(server.getConfig().getServerIdleTimeout().toMillis() * (server.getConfig().getServerIdleRetries() + 1) + 1000);// NOSONAR
-        }
-        catch (InterruptedException | ExecutionException | CryptoException e) {
-            fail("Exception occurred during the test.");
-        }
-
-        TestHelper.println("FINISHED idleTimoutNegativeTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+        assertEquals(new PongMessage(request.getId()), response);
     }
 
     @Test
-    public void serverPingResponseTest() {
-        TestHelper.println("STARTING serverPingResponseTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+    public void nonAuthorizedClientSendingNonJoinMessageShouldBeRespondedWithStatusForbiddenMessage() throws ExecutionException, InterruptedException {
+        TestServerConnection session = TestServerConnection.build(server);
 
-        CountDownLatch lock = new CountDownLatch(1);
-        try {
-            TestServerConnection session = TestServerConnection.build(server, false);
+        // send messages
+        RequestMessage<?> request = new ApplicationMessage(TestHelper.random(), TestHelper.random(), new byte[]{
+                0x00,
+                0x01
+        });
+        Single<StatusMessage> send = session.send(request, StatusMessage.class);
 
-            session.addListener(message -> {
-                if (message instanceof PongMessage) {
-                    lock.countDown();
-                }
-            });
+        // verify responses
+        Message<?> response = send.blockingGet();
 
-            session.send(new PingMessage());
-
-            lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
-            assertEquals(0, lock.getCount());
-        }
-        catch (InterruptedException | ExecutionException e) {
-            fail("Exception occurred during the test.");
-        }
-
-        TestHelper.println("FINISHED serverPingResponseTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
-    }
-
-    @Test
-    public void sendBeforeAuthTest() {
-        TestHelper.println("STARTING sendBeforeAuthTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
-        CountDownLatch lock = new CountDownLatch(1);
-
-        try {
-            TestServerConnection session = TestServerConnection.build(server);
-
-            RequestMessage<?> msg = new ApplicationMessage(TestHelper.random(), TestHelper.random(), new byte[]{
-                    0x00,
-                    0x01
-            });
-
-            session.send(msg, StatusMessage.class).subscribe(response -> {
-                assertThat(response.getCode(), anyOf(
-                        equalTo(STATUS_FORBIDDEN)));
-
-                lock.countDown();
-            });
-
-            lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
-            assertEquals(0, lock.getCount());
-        }
-        catch (InterruptedException | ExecutionException e) {
-            fail("Exception occurred during the test.");
-        }
-
-        TestHelper.println("FINISHED sendBeforeAuthTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+        assertEquals(new StatusMessage(STATUS_FORBIDDEN, request.getId()), response);
     }
 
     @Ignore
     public void messageWithMaxSizeShouldArrive() {
-        TestHelper.println("STARTING maxSizeExceededTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
-
         CountDownLatch lock = new CountDownLatch(2);
 
         try {
@@ -578,14 +384,10 @@ public class NodeServerIT {
         catch (InterruptedException | ExecutionException | CryptoException e) {
             fail("Exception occurred during the test.");
         }
-
-        TestHelper.println("FINISHED forwardTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
     }
 
     @Ignore
     public void maxSizeExceededTest() {
-        TestHelper.println("STARTING maxSizeExceededTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
-
         CountDownLatch lock = new CountDownLatch(2);
 
         try {
@@ -617,8 +419,6 @@ public class NodeServerIT {
         catch (InterruptedException | ExecutionException | CryptoException e) {
             fail("Exception occurred during the test.");
         }
-
-        TestHelper.println("FINISHED forwardTest()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
     }
 
     @Test
@@ -641,72 +441,46 @@ public class NodeServerIT {
     }
 
     @Test
-    public void serverShouldSayByeOnClose() {
-        TestHelper.println("STARTING serverShouldSayByeOnClose()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+    public void shuttingDownServerShouldSendLeaveMessage() throws ExecutionException, InterruptedException, CryptoException {
+        TestServerConnection session = TestServerConnection.buildAutoJoin(server);
 
-        try {
-            CountDownLatch lock = new CountDownLatch(2);
+        Subject<Message<?>> receiver = session.receivedMessages();
 
-            TestServerConnection session = TestServerConnection.build(server);
+        server.close();
 
-            session.addListener(message -> {
-                if (message instanceof LeaveMessage) {
-                    lock.countDown();
-                }
-            });
+        // verify responses
+        Message<?> received = receiver.firstElement().blockingGet();
 
-            session.send(new JoinMessage(identityManager.getKeyPair().getPublicKey(), Set.of()),
-                    WelcomeMessage.class).blockingSubscribe(response -> lock.countDown());
-
-            server.close();
-
-            lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
-            assertEquals(0, lock.getCount());
-        }
-        catch (InterruptedException | ExecutionException e) {
-            fail("Exception occurred during the test.");
-        }
-
-        TestHelper.println("FINISHED serverShouldSayByeOnClose()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+        assertEquals(new LeaveMessage(REASON_SHUTTING_DOWN), received);
     }
 
     @Test
-    public void serverShouldNotAllowNewConnectionsOnClose() {
-        TestHelper.println("STARTING serverShouldNotAllowNewConnectionsOnClose()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+    public void shuttingDownServerShouldRejectNewConnections() throws ExecutionException, InterruptedException, CryptoException {
+        TestServerConnection session = TestServerConnection.build(server);
 
-        try {
-            CountDownLatch lock = new CountDownLatch(2);
+        server.close();
 
-            TestServerConnection session = TestServerConnection.build(server);
-            TestServerConnection session2 = TestServerConnection.build(server);
+        // send message
+        RequestMessage<?> request = new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of());
+        Single<RejectMessage> send = session.send(request, RejectMessage.class);
 
-            session2.addListener(message -> {
-                if (message instanceof RejectMessage) {
-                    lock.countDown();
-                }
-            });
+        // verify response
+        Message<?> received = send.blockingGet();
 
-            session.send(new JoinMessage(identityManager.getKeyPair().getPublicKey(), Set.of()),
-                    WelcomeMessage.class).blockingSubscribe(response -> lock.countDown());
+        assertEquals(new RejectMessage(request.getId()), received);
+    }
 
-            server.addBeforeCloseListener(() -> {
-                try {
-                    session2.send(new JoinMessage(CompressedPublicKey.of("0340a4f2adbddeedc8f9ace30e3f18713a3405f43f4871b4bac9624fe80d2056a7"), Set.of()));
-                }
-                catch (CryptoException e) {
-                    e.printStackTrace();
-                }
-            });
+    @BeforeAll
+    public static void beforeAll() {
+        workerGroup = new NioEventLoopGroup();
+        bossGroup = new NioEventLoopGroup(1);
+    }
 
-            server.close();
-
-            lock.await(TIMEOUT, TimeUnit.MILLISECONDS);
-            assertEquals(0, lock.getCount());
-        }
-        catch (InterruptedException | ExecutionException e) {
-            fail("Exception occurred during the test.");
-        }
-
-        TestHelper.println("FINISHED serverShouldNotAllowNewConnectionsOnClose()", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
+    @AfterAll
+    public static void afterAll() {
+        workerGroup.shutdownGracefully().syncUninterruptibly();
+        bossGroup.shutdownGracefully().syncUninterruptibly();
     }
 }

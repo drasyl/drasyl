@@ -24,6 +24,8 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
+import io.reactivex.rxjava3.subjects.ReplaySubject;
+import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.core.common.message.*;
 import org.drasyl.core.models.CompressedPublicKey;
 import org.drasyl.core.node.ConnectionsManager;
@@ -50,21 +52,40 @@ import static org.mockito.Mockito.mock;
 
 public class TestServerConnection extends NettyPeerConnection {
     private final static Logger LOG = LoggerFactory.getLogger(TestServerConnection.class);
-
-    public interface IResponseListener<T> {
-        /**
-         * Notifies about an event.
-         *
-         * @param event event data
-         */
-        void emitEvent(T event);
-    }
-
     protected final List<IResponseListener<Message<?>>> listeners;
 
     public TestServerConnection(Channel channel, URI targetSystem, Identity clientUID) {
         super(channel, targetSystem, clientUID, "JUnit-Test", mock(ConnectionsManager.class));
         listeners = Collections.synchronizedList(new ArrayList<>());
+    }
+
+    public ReplaySubject<Message<?>> receivedMessages() {
+        ReplaySubject<Message<?>> subject = ReplaySubject.create();
+        addListener(subject::onNext);
+        return subject;
+    }
+
+    /**
+     * Registers a {@link IResponseListener} listener on the session.
+     *
+     * @param listener Listener to be called at an event
+     */
+    public void addListener(IResponseListener<Message<?>> listener) {
+        listeners.add(listener);
+    }
+
+    public void sendRawString(final String string) {
+        if (string != null && !isClosed.get() && myChannel.isOpen()) {
+            myChannel.writeAndFlush(new TextWebSocketFrame(string));
+        }
+        else {
+            LOG.info("[{} Can't send message {}", TestServerConnection.this, string);
+        }
+    }
+
+    @Override
+    protected Logger getLogger() {
+        return LOG;
     }
 
     /**
@@ -74,40 +95,6 @@ public class TestServerConnection extends NettyPeerConnection {
         URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
         return build(serverEntryPoint,
                 TestHelper.random(), true, server.workerGroup);
-    }
-
-    /**
-     * Creates a new session to the given server.
-     */
-    public static TestServerConnection build(NodeServer server,
-                                             boolean pingPong) throws ExecutionException,
-            InterruptedException {
-        URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
-        return build(serverEntryPoint,
-                TestHelper.random(), pingPong, server.workerGroup);
-    }
-
-    /**
-     * Creates a new session to the given server.
-     */
-    public static TestServerConnection build(NodeServer server,
-                                             Identity uid) throws ExecutionException, InterruptedException {
-        URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
-        return build(serverEntryPoint, uid, true, server.workerGroup);
-    }
-
-    /**
-     * Creates a new session with the given sessionUID and joins the given server.
-     */
-    public static TestServerConnection buildAutoJoin(NodeServer server) throws ExecutionException,
-            InterruptedException, CryptoException {
-        KeyPair keyPair = Crypto.generateKeys();
-        CompressedPublicKey publicKey = CompressedPublicKey.of(keyPair.getPublic());
-        URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
-        TestServerConnection session = build(serverEntryPoint, Identity.of(publicKey), true, server.workerGroup);
-        session.send(new JoinMessage(publicKey, Set.of()), WelcomeMessage.class).blockingGet();
-
-        return session;
     }
 
     /**
@@ -151,24 +138,6 @@ public class TestServerConnection extends NettyPeerConnection {
     }
 
     /**
-     * Creates a new session.
-     */
-    public static TestServerConnection build(URI targetSystem,
-                                             Identity uid,
-                                             boolean pingPong) throws ExecutionException, InterruptedException {
-        return build(targetSystem, uid, pingPong, null);
-    }
-
-    public void sendRawString(final String string) {
-        if (string != null && !isClosed.get() && myChannel.isOpen()) {
-            myChannel.writeAndFlush(new TextWebSocketFrame(string));
-        }
-        else {
-            LOG.info("[{} Can't send message {}", TestServerConnection.this, string);
-        }
-    }
-
-    /**
      * Handles incoming messages and notifies listeners.
      *
      * @param message incoming message
@@ -189,16 +158,54 @@ public class TestServerConnection extends NettyPeerConnection {
     }
 
     /**
-     * Registers a {@link IResponseListener} listener on the session.
-     *
-     * @param listener Listener to be called at an event
+     * Creates a new session to the given server.
      */
-    public void addListener(IResponseListener<Message<?>> listener) {
-        listeners.add(listener);
+    public static TestServerConnection build(NodeServer server,
+                                             boolean pingPong) throws ExecutionException,
+            InterruptedException {
+        URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
+        return build(serverEntryPoint,
+                TestHelper.random(), pingPong, server.workerGroup);
     }
 
-    @Override
-    protected Logger getLogger() {
-        return LOG;
+    /**
+     * Creates a new session to the given server.
+     */
+    public static TestServerConnection build(NodeServer server,
+                                             Identity uid) throws ExecutionException, InterruptedException {
+        URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
+        return build(serverEntryPoint, uid, true, server.workerGroup);
+    }
+
+    /**
+     * Creates a new session with the given sessionUID and joins the given server.
+     */
+    public static TestServerConnection buildAutoJoin(NodeServer server) throws ExecutionException,
+            InterruptedException, CryptoException {
+        KeyPair keyPair = Crypto.generateKeys();
+        CompressedPublicKey publicKey = CompressedPublicKey.of(keyPair.getPublic());
+        URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
+        TestServerConnection session = build(serverEntryPoint, Identity.of(publicKey), true, server.workerGroup);
+        session.send(new JoinMessage(publicKey, Set.of()), WelcomeMessage.class).blockingGet();
+
+        return session;
+    }
+
+    /**
+     * Creates a new session.
+     */
+    public static TestServerConnection build(URI targetSystem,
+                                             Identity uid,
+                                             boolean pingPong) throws ExecutionException, InterruptedException {
+        return build(targetSystem, uid, pingPong, null);
+    }
+
+    public interface IResponseListener<T> {
+        /**
+         * Notifies about an event.
+         *
+         * @param event event data
+         */
+        void emitEvent(T event);
     }
 }
