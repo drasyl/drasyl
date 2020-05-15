@@ -147,13 +147,13 @@ public class TestServerConnection extends NettyPeerConnection {
             return;
         }
 
+        for (IResponseListener<Message<?>> listener : listeners) {
+            listener.emitEvent(message);
+        }
+
         if (message instanceof ResponseMessage) {
             ResponseMessage<RequestMessage<?>, Message<?>> response = (ResponseMessage<RequestMessage<?>, Message<?>>) message;
             setResponse(response);
-        }
-
-        for (IResponseListener<Message<?>> listener : listeners) {
-            listener.emitEvent(message);
         }
     }
 
