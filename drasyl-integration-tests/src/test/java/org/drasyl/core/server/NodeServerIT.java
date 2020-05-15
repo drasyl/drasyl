@@ -93,7 +93,7 @@ public class NodeServerIT {
         messenger = new Messenger(connectionsManager);
 
         config = new DrasylNodeConfig(
-                ConfigFactory.load("configs/ClientTest.conf"));
+                ConfigFactory.load("configs/NodeServerIT.conf"));
 
         server = new NodeServer(identityManager, messenger, peersManager, config, workerGroup, bossGroup);
 
