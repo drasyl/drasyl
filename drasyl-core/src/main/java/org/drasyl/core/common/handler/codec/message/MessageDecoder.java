@@ -32,6 +32,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.core.common.util.LoggingUtil.sanitizeLogArg;
 
 /**
  * Decodes a {@link String} into a {@link Message} object.
@@ -57,7 +58,7 @@ public class MessageDecoder extends MessageToMessageDecoder<TextWebSocketFrame> 
             out.add(message);
         }
         catch (IOException e) {
-            LOG.warn("[{}]: Invalid Message: '{}'", ctx.channel().id().asShortText(), msg.text());
+            LOG.warn("[{}]: Invalid Message: '{}'", ctx.channel().id().asShortText(), sanitizeLogArg(msg.text()));
             throw new IllegalArgumentException("Your request dit not contain a valid Message: " + e.getMessage());
         }
     }

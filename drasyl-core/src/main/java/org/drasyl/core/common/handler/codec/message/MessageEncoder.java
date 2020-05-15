@@ -31,6 +31,8 @@ import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 
 import java.util.List;
 
+import static org.drasyl.core.common.util.LoggingUtil.sanitizeLogArg;
+
 /**
  * Encodes a {@link Message} into a {@link String} object.
  */
@@ -55,7 +57,7 @@ public class MessageEncoder extends MessageToMessageEncoder<Message> {
             out.add(new TextWebSocketFrame(json));
         }
         catch (JsonProcessingException e) {
-            LOG.warn("[{}]: Invalid Message '{}'", ctx.channel().id().asShortText(), msg);
+            LOG.warn("[{}]: Invalid Message '{}'", ctx.channel().id().asShortText(), sanitizeLogArg(msg));
             throw new IllegalArgumentException("Your request dit not contain a valid Message: " + e.getMessage());
         }
     }
