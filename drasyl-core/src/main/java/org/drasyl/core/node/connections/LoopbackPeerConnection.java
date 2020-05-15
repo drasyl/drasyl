@@ -33,20 +33,20 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 /**
- * The {@link AutoreferentialPeerConnection} object models an autoreferentially connection of this
+ * The {@link LoopbackPeerConnection} object models an autoreferentially connection of this
  * node.
  */
 @SuppressWarnings({ "java:S2160" })
-public class AutoreferentialPeerConnection extends PeerConnection {
+public class LoopbackPeerConnection extends PeerConnection {
     private final Consumer<Event> onEvent;
     private final URI endpoint;
     protected CompletableFuture<Boolean> closedCompletable;
     protected AtomicBoolean isClosed;
 
-    AutoreferentialPeerConnection(Consumer<Event> onEvent,
-                                  Identity identity, URI endpoint,
-                                  CompletableFuture<Boolean> closedCompletable,
-                                  AtomicBoolean isClosed, ConnectionsManager connectionsManager) {
+    LoopbackPeerConnection(Consumer<Event> onEvent,
+                           Identity identity, URI endpoint,
+                           CompletableFuture<Boolean> closedCompletable,
+                           AtomicBoolean isClosed, ConnectionsManager connectionsManager) {
         super(identity, connectionsManager);
         this.onEvent = onEvent;
         this.endpoint = endpoint;
@@ -62,10 +62,10 @@ public class AutoreferentialPeerConnection extends PeerConnection {
      * @param uri                the node endpoint
      * @param connectionsManager reference to the {@link ConnectionsManager}
      */
-    public AutoreferentialPeerConnection(Consumer<Event> onEvent,
-                                         Identity identity,
-                                         URI uri,
-                                         ConnectionsManager connectionsManager) {
+    public LoopbackPeerConnection(Consumer<Event> onEvent,
+                                  Identity identity,
+                                  URI uri,
+                                  ConnectionsManager connectionsManager) {
         this(onEvent, identity, uri, new CompletableFuture<>(), new AtomicBoolean(false), connectionsManager);
     }
 

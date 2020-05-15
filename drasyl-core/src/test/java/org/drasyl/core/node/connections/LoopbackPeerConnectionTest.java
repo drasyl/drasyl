@@ -37,7 +37,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
-class AutoreferentialPeerConnectionTest {
+class LoopbackPeerConnectionTest {
     private Consumer<Event> onEvent;
     private Identity identity;
     private URI endpoint;
@@ -59,7 +59,7 @@ class AutoreferentialPeerConnectionTest {
 
     @Test
     void sendShouldTriggerEvent() {
-        AutoreferentialPeerConnection con = new AutoreferentialPeerConnection(onEvent, identity, endpoint, closedCompletable, isClosed, connectionsManager);
+        LoopbackPeerConnection con = new LoopbackPeerConnection(onEvent, identity, endpoint, closedCompletable, isClosed, connectionsManager);
 
         ApplicationMessage message = new ApplicationMessage(Identity.of(Crypto.randomString(5)), Identity.of(Crypto.randomString(5)), new byte[]{
                 0x00,
@@ -74,7 +74,7 @@ class AutoreferentialPeerConnectionTest {
     @Test
     void sendShouldNotSendIfClosed() {
         ConnectionsManager connectionsManager = new ConnectionsManager();
-        AutoreferentialPeerConnection con = new AutoreferentialPeerConnection(onEvent, identity, endpoint, closedCompletable, isClosed, connectionsManager);
+        LoopbackPeerConnection con = new LoopbackPeerConnection(onEvent, identity, endpoint, closedCompletable, isClosed, connectionsManager);
 
         ApplicationMessage message = new ApplicationMessage(Identity.of(Crypto.randomString(5)), Identity.of(Crypto.randomString(5)), new byte[]{
                 0x00,
@@ -92,7 +92,7 @@ class AutoreferentialPeerConnectionTest {
 
     @Test
     void shouldThrowExceptionIfMessageIsNotAnApplicationMessage() {
-        AutoreferentialPeerConnection con = new AutoreferentialPeerConnection(onEvent, identity, endpoint, closedCompletable, isClosed, connectionsManager);
+        LoopbackPeerConnection con = new LoopbackPeerConnection(onEvent, identity, endpoint, closedCompletable, isClosed, connectionsManager);
 
         assertThrows(IllegalArgumentException.class, () -> con.send(mock(JoinMessage.class), StatusMessage.class));
         verifyNoInteractions(onEvent);
@@ -100,7 +100,7 @@ class AutoreferentialPeerConnectionTest {
 
     @Test
     void shouldReturnStatusSingle() {
-        AutoreferentialPeerConnection con = new AutoreferentialPeerConnection(onEvent, identity, endpoint, closedCompletable, isClosed, connectionsManager);
+        LoopbackPeerConnection con = new LoopbackPeerConnection(onEvent, identity, endpoint, closedCompletable, isClosed, connectionsManager);
 
         ApplicationMessage message = new ApplicationMessage(Identity.of(Crypto.randomString(5)), Identity.of(Crypto.randomString(5)), new byte[]{
                 0x00,
@@ -113,7 +113,7 @@ class AutoreferentialPeerConnectionTest {
 
     @Test
     void wrongReturnTypeShouldThrowError() {
-        AutoreferentialPeerConnection con = new AutoreferentialPeerConnection(onEvent, identity, endpoint, closedCompletable, isClosed, connectionsManager);
+        LoopbackPeerConnection con = new LoopbackPeerConnection(onEvent, identity, endpoint, closedCompletable, isClosed, connectionsManager);
 
         assertThrows(IllegalArgumentException.class, () -> con.send(mock(ApplicationMessage.class), RejectMessage.class).blockingGet());
 
@@ -122,21 +122,21 @@ class AutoreferentialPeerConnectionTest {
 
     @Test
     void getterTest() {
-        AutoreferentialPeerConnection con = new AutoreferentialPeerConnection(onEvent, identity, endpoint, connectionsManager);
-        AutoreferentialPeerConnection con2 = new AutoreferentialPeerConnection(onEvent, identity, endpoint, connectionsManager);
+        LoopbackPeerConnection con = new LoopbackPeerConnection(onEvent, identity, endpoint, connectionsManager);
+        LoopbackPeerConnection con2 = new LoopbackPeerConnection(onEvent, identity, endpoint, connectionsManager);
 
         assertEquals(AbstractMessageWithUserAgent.userAgentGenerator.get(), con.getUserAgent());
         assertEquals(endpoint, con.getEndpoint());
         assertEquals(identity, con.getIdentity());
         assertEquals(con, con);
         assertNotEquals(con, con2);
-        assertNotEquals(con, mock(AutoreferentialPeerConnection.class));
+        assertNotEquals(con, mock(LoopbackPeerConnection.class));
         assertEquals(con.hashCode(), con.hashCode());
     }
 
     @Test
     void doNothingOnSetResponse() {
-        AutoreferentialPeerConnection con = new AutoreferentialPeerConnection(onEvent, identity, endpoint, closedCompletable, isClosed, connectionsManager);
+        LoopbackPeerConnection con = new LoopbackPeerConnection(onEvent, identity, endpoint, closedCompletable, isClosed, connectionsManager);
         con.setResponse(mock(ResponseMessage.class));
 
         verifyNoInteractions(onEvent);

@@ -31,7 +31,7 @@ import org.drasyl.core.common.message.ApplicationMessage;
 import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.models.Event;
 import org.drasyl.core.models.Node;
-import org.drasyl.core.node.connections.AutoreferentialPeerConnection;
+import org.drasyl.core.node.connections.LoopbackPeerConnection;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.node.identity.IdentityManager;
 import org.drasyl.core.node.identity.IdentityManagerException;
@@ -53,6 +53,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.concurrent.CompletableFuture.runAsync;
 import static org.drasyl.core.models.Code.*;
+import static org.drasyl.core.node.connections.PeerConnection.CloseReason.REASON_SHUTTING_DOWN;
 
 @SuppressWarnings({ "java:S107" })
 public abstract class DrasylNode {
@@ -96,7 +97,6 @@ public abstract class DrasylNode {
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = new CompletableFuture<>();
-            new AutoreferentialPeerConnection(this::onEvent, identityManager.getIdentity(), URI.create("ws://127.0.0.1:" + this.config.getServerBindPort()), messenger.getConnectionsManager());
         }
         catch (ConfigException e) {
             throw new DrasylException("Couldn't load config: \n" + e.getMessage());
@@ -147,8 +147,6 @@ public abstract class DrasylNode {
         messenger.send(new ApplicationMessage(identityManager.getIdentity(), recipient, payload));
     }
 
-    public abstract void onEvent(Event event);
-
     public synchronized void send(String recipient, String payload) throws DrasylException {
         send(Identity.of(recipient), payload);
     }
@@ -182,6 +180,7 @@ public abstract class DrasylNode {
             shutdownSequence = runAsync(this::loadIdentity)
                     .thenRun(this::stopSuperPeerClient)
                     .thenRun(this::stopServer)
+                    .thenRun(this::destroyLoopbackPeerConnection)
                     .whenComplete((r, e) -> {
                         try {
                             if (e == null) {
@@ -209,6 +208,8 @@ public abstract class DrasylNode {
         return shutdownSequence;
     }
 
+    public abstract void onEvent(Event event);
+
     private void loadIdentity() {
         try {
             identityManager.loadOrCreateIdentity();
@@ -217,22 +218,6 @@ public abstract class DrasylNode {
         }
         catch (IdentityManagerException e) {
             throw new CompletionException(e);
-        }
-    }
-
-    /**
-     * This method stops the shared threads ({@link EventLoopGroup}s), but only if none {@link
-     * DrasylNode} is using them anymore.
-     *
-     * <p>
-     * <b>This operation cannot be undone. After performing this operation, no new DrasylNodes can
-     * be created!</b>
-     * </p>
-     */
-    public static void irrevocablyTerminate() {
-        if (INSTANCES.isEmpty()) {
-            BOSS_GROUP.shutdownGracefully().syncUninterruptibly();
-            WORKER_GROUP.shutdownGracefully().syncUninterruptibly();
         }
     }
 
@@ -260,6 +245,10 @@ public abstract class DrasylNode {
         }
     }
 
+    private void destroyLoopbackPeerConnection() {
+        messenger.getConnectionsManager().closeConnectionsOfType(LoopbackPeerConnection.class, REASON_SHUTTING_DOWN);
+    }
+
     /**
      * Start the Drasyl node.
      * <p>
@@ -284,6 +273,7 @@ public abstract class DrasylNode {
             LOG.info("Start drasyl Node v{}...", DrasylNode.getVersion());
             LOG.debug("The following configuration will be used:\n{}", config);
             startSequence = runAsync(this::loadIdentity)
+                    .thenRun(this::createLoopbackPeerConnection)
                     .thenRun(this::startServer)
                     .thenRun(this::startSuperPeerClient)
                     .whenComplete((r, e) -> {
@@ -329,6 +319,10 @@ public abstract class DrasylNode {
         }
     }
 
+    private void createLoopbackPeerConnection() {
+        new LoopbackPeerConnection(this::onEvent, identityManager.getIdentity(), URI.create("ws://127.0.0.1:" + config.getServerBindPort()), messenger.getConnectionsManager());
+    }
+
     /**
      * If activated, the local server should be started in this method. Method should block and wait
      * until the server is running.
@@ -360,6 +354,22 @@ public abstract class DrasylNode {
             catch (SuperPeerClientException e) {
                 throw new CompletionException(e);
             }
+        }
+    }
+
+    /**
+     * This method stops the shared threads ({@link EventLoopGroup}s), but only if none {@link
+     * DrasylNode} is using them anymore.
+     *
+     * <p>
+     * <b>This operation cannot be undone. After performing this operation, no new DrasylNodes can
+     * be created!</b>
+     * </p>
+     */
+    public static void irrevocablyTerminate() {
+        if (INSTANCES.isEmpty()) {
+            BOSS_GROUP.shutdownGracefully().syncUninterruptibly();
+            WORKER_GROUP.shutdownGracefully().syncUninterruptibly();
         }
     }
 }

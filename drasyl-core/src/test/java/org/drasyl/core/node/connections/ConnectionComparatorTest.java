@@ -33,7 +33,7 @@ class ConnectionComparatorTest {
     private NettyPeerConnection nettyPeerConnection;
     private ClientConnection clientConnection;
     private SuperPeerConnection superPeerConnection;
-    private AutoreferentialPeerConnection autoreferentialPeerConnection;
+    private LoopbackPeerConnection loopbackPeerConnection;
 
     @BeforeEach
     void setUp() {
@@ -41,7 +41,7 @@ class ConnectionComparatorTest {
         nettyPeerConnection = mock(NettyPeerConnection.class);
         clientConnection = mock(ClientConnection.class);
         superPeerConnection = mock(SuperPeerConnection.class);
-        autoreferentialPeerConnection = mock(AutoreferentialPeerConnection.class);
+        loopbackPeerConnection = mock(LoopbackPeerConnection.class);
     }
 
     @Test
@@ -49,22 +49,22 @@ class ConnectionComparatorTest {
         ArrayList<PeerConnection> peerConnections = new ArrayList<>();
         peerConnections.add(peerConnection);
         peerConnections.add(nettyPeerConnection);
-        peerConnections.add(autoreferentialPeerConnection);
+        peerConnections.add(loopbackPeerConnection);
         peerConnections.add(clientConnection);
         peerConnections.add(superPeerConnection);
 
         peerConnections.sort(ConnectionComparator.INSTANCE);
 
-        assertEquals(List.of(autoreferentialPeerConnection, clientConnection, superPeerConnection, nettyPeerConnection, peerConnection), peerConnections);
-        assertNotEquals(List.of(peerConnection, nettyPeerConnection, superPeerConnection, clientConnection, autoreferentialPeerConnection), peerConnections);
+        assertEquals(List.of(loopbackPeerConnection, clientConnection, superPeerConnection, nettyPeerConnection, peerConnection), peerConnections);
+        assertNotEquals(List.of(peerConnection, nettyPeerConnection, superPeerConnection, clientConnection, loopbackPeerConnection), peerConnections);
     }
 
     @Test
     void selfConnectionShouldBeTheFirstOption() {
-        assertEquals(-1, ConnectionComparator.INSTANCE.compare(autoreferentialPeerConnection, peerConnection));
-        assertEquals(-1, ConnectionComparator.INSTANCE.compare(autoreferentialPeerConnection, nettyPeerConnection));
-        assertEquals(-1, ConnectionComparator.INSTANCE.compare(autoreferentialPeerConnection, clientConnection));
-        assertEquals(-1, ConnectionComparator.INSTANCE.compare(autoreferentialPeerConnection, superPeerConnection));
+        assertEquals(-1, ConnectionComparator.INSTANCE.compare(loopbackPeerConnection, peerConnection));
+        assertEquals(-1, ConnectionComparator.INSTANCE.compare(loopbackPeerConnection, nettyPeerConnection));
+        assertEquals(-1, ConnectionComparator.INSTANCE.compare(loopbackPeerConnection, clientConnection));
+        assertEquals(-1, ConnectionComparator.INSTANCE.compare(loopbackPeerConnection, superPeerConnection));
     }
 
     @Test
@@ -72,6 +72,6 @@ class ConnectionComparatorTest {
         assertEquals(1, ConnectionComparator.INSTANCE.compare(peerConnection, nettyPeerConnection));
         assertEquals(1, ConnectionComparator.INSTANCE.compare(peerConnection, clientConnection));
         assertEquals(1, ConnectionComparator.INSTANCE.compare(peerConnection, superPeerConnection));
-        assertEquals(1, ConnectionComparator.INSTANCE.compare(peerConnection, autoreferentialPeerConnection));
+        assertEquals(1, ConnectionComparator.INSTANCE.compare(peerConnection, loopbackPeerConnection));
     }
 }
