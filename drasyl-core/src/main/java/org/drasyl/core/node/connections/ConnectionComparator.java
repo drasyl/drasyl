@@ -30,7 +30,7 @@ public class ConnectionComparator implements Comparator<PeerConnection> {
     private static final List<Class<?>> PRIORITISATION = new ArrayList<>();
 
     static {
-        PRIORITISATION.add(AutoreferentialPeerConnection.class);
+        PRIORITISATION.add(LoopbackPeerConnection.class);
         PRIORITISATION.add(ClientConnection.class);
         PRIORITISATION.add(SuperPeerConnection.class);
         PRIORITISATION.add(NettyPeerConnection.class);

@@ -54,6 +54,7 @@ public class DrasylNodeTest {
     private CompletableFuture<Void> startSequence;
     private CompletableFuture<Void> shutdownSequence;
     private SuperPeerClient superPeerClient;
+    private ConnectionsManager connectionsManager;
 
     @BeforeEach
     void setUp() {
@@ -73,6 +74,7 @@ public class DrasylNodeTest {
         startSequence = mock(CompletableFuture.class);
         shutdownSequence = mock(CompletableFuture.class);
         superPeerClient = mock(SuperPeerClient.class);
+        connectionsManager = mock(ConnectionsManager.class);
     }
 
     @AfterEach
@@ -90,8 +92,9 @@ public class DrasylNodeTest {
     }
 
     @Test
-    public void shartShouldEmitUpEventOnSuccessfulStart() {
+    public void startShouldEmitUpEventOnSuccessfulStart() {
         when(identityManager.getIdentity()).thenReturn(identity);
+        when(messenger.getConnectionsManager()).thenReturn(connectionsManager);
 
         DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, server, superPeerClient, new AtomicBoolean(false), startSequence, shutdownSequence) {
             @Override
@@ -106,6 +109,7 @@ public class DrasylNodeTest {
     @Test
     public void shutdownShouldEmitDownAndNormalTerminationEventOnSuccessfulShutdown() {
         when(identityManager.getIdentity()).thenReturn(identity);
+        when(messenger.getConnectionsManager()).thenReturn(connectionsManager);
 
         DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, server, superPeerClient, new AtomicBoolean(true), startSequence, shutdownSequence) {
             @Override
