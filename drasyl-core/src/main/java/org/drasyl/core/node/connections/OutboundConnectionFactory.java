@@ -49,6 +49,7 @@ import java.util.concurrent.CompletableFuture;
 import static org.drasyl.core.common.handler.ExceptionHandler.EXCEPTION_HANDLER;
 import static org.drasyl.core.common.handler.codec.message.MessageDecoder.MESSAGE_DECODER;
 import static org.drasyl.core.common.handler.codec.message.MessageEncoder.MESSAGE_ENCODER;
+import static org.drasyl.core.common.util.WebsocketUtil.websocketPort;
 
 /**
  * This factory produces outbound netty connections.
@@ -262,17 +263,7 @@ public class OutboundConnectionFactory {
             b.handler(initializer);
         }
 
-        int port = uri.getPort();
-        if (port == -1 && uri.getScheme() != null) {
-            if (uri.getScheme().equals("ws")) {
-                port = 80;
-            }
-            else if (uri.getScheme().equals("wss")) {
-                port = 443;
-            }
-        }
-
-        Channel ch = b.connect(uri.getHost(), port).sync().channel();
+        Channel ch = b.connect(uri.getHost(), websocketPort(uri)).sync().channel();
 
         ch.closeFuture().addListener(future -> {
             LOG.debug("OutboundConnection for {} was closed.", uri, future.cause());
