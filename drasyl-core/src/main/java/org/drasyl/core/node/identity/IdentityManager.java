@@ -164,6 +164,26 @@ public class IdentityManager {
     }
 
     /**
+     * Deletes the identity file specified in the configuration.
+     * <p>
+     * ATTENTION: Messages directed to the present identity can then no longer be decrypted and
+     * read. This step is irreversible. Should only be used if the present identity should never be
+     * used again!
+     */
+    public static void deleteIdentityFile(Path path) throws IdentityManagerException {
+        File file = path.toFile();
+
+        if (!file.exists()) {
+            // nothing to do
+            return;
+        }
+
+        if (!file.delete()) {
+            throw new IdentityManagerException("Unable to delete identity file '" + path + "'");
+        }
+    }
+
+    /**
      * @return returns the node identity.
      */
     public Identity getIdentity() {

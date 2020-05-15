@@ -27,17 +27,14 @@ import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.core.common.message.*;
-import org.drasyl.core.models.CompressedKeyPair;
-import org.drasyl.core.models.CompressedPrivateKey;
 import org.drasyl.core.models.CompressedPublicKey;
 import org.drasyl.core.models.DrasylException;
-import org.drasyl.core.node.ConnectionsManager;
 import org.drasyl.core.node.DrasylNodeConfig;
 import org.drasyl.core.node.Messenger;
 import org.drasyl.core.node.PeersManager;
 import org.drasyl.core.node.connections.PeerConnection;
-import org.drasyl.core.node.identity.Identity;
 import org.drasyl.core.node.identity.IdentityManager;
+import org.drasyl.core.node.identity.IdentityManagerException;
 import org.drasyl.core.server.testutils.ANSI_COLOR;
 import org.drasyl.core.server.testutils.TestHelper;
 import org.drasyl.core.server.testutils.TestServerConnection;
@@ -66,8 +63,6 @@ import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.Assert.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 //import net.jcip.annotations.NotThreadSafe;
 
@@ -81,38 +76,29 @@ public class NodeServerIT {
     private IdentityManager identityManager;
     private NodeServer server;
     private Messenger messenger;
+    private PeersManager peersManager;
 
     @BeforeEach
     public void setup(TestInfo info) throws DrasylException, CryptoException {
         TestHelper.println("STARTING " + info.getDisplayName(), ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
 
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
-        identityManager = mock(IdentityManager.class);
-        PeersManager peersManager = new PeersManager();
-        ConnectionsManager connectionsManager = new ConnectionsManager();
-        messenger = new Messenger(connectionsManager);
 
-        config = new DrasylNodeConfig(
-                ConfigFactory.load("configs/NodeServerIT.conf"));
+        config = new DrasylNodeConfig(ConfigFactory.load("configs/NodeServerIT.conf"));
+        identityManager = new IdentityManager(config);
+        identityManager.loadOrCreateIdentity();
+        peersManager = new PeersManager();
+        messenger = new Messenger();
 
         server = new NodeServer(identityManager, messenger, peersManager, config, workerGroup, bossGroup);
-
-        TestHelper.waitUntilNetworkAvailable(config.getServerBindPort());
         server.open();
-
-        CompressedKeyPair keyPair = mock(CompressedKeyPair.class);
-        CompressedPublicKey publicKey = CompressedPublicKey.of("0343bc674c4e58a289d3904a16f83177581770d32e3ee0d63b7c75ee2b32c733b1");
-        CompressedPrivateKey privateKey = CompressedPrivateKey.of("0c5d76039113707512c15d23f27c963fa2b636672ae86c66f68e588203556775");
-
-        when(identityManager.getKeyPair()).thenReturn(keyPair);
-        when(keyPair.getPublicKey()).thenReturn(publicKey);
-        when(keyPair.getPrivateKey()).thenReturn(privateKey);
-        when(identityManager.getIdentity()).thenReturn(Identity.of(publicKey));
     }
 
     @AfterEach
-    public void cleanUp(TestInfo info) {
+    public void cleanUp(TestInfo info) throws IdentityManagerException {
         server.close();
+
+        IdentityManager.deleteIdentityFile(config.getIdentityPath());
 
         TestHelper.println("FINISHED " + info.getDisplayName(), ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);
     }
@@ -423,7 +409,7 @@ public class NodeServerIT {
 
     @Test
     public void shouldOpenAndCloseGracefully() throws DrasylException {
-        NodeServer server = new NodeServer(identityManager, messenger, mock(PeersManager.class), workerGroup, bossGroup);
+        NodeServer server = new NodeServer(identityManager, messenger, peersManager, workerGroup, bossGroup);
 
         server.open();
         server.close();
@@ -435,7 +421,7 @@ public class NodeServerIT {
     public void openShouldFailIfInvalidPortIsGiven() throws DrasylException {
         Config config =
                 ConfigFactory.parseString("drasyl.server.bind-port = 72522").withFallback(ConfigFactory.load());
-        NodeServer server = new NodeServer(identityManager, mock(Messenger.class), mock(PeersManager.class), config, workerGroup, bossGroup);
+        NodeServer server = new NodeServer(identityManager, messenger, peersManager, config, workerGroup, bossGroup);
 
         assertThrows(NodeServerException.class, server::open);
     }
