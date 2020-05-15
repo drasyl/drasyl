@@ -260,7 +260,7 @@ public class NodeServerIT {
         List<Message<?>> received1 = receiver1.take(2).toList().blockingGet();
         @NonNull List<Message<?>> received2 = receiver2.take(1).toList().blockingGet();
 
-        assertThat(received1, contains(instanceOf(WelcomeMessage.class), equalTo(new LeaveMessage(PeerConnection.CloseReason.REASON_NEW_SESSION))));
+        assertThat(received1, contains(instanceOf(WelcomeMessage.class), equalTo(new QuitMessage(PeerConnection.CloseReason.REASON_NEW_SESSION))));
         assertThat(received2, contains(instanceOf(WelcomeMessage.class)));
     }
 
@@ -438,7 +438,7 @@ public class NodeServerIT {
         // verify responses
         Message<?> received = receiver.firstElement().blockingGet();
 
-        assertEquals(new LeaveMessage(REASON_SHUTTING_DOWN), received);
+        assertEquals(new QuitMessage(REASON_SHUTTING_DOWN), received);
     }
 
     @Test

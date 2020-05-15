@@ -31,16 +31,16 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class LeaveMessageTest {
+public class QuitMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
     @Test
     public void toJson() throws JsonProcessingException {
-        LeaveMessage message = new LeaveMessage();
+        QuitMessage message = new QuitMessage();
 
         assertThatJson(JSON_MAPPER.writeValueAsString(message))
                 .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo("{\"@type\":\"LeaveMessage\",\"id\":\"" + message.getId() + "\"}");
+                .isEqualTo("{\"@type\":\"QuitMessage\",\"id\":\"" + message.getId() + "\"}");
 
         // Ignore toString()
         message.toString();
@@ -48,23 +48,23 @@ public class LeaveMessageTest {
 
     @Test
     public void fromJson() throws IOException {
-        String json = "{\"@type\":\"LeaveMessage\",\"id\":\"77175D7235920F3BA17341D7\"}";
+        String json = "{\"@type\":\"QuitMessage\",\"id\":\"77175D7235920F3BA17341D7\"}";
 
-        assertThat(JSON_MAPPER.readValue(json, Message.class), instanceOf(LeaveMessage.class));
+        assertThat(JSON_MAPPER.readValue(json, Message.class), instanceOf(QuitMessage.class));
     }
 
     @Test
     void testEquals() {
-        LeaveMessage message1 = new LeaveMessage();
-        LeaveMessage message2 = new LeaveMessage();
+        QuitMessage message1 = new QuitMessage();
+        QuitMessage message2 = new QuitMessage();
 
         assertEquals(message1, message2);
     }
 
     @Test
     void testHashCode() {
-        LeaveMessage message1 = new LeaveMessage();
-        LeaveMessage message2 = new LeaveMessage();
+        QuitMessage message1 = new QuitMessage();
+        QuitMessage message2 = new QuitMessage();
 
         assertEquals(message1.hashCode(), message2.hashCode());
     }

@@ -53,7 +53,7 @@ class JoinHandlerTest {
         ctx = mock(ChannelHandlerContext.class);
         promise = mock(ChannelPromise.class);
         timeoutFuture = mock(ScheduledFuture.class);
-        msg = new LeaveMessage();
+        msg = new QuitMessage();
         publicKey = mock(CompressedPublicKey.class);
         eventExecutor = mock(EventExecutor.class);
         channelFuture = mock(ChannelFuture.class);
@@ -96,7 +96,7 @@ class JoinHandlerTest {
 
         handler.channelWrite0(ctx, msg, promise);
 
-        verify(ctx).write(any(LeaveMessage.class), eq(promise));
+        verify(ctx).write(any(QuitMessage.class), eq(promise));
     }
 
     @Test
@@ -105,7 +105,7 @@ class JoinHandlerTest {
 
         handler.channelWrite0(ctx, msg, promise);
 
-        verify(ctx).write(any(LeaveMessage.class), eq(promise));
+        verify(ctx).write(any(QuitMessage.class), eq(promise));
     }
 
     @Test

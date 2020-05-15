@@ -8,7 +8,7 @@ import io.netty.handler.codec.http.HttpResponseDecoder;
 import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
-import org.drasyl.core.common.message.LeaveMessage;
+import org.drasyl.core.common.message.QuitMessage;
 import org.drasyl.core.common.message.Message;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -22,7 +22,7 @@ class WebSocketClientHandlerTest {
     private WebSocketClientHandshaker handshaker;
     private CompletableFuture<Void> handshakeFuture;
     private ChannelHandlerContext ctx;
-    private Message leaveMessage;
+    private Message quitMessage;
     private Throwable cause;
     private FullHttpResponse fullHttpResponse;
     private CloseWebSocketFrame closeWebSocketFrame;
@@ -38,7 +38,7 @@ class WebSocketClientHandlerTest {
         handshaker = mock(WebSocketClientHandshaker.class);
         handshakeFuture = mock(CompletableFuture.class);
         ctx = mock(ChannelHandlerContext.class);
-        leaveMessage = mock(LeaveMessage.class);
+        quitMessage = mock(QuitMessage.class);
         fullHttpResponse = mock(FullHttpResponse.class);
         closeWebSocketFrame = mock(CloseWebSocketFrame.class);
         cause = mock(Throwable.class);
@@ -54,7 +54,7 @@ class WebSocketClientHandlerTest {
     void channelWrite0ShouldBlockUntilHandshakeIsDone() throws Exception {
         WebSocketClientHandler handler = new WebSocketClientHandler(handshaker, handshakeFuture);
 
-        handler.channelWrite0(ctx, leaveMessage, promise);
+        handler.channelWrite0(ctx, quitMessage, promise);
 
         verify(handshakeFuture).join();
     }

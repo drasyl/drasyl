@@ -23,7 +23,7 @@ import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
-import org.drasyl.core.common.message.LeaveMessage;
+import org.drasyl.core.common.message.QuitMessage;
 import org.drasyl.core.common.message.StatusMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -31,22 +31,22 @@ import org.slf4j.LoggerFactory;
 import static org.drasyl.core.common.message.StatusMessage.Code.STATUS_OK;
 
 /**
- * Fires a channel wide close event, when a {@link LeaveMessage} received.
+ * Fires a channel wide close event, when a {@link QuitMessage} received.
  */
 @Sharable
-public class LeaveHandler extends SimpleChannelInboundHandler<LeaveMessage> {
-    private static final Logger LOG = LoggerFactory.getLogger(LeaveHandler.class);
-    public static final LeaveHandler INSTANCE = new LeaveHandler();
-    public static final String LEAVE_HANDLER = "leaveHandler";
+public class QuitMessageHandler extends SimpleChannelInboundHandler<QuitMessage> {
+    private static final Logger LOG = LoggerFactory.getLogger(QuitMessageHandler.class);
+    public static final QuitMessageHandler INSTANCE = new QuitMessageHandler();
+    public static final String QUIT_MESSAGE_HANDLER = "quitMessageHandler";
 
-    private LeaveHandler() {
+    private QuitMessageHandler() {
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, LeaveMessage msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, QuitMessage msg) throws Exception {
         try {
             ctx.writeAndFlush(new StatusMessage(STATUS_OK, msg.getId())).addListener(ChannelFutureListener.CLOSE);
-            LOG.debug("{} received LeaveMessage. Fire channel close.", ctx.channel().id());
+            LOG.debug("{} received {}. Fire channel close.", ctx.channel().id(), QuitMessage.class.getSimpleName());
         }
         finally {
             ReferenceCountUtil.release(msg);

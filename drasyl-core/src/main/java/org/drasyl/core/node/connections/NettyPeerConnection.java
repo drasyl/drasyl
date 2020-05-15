@@ -23,7 +23,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.core.SingleEmitter;
-import org.drasyl.core.common.message.LeaveMessage;
+import org.drasyl.core.common.message.QuitMessage;
 import org.drasyl.core.common.message.Message;
 import org.drasyl.core.common.message.RequestMessage;
 import org.drasyl.core.common.message.ResponseMessage;
@@ -170,7 +170,7 @@ public abstract class NettyPeerConnection extends PeerConnection {
     protected void close(CloseReason reason) {
         if (isClosed.compareAndSet(false, true)) {
             emitters.clear();
-            myChannel.writeAndFlush(new LeaveMessage(reason)).addListener(ChannelFutureListener.CLOSE);
+            myChannel.writeAndFlush(new QuitMessage(reason)).addListener(ChannelFutureListener.CLOSE);
         }
     }
 

@@ -22,7 +22,7 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import org.drasyl.core.common.message.Message;
-import org.drasyl.core.common.message.LeaveMessage;
+import org.drasyl.core.common.message.QuitMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +34,7 @@ class MessageEncoderTest {
 
     @BeforeEach
     void setUp() {
-        message = new LeaveMessage();
+        message = new QuitMessage();
         ChannelHandler handler = MessageEncoder.INSTANCE;
         channel = new EmbeddedChannel(handler);
     }

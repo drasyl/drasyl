@@ -114,9 +114,9 @@ class PingPongHandlerTest {
     @Test
     void channelRead0ShouldPassThroughAllUnrelatedMessages() throws Exception {
         PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
-        handler.channelRead0(ctx, new LeaveMessage());
+        handler.channelRead0(ctx, new QuitMessage());
 
         assertEquals(0, handler.counter.get());
-        verify(ctx).fireChannelRead(any(LeaveMessage.class));
+        verify(ctx).fireChannelRead(any(QuitMessage.class));
     }
 }

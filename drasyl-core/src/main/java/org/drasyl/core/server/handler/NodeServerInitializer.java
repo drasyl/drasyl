@@ -30,7 +30,7 @@ import io.netty.handler.ssl.util.SelfSignedCertificate;
 import org.drasyl.core.common.handler.ConnectionGuardHandler;
 import org.drasyl.core.common.handler.DefaultSessionInitializer;
 import org.drasyl.core.common.handler.ExceptionHandler;
-import org.drasyl.core.common.handler.LeaveHandler;
+import org.drasyl.core.common.handler.QuitMessageHandler;
 import org.drasyl.core.common.handler.codec.message.MessageDecoder;
 import org.drasyl.core.common.handler.codec.message.MessageEncoder;
 import org.drasyl.core.server.NodeServer;
@@ -42,7 +42,7 @@ import java.security.cert.CertificateException;
 
 import static org.drasyl.core.common.handler.ConnectionGuardHandler.CONNECTION_GUARD;
 import static org.drasyl.core.common.handler.ExceptionHandler.EXCEPTION_HANDLER;
-import static org.drasyl.core.common.handler.LeaveHandler.LEAVE_HANDLER;
+import static org.drasyl.core.common.handler.QuitMessageHandler.QUIT_MESSAGE_HANDLER;
 import static org.drasyl.core.common.handler.codec.message.MessageDecoder.MESSAGE_DECODER;
 import static org.drasyl.core.common.handler.codec.message.MessageEncoder.MESSAGE_ENCODER;
 import static org.drasyl.core.server.handler.JoinHandler.JOIN_GUARD;
@@ -102,8 +102,8 @@ public class NodeServerInitializer extends DefaultSessionInitializer {
 
     @Override
     protected void customStage(ChannelPipeline pipeline) {
-        // Leave handler
-        pipeline.addLast(LEAVE_HANDLER, LeaveHandler.INSTANCE);
+        // QuitMessage handler
+        pipeline.addLast(QUIT_MESSAGE_HANDLER, QuitMessageHandler.INSTANCE);
 
         // Guards
         pipeline.addLast(JOIN_GUARD, new JoinHandler(server.getConfig().getServerHandshakeTimeout().toMillis()));

@@ -22,7 +22,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
-import org.drasyl.core.common.message.LeaveMessage;
+import org.drasyl.core.common.message.QuitMessage;
 import org.drasyl.core.common.message.StatusMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -30,19 +30,19 @@ import org.junit.jupiter.api.Test;
 import static org.drasyl.core.common.message.StatusMessage.Code.STATUS_OK;
 import static org.mockito.Mockito.*;
 
-class LeaveHandlerTest {
+class QuitMessageHandlerTest {
     private ChannelHandlerContext ctx;
     private ChannelFuture channelFuture;
-    private LeaveHandler handler;
-    private LeaveMessage msg;
+    private QuitMessageHandler handler;
+    private QuitMessage msg;
 
     @BeforeEach
     void setUp() {
         ctx = mock(ChannelHandlerContext.class);
-        handler = LeaveHandler.INSTANCE;
+        handler = QuitMessageHandler.INSTANCE;
         Channel channel = mock(Channel.class);
         channelFuture = mock(ChannelFuture.class);
-        msg = new LeaveMessage();
+        msg = new QuitMessage();
 
         when(ctx.channel()).thenReturn(channel);
         when(ctx.writeAndFlush(any())).thenReturn(channelFuture);
