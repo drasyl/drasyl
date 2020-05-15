@@ -50,7 +50,7 @@ class IdentityManagerTest {
         IdentityManager identityManager = new IdentityManager(config);
         identityManager.loadOrCreateIdentity();
 
-        assertEquals(Identity.of("0229041b27"), identityManager.getIdentity());
+        assertEquals(Identity.of("37ca8159a8"), identityManager.getIdentity());
     }
 
     @Test
@@ -79,7 +79,7 @@ class IdentityManagerTest {
         IdentityManager identityManager = new IdentityManager(config);
         identityManager.loadOrCreateIdentity();
 
-        assertEquals(Identity.of("0229041b27"), identityManager.getIdentity());
+        assertEquals(Identity.of("37ca8159a8"), identityManager.getIdentity());
     }
 
     @Test

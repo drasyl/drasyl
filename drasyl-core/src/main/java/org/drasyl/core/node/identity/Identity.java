@@ -20,13 +20,14 @@ package org.drasyl.core.node.identity;
 
 import com.fasterxml.jackson.annotation.JsonValue;
 import com.google.re2j.Pattern;
+import org.apache.commons.codec.digest.DigestUtils;
 import org.drasyl.core.models.CompressedPublicKey;
 
 import java.util.Objects;
 
 /**
- * This class models the identity of a drasyl node. The identity is derived from the public key and
- * is 10 hexadecimal characters long.
+ * This class models the identity of a drasyl node. The identity is derived from the SHA-256 hash of
+ * the public key and is 10 hexadecimal characters long.
  */
 public class Identity {
     private static final Pattern syntax = Pattern.compile("^[a-f0-9]{10}$");
@@ -48,9 +49,9 @@ public class Identity {
 
     public static Identity of(CompressedPublicKey compressedPublicKey) {
         Objects.requireNonNull(compressedPublicKey);
-        // FIXME: This is not collision resistant
         var cpk = compressedPublicKey.toString();
-        var shortID = cpk.substring(0, Math.min(cpk.length(), 10));
+        var hash = DigestUtils.sha256Hex(cpk);
+        var shortID = hash.substring(0, Math.min(hash.length(), 10));
         return new Identity(shortID);
     }
 
@@ -68,8 +69,9 @@ public class Identity {
     public static boolean verify(CompressedPublicKey compressedPublicKey, Identity identity) {
         Objects.requireNonNull(compressedPublicKey);
         Objects.requireNonNull(identity);
-        // FIXME: Must be the inverse function of {@link #of(CompressedPublicKey compressedPublicKey)}
-        return compressedPublicKey.toString().startsWith(identity.getId());
+        var hash = DigestUtils.sha256Hex(compressedPublicKey.toString());
+
+        return hash.startsWith(identity.getId());
     }
 
     public String getId() {

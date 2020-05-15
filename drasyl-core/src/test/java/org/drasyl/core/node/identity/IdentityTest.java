@@ -33,14 +33,14 @@ public class IdentityTest {
 
     @BeforeEach
     void setUp() {
-        identity = Identity.of("ead3151c64");
+        identity = Identity.of("41eaac1ee8");
         compressedPublicKey = mock(CompressedPublicKey.class);
         when(compressedPublicKey.toString()).thenReturn("ead3151c64AAAABBBBCCCCDDDDEEEEFFFF");
     }
 
     @Test
     public void toStringCase() {
-        assertEquals("Identity{id=ead3151c64}", identity.toString());
+        assertEquals("Identity{id=41eaac1ee8}", identity.toString());
     }
 
     @Test
@@ -60,7 +60,7 @@ public class IdentityTest {
 
     @Test
     public void sameIdShouldBeEquals() {
-        Identity id2 = Identity.of("ead3151c64");
+        Identity id2 = Identity.of("41eaac1ee8");
 
         assertEquals(identity, id2);
         assertEquals(identity, identity);
