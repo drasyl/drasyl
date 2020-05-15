@@ -32,6 +32,8 @@ import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * This class provides the identity of the node. Messages to the node are addressed to the identity.
  * In a future release, messages will be signed and encrypted with public-private key pairs
@@ -162,16 +164,36 @@ public class IdentityManager {
     }
 
     /**
+     * Deletes the identity file specified in the configuration.
+     * <p>
+     * ATTENTION: Messages directed to the present identity can then no longer be decrypted and
+     * read. This step is irreversible. Should only be used if the present identity should never be
+     * used again!
+     */
+    public static void deleteIdentityFile(Path path) throws IdentityManagerException {
+        File file = path.toFile();
+
+        if (!file.exists()) {
+            // nothing to do
+            return;
+        }
+
+        if (!file.delete()) {
+            throw new IdentityManagerException("Unable to delete identity file '" + path + "'");
+        }
+    }
+
+    /**
      * @return returns the node identity.
      */
     public Identity getIdentity() {
-        return identity;
+        return requireNonNull(identity);
     }
 
     /**
      * @return returns the node key pair.
      */
     public CompressedKeyPair getKeyPair() {
-        return keyPair;
+        return requireNonNull(keyPair);
     }
 }
