@@ -1,6 +1,6 @@
 package org.drasyl.core.common.message.action;
 
-import org.drasyl.core.common.message.LeaveMessage;
+import org.drasyl.core.common.message.QuitMessage;
 import org.drasyl.core.node.connections.PeerConnection.CloseReason;
 import org.drasyl.core.common.message.StatusMessage;
 import org.drasyl.core.node.ConnectionsManager;
@@ -14,8 +14,8 @@ import static org.drasyl.core.node.connections.PeerConnection.CloseReason.REASON
 import static org.drasyl.core.common.message.StatusMessage.Code.STATUS_OK;
 import static org.mockito.Mockito.*;
 
-class LeaveMessageActionTest {
-    private LeaveMessage message;
+class QuitMessageActionTest {
+    private QuitMessage message;
     private ClientConnection clientConnection;
     private NodeServer server;
     private String id;
@@ -25,7 +25,7 @@ class LeaveMessageActionTest {
 
     @BeforeEach
     void setUp() {
-        message = mock(LeaveMessage.class);
+        message = mock(QuitMessage.class);
         clientConnection = mock(ClientConnection.class);
         server = mock(NodeServer.class);
         id = "id";
@@ -41,7 +41,7 @@ class LeaveMessageActionTest {
 
     @Test
     void onMessageServerShouldSendStatusOkAndCloseConnection() {
-        LeaveMessageAction action = new LeaveMessageAction(message);
+        QuitMessageAction action = new QuitMessageAction(message);
 
         action.onMessageServer(clientConnection, server);
 

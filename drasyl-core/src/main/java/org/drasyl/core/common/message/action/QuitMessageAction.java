@@ -1,14 +1,14 @@
 package org.drasyl.core.common.message.action;
 
-import org.drasyl.core.common.message.LeaveMessage;
+import org.drasyl.core.common.message.QuitMessage;
 import org.drasyl.core.common.message.StatusMessage;
 import org.drasyl.core.node.connections.ClientConnection;
 import org.drasyl.core.server.NodeServer;
 
 import static org.drasyl.core.common.message.StatusMessage.Code.STATUS_OK;
 
-public class LeaveMessageAction extends AbstractMessageAction<LeaveMessage> implements ServerMessageAction<LeaveMessage> {
-    public LeaveMessageAction(LeaveMessage message) {
+public class QuitMessageAction extends AbstractMessageAction<QuitMessage> implements ServerMessageAction<QuitMessage> {
+    public QuitMessageAction(QuitMessage message) {
         super(message);
     }
 

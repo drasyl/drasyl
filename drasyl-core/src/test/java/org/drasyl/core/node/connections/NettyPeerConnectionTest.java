@@ -194,7 +194,7 @@ class NettyPeerConnectionTest {
         connectionsManager.closeConnection(peerConnection, reason);
 
         verify(emitters).clear();
-        verify(channel).writeAndFlush(any(LeaveMessage.class));
+        verify(channel).writeAndFlush(any(QuitMessage.class));
         verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
         peerConnection.isClosed().whenComplete((suc, err) -> assertTrue(true));
     }

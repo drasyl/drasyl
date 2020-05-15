@@ -19,7 +19,7 @@
 package org.drasyl.core.common.message;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import org.drasyl.core.common.message.action.LeaveMessageAction;
+import org.drasyl.core.common.message.action.QuitMessageAction;
 import org.drasyl.core.common.message.action.MessageAction;
 import org.drasyl.core.node.connections.PeerConnection.CloseReason;
 
@@ -28,15 +28,15 @@ import java.util.Objects;
 /**
  * A message representing a termination of a connection.
  */
-public class LeaveMessage extends AbstractMessage<LeaveMessage> implements RequestMessage<LeaveMessage>, UnrestrictedPassableMessage {
+public class QuitMessage extends AbstractMessage<QuitMessage> implements RequestMessage<QuitMessage>, UnrestrictedPassableMessage {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final CloseReason reason;
 
-    public LeaveMessage() {
+    public QuitMessage() {
         this(null);
     }
 
-    public LeaveMessage(CloseReason reason) {
+    public QuitMessage(CloseReason reason) {
         this.reason = reason;
     }
 
@@ -51,7 +51,7 @@ public class LeaveMessage extends AbstractMessage<LeaveMessage> implements Reque
         if (!super.equals(o)) {
             return false;
         }
-        LeaveMessage that = (LeaveMessage) o;
+        QuitMessage that = (QuitMessage) o;
         return Objects.equals(reason, that.reason);
     }
 
@@ -62,7 +62,7 @@ public class LeaveMessage extends AbstractMessage<LeaveMessage> implements Reque
 
     @Override
     public String toString() {
-        return "LeaveMessage{" +
+        return "QuitMessage{" +
                 "reason='" + reason + '\'' +
                 ", id='" + id + '\'' +
                 ", signature=" + signature +
@@ -74,7 +74,7 @@ public class LeaveMessage extends AbstractMessage<LeaveMessage> implements Reque
     }
 
     @Override
-    public MessageAction<LeaveMessage> getAction() {
-        return new LeaveMessageAction(this);
+    public MessageAction<QuitMessage> getAction() {
+        return new QuitMessageAction(this);
     }
 }
