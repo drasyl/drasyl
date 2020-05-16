@@ -64,7 +64,7 @@ DrasylNode node = new DrasylNode() {
 };
 node.start();
 
-// wait till NODE_ONLINE event has been received
+// wait till EVENT_NODE_ONLINE has been received
 
 // send message to another node
 node.send("025eb0dc5d", "Hello World");

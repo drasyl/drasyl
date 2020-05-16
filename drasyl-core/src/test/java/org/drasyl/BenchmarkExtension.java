@@ -40,6 +40,17 @@ public class BenchmarkExtension implements
         storeNowAsLaunchTime(context, LaunchTimeKey.CLASS);
     }
 
+    private static boolean shouldBeBenchmarked(ExtensionContext context) {
+        return context.getElement()
+                .map(el -> isAnnotated(el, Benchmark.class))
+                .orElse(false);
+    }
+
+    private static void storeNowAsLaunchTime(
+            ExtensionContext context, LaunchTimeKey key) {
+        context.getStore(NAMESPACE).put(key, currentTimeMillis());
+    }
+
     @Override
     public void beforeTestExecution(ExtensionContext context) {
         if (!shouldBeBenchmarked(context)) {
@@ -48,6 +59,8 @@ public class BenchmarkExtension implements
 
         storeNowAsLaunchTime(context, LaunchTimeKey.TEST);
     }
+
+    // HELPER
 
     @Override
     public void afterTestExecution(ExtensionContext context) {
@@ -58,30 +71,6 @@ public class BenchmarkExtension implements
         long launchTime = loadLaunchTime(context, LaunchTimeKey.TEST);
         long elapsedTime = currentTimeMillis() - launchTime;
         report("Test", context, elapsedTime);
-    }
-
-    @Override
-    public void afterAll(ExtensionContext context) {
-        if (!shouldBeBenchmarked(context)) {
-            return;
-        }
-
-        long launchTime = loadLaunchTime(context, LaunchTimeKey.CLASS);
-        long elapsedTime = currentTimeMillis() - launchTime;
-        report("Test container", context, elapsedTime);
-    }
-
-    // HELPER
-
-    private static boolean shouldBeBenchmarked(ExtensionContext context) {
-        return context.getElement()
-                .map(el -> isAnnotated(el, Benchmark.class))
-                .orElse(false);
-    }
-
-    private static void storeNowAsLaunchTime(
-            ExtensionContext context, LaunchTimeKey key) {
-        context.getStore(NAMESPACE).put(key, currentTimeMillis());
     }
 
     private static long loadLaunchTime(
@@ -95,6 +84,17 @@ public class BenchmarkExtension implements
                 "%s '%s' took %d ms.",
                 unit, context.getDisplayName(), elapsedTime);
         context.publishReportEntry("benchmark", message);
+    }
+
+    @Override
+    public void afterAll(ExtensionContext context) {
+        if (!shouldBeBenchmarked(context)) {
+            return;
+        }
+
+        long launchTime = loadLaunchTime(context, LaunchTimeKey.CLASS);
+        long elapsedTime = currentTimeMillis() - launchTime;
+        report("Test container", context, elapsedTime);
     }
 
     private enum LaunchTimeKey {

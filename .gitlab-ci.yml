@@ -8,8 +8,8 @@ include:
   #  - template: Dependency-Scanning.gitlab-ci.yml
   #  - template: Code-Quality.gitlab-ci.yml
   - local: /.gitlab-ci/Docker.gitlab-ci.yml
-#  - template: License-Management.gitlab-ci.yml
-#  - template: SAST.gitlab-ci.yml
+  #  - template: License-Management.gitlab-ci.yml
+  #  - template: SAST.gitlab-ci.yml
   - local: /.gitlab-ci/Deployments.gitlab-ci.yml
 
 #license_management:

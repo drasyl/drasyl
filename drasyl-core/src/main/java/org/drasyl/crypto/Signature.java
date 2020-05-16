@@ -37,13 +37,9 @@ public class Signature {
         bytes = sig;
     }
 
-    /**
-     * Returns bytes of signature.
-     *
-     * @return signature bytes
-     */
-    public byte[] getBytes() {
-        return bytes;
+    @Override
+    public int hashCode() {
+        return bytes.length;
     }
 
     @Override
@@ -62,9 +58,13 @@ public class Signature {
         return false;
     }
 
-    @Override
-    public int hashCode() {
-        return bytes.length;
+    /**
+     * Returns bytes of signature.
+     *
+     * @return signature bytes
+     */
+    public byte[] getBytes() {
+        return bytes;
     }
 
     @Override

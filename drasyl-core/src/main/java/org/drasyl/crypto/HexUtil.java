@@ -36,16 +36,6 @@ public final class HexUtil {
     }
 
     /**
-     * Converts a byte[] into a string representation
-     *
-     * @param byteArray e.g {AB,34}
-     * @return string "AB34"
-     */
-    public static String toString(byte[] byteArray) {
-        return bytesToHex(byteArray);
-    }
-
-    /**
      * Converts the string argument into an array of bytes.
      *
      * @param lexicalXSDHexBinary A string containing lexical representation of xsd:hexBinary.
@@ -87,6 +77,16 @@ public final class HexUtil {
             return ch - 'a' + 10;
         }
         return -1;
+    }
+
+    /**
+     * Converts a byte[] into a string representation
+     *
+     * @param byteArray e.g {AB,34}
+     * @return string "AB34"
+     */
+    public static String toString(byte[] byteArray) {
+        return bytesToHex(byteArray);
     }
 
     /**
