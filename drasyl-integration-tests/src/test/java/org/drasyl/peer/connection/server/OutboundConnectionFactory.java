@@ -278,7 +278,7 @@ public class OutboundConnectionFactory {
      */
     private DefaultSessionInitializer defaultInitializer() {
         return new AbstractClientInitializer(FlushConsolidationHandler.DEFAULT_EXPLICIT_FLUSH_AFTER_FLUSHES, //NOSONAR
-                idleTimeout, idleRetries, maxContentLength, uri, channelReadyFuture) {
+                idleTimeout, idleRetries, uri, channelReadyFuture) {
             @Override
             protected void pojoMarshalStage(ChannelPipeline pipeline) {
                 // From String to Message

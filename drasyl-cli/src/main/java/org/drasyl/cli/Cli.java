@@ -126,11 +126,25 @@ class Cli {
                 "\n" +
                 "Options:";
 
-        // TODO: Add configuration example
         String footer = "\n" +
                 CONF + " syntax:\n" +
                 "drasyl {\n" +
-                "  ...TODO...\n" +
+                "  identity {\n" +
+                "    public-key = \"...\"\n" +
+                "    private-key = \"...\"\n" +
+                "  }\n" +
+                "\n" +
+                "  server {\n" +
+                "    enabled = true\n" +
+                "    bind-host = \"0.0.0.0\"\n" +
+                "    bind-port = 22527\n" +
+                "  }\n" +
+                "\n" +
+                "  super-peer {\n" +
+                "    enabled = true\n" +
+                "    endpoints = [\"wss://staging.env.drasyl.org\"]\n" +
+                "    public-key = \"\"\n" +
+                "  }\n" +
                 "}";
 
         HelpFormatter formatter = new HelpFormatter();

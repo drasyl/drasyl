@@ -27,7 +27,7 @@ import java.security.PrivateKey;
 /**
  * This interface models a compressed key that can be converted into a string and vice versa.
  */
-public class CompressedPrivateKey extends CompressedKey<PrivateKey> {
+public class CompressedPrivateKey extends AbstractCompressedKey<PrivateKey> {
     public CompressedPrivateKey(String compressedKey) throws CryptoException {
         super(compressedKey);
     }
