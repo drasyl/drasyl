@@ -20,7 +20,6 @@ package org.drasyl.peer;
 
 import com.google.common.collect.ImmutableSet;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.peer.connection.PeerConnection;
 
 import java.net.URI;
 import java.util.Collection;
@@ -43,11 +42,11 @@ public class PeerInformation {
     private CompressedPublicKey publicKey;
 
     public PeerInformation() {
-        this(new HashSet<>(), new HashSet<>(), null);
+        this(new HashSet<>(), null);
     }
 
     PeerInformation(Set<URI> endpoints,
-                    Set<PeerConnection> connections, CompressedPublicKey publicKey) {
+                    CompressedPublicKey publicKey) {
         this.endpoints = endpoints;
         this.publicKey = publicKey;
     }

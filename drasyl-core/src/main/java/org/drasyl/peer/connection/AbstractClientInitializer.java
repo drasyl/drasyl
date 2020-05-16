@@ -39,7 +39,6 @@ public abstract class AbstractClientInitializer extends DefaultSessionInitialize
     private static final Logger LOG = LoggerFactory.getLogger(AbstractClientInitializer.class);
     protected final URI target;
     private final CompletableFuture<Void> channelReadyFuture;
-    private final int maxContentLength;
 
     /**
      * Initialize a netty Channel for an outbound connection to a node server.
@@ -74,7 +73,6 @@ public abstract class AbstractClientInitializer extends DefaultSessionInitialize
                                         CompletableFuture<Void> channelReadyFuture) {
         super(flushBufferSize, readIdleTimeout, pingPongRetries);
         this.channelReadyFuture = channelReadyFuture;
-        this.maxContentLength = maxContentLength;
         this.target = target;
     }
 

@@ -18,74 +18,34 @@
  */
 package org.drasyl.identity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonValue;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.HexUtil;
 
 import java.security.PrivateKey;
-import java.util.Objects;
 
 /**
  * This interface models a compressed key that can be converted into a string and vice versa.
  */
-public class CompressedPrivateKey {
-    @JsonValue
-    private final String compressedKey;
-    @JsonIgnore
-    private PrivateKey key;
-
-    CompressedPrivateKey() {
-        compressedKey = null;
+public class CompressedPrivateKey extends CompressedKey<PrivateKey> {
+    public CompressedPrivateKey(String compressedKey) throws CryptoException {
+        super(compressedKey);
     }
 
-    private CompressedPrivateKey(String compressedKey) throws CryptoException {
-        this.compressedKey = compressedKey;
-        this.key = toPrivKey();
-    }
-
-    public PrivateKey toPrivKey() throws CryptoException {
-        if (key == null) {
-            key = Crypto.getPrivateKeyFromBytes(HexUtil.fromString(compressedKey));
-        }
-
-        return this.key;
-    }
-
-    private CompressedPrivateKey(PrivateKey key) throws CryptoException {
+    public CompressedPrivateKey(PrivateKey key) throws CryptoException {
         this(HexUtil.bytesToHex(Crypto.compressedKey(key)), key);
     }
 
     CompressedPrivateKey(String compressedKey, PrivateKey key) {
-        this.compressedKey = compressedKey;
-        this.key = key;
-    }
-
-    public String getCompressedKey() {
-        return this.compressedKey;
+        super(compressedKey, key);
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hashCode(compressedKey);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
+    public PrivateKey toUncompressedKey() throws CryptoException {
+        if (key == null) {
+            key = Crypto.getPrivateKeyFromBytes(HexUtil.fromString(compressedKey));
         }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        CompressedPrivateKey that = (CompressedPrivateKey) o;
-        return Objects.equals(compressedKey, that.compressedKey);
-    }
-
-    @Override
-    public String toString() {
-        return this.compressedKey;
+        return this.key;
     }
 
     /**

@@ -11,7 +11,6 @@ import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.JoinMessage;
-import org.drasyl.peer.connection.server.NodeServerClientConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
