@@ -34,6 +34,9 @@ class DrasylNodeConfigTest {
     private Set<String> superPeerEndpoints;
     private String superPeerPublicKey;
     private List<Duration> superPeerRetryDelays;
+    private String superPeerChannelInitializer;
+    private short superPeerIdleRetries;
+    private Duration superPeerIdleTimeout;
 
     @BeforeEach
     void setUp() {
@@ -56,6 +59,9 @@ class DrasylNodeConfigTest {
         superPeerEndpoints = mock(Set.class);
         superPeerPublicKey = "";
         superPeerRetryDelays = mock(List.class);
+        superPeerChannelInitializer = "org.drasyl.core.client.handler.SuperPeerClientInitializer";
+        superPeerIdleRetries = 3;
+        superPeerIdleTimeout = Duration.ofSeconds(60);
     }
 
     @AfterEach
@@ -66,7 +72,7 @@ class DrasylNodeConfigTest {
     void toStringShouldMaskSecrets() {
         identityPrivateKey = "07e98a2f8162a4002825f810c0fbd69b0c42bd9cb4f74a21bc7807bc5acb4f5f";
 
-        DrasylNodeConfig config = new DrasylNodeConfig(identityPublicKey, identityPrivateKey, identityPath, userAgent, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, maxContentLength, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays);
+        DrasylNodeConfig config = new DrasylNodeConfig(identityPublicKey, identityPrivateKey, identityPath, userAgent, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, maxContentLength, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout);
 
         assertThat(config.toString(), not(containsString(identityPrivateKey)));
     }

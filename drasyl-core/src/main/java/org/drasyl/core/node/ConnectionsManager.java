@@ -4,6 +4,7 @@ import com.google.common.collect.HashMultimap;
 import org.drasyl.core.node.connections.ConnectionComparator;
 import org.drasyl.core.node.connections.PeerConnection;
 import org.drasyl.core.node.connections.PeerConnection.CloseReason;
+import org.drasyl.core.node.connections.SuperPeerConnection;
 import org.drasyl.core.node.identity.Identity;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -28,17 +29,20 @@ public class ConnectionsManager {
     private final ReadWriteLock lock;
     private final HashMultimap<Identity, PeerConnection> connections;
     private final Map<PeerConnection, Consumer<CloseReason>> closeProcedures;
+    private Identity superPeer;
 
     public ConnectionsManager() {
-        this(new ReentrantReadWriteLock(true), HashMultimap.create(), new HashMap<>());
+        this(new ReentrantReadWriteLock(true), HashMultimap.create(), new HashMap<>(), null);
     }
 
     ConnectionsManager(ReadWriteLock lock,
                        HashMultimap<Identity, PeerConnection> connections,
-                       Map<PeerConnection, Consumer<CloseReason>> closeProcedures) {
+                       Map<PeerConnection, Consumer<CloseReason>> closeProcedures,
+                       Identity superPeer) {
         this.lock = requireNonNull(lock);
         this.connections = requireNonNull(connections);
         this.closeProcedures = requireNonNull(closeProcedures);
+        this.superPeer = superPeer;
     }
 
     /**
@@ -54,6 +58,11 @@ public class ConnectionsManager {
             lock.readLock().lock();
 
             Optional<PeerConnection> connection = connections.get(identity).stream().min(ConnectionComparator.INSTANCE);
+
+            // super peer fallback
+            if (!connection.isPresent() && superPeer != null) {
+                connection = connections.get(superPeer).stream().findFirst();
+            }
 
             return connection.orElse(null);
         }
@@ -77,6 +86,11 @@ public class ConnectionsManager {
             lock.writeLock().lock();
 
             LOG.debug("Add Connection '{}' for Node '{}'", connection, connection.getIdentity());
+
+            // remember super peer identity for fast lookup
+            if (connection instanceof SuperPeerConnection) {
+                superPeer = connection.getIdentity();
+            }
 
             Optional<PeerConnection> existingConnection = connections.get(connection.getIdentity()).stream().filter(c -> c.getClass() == connection.getClass()).findFirst();
             if (existingConnection.isPresent()) {

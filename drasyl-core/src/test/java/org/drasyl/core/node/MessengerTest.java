@@ -45,7 +45,7 @@ class MessengerTest {
     }
 
     @Test
-    public void sendShouldHandleMessagesAddressedToClients() throws DrasylException {
+    public void sendShouldHandleMessages() throws DrasylException {
         when(connectionsManager.getConnection(any())).thenReturn(peerConnection);
 
         ApplicationMessage message = new ApplicationMessage(sender, recipient, payload);
@@ -53,22 +53,5 @@ class MessengerTest {
         messenger.send(message);
 
         verify(peerConnection).send(message);
-    }
-
-    @Test
-    public void sendShouldHandleMessagesAddressedToUnknownClientsWithSuperPeerPresent() throws DrasylException {
-        when(connectionsManager.getConnection(any())).thenReturn(null).thenReturn(peerConnection);
-
-        ApplicationMessage message = new ApplicationMessage(sender, recipient, payload);
-        Messenger messenger = new Messenger(connectionsManager);
-        messenger.send(message);
-
-        verify(peerConnection).send(message);
-    }
-
-    @Test
-    public void sendShouldFailForMessagesAddressedToUnknownClientsWithNoSuperPeerPresent() {
-        Messenger messenger = new Messenger();
-        assertThrows(DrasylException.class, () -> messenger.send(new ApplicationMessage(sender, recipient, payload)));
     }
 }

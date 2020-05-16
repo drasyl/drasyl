@@ -16,18 +16,17 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.core.common.handler.codec.message;
 
-import org.drasyl.core.common.message.Message;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
+import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
+import org.drasyl.core.common.message.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 
 import java.util.List;
 
@@ -37,7 +36,7 @@ import static org.drasyl.core.common.util.LoggingUtil.sanitizeLogArg;
  * Encodes a {@link Message} into a {@link String} object.
  */
 @Sharable
-public class MessageEncoder extends MessageToMessageEncoder<Message> {
+public class MessageEncoder extends MessageToMessageEncoder<Message<?>> {
     private static final Logger LOG = LoggerFactory.getLogger(MessageEncoder.class);
     public static final MessageEncoder INSTANCE = new MessageEncoder();
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
@@ -47,9 +46,10 @@ public class MessageEncoder extends MessageToMessageEncoder<Message> {
     }
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, Message msg, List<Object> out) {
-        if (LOG.isDebugEnabled())
+    protected void encode(ChannelHandlerContext ctx, Message<?> msg, List<Object> out) {
+        if (LOG.isDebugEnabled()) {
             LOG.debug("[{}]: Send Message '{}'", ctx.channel().id().asShortText(), msg);
+        }
 
         try {
             String json = JSON_MAPPER.writeValueAsString(msg);

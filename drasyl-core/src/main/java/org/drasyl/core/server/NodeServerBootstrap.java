@@ -39,19 +39,20 @@ public class NodeServerBootstrap {
         this.nodeServer = nodeServer;
         this.serverBootstrap = serverBootstrap;
         this.config = config;
+        String channelInitializer = config.getServerChannelInitializer();
 
         try {
-            this.relayServerInitializer = getChannelInitializer(nodeServer, config.getServerChannelInitializer());
+            this.relayServerInitializer = getChannelInitializer(nodeServer, channelInitializer);
         } catch (ClassNotFoundException e) {
-            throw new NodeServerException("The given channel initializer can't be found: '" + config.getServerChannelInitializer() + "'");
+            throw new NodeServerException("The given channel initializer can't be found: '" + channelInitializer + "'");
         } catch (NoSuchMethodException e) {
-            throw new NodeServerException("The given channel initializer has not the correct signature: '" + config.getServerChannelInitializer() + "'");
+            throw new NodeServerException("The given channel initializer has not the correct signature: '" + channelInitializer + "'");
         } catch (IllegalAccessException e) {
-            throw new NodeServerException("Can't access the given channel initializer: '" + config.getServerChannelInitializer() + "'");
+            throw new NodeServerException("Can't access the given channel initializer: '" + channelInitializer + "'");
         } catch (InvocationTargetException e) {
-            throw new NodeServerException("Can't invoke the given channel initializer: '" + config.getServerChannelInitializer() + "'");
+            throw new NodeServerException("Can't invoke the given channel initializer: '" + channelInitializer + "'");
         } catch (InstantiationException e) {
-            throw new NodeServerException("Can't instantiate the given channel initializer: '" + config.getServerChannelInitializer() + "'");
+            throw new NodeServerException("Can't instantiate the given channel initializer: '" + channelInitializer + "'");
         }
     }
 

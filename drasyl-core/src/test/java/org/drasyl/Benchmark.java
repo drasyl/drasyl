@@ -16,20 +16,18 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.drasyl;
 
-package org.drasyl.core.node;
+import org.junit.jupiter.api.extension.ExtendWith;
 
-import org.drasyl.core.models.DrasylException;
+import java.lang.annotation.Retention;
+import java.lang.annotation.Target;
 
-/**
- * This exception is thrown if the desired client was not found.
- */
-public class ClientNotFoundException extends DrasylException {
-    public ClientNotFoundException(Throwable cause) {
-        super(cause);
-    }
+import static java.lang.annotation.ElementType.*;
+import static java.lang.annotation.RetentionPolicy.RUNTIME;
 
-    public ClientNotFoundException(String cause) {
-        super(cause);
-    }
+@Target({ TYPE, METHOD, ANNOTATION_TYPE })
+@Retention(RUNTIME)
+@ExtendWith(BenchmarkExtension.class)
+public @interface Benchmark {
 }

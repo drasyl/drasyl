@@ -21,6 +21,7 @@ package org.drasyl.core.node;
 import org.drasyl.core.common.message.ApplicationMessage;
 import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.node.connections.PeerConnection;
+import org.drasyl.core.node.identity.Identity;
 
 import java.util.Optional;
 
@@ -45,39 +46,14 @@ public class Messenger {
         return connectionsManager;
     }
 
-    public void send(ApplicationMessage message) throws DrasylException {
-        try {
-            sendToClient(message);
-        }
-        catch (ClientNotFoundException e) {
-            try {
-                sendToSuperPeer(message);
-            }
-            catch (NoSuperPeerException ex) {
-                throw new DrasylException("Unable to send message: " + message.toString());
-            }
-        }
-    }
-
-    private void sendToClient(ApplicationMessage message) throws ClientNotFoundException {
+    public void send(ApplicationMessage message) throws MessengerException {
         Optional<PeerConnection> connection = ofNullable(this.connectionsManager.getConnection(message.getRecipient()));
 
         if (connection.isPresent()) {
             connection.get().send(message);
         }
         else {
-            throw new ClientNotFoundException("Can't found client: '" + message.getRecipient() + "'");
-        }
-    }
-
-    private void sendToSuperPeer(ApplicationMessage message) throws NoSuperPeerException {
-        Optional<PeerConnection> connection = ofNullable(this.connectionsManager.getConnection(message.getRecipient()));
-
-        if (connection.isPresent()) {
-            connection.get().send(message);
-        }
-        else {
-            throw new NoSuperPeerException();
+            throw new MessengerException("Unable to send '" + message.toString() + "': Neither Connection to Recipient nor Super Peer available");
         }
     }
 }

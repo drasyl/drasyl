@@ -132,17 +132,6 @@ class NodeServerTest {
     }
 
     @Test
-    void sendShouldPassMessageToMessenger() throws DrasylException {
-        NodeServer server = new NodeServer(identityManager, messenger, peersManager,
-                config, serverChannel, serverBootstrap, workerGroup, bossGroup,
-                beforeCloseListeners, startedFuture, stoppedFuture, nodeServerBootstrap, new AtomicBoolean(false), -1, new HashSet<>());
-
-        server.send(message);
-
-        verify(messenger).send(message);
-    }
-
-    @Test
     void closeShouldDoNothingIfServerHasAlreadyBeenShutDown() {
         NodeServer server = new NodeServer(identityManager, messenger, peersManager,
                 config, serverChannel, serverBootstrap, workerGroup, bossGroup,

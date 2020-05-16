@@ -3,6 +3,7 @@ package org.drasyl.core.node;
 import com.google.common.collect.HashMultimap;
 import org.drasyl.core.node.connections.PeerConnection.CloseReason;
 import org.drasyl.core.node.connections.PeerConnection;
+import org.drasyl.core.node.connections.SuperPeerConnection;
 import org.drasyl.core.node.identity.Identity;
 import org.drasyl.crypto.Crypto;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +31,9 @@ class ConnectionsManagerTest {
     private CloseReason reason;
     private Consumer<CloseReason> runnable1;
     private Consumer<CloseReason> runnable2;
+    private Identity superPeer;
+    private SuperPeerConnection superPeerConnection;
+    private Consumer superPeerRunnable;
 
     @BeforeEach
     void setUp() {
@@ -41,22 +45,27 @@ class ConnectionsManagerTest {
         identity = Identity.of(Crypto.randomString(5));
         peerConnection = mock(PeerConnection.class);
         peerConnection2 = mock(PeerConnection.class);
+        superPeerConnection = mock(SuperPeerConnection.class);
         reason = REASON_SHUTTING_DOWN;
         runnable1 = mock(Consumer.class);
         runnable2 = mock(Consumer.class);
+        superPeerRunnable = mock(Consumer.class);
+        superPeer = mock(Identity.class);
 
         when(lock.writeLock()).thenReturn(writeLock);
         when(lock.readLock()).thenReturn(readLock);
 
         when(peerConnection.getIdentity()).thenReturn(identity);
         when(peerConnection2.getIdentity()).thenReturn(identity);
+        when(superPeerConnection.getIdentity()).thenReturn(superPeer);
         when(closeProcedures.remove(eq(peerConnection))).thenReturn(runnable1);
         when(closeProcedures.remove(eq(peerConnection2))).thenReturn(runnable2);
+        when(closeProcedures.remove(eq(superPeerConnection))).thenReturn(superPeerRunnable);
     }
 
     @Test
-    void getConnectionShouldReturnBestConnectionForGivenIdentity() {
-        ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures);
+    void getConnectionShouldReturnDirectConnectionIfItsTheBestConnectionForGivenIdentity() {
+        ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures, superPeer);
         connectionsManager.addConnection(peerConnection, runnable1);
 
         assertEquals(peerConnection, connectionsManager.getConnection(identity));
@@ -65,8 +74,18 @@ class ConnectionsManagerTest {
     }
 
     @Test
+    void getConnectionShouldReturnSuperPeerConnectionIfItsTheBestConnectionForGivenIdentity() {
+        ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures, superPeer);
+        connectionsManager.addConnection(superPeerConnection, superPeerRunnable);
+
+        assertEquals(superPeerConnection, connectionsManager.getConnection(identity));
+        verify(readLock).lock();
+        verify(readLock).unlock();
+    }
+
+    @Test
     void getConnectionShouldReturnNullIfNoConnectionIsAvailable() {
-        ConnectionsManager connectionsManager = new ConnectionsManager(lock, HashMultimap.create(), Map.of());
+        ConnectionsManager connectionsManager = new ConnectionsManager(lock, HashMultimap.create(), Map.of(), null);
 
         assertNull(connectionsManager.getConnection(identity));
         verify(readLock).lock();
@@ -75,7 +94,7 @@ class ConnectionsManagerTest {
 
     @Test
     void addConnectionShouldCloseExistingConnectionAndAddConnectionToListOfAllConnections() {
-        ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures);
+        ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures, null);
         connectionsManager.addConnection(peerConnection, runnable1);
         connectionsManager.addConnection(peerConnection2, runnable2);
 
@@ -87,7 +106,7 @@ class ConnectionsManagerTest {
 
     @Test
     void closeConnectionShouldCloseAndRemoveFromListOfAllConnections() {
-        ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures);
+        ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures, null);
         connectionsManager.addConnection(peerConnection, runnable1);
         connectionsManager.closeConnection(peerConnection, reason);
 
@@ -99,7 +118,7 @@ class ConnectionsManagerTest {
 
     @Test
     void closeConnectionOfTypeForIdentityShouldCloseAndRemoveAllConnectionsOfGivenTypeForGivenIdentity() {
-        ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures);
+        ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures, null);
         connectionsManager.addConnection(peerConnection, runnable1);
         connectionsManager.closeConnectionOfTypeForIdentity(identity, peerConnection.getClass(), reason);
 
@@ -111,7 +130,7 @@ class ConnectionsManagerTest {
 
     @Test
     void closeConnectionsOfTypeShouldCloseAndRemoveAllConnectionsOfGivenType() {
-        ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures);
+        ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures, null);
         connectionsManager.addConnection(peerConnection, runnable1);
         connectionsManager.closeConnectionsOfType(peerConnection.getClass(), reason);
 
