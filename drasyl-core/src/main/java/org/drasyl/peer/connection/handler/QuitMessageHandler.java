@@ -45,8 +45,8 @@ public class QuitMessageHandler extends SimpleChannelInboundHandler<QuitMessage>
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, QuitMessage msg) throws Exception {
         try {
+            LOG.debug("[{}]: received {}. Close channel", ctx.channel().id().asShortText(), msg);
             ctx.writeAndFlush(new StatusMessage(STATUS_OK, msg.getId())).addListener(ChannelFutureListener.CLOSE);
-            LOG.debug("{} received {}. Fire channel close.", ctx.channel().id(), QuitMessage.class.getSimpleName());
         }
         finally {
             ReferenceCountUtil.release(msg);

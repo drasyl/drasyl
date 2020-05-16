@@ -42,6 +42,10 @@ public abstract class PeerConnection {
     protected final String connectionId = Crypto.randomString(8);
     protected Identity identity;
 
+    protected PeerConnection(Identity identity) {
+        this.identity = identity;
+    }
+
     public PeerConnection(Identity identity,
                           ConnectionsManager connectionsManager) {
         this.identity = identity;

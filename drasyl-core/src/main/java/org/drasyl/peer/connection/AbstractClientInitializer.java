@@ -24,7 +24,6 @@ import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshakerFactory;
 import io.netty.handler.codec.http.websocketx.WebSocketVersion;
-import org.drasyl.peer.connection.handler.DefaultSessionInitializer;
 import org.drasyl.peer.connection.handler.WebSocketClientHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

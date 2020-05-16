@@ -11,6 +11,7 @@ import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.JoinMessage;
+import org.drasyl.peer.connection.server.NodeServerClientConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -25,6 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import static java.lang.Thread.sleep;
+import static org.drasyl.peer.connection.PeerConnection.CloseReason.REASON_SHUTTING_DOWN;
 
 /**
  * This class represents the link between <code>DrasylNode</code> and the super peer. It is
@@ -209,8 +211,12 @@ public class SuperPeerClient implements AutoCloseable {
 
     @Override
     public void close() {
-        if (opened.compareAndSet(true, false) && clientChannel != null && clientChannel.isOpen()) {
-            clientChannel.close().syncUninterruptibly();
+        if (opened.compareAndSet(true, false)) {
+            messenger.getConnectionsManager().closeConnectionsOfType(SuperPeerConnection.class, REASON_SHUTTING_DOWN);
+
+            if (clientChannel != null && clientChannel.isOpen()) {
+                clientChannel.close().syncUninterruptibly();
+            }
         }
     }
 

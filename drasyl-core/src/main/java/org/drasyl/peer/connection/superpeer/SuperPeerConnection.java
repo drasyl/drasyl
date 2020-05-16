@@ -21,7 +21,7 @@ package org.drasyl.peer.connection.superpeer;
 import io.netty.channel.Channel;
 import io.reactivex.rxjava3.core.SingleEmitter;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.AbstractPeerConnection;
+import org.drasyl.peer.connection.AbstractNettyConnection;
 import org.drasyl.peer.connection.ConnectionsManager;
 import org.drasyl.peer.connection.message.ResponseMessage;
 import org.drasyl.peer.connection.server.NodeServerClientConnection;
@@ -35,7 +35,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @SuppressWarnings({ "java:S2160" })
-public class SuperPeerConnection extends AbstractPeerConnection {
+public class SuperPeerConnection extends AbstractNettyConnection {
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerConnection.class);
 
     /**

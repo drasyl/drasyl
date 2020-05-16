@@ -16,9 +16,8 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection.models;
+package org.drasyl.util;
 
-import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 

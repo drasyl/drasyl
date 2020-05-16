@@ -16,13 +16,17 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection.handler;
+package org.drasyl.peer.connection;
 
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.flush.FlushConsolidationHandler;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.timeout.IdleStateHandler;
+import org.drasyl.peer.connection.DefaultSessionInitializer;
+import org.drasyl.peer.connection.handler.MessageDecoder;
+import org.drasyl.peer.connection.handler.MessageEncoder;
+import org.drasyl.peer.connection.handler.PingPongHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.Mockito;

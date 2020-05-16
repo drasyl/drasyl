@@ -33,13 +33,12 @@ import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerConnection;
 import org.drasyl.peer.connection.message.*;
-import org.drasyl.peer.connection.server.testutils.ANSI_COLOR;
-import org.drasyl.peer.connection.server.testutils.TestClientConnection;
-import org.drasyl.peer.connection.server.testutils.TestHelper;
 import org.junit.Ignore;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import testutils.AnsiColor;
+import testutils.TestHelper;
 
 import java.util.List;
 import java.util.Random;
@@ -52,7 +51,8 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.awaitility.Awaitility.with;
 import static org.awaitility.Durations.FIVE_MINUTES;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
-import static org.drasyl.peer.connection.server.testutils.TestHelper.colorizedPrintln;
+import static org.drasyl.peer.connection.server.TestNodeServerClientConnection.clientSession;
+import static org.drasyl.peer.connection.server.TestNodeServerClientConnection.clientSessionAfterJoin;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
@@ -60,6 +60,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static testutils.TestHelper.colorizedPrintln;
 
 //import net.jcip.annotations.NotThreadSafe;
 
@@ -77,7 +78,7 @@ public class NodeServerIT {
 
     @BeforeEach
     public void setup(TestInfo info) throws DrasylException, CryptoException {
-        colorizedPrintln("STARTING " + info.getDisplayName(), ANSI_COLOR.COLOR_CYAN, ANSI_COLOR.STYLE_REVERSED);
+        colorizedPrintln("STARTING " + info.getDisplayName(), AnsiColor.COLOR_CYAN, AnsiColor.STYLE_REVERSED);
 
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
 
@@ -97,14 +98,14 @@ public class NodeServerIT {
 
         IdentityManager.deleteIdentityFile(config.getIdentityPath());
 
-        colorizedPrintln("FINISHED " + info.getDisplayName(), ANSI_COLOR.COLOR_CYAN, ANSI_COLOR.STYLE_REVERSED);
+        colorizedPrintln("FINISHED " + info.getDisplayName(), AnsiColor.COLOR_CYAN, AnsiColor.STYLE_REVERSED);
     }
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     public void joinMessageShouldBeRespondedWithWelcomeMessage() throws ExecutionException, InterruptedException {
         // create connection
-        TestClientConnection session = TestClientConnection.clientSession(server);
+        TestNodeServerClientConnection session = clientSession(server);
 
         // send message
         RequestMessage<?> request = new JoinMessage(identityManager.getKeyPair().getPublicKey(), Set.of());
@@ -120,8 +121,8 @@ public class NodeServerIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     public void multipleJoinMessagesShouldBeRespondedWithWelcomeMessage() throws ExecutionException, InterruptedException, CryptoException {
         // create connections
-        TestClientConnection session1 = TestClientConnection.clientSession(server);
-        TestClientConnection session2 = TestClientConnection.clientSession(server);
+        TestNodeServerClientConnection session1 = clientSession(server);
+        TestNodeServerClientConnection session2 = clientSession(server);
 
         // send messages
         RequestMessage<?> request1 = new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of());
@@ -142,8 +143,8 @@ public class NodeServerIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     public void requestStocktakingMessageShouldBeRespondedWithStocktakingMessage() throws ExecutionException, InterruptedException, CryptoException {
         // create connections
-        TestClientConnection session1 = TestClientConnection.clientSessionAfterJoin(server);
-        TestClientConnection session2 = TestClientConnection.clientSessionAfterJoin(server);
+        TestNodeServerClientConnection session1 = clientSessionAfterJoin(server);
+        TestNodeServerClientConnection session2 = clientSessionAfterJoin(server);
 
         with().pollInSameThread().await().pollDelay(0, NANOSECONDS).atMost(FIVE_MINUTES)
                 .until(() -> server.getPeersManager().getChildren().size() >= 2);
@@ -163,8 +164,8 @@ public class NodeServerIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     public void applicationMessageShouldBeForwardedToRecipient() throws ExecutionException, InterruptedException, CryptoException {
         // create connections
-        TestClientConnection session1 = TestClientConnection.clientSessionAfterJoin(server);
-        TestClientConnection session2 = TestClientConnection.clientSessionAfterJoin(server);
+        TestNodeServerClientConnection session1 = clientSessionAfterJoin(server);
+        TestNodeServerClientConnection session2 = clientSessionAfterJoin(server);
 
         CompletableFuture<Message<?>> receivedMessage2 = session2.receivedMessages().firstElement().toCompletionStage().toCompletableFuture();
 
@@ -187,7 +188,7 @@ public class NodeServerIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     public void notJoiningClientsShouldBeDroppedAfterTimeout() throws ExecutionException, InterruptedException {
         // create connection
-        TestClientConnection session = TestClientConnection.clientSession(server);
+        TestNodeServerClientConnection session = clientSession(server);
 
         CompletableFuture<Message<?>> receivedMessage = session.receivedMessages().firstElement().toCompletionStage().toCompletableFuture();
 
@@ -203,7 +204,7 @@ public class NodeServerIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     public void joinedClientsShouldNoBeDroppedAfterTimeout() throws InterruptedException, CryptoException, ExecutionException {
         // create connection
-        TestClientConnection session = TestClientConnection.clientSessionAfterJoin(server);
+        TestNodeServerClientConnection session = clientSessionAfterJoin(server);
 
         // wait until timeout
         Thread.sleep(server.getConfig().getServerHandshakeTimeout().plusSeconds(2).toMillis());// NOSONAR
@@ -216,7 +217,7 @@ public class NodeServerIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     public void invalidMessageShouldBeRespondedWithExceptionMessage() throws ExecutionException, InterruptedException {
         // create connection
-        TestClientConnection session = TestClientConnection.clientSession(server);
+        TestNodeServerClientConnection session = clientSession(server);
 
         CompletableFuture<List<Message<?>>> receivedMessages = session.receivedMessages().take(2).toList().toCompletionStage().toCompletableFuture();
 
@@ -231,8 +232,8 @@ public class NodeServerIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     public void newSessionWithSameIdentityShouldReplaceAndCloseExistingSession() throws ExecutionException, InterruptedException, CryptoException {
         // create connections
-        TestClientConnection session1 = TestClientConnection.clientSession(server);
-        TestClientConnection session2 = TestClientConnection.clientSession(server);
+        TestNodeServerClientConnection session1 = clientSession(server);
+        TestNodeServerClientConnection session2 = clientSession(server);
 
         CompletableFuture<List<Message<?>>> receivedMessages1 = session1.receivedMessages().take(2).toList().toCompletionStage().toCompletableFuture();
         CompletableFuture<Message<?>> receivedMessage2 = session2.receivedMessages().firstElement().toCompletionStage().toCompletableFuture();
@@ -254,7 +255,7 @@ public class NodeServerIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     public void multipleJoinMessagesWithinSameSessionShouldRespondedWithExceptionMessage() throws ExecutionException, InterruptedException, CryptoException {
         // create connection
-        TestClientConnection session = TestClientConnection.clientSessionAfterJoin(server);
+        TestNodeServerClientConnection session = clientSessionAfterJoin(server);
 
         // send message
         RequestMessage<?> request = new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of());
@@ -270,7 +271,7 @@ public class NodeServerIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     public void clientsNotSendingPongMessageShouldBeDroppedAfterTimeout() throws ExecutionException, InterruptedException {
         // create connection
-        TestClientConnection session = TestClientConnection.clientSession(server, false);
+        TestNodeServerClientConnection session = clientSession(server, false);
 
         CompletableFuture<List<Message<?>>> receivedMessages = session.receivedMessages().take(3).toList().toCompletionStage().toCompletableFuture();
 
@@ -285,7 +286,7 @@ public class NodeServerIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     public void clientsSendingPongMessageShouldNotBeDroppedAfterTimeout() throws ExecutionException, InterruptedException, CryptoException {
         // create connection
-        TestClientConnection session = TestClientConnection.clientSessionAfterJoin(server);
+        TestNodeServerClientConnection session = clientSessionAfterJoin(server);
 
         // wait until timeout
         Thread.sleep(server.getConfig().getServerIdleTimeout().toMillis() * (server.getConfig().getServerIdleRetries() + 1) + 1000);// NOSONAR
@@ -298,7 +299,7 @@ public class NodeServerIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     public void pingMessageShouldBeRespondedWithPongMessage() throws ExecutionException, InterruptedException {
         // create connection
-        TestClientConnection session = TestClientConnection.clientSession(server, false);
+        TestNodeServerClientConnection session = clientSession(server, false);
 
         // send message
         RequestMessage<?> request = new PingMessage();
@@ -314,7 +315,7 @@ public class NodeServerIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     public void nonAuthorizedClientSendingNonJoinMessageShouldBeRespondedWithStatusForbiddenMessage() throws ExecutionException, InterruptedException {
         // create connection
-        TestClientConnection session = TestClientConnection.clientSession(server);
+        TestNodeServerClientConnection session = clientSession(server);
 
         // send message
         RequestMessage<?> request = new ApplicationMessage(TestHelper.random(), TestHelper.random(), new byte[]{
@@ -333,8 +334,8 @@ public class NodeServerIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     public void messageWithMaxSizeShouldArrive() throws InterruptedException, ExecutionException, CryptoException {
         // create connection
-        TestClientConnection session1 = TestClientConnection.clientSessionAfterJoin(server);
-        TestClientConnection session2 = TestClientConnection.clientSessionAfterJoin(server);
+        TestNodeServerClientConnection session1 = clientSessionAfterJoin(server);
+        TestNodeServerClientConnection session2 = clientSessionAfterJoin(server);
 
         CompletableFuture<Message<?>> receivedMessage = session2.receivedMessages().firstElement().toCompletionStage().toCompletableFuture();
 
@@ -354,8 +355,8 @@ public class NodeServerIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     public void messageExceedingMaxSizeShouldThrowExceptionOnSend() throws InterruptedException, ExecutionException, CryptoException {
         // create connection
-        TestClientConnection session1 = TestClientConnection.clientSessionAfterJoin(server);
-        TestClientConnection session2 = TestClientConnection.clientSessionAfterJoin(server);
+        TestNodeServerClientConnection session1 = clientSessionAfterJoin(server);
+        TestNodeServerClientConnection session2 = clientSessionAfterJoin(server);
 
         // create message with exceeded payload size
         byte[] bigPayload = new byte[config.getMaxContentLength() + 1];
@@ -389,7 +390,7 @@ public class NodeServerIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     public void shuttingDownServerShouldSendLeaveMessage() throws ExecutionException, InterruptedException, CryptoException {
-        TestClientConnection session = TestClientConnection.clientSessionAfterJoin(server);
+        TestNodeServerClientConnection session = clientSessionAfterJoin(server);
 
         CompletableFuture<Message<?>> receivedMessage = session.receivedMessages().firstElement().toCompletionStage().toCompletableFuture();
 
@@ -402,7 +403,7 @@ public class NodeServerIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     public void shuttingDownServerShouldRejectNewConnections() throws ExecutionException, InterruptedException, CryptoException {
-        TestClientConnection session = TestClientConnection.clientSession(server);
+        TestNodeServerClientConnection session = clientSession(server);
 
         server.close();
 

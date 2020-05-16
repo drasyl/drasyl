@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection;
+package org.drasyl.peer.connection.server;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.*;
@@ -29,7 +29,8 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
-import org.drasyl.peer.connection.handler.DefaultSessionInitializer;
+import org.drasyl.peer.connection.AbstractClientInitializer;
+import org.drasyl.peer.connection.DefaultSessionInitializer;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.MessageDecoder;
 import org.drasyl.peer.connection.handler.MessageEncoder;

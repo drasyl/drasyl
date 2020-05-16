@@ -12,6 +12,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
 
 public class SuperPeerClientBootstrap {
     private final DrasylNodeConfig config;
@@ -68,8 +69,19 @@ public class SuperPeerClientBootstrap {
 
         if (channelFuture.isSuccess()) {
             Channel channel = channelFuture.channel();
-            superPeerClientInitializer.connectedFuture().join(); // TODO: handle join failures!?
-            return channel;
+
+            try {
+                superPeerClientInitializer.connectedFuture().get();
+
+                return channel;
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+                return null;
+            }
+            catch (ExecutionException e) {
+                throw new SuperPeerClientException(e.getCause());
+            }
         }
         else {
             throw new SuperPeerClientException(channelFuture.cause());

@@ -100,11 +100,11 @@ public class SuperPeerHandler extends SimpleChannelInboundHandler<Message<?>> {
             WelcomeMessage welcomeMessage = (WelcomeMessage) msg;
             Identity identity = Identity.of(welcomeMessage.getPublicKey());
 
-            connection = new SuperPeerConnection(ctx.channel(), endpoint, identity, welcomeMessage.getUserAgent(), superPeerClient.getMessenger().getConnectionsManager());
-
             if (LOG.isDebugEnabled()) {
-                LOG.debug("[{}]: Create new channel {}, for SuperPeerConnection {}", ctx.channel().id().asShortText(), ctx.channel().id(), connection);
+                LOG.debug("[{}]: Create new Connection from Channel {}", ctx.channel().id().asShortText(), ctx.channel().id());
             }
+
+            connection = new SuperPeerConnection(ctx.channel(), endpoint, identity, welcomeMessage.getUserAgent(), superPeerClient.getMessenger().getConnectionsManager());
         }
     }
 }

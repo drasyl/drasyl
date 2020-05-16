@@ -40,15 +40,15 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * The {@link AbstractPeerConnection} object models an in- or outbound connection by netty.
+ * The {@link AbstractNettyConnection} object models an in- or outbound connection by netty.
  */
 @SuppressWarnings({ "squid:S00107", "java:S2160" })
-public abstract class AbstractPeerConnection extends PeerConnection {
+public abstract class AbstractNettyConnection extends PeerConnection {
     protected final ConcurrentHashMap<String, Pair<Class<? extends ResponseMessage<?, ?>>, SingleEmitter<ResponseMessage<?, ?>>>> emitters;
-    protected final Channel myChannel;
+    protected final Channel channel;
     protected final String userAgent;
     protected final URI endpoint;
-    private final String channelID;
+    private final String channelId;
     protected AtomicBoolean isClosed;
     protected CompletableFuture<Boolean> closedCompletable;
     protected ChannelFutureListener channelCloseFutureListener;
@@ -61,10 +61,10 @@ public abstract class AbstractPeerConnection extends PeerConnection {
      * @param identity           the identity of this {@link NodeServerClientConnection}
      * @param connectionsManager reference to the {@link ConnectionsManager}
      */
-    public AbstractPeerConnection(Channel channel,
-                                  URI endpoint,
-                                  Identity identity,
-                                  ConnectionsManager connectionsManager) {
+    public AbstractNettyConnection(Channel channel,
+                                   URI endpoint,
+                                   Identity identity,
+                                   ConnectionsManager connectionsManager) {
         this(channel, endpoint, identity, "U/A", connectionsManager);
     }
 
@@ -77,43 +77,44 @@ public abstract class AbstractPeerConnection extends PeerConnection {
      * @param userAgent          the User-Agent string
      * @param connectionsManager reference to the {@link ConnectionsManager}
      */
-    public AbstractPeerConnection(Channel channel,
-                                  URI endpoint,
-                                  Identity identity,
-                                  String userAgent,
-                                  ConnectionsManager connectionsManager) {
+    public AbstractNettyConnection(Channel channel,
+                                   URI endpoint,
+                                   Identity identity,
+                                   String userAgent,
+                                   ConnectionsManager connectionsManager) {
         this(channel, userAgent, identity, endpoint, new AtomicBoolean(false), new ConcurrentHashMap<>(), new CompletableFuture<>(), connectionsManager);
 
         channelCloseFutureListener = future -> {
-            String msg = "The client and its associated channel";
             if (future.isSuccess()) {
-                getLogger().debug("{} {} {} have been closed successfully.", AbstractPeerConnection.this, msg, future.channel().id());
+                getLogger().debug("[{}]: The channel have been closed successfully.", future.channel().id().asShortText());
                 closedCompletable.complete(true);
             }
             else {
-                getLogger().error("{} {} {} could not be closed: ", AbstractPeerConnection.this, msg, future.channel().id(), future.cause());
+                getLogger().error("[{}]: The channel could not be closed: {}", future.channel().id().asShortText(), future.cause());
             }
         };
 
-        myChannel.closeFuture().addListener(channelCloseFutureListener);
+        this.channel.closeFuture().addListener(channelCloseFutureListener);
     }
 
-    protected AbstractPeerConnection(Channel myChannel,
-                                     String userAgent,
-                                     Identity identity,
-                                     URI endpoint,
-                                     AtomicBoolean isClosed,
-                                     ConcurrentHashMap<String, Pair<Class<? extends ResponseMessage<?, ?>>, SingleEmitter<ResponseMessage<?, ?>>>> emitters,
-                                     CompletableFuture<Boolean> closedCompletable,
-                                     ConnectionsManager connectionsManager) {
-        super(identity, connectionsManager);
+    protected AbstractNettyConnection(Channel channel,
+                                      String userAgent,
+                                      Identity identity,
+                                      URI endpoint,
+                                      AtomicBoolean isClosed,
+                                      ConcurrentHashMap<String, Pair<Class<? extends ResponseMessage<?, ?>>, SingleEmitter<ResponseMessage<?, ?>>>> emitters,
+                                      CompletableFuture<Boolean> closedCompletable,
+                                      ConnectionsManager connectionsManager) {
+        super(identity);
         this.emitters = emitters;
-        this.myChannel = myChannel;
+        this.channel = channel;
         this.userAgent = userAgent;
         this.endpoint = endpoint;
         this.isClosed = isClosed;
         this.closedCompletable = closedCompletable;
-        this.channelID = myChannel.id().asShortText();
+        this.channelId = channel.id().asShortText();
+
+        connectionsManager.addConnection(this, this::close);
     }
 
     /**
@@ -125,24 +126,24 @@ public abstract class AbstractPeerConnection extends PeerConnection {
      * Returns the channel close future.
      */
     public ChannelFuture getCloseFuture() {
-        return myChannel.closeFuture();
+        return channel.closeFuture();
     }
 
     @Override
     protected void close(CloseReason reason) {
         if (isClosed.compareAndSet(false, true)) {
             emitters.clear();
-            myChannel.writeAndFlush(new QuitMessage(reason)).addListener(ChannelFutureListener.CLOSE);
+            channel.writeAndFlush(new QuitMessage(reason)).addListener(ChannelFutureListener.CLOSE);
         }
     }
 
     @Override
     public void send(Message<?> message) {
-        if (message != null && !isClosed.get() && myChannel.isOpen()) {
-            myChannel.writeAndFlush(message);
+        if (message != null && !isClosed.get() && channel.isOpen()) {
+            channel.writeAndFlush(message);
         }
         else {
-            getLogger().info("[{} Can't send message {}", AbstractPeerConnection.this, message);
+            getLogger().info("[{} Can't send message {}", AbstractNettyConnection.this, message);
         }
     }
 
@@ -200,12 +201,12 @@ public abstract class AbstractPeerConnection extends PeerConnection {
         if (!super.equals(o)) {
             return false;
         }
-        AbstractPeerConnection that = (AbstractPeerConnection) o;
+        AbstractNettyConnection that = (AbstractNettyConnection) o;
         return Objects.equals(connectionId, that.connectionId);
     }
 
     @Override
     public String toString() {
-        return MessageFormat.format("[{0}/Channel:{1}]", identity, channelID);
+        return MessageFormat.format(getClass().getSimpleName() + " [{0}/Channel:{1}]", identity, channelId);
     }
 }

@@ -8,7 +8,7 @@ import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.event.Event;
 import org.drasyl.event.EventCode;
-import org.drasyl.peer.connection.server.testutils.TestHelper;
+import testutils.TestHelper;
 import org.drasyl.util.Pair;
 import org.hamcrest.MatcherAssert;
 import org.hamcrest.Matchers;
@@ -20,8 +20,8 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.peer.connection.server.testutils.ANSI_COLOR.COLOR_CYAN;
-import static org.drasyl.peer.connection.server.testutils.ANSI_COLOR.STYLE_REVERSED;
+import static testutils.AnsiColor.COLOR_CYAN;
+import static testutils.AnsiColor.STYLE_REVERSED;
 import static org.hamcrest.MatcherAssert.assertThat;
 
 public class DrasylNodeIT {

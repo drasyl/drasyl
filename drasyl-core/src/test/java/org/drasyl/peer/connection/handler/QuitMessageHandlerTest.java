@@ -18,10 +18,7 @@
  */
 package org.drasyl.peer.connection.handler;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.*;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,10 +38,13 @@ class QuitMessageHandlerTest {
         ctx = mock(ChannelHandlerContext.class);
         handler = QuitMessageHandler.INSTANCE;
         Channel channel = mock(Channel.class);
+        ChannelId channelId = mock(ChannelId.class);
         channelFuture = mock(ChannelFuture.class);
         msg = new QuitMessage();
 
         when(ctx.channel()).thenReturn(channel);
+        when(channel.id()).thenReturn(channelId);
+        when(channelId.asShortText()).thenReturn("123123");
         when(ctx.writeAndFlush(any())).thenReturn(channelFuture);
     }
 
