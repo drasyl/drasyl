@@ -211,6 +211,7 @@
         <module>drasyl-cli</module>
         <module>drasyl-core</module>
         <module>drasyl-integration-tests</module>
+        <module>drasyl-examples</module>
     </modules>
 
     <properties>
