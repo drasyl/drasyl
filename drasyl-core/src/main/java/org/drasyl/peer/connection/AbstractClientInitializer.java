@@ -52,23 +52,19 @@ public abstract class AbstractClientInitializer extends DefaultSessionInitialize
      * @param pingPongRetries  The maximum amount that a remote station cannot reply to a PING
      *                         request in succession in the interval {@code readIdleTimeout}. Min
      *                         value is 1, max 32767
-     * @param maxContentLength The maximum length of the aggregated content in bytes that a message
-     *                         can have
      * @param target           the target URI
      */
     public AbstractClientInitializer(int flushBufferSize,
                                      Duration readIdleTimeout,
                                      short pingPongRetries,
-                                     int maxContentLength,
                                      URI target) {
         this(flushBufferSize, readIdleTimeout, pingPongRetries,
-                maxContentLength, target, new CompletableFuture<>());
+                target, new CompletableFuture<>());
     }
 
     protected AbstractClientInitializer(int flushBufferSize,
                                         Duration readIdleTimeout,
                                         short pingPongRetries,
-                                        int maxContentLength,
                                         URI target,
                                         CompletableFuture<Void> channelReadyFuture) {
         super(flushBufferSize, readIdleTimeout, pingPongRetries);

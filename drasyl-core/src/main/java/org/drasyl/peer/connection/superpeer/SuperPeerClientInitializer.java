@@ -33,7 +33,7 @@ public class SuperPeerClientInitializer extends AbstractClientInitializer {
     public SuperPeerClientInitializer(DrasylNodeConfig config,
                                       URI endpoint, SuperPeerClient superPeerClient) {
         super(config.getFlushBufferSize(), config.getSuperPeerIdleTimeout(),
-                config.getSuperPeerIdleRetries(), 65536, endpoint);
+                config.getSuperPeerIdleRetries(), endpoint);
         this.config = config;
         this.superPeerClient = superPeerClient;
     }

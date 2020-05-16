@@ -62,7 +62,7 @@ class AbstractClientInitializerTest {
     @Test
     void beforeMarshalStage() throws URISyntaxException {
         AbstractClientInitializer initializer = new AbstractClientInitializer(flushBufferSize, readIdleTimeout, pingPongRetries,
-                maxContentLength, ipAddress, channelReadyFuture) {
+                ipAddress, channelReadyFuture) {
             @Override
             protected void customStage(ChannelPipeline pipeline) {
 
@@ -84,7 +84,7 @@ class AbstractClientInitializerTest {
     void exceptionOnInvalidTarget() {
         assertThrows(URISyntaxException.class, () -> {
             AbstractClientInitializer initializer = new AbstractClientInitializer(flushBufferSize, readIdleTimeout, pingPongRetries,
-                    maxContentLength, new URI("|<>:22527"), channelReadyFuture) {
+                    new URI("|<>:22527"), channelReadyFuture) {
                 @Override
                 protected void customStage(ChannelPipeline pipeline) {
 

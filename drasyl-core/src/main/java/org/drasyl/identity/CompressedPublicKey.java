@@ -27,7 +27,7 @@ import java.security.PublicKey;
 /**
  * This interface models a compressed key that can be converted into a string and vice versa.
  */
-public class CompressedPublicKey extends CompressedKey<PublicKey> {
+public class CompressedPublicKey extends AbstractCompressedKey<PublicKey> {
     public CompressedPublicKey(String compressedKey) throws CryptoException {
         super(compressedKey);
     }

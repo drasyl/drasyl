@@ -6,23 +6,23 @@ import org.drasyl.crypto.CryptoException;
 
 import java.util.Objects;
 
-public abstract class CompressedKey<K> {
+public abstract class AbstractCompressedKey<K> {
     @JsonValue
     protected final String compressedKey;
     @JsonIgnore
     protected K key;
 
-    CompressedKey() {
+    AbstractCompressedKey() {
         compressedKey = null;
         key = null;
     }
 
-    protected CompressedKey(String compressedKey) throws CryptoException {
+    protected AbstractCompressedKey(String compressedKey) throws CryptoException {
         this.compressedKey = compressedKey;
         this.key = toUncompressedKey();
     }
 
-    protected CompressedKey(String compressedKey, K key) {
+    protected AbstractCompressedKey(String compressedKey, K key) {
         this.compressedKey = compressedKey;
         this.key = key;
     }
@@ -46,7 +46,7 @@ public abstract class CompressedKey<K> {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        CompressedKey that = (CompressedKey) o;
+        AbstractCompressedKey<?> that = (AbstractCompressedKey<?>) o;
         return Objects.equals(compressedKey, that.compressedKey);
     }
 
