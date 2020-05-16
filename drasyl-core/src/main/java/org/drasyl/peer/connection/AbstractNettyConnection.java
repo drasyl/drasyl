@@ -86,11 +86,15 @@ public abstract class AbstractNettyConnection extends PeerConnection {
 
         channelCloseFutureListener = future -> {
             if (future.isSuccess()) {
-                getLogger().debug("[{}]: The channel have been closed successfully.", future.channel().id().asShortText());
+                if (getLogger().isDebugEnabled()) {
+                    getLogger().debug("[{}]: The channel have been closed successfully.", future.channel().id().asShortText());
+                }
                 closedCompletable.complete(true);
             }
             else {
-                getLogger().error("[{}]: The channel could not be closed: {}", future.channel().id().asShortText(), future.cause());
+                if (getLogger().isDebugEnabled()) {
+                    getLogger().error("[{}]: The channel could not be closed: ", future.channel().id().asShortText(), future.cause());
+                }
             }
         };
 
@@ -207,6 +211,6 @@ public abstract class AbstractNettyConnection extends PeerConnection {
 
     @Override
     public String toString() {
-        return MessageFormat.format(getClass().getSimpleName() + " [{0}/Channel:{1}]", identity, channelId);
+        return MessageFormat.format("{0} [{1}/Channel:{2}]", getClass().getSimpleName(), identity, channelId);
     }
 }

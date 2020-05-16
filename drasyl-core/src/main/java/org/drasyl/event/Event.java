@@ -33,7 +33,7 @@ public class Event {
     private final Peer peer;
     private final Pair<Identity, byte[]> message;
 
-    public Event(EventCode code, Node node, Peer peer, Pair<Identity, byte[]> message) {
+    Event(EventCode code, Node node, Peer peer, Pair<Identity, byte[]> message) {
         this.code = code;
         this.node = node;
         this.peer = peer;

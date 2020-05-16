@@ -18,6 +18,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * This particular Implementation of a drasyl Node shows exemplary how incoming Events can be
  * processed using the Observer Pattern.
  */
+@SuppressWarnings({ "java:S107" })
 public class ObservableDrasylNode extends DrasylNode {
     private final Subject<Event> events;
 
@@ -52,7 +53,7 @@ public class ObservableDrasylNode extends DrasylNode {
 
     public static void main(String[] args) throws DrasylException {
         ObservableDrasylNode node = new ObservableDrasylNode();
-        node.events().subscribe(System.out::println);
+        node.events().subscribe(System.out::println); // NOSONAR
         node.start().join();
     }
 

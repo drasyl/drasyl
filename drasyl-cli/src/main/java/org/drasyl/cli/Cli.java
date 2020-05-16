@@ -72,16 +72,14 @@ class Cli {
                 printVersion();
             }
             else {
-                try {
-                    runNode(cmd);
-                }
-                catch (CliShutdownException e) {
-                    // do nothing
-                }
+                runNode(cmd);
             }
         }
         catch (ParseException e) {
             throw new CliException(e);
+        }
+        catch (CliShutdownException e) {
+            // do nothing
         }
     }
 
@@ -89,7 +87,7 @@ class Cli {
         if (node != null) {
             log.info("Shutdown Drasyl Node");
             node.shutdown().join();
-            node.irrevocablyTerminate();
+            DrasylNode.irrevocablyTerminate();
         }
     }
 
@@ -143,7 +141,7 @@ class Cli {
 
     private void printVersion() {
         String version = DrasylNode.getVersion();
-        System.out.println(version);
+        System.out.println(version); // NOSONAR
     }
 
     private void runNode(CommandLine cmd) throws CliException {

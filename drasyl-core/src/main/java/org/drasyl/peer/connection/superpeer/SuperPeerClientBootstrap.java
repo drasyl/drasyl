@@ -11,7 +11,6 @@ import org.drasyl.util.WebsocketUtil;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 public class SuperPeerClientBootstrap {

@@ -28,7 +28,6 @@ import org.drasyl.DrasylNodeConfig;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.PeerConnection;
 
 import java.net.InetSocketAddress;
 import java.net.URI;

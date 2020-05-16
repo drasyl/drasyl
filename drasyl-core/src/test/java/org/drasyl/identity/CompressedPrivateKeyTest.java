@@ -47,7 +47,7 @@ class CompressedPrivateKeyTest {
     public void ofTest() throws CryptoException {
         CompressedPrivateKey compressedPrivateKey1 = CompressedPrivateKey.of(keyPair.getPrivate());
         CompressedPrivateKey compressedPrivateKey2 = CompressedPrivateKey.of(compressedPrivateKey1.getCompressedKey());
-        CompressedPrivateKey compressedPrivateKey3 = CompressedPrivateKey.of(compressedPrivateKey2.toPrivKey());
+        CompressedPrivateKey compressedPrivateKey3 = CompressedPrivateKey.of(compressedPrivateKey2.toUncompressedKey());
 
         assertEquals(compressedPrivateKey1, compressedPrivateKey2);
         assertEquals(compressedPrivateKey1, compressedPrivateKey3);

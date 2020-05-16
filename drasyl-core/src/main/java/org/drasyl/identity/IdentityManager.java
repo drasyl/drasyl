@@ -30,6 +30,7 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.security.KeyPair;
 
 import static java.util.Objects.requireNonNull;
 
@@ -86,10 +87,10 @@ public class IdentityManager {
                 this.keyPair = readIdentityFile(path);
             }
             else {
-                LOG.debug("No identity present. Generate a new one and write to file '{}'", path);
-                CompressedKeyPair keyPair = generateIdentity();
-                writeIdentityFile(path, keyPair);
-                this.keyPair = keyPair;
+                LOG.debug("No Identity present. Generate a new one and write to file '{}'", path);
+                CompressedKeyPair myKeyPair = generateIdentity();
+                writeIdentityFile(path, myKeyPair);
+                this.keyPair = myKeyPair;
             }
         }
 
@@ -135,7 +136,7 @@ public class IdentityManager {
      */
     private static CompressedKeyPair generateIdentity() throws IdentityManagerException {
         try {
-            var newKeyPair = Crypto.generateKeys();
+            KeyPair newKeyPair = Crypto.generateKeys();
             return CompressedKeyPair.of(newKeyPair.getPublic(), newKeyPair.getPrivate());
         }
         catch (CryptoException e) {
@@ -200,8 +201,11 @@ public class IdentityManager {
             return;
         }
 
-        if (!file.delete()) {
-            throw new IdentityManagerException("Unable to delete identity file '" + path + "'");
+        try {
+            Files.delete(path);
+        }
+        catch (IOException e) {
+            throw new IdentityManagerException("Unable to delete identity file '" + path + "': " + e.getMessage());
         }
     }
 }

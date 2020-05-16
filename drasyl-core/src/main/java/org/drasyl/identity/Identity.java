@@ -24,6 +24,8 @@ import org.apache.commons.codec.digest.DigestUtils;
 
 import java.util.Objects;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * This class models the identity of a drasyl node. The identity is derived from the SHA-256 hash of
  * the public key and is 10 hexadecimal characters long.
@@ -38,7 +40,7 @@ public class Identity {
     }
 
     Identity(String id) {
-        Objects.requireNonNull(id);
+        requireNonNull(id);
         if (!isValid(id)) {
             throw new IllegalArgumentException("This is not a valid Identity: '" + id + "'");
         }
@@ -75,10 +77,10 @@ public class Identity {
     }
 
     public static Identity of(CompressedPublicKey compressedPublicKey) {
-        Objects.requireNonNull(compressedPublicKey);
-        var cpk = compressedPublicKey.toString();
-        var hash = DigestUtils.sha256Hex(cpk);
-        var shortID = hash.substring(0, Math.min(hash.length(), 10));
+        requireNonNull(compressedPublicKey);
+        String cpk = compressedPublicKey.toString();
+        String hash = DigestUtils.sha256Hex(cpk);
+        String shortID = hash.substring(0, Math.min(hash.length(), 10));
         return new Identity(shortID);
     }
 
@@ -94,9 +96,9 @@ public class Identity {
      * @return true, iff the compressedPublicKey corresponds to the given identity
      */
     public static boolean verify(CompressedPublicKey compressedPublicKey, Identity identity) {
-        Objects.requireNonNull(compressedPublicKey);
-        Objects.requireNonNull(identity);
-        var hash = DigestUtils.sha256Hex(compressedPublicKey.toString());
+        requireNonNull(compressedPublicKey);
+        requireNonNull(identity);
+        String hash = DigestUtils.sha256Hex(compressedPublicKey.toString());
 
         return hash.startsWith(identity.getId());
     }

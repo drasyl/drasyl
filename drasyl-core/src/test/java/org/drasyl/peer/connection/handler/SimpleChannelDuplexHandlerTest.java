@@ -48,7 +48,7 @@ class SimpleChannelDuplexHandlerTest {
 
     @Test
     void testWrite0AndRead0() throws Exception {
-        var handler = new SimpleChannelDuplexHandler<Integer, String>() {
+        SimpleChannelDuplexHandler handler = new SimpleChannelDuplexHandler<Integer, String>() {
             @Override
             protected void channelRead0(ChannelHandlerContext ctx, Integer msg) throws Exception {
                 assertEquals(i, msg);
@@ -70,7 +70,7 @@ class SimpleChannelDuplexHandlerTest {
 
     @Test
     void testNoMatch() throws Exception {
-        var handler = new SimpleChannelDuplexHandler<>(Exception.class,
+        SimpleChannelDuplexHandler handler = new SimpleChannelDuplexHandler<>(Exception.class,
                 Number.class) {
             @Override
             protected void channelRead0(ChannelHandlerContext ctx, Exception msg) throws Exception {
@@ -93,7 +93,7 @@ class SimpleChannelDuplexHandlerTest {
 
     @Test
     void testBindFires() throws Exception {
-        var handler = mock(SimpleChannelDuplexHandler.class, InvocationOnMock::callRealMethod);
+        SimpleChannelDuplexHandler handler = mock(SimpleChannelDuplexHandler.class, InvocationOnMock::callRealMethod);
         handler.bind(ctx, socketAddress, promise);
 
         verify(ctx).bind(socketAddress, promise);
@@ -101,7 +101,7 @@ class SimpleChannelDuplexHandlerTest {
 
     @Test
     void testConnectFires() throws Exception {
-        var handler = mock(SimpleChannelDuplexHandler.class, InvocationOnMock::callRealMethod);
+        SimpleChannelDuplexHandler handler = mock(SimpleChannelDuplexHandler.class, InvocationOnMock::callRealMethod);
         handler.connect(ctx, socketAddress, socketAddress, promise);
 
         verify(ctx).connect(socketAddress, socketAddress, promise);
@@ -109,7 +109,7 @@ class SimpleChannelDuplexHandlerTest {
 
     @Test
     void testDisconnectFires() throws Exception {
-        var handler = mock(SimpleChannelDuplexHandler.class, InvocationOnMock::callRealMethod);
+        SimpleChannelDuplexHandler handler = mock(SimpleChannelDuplexHandler.class, InvocationOnMock::callRealMethod);
         handler.disconnect(ctx, promise);
 
         verify(ctx).disconnect(promise);
@@ -117,7 +117,7 @@ class SimpleChannelDuplexHandlerTest {
 
     @Test
     void testCloseFires() throws Exception {
-        var handler = mock(SimpleChannelDuplexHandler.class, InvocationOnMock::callRealMethod);
+        SimpleChannelDuplexHandler handler = mock(SimpleChannelDuplexHandler.class, InvocationOnMock::callRealMethod);
         handler.close(ctx, promise);
 
         verify(ctx).close(promise);
@@ -125,7 +125,7 @@ class SimpleChannelDuplexHandlerTest {
 
     @Test
     void testDeregisterFires() throws Exception {
-        var handler = mock(SimpleChannelDuplexHandler.class, InvocationOnMock::callRealMethod);
+        SimpleChannelDuplexHandler handler = mock(SimpleChannelDuplexHandler.class, InvocationOnMock::callRealMethod);
         handler.deregister(ctx, promise);
 
         verify(ctx).deregister(promise);
@@ -133,7 +133,7 @@ class SimpleChannelDuplexHandlerTest {
 
     @Test
     void testReadFires() throws Exception {
-        var handler = mock(SimpleChannelDuplexHandler.class, InvocationOnMock::callRealMethod);
+        SimpleChannelDuplexHandler handler = mock(SimpleChannelDuplexHandler.class, InvocationOnMock::callRealMethod);
         handler.read(ctx);
 
         verify(ctx).read();
@@ -141,7 +141,7 @@ class SimpleChannelDuplexHandlerTest {
 
     @Test
     void testFlushFires() throws Exception {
-        var handler = mock(SimpleChannelDuplexHandler.class, InvocationOnMock::callRealMethod);
+        SimpleChannelDuplexHandler handler = mock(SimpleChannelDuplexHandler.class, InvocationOnMock::callRealMethod);
         handler.flush(ctx);
 
         verify(ctx).flush();

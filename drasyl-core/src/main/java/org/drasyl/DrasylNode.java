@@ -322,7 +322,7 @@ public abstract class DrasylNode {
             // 2nd Phase: Start local server (if enabled)
             // 3rd Phase: Start Super Peer Client (if declared)
             LOG.info("Start drasyl Node v{}...", DrasylNode.getVersion());
-            LOG.debug("The following configuration will be used:\n{}", config);
+            LOG.debug("The following configuration will be used: {}", config);
             startSequence = runAsync(this::loadIdentity)
                     .thenRun(this::createLoopbackPeerConnection)
                     .thenRun(this::startServer)
@@ -333,6 +333,7 @@ public abstract class DrasylNode {
                             LOG.info("drasyl Node with Identity '{}' has started", identityManager.getIdentity().getId());
                         }
                         else {
+                            onEvent(new Event(EVENT_NODE_UNRECOVERABLE_ERROR, new Node(identityManager.getIdentity())));
                             LOG.info("Could not start drasyl Node: {}", e.getMessage());
                             LOG.info("Stop all running components...");
                             this.stopServer();

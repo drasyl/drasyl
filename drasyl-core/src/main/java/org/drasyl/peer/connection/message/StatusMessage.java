@@ -201,15 +201,15 @@ public class StatusMessage extends AbstractResponseMessage<RequestMessage<?>, St
             }
         }
 
-        private final int code;
+        private final int number;
 
-        Code(int code) {
-            this.code = code;
+        Code(int number) {
+            this.number = number;
         }
 
         @JsonValue
         public int getNumber() {
-            return code;
+            return number;
         }
 
         @JsonCreator
