@@ -50,7 +50,7 @@ public class MessageDecoder extends MessageToMessageDecoder<TextWebSocketFrame> 
     @Override
     protected void decode(ChannelHandlerContext ctx, TextWebSocketFrame msg, List<Object> out) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("[{}]: Receive Message '{}'", ctx.channel().id().asShortText(), msg.text());
+            LOG.trace("[{}]: Receive Message '{}'", ctx.channel().id().asShortText(), msg.text());
         }
 
         try {

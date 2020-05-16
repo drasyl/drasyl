@@ -47,7 +47,7 @@ public class MessageEncoder extends MessageToMessageEncoder<Message<?>> {
     @Override
     protected void encode(ChannelHandlerContext ctx, Message<?> msg, List<Object> out) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("[{}]: Send Message '{}'", ctx.channel().id().asShortText(), msg);
+            LOG.trace("[{}]: Send Message '{}'", ctx.channel().id().asShortText(), msg);
         }
 
         try {

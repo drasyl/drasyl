@@ -2,6 +2,7 @@ package org.drasyl.peer.connection.superpeer;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import org.drasyl.DrasylNodeConfig;
@@ -10,6 +11,7 @@ import org.drasyl.util.WebsocketUtil;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
+import java.util.concurrent.CompletableFuture;
 
 public class SuperPeerClientBootstrap {
     private final DrasylNodeConfig config;
@@ -56,16 +58,21 @@ public class SuperPeerClientBootstrap {
         return (SuperPeerClientInitializer) cons.newInstance(config, endpoint, superPeerClient);
     }
 
-    public Channel getChannel() {
-        Channel channel = new Bootstrap()
+    public Channel getChannel() throws SuperPeerClientException {
+        ChannelFuture channelFuture = new Bootstrap()
                 .group(workerGroup)
                 .channel(NioSocketChannel.class)
                 .handler(superPeerClientInitializer)
-                .connect(endpoint.getHost(), WebsocketUtil.websocketPort(endpoint))
-                .syncUninterruptibly()
-                .channel();
-        superPeerClientInitializer.connectedFuture().join();
+                .connect(endpoint.getHost(), WebsocketUtil.websocketPort(endpoint));
+        channelFuture.awaitUninterruptibly();
 
-        return channel;
+        if (channelFuture.isSuccess()) {
+            Channel channel = channelFuture.channel();
+            superPeerClientInitializer.connectedFuture().join(); // TODO: handle join failures!?
+            return channel;
+        }
+        else {
+            throw new SuperPeerClientException(channelFuture.cause());
+        }
     }
 }
