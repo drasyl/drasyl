@@ -226,7 +226,7 @@ public abstract class DrasylNode {
      * not registered or not started.
      */
     private void stopSuperPeerClient() {
-        if (config.hasSuperPeer()) {
+        if (config.isSuperPeerEnabled()) {
             LOG.info("Stop Super Peer Client...");
             superPeerClient.close();
             LOG.info("Super Peer Client stopped");
@@ -345,7 +345,7 @@ public abstract class DrasylNode {
      * the super peer.
      */
     private void startSuperPeerClient() {
-        if (config.hasSuperPeer()) {
+        if (config.isSuperPeerEnabled()) {
             try {
                 LOG.debug("Start Super Peer Client...");
                 superPeerClient.open(server.getEntryPoints());
