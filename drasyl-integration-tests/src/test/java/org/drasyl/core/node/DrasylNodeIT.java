@@ -58,7 +58,7 @@ public class DrasylNodeIT {
         Config config;
 
         // super super peer
-        config = ConfigFactory.parseString("drasyl.server.bind-port = 22528\ndrasyl.super-peer.endpoints = []").withFallback(ConfigFactory.load("configs/DrasylNodeIT-4c4fdd0957.conf"));
+        config = ConfigFactory.parseString("drasyl.server.bind-port = 22528\ndrasyl.super-peer.enabled = false").withFallback(ConfigFactory.load("configs/DrasylNodeIT-4c4fdd0957.conf"));
         Pair<DrasylNode, Observable<Event>> superSuperPeer = createNode(config);
         assertThat(superSuperPeer.second().take(1).toList().blockingGet().stream().map(Event::getCode).collect(Collectors.toList()), contains(NODE_UP));
         TestHelper.println("CREATED superSuperPeer", ANSI_COLOR.CYAN, ANSI_COLOR.REVERSED);

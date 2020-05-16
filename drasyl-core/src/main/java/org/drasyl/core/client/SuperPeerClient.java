@@ -80,6 +80,10 @@ public class SuperPeerClient implements AutoCloseable {
                 endpoints.add(new URI(endpoint));
             }
 
+            if (endpoints.isEmpty()) {
+                throw new SuperPeerClientException("At least one Super Peer Endpoint must be specified.");
+            }
+
             this.identityManager = identityManager;
             this.messenger = messenger;
             this.peersManager = peersManager;
@@ -169,7 +173,7 @@ public class SuperPeerClient implements AutoCloseable {
      * @return
      */
     private boolean retryConnection() {
-        return opened.get() && !config.getSuperPeerRetryDelays().isEmpty();
+        return opened.get();
     }
 
     /**
