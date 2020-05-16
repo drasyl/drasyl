@@ -21,7 +21,7 @@ package org.drasyl.peer.connection.server;
 import io.netty.channel.Channel;
 import io.reactivex.rxjava3.core.SingleEmitter;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.AbstractPeerConnection;
+import org.drasyl.peer.connection.AbstractNettyConnection;
 import org.drasyl.peer.connection.ConnectionsManager;
 import org.drasyl.peer.connection.message.ResponseMessage;
 import org.drasyl.util.Pair;
@@ -37,7 +37,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * The {@link NodeServerClientConnection} object models the clients of a drasyl node server.
  */
 @SuppressWarnings({ "squid:S00107", "java:S2160" })
-public class NodeServerClientConnection extends AbstractPeerConnection {
+public class NodeServerClientConnection extends AbstractNettyConnection {
     private static final Logger LOG = LoggerFactory.getLogger(NodeServerClientConnection.class);
 
     /**

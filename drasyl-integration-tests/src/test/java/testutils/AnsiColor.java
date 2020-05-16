@@ -16,16 +16,28 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection.server.testutils;
+package testutils;
 
-import java.util.ArrayList;
-import java.util.Arrays;
+public enum AnsiColor {
+    COLOR_RESET("\u001B[0m"),
+    COLOR_BLACK("\u001B[30m"),
+    COLOR_RED("\u001B[31m"),
+    COLOR_GREEN("\u001B[32m"),
+    COLOR_YELLOW("\u001B[33m"),
+    COLOR_BLUE("\u001B[34m"),
+    COLOR_PURPLE("\u001B[35m"),
+    COLOR_CYAN("\u001B[36m"),
+    COLOR_WHITE("\u001B[37m"),
+    STYLE_REVERSED("\u001b[7m"),
+    STYLE_BOLD("\u001b[1m"),
+    STYLE_UNDERLINE("\u001b[4m");
+    private String color;
 
-public class BetterArrayList<T> extends ArrayList<T> {
-    private static final long serialVersionUID = 5242104563678968475L;
+    AnsiColor(String color) {
+        this.color = color;
+    }
 
-    @SuppressWarnings("unchecked")
-    public void add(T... ts) {
-        super.addAll(Arrays.asList(ts));
+    public String getColor() {
+        return this.color;
     }
 }

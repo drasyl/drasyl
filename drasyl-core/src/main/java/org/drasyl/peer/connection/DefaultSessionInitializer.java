@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection.handler;
+package org.drasyl.peer.connection;
 
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelInitializer;
@@ -25,6 +25,10 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.flush.FlushConsolidationHandler;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.timeout.IdleStateHandler;
+import org.drasyl.peer.connection.handler.ExceptionHandler;
+import org.drasyl.peer.connection.handler.MessageDecoder;
+import org.drasyl.peer.connection.handler.MessageEncoder;
+import org.drasyl.peer.connection.handler.PingPongHandler;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;

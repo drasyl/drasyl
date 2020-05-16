@@ -16,13 +16,13 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.core.models;
+package org.drasyl.identity;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.javacrumbs.jsonunit.core.Option;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.identity.CompressedPrivateKey;
+import org.drasyl.identity.CompressedPublicKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +34,7 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-class CompressedPrivateKeyTest {
+class CompressedPublicKeyTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
     private KeyPair keyPair;
 
@@ -45,35 +45,35 @@ class CompressedPrivateKeyTest {
 
     @Test
     public void ofTest() throws CryptoException {
-        CompressedPrivateKey compressedPrivateKey1 = CompressedPrivateKey.of(keyPair.getPrivate());
-        CompressedPrivateKey compressedPrivateKey2 = CompressedPrivateKey.of(compressedPrivateKey1.getCompressedKey());
-        CompressedPrivateKey compressedPrivateKey3 = CompressedPrivateKey.of(compressedPrivateKey2.toPrivKey());
+        CompressedPublicKey compressedPublicKey1 = CompressedPublicKey.of(keyPair.getPublic());
+        CompressedPublicKey compressedPublicKey2 = CompressedPublicKey.of(compressedPublicKey1.getCompressedKey());
+        CompressedPublicKey compressedPublicKey3 = CompressedPublicKey.of(compressedPublicKey2.toPubKey());
 
-        assertEquals(compressedPrivateKey1, compressedPrivateKey2);
-        assertEquals(compressedPrivateKey1, compressedPrivateKey3);
-        assertEquals(compressedPrivateKey2, compressedPrivateKey3);
-        assertEquals(compressedPrivateKey1.hashCode(), compressedPrivateKey2.hashCode());
-        assertEquals(compressedPrivateKey1.hashCode(), compressedPrivateKey3.hashCode());
-        assertEquals(compressedPrivateKey2.hashCode(), compressedPrivateKey3.hashCode());
+        assertEquals(compressedPublicKey1, compressedPublicKey2);
+        assertEquals(compressedPublicKey1, compressedPublicKey3);
+        assertEquals(compressedPublicKey2, compressedPublicKey3);
+        assertEquals(compressedPublicKey1.hashCode(), compressedPublicKey2.hashCode());
+        assertEquals(compressedPublicKey1.hashCode(), compressedPublicKey3.hashCode());
+        assertEquals(compressedPublicKey2.hashCode(), compressedPublicKey3.hashCode());
     }
 
     @Test
     public void toJson() throws IOException, CryptoException {
-        CompressedPrivateKey compressedPrivateKey = CompressedPrivateKey.of(keyPair.getPrivate());
+        CompressedPublicKey compressedPublicKey = CompressedPublicKey.of(keyPair.getPublic());
 
-        assertThatJson(JSON_MAPPER.writeValueAsString(compressedPrivateKey))
+        assertThatJson(JSON_MAPPER.writeValueAsString(compressedPublicKey))
                 .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo(compressedPrivateKey.toString());
+                .isEqualTo(compressedPublicKey.toString());
 
         // Ignore toString()
-        compressedPrivateKey.toString();
-        assertEquals(compressedPrivateKey, JSON_MAPPER.readValue(JSON_MAPPER.writeValueAsString(compressedPrivateKey), CompressedPrivateKey.class));
+        compressedPublicKey.toString();
+        assertEquals(compressedPublicKey, JSON_MAPPER.readValue(JSON_MAPPER.writeValueAsString(compressedPublicKey), CompressedPublicKey.class));
     }
 
     @Test
     public void fromJson() throws IOException {
-        String json = "\"045ADCB39AA39A81E8C95A0E309B448FA60A41535B3F3CA41AA2745558DFFD6B\"";
+        String json = "\"0340A4F2ADBDDEEDC8F9ACE30E3F18713A3405F43F4871B4BAC9624FE80D2056A7\"";
 
-        assertThat(JSON_MAPPER.readValue(json, CompressedPrivateKey.class), instanceOf(CompressedPrivateKey.class));
+        assertThat(JSON_MAPPER.readValue(json, CompressedPublicKey.class), instanceOf(CompressedPublicKey.class));
     }
 }

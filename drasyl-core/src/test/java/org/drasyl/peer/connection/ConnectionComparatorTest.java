@@ -32,7 +32,7 @@ import static org.mockito.Mockito.mock;
 
 class ConnectionComparatorTest {
     private PeerConnection peerConnection;
-    private AbstractPeerConnection nettyPeerConnection;
+    private AbstractNettyConnection nettyPeerConnection;
     private NodeServerClientConnection clientConnection;
     private SuperPeerConnection superPeerConnection;
     private LoopbackPeerConnection loopbackPeerConnection;
@@ -40,7 +40,7 @@ class ConnectionComparatorTest {
     @BeforeEach
     void setUp() {
         peerConnection = mock(PeerConnection.class);
-        nettyPeerConnection = mock(AbstractPeerConnection.class);
+        nettyPeerConnection = mock(AbstractNettyConnection.class);
         clientConnection = mock(NodeServerClientConnection.class);
         superPeerConnection = mock(SuperPeerConnection.class);
         loopbackPeerConnection = mock(LoopbackPeerConnection.class);

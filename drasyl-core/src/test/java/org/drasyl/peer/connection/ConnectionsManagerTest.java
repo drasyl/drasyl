@@ -1,4 +1,4 @@
-package org.drasyl;
+package org.drasyl.peer.connection;
 
 import com.google.common.collect.HashMultimap;
 import org.drasyl.crypto.Crypto;

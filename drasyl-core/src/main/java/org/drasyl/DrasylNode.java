@@ -106,10 +106,18 @@ public abstract class DrasylNode {
     private CompletableFuture<Void> startSequence;
     private CompletableFuture<Void> shutdownSequence;
 
+    /**
+     * Creates a new drasyl Node.
+     */
     public DrasylNode() throws DrasylException {
         this(ConfigFactory.load());
     }
 
+    /**
+     * Creates a new drasyl Node with the given <code>config</code>.
+     *
+     * @param config
+     */
     public DrasylNode(Config config) throws DrasylException {
         try {
             this.config = new DrasylNodeConfig(config);
@@ -127,6 +135,12 @@ public abstract class DrasylNode {
         }
     }
 
+    /**
+     * Sends <code>event</code> to the application and tells it information about the local node,
+     * other peers, connections or incoming messages.
+     *
+     * @param event
+     */
     public abstract void onEvent(Event event);
 
     DrasylNode(DrasylNodeConfig config,
@@ -154,16 +168,10 @@ public abstract class DrasylNode {
     }
 
     /**
-     * This method is responsible for the delivery of the message <code>payload</code> to the
-     * recipient <code>recipient</code>.
-     * <p>
-     * First, the system checks whether the message is addressed to the node itself.
-     * <p>
-     * If this is not the case, it is checked whether the message can be sent to a client/grandson.
-     * <p>
-     * If this is also not possible, the message is sent to a possibly existing super peer.
-     * <p>
-     * If this is also not possible, an exception is thrown.
+     * Sends the content of <code>payload</code> to the identity <code>recipient</code>. Throws a
+     * {@link DrasylException} if the message could not be sent to the recipient or a super peer.
+     * Important: Just because no exception was thrown does not automatically mean that the message
+     * could be delivered. Delivery confirmations must be implemented by the application.
      *
      * @param recipient the recipient of a message
      * @param payload   the payload of a message
@@ -173,10 +181,30 @@ public abstract class DrasylNode {
         messenger.send(new ApplicationMessage(identityManager.getIdentity(), recipient, payload));
     }
 
+    /**
+     * Sends the content of <code>payload</code> to the identity <code>recipient</code>. Throws a
+     * {@link DrasylException} if the message could not be sent to the recipient or a super peer.
+     * Important: Just because no exception was thrown does not automatically mean that the message
+     * could be delivered. Delivery confirmations must be implemented by the application.
+     *
+     * @param recipient the recipient of a message
+     * @param payload   the payload of a message
+     * @throws DrasylException if an error occurs during the processing
+     */
     public synchronized void send(String recipient, String payload) throws DrasylException {
         send(Identity.of(recipient), payload);
     }
 
+    /**
+     * Sends the content of <code>payload</code> to the identity <code>recipient</code>. Throws a
+     * {@link DrasylException} if the message could not be sent to the recipient or a super peer.
+     * Important: Just because no exception was thrown does not automatically mean that the message
+     * could be delivered. Delivery confirmations must be implemented by the application.
+     *
+     * @param recipient the recipient of a message
+     * @param payload   the payload of a message
+     * @throws DrasylException if an error occurs during the processing
+     */
     public synchronized void send(Identity recipient, String payload) throws DrasylException {
         send(recipient, payload.getBytes());
     }
@@ -203,8 +231,7 @@ public abstract class DrasylNode {
             // 2nd Phase: Stop local server (if started)
             onEvent(new Event(EVENT_NODE_DOWN, new Node(identityManager.getIdentity())));
             LOG.info("Shutdown drasyl Node with Identity '{}'...", identityManager.getIdentity().getId());
-            shutdownSequence = runAsync(this::loadIdentity)
-                    .thenRun(this::stopSuperPeerClient)
+            shutdownSequence = runAsync(this::stopSuperPeerClient)
                     .thenRun(this::stopServer)
                     .thenRun(this::destroyLoopbackPeerConnection)
                     .whenComplete((r, e) -> {

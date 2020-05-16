@@ -33,20 +33,18 @@ import org.drasyl.peer.connection.PeerConnection;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
+
+import static org.drasyl.peer.connection.PeerConnection.CloseReason.REASON_SHUTTING_DOWN;
 
 @SuppressWarnings({ "squid:S00107" })
 public class NodeServer implements AutoCloseable {
     public final EventLoopGroup workerGroup;
     public final EventLoopGroup bossGroup;
     public final ServerBootstrap serverBootstrap;
-    private final List<Runnable> beforeCloseListeners;
     private final IdentityManager identityManager;
     private final PeersManager peersManager;
     private final DrasylNodeConfig config;
@@ -113,8 +111,8 @@ public class NodeServer implements AutoCloseable {
                       EventLoopGroup bossGroup) throws NodeServerException {
         this(identityManager, messenger, peersManager, config,
                 null, new ServerBootstrap(),
-                workerGroup, bossGroup, new ArrayList<>(),
-                new CompletableFuture<>(), new CompletableFuture<>(), null, new AtomicBoolean(false), -1, new HashSet<>());
+                workerGroup, bossGroup,
+                null, new AtomicBoolean(false), -1, new HashSet<>());
 
         nodeServerBootstrap = new NodeServerBootstrap(this, serverBootstrap, config);
     }
@@ -127,9 +125,6 @@ public class NodeServer implements AutoCloseable {
                ServerBootstrap serverBootstrap,
                EventLoopGroup workerGroup,
                EventLoopGroup bossGroup,
-               List<Runnable> beforeCloseListeners,
-               CompletableFuture<Void> startedFuture,
-               CompletableFuture<Void> stoppedFuture,
                NodeServerBootstrap nodeServerBootstrap,
                AtomicBoolean opened,
                int actualPort,
@@ -141,7 +136,6 @@ public class NodeServer implements AutoCloseable {
         this.serverBootstrap = serverBootstrap;
         this.workerGroup = workerGroup;
         this.bossGroup = bossGroup;
-        this.beforeCloseListeners = beforeCloseListeners;
         this.nodeServerBootstrap = nodeServerBootstrap;
         this.opened = opened;
         this.messenger = messenger;
@@ -172,11 +166,6 @@ public class NodeServer implements AutoCloseable {
      */
     public DrasylNodeConfig getConfig() {
         return config;
-    }
-
-    @SuppressWarnings({ "java:S1144" })
-    private void beforeClose(Runnable listener) {
-        beforeCloseListeners.add(listener);
     }
 
     EventLoopGroup getBossGroup() {
@@ -240,32 +229,12 @@ public class NodeServer implements AutoCloseable {
     }
 
     /**
-     * Adds a Runnable to the beforeCloseListeners List.
-     *
-     * @param runnable runnable that should be executed before close
-     */
-    public void addBeforeCloseListener(Runnable runnable) {
-        beforeCloseListeners.add(runnable);
-    }
-
-    /**
-     * Removes a Runnable from the beforeCloseListeners List.
-     *
-     * @param runnable runnable that should be removed
-     */
-    public void removeBeforeCloseListener(Runnable runnable) {
-        beforeCloseListeners.remove(runnable);
-    }
-
-    /**
      * Closes the server socket and all open client sockets.
      */
     @Override
     public void close() {
         if (opened.compareAndSet(true, false)) {
-            beforeCloseListeners.forEach(Runnable::run);
-
-            messenger.getConnectionsManager().closeConnectionsOfType(NodeServerClientConnection.class, PeerConnection.CloseReason.REASON_SHUTTING_DOWN);
+            messenger.getConnectionsManager().closeConnectionsOfType(NodeServerClientConnection.class, REASON_SHUTTING_DOWN);
 
             if (serverChannel != null && serverChannel.isOpen()) {
                 serverChannel.close().syncUninterruptibly();

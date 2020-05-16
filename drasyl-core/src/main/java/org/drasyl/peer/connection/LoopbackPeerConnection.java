@@ -120,4 +120,9 @@ public class LoopbackPeerConnection extends PeerConnection {
     public CompletableFuture<Boolean> isClosed() {
         return closedCompletable;
     }
+
+    @Override
+    public String toString() {
+        return "LoopbackPeerConnection{}";
+    }
 }

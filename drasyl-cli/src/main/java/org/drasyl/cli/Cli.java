@@ -20,12 +20,16 @@ package org.drasyl.cli;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
+import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
 import org.apache.commons.cli.*;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.event.Event;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.io.File;
 
 class Cli {
     private static final Logger log = LoggerFactory.getLogger(Cli.class);
@@ -38,6 +42,7 @@ class Cli {
     private DrasylNode node;
 
     public Cli() {
+        node = null;
     }
 
     public static void main(String[] args) throws CliException {
@@ -143,7 +148,25 @@ class Cli {
 
     private void runNode(CommandLine cmd) throws CliException {
         try {
-            node = new DrasylNode() {
+            Config config;
+            if (!cmd.hasOption(OPT_CONFIGFILE)) {
+                File defaultFile = new File(CONF);
+                if (defaultFile.exists()) {
+                    log.info("Node is using default configuration file '{}'", defaultFile);
+                    config = ConfigFactory.parseFile(defaultFile).withFallback(ConfigFactory.load());
+                }
+                else {
+                    log.info("Node is using configuration defaults as '{}' does not exist", CONF);
+                    config = ConfigFactory.load();
+                }
+            }
+            else {
+                File file = new File(cmd.getOptionValue(OPT_CONFIGFILE));
+                log.info("Node is using configuration file '{}'", file);
+                config = ConfigFactory.parseFile(file).withFallback(ConfigFactory.load());
+            }
+
+            node = new DrasylNode(config) {
                 @Override
                 public void onEvent(Event event) {
                     log.info("Event received: {}", event);

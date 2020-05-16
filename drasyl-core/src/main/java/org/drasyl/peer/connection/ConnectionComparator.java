@@ -36,7 +36,7 @@ public class ConnectionComparator implements Comparator<PeerConnection> {
         PRIORITISATION.add(LoopbackPeerConnection.class);
         PRIORITISATION.add(NodeServerClientConnection.class);
         PRIORITISATION.add(SuperPeerConnection.class);
-        PRIORITISATION.add(AbstractPeerConnection.class);
+        PRIORITISATION.add(AbstractNettyConnection.class);
         PRIORITISATION.add(PeerConnection.class);
     }
 

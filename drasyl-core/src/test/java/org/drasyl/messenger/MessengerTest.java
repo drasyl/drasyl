@@ -16,8 +16,9 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl;
+package org.drasyl.messenger;
 
+import org.drasyl.DrasylException;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.connection.ConnectionsManager;

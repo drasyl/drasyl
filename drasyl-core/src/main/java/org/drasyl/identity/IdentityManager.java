@@ -82,7 +82,7 @@ public class IdentityManager {
             Path path = config.getIdentityPath();
 
             if (isIdentityFilePresent(path)) {
-                LOG.debug("Read identity from file '{}'", path);
+                LOG.debug("Read Identity from file '{}'", path);
                 this.keyPair = readIdentityFile(path);
             }
             else {

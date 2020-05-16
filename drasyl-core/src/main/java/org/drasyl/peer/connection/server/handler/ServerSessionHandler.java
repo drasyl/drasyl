@@ -152,14 +152,15 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<Message<?>
                 }
             }
 
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("[{}]: Create new Connection from Channel {}", ctx.channel().id().asShortText(), ctx.channel().id());
+            }
+
             clientConnection = new NodeServerClientConnection(ctx.channel(), uri, identity,
                     Optional.ofNullable(jm.getUserAgent()).orElse("U/A"), server.getMessenger().getConnectionsManager());
             sessionReadyFuture.complete(clientConnection);
             ctx.pipeline().remove(KillOnExceptionHandler.KILL_SWITCH);
             ctx.pipeline().remove(ConnectionGuardHandler.CONNECTION_GUARD);
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("[{}]: Create new channel {} for ClientConnection {}", ctx.channel().id().asShortText(), ctx.channel().id(), clientConnection);
-            }
         }
     }
 

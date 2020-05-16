@@ -95,7 +95,7 @@ public class WebSocketClientHandler extends SimpleChannelDuplexHandler<Object, M
             }
             catch (WebSocketHandshakeException e) {
                 handshakeFuture.completeExceptionally(e);
-                LOG.error("[{}] WebSocket Client failed to connect!", ch.id().asShortText());
+                LOG.warn("[{}] WebSocket Client failed to connect!", ch.id().asShortText());
             }
             return;
         }

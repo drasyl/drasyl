@@ -25,7 +25,7 @@ import java.util.Objects;
 
 /**
  * Describes an Event that provides the application with information about the local node, other
- * peers, connections or incoming message.
+ * peers, connections or incoming messages.
  */
 public class Event {
     private final EventCode code;

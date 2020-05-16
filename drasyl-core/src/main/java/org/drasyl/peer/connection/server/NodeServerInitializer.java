@@ -28,7 +28,7 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import org.drasyl.peer.connection.handler.ConnectionGuardHandler;
-import org.drasyl.peer.connection.handler.DefaultSessionInitializer;
+import org.drasyl.peer.connection.DefaultSessionInitializer;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.QuitMessageHandler;
 import org.drasyl.peer.connection.server.handler.JoinHandler;

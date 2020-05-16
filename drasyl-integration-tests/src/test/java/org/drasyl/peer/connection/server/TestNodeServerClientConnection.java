@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection.server.testutils;
+package org.drasyl.peer.connection.server;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -31,11 +31,10 @@ import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.AbstractPeerConnection;
+import org.drasyl.peer.connection.AbstractNettyConnection;
 import org.drasyl.peer.connection.ConnectionsManager;
-import org.drasyl.peer.connection.OutboundConnectionFactory;
 import org.drasyl.peer.connection.message.*;
-import org.drasyl.peer.connection.server.NodeServer;
+import testutils.TestHelper;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -48,11 +47,11 @@ import java.util.concurrent.ExecutionException;
 
 import static org.mockito.Mockito.mock;
 
-public class TestClientConnection extends AbstractPeerConnection {
-    private final static Logger LOG = LoggerFactory.getLogger(TestClientConnection.class);
+public class TestNodeServerClientConnection extends AbstractNettyConnection {
+    private final static Logger LOG = LoggerFactory.getLogger(TestNodeServerClientConnection.class);
     protected final Subject<Message<?>> receivedMessages;
 
-    public TestClientConnection(Channel channel, URI targetSystem, Identity clientUID) {
+    public TestNodeServerClientConnection(Channel channel, URI targetSystem, Identity clientUID) {
         super(channel, targetSystem, clientUID, "JUnit-Test", mock(ConnectionsManager.class));
         receivedMessages = PublishSubject.create();
     }
@@ -62,11 +61,11 @@ public class TestClientConnection extends AbstractPeerConnection {
     }
 
     public void sendRawString(final String string) {
-        if (string != null && !isClosed.get() && myChannel.isOpen()) {
-            myChannel.writeAndFlush(new TextWebSocketFrame(string));
+        if (string != null && !isClosed.get() && channel.isOpen()) {
+            channel.writeAndFlush(new TextWebSocketFrame(string));
         }
         else {
-            LOG.info("[{} Can't send message {}", TestClientConnection.this, string);
+            LOG.info("[{} Can't send message {}", TestNodeServerClientConnection.this, string);
         }
     }
 
@@ -78,7 +77,7 @@ public class TestClientConnection extends AbstractPeerConnection {
     /**
      * Creates a new session to the given server with a random identity
      */
-    public static TestClientConnection clientSession(NodeServer server) throws ExecutionException, InterruptedException {
+    public static TestNodeServerClientConnection clientSession(NodeServer server) throws ExecutionException, InterruptedException {
         URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
         return clientSession(serverEntryPoint,
                 TestHelper.random(), true, server.workerGroup);
@@ -87,12 +86,12 @@ public class TestClientConnection extends AbstractPeerConnection {
     /**
      * Creates a new session.
      */
-    public static TestClientConnection clientSession(URI targetSystem,
-                                                     Identity uid,
-                                                     boolean pingPong,
-                                                     EventLoopGroup eventLoopGroup) throws InterruptedException,
+    public static TestNodeServerClientConnection clientSession(URI targetSystem,
+                                                               Identity uid,
+                                                               boolean pingPong,
+                                                               EventLoopGroup eventLoopGroup) throws InterruptedException,
             ExecutionException {
-        CompletableFuture<TestClientConnection> future = new CompletableFuture<>();
+        CompletableFuture<TestNodeServerClientConnection> future = new CompletableFuture<>();
 
         if (eventLoopGroup == null) {
             eventLoopGroup = new NioEventLoopGroup();
@@ -100,11 +99,11 @@ public class TestClientConnection extends AbstractPeerConnection {
 
         OutboundConnectionFactory factory = new OutboundConnectionFactory(targetSystem, eventLoopGroup)
                 .handler(new SimpleChannelInboundHandler<Message>() {
-                    TestClientConnection session;
+                    TestNodeServerClientConnection session;
 
                     @Override
                     public void handlerAdded(final ChannelHandlerContext ctx) {
-                        session = new TestClientConnection(ctx.channel(), targetSystem, uid);
+                        session = new TestNodeServerClientConnection(ctx.channel(), targetSystem, uid);
                         future.complete(session);
                     }
 
@@ -145,8 +144,8 @@ public class TestClientConnection extends AbstractPeerConnection {
     /**
      * Creates a new session to the given server.
      */
-    public static TestClientConnection clientSession(NodeServer server,
-                                                     boolean pingPong) throws ExecutionException,
+    public static TestNodeServerClientConnection clientSession(NodeServer server,
+                                                               boolean pingPong) throws ExecutionException,
             InterruptedException {
         URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
         return clientSession(serverEntryPoint,
@@ -156,8 +155,8 @@ public class TestClientConnection extends AbstractPeerConnection {
     /**
      * Creates a new session to the given server.
      */
-    public static TestClientConnection clientSession(NodeServer server,
-                                                     Identity uid) throws ExecutionException, InterruptedException {
+    public static TestNodeServerClientConnection clientSession(NodeServer server,
+                                                               Identity uid) throws ExecutionException, InterruptedException {
         URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
         return clientSession(serverEntryPoint, uid, true, server.workerGroup);
     }
@@ -165,12 +164,12 @@ public class TestClientConnection extends AbstractPeerConnection {
     /**
      * Creates a new session with the given sessionUID and joins the given server.
      */
-    public static TestClientConnection clientSessionAfterJoin(NodeServer server) throws ExecutionException,
+    public static TestNodeServerClientConnection clientSessionAfterJoin(NodeServer server) throws ExecutionException,
             InterruptedException, CryptoException {
         KeyPair keyPair = Crypto.generateKeys();
         CompressedPublicKey publicKey = CompressedPublicKey.of(keyPair.getPublic());
         URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
-        TestClientConnection session = clientSession(serverEntryPoint, Identity.of(publicKey), true, server.workerGroup);
+        TestNodeServerClientConnection session = clientSession(serverEntryPoint, Identity.of(publicKey), true, server.workerGroup);
         session.send(new JoinMessage(publicKey, Set.of()), WelcomeMessage.class).blockingGet();
 
         return session;
@@ -179,9 +178,9 @@ public class TestClientConnection extends AbstractPeerConnection {
     /**
      * Creates a new session.
      */
-    public static TestClientConnection clientSession(URI targetSystem,
-                                                     Identity uid,
-                                                     boolean pingPong) throws ExecutionException, InterruptedException {
+    public static TestNodeServerClientConnection clientSession(URI targetSystem,
+                                                               Identity uid,
+                                                               boolean pingPong) throws ExecutionException, InterruptedException {
         return clientSession(targetSystem, uid, pingPong, null);
     }
 }

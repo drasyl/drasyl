@@ -16,9 +16,8 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection.server.testutils;
+package testutils;
 
-import org.awaitility.Durations;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.identity.Identity;
@@ -28,9 +27,10 @@ import org.drasyl.util.NetworkUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.TimeUnit;
-
+import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.awaitility.Awaitility.with;
+import static org.awaitility.Durations.FIVE_MINUTES;
+import static testutils.AnsiColor.COLOR_RESET;
 
 public final class TestHelper {
     private static final Logger LOG = LoggerFactory.getLogger(TestHelper.class);
@@ -42,8 +42,8 @@ public final class TestHelper {
      * @param msg   message to print
      * @param color color of the message
      */
-    public static void colorizedPrintln(String msg, ANSI_COLOR color) {
-        LOG.debug(color.getColor() + DIVIDER + msg + DIVIDER + ANSI_COLOR.COLOR_RESET.getColor());
+    public static void colorizedPrintln(String msg, AnsiColor color) {
+        LOG.debug(color.getColor() + DIVIDER + msg + DIVIDER + COLOR_RESET.getColor());
     }
 
     /**
@@ -53,8 +53,8 @@ public final class TestHelper {
      * @param color color of the message
      * @param style style of the message
      */
-    public static void colorizedPrintln(String msg, ANSI_COLOR color, ANSI_COLOR style) {
-        LOG.debug(color.getColor() + style.getColor() + DIVIDER + " " + msg + " " + DIVIDER + ANSI_COLOR.COLOR_RESET.getColor());
+    public static void colorizedPrintln(String msg, AnsiColor color, AnsiColor style) {
+        LOG.debug(color.getColor() + style.getColor() + DIVIDER + " " + msg + " " + DIVIDER + COLOR_RESET.getColor());
     }
 
     /**
@@ -84,7 +84,7 @@ public final class TestHelper {
         TestHelper.waitUntilNetworkAvailable(config.getServerBindPort());
         server.open();
 
-        with().pollInSameThread().await().pollDelay(0, TimeUnit.NANOSECONDS).atMost(Durations.FIVE_MINUTES)
+        with().pollInSameThread().await().pollDelay(0, NANOSECONDS).atMost(FIVE_MINUTES)
                 .until(() -> {
                     return NetworkUtil.alive("127.0.0.1", server.getConfig().getServerBindPort());
                 });
@@ -102,7 +102,7 @@ public final class TestHelper {
      * @param port the port
      */
     public static void waitUntilNetworkAvailable(int port) {
-        with().pollInSameThread().await().pollDelay(0, TimeUnit.NANOSECONDS).atMost(Durations.FIVE_MINUTES)
+        with().pollInSameThread().await().pollDelay(0, NANOSECONDS).atMost(FIVE_MINUTES)
                 .until(() -> NetworkUtil.available(port));
     }
 

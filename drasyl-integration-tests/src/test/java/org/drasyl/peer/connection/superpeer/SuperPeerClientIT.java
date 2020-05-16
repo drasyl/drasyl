@@ -1,4 +1,4 @@
-package org.drasyl.peer.connection.client;
+package org.drasyl.peer.connection.superpeer;
 
 import com.typesafe.config.ConfigFactory;
 import io.netty.channel.EventLoopGroup;
@@ -13,10 +13,8 @@ import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.server.NodeServer;
-import org.drasyl.peer.connection.server.testutils.ANSI_COLOR;
-import org.drasyl.peer.connection.server.testutils.TestHelper;
-import org.drasyl.peer.connection.superpeer.SuperPeerClient;
-import org.drasyl.peer.connection.superpeer.SuperPeerClientException;
+import testutils.AnsiColor;
+import testutils.TestHelper;
 import org.junit.Ignore;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.parallel.Execution;
@@ -42,7 +40,7 @@ public class SuperPeerClientIT {
 
     @BeforeEach
     public void setup(TestInfo info) throws DrasylException {
-        TestHelper.colorizedPrintln("STARTING " + info.getDisplayName(), ANSI_COLOR.COLOR_CYAN, ANSI_COLOR.STYLE_REVERSED);
+        TestHelper.colorizedPrintln("STARTING " + info.getDisplayName(), AnsiColor.COLOR_CYAN, AnsiColor.STYLE_REVERSED);
 
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
 
@@ -66,7 +64,7 @@ public class SuperPeerClientIT {
 
         IdentityManager.deleteIdentityFile(config.getIdentityPath());
 
-        TestHelper.colorizedPrintln("FINISHED " + info.getDisplayName(), ANSI_COLOR.COLOR_CYAN, ANSI_COLOR.STYLE_REVERSED);
+        TestHelper.colorizedPrintln("FINISHED " + info.getDisplayName(), AnsiColor.COLOR_CYAN, AnsiColor.STYLE_REVERSED);
     }
 
     @Ignore
