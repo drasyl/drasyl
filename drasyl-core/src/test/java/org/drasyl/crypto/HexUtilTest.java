@@ -18,11 +18,15 @@
  */
 package org.drasyl.crypto;
 
+import org.bouncycastle.util.encoders.Hex;
+import org.drasyl.Benchmark;
+import org.junit.Ignore;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
+@SuppressWarnings({ "java:S1607" })
 class HexUtilTest {
     private byte[] byteArray;
 
@@ -35,6 +39,7 @@ class HexUtilTest {
     public void toStringAndFromStringShouldBeInverse() {
         String byteAsString = HexUtil.toString(byteArray);
 
+        assertEquals(Hex.toHexString(byteArray), byteAsString);
         assertArrayEquals(byteArray, HexUtil.fromString(byteAsString));
         assertArrayEquals(byteArray, HexUtil.fromString(byteAsString.toLowerCase()));
         assertEquals("4f00100d", byteAsString);
@@ -44,5 +49,21 @@ class HexUtilTest {
     public void shouldThrowExceptionOnNotConformStringRepresentations() {
         assertThrows(IllegalArgumentException.class, () -> HexUtil.fromString("A"));
         assertThrows(IllegalArgumentException.class, () -> HexUtil.fromString("0Z"));
+    }
+
+    @Ignore
+    @Benchmark
+    public void ownByteToString() {
+        for (int i = 0; i < 10000000; i++) {
+            HexUtil.toString(byteArray);
+        }
+    }
+
+    @Ignore
+    @Benchmark
+    public void bouncycastleByteToString() {
+        for (int i = 0; i < 10000000; i++) {
+            Hex.toHexString(byteArray);
+        }
     }
 }

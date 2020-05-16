@@ -5,6 +5,8 @@ import org.drasyl.core.common.message.ApplicationMessage;
 import org.drasyl.core.common.message.StatusMessage;
 import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.node.DrasylNodeConfig;
+import org.drasyl.core.node.Messenger;
+import org.drasyl.core.node.MessengerException;
 import org.drasyl.core.node.PeersManager;
 import org.drasyl.core.node.connections.ClientConnection;
 import org.drasyl.core.node.identity.Identity;
@@ -14,7 +16,7 @@ import org.junit.jupiter.api.Test;
 
 import static org.drasyl.core.common.message.StatusMessage.Code.STATUS_NOT_FOUND;
 import static org.drasyl.core.common.message.StatusMessage.Code.STATUS_OK;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
@@ -26,6 +28,7 @@ class ApplicationMessageActionTest {
     private byte[] payload;
     private String id;
     private PeersManager peersManager;
+    private Messenger messenger;
 
     @BeforeEach
     void setUp() {
@@ -35,11 +38,13 @@ class ApplicationMessageActionTest {
         peersManager = mock(PeersManager.class);
         sender = mock(Identity.class);
         recipient = mock(Identity.class);
+        messenger = mock(Messenger.class);
         payload = new byte[]{ 0x00, 0x01, 0x03 };
         id = "id";
 
         when(nodeServer.getPeersManager()).thenReturn(peersManager);
         when(nodeServer.getConfig()).thenReturn(new DrasylNodeConfig(ConfigFactory.load()));
+        when(nodeServer.getMessenger()).thenReturn(messenger);
 
         when(message.getSender()).thenReturn(sender);
         when(message.getRecipient()).thenReturn(recipient);
@@ -53,12 +58,12 @@ class ApplicationMessageActionTest {
         action.onMessageServer(clientConnection, nodeServer);
 
         verify(clientConnection).send(new StatusMessage(STATUS_OK, message.getId()));
-        verify(nodeServer).send(message);
+        verify(messenger).send(message);
     }
 
     @Test
     public void onMessageServerShouldSendStatusNotFoundIfMessageCouldNotBeSent() throws DrasylException {
-        doThrow(DrasylException.class).when(nodeServer).send(any());
+        doThrow(MessengerException.class).when(messenger).send(any());
 
         ApplicationMessageAction action = new ApplicationMessageAction(message);
         action.onMessageServer(clientConnection, nodeServer);
@@ -74,6 +79,6 @@ class ApplicationMessageActionTest {
         assertThrows(NullPointerException.class, () -> action.onMessageServer(clientConnection, null));
 
         verify(clientConnection, never()).send(any());
-        verify(nodeServer, never()).send(any());
+        verify(messenger, never()).send(any());
     }
 }

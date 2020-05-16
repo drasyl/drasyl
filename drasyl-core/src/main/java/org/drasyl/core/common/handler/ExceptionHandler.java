@@ -16,10 +16,11 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.core.common.handler;
 
-import io.netty.channel.*;
+import io.netty.channel.ChannelDuplexHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import org.drasyl.core.common.message.MessageExceptionMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,7 +30,8 @@ import java.nio.channels.ClosedChannelException;
 import java.util.Objects;
 
 /**
- * This handler listens to exceptions on the pipeline and throws them as {@link MessageExceptionMessage} to the peer.
+ * This handler listens to exceptions on the pipeline and throws them as {@link
+ * MessageExceptionMessage} to the peer.
  */
 public class ExceptionHandler extends ChannelDuplexHandler {
     private static final Logger LOG = LoggerFactory.getLogger(ExceptionHandler.class);
@@ -56,17 +58,16 @@ public class ExceptionHandler extends ChannelDuplexHandler {
     }
 
     /**
-     * Exception handler that does not re-throw occurred {@link Exception}s on
-     * {@link #exceptionCaught} to the next pipeline.
+     * Exception handler that does not re-throw occurred {@link Exception}s on {@link
+     * #exceptionCaught} to the next pipeline.
      */
     public ExceptionHandler() {
         this(false);
     }
 
     /**
-     * Exception handler that does re-throw occurred {@link Exception}s on
-     * {@link #exceptionCaught} to the next pipeline, if {@code rethrowExceptions}
-     * is {@code true}.
+     * Exception handler that does re-throw occurred {@link Exception}s on {@link #exceptionCaught}
+     * to the next pipeline, if {@code rethrowExceptions} is {@code true}.
      *
      * @param rethrowExceptions if {@code true} re-throws to next channel in the pipeline
      */
@@ -104,7 +105,9 @@ public class ExceptionHandler extends ChannelDuplexHandler {
     }
 
     @Override
-    public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress, SocketAddress localAddress,
+    public void connect(ChannelHandlerContext ctx,
+                        SocketAddress remoteAddress,
+                        SocketAddress localAddress,
                         ChannelPromise promise) {
         ctx.connect(remoteAddress, localAddress, exceptionListener.getListener(promise, ctx));
     }
@@ -113,8 +116,9 @@ public class ExceptionHandler extends ChannelDuplexHandler {
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         sendException(ctx, cause);
 
-        if (rethrowExceptions)
+        if (rethrowExceptions) {
             ctx.fireExceptionCaught(cause);
+        }
     }
 
     /**
@@ -125,8 +129,9 @@ public class ExceptionHandler extends ChannelDuplexHandler {
      */
     private void sendException(ChannelHandlerContext ctx, Throwable e) {
         if (e instanceof ClosedChannelException
-                || handledCause != null && Objects.equals(handledCause.getMessage(), e.getMessage()))
+                || handledCause != null && Objects.equals(handledCause.getMessage(), e.getMessage()) || Objects.equals("SSLEngine closed already", e.getMessage())) {
             return;
+        }
 
         handledCause = e;
 

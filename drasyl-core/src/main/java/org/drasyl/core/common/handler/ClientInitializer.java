@@ -40,7 +40,7 @@ public abstract class ClientInitializer extends DefaultSessionInitializer {
 
     private final CompletableFuture<Void> channelReadyFuture;
     private final int maxContentLength;
-    private final URI target;
+    protected final URI target;
 
     protected ClientInitializer(int flushBufferSize, Duration readIdleTimeout, short pingPongRetries,
                                 int maxContentLength, URI target,
@@ -80,6 +80,7 @@ public abstract class ClientInitializer extends DefaultSessionInitializer {
             }
             else {
                 channelReadyFuture.complete(null);
+                LOG.debug("Client WebSocket created for {}", target);
             }
         });
 
@@ -93,7 +94,7 @@ public abstract class ClientInitializer extends DefaultSessionInitializer {
      * <p>
      * The future may fail if a connection could not be established.
      */
-    public CompletableFuture<Void> waitUntilConnected() {
+    public CompletableFuture<Void> connectedFuture() {
         return channelReadyFuture;
     }
 }

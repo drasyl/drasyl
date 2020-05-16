@@ -31,8 +31,6 @@ import org.drasyl.core.common.handler.ConnectionGuardHandler;
 import org.drasyl.core.common.handler.DefaultSessionInitializer;
 import org.drasyl.core.common.handler.ExceptionHandler;
 import org.drasyl.core.common.handler.QuitMessageHandler;
-import org.drasyl.core.common.handler.codec.message.MessageDecoder;
-import org.drasyl.core.common.handler.codec.message.MessageEncoder;
 import org.drasyl.core.server.NodeServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,8 +41,6 @@ import java.security.cert.CertificateException;
 import static org.drasyl.core.common.handler.ConnectionGuardHandler.CONNECTION_GUARD;
 import static org.drasyl.core.common.handler.ExceptionHandler.EXCEPTION_HANDLER;
 import static org.drasyl.core.common.handler.QuitMessageHandler.QUIT_MESSAGE_HANDLER;
-import static org.drasyl.core.common.handler.codec.message.MessageDecoder.MESSAGE_DECODER;
-import static org.drasyl.core.common.handler.codec.message.MessageEncoder.MESSAGE_ENCODER;
 import static org.drasyl.core.server.handler.JoinHandler.JOIN_GUARD;
 import static org.drasyl.core.server.handler.KillOnExceptionHandler.KILL_SWITCH;
 import static org.drasyl.core.server.handler.ServerSessionHandler.HANDLER;
@@ -77,13 +73,6 @@ public class NodeServerInitializer extends DefaultSessionInitializer {
             }
         }
         return null;
-    }
-
-    @Override
-    protected void pojoMarshalStage(ChannelPipeline pipeline) {
-        // From String to Message
-        pipeline.addLast(MESSAGE_DECODER, MessageDecoder.INSTANCE);
-        pipeline.addLast(MESSAGE_ENCODER, MessageEncoder.INSTANCE);
     }
 
     @Override

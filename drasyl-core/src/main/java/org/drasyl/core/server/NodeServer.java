@@ -23,7 +23,6 @@ import com.typesafe.config.ConfigFactory;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
-import org.drasyl.core.common.message.ApplicationMessage;
 import org.drasyl.core.models.DrasylException;
 import org.drasyl.core.node.DrasylNodeConfig;
 import org.drasyl.core.node.Messenger;
@@ -156,10 +155,6 @@ public class NodeServer implements AutoCloseable {
         return messenger;
     }
 
-    public void send(ApplicationMessage message) throws DrasylException {
-        messenger.send(message);
-    }
-
     /**
      * @return the peers manager
      */
@@ -212,8 +207,13 @@ public class NodeServer implements AutoCloseable {
             InetSocketAddress socketAddress = (InetSocketAddress) serverChannel.localAddress();
             actualPort = socketAddress.getPort();
             actualEndpoints = config.getServerEndpoints().stream()
-                    .map(a -> overridePort(URI.create(a), getPort()))
-                    .collect(Collectors.toSet());
+                    .map(a -> {
+                        URI uri = URI.create(a);
+                        if (uri.getPort() == 0) {
+                            return overridePort(uri, getPort());
+                        }
+                        return uri;
+                    }).collect(Collectors.toSet());
         }
     }
 

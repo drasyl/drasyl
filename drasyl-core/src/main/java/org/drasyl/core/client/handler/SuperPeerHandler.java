@@ -1,0 +1,108 @@
+/*
+ * Copyright (c) 2020.
+ *
+ * This file is part of drasyl.
+ *
+ *  drasyl is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  drasyl is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.drasyl.core.client.handler;
+
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.ReferenceCountUtil;
+import org.drasyl.core.client.SuperPeerClient;
+import org.drasyl.core.common.message.Message;
+import org.drasyl.core.common.message.RequestMessage;
+import org.drasyl.core.common.message.ResponseMessage;
+import org.drasyl.core.common.message.WelcomeMessage;
+import org.drasyl.core.common.message.action.ClientMessageAction;
+import org.drasyl.core.common.message.action.MessageAction;
+import org.drasyl.core.node.connections.PeerConnection;
+import org.drasyl.core.node.connections.SuperPeerConnection;
+import org.drasyl.core.node.identity.Identity;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
+import java.net.URI;
+
+/**
+ * This handler mange in-/oncoming messages and pass them to the correct sub-function. It also
+ * creates a new {@link SuperPeerConnection} object if a {@link WelcomeMessage} has pass the {@link
+ * WelcomeGuard} guard.
+ */
+public class SuperPeerHandler extends SimpleChannelInboundHandler<Message<?>> {
+    private static final Logger LOG = LoggerFactory.getLogger(SuperPeerHandler.class);
+    public static final String SUPER_PEER_HANDLER = "superPeerHandler";
+    private final SuperPeerClient superPeerClient;
+    private final URI endpoint;
+    private SuperPeerConnection connection;
+
+    public SuperPeerHandler(SuperPeerClient superPeerClient, URI endpoint) {
+        this.superPeerClient = superPeerClient;
+        this.endpoint = endpoint;
+    }
+
+    @Override
+    public void handlerAdded(final ChannelHandlerContext ctx) {
+        ctx.channel().closeFuture().addListener(future -> {
+            if (connection != null && !connection.isClosed().isDone()) {
+                superPeerClient.getMessenger().getConnectionsManager().closeConnection(connection, PeerConnection.CloseReason.REASON_INTERNAL_REJECTION);
+            }
+        });
+    }
+
+    @Override
+    protected void channelRead0(ChannelHandlerContext ctx,
+                                Message<?> msg) throws Exception {
+        ctx.executor().submit(() -> {
+            createConnection(ctx, msg);
+            if (connection != null) {
+                if (msg instanceof ResponseMessage) {
+                    connection.setResponse((ResponseMessage<? extends RequestMessage<?>, ? extends Message<?>>) msg);
+                }
+
+                MessageAction<?> action = msg.getAction();
+
+                if (action instanceof ClientMessageAction) {
+                    ((ClientMessageAction<?>) action).onMessageClient(connection, superPeerClient);
+                }
+                else {
+                    LOG.debug("Could not process the message {}", msg);
+                }
+            }
+        }).addListener(future -> {
+            if (!future.isSuccess()) {
+                LOG.debug("Could not process the message {}: ", msg, future.cause());
+            }
+
+            ReferenceCountUtil.release(msg);
+        });
+    }
+
+    /**
+     * Creates a new {@link SuperPeerConnection}, if not already there.
+     */
+    private void createConnection(final ChannelHandlerContext ctx, Message<?> msg) {
+        if (msg instanceof WelcomeMessage && connection == null) {
+            WelcomeMessage welcomeMessage = (WelcomeMessage) msg;
+            Identity identity = Identity.of(welcomeMessage.getPublicKey());
+
+            connection = new SuperPeerConnection(ctx.channel(), endpoint, identity, welcomeMessage.getUserAgent(), superPeerClient.getMessenger().getConnectionsManager());
+
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("[{}]: Create new channel {}, for SuperPeerConnection {}", ctx.channel().id().asShortText(), ctx.channel().id(), connection);
+            }
+        }
+    }
+}

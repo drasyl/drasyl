@@ -18,15 +18,15 @@
  */
 package org.drasyl.core.common.handler.codec.message;
 
-import org.drasyl.core.common.message.Message;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.handler.codec.MessageToMessageDecoder;
+import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
+import org.drasyl.core.common.message.Message;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 
 import java.io.IOException;
 import java.util.List;
@@ -54,7 +54,7 @@ public class MessageDecoder extends MessageToMessageDecoder<TextWebSocketFrame> 
         }
 
         try {
-            Message message = requireNonNull(JSON_MAPPER.readValue(msg.text(), Message.class));
+            Message<?> message = requireNonNull(JSON_MAPPER.readValue(msg.text(), Message.class));
             out.add(message);
         }
         catch (IOException e) {

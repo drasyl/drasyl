@@ -22,10 +22,14 @@ package org.drasyl.core.node;
 import org.drasyl.core.models.DrasylException;
 
 /**
- * This exception is thrown if the node does not have a super peer.
+ * A MessengerException is thrown by the {@link MessengerException} when errors occur.
  */
-public class NoSuperPeerException extends DrasylException {
-    public NoSuperPeerException() {
-        super("Node does not have a Super Peer");
+public class MessengerException extends DrasylException {
+    public MessengerException(Throwable cause) {
+        super(cause);
+    }
+
+    public MessengerException(String cause) {
+        super(cause);
     }
 }

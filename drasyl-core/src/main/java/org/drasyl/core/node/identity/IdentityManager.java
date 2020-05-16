@@ -60,6 +60,15 @@ public class IdentityManager {
         this.identity = identity;
     }
 
+    /**
+     * Attempts to load the identity defined in the configuration: First it tries to read the key
+     * pair directly from the configuration. If no key pair is specified there, the identity is
+     * loaded from the identity file path specified in the configuration. If the file does not
+     * exist, a new identity is generated and written to the file. If all this fails and no identity
+     * can be loaded, an {@link IdentityManagerException} is thrown.
+     *
+     * @throws IdentityManagerException
+     */
     public void loadOrCreateIdentity() throws IdentityManagerException {
         if (!config.getIdentityPublicKey().isEmpty() || !config.getIdentityPrivateKey().isEmpty()) {
             LOG.debug("Load identity specified in config");

@@ -49,7 +49,7 @@ import static org.drasyl.core.server.handler.KillOnExceptionHandler.KILL_SWITCH;
  * creates a new {@link ClientConnection} object if a {@link JoinMessage} has pass the {@link
  * JoinHandler} guard.
  */
-public class ServerSessionHandler extends SimpleChannelInboundHandler<Message> {
+public class ServerSessionHandler extends SimpleChannelInboundHandler<Message<?>> {
     private static final Logger LOG = LoggerFactory.getLogger(ServerSessionHandler.class);
     public static final String HANDLER = "handler";
     private final NodeServer server;
@@ -107,7 +107,7 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<Message> {
      * Reads an incoming message and pass it to the correct sub-function.
      */
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, Message<?> msg) throws Exception {
         ctx.executor().submit(() -> {
             createSession(ctx, msg);
             if (clientConnection != null) {

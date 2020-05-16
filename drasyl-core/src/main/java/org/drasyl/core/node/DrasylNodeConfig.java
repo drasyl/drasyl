@@ -22,7 +22,6 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
 import org.drasyl.core.common.tools.NetworkTool;
-import org.drasyl.core.models.DrasylException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -57,7 +56,9 @@ public class DrasylNodeConfig {
     private static final String SUPER_PEER_ENDPOINTS = "drasyl.super-peer.endpoints";
     private static final String SUPER_PEER_PUBLIC_KEY = "drasyl.super-peer.public-key";
     private static final String SUPER_PEER_RETRY_DELAYS = "drasyl.super-peer.retry-delays";
-    private static short minShortValue;
+    private static final String SUPER_PEER_CHANNEL_INITIALIZER = "drasyl.super-peer.channel-initializer";
+    private static final String SUPER_PEER_IDLE_RETRIES = "drasyl.super-peer.idle.retries";
+    private static final String SUPER_PEER_IDLE_TIMEOUT = "drasyl.super-peer.idle.timeout";
     //======================================= Config Values ========================================
     private final String identityPublicKey;
     private final String identityPrivateKey;
@@ -78,6 +79,9 @@ public class DrasylNodeConfig {
     private final Set<String> superPeerEndpoints;
     private final String superPeerPublicKey;
     private final List<Duration> superPeerRetryDelays;
+    private final String superPeerChannelInitializer;
+    private final short superPeerIdleRetries;
+    private final Duration superPeerIdleTimeout;
 
     /**
      * Creates a new config for a drasyl node.
@@ -122,6 +126,9 @@ public class DrasylNodeConfig {
         this.superPeerEndpoints = new HashSet<>(config.getStringList(SUPER_PEER_ENDPOINTS));
         this.superPeerPublicKey = config.getString(SUPER_PEER_PUBLIC_KEY);
         this.superPeerRetryDelays = config.getDurationList(SUPER_PEER_RETRY_DELAYS);
+        this.superPeerChannelInitializer = config.getString(SUPER_PEER_CHANNEL_INITIALIZER);
+        this.superPeerIdleRetries = getShort(config, SUPER_PEER_IDLE_RETRIES);
+        this.superPeerIdleTimeout = config.getDuration(SUPER_PEER_IDLE_TIMEOUT);
     }
 
     @SuppressWarnings({ "java:S107" })
@@ -143,7 +150,10 @@ public class DrasylNodeConfig {
                      int maxContentLength,
                      Set<String> superPeerEndpoints,
                      String superPeerPublicKey,
-                     List<Duration> superPeerRetryDelays) {
+                     List<Duration> superPeerRetryDelays,
+                     String superPeerChannelInitializer,
+                     short superPeerIdleRetries,
+                     Duration superPeerIdleTimeout) {
         this.identityPublicKey = identityPublicKey;
         this.identityPrivateKey = identityPrivateKey;
         this.identityPath = identityPath;
@@ -163,6 +173,9 @@ public class DrasylNodeConfig {
         this.superPeerEndpoints = superPeerEndpoints;
         this.superPeerPublicKey = superPeerPublicKey;
         this.superPeerRetryDelays = superPeerRetryDelays;
+        this.superPeerChannelInitializer = superPeerChannelInitializer;
+        this.superPeerIdleRetries = superPeerIdleRetries;
+        this.superPeerIdleTimeout = superPeerIdleTimeout;
     }
 
     public String getServerBindHost() {
@@ -243,6 +256,18 @@ public class DrasylNodeConfig {
 
     public List<Duration> getSuperPeerRetryDelays() {
         return superPeerRetryDelays;
+    }
+
+    public String getSuperPeerChannelInitializer() {
+        return superPeerChannelInitializer;
+    }
+
+    public short getSuperPeerIdleRetries() {
+        return superPeerIdleRetries;
+    }
+
+    public Duration getSuperPeerIdleTimeout() {
+        return superPeerIdleTimeout;
     }
 
     @Override

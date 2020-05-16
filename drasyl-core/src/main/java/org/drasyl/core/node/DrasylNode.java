@@ -92,8 +92,8 @@ public abstract class DrasylNode {
             this.identityManager = new IdentityManager(this.config);
             this.peersManager = new PeersManager();
             this.messenger = new Messenger();
-            this.server = new NodeServer(identityManager, messenger, peersManager, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP);
-            this.superPeerClient = new SuperPeerClient(this.config, identityManager, peersManager, messenger, DrasylNode.WORKER_GROUP);
+            this.server = new NodeServer(identityManager, messenger, peersManager, config, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP);
+            this.superPeerClient = new SuperPeerClient(this.config, identityManager, peersManager, messenger, DrasylNode.WORKER_GROUP, this::onEvent);
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = new CompletableFuture<>();
@@ -348,10 +348,10 @@ public abstract class DrasylNode {
         if (config.hasSuperPeer()) {
             try {
                 LOG.debug("Start Super Peer Client...");
-                superPeerClient.open();
+                superPeerClient.open(server.getEntryPoints());
                 LOG.debug("Super Peer started");
             }
-            catch (SuperPeerClientException e) {
+            catch (Exception e) {
                 throw new CompletionException(e);
             }
         }
