@@ -2,11 +2,11 @@ package org.drasyl.example;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
-import org.drasyl.core.common.models.Pair;
-import org.drasyl.core.models.DrasylException;
-import org.drasyl.core.models.Event;
-import org.drasyl.core.node.DrasylNode;
-import org.drasyl.core.node.identity.Identity;
+import org.drasyl.DrasylException;
+import org.drasyl.DrasylNode;
+import org.drasyl.event.Event;
+import org.drasyl.identity.Identity;
+import org.drasyl.util.Pair;
 
 import java.io.File;
 import java.util.Scanner;
@@ -31,11 +31,11 @@ public class Chat {
             @Override
             public void onEvent(Event event) {
                 switch (event.getCode()) {
-                    case MESSAGE:
+                    case EVENT_MESSAGE:
                         Pair<Identity, byte[]> message = event.getMessage();
                         System.out.println("From " + message.first().getId() + ": " + new String(message.second()));
                         break;
-                    case NODE_ONLINE:
+                    case EVENT_NODE_ONLINE:
                         online.complete(null);
                         System.out.println("Your Address is: " + event.getNode().getAddress().getId());
                         break;

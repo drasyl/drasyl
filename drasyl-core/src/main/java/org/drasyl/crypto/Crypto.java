@@ -40,18 +40,18 @@ import java.security.spec.ECPublicKeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 
 public class Crypto {
-    private static final Logger LOG = LoggerFactory.getLogger(Crypto.class);
     public static final SecureRandom SRND = new SecureRandom();
+    private static final Logger LOG = LoggerFactory.getLogger(Crypto.class);
     private static final String PROVIDER = "BC";
     private static final String ECDSA = "ECDSA";
     private static final String SHA256_WITH_ECDSA = "SHA256withECDSA";
     private static final String CURVE_NAME = "curve25519";
 
-    Crypto() {
-    }
-
     static {
         Security.addProvider(new BouncyCastleProvider());
+    }
+
+    Crypto() {
     }
 
     public static KeyPair generateKeys() {
@@ -73,15 +73,34 @@ public class Crypto {
         return new KeyPair(getPublicKeyFromBytes(compressedPublic), getPrivateKeyFromBytes(compressedPrivate));
     }
 
-    public static ECPrivateKey parseCompressedPrivateKey(byte[] compressedPrivateKey) throws CryptoException {
-        X9ECParameters ecP = CustomNamedCurves.getByName(CURVE_NAME);
-        ECParameterSpec ecSpec = new ECParameterSpec(ecP.getCurve(), ecP.getG(), ecP.getN(), ecP.getH(), ecP.getSeed());
-        ECPrivateKeySpec privkeyspec = new ECPrivateKeySpec(new BigInteger(compressedPrivateKey), ecSpec);
-        try {
-            return (ECPrivateKey) KeyFactory.getInstance(ECDSA, PROVIDER).generatePrivate(privkeyspec);
+    public static PublicKey getPublicKeyFromBytes(byte[] pubKey) throws CryptoException {
+        if (pubKey.length <= 33) {
+            return parseCompressedPublicKey(pubKey);
         }
-        catch (Exception e) {
-            throw new CryptoException(e);
+        else {
+            try {
+                KeyFactory kf = KeyFactory.getInstance(ECDSA, PROVIDER);
+                return kf.generatePublic(getKeySpec(pubKey));
+            }
+            catch (Exception e) {
+                throw new CryptoException("Could not parse Key: " + HexUtil.toString(pubKey), e);
+            }
+        }
+    }
+
+    public static PrivateKey getPrivateKeyFromBytes(byte[] privKey) throws CryptoException {
+        if (privKey.length <= 33) {
+            return parseCompressedPrivateKey(privKey);
+        }
+        else {
+            try {
+                PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(privKey);
+                KeyFactory factory = KeyFactory.getInstance(ECDSA, PROVIDER);
+                return factory.generatePrivate(spec);
+            }
+            catch (Exception e) {
+                throw new CryptoException("Could not parse Key: " + HexUtil.toString(privKey), e);
+            }
         }
     }
 
@@ -103,6 +122,27 @@ public class Crypto {
         }
     }
 
+    private static ECPublicKeySpec getKeySpec(byte[] pubOrPrivKey) {
+        X9ECParameters ecP = CustomNamedCurves.getByName(CURVE_NAME);
+        ECParameterSpec ecSpec = new ECParameterSpec(ecP.getCurve(), ecP.getG(), ecP.getN(), ecP.getH(), ecP.getSeed());
+        ECNamedCurveSpec params = new ECNamedCurveSpec(CURVE_NAME, ecSpec.getCurve(), ecSpec.getG(), ecSpec.getN(), ecSpec.getH(), ecSpec.getSeed());
+        java.security.spec.ECParameterSpec actualParams = new java.security.spec.ECParameterSpec(params.getCurve(), params.getGenerator(), params.getOrder(), params.getCofactor());
+        ECPoint point = ECPointUtil.decodePoint(actualParams.getCurve(), pubOrPrivKey);
+        return new ECPublicKeySpec(point, actualParams);
+    }
+
+    public static ECPrivateKey parseCompressedPrivateKey(byte[] compressedPrivateKey) throws CryptoException {
+        X9ECParameters ecP = CustomNamedCurves.getByName(CURVE_NAME);
+        ECParameterSpec ecSpec = new ECParameterSpec(ecP.getCurve(), ecP.getG(), ecP.getN(), ecP.getH(), ecP.getSeed());
+        ECPrivateKeySpec privkeyspec = new ECPrivateKeySpec(new BigInteger(compressedPrivateKey), ecSpec);
+        try {
+            return (ECPrivateKey) KeyFactory.getInstance(ECDSA, PROVIDER).generatePrivate(privkeyspec);
+        }
+        catch (Exception e) {
+            throw new CryptoException(e);
+        }
+    }
+
     public static byte[] compressedKey(PublicKey key) throws CryptoException {
         if (key instanceof ECPublicKey) {
             return ((ECPublicKey) key).getQ().getEncoded(true);
@@ -115,18 +155,6 @@ public class Crypto {
             return ((ECPrivateKey) privkey).getD().toByteArray();
         }
         throw new CryptoException(new IllegalArgumentException("Can only compress ECPrivateKey"));
-    }
-
-    public static byte[] signMessage(PrivateKey key, byte[] message) throws CryptoException {
-        try {
-            Signature ecdsaSign = Signature.getInstance(SHA256_WITH_ECDSA, PROVIDER);
-            ecdsaSign.initSign(key);
-            ecdsaSign.update(message);
-            return ecdsaSign.sign();
-        }
-        catch (NoSuchAlgorithmException | NoSuchProviderException | SignatureException | InvalidKeyException e) {
-            throw new CryptoException(e);
-        }
     }
 
     /**
@@ -142,43 +170,15 @@ public class Crypto {
         signable.setSignature(new org.drasyl.crypto.Signature(signatureBytes));
     }
 
-    private static ECPublicKeySpec getKeySpec(byte[] pubOrPrivKey) {
-        X9ECParameters ecP = CustomNamedCurves.getByName(CURVE_NAME);
-        ECParameterSpec ecSpec = new ECParameterSpec(ecP.getCurve(), ecP.getG(), ecP.getN(), ecP.getH(), ecP.getSeed());
-        ECNamedCurveSpec params = new ECNamedCurveSpec(CURVE_NAME, ecSpec.getCurve(), ecSpec.getG(), ecSpec.getN(), ecSpec.getH(), ecSpec.getSeed());
-        java.security.spec.ECParameterSpec actualParams = new java.security.spec.ECParameterSpec(params.getCurve(), params.getGenerator(), params.getOrder(), params.getCofactor());
-        ECPoint point = ECPointUtil.decodePoint(actualParams.getCurve(), pubOrPrivKey);
-        return new ECPublicKeySpec(point, actualParams);
-    }
-
-    public static PrivateKey getPrivateKeyFromBytes(byte[] privKey) throws CryptoException {
-        if (privKey.length <= 33) {
-            return parseCompressedPrivateKey(privKey);
+    public static byte[] signMessage(PrivateKey key, byte[] message) throws CryptoException {
+        try {
+            Signature ecdsaSign = Signature.getInstance(SHA256_WITH_ECDSA, PROVIDER);
+            ecdsaSign.initSign(key);
+            ecdsaSign.update(message);
+            return ecdsaSign.sign();
         }
-        else {
-            try {
-                PKCS8EncodedKeySpec spec = new PKCS8EncodedKeySpec(privKey);
-                KeyFactory factory = KeyFactory.getInstance(ECDSA, PROVIDER);
-                return factory.generatePrivate(spec);
-            }
-            catch (Exception e) {
-                throw new CryptoException("Could not parse Key: " + HexUtil.toString(privKey), e);
-            }
-        }
-    }
-
-    public static PublicKey getPublicKeyFromBytes(byte[] pubKey) throws CryptoException {
-        if (pubKey.length <= 33) {
-            return parseCompressedPublicKey(pubKey);
-        }
-        else {
-            try {
-                KeyFactory kf = KeyFactory.getInstance(ECDSA, PROVIDER);
-                return kf.generatePublic(getKeySpec(pubKey));
-            }
-            catch (Exception e) {
-                throw new CryptoException("Could not parse Key: " + HexUtil.toString(pubKey), e);
-            }
+        catch (NoSuchAlgorithmException | NoSuchProviderException | SignatureException | InvalidKeyException e) {
+            throw new CryptoException(e);
         }
     }
 
