@@ -117,18 +117,9 @@ public class SuperPeerClient implements AutoCloseable {
                         .syncUninterruptibly();
                 clientChannel.closeFuture().syncUninterruptibly();
                 onEvent.accept(new Event(EventCode.EVENT_NODE_OFFLINE, Node.of(identityManager.getIdentity())));
-
-                Duration duration = retryDelay();
-                if (!duration.isZero()) {
-                    LOG.debug("Wait {} ms before retry reconnect to Super Peer", duration.toMillis());
-                    sleep(duration.toMillis());
-                }
             }
             catch (SuperPeerClientException e) {
-                LOG.warn("Error while trying to connect to super peer: {}", e.getMessage());
-            }
-            catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
+                LOG.warn("Error while trying to connect to Super Peer: {}", e.getMessage());
             }
             catch (IllegalStateException e) {
                 LOG.debug("Working Group has rejected the new bootstrap. Maybe the node is shutting down.");
@@ -150,6 +141,44 @@ public class SuperPeerClient implements AutoCloseable {
     }
 
     /**
+     * This message blocks until the client should make another connect attempt and then returns
+     * <code>true</code. Otherwise <code>false</code> is returned.
+     *
+     * @return
+     */
+    private boolean retryConnection() {
+        if (opened.get() && !config.getSuperPeerRetryDelays().isEmpty()) {
+            try {
+                Duration duration = retryDelay();
+                LOG.debug("Wait {}ms before retry connect to Super Peer", duration.toMillis());
+                sleep(duration.toMillis());
+            }
+            catch (InterruptedException e) {
+                Thread.currentThread().interrupt();
+            }
+
+            return true;
+        }
+        else {
+            return false;
+        }
+    }
+
+    /**
+     * Increases the internal counters for retries. Ensures that the client iterates over the
+     * available Super Peer endpoints and throttles the speed of attempts to reconnect. Always
+     * returns <code>true</code>.
+     *
+     * @return
+     */
+    private boolean doRetryCycle() {
+        nextEndpointPointer.updateAndGet(p -> (p + 1) % endpoints.size());
+        List<Duration> delays = config.getSuperPeerRetryDelays();
+        nextRetryDelayPointer.updateAndGet(p -> Math.min(p + 1, delays.size() - 1));
+        return true;
+    }
+
+    /**
      * Returns the duration of delay before the client should make a new attempt to reconnect to
      * Super Peer. Iterates over list of all delays specified in configuration. Uses last element
      * permanently when end of list is reached. If list is empty, a {@link IllegalArgumentException}
@@ -164,30 +193,6 @@ public class SuperPeerClient implements AutoCloseable {
         }
 
         return delays[nextRetryDelayPointer.get()];
-    }
-
-    /**
-     * Returns <code>true</code> if the client should try to reconnect to super peer. Otherwise
-     * <code>false</code> is returned.
-     *
-     * @return
-     */
-    private boolean retryConnection() {
-        return opened.get();
-    }
-
-    /**
-     * Increases the internal counters for retries. Ensures that the client iterates over the
-     * available Super Peer endpoints and throttles the speed of attempts to reconnect. Always
-     * returns <code>true</code>.
-     *
-     * @return
-     */
-    private boolean doRetryCycle() {
-        nextEndpointPointer.updateAndGet(p -> (p + 1) % endpoints.size());
-        List<Duration> delays = config.getSuperPeerRetryDelays();
-        nextRetryDelayPointer.updateAndGet(p -> Math.min(p, delays.size()));
-        return true;
     }
 
     public IdentityManager getIdentityManager() {

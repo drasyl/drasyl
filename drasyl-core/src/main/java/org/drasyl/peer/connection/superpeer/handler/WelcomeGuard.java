@@ -24,7 +24,6 @@ import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.peer.connection.PeerConnection;
 import org.drasyl.peer.connection.handler.SimpleChannelDuplexHandler;
 import org.drasyl.peer.connection.message.*;
 import org.slf4j.Logger;
@@ -68,12 +67,16 @@ public class WelcomeGuard extends SimpleChannelDuplexHandler<Message<?>, Message
                                 Message<?> msg) throws Exception {
         if (msg instanceof WelcomeMessage) {
             WelcomeMessage welcomeMessage = (WelcomeMessage) msg;
-            if (expectedPublicKey != null && !welcomeMessage.getPublicKey().equals(expectedPublicKey)) {
-                ctx.writeAndFlush(new QuitMessage(PeerConnection.CloseReason.REASON_WRONG_PUB_KEY)).addListener(ChannelFutureListener.CLOSE);
+            CompressedPublicKey superPeerPublicKey = welcomeMessage.getPublicKey();
+            if (expectedPublicKey != null && !superPeerPublicKey.equals(expectedPublicKey)) {
+                LOG.warn("Super Peer has sent an unexpected public key '{}'. This could indicate a configuration error or man-in-the-middle attack. Close connection.", superPeerPublicKey);
+                ctx.writeAndFlush(new ConnectionExceptionMessage("Super Peer has sent an unexpected public key '" + superPeerPublicKey + "'. This could indicate a configuration error or man-in-the-middle attack. " +
+                        "Connection is closed.")).addListener(ChannelFutureListener.CLOSE);
             }
-            else if (welcomeMessage.getPublicKey().equals(ownPublicKey)) {
-                LOG.error("You can't use your self a super peer. This would mean an endless loop.");
-                ctx.writeAndFlush(new QuitMessage(PeerConnection.CloseReason.REASON_WRONG_PUB_KEY)).addListener(ChannelFutureListener.CLOSE);
+            else if (superPeerPublicKey.equals(ownPublicKey)) {
+                LOG.warn("Super Peer has sent same public key. You can't use yourself as a Super Peer. This would mean an endless loop. This could indicate a configuration error. Close connection.");
+                ctx.writeAndFlush(new ConnectionExceptionMessage("Super Peer has sent same public key. You can't use yourself as a Super Peer. This would mean an endless loop. This could indicate a configuration error. " +
+                        "Connection is closed.")).addListener(ChannelFutureListener.CLOSE);
             }
             else {
                 ctx.fireChannelRead(msg);

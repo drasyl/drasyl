@@ -16,8 +16,9 @@ import java.util.concurrent.CompletableFuture;
  * This is an Example of a Chat Application running on the drasyl Overlay Network. It allows you to
  * send Text Messages to other drasyl Nodes running this Chat Application.
  */
+@SuppressWarnings("squid:S106")
 public class Chat {
-    public static void main(String[] args) throws DrasylException, InterruptedException {
+    public static void main(String[] args) throws DrasylException {
         Config config;
         if (args.length == 1) {
             config = ConfigFactory.parseFile(new File(args[0])).withFallback(ConfigFactory.load());
@@ -56,7 +57,8 @@ public class Chat {
 
         String recipient = "";
         Scanner scanner = new Scanner(System.in);
-        while (true) {
+        boolean keepRunning = true;
+        while (keepRunning) {
             try {
                 // prompt for recipient
                 System.out.print("Recipient [" + recipient + "]? ");
@@ -73,7 +75,13 @@ public class Chat {
                 System.err.println(e.getMessage());
             }
 
-            Thread.sleep(1000);
+            try {
+                Thread.sleep(1000);
+            }
+            catch (InterruptedException e) {
+                keepRunning = false;
+                Thread.currentThread().interrupt();
+            }
         }
     }
 }

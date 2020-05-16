@@ -137,8 +137,7 @@ public abstract class PeerConnection {
     public enum CloseReason {
         REASON_NEW_SESSION("New Connection with this Identity has been created."),
         REASON_SHUTTING_DOWN("Peer is shutting down."),
-        REASON_INTERNAL_REJECTION("Peer rejects or closed this Connection of internal reasons."),
-        REASON_WRONG_PUB_KEY("The peer has sent an unexpected public key.");
+        REASON_INTERNAL_REJECTION("Peer rejects or closed this Connection of internal reasons.");
         private static final Map<String, CloseReason> reasons = new HashMap<>();
 
         static {

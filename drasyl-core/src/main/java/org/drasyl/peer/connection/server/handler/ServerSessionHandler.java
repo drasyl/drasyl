@@ -42,6 +42,8 @@ import java.net.URISyntaxException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+import static org.drasyl.peer.connection.PeerConnection.CloseReason.REASON_INTERNAL_REJECTION;
+
 /**
  * This handler mange in-/oncoming messages and pass them to the correct sub-function. It also
  * creates a new {@link NodeServerClientConnection} object if a {@link JoinMessage} has pass the
@@ -96,7 +98,7 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<Message<?>
     public void handlerAdded(final ChannelHandlerContext ctx) {
         ctx.channel().closeFuture().addListener(future -> {
             if (clientConnection != null && !clientConnection.isClosed().isDone()) {
-                server.getMessenger().getConnectionsManager().closeConnection(clientConnection, PeerConnection.CloseReason.REASON_INTERNAL_REJECTION);
+                server.getMessenger().getConnectionsManager().closeConnection(clientConnection, REASON_INTERNAL_REJECTION);
             }
         });
     }
@@ -156,7 +158,7 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<Message<?>
             ctx.pipeline().remove(KillOnExceptionHandler.KILL_SWITCH);
             ctx.pipeline().remove(ConnectionGuardHandler.CONNECTION_GUARD);
             if (LOG.isDebugEnabled()) {
-                LOG.debug("[{}]: Create new channel {}, for ClientConnection {}", ctx.channel().id().asShortText(), ctx.channel().id(), clientConnection);
+                LOG.debug("[{}]: Create new channel {} for ClientConnection {}", ctx.channel().id().asShortText(), ctx.channel().id(), clientConnection);
             }
         }
     }

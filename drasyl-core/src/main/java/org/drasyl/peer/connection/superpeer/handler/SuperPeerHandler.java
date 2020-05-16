@@ -36,6 +36,8 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 
+import static org.drasyl.peer.connection.PeerConnection.CloseReason.REASON_INTERNAL_REJECTION;
+
 /**
  * This handler mange in-/oncoming messages and pass them to the correct sub-function. It also
  * creates a new {@link SuperPeerConnection} object if a {@link WelcomeMessage} has pass the {@link
@@ -57,7 +59,7 @@ public class SuperPeerHandler extends SimpleChannelInboundHandler<Message<?>> {
     public void handlerAdded(final ChannelHandlerContext ctx) {
         ctx.channel().closeFuture().addListener(future -> {
             if (connection != null && !connection.isClosed().isDone()) {
-                superPeerClient.getMessenger().getConnectionsManager().closeConnection(connection, PeerConnection.CloseReason.REASON_INTERNAL_REJECTION);
+                superPeerClient.getMessenger().getConnectionsManager().closeConnection(connection, REASON_INTERNAL_REJECTION);
             }
         });
     }
