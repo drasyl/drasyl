@@ -24,6 +24,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 
+import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_INITIALIZATION;
+
 /**
  * This handler closes the channel if an exception occurs during initialization stage.
  */
@@ -37,7 +39,6 @@ public class KillOnExceptionHandler extends ChannelInboundHandlerAdapter {
 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
-        ctx.writeAndFlush(new ConnectionExceptionMessage(
-                "Exception occurred during initialization stage. The connection will shut down.")).addListener(ChannelFutureListener.CLOSE);
+        ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_INITIALIZATION)).addListener(ChannelFutureListener.CLOSE);
     }
 }

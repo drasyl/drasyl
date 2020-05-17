@@ -61,7 +61,7 @@ public class ClientsStocktakingMessageTest {
 
     @Test
     public void fromJson() throws IOException {
-        String json = "{\"@type\":\"ClientsStocktakingMessage\",\"id\":\"FDCC13C730368155EC025866\",\"identities\":[\"" + identity.getId() + "\"]}";
+        String json = "{\"@type\":\"ClientsStocktakingMessage\",\"id\":\"FDCC13C730368155EC025866\",\"identities\":[\"" + identity.getId() + "\"],\"correspondingId\":\"correspondingId\"}";
 
         assertThat(JSON_MAPPER.readValue(json, Message.class), instanceOf(ClientsStocktakingMessage.class));
     }

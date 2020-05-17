@@ -58,8 +58,8 @@ public class MessageDecoder extends MessageToMessageDecoder<TextWebSocketFrame> 
             out.add(message);
         }
         catch (IOException e) {
-            LOG.warn("[{}]: Invalid Message: '{}'", ctx.channel().id().asShortText(), LoggingUtil.sanitizeLogArg(msg.text()));
-            throw new IllegalArgumentException("Your request dit not contain a valid Message: " + e.getMessage());
+            LOG.warn("[{}]: Unable to deserialize '{}'", ctx.channel().id().asShortText(), LoggingUtil.sanitizeLogArg(msg.text()));
+            throw new IllegalArgumentException("Message could not be deserialized: " + e.getMessage());
         }
     }
 }

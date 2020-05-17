@@ -23,10 +23,11 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.peer.connection.message.Message;
-import org.drasyl.peer.connection.message.RejectMessage;
+import org.drasyl.peer.connection.message.StatusMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_SERVICE_UNAVAILABLE;
 import static org.mockito.Mockito.*;
 
 class ConnectionGuardHandlerTest {
@@ -43,6 +44,7 @@ class ConnectionGuardHandlerTest {
 
         when(ctx.channel()).thenReturn(channel);
         when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
+        when(message.getId()).thenReturn("sdasdsa");
     }
 
     @Test
@@ -60,7 +62,7 @@ class ConnectionGuardHandlerTest {
 
         handler.channelRead0(ctx, message);
 
-        verify(ctx).writeAndFlush(isA(RejectMessage.class));
+        verify(ctx).writeAndFlush(new StatusMessage(STATUS_SERVICE_UNAVAILABLE, message.getId()));
         verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
     }
 }

@@ -21,7 +21,7 @@ package org.drasyl.messenger;
 import org.drasyl.DrasylException;
 
 /**
- * A MessengerException is thrown by the {@link MessengerException} when errors occur.
+ * A MessengerException is thrown by the {@link Messenger} when errors occur.
  */
 public class MessengerException extends DrasylException {
     public MessengerException(Throwable cause) {

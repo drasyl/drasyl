@@ -21,13 +21,19 @@ package org.drasyl.peer.connection.handler;
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import io.netty.handler.codec.DecoderException;
+import org.drasyl.peer.connection.message.ExceptionMessage;
 import org.drasyl.peer.connection.message.MessageExceptionMessage;
+import org.drasyl.peer.connection.message.ResponseMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.Objects;
+
+import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_FORMAT;
+import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_INTERNAL;
 
 /**
  * This handler listens to exceptions on the pipeline and throws them as {@link
@@ -126,8 +132,14 @@ public class ExceptionHandler extends ChannelDuplexHandler {
         handledCause = e;
 
         if (ctx.channel().isWritable()) {
-            // TODO: set correspondingId !?
-            ctx.writeAndFlush(new MessageExceptionMessage(e, ""));
+            ExceptionMessage msg;
+            if (e instanceof DecoderException) {
+                msg = new ExceptionMessage(ERROR_FORMAT);
+            }
+            else {
+                msg = new ExceptionMessage(ERROR_INTERNAL);
+            }
+            ctx.writeAndFlush(msg);
         }
         LOG.debug("", e);
     }

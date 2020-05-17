@@ -24,10 +24,13 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RejectMessage;
+import org.drasyl.peer.connection.message.StatusMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.function.BooleanSupplier;
+
+import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_SERVICE_UNAVAILABLE;
 
 /**
  * This handler acts as a channel creation guard. A new channel should not be created, if the {@code
@@ -49,7 +52,7 @@ public class ConnectionGuardHandler extends SimpleChannelInboundHandler<Message<
         }
         else {
             try {
-                ctx.writeAndFlush(new RejectMessage(msg.getId())).addListener(ChannelFutureListener.CLOSE);
+                ctx.writeAndFlush(new StatusMessage(STATUS_SERVICE_UNAVAILABLE, msg.getId())).addListener(ChannelFutureListener.CLOSE);
                 LOG.debug("ConnectionGuard blocked creation of channel {}.", ctx.channel().id());
             }
             finally {

@@ -51,6 +51,7 @@ import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.awaitility.Awaitility.with;
 import static org.awaitility.Durations.FIVE_MINUTES;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
+import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_SERVICE_UNAVAILABLE;
 import static org.drasyl.peer.connection.server.TestNodeServerClientConnection.clientSession;
 import static org.drasyl.peer.connection.server.TestNodeServerClientConnection.clientSessionAfterJoin;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -226,7 +227,7 @@ public class NodeServerIT {
         session.sendRawString("invalid message");
 
         // verify response
-        assertThat(receivedMessages.get(), contains(instanceOf(MessageExceptionMessage.class), instanceOf(ConnectionExceptionMessage.class)));
+        assertThat(receivedMessages.get(), contains(instanceOf(ExceptionMessage.class), instanceOf(ConnectionExceptionMessage.class)));
     }
 
     @Test
@@ -415,7 +416,7 @@ public class NodeServerIT {
         // verify response
         ResponseMessage<?, ?> received = send.blockingGet();
 
-        assertEquals(new RejectMessage(request.getId()), received);
+        assertEquals(new StatusMessage(STATUS_SERVICE_UNAVAILABLE, request.getId()), received);
     }
 
     @BeforeAll

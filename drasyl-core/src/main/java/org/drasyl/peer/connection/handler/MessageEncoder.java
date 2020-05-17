@@ -56,8 +56,8 @@ public class MessageEncoder extends MessageToMessageEncoder<Message<?>> {
             out.add(new TextWebSocketFrame(json));
         }
         catch (JsonProcessingException e) {
-            LOG.warn("[{}]: Invalid Message '{}'", ctx.channel().id().asShortText(), LoggingUtil.sanitizeLogArg(msg));
-            throw new IllegalArgumentException("Your request dit not contain a valid Message: " + e.getMessage());
+            LOG.error("[{}]: Unable to serialize '{}'", ctx.channel().id().asShortText(), LoggingUtil.sanitizeLogArg(msg));
+            throw new IllegalArgumentException("Message could not be serialized. This could indicate a bug in drasyl: " + e.getMessage());
         }
     }
 }

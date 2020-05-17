@@ -29,6 +29,8 @@ import org.drasyl.peer.connection.message.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_SUPER_PEER_SAME_PUBLIC_KEY;
+import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_SUPER_PEER_WRONG_PUBLIC_KEY;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
 
 /**
@@ -70,13 +72,11 @@ public class WelcomeGuard extends SimpleChannelDuplexHandler<Message<?>, Message
             CompressedPublicKey superPeerPublicKey = welcomeMessage.getPublicKey();
             if (expectedPublicKey != null && !superPeerPublicKey.equals(expectedPublicKey)) {
                 LOG.warn("Super Peer has sent an unexpected public key '{}'. This could indicate a configuration error or man-in-the-middle attack. Close connection.", superPeerPublicKey);
-                ctx.writeAndFlush(new ConnectionExceptionMessage("Super Peer has sent an unexpected public key '" + superPeerPublicKey + "'. This could indicate a configuration error or man-in-the-middle attack. " +
-                        "Connection is closed.")).addListener(ChannelFutureListener.CLOSE);
+                ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_SUPER_PEER_WRONG_PUBLIC_KEY)).addListener(ChannelFutureListener.CLOSE);
             }
             else if (superPeerPublicKey.equals(ownPublicKey)) {
                 LOG.warn("Super Peer has sent same public key. You can't use yourself as a Super Peer. This would mean an endless loop. This could indicate a configuration error. Close connection.");
-                ctx.writeAndFlush(new ConnectionExceptionMessage("Super Peer has sent same public key. You can't use yourself as a Super Peer. This would mean an endless loop. This could indicate a configuration error. " +
-                        "Connection is closed.")).addListener(ChannelFutureListener.CLOSE);
+                ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_SUPER_PEER_SAME_PUBLIC_KEY)).addListener(ChannelFutureListener.CLOSE);
             }
             else {
                 ctx.fireChannelRead(msg);

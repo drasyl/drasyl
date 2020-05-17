@@ -21,7 +21,6 @@ package org.drasyl.peer.connection.message;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import org.drasyl.peer.connection.message.action.MessageAction;
-import org.drasyl.peer.connection.message.action.StatusMessageAction;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -113,7 +112,7 @@ public class StatusMessage extends AbstractResponseMessage<RequestMessage<?>, St
 
     @Override
     public MessageAction<StatusMessage> getAction() {
-        return new StatusMessageAction(this);
+        return null;
     }
 
     @Override
@@ -185,6 +184,7 @@ public class StatusMessage extends AbstractResponseMessage<RequestMessage<?>, St
         STATUS_UNSUPPORTED_MEDIA_TYPE(415),
         STATUS_RANGE_NOT_SATISFIABLE(416),
         STATUS_EXPECTATION_FAILED(417),
+        STATUS_IM_A_TEAPOT(418),
         STATUS_UPGRADE_REQUIRED(426),
         // -------- 5xx (Server Error) --------
         STATUS_INTERNAL_SERVER_ERROR(500),

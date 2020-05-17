@@ -19,7 +19,6 @@
 package org.drasyl.peer.connection.message;
 
 import org.drasyl.peer.connection.message.action.MessageAction;
-import org.drasyl.peer.connection.message.action.RejectMessageAction;
 
 /**
  * A message representing a rejection of a connection.
@@ -30,7 +29,7 @@ public class RejectMessage extends AbstractResponseMessage<RequestMessage<?>, Re
     }
 
     protected RejectMessage() {
-        super("");
+        super();
     }
 
     @Override
@@ -45,7 +44,7 @@ public class RejectMessage extends AbstractResponseMessage<RequestMessage<?>, Re
 
     @Override
     public MessageAction<RejectMessage> getAction() {
-        return new RejectMessageAction(this);
+        return null;
     }
 
     @Override

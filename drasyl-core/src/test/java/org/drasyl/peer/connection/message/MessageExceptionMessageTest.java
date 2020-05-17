@@ -27,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
+import static org.drasyl.peer.connection.message.MessageExceptionMessage.Error.MESSAGE_ERROR_ALREADY_JOINED;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
@@ -44,11 +45,11 @@ public class MessageExceptionMessageTest {
 
     @Test
     public void toJson() throws JsonProcessingException {
-        MessageExceptionMessage message = new MessageExceptionMessage("something horrible has happened", correspondingId);
+        MessageExceptionMessage message = new MessageExceptionMessage(MESSAGE_ERROR_ALREADY_JOINED, correspondingId);
 
         assertThatJson(JSON_MAPPER.writeValueAsString(message))
                 .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo("{\"@type\":\"" + message.getClass().getSimpleName() + "\",\"id\":\"" + message.getId() + "\",\"correspondingId\":\"correspondingId\",\"exception\":\"something horrible has happened\"}");
+                .isEqualTo("{\"@type\":\"" + message.getClass().getSimpleName() + "\",\"id\":\"" + message.getId() + "\",\"correspondingId\":\"correspondingId\",\"error\":\"This client has already an open Session with this Node Server. No need to authenticate twice.\"}");
 
         // Ignore toString()
         message.toString();
@@ -57,35 +58,33 @@ public class MessageExceptionMessageTest {
     @Test
     public void fromJson() throws IOException {
         String json = "{\"@type\":\"" + MessageExceptionMessage.class.getSimpleName() + "\",\"id\":\"77175D7235920F3BA17341D7\"," +
-                "\"exception\":\"something horrible has happened\"}";
+                "\"error\":\"This client has already an open Session with this Node Server. No need to authenticate twice.\",\"correspondingId\":\"correspondingId\"}";
 
         assertThat(JSON_MAPPER.readValue(json, Message.class), instanceOf(MessageExceptionMessage.class));
     }
 
     @Test
     public void nullTest() {
-        assertThrows(NullPointerException.class, () -> new MessageExceptionMessage((String) null, correspondingId), "NodeServerException requires an exception");
-
-        assertThrows(NullPointerException.class, () -> new MessageExceptionMessage((Exception) null, ""), "NodeServerException requires an exception");
+        assertThrows(NullPointerException.class, () -> new MessageExceptionMessage(null, correspondingId), "MessageExceptionMessage requires an error");
     }
 
     @Test
     void testEquals() {
-        MessageExceptionMessage message1 = new MessageExceptionMessage("something horrible has happened", correspondingId);
-        MessageExceptionMessage message2 = new MessageExceptionMessage("something horrible has happened", correspondingId);
-        MessageExceptionMessage message3 = new MessageExceptionMessage("something dreadful has happened", correspondingId);
+        MessageExceptionMessage message1 = new MessageExceptionMessage(MESSAGE_ERROR_ALREADY_JOINED, correspondingId);
+        MessageExceptionMessage message2 = new MessageExceptionMessage(MESSAGE_ERROR_ALREADY_JOINED, correspondingId);
+//        MessageExceptionMessage message3 = new MessageExceptionMessage("something dreadful has happened", correspondingId);
 
         assertEquals(message1, message2);
-        assertNotEquals(message2, message3);
+//        assertNotEquals(message2, message3);
     }
 
     @Test
     void testHashCode() {
-        MessageExceptionMessage message1 = new MessageExceptionMessage("something horrible has happened", correspondingId);
-        MessageExceptionMessage message2 = new MessageExceptionMessage("something horrible has happened", correspondingId);
-        MessageExceptionMessage message3 = new MessageExceptionMessage("something dreadful has happened", correspondingId);
+        MessageExceptionMessage message1 = new MessageExceptionMessage(MESSAGE_ERROR_ALREADY_JOINED, correspondingId);
+        MessageExceptionMessage message2 = new MessageExceptionMessage(MESSAGE_ERROR_ALREADY_JOINED, correspondingId);
+//        MessageExceptionMessage message3 = new MessageExceptionMessage("something dreadful has happened", correspondingId);
 
         assertEquals(message1.hashCode(), message2.hashCode());
-        assertNotEquals(message2.hashCode(), message3.hashCode());
+//        assertNotEquals(message2.hashCode(), message3.hashCode());
     }
 }
