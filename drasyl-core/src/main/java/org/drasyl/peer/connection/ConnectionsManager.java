@@ -115,7 +115,7 @@ public class ConnectionsManager {
         connections.remove(connection.getIdentity(), connection);
         Optional.ofNullable(closeProcedures.remove(connection)).ifPresent(p -> {
             p.accept(reason);
-            LOG.debug("Close and remove Connection '{}' for Node '{}'", connection, connection.getIdentity());
+            LOG.debug("Close and remove Connection '{}' for Node '{}' for Reason '{}'", connection, connection.getIdentity(), reason);
         });
     }
 
