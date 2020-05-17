@@ -32,6 +32,8 @@ import org.drasyl.peer.connection.message.PongMessage;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_PING_PONG;
+
 /**
  * This handler answers automatically to {@link PingMessage}. When a {@link IdleStateHandler} is
  * registered, it's also ask periodically for a {@link PongMessage} from the peer.
@@ -66,8 +68,7 @@ public class PingPongHandler extends SimpleChannelInboundHandler<Message<?>> {
             IdleStateEvent e = (IdleStateEvent) evt;
             if (e.state() == IdleState.READER_IDLE) {
                 if (counter.getAndIncrement() > retries) {
-                    ctx.writeAndFlush(new ConnectionExceptionMessage(
-                            "Too many PingMessages were not answered with a PongMessage. Connection will be closed.")).addListener(ChannelFutureListener.CLOSE);
+                    ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG)).addListener(ChannelFutureListener.CLOSE);
                 }
                 else {
                     ctx.writeAndFlush(new PingMessage());

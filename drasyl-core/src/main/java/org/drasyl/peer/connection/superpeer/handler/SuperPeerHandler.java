@@ -22,7 +22,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.PeerConnection;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.ResponseMessage;
@@ -75,12 +74,13 @@ public class SuperPeerHandler extends SimpleChannelInboundHandler<Message<?>> {
                 }
 
                 MessageAction<?> action = msg.getAction();
-
-                if (action instanceof ClientMessageAction) {
-                    ((ClientMessageAction<?>) action).onMessageClient(connection, superPeerClient);
-                }
-                else {
-                    LOG.debug("Could not process the message {}", msg);
+                if (action != null) {
+                    if (action instanceof ClientMessageAction) {
+                        ((ClientMessageAction<?>) action).onMessageClient(connection, superPeerClient);
+                    }
+                    else {
+                        LOG.debug("Could not process the message {}", msg);
+                    }
                 }
             }
         }).addListener(future -> {

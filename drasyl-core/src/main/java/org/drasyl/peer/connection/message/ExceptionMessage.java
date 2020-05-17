@@ -30,15 +30,14 @@ import java.util.Objects;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A message representing an exception that refers to a message. Such an exception should always be
- * handled.
+ * A message representing an exception. Such an exception should always be handled.
  */
 @SuppressWarnings({ "squid:S2166" })
-public class MessageExceptionMessage extends AbstractResponseMessage<RequestMessage<?>, MessageExceptionMessage> implements UnrestrictedPassableMessage {
+public class ExceptionMessage extends AbstractMessage<ExceptionMessage> implements UnrestrictedPassableMessage {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final Error error;
 
-    MessageExceptionMessage() {
+    ExceptionMessage() {
         super();
         error = null;
     }
@@ -46,11 +45,10 @@ public class MessageExceptionMessage extends AbstractResponseMessage<RequestMess
     /**
      * Creates a new exception message.
      *
-     * @param error           the error type
-     * @param correspondingId
+     * @param error the error type
      */
-    public MessageExceptionMessage(Error error, String correspondingId) {
-        super(correspondingId);
+    public ExceptionMessage(Error error) {
+        super();
         this.error = requireNonNull(error);
     }
 
@@ -62,7 +60,7 @@ public class MessageExceptionMessage extends AbstractResponseMessage<RequestMess
     }
 
     @Override
-    public MessageAction<MessageExceptionMessage> getAction() {
+    public MessageAction<ExceptionMessage> getAction() {
         return null;
     }
 
@@ -82,25 +80,25 @@ public class MessageExceptionMessage extends AbstractResponseMessage<RequestMess
         if (!super.equals(o)) {
             return false;
         }
-        MessageExceptionMessage that = (MessageExceptionMessage) o;
+        ExceptionMessage that = (ExceptionMessage) o;
         return Objects.equals(error, that.error);
     }
 
     @Override
     public String toString() {
-        return "MessageExceptionMessage{" +
+        return "ExceptionMessage{" +
                 "error='" + error + '\'' +
-                ", correspondingId='" + correspondingId + '\'' +
                 ", id='" + id + '\'' +
                 ", signature=" + signature +
                 '}';
     }
 
     /**
-     * Specifies the type of the {@link MessageExceptionMessage}.
+     * Specifies the type of the {@link ExceptionMessage}.
      */
     public enum Error {
-        MESSAGE_ERROR_ALREADY_JOINED("This client has already an open Session with this Node Server. No need to authenticate twice.");
+        ERROR_INTERNAL("Internal Error occurred."),
+        ERROR_FORMAT("Invalid Message format.");
         private static final Map<String, Error> errors = new HashMap<>();
 
         static {

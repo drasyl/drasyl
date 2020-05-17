@@ -32,6 +32,8 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_HANDSHAKE;
+import static org.drasyl.peer.connection.message.MessageExceptionMessage.Error.MESSAGE_ERROR_ALREADY_JOINED;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
 
 /**
@@ -67,8 +69,7 @@ public class JoinHandler extends SimpleChannelDuplexHandler<Message<?>, Message<
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         timeoutFuture = ctx.executor().schedule(() -> {
             if (!timeoutFuture.isCancelled() && !authenticated.get()) {
-                ctx.writeAndFlush(new ConnectionExceptionMessage("Handshake did not take place successfully in " + timeout + " ms. " +
-                        "Connection is closed.")).addListener(ChannelFutureListener.CLOSE);
+                ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE)).addListener(ChannelFutureListener.CLOSE);
                 LOG.debug("[{}]: Handshake did not take place successfully in {}ms. "
                         + "Connection is closed.", ctx.channel().id().asShortText(), timeout);
             }
@@ -100,8 +101,7 @@ public class JoinHandler extends SimpleChannelDuplexHandler<Message<?>, Message<
     protected void channelRead0(ChannelHandlerContext ctx, Message<?> request) throws Exception {
         if (authenticated.get()) {
             if (request instanceof JoinMessage) {
-                ctx.writeAndFlush(new MessageExceptionMessage("This client has already an open "
-                        + "session with this node server. No need to authenticate twice.", request.getId()));
+                ctx.writeAndFlush(new MessageExceptionMessage(MESSAGE_ERROR_ALREADY_JOINED, request.getId()));
                 ReferenceCountUtil.release(request);
             }
             else {

@@ -21,7 +21,7 @@ package org.drasyl.peer.connection.handler;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
-import org.drasyl.peer.connection.message.MessageExceptionMessage;
+import org.drasyl.peer.connection.message.ExceptionMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -83,7 +83,7 @@ class ExceptionHandlerTest {
         handler.exceptionCaught(ctx, cause);
 
         assertEquals(cause, handler.handledCause);
-        verify(ctx).writeAndFlush(any(MessageExceptionMessage.class));
+        verify(ctx).writeAndFlush(any(ExceptionMessage.class));
     }
 
     // do nothing
@@ -93,7 +93,7 @@ class ExceptionHandlerTest {
         handler.exceptionCaught(ctx, new ClosedChannelException());
 
         assertNull(handler.handledCause);
-        verify(ctx, never()).writeAndFlush(any(MessageExceptionMessage.class));
+        verify(ctx, never()).writeAndFlush(any(ExceptionMessage.class));
     }
 
     // sendMSG the exception as exception message and pass to the next handler in the pipeline
@@ -103,7 +103,7 @@ class ExceptionHandlerTest {
         handler.exceptionCaught(ctx, cause);
 
         assertEquals(cause, handler.handledCause);
-        verify(ctx).writeAndFlush(any(MessageExceptionMessage.class));
+        verify(ctx).writeAndFlush(any(ExceptionMessage.class));
         verify(ctx).fireExceptionCaught(cause);
     }
 
@@ -114,7 +114,7 @@ class ExceptionHandlerTest {
         handler.exceptionCaught(ctx, cause);
 
         assertEquals(cause, handler.handledCause);
-        verify(ctx, never()).writeAndFlush(any(MessageExceptionMessage.class));
+        verify(ctx, never()).writeAndFlush(any(ExceptionMessage.class));
         verify(ctx).fireExceptionCaught(cause);
     }
 }

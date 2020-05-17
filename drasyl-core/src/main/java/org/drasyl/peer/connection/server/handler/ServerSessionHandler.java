@@ -115,11 +115,13 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<Message<?>
                 }
 
                 MessageAction<?> action = msg.getAction();
-                if (action instanceof ServerMessageAction) {
-                    ((ServerMessageAction<?>) action).onMessageServer(clientConnection, server);
-                }
-                else {
-                    LOG.debug("Could not process the message {}", msg);
+                if (action != null) {
+                    if (action instanceof ServerMessageAction) {
+                        ((ServerMessageAction<?>) action).onMessageServer(clientConnection, server);
+                    }
+                    else {
+                        LOG.debug("Could not process the message {}", msg);
+                    }
                 }
             }
         }).addListener(future -> {

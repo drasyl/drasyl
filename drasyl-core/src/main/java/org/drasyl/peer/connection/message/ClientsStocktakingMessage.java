@@ -19,7 +19,6 @@
 package org.drasyl.peer.connection.message;
 
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.message.action.ClientsStocktakingMessageAction;
 import org.drasyl.peer.connection.message.action.MessageAction;
 
 import java.util.Collection;
@@ -40,7 +39,7 @@ public class ClientsStocktakingMessage extends AbstractResponseMessage<RequestCl
     private final Collection<Identity> identities;
 
     ClientsStocktakingMessage() {
-        super(null);
+        super();
         identities = null;
     }
 
@@ -65,7 +64,7 @@ public class ClientsStocktakingMessage extends AbstractResponseMessage<RequestCl
 
     @Override
     public MessageAction<ClientsStocktakingMessage> getAction() {
-        return new ClientsStocktakingMessageAction(this);
+        return null;
     }
 
     @Override

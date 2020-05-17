@@ -1,15 +1,18 @@
 package org.drasyl.peer.connection.message;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-
 import java.util.Objects;
 
+import static java.util.Objects.requireNonNull;
+
 public abstract class AbstractResponseMessage<R extends RequestMessage<?>, T extends Message<?>> extends AbstractMessage<T> implements ResponseMessage<R, T> {
-    @JsonInclude(JsonInclude.Include.NON_NULL)
     protected final String correspondingId;
 
+    protected AbstractResponseMessage() {
+        correspondingId = null;
+    }
+
     protected AbstractResponseMessage(String correspondingId) {
-        this.correspondingId = correspondingId;
+        this.correspondingId = requireNonNull(correspondingId);
     }
 
     @Override

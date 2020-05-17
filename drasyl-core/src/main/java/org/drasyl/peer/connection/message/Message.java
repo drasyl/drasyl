@@ -35,6 +35,7 @@ import org.drasyl.peer.connection.server.NodeServer;
         @JsonSubTypes.Type(value = ApplicationMessage.class),
         @JsonSubTypes.Type(value = ClientsStocktakingMessage.class),
         @JsonSubTypes.Type(value = ConnectionExceptionMessage.class),
+        @JsonSubTypes.Type(value = ExceptionMessage.class),
         @JsonSubTypes.Type(value = JoinMessage.class),
         @JsonSubTypes.Type(value = QuitMessage.class),
         @JsonSubTypes.Type(value = MessageExceptionMessage.class),
@@ -56,7 +57,7 @@ public interface Message<T extends Message<?>> extends Signable {
 
     /**
      * Returns a {@link MessageAction} object that describes how a server or client should process
-     * received messages.
+     * received messages. Returns <code>null</code> if no processing is necessary.
      *
      * @return
      */

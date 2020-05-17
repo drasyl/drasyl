@@ -141,8 +141,8 @@ public abstract class PeerConnection {
         private static final Map<String, CloseReason> reasons = new HashMap<>();
 
         static {
-            for (CloseReason code : values()) {
-                reasons.put(code.getDescription(), code);
+            for (CloseReason description : values()) {
+                reasons.put(description.getDescription(), description);
             }
         }
 

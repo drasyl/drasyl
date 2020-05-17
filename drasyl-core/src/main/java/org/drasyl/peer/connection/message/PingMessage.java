@@ -19,7 +19,6 @@
 package org.drasyl.peer.connection.message;
 
 import org.drasyl.peer.connection.message.action.MessageAction;
-import org.drasyl.peer.connection.message.action.PingMessageAction;
 
 /**
  * A message representing a PING request.
@@ -27,7 +26,7 @@ import org.drasyl.peer.connection.message.action.PingMessageAction;
 public class PingMessage extends AbstractMessage<PingMessage> implements RequestMessage<PingMessage>, UnrestrictedPassableMessage {
     @Override
     public MessageAction<PingMessage> getAction() {
-        return new PingMessageAction(this);
+        return null;
     }
 
     @Override

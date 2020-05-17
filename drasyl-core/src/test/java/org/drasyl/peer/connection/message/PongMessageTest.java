@@ -54,7 +54,7 @@ public class PongMessageTest {
 
     @Test
     public void fromJson() throws IOException {
-        String json = "{\"@type\":\"PongMessage\",\"id\":\"77175D7235920F3BA17341D7\"}";
+        String json = "{\"@type\":\"PongMessage\",\"id\":\"77175D7235920F3BA17341D7\",\"correspondingId\":\"correspondingId\"}";
 
         assertThat(JSON_MAPPER.readValue(json, Message.class), instanceOf(PongMessage.class));
     }
