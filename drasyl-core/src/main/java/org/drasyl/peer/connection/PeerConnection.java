@@ -78,18 +78,14 @@ public abstract class PeerConnection {
      * Sends a message to the peer and returns a {@link Single} object for potential responses to
      * this message.
      *
-     * @param message       message that should be sent
-     * @param responseClass the class of the response object, to avoid * ClassCastExceptions
-     * @param <T>           the type of the response
+     * @param message message that should be sent
      * @return a {@link Single} object that can be fulfilled with a {@link Message response} to the
      * * message
      */
-    public abstract <T extends ResponseMessage<? extends RequestMessage<?>, ? extends Message<?>>> Single<T> send(
-            RequestMessage<?> message,
-            Class<T> responseClass);
+    public abstract Single<ResponseMessage<?, ?>> sendRequest(RequestMessage<?> message);
 
     /**
-     * Sets the result of a {@link Single} object from a {@link #send(RequestMessage, Class)} call.
+     * Sets the result of a {@link Single} object from a {@link #sendRequest(RequestMessage)} call.
      *
      * @param response the response
      */

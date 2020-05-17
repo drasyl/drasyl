@@ -29,7 +29,6 @@ import org.drasyl.identity.IdentityTestHelper;
 import org.drasyl.peer.connection.message.*;
 import org.drasyl.peer.connection.server.NodeServerClientConnection;
 import org.drasyl.peer.connection.superpeer.SuperPeerConnection;
-import org.drasyl.util.Pair;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -47,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 public class AbstractNettyConnectionTest {
-    private ConcurrentHashMap<String, Pair<Class<? extends Message<?>>, SingleEmitter<Message<?>>>> emitters;
+    private ConcurrentHashMap<String, SingleEmitter<Message<?>>> emitters;
     private Channel channel;
     private URI endpoint;
     private Identity myid;
@@ -118,11 +117,9 @@ public class AbstractNettyConnectionTest {
         AbstractNettyConnection peerConnection = constructor.newInstance(channel, userAgent, myid,
                 endpoint, isClosed, emitters, closedCompletable, connectionsManager);
 
-        peerConnection.send(message, StatusMessage.class).subscribe(onSuccess -> {
-        }, onError -> {
-        });
+        peerConnection.sendRequest(message).subscribe();
 
-        verify(emitters).putIfAbsent(eq(message.getId()), any(Pair.class));
+        verify(emitters).putIfAbsent(eq(message.getId()), any(SingleEmitter.class));
         verify(channel).writeAndFlush(eq(message));
     }
 
@@ -138,9 +135,7 @@ public class AbstractNettyConnectionTest {
 
         when(responseMessage.getCorrespondingId()).thenReturn(msgID);
 
-        peerConnection.send(message, StatusMessage.class).subscribe(onSuccess -> {
-        }, onError -> {
-        });
+        peerConnection.sendRequest(message).subscribe();
         peerConnection.send(message);
         peerConnection.send(messageExceptionMessage);
         peerConnection.send(responseMessage);
@@ -160,12 +155,10 @@ public class AbstractNettyConnectionTest {
         AbstractNettyConnection peerConnection = constructor.newInstance(channel, userAgent, myid,
                 endpoint, isClosed, emitters, closedCompletable, connectionsManager);
 
-        when(emitters.remove(message.getId())).thenReturn(Pair.of(StatusMessage.class, singleEmitter));
+        when(emitters.remove(message.getId())).thenReturn(singleEmitter);
         when(responseMessage.getCorrespondingId()).thenReturn(msgID);
 
-        peerConnection.send(message, StatusMessage.class).subscribe(onSuccess -> {
-        }, onError -> {
-        });
+        peerConnection.sendRequest(message).subscribe();
         peerConnection.setResponse(responseMessage);
 
         verify(singleEmitter).onSuccess(eq(responseMessage));
@@ -184,9 +177,7 @@ public class AbstractNettyConnectionTest {
 
         when(responseMessage.getCorrespondingId()).thenReturn(msgID);
 
-        peerConnection.send(message, StatusMessage.class).subscribe(onSuccess -> {
-        }, onError -> {
-        });
+        peerConnection.sendRequest(message).subscribe();
         peerConnection.setResponse(responseMessage);
 
         verify(emitters).remove(eq(message.getId()));

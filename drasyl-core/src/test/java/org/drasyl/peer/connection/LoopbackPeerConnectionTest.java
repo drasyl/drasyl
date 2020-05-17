@@ -30,6 +30,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -90,7 +91,7 @@ class LoopbackPeerConnectionTest {
     void shouldThrowExceptionIfMessageIsNotAnApplicationMessage() {
         LoopbackPeerConnection con = new LoopbackPeerConnection(onEvent, identity, endpoint, closedCompletable, isClosed, connectionsManager);
 
-        assertThrows(IllegalArgumentException.class, () -> con.send(mock(JoinMessage.class), StatusMessage.class));
+        assertThrows(IllegalArgumentException.class, () -> con.sendRequest(mock(JoinMessage.class)));
         verifyNoInteractions(onEvent);
     }
 
@@ -103,16 +104,7 @@ class LoopbackPeerConnectionTest {
                 0x01
         });
 
-        assertEquals(StatusMessage.Code.STATUS_OK, con.send(message, StatusMessage.class).blockingGet().getCode());
-        verify(onEvent).accept(any(Event.class));
-    }
-
-    @Test
-    void wrongReturnTypeShouldThrowError() {
-        LoopbackPeerConnection con = new LoopbackPeerConnection(onEvent, identity, endpoint, closedCompletable, isClosed, connectionsManager);
-
-        assertThrows(IllegalArgumentException.class, () -> con.send(mock(ApplicationMessage.class), RejectMessage.class).blockingGet());
-
+        assertEquals(new StatusMessage(STATUS_OK, message.getId()), con.sendRequest(message).blockingGet());
         verify(onEvent).accept(any(Event.class));
     }
 

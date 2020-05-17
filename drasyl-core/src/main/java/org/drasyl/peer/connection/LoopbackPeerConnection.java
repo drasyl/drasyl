@@ -31,6 +31,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
+
 /**
  * The {@link LoopbackPeerConnection} object models an loobback connection of this node.
  */
@@ -90,15 +92,10 @@ public class LoopbackPeerConnection extends PeerConnection {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T extends ResponseMessage<? extends RequestMessage<?>, ? extends Message<?>>> Single<T> send(
-            RequestMessage<?> message, Class<T> responseClass) {
+    public Single<ResponseMessage<?, ?>> sendRequest(RequestMessage<?> message) {
         send(message);
 
-        if (StatusMessage.class.isAssignableFrom(responseClass)) {
-            return (Single<T>) Single.just(new StatusMessage(StatusMessage.Code.STATUS_OK, message.getId()));
-        }
-
-        return Single.error(new IllegalArgumentException("Only StatusMessage is allowed as return type"));
+        return Single.just(new StatusMessage(STATUS_OK, message.getId()));
     }
 
     @Override
