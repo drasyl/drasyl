@@ -17,5 +17,6 @@ EXPOSE 22527
 ENTRYPOINT ["drasyl"]
 
 HEALTHCHECK --start-period=15s \
+            --interval=10s \
     CMD curl http://localhost:22527 2>&1 \
         | grep -q 'Not a WebSocket Handshake Request: Missing Upgrade'
