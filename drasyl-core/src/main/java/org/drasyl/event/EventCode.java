@@ -70,6 +70,11 @@ public enum EventCode {
     EVENT_PEER_RELAY,
 
     /**
+     * This event signals that the node is unable to reach given peer.
+     */
+    EVENT_PEER_UNREACHABLE,
+
+    /**
      * This event signals that the node has received a message addressed to it.
      */
     EVENT_MESSAGE;
