@@ -29,7 +29,6 @@ import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.ResponseMessage;
 import org.drasyl.peer.connection.server.NodeServerClientConnection;
-import org.drasyl.util.Pair;
 import org.slf4j.Logger;
 
 import java.net.URI;
@@ -44,7 +43,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @SuppressWarnings({ "squid:S00107", "java:S2160" })
 public abstract class AbstractNettyConnection extends PeerConnection {
-    protected final ConcurrentHashMap<String, Pair<Class<? extends ResponseMessage<?, ?>>, SingleEmitter<ResponseMessage<?, ?>>>> emitters;
+    protected final ConcurrentHashMap<String, SingleEmitter<ResponseMessage<?, ?>>> emitters;
     protected final Channel channel;
     protected final String userAgent;
     protected final URI endpoint;
@@ -106,7 +105,7 @@ public abstract class AbstractNettyConnection extends PeerConnection {
                                       Identity identity,
                                       URI endpoint,
                                       AtomicBoolean isClosed,
-                                      ConcurrentHashMap<String, Pair<Class<? extends ResponseMessage<?, ?>>, SingleEmitter<ResponseMessage<?, ?>>>> emitters,
+                                      ConcurrentHashMap<String, SingleEmitter<ResponseMessage<?, ?>>> emitters,
                                       CompletableFuture<Boolean> closedCompletable,
                                       ConnectionsManager connectionsManager) {
         super(identity);
@@ -153,14 +152,12 @@ public abstract class AbstractNettyConnection extends PeerConnection {
 
     @Override
     @SuppressWarnings("unchecked")
-    public <T extends ResponseMessage<? extends RequestMessage<?>, ? extends Message<?>>> Single<T> send(
-            RequestMessage<?> message,
-            Class<T> responseClass) {
-        return (Single<T>) Single.<ResponseMessage<?, ?>>create(emitter -> {
+    public Single<ResponseMessage<?, ?>> sendRequest(RequestMessage<?> message) {
+        return Single.create(emitter -> {
             if (isClosed.get()) {
                 emitter.onError(new IllegalStateException("This connection is already prompt to close."));
             }
-            else if (emitters.putIfAbsent(message.getId(), Pair.of(responseClass, emitter)) == null) {
+            else if (emitters.putIfAbsent(message.getId(), emitter) == null) {
                 send(message);
             }
         });
@@ -168,9 +165,9 @@ public abstract class AbstractNettyConnection extends PeerConnection {
 
     @Override
     public void setResponse(ResponseMessage<? extends RequestMessage<?>, ? extends Message<?>> response) {
-        Pair<Class<? extends ResponseMessage<?, ?>>, SingleEmitter<ResponseMessage<?, ?>>> pair = emitters.remove(response.getCorrespondingId());
-        if (pair != null && pair.first().isInstance(response)) {
-            pair.second().onSuccess(response);
+        SingleEmitter<ResponseMessage<?, ?>> emitter = emitters.remove(response.getCorrespondingId());
+        if (emitter != null) {
+            emitter.onSuccess(response);
         }
     }
 

@@ -25,7 +25,6 @@ import org.drasyl.peer.connection.AbstractNettyConnection;
 import org.drasyl.peer.connection.ConnectionsManager;
 import org.drasyl.peer.connection.message.ResponseMessage;
 import org.drasyl.peer.connection.server.NodeServerClientConnection;
-import org.drasyl.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -73,7 +72,7 @@ public class SuperPeerConnection extends AbstractNettyConnection {
                                Identity identity,
                                URI endpoint,
                                AtomicBoolean isClosed,
-                               ConcurrentHashMap<String, Pair<Class<? extends ResponseMessage<?, ?>>, SingleEmitter<ResponseMessage<?, ?>>>> emitters,
+                               ConcurrentHashMap<String, SingleEmitter<ResponseMessage<?, ?>>> emitters,
                                CompletableFuture<Boolean> closedCompletable,
                                ConnectionsManager connectionsManager) {
         super(myChannel, userAgent, identity, endpoint, isClosed, emitters, closedCompletable, connectionsManager);

@@ -20,7 +20,6 @@ package org.drasyl.messenger;
 
 import org.drasyl.DrasylException;
 import org.drasyl.identity.Identity;
-import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.connection.ConnectionsManager;
 import org.drasyl.peer.connection.PeerConnection;
 import org.drasyl.peer.connection.message.ApplicationMessage;

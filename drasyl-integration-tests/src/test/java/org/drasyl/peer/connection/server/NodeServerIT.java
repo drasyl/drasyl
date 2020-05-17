@@ -109,10 +109,10 @@ public class NodeServerIT {
 
         // send message
         RequestMessage<?> request = new JoinMessage(identityManager.getKeyPair().getPublicKey(), Set.of());
-        Single<WelcomeMessage> send = session.send(request, WelcomeMessage.class);
+        Single<ResponseMessage<?, ?>> send = session.sendRequest(request);
 
         // verify response
-        WelcomeMessage response = send.blockingGet();
+        ResponseMessage<?, ?> response = send.blockingGet();
 
         assertThat(response, instanceOf(WelcomeMessage.class));
     }
@@ -126,14 +126,14 @@ public class NodeServerIT {
 
         // send messages
         RequestMessage<?> request1 = new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of());
-        Single<WelcomeMessage> send1 = session1.send(request1, WelcomeMessage.class);
+        Single<ResponseMessage<?, ?>> send1 = session1.sendRequest(request1);
 
         RequestMessage<?> request2 = new JoinMessage(CompressedPublicKey.of("0340a4f2adbddeedc8f9ace30e3f18713a3405f43f4871b4bac9624fe80d2056a7"), Set.of());
-        Single<WelcomeMessage> send2 = session2.send(request2, WelcomeMessage.class);
+        Single<ResponseMessage<?, ?>> send2 = session2.sendRequest(request2);
 
         // verify responses
-        WelcomeMessage response1 = send1.blockingGet();
-        WelcomeMessage response2 = send2.blockingGet();
+        ResponseMessage<?, ?> response1 = send1.blockingGet();
+        ResponseMessage<?, ?> response2 = send2.blockingGet();
 
         assertThat(response1, instanceOf(WelcomeMessage.class));
         assertThat(response2, instanceOf(WelcomeMessage.class));
@@ -151,13 +151,14 @@ public class NodeServerIT {
 
         // send message
         RequestMessage<?> request = new RequestClientsStocktakingMessage();
-        Single<ClientsStocktakingMessage> send = session1.send(request, ClientsStocktakingMessage.class);
+        Single<ResponseMessage<?, ?>> send = session1.sendRequest(request);
 
         // verify response
-        ClientsStocktakingMessage response = send.blockingGet();
+        ResponseMessage<?, ?> response = send.blockingGet();
 
         assertThat(response, instanceOf(ClientsStocktakingMessage.class));
-        assertThat(response.getIdentities(), containsInAnyOrder(session1.getIdentity(), session2.getIdentity()));
+        ClientsStocktakingMessage clientsStocktakingMessage = (ClientsStocktakingMessage) response;
+        assertThat(clientsStocktakingMessage.getIdentities(), containsInAnyOrder(session1.getIdentity(), session2.getIdentity()));
     }
 
     @Test
@@ -175,10 +176,10 @@ public class NodeServerIT {
                 0x01,
                 0x02
         });
-        Single<StatusMessage> send1 = session1.send(request, StatusMessage.class);
+        Single<ResponseMessage<?, ?>> send1 = session1.sendRequest(request);
 
         // verify responses
-        StatusMessage response1 = send1.blockingGet();
+        ResponseMessage<?, ?> response1 = send1.blockingGet();
 
         assertEquals(new StatusMessage(StatusMessage.Code.STATUS_OK, request.getId()), response1);
         assertEquals(request, receivedMessage2.get());
@@ -241,10 +242,10 @@ public class NodeServerIT {
         // send messages
         CompressedPublicKey publicKey = CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3");
         RequestMessage<?> request1 = new JoinMessage(publicKey, Set.of());
-        session1.send(request1, WelcomeMessage.class).blockingGet();
+        session1.sendRequest(request1).blockingGet();
 
         RequestMessage<?> request2 = new JoinMessage(publicKey, Set.of());
-        session2.send(request2, WelcomeMessage.class).blockingGet();
+        session2.sendRequest(request2).blockingGet();
 
         // verify responses
         assertThat(receivedMessages1.get(), contains(instanceOf(WelcomeMessage.class), equalTo(new QuitMessage(PeerConnection.CloseReason.REASON_NEW_SESSION))));
@@ -259,10 +260,10 @@ public class NodeServerIT {
 
         // send message
         RequestMessage<?> request = new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of());
-        Single<MessageExceptionMessage> send = session.send(request, MessageExceptionMessage.class);
+        Single<ResponseMessage<?, ?>> send = session.sendRequest(request);
 
         // verify response
-        Message<?> response = send.blockingGet();
+        ResponseMessage<?, ?> response = send.blockingGet();
 
         assertThat(response, instanceOf(MessageExceptionMessage.class));
     }
@@ -303,10 +304,10 @@ public class NodeServerIT {
 
         // send message
         RequestMessage<?> request = new PingMessage();
-        Single<PongMessage> send = session.send(request, PongMessage.class);
+        Single<ResponseMessage<?, ?>> send = session.sendRequest(request);
 
         // verify response
-        Message<?> response = send.blockingGet();
+        ResponseMessage<?, ?> response = send.blockingGet();
 
         assertEquals(new PongMessage(request.getId()), response);
     }
@@ -322,10 +323,10 @@ public class NodeServerIT {
                 0x00,
                 0x01
         });
-        Single<StatusMessage> send = session.send(request, StatusMessage.class);
+        Single<ResponseMessage<?, ?>> send = session.sendRequest(request);
 
         // verify response
-        Message<?> response = send.blockingGet();
+        ResponseMessage<?, ?> response = send.blockingGet();
 
         assertEquals(new StatusMessage(STATUS_FORBIDDEN, request.getId()), response);
     }
@@ -409,10 +410,10 @@ public class NodeServerIT {
 
         // send message
         RequestMessage<?> request = new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of());
-        Single<RejectMessage> send = session.send(request, RejectMessage.class);
+        Single<ResponseMessage<?, ?>> send = session.sendRequest(request);
 
         // verify response
-        Message<?> received = send.blockingGet();
+        ResponseMessage<?, ?> received = send.blockingGet();
 
         assertEquals(new RejectMessage(request.getId()), received);
     }

@@ -170,7 +170,7 @@ public class TestNodeServerClientConnection extends AbstractNettyConnection {
         CompressedPublicKey publicKey = CompressedPublicKey.of(keyPair.getPublic());
         URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
         TestNodeServerClientConnection session = clientSession(serverEntryPoint, Identity.of(publicKey), true, server.workerGroup);
-        session.send(new JoinMessage(publicKey, Set.of()), WelcomeMessage.class).blockingGet();
+        session.sendRequest(new JoinMessage(publicKey, Set.of())).blockingGet();
 
         return session;
     }
