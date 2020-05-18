@@ -33,6 +33,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 /**
@@ -42,30 +43,30 @@ import java.util.stream.Collectors;
 public class DrasylNodeConfig {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNodeConfig.class); // NOSONAR
     //======================================== Config Paths ========================================
-    private static final String LOGLEVEL = "drasyl.loglevel";
-    private static final String IDENTITY_PUBLIC_KEY = "drasyl.identity.public-key";
-    private static final String IDENTITY_PRIVATE_KEY = "drasyl.identity.private-key";
-    private static final String IDENTITY_PATH = "drasyl.identity.path";
-    private static final String USER_AGENT = "drasyl.user-agent";
-    private static final String MAX_CONTENT_LENGTH = "drasyl.max-content-length";
-    private static final String FLUSH_BUFFER_SIZE = "drasyl.flush-buffer-size";
-    private static final String SERVER_ENABLED = "drasyl.server.enabled";
-    private static final String SERVER_BIND_HOST = "drasyl.server.bind-host";
-    private static final String SERVER_BIND_PORT = "drasyl.server.bind-port";
-    private static final String SERVER_ENDPOINTS = "drasyl.server.endpoints";
-    private static final String SERVER_IDLE_RETRIES = "drasyl.server.idle.retries";
-    private static final String SERVER_IDLE_TIMEOUT = "drasyl.server.idle.timeout";
-    private static final String SERVER_SSL_ENABLED = "drasyl.server.ssl.enabled";
-    private static final String SERVER_SSL_PROTOCOLS = "drasyl.server.ssl.protocols";
-    private static final String SERVER_MAX_HANDSHAKE_TIMEOUT = "drasyl.server.max-handshake-timeout";
-    private static final String SERVER_CHANNEL_INITIALIZER = "drasyl.server.channel-initializer";
-    private static final String SUPER_PEER_ENABLED = "drasyl.super-peer.enabled";
-    private static final String SUPER_PEER_ENDPOINTS = "drasyl.super-peer.endpoints";
-    private static final String SUPER_PEER_PUBLIC_KEY = "drasyl.super-peer.public-key";
-    private static final String SUPER_PEER_RETRY_DELAYS = "drasyl.super-peer.retry-delays";
-    private static final String SUPER_PEER_CHANNEL_INITIALIZER = "drasyl.super-peer.channel-initializer";
-    private static final String SUPER_PEER_IDLE_RETRIES = "drasyl.super-peer.idle.retries";
-    private static final String SUPER_PEER_IDLE_TIMEOUT = "drasyl.super-peer.idle.timeout";
+    static final String LOGLEVEL = "drasyl.loglevel";
+    static final String IDENTITY_PUBLIC_KEY = "drasyl.identity.public-key";
+    static final String IDENTITY_PRIVATE_KEY = "drasyl.identity.private-key";
+    static final String IDENTITY_PATH = "drasyl.identity.path";
+    static final String USER_AGENT = "drasyl.user-agent";
+    static final String MAX_CONTENT_LENGTH = "drasyl.max-content-length";
+    static final String FLUSH_BUFFER_SIZE = "drasyl.flush-buffer-size";
+    static final String SERVER_ENABLED = "drasyl.server.enabled";
+    static final String SERVER_BIND_HOST = "drasyl.server.bind-host";
+    static final String SERVER_BIND_PORT = "drasyl.server.bind-port";
+    static final String SERVER_ENDPOINTS = "drasyl.server.endpoints";
+    static final String SERVER_IDLE_RETRIES = "drasyl.server.idle.retries";
+    static final String SERVER_IDLE_TIMEOUT = "drasyl.server.idle.timeout";
+    static final String SERVER_SSL_ENABLED = "drasyl.server.ssl.enabled";
+    static final String SERVER_SSL_PROTOCOLS = "drasyl.server.ssl.protocols";
+    static final String SERVER_MAX_HANDSHAKE_TIMEOUT = "drasyl.server.max-handshake-timeout";
+    static final String SERVER_CHANNEL_INITIALIZER = "drasyl.server.channel-initializer";
+    static final String SUPER_PEER_ENABLED = "drasyl.super-peer.enabled";
+    static final String SUPER_PEER_ENDPOINTS = "drasyl.super-peer.endpoints";
+    static final String SUPER_PEER_PUBLIC_KEY = "drasyl.super-peer.public-key";
+    static final String SUPER_PEER_RETRY_DELAYS = "drasyl.super-peer.retry-delays";
+    static final String SUPER_PEER_CHANNEL_INITIALIZER = "drasyl.super-peer.channel-initializer";
+    static final String SUPER_PEER_IDLE_RETRIES = "drasyl.super-peer.idle.retries";
+    static final String SUPER_PEER_IDLE_TIMEOUT = "drasyl.super-peer.idle.timeout";
     //======================================= Config Values ========================================
     private final Level loglevel;
     private final String identityPublicKey;
@@ -99,6 +100,10 @@ public class DrasylNodeConfig {
      * @throws ConfigException if the given config is invalid
      */
     public DrasylNodeConfig(Config config) {
+        this(config, NetworkUtil::getAddresses);
+    }
+
+    DrasylNodeConfig(Config config, Supplier<Set<String>> networkAddressesProvider) {
         config.checkValid(ConfigFactory.defaultReference(), "drasyl");
 
         // init
@@ -129,7 +134,7 @@ public class DrasylNodeConfig {
         }
         else {
             String scheme = serverSSLEnabled ? "wss" : "ws";
-            this.serverEndpoints = NetworkUtil.getAddresses().stream().map(a -> scheme + "://" + a + ":" + serverBindPort).collect(Collectors.toSet());
+            this.serverEndpoints = networkAddressesProvider.get().stream().map(a -> scheme + "://" + a + ":" + serverBindPort).collect(Collectors.toSet());
         }
 
         // Init super peer config
@@ -257,8 +262,8 @@ public class DrasylNodeConfig {
         return flushBufferSize;
     }
 
-    public String[] getServerSSLProtocols() {
-        return serverSSLProtocols.toArray(new String[0]);
+    public List<String> getServerSSLProtocols() {
+        return serverSSLProtocols;
     }
 
     public Duration getServerHandshakeTimeout() {
@@ -307,7 +312,7 @@ public class DrasylNodeConfig {
 
     @Override
     public int hashCode() {
-        return Objects.hash(loglevel, identityPublicKey, identityPrivateKey, identityPath, userAgent, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, maxContentLength, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout);
+        return Objects.hash(identityPublicKey, identityPrivateKey, identityPath, userAgent, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, maxContentLength, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout);
     }
 
     @Override
