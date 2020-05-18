@@ -53,7 +53,7 @@ public class ObservableDrasylNode extends DrasylNode {
 
     public static void main(String[] args) throws DrasylException {
         ObservableDrasylNode node = new ObservableDrasylNode();
-        node.events().subscribe(System.out::println); // NOSONAR
+        node.events().subscribe(System.out::println, System.err::println); // NOSONAR
         node.start().join();
     }
 
