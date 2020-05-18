@@ -32,7 +32,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * A message representing an exception. Such an exception should always be handled.
  */
-@SuppressWarnings({ "squid:S2166" })
+@SuppressWarnings({ "squid:S2166", "common-java:DuplicatedBlocks" })
 public class ExceptionMessage extends AbstractMessage<ExceptionMessage> implements UnrestrictedPassableMessage {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final Error error;

@@ -45,6 +45,7 @@ import static org.drasyl.peer.connection.handler.MessageEncoder.MESSAGE_ENCODER;
  * #beforeMarshalStage(ChannelPipeline)}</b>
  * </p>
  */
+@SuppressWarnings("java:S4818")
 public abstract class DefaultSessionInitializer extends ChannelInitializer<SocketChannel> {
     public static final String IDLE_EVENT = "idleEvent";
     private final int flushBufferSize;

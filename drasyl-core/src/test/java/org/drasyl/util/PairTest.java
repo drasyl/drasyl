@@ -24,7 +24,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class PairTest {
+class PairTest {
     @Test
     void firstShouldReturnFirstElement() {
         Pair<Integer, String> pair = Pair.of(10, "beers");

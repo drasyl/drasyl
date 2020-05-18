@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2020.
+ *
+ * This file is part of drasyl.
+ *
+ *  drasyl is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  drasyl is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package org.drasyl.peer.connection.superpeer;
 
 import com.typesafe.config.ConfigFactory;
@@ -13,12 +32,12 @@ import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.server.NodeServer;
-import testutils.AnsiColor;
-import testutils.TestHelper;
 import org.junit.Ignore;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
+import testutils.AnsiColor;
+import testutils.TestHelper;
 
 import java.util.concurrent.CountDownLatch;
 
@@ -26,7 +45,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Execution(ExecutionMode.SAME_THREAD)
-public class SuperPeerClientIT {
+class SuperPeerClientIT {
     public static final long TIMEOUT = 10000L;
     private static EventLoopGroup workerGroup;
     private static EventLoopGroup bossGroup;
@@ -39,7 +58,7 @@ public class SuperPeerClientIT {
     private PeersManager peersManager;
 
     @BeforeEach
-    public void setup(TestInfo info) throws DrasylException {
+    void setup(TestInfo info) throws DrasylException {
         TestHelper.colorizedPrintln("STARTING " + info.getDisplayName(), AnsiColor.COLOR_CYAN, AnsiColor.STYLE_REVERSED);
 
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
@@ -59,7 +78,7 @@ public class SuperPeerClientIT {
     }
 
     @AfterEach
-    public void cleanUp(TestInfo info) throws IdentityManagerException {
+    void cleanUp(TestInfo info) throws IdentityManagerException {
         server.close();
 
         IdentityManager.deleteIdentityFile(config.getIdentityPath());
@@ -67,9 +86,9 @@ public class SuperPeerClientIT {
         TestHelper.colorizedPrintln("FINISHED " + info.getDisplayName(), AnsiColor.COLOR_CYAN, AnsiColor.STYLE_REVERSED);
     }
 
-    @Ignore
+    @Ignore("Muss noch implementiert werden")
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    public void clientShouldSendJoinMessageOnConnect() throws SuperPeerClientException, InterruptedException {
+    void clientShouldSendJoinMessageOnConnect() throws SuperPeerClientException {
         // start client
         SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, event -> {
         });
@@ -78,27 +97,27 @@ public class SuperPeerClientIT {
         // TODO: check if JoinMessage has been received by server
     }
 
-    @Ignore
+    @Ignore("Muss noch implementiert werden")
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    public void clientShouldSendXXXMessageOnClientSideDisconnect() {
+    void clientShouldSendXXXMessageOnClientSideDisconnect() {
 
     }
 
-    @Ignore
+    @Ignore("Muss noch implementiert werden")
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    public void clientShouldRespondToPingMessageWithPongMessage() {
+    void clientShouldRespondToPingMessageWithPongMessage() {
 
     }
 
-    @Ignore
+    @Ignore("Muss noch implementiert werden")
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    public void clientShouldRespondToApplicationMessageWithStatusOk() {
+    void clientShouldRespondToApplicationMessageWithStatusOk() {
 
     }
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    public void clientShouldEmitNodeOfflineEventOnClientSideDisconnect() throws InterruptedException, SuperPeerClientException {
+    void clientShouldEmitNodeOfflineEventOnClientSideDisconnect() throws InterruptedException, SuperPeerClientException {
         CountDownLatch lock = new CountDownLatch(2);
 
         ReplaySubject<Event> subject = ReplaySubject.create();
@@ -122,15 +141,15 @@ public class SuperPeerClientIT {
         assertEquals(0, lock.getCount());
     }
 
-    @Ignore
+    @Ignore("Muss noch implementiert werden")
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    public void clientShouldEmitNodeOfflineEventAfterReceivingQuitMessage() throws SuperPeerClientException, InterruptedException {
+    void clientShouldEmitNodeOfflineEventAfterReceivingQuitMessage() throws SuperPeerClientException, InterruptedException {
 
     }
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    public void clientShouldEmitNodeOnlineEventAfterReceivingWelcomeMessage() throws InterruptedException, SuperPeerClientException {
+    void clientShouldEmitNodeOnlineEventAfterReceivingWelcomeMessage() throws InterruptedException, SuperPeerClientException {
         CountDownLatch lock = new CountDownLatch(1);
         // start client
         SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, event -> {
@@ -147,7 +166,7 @@ public class SuperPeerClientIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    public void clientShouldReconnectOnDisconnect() throws SuperPeerClientException, InterruptedException {
+    void clientShouldReconnectOnDisconnect() throws SuperPeerClientException, InterruptedException {
         CountDownLatch lock = new CountDownLatch(2);
 
         ReplaySubject<Event> subject = ReplaySubject.create();
@@ -171,13 +190,13 @@ public class SuperPeerClientIT {
     }
 
     @BeforeAll
-    public static void beforeAll() {
+    static void beforeAll() {
         workerGroup = new NioEventLoopGroup();
         bossGroup = new NioEventLoopGroup(1);
     }
 
     @AfterAll
-    public static void afterAll() {
+    static void afterAll() {
         workerGroup.shutdownGracefully().syncUninterruptibly();
         bossGroup.shutdownGracefully().syncUninterruptibly();
     }

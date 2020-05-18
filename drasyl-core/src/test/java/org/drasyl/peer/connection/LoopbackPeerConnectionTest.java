@@ -90,8 +90,9 @@ class LoopbackPeerConnectionTest {
     @Test
     void shouldThrowExceptionIfMessageIsNotAnApplicationMessage() {
         LoopbackPeerConnection con = new LoopbackPeerConnection(onEvent, identity, endpoint, closedCompletable, isClosed, connectionsManager);
+        JoinMessage joinMessage = mock(JoinMessage.class);
 
-        assertThrows(IllegalArgumentException.class, () -> con.sendRequest(mock(JoinMessage.class)));
+        assertThrows(IllegalArgumentException.class, () -> con.sendRequest(joinMessage));
         verifyNoInteractions(onEvent);
     }
 

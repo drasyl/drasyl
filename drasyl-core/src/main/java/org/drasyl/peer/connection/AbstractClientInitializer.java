@@ -35,6 +35,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Creates a newly configured {@link ChannelPipeline} for a ClientConnection to a node server.
  */
+@SuppressWarnings("java:S4818")
 public abstract class AbstractClientInitializer extends DefaultSessionInitializer {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractClientInitializer.class);
     protected final URI target;
@@ -43,16 +44,16 @@ public abstract class AbstractClientInitializer extends DefaultSessionInitialize
     /**
      * Initialize a netty Channel for an outbound connection to a node server.
      *
-     * @param flushBufferSize  The size of the flush buffer, to minimize IO overhead. A high value
-     *                         is good for throughput. A low value is good for latency.
-     * @param readIdleTimeout  The maximum time that an active connection can spend in idle before
-     *                         the client checks with a PING request whether the remote station is
-     *                         still alive. Note: every long value <= 0 s deactivates the idle
-     *                         function.
-     * @param pingPongRetries  The maximum amount that a remote station cannot reply to a PING
-     *                         request in succession in the interval {@code readIdleTimeout}. Min
-     *                         value is 1, max 32767
-     * @param target           the target URI
+     * @param flushBufferSize The size of the flush buffer, to minimize IO overhead. A high value is
+     *                        good for throughput. A low value is good for latency.
+     * @param readIdleTimeout The maximum time that an active connection can spend in idle before
+     *                        the client checks with a PING request whether the remote station is
+     *                        still alive. Note: every long value <= 0 s deactivates the idle
+     *                        function.
+     * @param pingPongRetries The maximum amount that a remote station cannot reply to a PING
+     *                        request in succession in the interval {@code readIdleTimeout}. Min
+     *                        value is 1, max 32767
+     * @param target          the target URI
      */
     public AbstractClientInitializer(int flushBufferSize,
                                      Duration readIdleTimeout,

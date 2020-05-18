@@ -45,7 +45,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-public class AbstractNettyConnectionTest {
+class AbstractNettyConnectionTest {
     private ConcurrentHashMap<String, SingleEmitter<Message<?>>> emitters;
     private Channel channel;
     private URI endpoint;

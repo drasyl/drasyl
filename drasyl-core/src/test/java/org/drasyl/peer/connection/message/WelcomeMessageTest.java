@@ -38,7 +38,7 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
-public class WelcomeMessageTest {
+class WelcomeMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
     private CompressedPublicKey publicKey;
     private Set<URI> endpoints;

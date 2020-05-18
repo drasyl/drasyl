@@ -36,7 +36,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class ClientsStocktakingMessageTest {
+class ClientsStocktakingMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
     private Identity identity;
     private String correspondingId;

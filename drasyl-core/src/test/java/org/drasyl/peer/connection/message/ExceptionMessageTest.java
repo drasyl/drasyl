@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.peer.connection.message;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -35,7 +34,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class ExceptionMessageTest {
+class ExceptionMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
     @Test

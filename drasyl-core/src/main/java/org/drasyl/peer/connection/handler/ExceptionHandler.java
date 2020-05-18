@@ -24,7 +24,6 @@ import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.DecoderException;
 import org.drasyl.peer.connection.message.ExceptionMessage;
 import org.drasyl.peer.connection.message.MessageExceptionMessage;
-import org.drasyl.peer.connection.message.ResponseMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -30,7 +30,7 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
-public class RequestClientsStocktakingMessageTest {
+class RequestClientsStocktakingMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
     @Test

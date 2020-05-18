@@ -39,7 +39,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
-public class DrasylNodeTest {
+class DrasylNodeTest {
     private DrasylNodeConfig config;
     private IdentityManager identityManager;
     private Messenger messenger;
