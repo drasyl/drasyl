@@ -6,7 +6,7 @@ stages:
 
 include:
   - local: /.gitlab-ci/Maven.gitlab-ci.yml # we have to use our own template, since GitLab's template uses JDK8, but we need JDK11
-  #  - template: Dependency-Scanning.gitlab-ci.yml
+  - template: Dependency-Scanning.gitlab-ci.yml
   #  - template: Code-Quality.gitlab-ci.yml
   - local: /.gitlab-ci/Docker.gitlab-ci.yml
   - template: License-Scanning.gitlab-ci.yml
@@ -21,6 +21,11 @@ license_scanning:
   only:
     variables:
       - $LICENSE_MANAGEMENT_ENABLED
+
+dependency_scanning:
+  only:
+    variables:
+      - $DEPENDENCY_SCANNING_ENABLED
 
 #sast:
 #  variables:
