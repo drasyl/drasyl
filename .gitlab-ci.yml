@@ -1,5 +1,6 @@
 stages:
   - build
+  - test
   - docker
   - deploy
 
@@ -8,15 +9,19 @@ include:
   #  - template: Dependency-Scanning.gitlab-ci.yml
   #  - template: Code-Quality.gitlab-ci.yml
   - local: /.gitlab-ci/Docker.gitlab-ci.yml
-  #  - template: License-Management.gitlab-ci.yml
+  - template: License-Scanning.gitlab-ci.yml
   #  - template: SAST.gitlab-ci.yml
   - local: /.gitlab-ci/Deployments.gitlab-ci.yml
 
-#license_management:
-#  variables:
-#    MAVEN_CLI_OPTS: -DskipTests
-#    LM_JAVA_VERSION: 11
-#
+license_scanning:
+  stage: build
+  variables:
+    MAVEN_CLI_OPTS: -DskipTests
+    LM_JAVA_VERSION: 11
+  only:
+    variables:
+      - $LICENSE_MANAGEMENT_ENABLED
+
 #sast:
 #  variables:
 #    MAVEN_CLI_OPTS: -DskipTests
