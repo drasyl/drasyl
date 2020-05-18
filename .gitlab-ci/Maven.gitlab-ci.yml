@@ -8,17 +8,11 @@ cache:
   paths:
     - .m2/repository
 
-maven-verify:
-  stage: build
-  script:
-    - 'mvn $MAVEN_CLI_OPTS verify sonar:sonar'
-    - mv drasyl-cli/target/drasyl-*.zip .
+.maven-base: &maven-base
   after_script:
+    - mv drasyl-cli/target/drasyl-*.zip .
     - '/bin/bash coverage-jacoco.sh'
   coverage: '/\d+.\d+ \% covered/'
-  except:
-    - master
-    - /^\d+\.\d+/
   artifacts:
     reports:
       junit:
@@ -27,21 +21,20 @@ maven-verify:
     paths:
       - "drasyl-*.zip"
 
+maven-verify:
+  <<: *maven-base
+  stage: test
+  script:
+    - 'mvn $MAVEN_CLI_OPTS verify sonar:sonar'
+  except:
+    - master
+    - /^\d+\.\d+/
+
 maven-deploy:
-  stage: build
+  <<: *maven-base
+  stage: deploy
   script:
     - 'mvn $MAVEN_CLI_OPTS deploy sonar:sonar'
-    - mv drasyl-cli/target/drasyl-*.zip .
-  after_script:
-    - '/bin/bash coverage-jacoco.sh'
-  coverage: '/\d+.\d+ \% covered/'
   only:
     - master
     - /^\d+\.\d+/
-  artifacts:
-    reports:
-      junit:
-        - "*/target/surefire-reports/TEST-*.xml"
-        - "*/target/failsafe-reports/TEST-*.xml"
-    paths:
-      - "drasyl-*.zip"
