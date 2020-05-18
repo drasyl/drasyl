@@ -1,5 +1,5 @@
 .docker: &docker
-  stage: docker
+  stage: docker-build
   # Official docker image.
   image: docker:latest
   services:

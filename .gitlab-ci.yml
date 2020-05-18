@@ -1,7 +1,8 @@
 stages:
   - build
   - test
-  - docker
+  - docker-build
+  - docker-test
   - deploy
 
 include:
@@ -9,6 +10,7 @@ include:
   - template: Dependency-Scanning.gitlab-ci.yml
   #  - template: Code-Quality.gitlab-ci.yml
   - local: /.gitlab-ci/Docker.gitlab-ci.yml
+  - template: Container-Scanning.gitlab-ci.yml
   - template: License-Scanning.gitlab-ci.yml
   #  - template: SAST.gitlab-ci.yml
   - local: /.gitlab-ci/Deployments.gitlab-ci.yml
@@ -21,6 +23,12 @@ license_scanning:
   only:
     variables:
       - $LICENSE_MANAGEMENT_ENABLED
+
+container_scanning:
+  stage: docker-test
+  only:
+    variables:
+      - $CONTAINER_SCANNING_ENABLED
 
 dependency_scanning:
   only:
