@@ -1,4 +1,7 @@
 <configuration>
+    <!-- https://stackoverflow.com/questions/3257154/how-to-prevent-logback-from-outputting-its-own-status-at-the-start-of-every-log -->
+    <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
+
     <!-- Configure the Console appender -->
     <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
@@ -19,15 +22,7 @@
 
     <!-- available levels: off, error, warn, info, debug, trace -->
 
-    <logger name="org.drasyl" level="debug" additivity="false">
-        <appender-ref ref="Console"/>
-    </logger>
-
-    <logger name="ch.qos.logback" level="warn" additivity="false">
-        <appender-ref ref="Console"/>
-    </logger>
-
-    <root level="INFO">
+    <root level="WARN">
         <appender-ref ref="Console"/>
         <appender-ref ref="Sentry"/>
     </root>

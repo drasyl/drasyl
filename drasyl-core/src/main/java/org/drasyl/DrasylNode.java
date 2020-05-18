@@ -18,6 +18,7 @@
  */
 package org.drasyl;
 
+import ch.qos.logback.classic.LoggerContext;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
@@ -129,6 +130,10 @@ public abstract class DrasylNode {
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = new CompletableFuture<>();
+
+            // set config level of all drasyl loggers
+            LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
+            context.getLoggerList().stream().filter(l -> l.getName().startsWith("org.drasyl")).forEach(l -> l.setLevel(this.config.getLoglevel()));
         }
         catch (ConfigException e) {
             throw new DrasylException("Couldn't load config: \n" + e.getMessage());
