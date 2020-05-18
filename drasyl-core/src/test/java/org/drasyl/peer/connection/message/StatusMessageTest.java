@@ -44,7 +44,7 @@ public class StatusMessageTest {
     }
 
     @Test
-    public void toJson() throws JsonProcessingException {
+    void toJson() throws JsonProcessingException {
         StatusMessage message = new StatusMessage(STATUS_OK, correspondingId);
 
         assertThatJson(JSON_MAPPER.writeValueAsString(message))
@@ -53,7 +53,7 @@ public class StatusMessageTest {
     }
 
     @Test
-    public void fromJson() throws IOException {
+    void fromJson() throws IOException {
         String json = "{\"@type\":\"StatusMessage\",\"id\":\"205E5ECE2F3F1E744D951658\",\"code\":200}";
 
         assertThat(JSON_MAPPER.readValue(json, Message.class), instanceOf(StatusMessage.class));

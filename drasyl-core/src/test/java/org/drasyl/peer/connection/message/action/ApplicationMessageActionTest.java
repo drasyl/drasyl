@@ -61,7 +61,7 @@ class ApplicationMessageActionTest {
     }
 
     @Test
-    public void onMessageServerShouldSendStatusNotFoundIfMessageCouldNotBeSent() throws DrasylException {
+    void onMessageServerShouldSendStatusNotFoundIfMessageCouldNotBeSent() throws DrasylException {
         doThrow(MessengerException.class).when(messenger).send(any());
 
         ApplicationMessageAction action = new ApplicationMessageAction(message);
@@ -71,7 +71,7 @@ class ApplicationMessageActionTest {
     }
 
     @Test
-    public void onMessageServerShouldRejectNullValues() throws DrasylException {
+    void onMessageServerShouldRejectNullValues() throws DrasylException {
         ApplicationMessageAction action = new ApplicationMessageAction(message);
 
         assertThrows(NullPointerException.class, () -> action.onMessageServer(null, nodeServer));

@@ -27,7 +27,7 @@ public class ConnectionExceptionMessageTest {
     }
 
     @Test
-    public void toJson() throws JsonProcessingException {
+    void toJson() throws JsonProcessingException {
         ConnectionExceptionMessage message = new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG);
 
         assertThatJson(JSON_MAPPER.writeValueAsString(message))
@@ -39,7 +39,7 @@ public class ConnectionExceptionMessageTest {
     }
 
     @Test
-    public void fromJson() throws IOException {
+    void fromJson() throws IOException {
         String json = "{\"@type\":\"" + ConnectionExceptionMessage.class.getSimpleName() + "\",\"id\":\"77175D7235920F3BA17341D7\"," +
                 "\"error\":\"Too many PingMessages were not answered with a PongMessage.\"}";
 
@@ -47,7 +47,7 @@ public class ConnectionExceptionMessageTest {
     }
 
     @Test
-    public void nullTest() {
+    void nullTest() {
         assertThrows(NullPointerException.class, () -> new ConnectionExceptionMessage(null), "ConnectionExceptionMessage requires an error type");
     }
 

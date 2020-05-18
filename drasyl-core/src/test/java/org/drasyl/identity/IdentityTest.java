@@ -37,12 +37,12 @@ public class IdentityTest {
     }
 
     @Test
-    public void toStringCase() {
+    void toStringCase() {
         assertEquals("Identity{id=41eaac1ee8}", identity.toString());
     }
 
     @Test
-    public void illegalIdentityShouldThrowException() {
+    void illegalIdentityShouldThrowException() {
         assertThrows(IllegalArgumentException.class, () -> Identity.of("1234567890a"));
         assertThrows(IllegalArgumentException.class, () -> Identity.of("123456789"));
         assertThrows(NullPointerException.class, () -> Identity.of((String) null));
@@ -52,12 +52,12 @@ public class IdentityTest {
     }
 
     @Test
-    public void aValidIdentityShouldBeCreatedFromACompressedPublicKey() {
+    void aValidIdentityShouldBeCreatedFromACompressedPublicKey() {
         assertEquals(identity, Identity.of(compressedPublicKey));
     }
 
     @Test
-    public void sameIdShouldBeEquals() {
+    void sameIdShouldBeEquals() {
         Identity id2 = Identity.of("41eaac1ee8");
 
         assertEquals(identity, id2);

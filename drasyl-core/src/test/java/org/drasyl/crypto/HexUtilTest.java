@@ -36,7 +36,7 @@ class HexUtilTest {
     }
 
     @Test
-    public void toStringAndFromStringShouldBeInverse() {
+    void toStringAndFromStringShouldBeInverse() {
         String byteAsString = HexUtil.toString(byteArray);
 
         assertEquals(Hex.toHexString(byteArray), byteAsString);
@@ -46,7 +46,7 @@ class HexUtilTest {
     }
 
     @Test
-    public void shouldThrowExceptionOnNotConformStringRepresentations() {
+    void shouldThrowExceptionOnNotConformStringRepresentations() {
         assertThrows(IllegalArgumentException.class, () -> HexUtil.fromString("A"));
         assertThrows(IllegalArgumentException.class, () -> HexUtil.fromString("0Z"));
     }

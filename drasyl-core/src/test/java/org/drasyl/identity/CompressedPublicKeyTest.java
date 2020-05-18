@@ -44,7 +44,7 @@ class CompressedPublicKeyTest {
     }
 
     @Test
-    public void ofTest() throws CryptoException {
+    void ofTest() throws CryptoException {
         CompressedPublicKey compressedPublicKey1 = CompressedPublicKey.of(keyPair.getPublic());
         CompressedPublicKey compressedPublicKey2 = CompressedPublicKey.of(compressedPublicKey1.getCompressedKey());
         CompressedPublicKey compressedPublicKey3 = CompressedPublicKey.of(compressedPublicKey2.toUncompressedKey());
@@ -58,7 +58,7 @@ class CompressedPublicKeyTest {
     }
 
     @Test
-    public void toJson() throws IOException, CryptoException {
+    void toJson() throws IOException, CryptoException {
         CompressedPublicKey compressedPublicKey = CompressedPublicKey.of(keyPair.getPublic());
 
         assertThatJson(JSON_MAPPER.writeValueAsString(compressedPublicKey))
@@ -71,7 +71,7 @@ class CompressedPublicKeyTest {
     }
 
     @Test
-    public void fromJson() throws IOException {
+    void fromJson() throws IOException {
         String json = "\"0340A4F2ADBDDEEDC8F9ACE30E3F18713A3405F43F4871B4BAC9624FE80D2056A7\"";
 
         assertThat(JSON_MAPPER.readValue(json, CompressedPublicKey.class), instanceOf(CompressedPublicKey.class));

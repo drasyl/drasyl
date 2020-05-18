@@ -18,6 +18,7 @@
  */
 package org.drasyl;
 
+import ch.qos.logback.classic.Level;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
@@ -42,6 +43,7 @@ import java.util.stream.Collectors;
 public class DrasylNodeConfig {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNodeConfig.class); // NOSONAR
     //======================================== Config Paths ========================================
+    static final String LOGLEVEL = "drasyl.loglevel";
     static final String IDENTITY_PUBLIC_KEY = "drasyl.identity.public-key";
     static final String IDENTITY_PRIVATE_KEY = "drasyl.identity.private-key";
     static final String IDENTITY_PATH = "drasyl.identity.path";
@@ -66,6 +68,7 @@ public class DrasylNodeConfig {
     static final String SUPER_PEER_IDLE_RETRIES = "drasyl.super-peer.idle.retries";
     static final String SUPER_PEER_IDLE_TIMEOUT = "drasyl.super-peer.idle.timeout";
     //======================================= Config Values ========================================
+    private final Level loglevel;
     private final String identityPublicKey;
     private final String identityPrivateKey;
     private final Path identityPath;
@@ -104,6 +107,7 @@ public class DrasylNodeConfig {
         config.checkValid(ConfigFactory.defaultReference(), "drasyl");
 
         // init
+        this.loglevel = Level.valueOf(config.getString(LOGLEVEL));
         this.userAgent = config.getString(USER_AGENT);
 
         // init identity config
@@ -161,7 +165,8 @@ public class DrasylNodeConfig {
     }
 
     @SuppressWarnings({ "java:S107" })
-    DrasylNodeConfig(String identityPublicKey,
+    DrasylNodeConfig(Level loglevel,
+                     String identityPublicKey,
                      String identityPrivateKey,
                      Path identityPath,
                      String userAgent,
@@ -183,6 +188,7 @@ public class DrasylNodeConfig {
                      String superPeerChannelInitializer,
                      short superPeerIdleRetries,
                      Duration superPeerIdleTimeout) {
+        this.loglevel = loglevel;
         this.identityPublicKey = identityPublicKey;
         this.identityPrivateKey = identityPrivateKey;
         this.identityPath = identityPath;
@@ -206,6 +212,10 @@ public class DrasylNodeConfig {
         this.superPeerChannelInitializer = superPeerChannelInitializer;
         this.superPeerIdleRetries = superPeerIdleRetries;
         this.superPeerIdleTimeout = superPeerIdleTimeout;
+    }
+
+    public Level getLoglevel() {
+        return loglevel;
     }
 
     public String getServerBindHost() {
@@ -314,7 +324,8 @@ public class DrasylNodeConfig {
             return false;
         }
         DrasylNodeConfig that = (DrasylNodeConfig) o;
-        return serverEnabled == that.serverEnabled &&
+        return loglevel == that.loglevel &&
+                serverEnabled == that.serverEnabled &&
                 serverBindPort == that.serverBindPort &&
                 serverIdleRetries == that.serverIdleRetries &&
                 flushBufferSize == that.flushBufferSize &&
@@ -342,7 +353,8 @@ public class DrasylNodeConfig {
     @Override
     public String toString() {
         return "DrasylNodeConfig{" +
-                "identityPublicKey='" + identityPublicKey + '\'' +
+                "loglevel='" + loglevel + '\'' +
+                ", identityPublicKey='" + identityPublicKey + '\'' +
                 ", identityPrivateKey='" + maskSecret(identityPrivateKey) + '\'' +
                 ", identityPath=" + identityPath +
                 ", userAgent='" + userAgent + '\'' +

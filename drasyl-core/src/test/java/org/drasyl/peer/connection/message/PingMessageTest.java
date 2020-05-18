@@ -34,7 +34,7 @@ public class PingMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
     @Test
-    public void toJson() throws JsonProcessingException {
+    void toJson() throws JsonProcessingException {
         PingMessage message = new PingMessage();
 
         assertThatJson(JSON_MAPPER.writeValueAsString(message))
@@ -46,7 +46,7 @@ public class PingMessageTest {
     }
 
     @Test
-    public void fromJson() throws IOException {
+    void fromJson() throws IOException {
         String json = "{\"@type\":\"PingMessage\",\"id\":\"77175D7235920F3BA17341D7\"}";
 
         assertThat(JSON_MAPPER.readValue(json, Message.class), instanceOf(PingMessage.class));
