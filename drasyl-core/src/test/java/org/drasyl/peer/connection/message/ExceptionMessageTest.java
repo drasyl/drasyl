@@ -20,7 +20,7 @@ public class ExceptionMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
     @Test
-    public void toJson() throws JsonProcessingException {
+    void toJson() throws JsonProcessingException {
         ExceptionMessage message = new ExceptionMessage(ERROR_INTERNAL);
 
         assertThatJson(JSON_MAPPER.writeValueAsString(message))
@@ -32,7 +32,7 @@ public class ExceptionMessageTest {
     }
 
     @Test
-    public void fromJson() throws IOException {
+    void fromJson() throws IOException {
         String json = "{\"@type\":\"" + ExceptionMessage.class.getSimpleName() + "\",\"id\":\"77175D7235920F3BA17341D7\"," +
                 "\"error\":\"Internal Error occurred.\"}";
 
@@ -40,7 +40,7 @@ public class ExceptionMessageTest {
     }
 
     @Test
-    public void nullTest() {
+    void nullTest() {
         assertThrows(NullPointerException.class, () -> new ExceptionMessage(null), "ExceptionMessage requires an error");
     }
 

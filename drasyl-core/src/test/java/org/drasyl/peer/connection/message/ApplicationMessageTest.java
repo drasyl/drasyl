@@ -62,7 +62,7 @@ public class ApplicationMessageTest {
     }
 
     @Test
-    public void toJson() throws JsonProcessingException {
+    void toJson() throws JsonProcessingException {
         message = new ApplicationMessage(sender, recipient, new byte[]{ 0x00, 0x01, 0x02 });
 
         assertThatJson(JSON_MAPPER.writeValueAsString(message))
@@ -71,7 +71,7 @@ public class ApplicationMessageTest {
     }
 
     @Test
-    public void fromJson() throws IOException {
+    void fromJson() throws IOException {
         String json = "{\"@type\":\"ApplicationMessage\",\"id\":\"" + id + "\",\"sender\":\"" + sender.getId() + "\",\"recipient\":\"" + recipient.getId() + "\",\"payload\":\"AAEC\"}";
 
         ApplicationMessage message = JSON_MAPPER.readValue(json, ApplicationMessage.class);
@@ -80,7 +80,7 @@ public class ApplicationMessageTest {
     }
 
     @Test
-    public void nullTest() {
+    void nullTest() {
         assertThrows(NullPointerException.class, () -> new ApplicationMessage(null, recipient, new byte[]{}), "Message requires a sender");
 
         assertThrows(NullPointerException.class, () -> new ApplicationMessage(sender, null, new byte[]{}), "Message requires a recipient");

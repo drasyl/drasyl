@@ -28,13 +28,13 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 public class NetworkUtilTest {
     @Test
-    public void getIPTest() throws IOException {
+    void getIPTest() throws IOException {
         assertNotEquals(NetworkUtil.getExternalIPAddress(), null);
         assertNotEquals(NetworkUtil.getExternalIPAddress(), "");
     }
 
     @Test
-    public void availablePortTest() {
+    void availablePortTest() {
         try (ServerSocket socket = new ServerSocket(5555)) {
             assertFalse(NetworkUtil.available(5555));
         }
@@ -45,7 +45,7 @@ public class NetworkUtilTest {
     }
 
     @Test
-    public void invalidPortTest() {
+    void invalidPortTest() {
         assertThrows(IllegalArgumentException.class, () -> NetworkUtil.available(NetworkUtil.MIN_PORT_NUMBER - 1));
 
         assertThrows(IllegalArgumentException.class, () -> NetworkUtil.available(NetworkUtil.MAX_PORT_NUMBER + 1));
@@ -56,7 +56,7 @@ public class NetworkUtilTest {
     }
 
     @Test
-    public void aliveTest() {
+    void aliveTest() {
         try (ServerSocket socket = new ServerSocket(2222)) {
             assertTrue(NetworkUtil.alive("127.0.0.1", 2222));
         }

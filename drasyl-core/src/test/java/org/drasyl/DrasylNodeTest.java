@@ -84,7 +84,7 @@ public class DrasylNodeTest {
     }
 
     @Test
-    public void startShouldReturnSameFutureIfStartHasAlreadyBeenTriggered() {
+    void startShouldReturnSameFutureIfStartHasAlreadyBeenTriggered() {
         DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, server, superPeerClient, new AtomicBoolean(true), startSequence, shutdownSequence) {
             @Override
             public void onEvent(Event event) {
@@ -94,7 +94,7 @@ public class DrasylNodeTest {
     }
 
     @Test
-    public void startShouldEmitUpEventOnSuccessfulStart() {
+    void startShouldEmitUpEventOnSuccessfulStart() {
         when(identityManager.getIdentity()).thenReturn(identity);
         when(messenger.getConnectionsManager()).thenReturn(connectionsManager);
 
@@ -109,7 +109,7 @@ public class DrasylNodeTest {
     }
 
     @Test
-    public void shutdownShouldEmitDownAndNormalTerminationEventOnSuccessfulShutdown() {
+    void shutdownShouldEmitDownAndNormalTerminationEventOnSuccessfulShutdown() {
         when(identityManager.getIdentity()).thenReturn(identity);
         when(messenger.getConnectionsManager()).thenReturn(connectionsManager);
 
@@ -125,7 +125,7 @@ public class DrasylNodeTest {
     }
 
     @Test
-    public void shutdownShouldReturnSameFutureIfShutdownHasAlreadyBeenTriggered() {
+    void shutdownShouldReturnSameFutureIfShutdownHasAlreadyBeenTriggered() {
         DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, server, superPeerClient, new AtomicBoolean(false), startSequence, shutdownSequence) {
             @Override
             public void onEvent(Event event) {
@@ -135,7 +135,7 @@ public class DrasylNodeTest {
     }
 
     @Test
-    public void sendShouldCallMessenger() throws DrasylException {
+    void sendShouldCallMessenger() throws DrasylException {
         when(identityManager.getIdentity()).thenReturn(identity);
 
         DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, server, superPeerClient, started, startSequence, shutdownSequence) {

@@ -43,8 +43,10 @@ public class Chat {
                         break;
                     case EVENT_NODE_OFFLINE:
                         System.out.println("Offline! No messages can be sent at the moment. Wait until node comes back online.");
+                        break;
                     case EVENT_NODE_UP:
                     case EVENT_NODE_DOWN:
+                        // ignore
                         break;
                     default:
                         System.out.println(event);

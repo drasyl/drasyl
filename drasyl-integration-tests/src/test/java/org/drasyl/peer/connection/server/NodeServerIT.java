@@ -371,7 +371,7 @@ public class NodeServerIT {
     }
 
     @Test
-    public void shouldOpenAndCloseGracefully() throws DrasylException {
+    void shouldOpenAndCloseGracefully() throws DrasylException {
         NodeServer server = new NodeServer(identityManager, messenger, peersManager, workerGroup, bossGroup);
 
         server.open();
@@ -381,7 +381,7 @@ public class NodeServerIT {
     }
 
     @Test
-    public void openShouldFailIfInvalidPortIsGiven() throws DrasylException {
+    void openShouldFailIfInvalidPortIsGiven() throws DrasylException {
         Config config =
                 ConfigFactory.parseString("drasyl.server.bind-port = 72522").withFallback(ConfigFactory.load());
         NodeServer server = new NodeServer(identityManager, messenger, peersManager, config, workerGroup, bossGroup);

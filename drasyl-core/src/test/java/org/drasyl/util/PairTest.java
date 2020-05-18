@@ -26,21 +26,21 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 public class PairTest {
     @Test
-    public void firstShouldReturnFirstElement() {
+    void firstShouldReturnFirstElement() {
         Pair<Integer, String> pair = Pair.of(10, "beers");
 
         assertEquals(10, pair.first());
     }
 
     @Test
-    public void secondShouldReturnSecondElement() {
+    void secondShouldReturnSecondElement() {
         Pair<Integer, String> pair = Pair.of(10, "beers");
 
         assertEquals("beers", pair.second());
     }
 
     @Test
-    public void equalsShouldRecognizeEqualPairs() {
+    void equalsShouldRecognizeEqualPairs() {
         Pair<Integer, String> pairA = Pair.of(5, "beers");
         Pair<Integer, String> pairB = Pair.of(5, "beers");
         Pair<Integer, String> pairC = Pair.of(null, "shots");
@@ -54,7 +54,7 @@ public class PairTest {
     }
 
     @Test
-    public void hashCodeShouldRecognizeEqualPairs() {
+    void hashCodeShouldRecognizeEqualPairs() {
         Pair pairA = Pair.of(5, "beers");
         Pair pairB = Pair.of(5, "beers");
         Pair pairC = Pair.of(10, "shots");

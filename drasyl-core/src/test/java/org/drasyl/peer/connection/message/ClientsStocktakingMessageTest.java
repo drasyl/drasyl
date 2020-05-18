@@ -48,7 +48,7 @@ public class ClientsStocktakingMessageTest {
     }
 
     @Test
-    public void toJson() throws JsonProcessingException {
+    void toJson() throws JsonProcessingException {
         ClientsStocktakingMessage message = new ClientsStocktakingMessage(List.of(identity), correspondingId);
 
         assertThatJson(JSON_MAPPER.writeValueAsString(message))
@@ -60,14 +60,14 @@ public class ClientsStocktakingMessageTest {
     }
 
     @Test
-    public void fromJson() throws IOException {
+    void fromJson() throws IOException {
         String json = "{\"@type\":\"ClientsStocktakingMessage\",\"id\":\"FDCC13C730368155EC025866\",\"identities\":[\"" + identity.getId() + "\"],\"correspondingId\":\"correspondingId\"}";
 
         assertThat(JSON_MAPPER.readValue(json, Message.class), instanceOf(ClientsStocktakingMessage.class));
     }
 
     @Test
-    public void nullTest() {
+    void nullTest() {
         assertThrows(NullPointerException.class, () -> new ClientsStocktakingMessage(null, correspondingId), "ClientsStocktaking requires client UIDs");
     }
 

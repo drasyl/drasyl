@@ -59,7 +59,7 @@ public class WelcomeMessageTest {
     }
 
     @Test
-    public void toJson() throws JsonProcessingException {
+    void toJson() throws JsonProcessingException {
         WelcomeMessage message = new WelcomeMessage(publicKey, endpoints, correspondingId);
 
         assertThatJson(JSON_MAPPER.writeValueAsString(message))
@@ -71,7 +71,7 @@ public class WelcomeMessageTest {
     }
 
     @Test
-    public void fromJson() throws IOException {
+    void fromJson() throws IOException {
         String json = "{\"@type\":\"WelcomeMessage\",\"id\":\"4AE5CDCD8C21719F8E779F21\",\"userAgent\":\"\",\"publicKey\":\"" + publicKey.getCompressedKey() + "\",\"endpoints\":[\"ws://test\"]}";
 
         assertThat(JSON_MAPPER.readValue(json, Message.class), instanceOf(WelcomeMessage.class));

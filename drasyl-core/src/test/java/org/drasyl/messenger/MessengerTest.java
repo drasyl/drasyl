@@ -45,7 +45,7 @@ class MessengerTest {
     }
 
     @Test
-    public void sendShouldHandleMessages() throws DrasylException {
+    void sendShouldHandleMessages() throws DrasylException {
         when(connectionsManager.getConnection(any())).thenReturn(peerConnection);
 
         ApplicationMessage message = new ApplicationMessage(sender, recipient, payload);

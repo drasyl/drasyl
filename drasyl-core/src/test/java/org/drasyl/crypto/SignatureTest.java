@@ -42,13 +42,13 @@ class SignatureTest {
     }
 
     @Test
-    public void testSignableNotNull() {
+    void testSignableNotNull() {
         signable1 = new DummySignable();
         assertNotNull(signable1.getSignableBytes());
     }
 
     @Test
-    public void testDifferentSignablesHaveDifferentSignatures() throws CryptoException {
+    void testDifferentSignablesHaveDifferentSignatures() throws CryptoException {
         Crypto.sign(keyPair1.getPrivate(), signable1);
         signature1 = signable1.getSignature();
         Crypto.sign(keyPair1.getPrivate(), signable2);
@@ -57,7 +57,7 @@ class SignatureTest {
     }
 
     @Test
-    public void testVerifySignature() throws CryptoException {
+    void testVerifySignature() throws CryptoException {
         Crypto.sign(keyPair1.getPrivate(), signable1);
         signature1 = signable1.getSignature();
         assertNotNull(signature1);
@@ -70,7 +70,7 @@ class SignatureTest {
     }
 
     @Test
-    public void testVerifyDifferentSignatures() throws CryptoException {
+    void testVerifyDifferentSignatures() throws CryptoException {
         Crypto.sign(keyPair1.getPrivate(), signable1);
         signature1 = signable1.getSignature();
         Crypto.sign(keyPair1.getPrivate(), signable2);
@@ -89,7 +89,7 @@ class SignatureTest {
     }
 
     @Test
-    public void testDifferentKeychainsHaveDifferentKeys() {
+    void testDifferentKeychainsHaveDifferentKeys() {
         assertNotEquals(keyPair1.getPublic(), keyPair2.getPublic());
         assertNotEquals(keyPair1.getPrivate(), keyPair2.getPrivate());
     }

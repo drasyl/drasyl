@@ -59,7 +59,7 @@ public class JoinMessageTest {
     }
 
     @Test
-    public void toJson() throws JsonProcessingException {
+    void toJson() throws JsonProcessingException {
         JoinMessage message = new JoinMessage(publicKey, endpoints);
 
         assertThatJson(JSON_MAPPER.writeValueAsString(message))
@@ -71,14 +71,14 @@ public class JoinMessageTest {
     }
 
     @Test
-    public void fromJson() throws IOException {
+    void fromJson() throws IOException {
         String json = "{\"@type\":\"JoinMessage\",\"id\":\"4AE5CDCD8C21719F8E779F21\",\"userAgent\":\"\",\"publicKey\":\"" + publicKey.getCompressedKey() + "\",\"endpoints\":[\"ws://test\"]}";
 
         assertThat(JSON_MAPPER.readValue(json, Message.class), instanceOf(JoinMessage.class));
     }
 
     @Test
-    public void nullTest() {
+    void nullTest() {
         assertThrows(NullPointerException.class, () -> new JoinMessage(null, endpoints), "Join requires a public key");
 
         assertThrows(NullPointerException.class, () -> new JoinMessage(publicKey, null), "Join requires endpoints");

@@ -58,7 +58,7 @@ class JoinMessageActionTest {
     }
 
     @Test
-    public void onMessageServerShouldAddPeerToPeersManager() {
+    void onMessageServerShouldAddPeerToPeersManager() {
         when(message.getPublicKey()).thenReturn(compressedPublicKey);
         when(message.getEndpoints()).thenReturn(Set.of());
         when(message.getId()).thenReturn(id);

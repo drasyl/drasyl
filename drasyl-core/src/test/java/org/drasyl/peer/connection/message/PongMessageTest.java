@@ -41,7 +41,7 @@ public class PongMessageTest {
     }
 
     @Test
-    public void toJson() throws JsonProcessingException {
+    void toJson() throws JsonProcessingException {
         PongMessage message = new PongMessage(correspondingId);
 
         assertThatJson(JSON_MAPPER.writeValueAsString(message))
@@ -53,7 +53,7 @@ public class PongMessageTest {
     }
 
     @Test
-    public void fromJson() throws IOException {
+    void fromJson() throws IOException {
         String json = "{\"@type\":\"PongMessage\",\"id\":\"77175D7235920F3BA17341D7\",\"correspondingId\":\"correspondingId\"}";
 
         assertThat(JSON_MAPPER.readValue(json, Message.class), instanceOf(PongMessage.class));

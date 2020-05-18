@@ -44,7 +44,7 @@ public class MessageExceptionMessageTest {
     }
 
     @Test
-    public void toJson() throws JsonProcessingException {
+    void toJson() throws JsonProcessingException {
         MessageExceptionMessage message = new MessageExceptionMessage(MESSAGE_ERROR_ALREADY_JOINED, correspondingId);
 
         assertThatJson(JSON_MAPPER.writeValueAsString(message))
@@ -56,7 +56,7 @@ public class MessageExceptionMessageTest {
     }
 
     @Test
-    public void fromJson() throws IOException {
+    void fromJson() throws IOException {
         String json = "{\"@type\":\"" + MessageExceptionMessage.class.getSimpleName() + "\",\"id\":\"77175D7235920F3BA17341D7\"," +
                 "\"error\":\"This client has already an open Session with this Node Server. No need to authenticate twice.\",\"correspondingId\":\"correspondingId\"}";
 
@@ -64,7 +64,7 @@ public class MessageExceptionMessageTest {
     }
 
     @Test
-    public void nullTest() {
+    void nullTest() {
         assertThrows(NullPointerException.class, () -> new MessageExceptionMessage(null, correspondingId), "MessageExceptionMessage requires an error");
     }
 
