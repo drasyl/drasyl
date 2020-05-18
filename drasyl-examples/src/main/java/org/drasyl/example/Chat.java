@@ -66,6 +66,10 @@ public class Chat {
                 if (!newRecipient.isBlank()) {
                     recipient = newRecipient;
                 }
+                if (recipient.isBlank()) {
+                    System.err.println("You must specify a recipient.");
+                    continue;
+                }
 
                 // prompt for message
                 System.out.print("Message? ");
