@@ -62,7 +62,10 @@ public class Chat {
             try {
                 // prompt for recipient
                 System.out.print("Recipient [" + recipient + "]? ");
-                recipient = scanner.nextLine();
+                String newRecipient = scanner.nextLine();
+                if (!newRecipient.isBlank()) {
+                    recipient = newRecipient;
+                }
 
                 // prompt for message
                 System.out.print("Message? ");
