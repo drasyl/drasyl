@@ -7,13 +7,31 @@ stages:
 
 include:
   - local: /.gitlab-ci/Maven.gitlab-ci.yml # we have to use our own template, since GitLab's template uses JDK8, but we need JDK11
+  - local: /.gitlab-ci/Docker.gitlab-ci.yml
+  - local: /.gitlab-ci/Deployments.gitlab-ci.yml
+  - template: SAST.gitlab-ci.yml
   - template: Dependency-Scanning.gitlab-ci.yml
   #  - template: Code-Quality.gitlab-ci.yml
-  - local: /.gitlab-ci/Docker.gitlab-ci.yml
   - template: Container-Scanning.gitlab-ci.yml
   - template: License-Scanning.gitlab-ci.yml
-  #  - template: SAST.gitlab-ci.yml
-  - local: /.gitlab-ci/Deployments.gitlab-ci.yml
+
+sast:
+  variables:
+    SAST_JAVA_VERSION: 11
+  only:
+    variables:
+      - $SAST_ENABLED
+
+dependency_scanning:
+  only:
+    variables:
+      - $DEPENDENCY_SCANNING_ENABLED
+
+container_scanning:
+  stage: docker-test
+  only:
+    variables:
+      - $CONTAINER_SCANNING_ENABLED
 
 license_scanning:
   stage: build
@@ -23,19 +41,3 @@ license_scanning:
   only:
     variables:
       - $LICENSE_MANAGEMENT_ENABLED
-
-container_scanning:
-  stage: docker-test
-  only:
-    variables:
-      - $CONTAINER_SCANNING_ENABLED
-
-dependency_scanning:
-  only:
-    variables:
-      - $DEPENDENCY_SCANNING_ENABLED
-
-#sast:
-#  variables:
-#    MAVEN_CLI_OPTS: -DskipTests
-#    SAST_JAVA_VERSION: 11
