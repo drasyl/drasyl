@@ -11,6 +11,7 @@ import org.drasyl.util.Pair;
 import java.io.File;
 import java.util.Scanner;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * This is an Example of a Chat Application running on the drasyl Overlay Network. It allows you to
@@ -42,6 +43,9 @@ public class Chat {
                         break;
                     case EVENT_NODE_OFFLINE:
                         System.out.println("Offline! No messages can be sent at the moment. Wait until node comes back online.");
+                    case EVENT_NODE_UP:
+                    case EVENT_NODE_DOWN:
+                        break;
                     default:
                         System.out.println(event);
                 }
@@ -59,8 +63,9 @@ public class Chat {
 
         String recipient = "";
         Scanner scanner = new Scanner(System.in);
-        boolean keepRunning = true;
-        while (keepRunning) {
+        AtomicBoolean keepRunning = new AtomicBoolean(true);
+        Runtime.getRuntime().addShutdownHook(new Thread(() -> keepRunning.set(false)));
+        while (keepRunning.get()) {
             try {
                 // prompt for recipient
                 System.out.print("Recipient [" + recipient + "]? ");
@@ -83,14 +88,8 @@ public class Chat {
             catch (IllegalArgumentException e) {
                 System.err.println(e.getMessage());
             }
-
-            try {
-                Thread.sleep(1000);
-            }
-            catch (InterruptedException e) {
-                keepRunning = false;
-                Thread.currentThread().interrupt();
-            }
         }
+
+        node.shutdown().join();
     }
 }
