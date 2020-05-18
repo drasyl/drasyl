@@ -19,7 +19,6 @@
 package org.drasyl.cli;
 
 import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.LoggerContext;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.apache.commons.cli.*;
@@ -33,8 +32,7 @@ import java.io.File;
 
 class Cli {
     private static final Logger log = LoggerFactory.getLogger(Cli.class);
-    private static final String CONF = "drasyl.conf";
-    private static final String LOGLEVEL = "info";
+    private static final String DEFAULT_CONF = "drasyl.conf";
     private static final String OPT_VERSION = "version";
     private static final String OPT_LOGLEVEL = "loglevel";
     private static final String OPT_CONFIGFILE = "configfile";
@@ -57,13 +55,6 @@ class Cli {
         try {
             CommandLineParser parser = new DefaultParser();
             CommandLine cmd = parser.parse(options, args);
-
-            if (cmd.hasOption(OPT_LOGLEVEL)) {
-                setLogLevel(cmd.getOptionValue(OPT_LOGLEVEL));
-            }
-            else {
-                setLogLevel(LOGLEVEL);
-            }
 
             if (cmd.hasOption(OPT_HELP)) {
                 printHelp(options);
@@ -97,7 +88,7 @@ class Cli {
         Option version = Option.builder("v").longOpt(OPT_VERSION).desc("display version").build();
         options.addOption(version);
 
-        Option loglevel = Option.builder("l").longOpt(OPT_LOGLEVEL).hasArg().argName("level").desc("sets the log level (off, error, warn, info, debug, trace; default: " + LOGLEVEL + ")").build();
+        Option loglevel = Option.builder("l").longOpt(OPT_LOGLEVEL).hasArg().argName("level").desc("sets the log level (off, error, warn, info, debug, trace; default: warn)").build();
         options.addOption(loglevel);
 
         Option configfile = Option.builder("f").longOpt(OPT_CONFIGFILE).hasArg().argName("file").desc("load configuration from specified file").build();
@@ -109,25 +100,18 @@ class Cli {
         return options;
     }
 
-    private void setLogLevel(String value) {
-        Level level = Level.valueOf(value);
-
-        LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
-        context.getLoggerList().stream().filter(l -> l.getName().startsWith("org.drasyl")).forEach(l -> l.setLevel(level));
-    }
-
     private void printHelp(Options options) {
         String header = "" +
                 "       drasyl\n" +
                 "       drasyl -f ~/drasyl.conf\n" +
                 "\n" +
                 "Run a Drasyl Node in the current directory.\n" +
-                "If the file '" + CONF + "' exists, that configuration is applied.\n" +
+                "If the file '" + DEFAULT_CONF + "' exists, that configuration is applied.\n" +
                 "\n" +
                 "Options:";
 
         String footer = "\n" +
-                CONF + " syntax:\n" +
+                DEFAULT_CONF + " syntax:\n" +
                 "drasyl {\n" +
                 "  identity {\n" +
                 "    public-key = \"...\"\n" +
@@ -162,13 +146,13 @@ class Cli {
         try {
             Config config;
             if (!cmd.hasOption(OPT_CONFIGFILE)) {
-                File defaultFile = new File(CONF);
+                File defaultFile = new File(DEFAULT_CONF);
                 if (defaultFile.exists()) {
                     log.info("Node is using default configuration file '{}'", defaultFile);
                     config = ConfigFactory.parseFile(defaultFile).withFallback(ConfigFactory.load());
                 }
                 else {
-                    log.info("Node is using configuration defaults as '{}' does not exist", CONF);
+                    log.info("Node is using configuration defaults as '{}' does not exist", DEFAULT_CONF);
                     config = ConfigFactory.load();
                 }
             }
@@ -176,6 +160,12 @@ class Cli {
                 File file = new File(cmd.getOptionValue(OPT_CONFIGFILE));
                 log.info("Node is using configuration file '{}'", file);
                 config = ConfigFactory.parseFile(file).withFallback(ConfigFactory.load());
+            }
+
+            // override log level
+            if (cmd.hasOption(OPT_LOGLEVEL)) {
+                String level = cmd.getOptionValue(OPT_LOGLEVEL);
+                config = ConfigFactory.parseString("drasyl.loglevel = \"" + level + "\"").withFallback(config);
             }
 
             node = new DrasylNode(config) {
