@@ -144,13 +144,6 @@
                 <version>${leveldb.version}</version>
             </dependency>
 
-            <!-- Apache Tika -->
-            <dependency>
-                <groupId>org.apache.tika</groupId>
-                <artifactId>tika-core</artifactId>
-                <version>${tika.version}</version>
-            </dependency>
-
             <dependency>
                 <groupId>org.jetbrains</groupId>
                 <artifactId>annotations</artifactId>
@@ -231,7 +224,6 @@
         <guava.version>28.1-jre</guava.version>
         <rxjava.version>3.0.1</rxjava.version>
         <sentry.version>1.7.27</sentry.version>
-        <tika.version>1.23</tika.version>
         <commons.version>4.4</commons.version>
         <leveldb.version>1.8</leveldb.version>
     </properties>
