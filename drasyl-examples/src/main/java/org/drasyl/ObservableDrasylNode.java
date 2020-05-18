@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl;
 
 import com.typesafe.config.Config;
@@ -29,6 +28,7 @@ import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.server.NodeServer;
 import org.drasyl.peer.connection.superpeer.SuperPeerClient;
+import org.drasyl.util.DrasylScheduler;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -72,7 +72,7 @@ public class ObservableDrasylNode extends DrasylNode {
 
     public static void main(String[] args) throws DrasylException {
         ObservableDrasylNode node = new ObservableDrasylNode();
-        node.events().subscribe(System.out::println, System.err::println); // NOSONAR
+        node.events().subscribeOn(DrasylScheduler.getInstance()).subscribe(System.out::println, System.err::println); // NOSONAR
         node.start().join();
     }
 
