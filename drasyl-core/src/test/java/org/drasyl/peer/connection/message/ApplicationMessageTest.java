@@ -41,7 +41,7 @@ import static org.junit.Assert.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 
-public class ApplicationMessageTest {
+class ApplicationMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
     KeyPair keyPair;
     CompressedPublicKey senderPubKey;

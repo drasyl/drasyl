@@ -31,10 +31,9 @@ import static org.drasyl.peer.connection.message.MessageExceptionMessage.Error.M
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class MessageExceptionMessageTest {
+class MessageExceptionMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
     private String correspondingId;
 

@@ -68,7 +68,7 @@ public class DrasylNodeConfig {
     static final String SUPER_PEER_IDLE_RETRIES = "drasyl.super-peer.idle.retries";
     static final String SUPER_PEER_IDLE_TIMEOUT = "drasyl.super-peer.idle.timeout";
     //======================================= Config Values ========================================
-    private final Level loglevel;
+    private final Level loglevel; // NOSONAR
     private final String identityPublicKey;
     private final String identityPrivateKey;
     private final Path identityPath;

@@ -26,7 +26,7 @@ import java.net.ServerSocket;
 import static org.junit.Assert.*;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class NetworkUtilTest {
+class NetworkUtilTest {
     @Test
     void getIPTest() throws IOException {
         assertNotEquals(NetworkUtil.getExternalIPAddress(), null);

@@ -1,10 +1,27 @@
+/*
+ * Copyright (c) 2020.
+ *
+ * This file is part of drasyl.
+ *
+ *  drasyl is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  drasyl is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package org.drasyl.peer;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.PeerInformation;
-import org.drasyl.peer.PeersManager;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -124,11 +141,8 @@ class PeersManagerTest {
 
     @Test
     void removePeerShouldThrowExceptionIfGivenPeerIsChildren() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            PeersManager manager = new PeersManager(lock, peers, Set.of(identity), superPeer);
-
-            manager.removePeer(identity);
-        });
+        PeersManager manager = new PeersManager(lock, peers, Set.of(identity), superPeer);
+        assertThrows(IllegalArgumentException.class, () -> manager.removePeer(identity));
     }
 
     @Test
@@ -144,20 +158,14 @@ class PeersManagerTest {
 
     @Test
     void removePeersShouldThrowExceptionIfGivenPeersContainSuperPeer() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            PeersManager manager = new PeersManager(lock, peers, children, superPeer);
-
-            manager.removePeers(superPeer);
-        });
+        PeersManager manager = new PeersManager(lock, peers, children, superPeer);
+        assertThrows(IllegalArgumentException.class, () -> manager.removePeers(superPeer));
     }
 
     @Test
     void removePeersShouldThrowExceptionIfGivenPeersContainChildren() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            PeersManager manager = new PeersManager(lock, peers, Set.of(identity), superPeer);
-
-            manager.removePeers(identity);
-        });
+        PeersManager manager = new PeersManager(lock, peers, Set.of(identity), superPeer);
+        assertThrows(IllegalArgumentException.class, () -> manager.removePeers(identity));
     }
 
     @Test
@@ -203,11 +211,8 @@ class PeersManagerTest {
 
     @Test
     void addChildrenShouldThrowExceptionWhenChildrenIsNotKnown() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            PeersManager manager = new PeersManager(lock, Map.of(), children, superPeer);
-
-            manager.addChildren(identity);
-        });
+        PeersManager manager = new PeersManager(lock, Map.of(), children, superPeer);
+        assertThrows(IllegalArgumentException.class, () -> manager.addChildren(identity));
     }
 
     @Test
@@ -252,11 +257,8 @@ class PeersManagerTest {
 
     @Test
     void setSuperPeerShouldThrowExceptionWhenSuperPeerIsNotKnown() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            PeersManager manager = new PeersManager(lock, Map.of(), children, superPeer);
-
-            manager.setSuperPeer(identity);
-        });
+        PeersManager manager = new PeersManager(lock, Map.of(), children, superPeer);
+        assertThrows(IllegalArgumentException.class, () -> manager.setSuperPeer(identity));
     }
 
     @Test

@@ -109,6 +109,7 @@ class Cli {
         return options;
     }
 
+    @SuppressWarnings("java:S1192")
     private void printHelp(Options options) {
         String header = "" +
                 "       drasyl\n" +

@@ -62,7 +62,7 @@ class JoinHandlerTest {
     }
 
     // FIXME: fix test
-    @Ignore
+    @Ignore("Muss implementiert werden")
     void channelActiveShouldThrowExceptionAndCloseChannelOnTimeout() throws Exception {
         when(ctx.executor()).thenReturn(eventExecutor);
         when(eventExecutor.schedule(any(Runnable.class), any(), any(TimeUnit.class))).then(invocation -> {

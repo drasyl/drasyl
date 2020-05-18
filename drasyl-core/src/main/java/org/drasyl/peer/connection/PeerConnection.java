@@ -38,6 +38,7 @@ import java.util.concurrent.CompletableFuture;
  * For this purpose, this object provides a standardized interface so that the actual connection
  * type is abstracted and the same operations are always available.
  */
+@SuppressWarnings({ "java:S1452" })
 public abstract class PeerConnection {
     protected final String connectionId = Crypto.randomString(8);
     protected Identity identity;

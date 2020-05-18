@@ -25,7 +25,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-public class IdentityTest {
+class IdentityTest {
     private CompressedPublicKey compressedPublicKey;
     private Identity identity;
 

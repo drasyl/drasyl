@@ -23,7 +23,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class WrongProtocolFilterTest {
     private ChannelHandlerContext ctx;
@@ -37,10 +38,7 @@ class WrongProtocolFilterTest {
     void channelRead0ShouldThrowExceptionIfClientApparentlyUsingWrongProtocol() {
         WrongProtocolFilter filter = WrongProtocolFilter.INSTANCE;
 
-        WrongProtocolFilter.FILTER.forEach(input -> assertThrows(IllegalArgumentException.class, () -> {
-            filter.channelRead0(ctx, input);
-            verify(ctx, never()).fireChannelRead(input);
-        }));
+        WrongProtocolFilter.FILTER.forEach(input -> assertThrows(IllegalArgumentException.class, () -> filter.channelRead0(ctx, input)));
     }
 
     @Test

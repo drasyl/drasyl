@@ -108,6 +108,7 @@ public final class NetworkUtil {
      * @return <tt>true</tt> if the port is available, or <tt>false</tt> if not
      * @throws IllegalArgumentException is thrown if the port number is out of range
      */
+    @SuppressWarnings("java:S4818")
     public static boolean available(int port) {
         if (!isValidPort(port)) {
             throw new IllegalArgumentException("Invalid port: " + port);

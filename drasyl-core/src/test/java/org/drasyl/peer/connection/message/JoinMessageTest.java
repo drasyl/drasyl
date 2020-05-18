@@ -40,7 +40,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
-public class JoinMessageTest {
+class JoinMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
     private CompressedPublicKey publicKey;
     private Set<URI> endpoints;

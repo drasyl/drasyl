@@ -31,7 +31,7 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 
-public class PongMessageTest {
+class PongMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
     private String correspondingId;
 
