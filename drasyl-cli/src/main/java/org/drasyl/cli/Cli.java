@@ -28,6 +28,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
+import java.util.function.Supplier;
 
 class Cli {
     private static final Logger log = LoggerFactory.getLogger(Cli.class);
@@ -36,10 +37,19 @@ class Cli {
     private static final String OPT_LOGLEVEL = "loglevel";
     private static final String OPT_CONFIGFILE = "configfile";
     private static final String OPT_HELP = "help";
+    private final HelpFormatter formatter;
+    private final Supplier<String> versionSupplier;
     private DrasylNode node;
 
+    Cli(HelpFormatter formatter,
+        Supplier<String> versionSupplier, DrasylNode node) {
+        this.node = node;
+        this.formatter = formatter;
+        this.versionSupplier = versionSupplier;
+    }
+
     public Cli() {
-        node = null;
+        this(new HelpFormatter(), DrasylNode::getVersion, null);
     }
 
     public static void main(String[] args) throws CliException {
@@ -130,15 +140,13 @@ class Cli {
                 "  }\n" +
                 "}";
 
-        HelpFormatter formatter = new HelpFormatter();
         formatter.setWidth(100);
         formatter.setSyntaxPrefix("Usage: ");
         formatter.printHelp("drasyl [options]", header, options, footer);
     }
 
     private void printVersion() {
-        String version = DrasylNode.getVersion();
-        System.out.println(version); // NOSONAR
+        System.out.println(versionSupplier.get()); // NOSONAR
     }
 
     private void runNode(CommandLine cmd) throws CliException {
