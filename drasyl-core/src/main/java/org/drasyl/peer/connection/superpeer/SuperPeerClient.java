@@ -19,6 +19,7 @@
 
 package org.drasyl.peer.connection.superpeer;
 
+import com.google.common.base.Function;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
 import org.drasyl.DrasylNodeConfig;
@@ -42,6 +43,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 import static java.lang.Thread.sleep;
 import static org.drasyl.peer.connection.PeerConnection.CloseReason.REASON_SHUTTING_DOWN;
@@ -65,6 +67,7 @@ public class SuperPeerClient implements AutoCloseable {
     private final AtomicInteger nextRetryDelayPointer;
     private final Consumer<Event> onEvent;
     private Channel clientChannel;
+    private final Function<Set<URI>, Thread> threadSupplier;
 
     SuperPeerClient(DrasylNodeConfig config,
                     IdentityManager identityManager,
@@ -75,7 +78,9 @@ public class SuperPeerClient implements AutoCloseable {
                     AtomicBoolean opened,
                     AtomicInteger nextEndpointPointer,
                     AtomicInteger nextRetryDelayPointer,
-                    Consumer<Event> onEvent) {
+                    Consumer<Event> onEvent,
+                    Channel clientChannel,
+                    Function<Set<URI>, Thread> threadSupplier) {
         this.identityManager = identityManager;
         this.messenger = messenger;
         this.peersManager = peersManager;
@@ -86,6 +91,8 @@ public class SuperPeerClient implements AutoCloseable {
         this.nextEndpointPointer = nextEndpointPointer;
         this.nextRetryDelayPointer = nextRetryDelayPointer;
         this.onEvent = onEvent;
+        this.clientChannel = clientChannel;
+        this.threadSupplier = threadSupplier;
     }
 
     public SuperPeerClient(DrasylNodeConfig config,
@@ -114,6 +121,7 @@ public class SuperPeerClient implements AutoCloseable {
             this.nextEndpointPointer = new AtomicInteger(endpoints.isEmpty() ? 0 : Crypto.randomNumber(endpoints.size()));
             this.nextRetryDelayPointer = new AtomicInteger(0);
             this.onEvent = onEvent;
+            this.threadSupplier = myEntryPoints -> new Thread(() -> keepConnectionAlive(myEntryPoints));
         }
         catch (URISyntaxException e) {
             throw new SuperPeerClientException("Unable to parse super peer endpoints: " + e.getMessage());
@@ -122,11 +130,11 @@ public class SuperPeerClient implements AutoCloseable {
 
     public void open(Set<URI> entryPoints) {
         if (opened.compareAndSet(false, true)) {
-            new Thread(() -> keepConnectionAlive(entryPoints)).start();
+            threadSupplier.apply(entryPoints).start();
         }
     }
 
-    private void keepConnectionAlive(Set<URI> entryPoints) {
+    void keepConnectionAlive(Set<URI> entryPoints) {
         do {
             URI endpoint = getEndpoint();
             LOG.debug("Connect to Super Peer Endpoint '{}'", endpoint);
@@ -166,7 +174,7 @@ public class SuperPeerClient implements AutoCloseable {
      *
      * @return
      */
-    private boolean retryConnection() {
+    boolean retryConnection() {
         if (opened.get() && !config.getSuperPeerRetryDelays().isEmpty()) {
             try {
                 Duration duration = retryDelay();
@@ -191,7 +199,7 @@ public class SuperPeerClient implements AutoCloseable {
      *
      * @return
      */
-    private boolean doRetryCycle() {
+    boolean doRetryCycle() {
         nextEndpointPointer.updateAndGet(p -> (p + 1) % endpoints.size());
         List<Duration> delays = config.getSuperPeerRetryDelays();
         nextRetryDelayPointer.updateAndGet(p -> Math.min(p + 1, delays.size() - 1));
@@ -206,13 +214,8 @@ public class SuperPeerClient implements AutoCloseable {
      *
      * @return
      */
-    private Duration retryDelay() {
-        Duration[] delays = config.getSuperPeerRetryDelays().toArray(new Duration[0]);
-        if (delays.length == 0) {
-            throw new IllegalArgumentException("No Retry Delays given!");
-        }
-
-        return delays[nextRetryDelayPointer.get()];
+    Duration retryDelay() {
+        return config.getSuperPeerRetryDelays().get(nextRetryDelayPointer.get());
     }
 
     public IdentityManager getIdentityManager() {
