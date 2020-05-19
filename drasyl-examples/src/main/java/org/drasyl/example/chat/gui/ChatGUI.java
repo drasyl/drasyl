@@ -64,48 +64,53 @@ public class ChatGUI extends Application {
     }
 
     @Override
-    public void start(Stage stage) throws Exception {
-        this.stage = stage;
-        stage.setTitle("Drasyl Chat");
-        stage.getIcons().add(new Image("icon.png"));
+    public void start(Stage stage) {
+        try {
+            this.stage = stage;
+            stage.setTitle("Drasyl Chat");
+            stage.getIcons().add(new Image("icon.png"));
 
-        chatScene = buildChatScene();
-        chatScene.getStylesheets().add("drasyl.css");
+            chatScene = buildChatScene();
+            chatScene.getStylesheets().add("drasyl.css");
 
-        CompletableFuture<Void> online = new CompletableFuture<>();
-        node = new DrasylNode() {
-            @Override
-            public void onEvent(Event event) {
-                switch (event.getCode()) {
-                    case EVENT_MESSAGE:
-                        parseMessage(event.getMessage());
-                        break;
-                    case EVENT_NODE_ONLINE:
-                        if (!online.isDone()) {
-                            online.complete(null);
-                        }
-                        myID = event.getNode().getAddress();
-                        txtArea.appendText("[~System~]: The node is online. Your address is: " + event.getNode().getAddress().getId() + "\n");
-                        break;
-                    case EVENT_NODE_OFFLINE:
-                        txtArea.appendText("[~System~]: The node is offline. No messages can be sent at the moment. Wait until node comes back online.\n");
-                        break;
-                    case EVENT_NODE_UP:
-                    case EVENT_NODE_DOWN:
-                        // ignore
-                        break;
-                    default:
+            CompletableFuture<Void> online = new CompletableFuture<>();
+            node = new DrasylNode() {
+                @Override
+                public void onEvent(Event event) {
+                    switch (event.getCode()) {
+                        case EVENT_MESSAGE:
+                            parseMessage(event.getMessage());
+                            break;
+                        case EVENT_NODE_ONLINE:
+                            if (!online.isDone()) {
+                                online.complete(null);
+                            }
+                            myID = event.getNode().getAddress();
+                            txtArea.appendText("[~System~]: The node is online. Your address is: " + event.getNode().getAddress().getId() + "\n");
+                            break;
+                        case EVENT_NODE_OFFLINE:
+                            txtArea.appendText("[~System~]: The node is offline. No messages can be sent at the moment. Wait until node comes back online.\n");
+                            break;
+                        case EVENT_NODE_UP:
+                        case EVENT_NODE_DOWN:
+                            // ignore
+                            break;
+                        default:
+                    }
                 }
-            }
-        };
-        node.start().join();
-        online.join();
+            };
+            node.start().join();
+            online.join();
 
-        Scene initScene = buildInitScene();
-        initScene.getStylesheets().add("drasyl.css");
+            Scene initScene = buildInitScene();
+            initScene.getStylesheets().add("drasyl.css");
 
-        stage.setScene(initScene);
-        stage.show();
+            stage.setScene(initScene);
+            stage.show();
+        }
+        catch (Exception e) {
+            e.printStackTrace();
+        }
     }
 
     @Override
@@ -161,6 +166,7 @@ public class ChatGUI extends Application {
     private void initAction(ActionEvent actionEvent) {
         if (validateInput(usernameInput, s -> !s.isEmpty()) && validateInput(recipientIDInput, Identity::isValid)) {
             username = usernameInput.getText();
+            stage.setTitle("[" + username + "] Drasyl Chat");
             recipient = Identity.of(recipientIDInput.getText());
 
             stage.setScene(chatScene);
