@@ -17,7 +17,7 @@
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.drasyl.example;
+package org.drasyl.example.chat.cli;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
