@@ -20,8 +20,8 @@ package org.drasyl.crypto;
 
 import org.bouncycastle.util.encoders.Hex;
 import org.drasyl.Benchmark;
-import org.junit.Ignore;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -51,7 +51,8 @@ class HexUtilTest {
         assertThrows(IllegalArgumentException.class, () -> HexUtil.fromString("0Z"));
     }
 
-    @Ignore
+    @Disabled
+    @Test
     @Benchmark
     public void ownByteToString() {
         for (int i = 0; i < 10000000; i++) {
@@ -59,7 +60,8 @@ class HexUtilTest {
         }
     }
 
-    @Ignore
+    @Disabled
+    @Test
     @Benchmark
     public void bouncycastleByteToString() {
         for (int i = 0; i < 10000000; i++) {

@@ -26,14 +26,12 @@ import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.event.Event;
 import org.drasyl.event.EventCode;
-import org.drasyl.event.Node;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.*;
 import org.drasyl.peer.connection.server.NodeServer;
-import org.junit.Ignore;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -111,7 +109,8 @@ class SuperPeerClientIT {
         assertThat(receivedMessages.get(), hasItem(instanceOf(JoinMessage.class)));
     }
 
-    @Ignore("Muss noch implementiert werden")
+    @Disabled("Muss noch implementiert werden")
+    @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldSendXXXMessageOnClientSideDisconnect() throws SuperPeerClientException, ExecutionException, InterruptedException {
 

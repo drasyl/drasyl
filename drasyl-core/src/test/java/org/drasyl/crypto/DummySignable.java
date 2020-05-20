@@ -23,7 +23,7 @@ package org.drasyl.crypto;
  */
 public class DummySignable implements Signable {
     private Signature signature;
-    private byte[] bytes;
+    private final byte[] bytes;
 
     public DummySignable() {
         bytes = new byte[]{ (byte) 0x3a, (byte) 0x22 };

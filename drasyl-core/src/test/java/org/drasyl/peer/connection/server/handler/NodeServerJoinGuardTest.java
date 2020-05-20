@@ -26,8 +26,8 @@ import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.*;
-import org.junit.Ignore;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;
@@ -64,7 +64,8 @@ class NodeServerJoinGuardTest {
     }
 
     // FIXME: fix test
-    @Ignore("Muss implementiert werden")
+    @Disabled("Muss implementiert werden")
+    @Test
     void channelActiveShouldThrowExceptionAndCloseChannelOnTimeout() throws Exception {
         when(ctx.executor()).thenReturn(eventExecutor);
         when(eventExecutor.schedule(any(Runnable.class), any(), any(TimeUnit.class))).then(invocation -> {

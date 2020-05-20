@@ -31,7 +31,7 @@ public enum AnsiColor {
     STYLE_REVERSED("\u001b[7m"),
     STYLE_BOLD("\u001b[1m"),
     STYLE_UNDERLINE("\u001b[4m");
-    private String color;
+    private final String color;
 
     AnsiColor(String color) {
         this.color = color;

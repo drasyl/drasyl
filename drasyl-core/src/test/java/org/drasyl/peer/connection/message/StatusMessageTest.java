@@ -31,8 +31,8 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBI
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class StatusMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();

@@ -32,9 +32,9 @@ import org.drasyl.identity.IdentityTestHelper;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.ApplicationMessage;
-import org.junit.Ignore;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
@@ -45,10 +45,8 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.*;
 
@@ -109,7 +107,8 @@ class NodeServerTest {
     void tearDown() {
     }
 
-    @Ignore("i'm unable to mock InetSocketAddress properly...")
+    @Disabled("i'm unable to mock InetSocketAddress properly...")
+    @Test
     void openShouldSetOpenToTrue() throws NodeServerException {
         when(serverChannel.localAddress()).thenReturn(mock(InetSocketAddress.class));
 

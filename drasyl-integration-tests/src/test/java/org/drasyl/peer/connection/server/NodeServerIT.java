@@ -33,7 +33,6 @@ import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerConnection;
 import org.drasyl.peer.connection.message.*;
-import org.junit.Ignore;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
@@ -57,10 +56,7 @@ import static org.drasyl.peer.connection.server.TestNodeServerClientConnection.c
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.*;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static testutils.TestHelper.colorizedPrintln;
 
 //import net.jcip.annotations.NotThreadSafe;
@@ -332,7 +328,8 @@ class NodeServerIT {
         assertEquals(new StatusMessage(STATUS_FORBIDDEN, request.getId()), response);
     }
 
-    @Ignore("Muss noch implementiert werden")
+    @Disabled("Muss noch implementiert werden")
+    @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void messageWithMaxSizeShouldArrive() throws InterruptedException, ExecutionException, CryptoException {
         // create connection
@@ -353,7 +350,8 @@ class NodeServerIT {
         assertEquals(receivedMessage.get(), request);
     }
 
-    @Ignore("Muss noch implementiert werden")
+    @Disabled("Muss noch implementiert werden")
+    @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void messageExceedingMaxSizeShouldThrowExceptionOnSend() throws InterruptedException, ExecutionException, CryptoException {
         // create connection
