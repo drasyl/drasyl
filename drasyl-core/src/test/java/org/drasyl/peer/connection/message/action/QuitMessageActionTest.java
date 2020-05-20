@@ -25,7 +25,7 @@ import org.drasyl.peer.connection.PeerConnection;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.server.NodeServer;
-import org.drasyl.peer.connection.server.NodeServerClientConnection;
+import org.drasyl.peer.connection.server.NodeServerConnection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -34,7 +34,7 @@ import static org.mockito.Mockito.*;
 
 class QuitMessageActionTest {
     private QuitMessage message;
-    private NodeServerClientConnection clientConnection;
+    private NodeServerConnection clientConnection;
     private NodeServer server;
     private String id;
     private Messenger messenger;
@@ -44,7 +44,7 @@ class QuitMessageActionTest {
     @BeforeEach
     void setUp() {
         message = mock(QuitMessage.class);
-        clientConnection = mock(NodeServerClientConnection.class);
+        clientConnection = mock(NodeServerConnection.class);
         server = mock(NodeServer.class);
         id = "id";
         messenger = mock(Messenger.class);

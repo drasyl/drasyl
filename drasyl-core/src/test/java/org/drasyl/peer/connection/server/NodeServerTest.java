@@ -65,7 +65,7 @@ class NodeServerTest {
     private CompletableFuture<Void> startedFuture;
     private CompletableFuture<Void> stoppedFuture;
     private ApplicationMessage message;
-    private NodeServerBootstrap nodeServerBootstrap;
+    private NodeServerChannelBootstrap nodeServerChannelBootstrap;
 
     @BeforeEach
     void setUp() throws InterruptedException, NodeServerException {
@@ -81,7 +81,7 @@ class NodeServerTest {
         startedFuture = new CompletableFuture<>();
         stoppedFuture = new CompletableFuture<>();
         Future future = mock(Future.class);
-        nodeServerBootstrap = mock(NodeServerBootstrap.class);
+        nodeServerChannelBootstrap = mock(NodeServerChannelBootstrap.class);
         ChannelFuture channelFuture = mock(ChannelFuture.class);
 
         message = mock(ApplicationMessage.class);
@@ -97,7 +97,7 @@ class NodeServerTest {
         when(bossGroup.shutdownGracefully()).thenReturn(future);
         when(workerGroup.shutdownGracefully()).thenReturn(future);
         when(config.getServerEndpoints()).thenReturn(Set.of("ws://localhost:22527/"));
-        when(nodeServerBootstrap.getChannel()).thenReturn(serverChannel);
+        when(nodeServerChannelBootstrap.getChannel()).thenReturn(serverChannel);
         when(serverChannel.closeFuture()).thenReturn(channelFuture);
 
         when(message.getSender()).thenReturn(identity1);
@@ -115,7 +115,7 @@ class NodeServerTest {
 
         NodeServer server = new NodeServer(identityManager, messenger, peersManager,
                 config, serverChannel, serverBootstrap, workerGroup, bossGroup,
-                nodeServerBootstrap, new AtomicBoolean(false), -1, new HashSet<>());
+                nodeServerChannelBootstrap, new AtomicBoolean(false), -1, new HashSet<>());
         server.open();
 
         assertTrue(server.isOpen());
@@ -125,18 +125,18 @@ class NodeServerTest {
     void openShouldDoNothingIfServerHasAlreadyBeenStarted() throws NodeServerException {
         NodeServer server = new NodeServer(identityManager, messenger, peersManager,
                 config, serverChannel, serverBootstrap, workerGroup, bossGroup,
-                nodeServerBootstrap, new AtomicBoolean(true), -1, new HashSet<>());
+                nodeServerChannelBootstrap, new AtomicBoolean(true), -1, new HashSet<>());
 
         server.open();
 
-        verify(nodeServerBootstrap, times(0)).getChannel();
+        verify(nodeServerChannelBootstrap, times(0)).getChannel();
     }
 
     @Test
     void closeShouldDoNothingIfServerHasAlreadyBeenShutDown() {
         NodeServer server = new NodeServer(identityManager, messenger, peersManager,
                 config, serverChannel, serverBootstrap, workerGroup, bossGroup,
-                nodeServerBootstrap, new AtomicBoolean(false), -1, new HashSet<>());
+                nodeServerChannelBootstrap, new AtomicBoolean(false), -1, new HashSet<>());
 
         server.close();
 

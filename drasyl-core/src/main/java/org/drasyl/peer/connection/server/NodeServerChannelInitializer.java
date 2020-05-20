@@ -27,33 +27,31 @@ import io.netty.handler.codec.http.websocketx.extensions.compression.WebSocketSe
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
-import org.drasyl.peer.connection.handler.ConnectionGuardHandler;
 import org.drasyl.peer.connection.DefaultSessionInitializer;
+import org.drasyl.peer.connection.handler.ConnectionGuard;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.QuitMessageHandler;
-import org.drasyl.peer.connection.server.handler.JoinHandler;
-import org.drasyl.peer.connection.server.handler.KillOnExceptionHandler;
-import org.drasyl.peer.connection.server.handler.ServerSessionHandler;
-import org.drasyl.peer.connection.server.handler.WebSocketMissingUpgradeErrorPageHandler;
+import org.drasyl.peer.connection.server.handler.NodeServerJoinGuard;
+import org.drasyl.peer.connection.server.handler.NodeServerConnectionHandler;
+import org.drasyl.peer.connection.server.handler.NodeServerMissingWebSocketUpgradeErrorPage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLException;
 import java.security.cert.CertificateException;
 
-import static org.drasyl.peer.connection.server.handler.JoinHandler.JOIN_GUARD;
-import static org.drasyl.peer.connection.server.handler.KillOnExceptionHandler.KILL_SWITCH;
-import static org.drasyl.peer.connection.server.handler.ServerSessionHandler.HANDLER;
+import static org.drasyl.peer.connection.server.handler.NodeServerJoinGuard.JOIN_GUARD;
+import static org.drasyl.peer.connection.server.handler.NodeServerConnectionHandler.HANDLER;
 
 /**
  * Creates a newly configured {@link ChannelPipeline} for the node server.
  */
 @SuppressWarnings({ "java:S4818" })
-public class NodeServerInitializer extends DefaultSessionInitializer {
-    private static final Logger LOG = LoggerFactory.getLogger(NodeServerInitializer.class);
-    private final NodeServer server;
+public class NodeServerChannelInitializer extends DefaultSessionInitializer {
+    private static final Logger LOG = LoggerFactory.getLogger(NodeServerChannelInitializer.class);
+    protected final NodeServer server;
 
-    public NodeServerInitializer(NodeServer server) {
+    public NodeServerChannelInitializer(NodeServer server) {
         super(server.getConfig().getFlushBufferSize(), server.getConfig().getServerIdleTimeout(),
                 server.getConfig().getServerIdleRetries());
         this.server = server;
@@ -81,16 +79,16 @@ public class NodeServerInitializer extends DefaultSessionInitializer {
         pipeline.addLast(QuitMessageHandler.QUIT_MESSAGE_HANDLER, QuitMessageHandler.INSTANCE);
 
         // Guards
-        pipeline.addLast(JOIN_GUARD, new JoinHandler(server.getConfig().getServerHandshakeTimeout().toMillis()));
+        pipeline.addLast(JOIN_GUARD, new NodeServerJoinGuard(server.getConfig().getServerHandshakeTimeout().toMillis()));
 
         // Server handler
-        pipeline.addLast(HANDLER, new ServerSessionHandler(this.server));
+        pipeline.addLast(HANDLER, new NodeServerConnectionHandler(this.server));
     }
 
     @Override
     protected void exceptionStage(ChannelPipeline pipeline) {
         // Catch Errors
-        pipeline.addLast(ExceptionHandler.EXCEPTION_HANDLER, new ExceptionHandler(true));
+        pipeline.addLast(ExceptionHandler.EXCEPTION_HANDLER, new ExceptionHandler());
     }
 
     @Override
@@ -98,18 +96,12 @@ public class NodeServerInitializer extends DefaultSessionInitializer {
         pipeline.addLast(new HttpServerCodec());
         pipeline.addLast(new HttpObjectAggregator(65536));
         pipeline.addLast(new WebSocketServerCompressionHandler());
-        pipeline.addLast(new WebSocketMissingUpgradeErrorPageHandler(server.getMyIdentity()));
+        pipeline.addLast(new NodeServerMissingWebSocketUpgradeErrorPage(server.getMyIdentity()));
         pipeline.addLast(new WebSocketServerProtocolHandler("/", null, true));
     }
 
     @Override
     protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
-        pipeline.addLast(ConnectionGuardHandler.CONNECTION_GUARD, new ConnectionGuardHandler(server::isOpen));
-    }
-
-    @Override
-    protected void afterExceptionStage(ChannelPipeline pipeline) {
-        // Kill if Client is not initialized
-        pipeline.addLast(KILL_SWITCH, KillOnExceptionHandler.INSTANCE);
+        pipeline.addLast(ConnectionGuard.CONNECTION_GUARD, new ConnectionGuard(server::isOpen));
     }
 }

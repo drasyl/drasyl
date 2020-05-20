@@ -33,14 +33,14 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_SERVI
 
 /**
  * This handler acts as a channel creation guard. A new channel should not be created, if the {@code
- * isOpenSupplier} returns false.
+ * isOpenSupplier} returns <code>false</code>.
  */
-public class ConnectionGuardHandler extends SimpleChannelInboundHandler<Message<?>> {
+public class ConnectionGuard extends SimpleChannelInboundHandler<Message<?>> {
     public static final String CONNECTION_GUARD = "connectionGuard";
-    private static final Logger LOG = LoggerFactory.getLogger(ConnectionGuardHandler.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ConnectionGuard.class);
     private final BooleanSupplier isOpenSupplier;
 
-    public ConnectionGuardHandler(BooleanSupplier isOpenSupplier) {
+    public ConnectionGuard(BooleanSupplier isOpenSupplier) {
         this.isOpenSupplier = isOpenSupplier;
     }
 

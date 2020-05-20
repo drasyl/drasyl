@@ -28,15 +28,15 @@ import org.drasyl.DrasylNodeConfig;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
-public class NodeServerBootstrap {
+public class NodeServerChannelBootstrap {
     private final NodeServer nodeServer;
     private final ServerBootstrap serverBootstrap;
     private final DrasylNodeConfig config;
     private final ChannelInitializer<SocketChannel> relayServerInitializer;
 
-    public NodeServerBootstrap(NodeServer nodeServer,
-                               ServerBootstrap serverBootstrap,
-                               DrasylNodeConfig config) throws NodeServerException {
+    public NodeServerChannelBootstrap(NodeServer nodeServer,
+                                      ServerBootstrap serverBootstrap,
+                                      DrasylNodeConfig config) throws NodeServerException {
         this.nodeServer = nodeServer;
         this.serverBootstrap = serverBootstrap;
         this.config = config;

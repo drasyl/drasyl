@@ -49,7 +49,7 @@ import java.util.concurrent.CompletableFuture;
 import static org.drasyl.peer.connection.handler.ExceptionHandler.EXCEPTION_HANDLER;
 import static org.drasyl.peer.connection.handler.MessageDecoder.MESSAGE_DECODER;
 import static org.drasyl.peer.connection.handler.MessageEncoder.MESSAGE_ENCODER;
-import static org.drasyl.util.WebsocketUtil.websocketPort;
+import static org.drasyl.util.WebSocketUtil.webSocketPort;
 
 /**
  * This factory produces outbound netty connections.
@@ -263,7 +263,7 @@ public class OutboundConnectionFactory {
             b.handler(initializer);
         }
 
-        Channel ch = b.connect(uri.getHost(), websocketPort(uri)).sync().channel();
+        Channel ch = b.connect(uri.getHost(), webSocketPort(uri)).sync().channel();
 
         ch.closeFuture().addListener(future -> {
             LOG.debug("OutboundConnection for {} was closed.", uri, future.cause());

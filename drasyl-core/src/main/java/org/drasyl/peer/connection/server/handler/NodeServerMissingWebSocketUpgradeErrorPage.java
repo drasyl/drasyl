@@ -42,10 +42,10 @@ import static io.netty.handler.codec.http.HttpResponseStatus.*;
  * This handler returns an HTML error page if the HTTP request does not perform a Websocket
  * upgrade.
  */
-public class WebSocketMissingUpgradeErrorPageHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
+public class NodeServerMissingWebSocketUpgradeErrorPage extends SimpleChannelInboundHandler<FullHttpRequest> {
     private final IdentityManager identityManager;
 
-    public WebSocketMissingUpgradeErrorPageHandler(IdentityManager identityManager) {
+    public NodeServerMissingWebSocketUpgradeErrorPage(IdentityManager identityManager) {
         this.identityManager = identityManager;
     }
 

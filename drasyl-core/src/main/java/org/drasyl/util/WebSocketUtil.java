@@ -21,8 +21,11 @@ package org.drasyl.util;
 
 import java.net.URI;
 
-public class WebsocketUtil {
-    private WebsocketUtil() {
+public class WebSocketUtil {
+    public static final int WS_PORT = 80;
+    public static final int WSS_PORT = 443;
+
+    private WebSocketUtil() {
         // util class
     }
 
@@ -34,7 +37,7 @@ public class WebsocketUtil {
      * @param uri
      * @return
      */
-    public static int websocketPort(URI uri) {
+    public static int webSocketPort(URI uri) {
         int port = uri.getPort();
 
         // port was included in URI
@@ -46,10 +49,10 @@ public class WebsocketUtil {
         String scheme = uri.getScheme();
         if (scheme != null) {
             if (scheme.equals("ws")) {
-                return 80;
+                return WS_PORT;
             }
             else if (scheme.equals("wss")) {
-                return 443;
+                return WSS_PORT;
             }
         }
 
@@ -63,7 +66,7 @@ public class WebsocketUtil {
      * @param uri
      * @return
      */
-    public static boolean isWebsocketSecureURI(URI uri) {
+    public static boolean isWebSocketSecureURI(URI uri) {
         return uri.getScheme() != null && uri.getScheme().equals("wss");
     }
 
@@ -75,7 +78,7 @@ public class WebsocketUtil {
      * @param uri
      * @return
      */
-    public static boolean isWebsocketNonSecureURI(URI uri) {
+    public static boolean isWebSocketNonSecureURI(URI uri) {
         return uri.getScheme() != null && uri.getScheme().equals("ws");
     }
 
@@ -86,7 +89,7 @@ public class WebsocketUtil {
      * @param uri
      * @return
      */
-    public static boolean isWebsocketURI(URI uri) {
-        return isWebsocketNonSecureURI(uri) || isWebsocketURI(uri);
+    public static boolean isWebSocketURI(URI uri) {
+        return isWebSocketNonSecureURI(uri) || isWebSocketURI(uri);
     }
 }

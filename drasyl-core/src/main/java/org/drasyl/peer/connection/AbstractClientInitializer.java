@@ -24,7 +24,7 @@ import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshakerFactory;
 import io.netty.handler.codec.http.websocketx.WebSocketVersion;
-import org.drasyl.peer.connection.handler.WebSocketClientHandler;
+import org.drasyl.peer.connection.handler.WebSocketHandshakeClientHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,10 +75,10 @@ public abstract class AbstractClientInitializer extends DefaultSessionInitialize
 
     @Override
     protected void beforeMarshalStage(ChannelPipeline pipeline) {
-        WebSocketClientHandler webSocketClientHandler =
-                new WebSocketClientHandler(WebSocketClientHandshakerFactory.newHandshaker(target,
+        WebSocketHandshakeClientHandler webSocketHandshakeClientHandler =
+                new WebSocketHandshakeClientHandler(WebSocketClientHandshakerFactory.newHandshaker(target,
                         WebSocketVersion.V13, null, false, new DefaultHttpHeaders()));
-        webSocketClientHandler.handshakeFuture().whenComplete((v, cause) -> {
+        webSocketHandshakeClientHandler.handshakeFuture().whenComplete((v, cause) -> {
             if (cause != null) {
                 channelReadyFuture.completeExceptionally(cause);
             }
@@ -90,7 +90,7 @@ public abstract class AbstractClientInitializer extends DefaultSessionInitialize
 
         pipeline.addLast(new HttpClientCodec(),
                 new HttpObjectAggregator(65536),
-                webSocketClientHandler);
+                webSocketHandshakeClientHandler);
     }
 
     /**

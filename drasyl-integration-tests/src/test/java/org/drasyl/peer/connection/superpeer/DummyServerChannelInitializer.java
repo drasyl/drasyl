@@ -16,22 +16,21 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.drasyl.peer.connection.superpeer;
 
-package org.drasyl.peer.connection.message.action;
-
-import org.drasyl.peer.connection.message.ClientsStocktakingMessage;
-import org.drasyl.peer.connection.message.RequestClientsStocktakingMessage;
+import io.netty.channel.ChannelPipeline;
+import org.drasyl.peer.connection.handler.ConnectionGuard;
 import org.drasyl.peer.connection.server.NodeServer;
-import org.drasyl.peer.connection.server.NodeServerConnection;
+import org.drasyl.peer.connection.server.NodeServerChannelInitializer;
 
-public class RequestClientsStocktakingMessageAction extends AbstractMessageAction<RequestClientsStocktakingMessage> implements ServerMessageAction<RequestClientsStocktakingMessage> {
-    public RequestClientsStocktakingMessageAction(RequestClientsStocktakingMessage message) {
-        super(message);
+public class DummyServerChannelInitializer extends NodeServerChannelInitializer {
+    public DummyServerChannelInitializer(NodeServer server) {
+        super(server);
     }
 
     @Override
-    public void onMessageServer(NodeServerConnection session,
-                                NodeServer nodeServer) {
-        session.send(new ClientsStocktakingMessage(nodeServer.getPeersManager().getChildren(), message.getId()));
+    protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
+        pipeline.addLast(new IntegrationTestHandler());
+        pipeline.addLast(ConnectionGuard.CONNECTION_GUARD, new ConnectionGuard(server::isOpen));
     }
 }

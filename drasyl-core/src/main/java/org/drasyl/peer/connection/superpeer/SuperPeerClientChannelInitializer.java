@@ -29,28 +29,28 @@ import org.drasyl.DrasylNodeConfig;
 import org.drasyl.peer.connection.AbstractClientInitializer;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.QuitMessageHandler;
-import org.drasyl.peer.connection.superpeer.handler.SuperPeerHandler;
-import org.drasyl.peer.connection.superpeer.handler.WelcomeGuard;
-import org.drasyl.util.WebsocketUtil;
+import org.drasyl.peer.connection.superpeer.handler.SuperPeerClientConnectionHandler;
+import org.drasyl.peer.connection.superpeer.handler.SuperPeerClientWelcomeGuard;
+import org.drasyl.util.WebSocketUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLException;
 import java.net.URI;
 
-import static org.drasyl.peer.connection.superpeer.handler.WelcomeGuard.WELCOME_GUARD;
+import static org.drasyl.peer.connection.superpeer.handler.SuperPeerClientWelcomeGuard.WELCOME_GUARD;
 
 /**
  * Creates a newly configured {@link ChannelPipeline} for a ClientConnection to a node server.
  */
 @SuppressWarnings({ "java:S110", "java:S4818" })
-public class SuperPeerClientInitializer extends AbstractClientInitializer {
-    private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClientInitializer.class);
+public class SuperPeerClientChannelInitializer extends AbstractClientInitializer {
+    private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClientChannelInitializer.class);
     private final DrasylNodeConfig config;
     private final SuperPeerClient superPeerClient;
 
-    public SuperPeerClientInitializer(DrasylNodeConfig config,
-                                      URI endpoint, SuperPeerClient superPeerClient) {
+    public SuperPeerClientChannelInitializer(DrasylNodeConfig config,
+                                             URI endpoint, SuperPeerClient superPeerClient) {
         super(config.getFlushBufferSize(), config.getSuperPeerIdleTimeout(),
                 config.getSuperPeerIdleRetries(), endpoint);
         this.config = config;
@@ -63,10 +63,10 @@ public class SuperPeerClientInitializer extends AbstractClientInitializer {
         pipeline.addLast(QuitMessageHandler.QUIT_MESSAGE_HANDLER, QuitMessageHandler.INSTANCE);
 
         // Guards
-        pipeline.addLast(WELCOME_GUARD, new WelcomeGuard(config.getSuperPeerPublicKey(), superPeerClient.getIdentityManager().getKeyPair().getPublicKey()));
+        pipeline.addLast(WELCOME_GUARD, new SuperPeerClientWelcomeGuard(config.getSuperPeerPublicKey(), superPeerClient.getIdentityManager().getKeyPair().getPublicKey()));
 
         // Super peer handler
-        pipeline.addLast(SuperPeerHandler.SUPER_PEER_HANDLER, new SuperPeerHandler(superPeerClient, target));
+        pipeline.addLast(SuperPeerClientConnectionHandler.SUPER_PEER_HANDLER, new SuperPeerClientConnectionHandler(superPeerClient, target));
     }
 
     @Override
@@ -77,11 +77,11 @@ public class SuperPeerClientInitializer extends AbstractClientInitializer {
 
     @Override
     protected SslHandler generateSslContext(SocketChannel ch) {
-        if (WebsocketUtil.isWebsocketSecureURI(target)) {
+        if (WebSocketUtil.isWebSocketSecureURI(target)) {
             try {
                 SslContext sslContext = SslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE)
                         .protocols(config.getServerSSLProtocols()).build();
-                return sslContext.newHandler(ch.alloc(), target.getHost(), WebsocketUtil.websocketPort(target));
+                return sslContext.newHandler(ch.alloc(), target.getHost(), WebSocketUtil.webSocketPort(target));
             }
             catch (SSLException e) {
                 LOG.error("SSLException: ", e);

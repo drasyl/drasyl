@@ -22,7 +22,7 @@ package org.drasyl.peer.connection.message.action;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.server.NodeServer;
-import org.drasyl.peer.connection.server.NodeServerClientConnection;
+import org.drasyl.peer.connection.server.NodeServerConnection;
 
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 
@@ -32,7 +32,7 @@ public class QuitMessageAction extends AbstractMessageAction<QuitMessage> implem
     }
 
     @Override
-    public void onMessageServer(NodeServerClientConnection session,
+    public void onMessageServer(NodeServerConnection session,
                                 NodeServer nodeServer) {
         session.send(new StatusMessage(STATUS_OK, message.getId()));
         nodeServer.getMessenger().getConnectionsManager().closeConnection(session, message.getReason());

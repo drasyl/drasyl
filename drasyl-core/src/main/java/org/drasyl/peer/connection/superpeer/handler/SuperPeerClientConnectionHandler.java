@@ -29,7 +29,7 @@ import org.drasyl.peer.connection.message.WelcomeMessage;
 import org.drasyl.peer.connection.message.action.ClientMessageAction;
 import org.drasyl.peer.connection.message.action.MessageAction;
 import org.drasyl.peer.connection.superpeer.SuperPeerClient;
-import org.drasyl.peer.connection.superpeer.SuperPeerConnection;
+import org.drasyl.peer.connection.superpeer.SuperPeerClientConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,17 +39,17 @@ import static org.drasyl.peer.connection.PeerConnection.CloseReason.REASON_INTER
 
 /**
  * This handler mange in-/oncoming messages and pass them to the correct sub-function. It also
- * creates a new {@link SuperPeerConnection} object if a {@link WelcomeMessage} has pass the {@link
- * WelcomeGuard} guard.
+ * creates a new {@link SuperPeerClientConnection} object if a {@link WelcomeMessage} has pass the {@link
+ * SuperPeerClientWelcomeGuard} guard.
  */
-public class SuperPeerHandler extends SimpleChannelInboundHandler<Message<?>> {
-    public static final String SUPER_PEER_HANDLER = "superPeerHandler";
-    private static final Logger LOG = LoggerFactory.getLogger(SuperPeerHandler.class);
+public class SuperPeerClientConnectionHandler extends SimpleChannelInboundHandler<Message<?>> {
+    public static final String SUPER_PEER_HANDLER = "superPeerClientConnectionHandler";
+    private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClientConnectionHandler.class);
     private final SuperPeerClient superPeerClient;
     private final URI endpoint;
-    private SuperPeerConnection connection;
+    private SuperPeerClientConnection connection;
 
-    public SuperPeerHandler(SuperPeerClient superPeerClient, URI endpoint) {
+    public SuperPeerClientConnectionHandler(SuperPeerClient superPeerClient, URI endpoint) {
         this.superPeerClient = superPeerClient;
         this.endpoint = endpoint;
     }
@@ -93,7 +93,7 @@ public class SuperPeerHandler extends SimpleChannelInboundHandler<Message<?>> {
     }
 
     /**
-     * Creates a new {@link SuperPeerConnection}, if not already there.
+     * Creates a new {@link SuperPeerClientConnection}, if not already there.
      */
     private void createConnection(final ChannelHandlerContext ctx, Message<?> msg) {
         if (msg instanceof WelcomeMessage && connection == null) {
@@ -104,7 +104,7 @@ public class SuperPeerHandler extends SimpleChannelInboundHandler<Message<?>> {
                 LOG.debug("[{}]: Create new Connection from Channel {}", ctx.channel().id().asShortText(), ctx.channel().id());
             }
 
-            connection = new SuperPeerConnection(ctx.channel(), endpoint, identity, welcomeMessage.getUserAgent(), superPeerClient.getMessenger().getConnectionsManager());
+            connection = new SuperPeerClientConnection(ctx.channel(), endpoint, identity, welcomeMessage.getUserAgent(), superPeerClient.getMessenger().getConnectionsManager());
         }
     }
 }

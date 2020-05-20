@@ -33,24 +33,24 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * The {@link NodeServerClientConnection} object models the clients of a drasyl node server.
+ * The {@link NodeServerConnection} object models the clients of a drasyl node server.
  */
 @SuppressWarnings({ "squid:S00107", "java:S2160" })
-public class NodeServerClientConnection extends AbstractNettyConnection {
-    private static final Logger LOG = LoggerFactory.getLogger(NodeServerClientConnection.class);
+public class NodeServerConnection extends AbstractNettyConnection {
+    private static final Logger LOG = LoggerFactory.getLogger(NodeServerConnection.class);
 
     /**
      * Creates a new connection with an unknown User-Agent.
      *
      * @param channel            channel of the connection
      * @param endpoint           the URI of the target system
-     * @param identity           the identity of this {@link NodeServerClientConnection}
+     * @param identity           the identity of this {@link NodeServerConnection}
      * @param connectionsManager reference to the {@link ConnectionsManager}
      */
-    public NodeServerClientConnection(Channel channel,
-                                      URI endpoint,
-                                      Identity identity,
-                                      ConnectionsManager connectionsManager) {
+    public NodeServerConnection(Channel channel,
+                                URI endpoint,
+                                Identity identity,
+                                ConnectionsManager connectionsManager) {
         super(channel, endpoint, identity, connectionsManager);
     }
 
@@ -59,26 +59,26 @@ public class NodeServerClientConnection extends AbstractNettyConnection {
      *
      * @param channel            channel of the connection
      * @param endpoint           the URI of the target system
-     * @param identity           the identity of this {@link NodeServerClientConnection}
+     * @param identity           the identity of this {@link NodeServerConnection}
      * @param userAgent          the User-Agent string
      * @param connectionsManager reference to the {@link ConnectionsManager}
      */
-    public NodeServerClientConnection(Channel channel,
-                                      URI endpoint,
-                                      Identity identity,
-                                      String userAgent,
-                                      ConnectionsManager connectionsManager) {
+    public NodeServerConnection(Channel channel,
+                                URI endpoint,
+                                Identity identity,
+                                String userAgent,
+                                ConnectionsManager connectionsManager) {
         super(channel, endpoint, identity, userAgent, connectionsManager);
     }
 
-    protected NodeServerClientConnection(Channel myChannel,
-                                         String userAgent,
-                                         Identity identity,
-                                         URI endpoint,
-                                         AtomicBoolean isClosed,
-                                         ConcurrentHashMap<String, SingleEmitter<ResponseMessage<?, ?>>> emitters,
-                                         CompletableFuture<Boolean> closedCompletable,
-                                         ConnectionsManager connectionsManager) {
+    protected NodeServerConnection(Channel myChannel,
+                                   String userAgent,
+                                   Identity identity,
+                                   URI endpoint,
+                                   AtomicBoolean isClosed,
+                                   ConcurrentHashMap<String, SingleEmitter<ResponseMessage<?, ?>>> emitters,
+                                   CompletableFuture<Boolean> closedCompletable,
+                                   ConnectionsManager connectionsManager) {
         super(myChannel, userAgent, identity, endpoint, isClosed, emitters, closedCompletable, connectionsManager);
     }
 

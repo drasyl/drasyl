@@ -24,7 +24,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.AbstractNettyConnection;
 import org.drasyl.peer.connection.ConnectionsManager;
 import org.drasyl.peer.connection.message.ResponseMessage;
-import org.drasyl.peer.connection.server.NodeServerClientConnection;
+import org.drasyl.peer.connection.server.NodeServerConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,20 +34,20 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 @SuppressWarnings({ "java:S2160" })
-public class SuperPeerConnection extends AbstractNettyConnection {
-    private static final Logger LOG = LoggerFactory.getLogger(SuperPeerConnection.class);
+public class SuperPeerClientConnection extends AbstractNettyConnection {
+    private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClientConnection.class);
 
     /**
      * Creates a new connection with an unknown User-Agent.
      *
      * @param channel            channel of the connection
      * @param endpoint           the URI of the target system
-     * @param identity           the identity of this {@link NodeServerClientConnection}
+     * @param identity           the identity of this {@link NodeServerConnection}
      * @param connectionsManager reference to the {@link ConnectionsManager}
      */
-    public SuperPeerConnection(Channel channel,
-                               URI endpoint,
-                               Identity identity, ConnectionsManager connectionsManager) {
+    public SuperPeerClientConnection(Channel channel,
+                                     URI endpoint,
+                                     Identity identity, ConnectionsManager connectionsManager) {
         super(channel, endpoint, identity, connectionsManager);
     }
 
@@ -56,25 +56,25 @@ public class SuperPeerConnection extends AbstractNettyConnection {
      *
      * @param channel            channel of the connection
      * @param endpoint           the URI of the target system
-     * @param identity           the identity of this {@link NodeServerClientConnection}
+     * @param identity           the identity of this {@link NodeServerConnection}
      * @param userAgent          the User-Agent string
      * @param connectionsManager reference to the {@link ConnectionsManager}
      */
-    public SuperPeerConnection(Channel channel,
-                               URI endpoint,
-                               Identity identity,
-                               String userAgent, ConnectionsManager connectionsManager) {
+    public SuperPeerClientConnection(Channel channel,
+                                     URI endpoint,
+                                     Identity identity,
+                                     String userAgent, ConnectionsManager connectionsManager) {
         super(channel, endpoint, identity, userAgent, connectionsManager);
     }
 
-    public SuperPeerConnection(Channel myChannel,
-                               String userAgent,
-                               Identity identity,
-                               URI endpoint,
-                               AtomicBoolean isClosed,
-                               ConcurrentHashMap<String, SingleEmitter<ResponseMessage<?, ?>>> emitters,
-                               CompletableFuture<Boolean> closedCompletable,
-                               ConnectionsManager connectionsManager) {
+    public SuperPeerClientConnection(Channel myChannel,
+                                     String userAgent,
+                                     Identity identity,
+                                     URI endpoint,
+                                     AtomicBoolean isClosed,
+                                     ConcurrentHashMap<String, SingleEmitter<ResponseMessage<?, ?>>> emitters,
+                                     CompletableFuture<Boolean> closedCompletable,
+                                     ConnectionsManager connectionsManager) {
         super(myChannel, userAgent, identity, endpoint, isClosed, emitters, closedCompletable, connectionsManager);
     }
 

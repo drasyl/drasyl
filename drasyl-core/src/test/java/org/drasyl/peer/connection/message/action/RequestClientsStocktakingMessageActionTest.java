@@ -26,7 +26,7 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.ClientsStocktakingMessage;
 import org.drasyl.peer.connection.message.RequestClientsStocktakingMessage;
 import org.drasyl.peer.connection.server.NodeServer;
-import org.drasyl.peer.connection.server.NodeServerClientConnection;
+import org.drasyl.peer.connection.server.NodeServerConnection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -40,7 +40,7 @@ import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.mockito.Mockito.*;
 
 class RequestClientsStocktakingMessageActionTest {
-    private NodeServerClientConnection clientConnection;
+    private NodeServerConnection clientConnection;
     private NodeServer server;
     private PeersManager peersManager;
     @Captor
@@ -55,7 +55,7 @@ class RequestClientsStocktakingMessageActionTest {
         MockitoAnnotations.initMocks(this);
 
         message = mock(RequestClientsStocktakingMessage.class);
-        clientConnection = mock(NodeServerClientConnection.class);
+        clientConnection = mock(NodeServerConnection.class);
         server = mock(NodeServer.class);
         peersManager = mock(PeersManager.class);
         id = "id";

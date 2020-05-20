@@ -18,8 +18,8 @@
  */
 package org.drasyl.peer.connection;
 
-import org.drasyl.peer.connection.server.NodeServerClientConnection;
-import org.drasyl.peer.connection.superpeer.SuperPeerConnection;
+import org.drasyl.peer.connection.server.NodeServerConnection;
+import org.drasyl.peer.connection.superpeer.SuperPeerClientConnection;
 
 import java.util.ArrayList;
 import java.util.Comparator;
@@ -34,8 +34,8 @@ public class ConnectionComparator implements Comparator<PeerConnection> {
 
     static {
         PRIORITISATION.add(LoopbackPeerConnection.class);
-        PRIORITISATION.add(NodeServerClientConnection.class);
-        PRIORITISATION.add(SuperPeerConnection.class);
+        PRIORITISATION.add(NodeServerConnection.class);
+        PRIORITISATION.add(SuperPeerClientConnection.class);
         PRIORITISATION.add(AbstractNettyConnection.class);
         PRIORITISATION.add(PeerConnection.class);
     }

@@ -25,9 +25,9 @@ import org.drasyl.peer.connection.PeerConnection;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.server.NodeServer;
-import org.drasyl.peer.connection.server.NodeServerClientConnection;
+import org.drasyl.peer.connection.server.NodeServerConnection;
 import org.drasyl.peer.connection.superpeer.SuperPeerClient;
-import org.drasyl.peer.connection.superpeer.SuperPeerConnection;
+import org.drasyl.peer.connection.superpeer.SuperPeerClientConnection;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_NOT_FOUND;
@@ -39,7 +39,7 @@ public class ApplicationMessageAction extends AbstractMessageAction<ApplicationM
     }
 
     @Override
-    public void onMessageServer(NodeServerClientConnection connection,
+    public void onMessageServer(NodeServerConnection connection,
                                 NodeServer nodeServer) {
         requireNonNull(connection);
         requireNonNull(nodeServer);
@@ -60,7 +60,7 @@ public class ApplicationMessageAction extends AbstractMessageAction<ApplicationM
     }
 
     @Override
-    public void onMessageClient(SuperPeerConnection connection,
+    public void onMessageClient(SuperPeerClientConnection connection,
                                 SuperPeerClient superPeerClient) {
         requireNonNull(connection);
         requireNonNull(superPeerClient);

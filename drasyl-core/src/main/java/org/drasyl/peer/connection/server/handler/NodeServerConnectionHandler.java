@@ -23,7 +23,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.handler.ConnectionGuardHandler;
+import org.drasyl.peer.connection.handler.ConnectionGuard;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
@@ -31,7 +31,7 @@ import org.drasyl.peer.connection.message.ResponseMessage;
 import org.drasyl.peer.connection.message.action.MessageAction;
 import org.drasyl.peer.connection.message.action.ServerMessageAction;
 import org.drasyl.peer.connection.server.NodeServer;
-import org.drasyl.peer.connection.server.NodeServerClientConnection;
+import org.drasyl.peer.connection.server.NodeServerConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,15 +45,15 @@ import static org.drasyl.peer.connection.PeerConnection.CloseReason.REASON_INTER
 
 /**
  * This handler mange in-/oncoming messages and pass them to the correct sub-function. It also
- * creates a new {@link NodeServerClientConnection} object if a {@link JoinMessage} has pass the
- * {@link JoinHandler} guard.
+ * creates a new {@link NodeServerConnection} object if a {@link JoinMessage} has pass the
+ * {@link NodeServerJoinGuard} guard.
  */
-public class ServerSessionHandler extends SimpleChannelInboundHandler<Message<?>> {
-    public static final String HANDLER = "handler";
-    private static final Logger LOG = LoggerFactory.getLogger(ServerSessionHandler.class);
+public class NodeServerConnectionHandler extends SimpleChannelInboundHandler<Message<?>> {
+    public static final String HANDLER = "nodeServerConnectionHandler";
+    private static final Logger LOG = LoggerFactory.getLogger(NodeServerConnectionHandler.class);
     private final NodeServer server;
-    private final CompletableFuture<NodeServerClientConnection> sessionReadyFuture;
-    private NodeServerClientConnection clientConnection;
+    private final CompletableFuture<NodeServerConnection> sessionReadyFuture;
+    private NodeServerConnection clientConnection;
     private URI uri;
 
     /**
@@ -61,29 +61,29 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<Message<?>
      *
      * @param server a reference to this server instance
      */
-    public ServerSessionHandler(NodeServer server) {
+    public NodeServerConnectionHandler(NodeServer server) {
         this(server, null, new CompletableFuture<>());
     }
 
     /**
      * Creates a new instance of this {@link io.netty.channel.ChannelHandler} and completes the
-     * given future, when the {@link NodeServerClientConnection} was created.
+     * given future, when the {@link NodeServerConnection} was created.
      *
      * @param server               a reference to this node server instance
-     * @param uri                  the {@link URI} of the newly created {@link NodeServerClientConnection},
+     * @param uri                  the {@link URI} of the newly created {@link NodeServerConnection},
      *                             null to let this class guess the correct IP
      * @param sessionReadyListener the future, that should be completed a clientConnection creation
      */
-    public ServerSessionHandler(NodeServer server,
-                                URI uri,
-                                CompletableFuture<NodeServerClientConnection> sessionReadyListener) {
+    public NodeServerConnectionHandler(NodeServer server,
+                                       URI uri,
+                                       CompletableFuture<NodeServerConnection> sessionReadyListener) {
         this(server, sessionReadyListener, null, uri);
     }
 
-    ServerSessionHandler(NodeServer server,
-                         CompletableFuture<NodeServerClientConnection> sessionReadyFuture,
-                         NodeServerClientConnection clientConnection,
-                         URI uri) {
+    NodeServerConnectionHandler(NodeServer server,
+                                CompletableFuture<NodeServerConnection> sessionReadyFuture,
+                                NodeServerConnection clientConnection,
+                                URI uri) {
         this.server = server;
         this.sessionReadyFuture = sessionReadyFuture;
         this.clientConnection = clientConnection;
@@ -157,11 +157,10 @@ public class ServerSessionHandler extends SimpleChannelInboundHandler<Message<?>
                 LOG.debug("[{}]: Create new Connection from Channel {}", ctx.channel().id().asShortText(), ctx.channel().id());
             }
 
-            clientConnection = new NodeServerClientConnection(ctx.channel(), uri, identity,
+            clientConnection = new NodeServerConnection(ctx.channel(), uri, identity,
                     Optional.ofNullable(jm.getUserAgent()).orElse("U/A"), server.getMessenger().getConnectionsManager());
             sessionReadyFuture.complete(clientConnection);
-            ctx.pipeline().remove(KillOnExceptionHandler.KILL_SWITCH);
-            ctx.pipeline().remove(ConnectionGuardHandler.CONNECTION_GUARD);
+            ctx.pipeline().remove(ConnectionGuard.CONNECTION_GUARD);
         }
     }
 
