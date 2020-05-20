@@ -29,7 +29,7 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.server.NodeServer;
-import org.drasyl.peer.connection.server.NodeServerClientConnection;
+import org.drasyl.peer.connection.server.NodeServerConnection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -40,7 +40,7 @@ import static org.mockito.Mockito.*;
 
 class ApplicationMessageActionTest {
     private ApplicationMessage message;
-    private NodeServerClientConnection clientConnection;
+    private NodeServerConnection clientConnection;
     private NodeServer nodeServer;
     private Identity sender, recipient;
     private byte[] payload;
@@ -51,7 +51,7 @@ class ApplicationMessageActionTest {
     @BeforeEach
     void setUp() {
         message = mock(ApplicationMessage.class);
-        clientConnection = mock(NodeServerClientConnection.class);
+        clientConnection = mock(NodeServerConnection.class);
         nodeServer = mock(NodeServer.class);
         peersManager = mock(PeersManager.class);
         sender = mock(Identity.class);

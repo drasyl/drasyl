@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_HANDSHAKE;
+import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_INITIALIZATION;
 import static org.drasyl.peer.connection.message.MessageExceptionMessage.Error.MESSAGE_ERROR_ALREADY_JOINED;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
 
@@ -44,19 +45,22 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBI
  * <p>
  * If a {@link JoinMessage} was not received in {@link DrasylNodeConfig#getServerHandshakeTimeout()}
  * the connection will be closed.
+ * <p>
+ * This handler closes the channel if an exception occurs during before a {@link
+ * JoinMessage} has been received.
  */
-public class JoinHandler extends SimpleChannelDuplexHandler<Message<?>, Message<?>> {
-    public static final String JOIN_GUARD = "joinGuard";
-    private static final Logger LOG = LoggerFactory.getLogger(JoinHandler.class);
+public class NodeServerJoinGuard extends SimpleChannelDuplexHandler<Message<?>, Message<?>> {
+    public static final String JOIN_GUARD = "nodeServerJoinGuard";
+    private static final Logger LOG = LoggerFactory.getLogger(NodeServerJoinGuard.class);
     private final long timeout;
     protected AtomicBoolean authenticated;
     private ScheduledFuture<?> timeoutFuture;
 
-    public JoinHandler(long timeout) {
+    public NodeServerJoinGuard(long timeout) {
         this(new AtomicBoolean(false), timeout, null);
     }
 
-    JoinHandler(AtomicBoolean authenticated, long timeout, ScheduledFuture<?> timeoutFuture) {
+    NodeServerJoinGuard(AtomicBoolean authenticated, long timeout, ScheduledFuture<?> timeoutFuture) {
         this.timeoutFuture = timeoutFuture;
         this.authenticated = authenticated;
         this.timeout = timeout;
@@ -124,5 +128,12 @@ public class JoinHandler extends SimpleChannelDuplexHandler<Message<?>, Message<
     public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
         timeoutFuture.cancel(true);
         ctx.close(promise);
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        if (!authenticated.get()) {
+            ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_INITIALIZATION)).addListener(ChannelFutureListener.CLOSE);
+        }
     }
 }

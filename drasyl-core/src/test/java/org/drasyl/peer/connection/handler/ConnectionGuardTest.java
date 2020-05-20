@@ -16,54 +16,53 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection.server.handler;
+package org.drasyl.peer.connection.handler;
 
-import io.netty.channel.*;
-import org.drasyl.crypto.Crypto;
-import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.peer.connection.message.Message;
-import org.drasyl.peer.connection.server.NodeServer;
+import org.drasyl.peer.connection.message.StatusMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
-
+import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_SERVICE_UNAVAILABLE;
 import static org.mockito.Mockito.*;
 
-class KillOnExceptionHandlerTest {
+class ConnectionGuardTest {
     private ChannelHandlerContext ctx;
-    private PeersManager peersManager;
-    private NodeServer nodeServer;
-    private Throwable cause;
-    private String id;
+    private Message<?> message;
     private ChannelFuture channelFuture;
 
     @BeforeEach
     void setUp() {
         ctx = mock(ChannelHandlerContext.class);
-        peersManager = mock(PeersManager.class);
-        nodeServer = mock(NodeServer.class);
         Channel channel = mock(Channel.class);
-        cause = mock(Throwable.class);
-        ChannelId channelId = mock(ChannelId.class);
-        id = Crypto.randomString(3);
         channelFuture = mock(ChannelFuture.class);
+        message = mock(Message.class);
 
-        when(nodeServer.getPeersManager()).thenReturn(peersManager);
         when(ctx.channel()).thenReturn(channel);
-        when(channel.id()).thenReturn(channelId);
-        when(channelId.asLongText()).thenReturn(id);
         when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
+        when(message.getId()).thenReturn("sdasdsa");
     }
 
     @Test
-    void exceptionCaughtShouldWriteExceptionToChannelAndThenCloseIt() {
-        when(peersManager.getPeers()).thenReturn(Map.of());
-        KillOnExceptionHandler handler = KillOnExceptionHandler.INSTANCE;
-        handler.exceptionCaught(ctx, cause);
+    void shouldFireOnOpenGuard() {
+        ConnectionGuard handler = new ConnectionGuard(() -> true);
 
-        verify(ctx).writeAndFlush(any(ConnectionExceptionMessage.class));
+        handler.channelRead0(ctx, message);
+
+        verify(ctx).fireChannelRead(message);
+    }
+
+    @Test
+    void shouldCloseConnectionOnClosedGuard() {
+        ConnectionGuard handler = new ConnectionGuard(() -> false);
+
+        handler.channelRead0(ctx, message);
+
+        verify(ctx).writeAndFlush(new StatusMessage(STATUS_SERVICE_UNAVAILABLE, message.getId()));
         verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
     }
 }

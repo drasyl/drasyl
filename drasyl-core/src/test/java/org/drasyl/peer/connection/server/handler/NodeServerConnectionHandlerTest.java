@@ -31,7 +31,7 @@ import org.drasyl.peer.connection.message.ResponseMessage;
 import org.drasyl.peer.connection.message.action.MessageAction;
 import org.drasyl.peer.connection.message.action.ServerMessageAction;
 import org.drasyl.peer.connection.server.NodeServer;
-import org.drasyl.peer.connection.server.NodeServerClientConnection;
+import org.drasyl.peer.connection.server.NodeServerConnection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -40,12 +40,12 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.Mockito.*;
 
-class ServerSessionHandlerTest {
+class NodeServerConnectionHandlerTest {
     private NodeServer nodeServer;
     private URI uri;
-    private CompletableFuture<NodeServerClientConnection> completableFuture;
+    private CompletableFuture<NodeServerConnection> completableFuture;
     private EmbeddedChannel channel;
-    private NodeServerClientConnection clientConnection;
+    private NodeServerConnection clientConnection;
     private ResponseMessage<?, ?> responseMessage;
     private MessageAction messageAction;
     private Message<?> message;
@@ -60,7 +60,7 @@ class ServerSessionHandlerTest {
         nodeServer = mock(NodeServer.class);
         uri = URI.create("ws://example.com");
         completableFuture = mock(CompletableFuture.class);
-        clientConnection = mock(NodeServerClientConnection.class);
+        clientConnection = mock(NodeServerConnection.class);
         responseMessage = mock(ResponseMessage.class);
         messageAction = mock(MessageAction.class);
         message = mock(Message.class);
@@ -70,7 +70,7 @@ class ServerSessionHandlerTest {
         messenger = mock(Messenger.class);
         connectionsManager = mock(ConnectionsManager.class);
 
-        ChannelHandler handler = new ServerSessionHandler(nodeServer, completableFuture, clientConnection, uri);
+        ChannelHandler handler = new NodeServerConnectionHandler(nodeServer, completableFuture, clientConnection, uri);
         channel = new EmbeddedChannel(handler);
 
         when(nodeServer.getMessenger()).thenReturn(messenger);
@@ -81,7 +81,7 @@ class ServerSessionHandlerTest {
     void shouldSetResponseForResponseMessageIfSessionExists() {
         when(responseMessage.getAction()).thenReturn(messageAction);
 
-        ChannelHandler handler = new ServerSessionHandler(nodeServer, completableFuture, clientConnection, uri);
+        ChannelHandler handler = new NodeServerConnectionHandler(nodeServer, completableFuture, clientConnection, uri);
         channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(responseMessage);
@@ -94,7 +94,7 @@ class ServerSessionHandlerTest {
     void shouldExecuteOnServerActionForMessageIfSessionExists() {
         when(message.getAction()).thenReturn(serverMessageAction);
 
-        ChannelHandler handler = new ServerSessionHandler(nodeServer, completableFuture, clientConnection, uri);
+        ChannelHandler handler = new NodeServerConnectionHandler(nodeServer, completableFuture, clientConnection, uri);
         channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(message);
@@ -107,7 +107,7 @@ class ServerSessionHandlerTest {
     void shouldCreateSessionOnJoinMessageIfNoSessionExists() {
         when(joinMessage.getPublicKey()).thenReturn(compressedPublicKey);
 
-        ChannelHandler handler = new ServerSessionHandler(nodeServer, completableFuture, null, uri);
+        ChannelHandler handler = new NodeServerConnectionHandler(nodeServer, completableFuture, null, uri);
         channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(joinMessage);
@@ -118,7 +118,7 @@ class ServerSessionHandlerTest {
 
     @Test
     void shouldCreateNoSessionOnJoinMessageIfSessionExists() {
-        ChannelHandler handler = new ServerSessionHandler(nodeServer, completableFuture, clientConnection, uri);
+        ChannelHandler handler = new NodeServerConnectionHandler(nodeServer, completableFuture, clientConnection, uri);
         channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(joinMessage);

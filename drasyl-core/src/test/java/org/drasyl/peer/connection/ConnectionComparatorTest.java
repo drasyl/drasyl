@@ -18,8 +18,8 @@
  */
 package org.drasyl.peer.connection;
 
-import org.drasyl.peer.connection.server.NodeServerClientConnection;
-import org.drasyl.peer.connection.superpeer.SuperPeerConnection;
+import org.drasyl.peer.connection.server.NodeServerConnection;
+import org.drasyl.peer.connection.superpeer.SuperPeerClientConnection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -33,16 +33,16 @@ import static org.mockito.Mockito.mock;
 class ConnectionComparatorTest {
     private PeerConnection peerConnection;
     private AbstractNettyConnection nettyPeerConnection;
-    private NodeServerClientConnection clientConnection;
-    private SuperPeerConnection superPeerConnection;
+    private NodeServerConnection clientConnection;
+    private SuperPeerClientConnection superPeerClientConnection;
     private LoopbackPeerConnection loopbackPeerConnection;
 
     @BeforeEach
     void setUp() {
         peerConnection = mock(PeerConnection.class);
         nettyPeerConnection = mock(AbstractNettyConnection.class);
-        clientConnection = mock(NodeServerClientConnection.class);
-        superPeerConnection = mock(SuperPeerConnection.class);
+        clientConnection = mock(NodeServerConnection.class);
+        superPeerClientConnection = mock(SuperPeerClientConnection.class);
         loopbackPeerConnection = mock(LoopbackPeerConnection.class);
     }
 
@@ -53,12 +53,12 @@ class ConnectionComparatorTest {
         peerConnections.add(nettyPeerConnection);
         peerConnections.add(loopbackPeerConnection);
         peerConnections.add(clientConnection);
-        peerConnections.add(superPeerConnection);
+        peerConnections.add(superPeerClientConnection);
 
         peerConnections.sort(ConnectionComparator.INSTANCE);
 
-        assertEquals(List.of(loopbackPeerConnection, clientConnection, superPeerConnection, nettyPeerConnection, peerConnection), peerConnections);
-        assertNotEquals(List.of(peerConnection, nettyPeerConnection, superPeerConnection, clientConnection, loopbackPeerConnection), peerConnections);
+        assertEquals(List.of(loopbackPeerConnection, clientConnection, superPeerClientConnection, nettyPeerConnection, peerConnection), peerConnections);
+        assertNotEquals(List.of(peerConnection, nettyPeerConnection, superPeerClientConnection, clientConnection, loopbackPeerConnection), peerConnections);
     }
 
     @Test
@@ -66,14 +66,14 @@ class ConnectionComparatorTest {
         assertEquals(-1, ConnectionComparator.INSTANCE.compare(loopbackPeerConnection, peerConnection));
         assertEquals(-1, ConnectionComparator.INSTANCE.compare(loopbackPeerConnection, nettyPeerConnection));
         assertEquals(-1, ConnectionComparator.INSTANCE.compare(loopbackPeerConnection, clientConnection));
-        assertEquals(-1, ConnectionComparator.INSTANCE.compare(loopbackPeerConnection, superPeerConnection));
+        assertEquals(-1, ConnectionComparator.INSTANCE.compare(loopbackPeerConnection, superPeerClientConnection));
     }
 
     @Test
     void peerConnectionShouldBeTheLastOption() {
         assertEquals(1, ConnectionComparator.INSTANCE.compare(peerConnection, nettyPeerConnection));
         assertEquals(1, ConnectionComparator.INSTANCE.compare(peerConnection, clientConnection));
-        assertEquals(1, ConnectionComparator.INSTANCE.compare(peerConnection, superPeerConnection));
+        assertEquals(1, ConnectionComparator.INSTANCE.compare(peerConnection, superPeerClientConnection));
         assertEquals(1, ConnectionComparator.INSTANCE.compare(peerConnection, loopbackPeerConnection));
     }
 }

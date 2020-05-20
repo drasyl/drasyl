@@ -22,7 +22,7 @@ package org.drasyl.peer.connection;
 import com.google.common.collect.HashMultimap;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.PeerConnection.CloseReason;
-import org.drasyl.peer.connection.superpeer.SuperPeerConnection;
+import org.drasyl.peer.connection.superpeer.SuperPeerClientConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -110,7 +110,7 @@ public class ConnectionsManager {
             LOG.debug("Add Connection '{}' for Node '{}'", connection, connection.getIdentity());
 
             // remember super peer identity for fast lookup
-            if (connection instanceof SuperPeerConnection) {
+            if (connection instanceof SuperPeerClientConnection) {
                 superPeer = connection.getIdentity();
             }
 

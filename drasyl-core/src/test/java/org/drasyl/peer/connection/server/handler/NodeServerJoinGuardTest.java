@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.*;
 
-class JoinHandlerTest {
+class NodeServerJoinGuardTest {
     private ChannelHandlerContext ctx;
     private ScheduledFuture<?> timeoutFuture;
     private ChannelPromise promise;
@@ -47,6 +47,7 @@ class JoinHandlerTest {
     private CompressedPublicKey publicKey;
     private EventExecutor eventExecutor;
     private ChannelFuture channelFuture;
+    private Throwable cause;
 
     @BeforeEach
     void setUp() {
@@ -57,6 +58,7 @@ class JoinHandlerTest {
         publicKey = mock(CompressedPublicKey.class);
         eventExecutor = mock(EventExecutor.class);
         channelFuture = mock(ChannelFuture.class);
+        cause = mock(Throwable.class);
 
         when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
     }
@@ -71,7 +73,7 @@ class JoinHandlerTest {
             return mock(ScheduledFuture.class);
         });
 
-        JoinHandler handler = new JoinHandler(new AtomicBoolean(false), 1L, timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(false), 1L, timeoutFuture);
 
         handler.channelActive(ctx);
 
@@ -82,7 +84,7 @@ class JoinHandlerTest {
 
     @Test
     void closeShouldCloseChannelAndCancelTimeoutTask() throws Exception {
-        JoinHandler handler = new JoinHandler(new AtomicBoolean(false), 1L, timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(false), 1L, timeoutFuture);
 
         handler.close(ctx, promise);
 
@@ -92,7 +94,7 @@ class JoinHandlerTest {
 
     @Test
     void channelWrite0ShouldPassThroughMessageIfAuthenticated() throws Exception {
-        JoinHandler handler = new JoinHandler(new AtomicBoolean(true), 1L, timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(true), 1L, timeoutFuture);
 
         handler.channelWrite0(ctx, msg, promise);
 
@@ -101,7 +103,7 @@ class JoinHandlerTest {
 
     @Test
     void channelWrite0ShouldPassThroughUnrestrictedMessageIfNotAuthenticated() throws Exception {
-        JoinHandler handler = new JoinHandler(1L);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(1L);
 
         handler.channelWrite0(ctx, msg, promise);
 
@@ -110,7 +112,7 @@ class JoinHandlerTest {
 
     @Test
     void channelWrite0ShouldBlockNonUnrestrictedMessageIfNotAuthenticated() {
-        JoinHandler handler = new JoinHandler(new AtomicBoolean(false), 1L, timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(false), 1L, timeoutFuture);
         msg = new RequestClientsStocktakingMessage();
 
         assertThrows(IllegalStateException.class, () -> handler.channelWrite0(ctx, msg, promise));
@@ -120,7 +122,7 @@ class JoinHandlerTest {
 
     @Test
     void channelRead0ShouldReplyWithStatusForbiddenForNonJoinMessageIfNotAuthenticated() throws Exception {
-        JoinHandler handler = new JoinHandler(new AtomicBoolean(false), 1L, timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(false), 1L, timeoutFuture);
 
         handler.channelRead0(ctx, msg);
 
@@ -130,7 +132,7 @@ class JoinHandlerTest {
 
     @Test
     void channelRead0ShouldAuthenticateIfNotAuthenticatedAndJoinMessageReceived() throws Exception {
-        JoinHandler handler = new JoinHandler(new AtomicBoolean(false), 1L, timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(false), 1L, timeoutFuture);
         msg = mock(JoinMessage.class);
 
         handler.channelRead0(ctx, msg);
@@ -143,7 +145,7 @@ class JoinHandlerTest {
 
     @Test
     void channelRead0ShouldReplyWithExceptionIfAuthenticatedAndJoinMessageReceived() throws Exception {
-        JoinHandler handler = new JoinHandler(new AtomicBoolean(true), 1L, timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(true), 1L, timeoutFuture);
         msg = new JoinMessage(publicKey, Set.of());
 
         handler.channelRead0(ctx, msg);
@@ -156,7 +158,7 @@ class JoinHandlerTest {
 
     @Test
     void channelRead0ShouldPassThroughNonJoinMessageIfAuthenticated() throws Exception {
-        JoinHandler handler = new JoinHandler(new AtomicBoolean(true), 1L, timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(true), 1L, timeoutFuture);
 
         handler.channelRead0(ctx, msg);
 
@@ -164,5 +166,23 @@ class JoinHandlerTest {
         verify(timeoutFuture, never()).cancel(true);
         verify(ctx, never()).fireChannelRead(any(JoinMessage.class));
         assertTrue(handler.authenticated.get());
+    }
+
+    @Test
+    void exceptionCaughtShouldWriteExceptionToChannelAndThenCloseItIfNotAuthenticated() {
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(false), 1L, timeoutFuture);
+        handler.exceptionCaught(ctx, cause);
+
+        verify(ctx).writeAndFlush(any(ConnectionExceptionMessage.class));
+        verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
+    }
+
+    @Test
+    void exceptionCaughtShouldNotWriteExceptionToChannelAndNotCloseItIfAuthenticated() {
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(true), 1L, timeoutFuture);
+        handler.exceptionCaught(ctx, cause);
+
+        verify(ctx, never()).writeAndFlush(any(ConnectionExceptionMessage.class));
+        verify(channelFuture, never()).addListener(ChannelFutureListener.CLOSE);
     }
 }

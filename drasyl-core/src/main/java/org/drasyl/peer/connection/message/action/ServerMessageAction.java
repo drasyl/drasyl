@@ -21,7 +21,7 @@ package org.drasyl.peer.connection.message.action;
 
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.server.NodeServer;
-import org.drasyl.peer.connection.server.NodeServerClientConnection;
+import org.drasyl.peer.connection.server.NodeServerConnection;
 
 /**
  * This class describes how a server has to respond when receiving a {@link Message} of type
@@ -37,5 +37,5 @@ public interface ServerMessageAction<T extends Message<?>> extends MessageAction
      * @param session
      * @param nodeServer
      */
-    void onMessageServer(NodeServerClientConnection session, NodeServer nodeServer);
+    void onMessageServer(NodeServerConnection session, NodeServer nodeServer);
 }

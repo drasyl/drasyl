@@ -221,13 +221,13 @@ class NodeServerIT {
         // create connection
         TestNodeServerClientConnection session = clientSession(server);
 
-        CompletableFuture<List<Message<?>>> receivedMessages = session.receivedMessages().take(2).toList().toCompletionStage().toCompletableFuture();
+        CompletableFuture<Message<?>> receivedMessage = session.receivedMessages().firstElement().toCompletionStage().toCompletableFuture();
 
         // send message
         session.sendRawString("invalid message");
 
         // verify response
-        assertThat(receivedMessages.get(), contains(instanceOf(ExceptionMessage.class), instanceOf(ConnectionExceptionMessage.class)));
+        assertThat(receivedMessage.get(), instanceOf(ConnectionExceptionMessage.class));
     }
 
     @Test

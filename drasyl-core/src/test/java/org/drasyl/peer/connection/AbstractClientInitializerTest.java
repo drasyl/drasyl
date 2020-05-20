@@ -25,7 +25,7 @@ import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.flush.FlushConsolidationHandler;
 import io.netty.handler.ssl.SslHandler;
-import org.drasyl.peer.connection.handler.WebSocketClientHandler;
+import org.drasyl.peer.connection.handler.WebSocketHandshakeClientHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -77,7 +77,7 @@ class AbstractClientInitializerTest {
         initializer.beforeMarshalStage(pipeline);
 
         verify(pipeline).addLast(any(HttpClientCodec.class), any(HttpObjectAggregator.class),
-                any(WebSocketClientHandler.class));
+                any(WebSocketHandshakeClientHandler.class));
     }
 
     @Test
@@ -99,6 +99,6 @@ class AbstractClientInitializerTest {
         });
 
         verify(pipeline, never()).addLast(any(HttpClientCodec.class), any(HttpObjectAggregator.class),
-                any(WebSocketClientHandler.class));
+                any(WebSocketHandshakeClientHandler.class));
     }
 }

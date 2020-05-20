@@ -37,7 +37,7 @@ import java.util.concurrent.CompletableFuture;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 
-class WebSocketClientHandlerTest {
+class WebSocketHandshakeClientHandlerTest {
     private WebSocketClientHandshaker handshaker;
     private CompletableFuture<Void> handshakeFuture;
     private ChannelHandlerContext ctx;
@@ -71,7 +71,7 @@ class WebSocketClientHandlerTest {
 
     @Test
     void channelWrite0ShouldBlockUntilHandshakeIsDone() throws Exception {
-        WebSocketClientHandler handler = new WebSocketClientHandler(handshaker, handshakeFuture);
+        WebSocketHandshakeClientHandler handler = new WebSocketHandshakeClientHandler(handshaker, handshakeFuture);
 
         handler.channelWrite0(ctx, quitMessage, promise);
 
@@ -88,7 +88,7 @@ class WebSocketClientHandlerTest {
         when(channel.id()).thenReturn(channelId);
         when(channelPipeline.context(HttpResponseDecoder.class)).thenReturn(mock(ChannelHandlerContext.class));
 
-        WebSocketClientHandler handler = new WebSocketClientHandler(handshaker, handshakeFuture);
+        WebSocketHandshakeClientHandler handler = new WebSocketHandshakeClientHandler(handshaker, handshakeFuture);
         handler.channelRead0(ctx, fullHttpResponse);
 
         verify(handshaker).finishHandshake(channel, fullHttpResponse);
@@ -101,7 +101,7 @@ class WebSocketClientHandlerTest {
         when(handshaker.isHandshakeComplete()).thenReturn(true);
         when(fullHttpResponse.content()).thenReturn(byteBuf);
 
-        WebSocketClientHandler handler = new WebSocketClientHandler(handshaker, handshakeFuture);
+        WebSocketHandshakeClientHandler handler = new WebSocketHandshakeClientHandler(handshaker, handshakeFuture);
         assertThrows(IllegalStateException.class, () -> handler.channelRead0(ctx, fullHttpResponse));
     }
 
@@ -111,7 +111,7 @@ class WebSocketClientHandlerTest {
         when(channel.id()).thenReturn(channelId);
         when(handshaker.isHandshakeComplete()).thenReturn(true);
 
-        WebSocketClientHandler handler = new WebSocketClientHandler(handshaker, handshakeFuture);
+        WebSocketHandshakeClientHandler handler = new WebSocketHandshakeClientHandler(handshaker, handshakeFuture);
         handler.channelRead0(ctx, closeWebSocketFrame);
 
         verify(channel).close();
@@ -122,7 +122,7 @@ class WebSocketClientHandlerTest {
         when(handshaker.isHandshakeComplete()).thenReturn(true);
         when(webSocketFrame.retain()).thenReturn(webSocketFrame);
 
-        WebSocketClientHandler handler = new WebSocketClientHandler(handshaker, handshakeFuture);
+        WebSocketHandshakeClientHandler handler = new WebSocketHandshakeClientHandler(handshaker, handshakeFuture);
         handler.channelRead0(ctx, webSocketFrame);
 
         verify(ctx).fireChannelRead(webSocketFrame);
@@ -133,7 +133,7 @@ class WebSocketClientHandlerTest {
     void exceptionCaughtShouldAbortHandshakeAndCloseChannel() {
         when(handshakeFuture.isDone()).thenReturn(false);
 
-        WebSocketClientHandler handler = new WebSocketClientHandler(handshaker, handshakeFuture);
+        WebSocketHandshakeClientHandler handler = new WebSocketHandshakeClientHandler(handshaker, handshakeFuture);
         handler.exceptionCaught(ctx, cause);
 
         verify(handshakeFuture).completeExceptionally(any());

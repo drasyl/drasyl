@@ -43,7 +43,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 import static java.lang.Thread.sleep;
 import static org.drasyl.peer.connection.PeerConnection.CloseReason.REASON_SHUTTING_DOWN;
@@ -139,7 +138,7 @@ public class SuperPeerClient implements AutoCloseable {
             URI endpoint = getEndpoint();
             LOG.debug("Connect to Super Peer Endpoint '{}'", endpoint);
             try {
-                SuperPeerClientBootstrap clientBootstrap = new SuperPeerClientBootstrap(config, workerGroup, endpoint, this);
+                SuperPeerClientChannelBootstrap clientBootstrap = new SuperPeerClientChannelBootstrap(config, workerGroup, endpoint, this);
                 clientChannel = clientBootstrap.getChannel();
                 clientChannel.writeAndFlush(new JoinMessage(identityManager.getKeyPair().getPublicKey(), entryPoints))
                         .syncUninterruptibly();
@@ -233,7 +232,7 @@ public class SuperPeerClient implements AutoCloseable {
     @Override
     public void close() {
         if (opened.compareAndSet(true, false)) {
-            messenger.getConnectionsManager().closeConnectionsOfType(SuperPeerConnection.class, REASON_SHUTTING_DOWN);
+            messenger.getConnectionsManager().closeConnectionsOfType(SuperPeerClientConnection.class, REASON_SHUTTING_DOWN);
 
             if (clientChannel != null && clientChannel.isOpen()) {
                 clientChannel.close().syncUninterruptibly();

@@ -28,8 +28,6 @@ import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.ConnectionsManager;
-import org.drasyl.peer.connection.PeerConnection;
-import org.drasyl.peer.connection.server.NodeServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -184,7 +182,7 @@ class SuperPeerClientTest {
 
         client.close();
 
-        verify(connectionsManager).closeConnectionsOfType(SuperPeerConnection.class, REASON_SHUTTING_DOWN);
+        verify(connectionsManager).closeConnectionsOfType(SuperPeerClientConnection.class, REASON_SHUTTING_DOWN);
         verify(clientChannel).close();
     }
 

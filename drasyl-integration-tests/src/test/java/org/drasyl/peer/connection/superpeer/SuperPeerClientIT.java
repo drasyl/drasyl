@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.peer.connection.superpeer;
 
 import com.typesafe.config.ConfigFactory;
@@ -27,10 +26,12 @@ import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.event.Event;
 import org.drasyl.event.EventCode;
+import org.drasyl.event.Node;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.message.*;
 import org.drasyl.peer.connection.server.NodeServer;
 import org.junit.Ignore;
 import org.junit.jupiter.api.*;
@@ -39,16 +40,22 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import testutils.AnsiColor;
 import testutils.TestHelper;
 
+import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Execution(ExecutionMode.SAME_THREAD)
 class SuperPeerClientIT {
     public static final long TIMEOUT = 10000L;
-    private static EventLoopGroup workerGroup;
-    private static EventLoopGroup bossGroup;
+    private EventLoopGroup workerGroup;
+    private EventLoopGroup bossGroup;
     DrasylNodeConfig config;
     DrasylNodeConfig serverConfig;
     private IdentityManager identityManager;
@@ -62,6 +69,9 @@ class SuperPeerClientIT {
         TestHelper.colorizedPrintln("STARTING " + info.getDisplayName(), AnsiColor.COLOR_CYAN, AnsiColor.STYLE_REVERSED);
 
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
+
+        workerGroup = new NioEventLoopGroup();
+        bossGroup = new NioEventLoopGroup(1);
 
         config = new DrasylNodeConfig(ConfigFactory.load("configs/SuperPeerClientIT.conf"));
         identityManager = new IdentityManager(config);
@@ -82,36 +92,28 @@ class SuperPeerClientIT {
         server.close();
 
         IdentityManager.deleteIdentityFile(config.getIdentityPath());
-
+        workerGroup.shutdownGracefully().syncUninterruptibly();
+        bossGroup.shutdownGracefully().syncUninterruptibly();
         TestHelper.colorizedPrintln("FINISHED " + info.getDisplayName(), AnsiColor.COLOR_CYAN, AnsiColor.STYLE_REVERSED);
     }
 
-    @Ignore("Muss noch implementiert werden")
+    @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldSendJoinMessageOnConnect() throws SuperPeerClientException {
+    void clientShouldSendJoinMessageOnConnect() throws SuperPeerClientException, ExecutionException, InterruptedException {
+        CompletableFuture<Message<?>> sentMessage = IntegrationTestHandler.sentMessages().firstElement().toCompletionStage().toCompletableFuture();
+        CompletableFuture<List<Message<?>>> receivedMessages = IntegrationTestHandler.receivedMessages().take(5).toList().toCompletionStage().toCompletableFuture();
         // start client
         SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, event -> {
         });
         client.open(server.getEntryPoints());
+        sentMessage.join();
 
-        // TODO: check if JoinMessage has been received by server
+        assertThat(receivedMessages.get(), hasItem(instanceOf(JoinMessage.class)));
     }
 
     @Ignore("Muss noch implementiert werden")
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldSendXXXMessageOnClientSideDisconnect() {
-
-    }
-
-    @Ignore("Muss noch implementiert werden")
-    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldRespondToPingMessageWithPongMessage() {
-
-    }
-
-    @Ignore("Muss noch implementiert werden")
-    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldRespondToApplicationMessageWithStatusOk() {
+    void clientShouldSendXXXMessageOnClientSideDisconnect() throws SuperPeerClientException, ExecutionException, InterruptedException {
 
     }
 
@@ -141,10 +143,61 @@ class SuperPeerClientIT {
         assertEquals(0, lock.getCount());
     }
 
-    @Ignore("Muss noch implementiert werden")
+    @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldEmitNodeOfflineEventAfterReceivingQuitMessage() throws SuperPeerClientException, InterruptedException {
+    void clientShouldRespondToPingMessageWithPongMessage() throws SuperPeerClientException, ExecutionException, InterruptedException {
+        CompletableFuture<Message<?>> sentMessage = IntegrationTestHandler.sentMessages().firstElement().toCompletionStage().toCompletableFuture();
+        CompletableFuture<List<Message<?>>> receivedMessages = IntegrationTestHandler.receivedMessages().take(2).toList().toCompletionStage().toCompletableFuture();
+        // start client
+        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, event -> {
+        });
+        client.open(server.getEntryPoints());
+        sentMessage.join();
 
+        IntegrationTestHandler.injectMessage(new PingMessage());
+        assertThat(receivedMessages.get(), hasItem(instanceOf(PongMessage.class)));
+    }
+
+    @Test
+    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+    void clientShouldRespondToApplicationMessageWithStatusOk() throws SuperPeerClientException, ExecutionException, InterruptedException {
+        CompletableFuture<Message<?>> sentMessage = IntegrationTestHandler.sentMessages().firstElement().toCompletionStage().toCompletableFuture();
+        CompletableFuture<List<Message<?>>> receivedMessages = IntegrationTestHandler.receivedMessages().take(5).toList().toCompletionStage().toCompletableFuture();
+        // start client
+        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, event -> {
+        });
+        client.open(server.getEntryPoints());
+
+        sentMessage.join();
+
+        IntegrationTestHandler.injectMessage(new ApplicationMessage(TestHelper.random(), identityManager.getIdentity(), new byte[]{
+                0x00,
+                0x01
+        }));
+
+        assertThat(receivedMessages.get(), hasItem(hasProperty("code", is(STATUS_OK))));
+    }
+
+    @Test
+    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+    void clientShouldEmitNodeOfflineEventAfterReceivingQuitMessage() throws SuperPeerClientException, InterruptedException, ExecutionException {
+        CountDownLatch lock = new CountDownLatch(1);
+        ReplaySubject<Event> subject = ReplaySubject.create();
+        CompletableFuture<Message<?>> receivedMessage = IntegrationTestHandler.receivedMessages().firstElement().toCompletionStage().toCompletableFuture();
+        // start client
+        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, subject::onNext);
+        client.open(server.getEntryPoints());
+        subject.subscribe(event -> {
+            if (event.getCode().equals(EventCode.EVENT_NODE_OFFLINE)) {
+                lock.countDown();
+            }
+        });
+
+        receivedMessage.join();
+
+        IntegrationTestHandler.injectMessage(new QuitMessage());
+        lock.await(TIMEOUT, MILLISECONDS);
+        assertEquals(0, lock.getCount());
     }
 
     @Test
@@ -187,17 +240,5 @@ class SuperPeerClientIT {
 
         lock.await(TIMEOUT, MILLISECONDS);
         assertEquals(0, lock.getCount());
-    }
-
-    @BeforeAll
-    static void beforeAll() {
-        workerGroup = new NioEventLoopGroup();
-        bossGroup = new NioEventLoopGroup(1);
-    }
-
-    @AfterAll
-    static void afterAll() {
-        workerGroup.shutdownGracefully().syncUninterruptibly();
-        bossGroup.shutdownGracefully().syncUninterruptibly();
     }
 }

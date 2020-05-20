@@ -21,7 +21,7 @@ package org.drasyl.peer.connection.message.action;
 
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.superpeer.SuperPeerClient;
-import org.drasyl.peer.connection.superpeer.SuperPeerConnection;
+import org.drasyl.peer.connection.superpeer.SuperPeerClientConnection;
 
 /**
  * This class describes how a client has to respond when receiving a {@link Message} of type
@@ -38,5 +38,5 @@ public interface ClientMessageAction<T extends Message<?>> extends MessageAction
      * @param connection      the super peer connection
      * @param superPeerClient the super peer client
      */
-    void onMessageClient(SuperPeerConnection connection, SuperPeerClient superPeerClient);
+    void onMessageClient(SuperPeerClientConnection connection, SuperPeerClient superPeerClient);
 }

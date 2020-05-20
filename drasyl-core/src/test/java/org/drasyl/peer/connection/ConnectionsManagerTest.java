@@ -22,10 +22,8 @@ package org.drasyl.peer.connection;
 import com.google.common.collect.HashMultimap;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.ConnectionsManager;
-import org.drasyl.peer.connection.PeerConnection;
 import org.drasyl.peer.connection.PeerConnection.CloseReason;
-import org.drasyl.peer.connection.superpeer.SuperPeerConnection;
+import org.drasyl.peer.connection.superpeer.SuperPeerClientConnection;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -51,7 +49,7 @@ class ConnectionsManagerTest {
     private Consumer<CloseReason> runnable1;
     private Consumer<CloseReason> runnable2;
     private Identity superPeer;
-    private SuperPeerConnection superPeerConnection;
+    private SuperPeerClientConnection superPeerClientConnection;
     private Consumer<CloseReason> superPeerRunnable;
 
     @BeforeEach
@@ -64,7 +62,7 @@ class ConnectionsManagerTest {
         identity = Identity.of(Crypto.randomString(5));
         peerConnection = mock(PeerConnection.class);
         peerConnection2 = mock(PeerConnection.class);
-        superPeerConnection = mock(SuperPeerConnection.class);
+        superPeerClientConnection = mock(SuperPeerClientConnection.class);
         reason = CloseReason.REASON_SHUTTING_DOWN;
         runnable1 = mock(Consumer.class);
         runnable2 = mock(Consumer.class);
@@ -76,10 +74,10 @@ class ConnectionsManagerTest {
 
         when(peerConnection.getIdentity()).thenReturn(identity);
         when(peerConnection2.getIdentity()).thenReturn(identity);
-        when(superPeerConnection.getIdentity()).thenReturn(superPeer);
+        when(superPeerClientConnection.getIdentity()).thenReturn(superPeer);
         when(closeProcedures.remove(eq(peerConnection))).thenReturn(runnable1);
         when(closeProcedures.remove(eq(peerConnection2))).thenReturn(runnable2);
-        when(closeProcedures.remove(eq(superPeerConnection))).thenReturn(superPeerRunnable);
+        when(closeProcedures.remove(eq(superPeerClientConnection))).thenReturn(superPeerRunnable);
     }
 
     @Test
@@ -95,9 +93,9 @@ class ConnectionsManagerTest {
     @Test
     void getConnectionShouldReturnSuperPeerConnectionIfItsTheBestConnectionForGivenIdentity() {
         ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures, superPeer);
-        connectionsManager.addConnection(superPeerConnection, superPeerRunnable);
+        connectionsManager.addConnection(superPeerClientConnection, superPeerRunnable);
 
-        Assertions.assertEquals(superPeerConnection, connectionsManager.getConnection(identity));
+        Assertions.assertEquals(superPeerClientConnection, connectionsManager.getConnection(identity));
         verify(readLock).lock();
         verify(readLock).unlock();
     }

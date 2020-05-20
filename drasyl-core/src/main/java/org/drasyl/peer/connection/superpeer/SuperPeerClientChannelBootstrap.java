@@ -25,24 +25,24 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import org.drasyl.DrasylNodeConfig;
-import org.drasyl.util.WebsocketUtil;
+import org.drasyl.util.WebSocketUtil;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.util.concurrent.ExecutionException;
 
-public class SuperPeerClientBootstrap {
+public class SuperPeerClientChannelBootstrap {
     private final DrasylNodeConfig config;
     private final EventLoopGroup workerGroup;
     private final URI endpoint;
-    private final SuperPeerClientInitializer superPeerClientInitializer;
+    private final SuperPeerClientChannelInitializer superPeerClientChannelInitializer;
     private final SuperPeerClient superPeerClient;
 
-    public SuperPeerClientBootstrap(DrasylNodeConfig config,
-                                    EventLoopGroup workerGroup,
-                                    URI endpoint,
-                                    SuperPeerClient superPeerClient) throws SuperPeerClientException {
+    public SuperPeerClientChannelBootstrap(DrasylNodeConfig config,
+                                           EventLoopGroup workerGroup,
+                                           URI endpoint,
+                                           SuperPeerClient superPeerClient) throws SuperPeerClientException {
         this.config = config;
         this.workerGroup = workerGroup;
         this.endpoint = endpoint;
@@ -50,7 +50,7 @@ public class SuperPeerClientBootstrap {
         String channelInitializer = config.getSuperPeerChannelInitializer();
 
         try {
-            this.superPeerClientInitializer = getChannelInitializer(channelInitializer);
+            this.superPeerClientChannelInitializer = getChannelInitializer(channelInitializer);
         }
         catch (ClassNotFoundException e) {
             throw new SuperPeerClientException("The given channel initializer can't be found: '" + channelInitializer + "'");
@@ -69,27 +69,27 @@ public class SuperPeerClientBootstrap {
         }
     }
 
-    private SuperPeerClientInitializer getChannelInitializer(String className) throws ClassNotFoundException,
+    private SuperPeerClientChannelInitializer getChannelInitializer(String className) throws ClassNotFoundException,
             NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         Class<?> c = Class.forName(className);
         Constructor<?> cons = c.getConstructor(DrasylNodeConfig.class, URI.class, SuperPeerClient.class);
 
-        return (SuperPeerClientInitializer) cons.newInstance(config, endpoint, superPeerClient);
+        return (SuperPeerClientChannelInitializer) cons.newInstance(config, endpoint, superPeerClient);
     }
 
     public Channel getChannel() throws SuperPeerClientException {
         ChannelFuture channelFuture = new Bootstrap()
                 .group(workerGroup)
                 .channel(NioSocketChannel.class)
-                .handler(superPeerClientInitializer)
-                .connect(endpoint.getHost(), WebsocketUtil.websocketPort(endpoint));
+                .handler(superPeerClientChannelInitializer)
+                .connect(endpoint.getHost(), WebSocketUtil.webSocketPort(endpoint));
         channelFuture.awaitUninterruptibly();
 
         if (channelFuture.isSuccess()) {
             Channel channel = channelFuture.channel();
 
             try {
-                superPeerClientInitializer.connectedFuture().get();
+                superPeerClientChannelInitializer.connectedFuture().get();
 
                 return channel;
             }

@@ -24,7 +24,7 @@ import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
 import org.drasyl.peer.connection.server.NodeServer;
-import org.drasyl.peer.connection.server.NodeServerClientConnection;
+import org.drasyl.peer.connection.server.NodeServerConnection;
 
 import static java.util.Objects.requireNonNull;
 
@@ -34,7 +34,7 @@ public class JoinMessageAction extends AbstractMessageAction<JoinMessage> implem
     }
 
     @Override
-    public void onMessageServer(NodeServerClientConnection session,
+    public void onMessageServer(NodeServerConnection session,
                                 NodeServer nodeServer) {
         requireNonNull(session);
         requireNonNull(nodeServer);

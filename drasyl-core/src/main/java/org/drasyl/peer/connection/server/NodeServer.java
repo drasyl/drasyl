@@ -50,7 +50,7 @@ public class NodeServer implements AutoCloseable {
     private final Messenger messenger;
     private final AtomicBoolean opened;
     private Channel serverChannel;
-    private NodeServerBootstrap nodeServerBootstrap;
+    private NodeServerChannelBootstrap nodeServerChannelBootstrap;
     private int actualPort;
     private Set<URI> actualEndpoints;
 
@@ -113,7 +113,7 @@ public class NodeServer implements AutoCloseable {
                 workerGroup, bossGroup,
                 null, new AtomicBoolean(false), -1, new HashSet<>());
 
-        nodeServerBootstrap = new NodeServerBootstrap(this, serverBootstrap, config);
+        nodeServerChannelBootstrap = new NodeServerChannelBootstrap(this, serverBootstrap, config);
     }
 
     NodeServer(IdentityManager identityManager,
@@ -124,7 +124,7 @@ public class NodeServer implements AutoCloseable {
                ServerBootstrap serverBootstrap,
                EventLoopGroup workerGroup,
                EventLoopGroup bossGroup,
-               NodeServerBootstrap nodeServerBootstrap,
+               NodeServerChannelBootstrap nodeServerChannelBootstrap,
                AtomicBoolean opened,
                int actualPort,
                Set<URI> actualEndpoints) {
@@ -135,7 +135,7 @@ public class NodeServer implements AutoCloseable {
         this.serverBootstrap = serverBootstrap;
         this.workerGroup = workerGroup;
         this.bossGroup = bossGroup;
-        this.nodeServerBootstrap = nodeServerBootstrap;
+        this.nodeServerChannelBootstrap = nodeServerChannelBootstrap;
         this.opened = opened;
         this.messenger = messenger;
         this.actualPort = actualPort;
@@ -188,7 +188,7 @@ public class NodeServer implements AutoCloseable {
      */
     public void open() throws NodeServerException {
         if (opened.compareAndSet(false, true)) {
-            serverChannel = nodeServerBootstrap.getChannel();
+            serverChannel = nodeServerChannelBootstrap.getChannel();
 
             InetSocketAddress socketAddress = (InetSocketAddress) serverChannel.localAddress();
             actualPort = socketAddress.getPort();
@@ -233,7 +233,7 @@ public class NodeServer implements AutoCloseable {
     @Override
     public void close() {
         if (opened.compareAndSet(true, false)) {
-            messenger.getConnectionsManager().closeConnectionsOfType(NodeServerClientConnection.class, REASON_SHUTTING_DOWN);
+            messenger.getConnectionsManager().closeConnectionsOfType(NodeServerConnection.class, REASON_SHUTTING_DOWN);
 
             if (serverChannel != null && serverChannel.isOpen()) {
                 serverChannel.close().syncUninterruptibly();

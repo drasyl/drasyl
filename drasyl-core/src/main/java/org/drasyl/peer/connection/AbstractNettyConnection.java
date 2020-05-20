@@ -28,7 +28,7 @@ import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.ResponseMessage;
-import org.drasyl.peer.connection.server.NodeServerClientConnection;
+import org.drasyl.peer.connection.server.NodeServerConnection;
 import org.slf4j.Logger;
 
 import java.net.URI;
@@ -57,7 +57,7 @@ public abstract class AbstractNettyConnection extends PeerConnection {
      *
      * @param channel            channel of the connection
      * @param endpoint           the URI of the target system
-     * @param identity           the identity of this {@link NodeServerClientConnection}
+     * @param identity           the identity of this {@link NodeServerConnection}
      * @param connectionsManager reference to the {@link ConnectionsManager}
      */
     public AbstractNettyConnection(Channel channel,
@@ -72,7 +72,7 @@ public abstract class AbstractNettyConnection extends PeerConnection {
      *
      * @param channel            channel of the connection
      * @param endpoint           the URI of the target system
-     * @param identity           the identity of this {@link NodeServerClientConnection}
+     * @param identity           the identity of this {@link NodeServerConnection}
      * @param userAgent          the User-Agent string
      * @param connectionsManager reference to the {@link ConnectionsManager}
      */

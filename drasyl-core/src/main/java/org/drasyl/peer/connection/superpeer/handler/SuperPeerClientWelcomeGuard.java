@@ -39,14 +39,14 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBI
  * received. Every other incoming message is also dropped unless a {@link WelcomeMessage} was
  * received.
  */
-public class WelcomeGuard extends SimpleChannelDuplexHandler<Message<?>, Message<?>> {
-    public static final String WELCOME_GUARD = "welcomeGuard";
-    private static final Logger LOG = LoggerFactory.getLogger(WelcomeGuard.class);
+public class SuperPeerClientWelcomeGuard extends SimpleChannelDuplexHandler<Message<?>, Message<?>> {
+    public static final String WELCOME_GUARD = "superPeerClientWelcomeGuard";
+    private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClientWelcomeGuard.class);
     private final CompressedPublicKey expectedPublicKey;
     private final CompressedPublicKey ownPublicKey;
 
-    public WelcomeGuard(String expectedPublicKey,
-                        CompressedPublicKey ownPublicKey) {
+    public SuperPeerClientWelcomeGuard(String expectedPublicKey,
+                                       CompressedPublicKey ownPublicKey) {
         CompressedPublicKey expectedPublicKey1;
         if (expectedPublicKey == null || expectedPublicKey.equals("")) {
             expectedPublicKey1 = null;

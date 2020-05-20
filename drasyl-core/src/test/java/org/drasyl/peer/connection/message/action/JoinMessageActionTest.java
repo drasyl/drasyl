@@ -27,7 +27,7 @@ import org.drasyl.peer.connection.ConnectionsManager;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
 import org.drasyl.peer.connection.server.NodeServer;
-import org.drasyl.peer.connection.server.NodeServerClientConnection;
+import org.drasyl.peer.connection.server.NodeServerConnection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.MockitoAnnotations;
@@ -40,7 +40,7 @@ import static org.mockito.Mockito.*;
 class JoinMessageActionTest {
     private JoinMessage message;
     private NodeServer nodeServer;
-    private NodeServerClientConnection session;
+    private NodeServerConnection session;
     private PeersManager peersManager;
     private CompressedPublicKey compressedPublicKey;
     private String id;
@@ -55,7 +55,7 @@ class JoinMessageActionTest {
         MockitoAnnotations.initMocks(this);
         message = mock(JoinMessage.class);
         nodeServer = mock(NodeServer.class);
-        session = mock(NodeServerClientConnection.class);
+        session = mock(NodeServerConnection.class);
         peersManager = mock(PeersManager.class);
         compressedPublicKey = mock(CompressedPublicKey.class);
         id = "id";

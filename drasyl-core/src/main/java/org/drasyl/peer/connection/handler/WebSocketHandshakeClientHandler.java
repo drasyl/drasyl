@@ -33,17 +33,20 @@ import org.slf4j.LoggerFactory;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CompletableFuture;
 
-public class WebSocketClientHandler extends SimpleChannelDuplexHandler<Object, Message<?>> {
-    private static final Logger LOG = LoggerFactory.getLogger(WebSocketClientHandler.class);
+/**
+ * This handler performs the Websocket handshake.
+ */
+public class WebSocketHandshakeClientHandler extends SimpleChannelDuplexHandler<Object, Message<?>> {
+    private static final Logger LOG = LoggerFactory.getLogger(WebSocketHandshakeClientHandler.class);
     private final WebSocketClientHandshaker handshaker;
     private final CompletableFuture<Void> handshakeFuture;
 
-    public WebSocketClientHandler(WebSocketClientHandshaker handshaker) {
+    public WebSocketHandshakeClientHandler(WebSocketClientHandshaker handshaker) {
         this(handshaker, new CompletableFuture<>());
     }
 
-    WebSocketClientHandler(WebSocketClientHandshaker handshaker,
-                           CompletableFuture<Void> handshakeFuture) {
+    WebSocketHandshakeClientHandler(WebSocketClientHandshaker handshaker,
+                                    CompletableFuture<Void> handshakeFuture) {
         this.handshaker = handshaker;
         this.handshakeFuture = handshakeFuture;
     }
