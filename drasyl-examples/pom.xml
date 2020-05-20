@@ -18,8 +18,7 @@
   ~  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
   -->
 
-<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-         xmlns="http://maven.apache.org/POM/4.0.0"
+<project xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xmlns="http://maven.apache.org/POM/4.0.0"
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <parent>
         <artifactId>parent</artifactId>
@@ -27,6 +26,13 @@
         <version>0.0.1-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
+
+    <name>drasyl: Next Generation Overlay Network - Examples Package</name>
+    <description>
+        This package contains examples of how to use drasyl.
+    </description>
+
+    <artifactId>drasyl-examples</artifactId>
 
     <build>
         <plugins>
@@ -52,10 +58,8 @@
                 </configuration>
             </plugin>
         </plugins>
-
     </build>
 
-    <artifactId>drasyl-examples</artifactId>
     <dependencies>
         <dependency>
             <groupId>org.drasyl</groupId>
@@ -69,6 +73,4 @@
             <version>14</version>
         </dependency>
     </dependencies>
-
-
 </project>

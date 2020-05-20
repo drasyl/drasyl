@@ -29,6 +29,11 @@
 
     <artifactId>drasyl-integration-tests</artifactId>
 
+    <name>drasyl: Next Generation Overlay Network - Integration Tests Package</name>
+    <description>
+        This package contains integration tests for drasyl.
+    </description>
+
     <build>
         <plugins>
             <plugin>
