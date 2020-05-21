@@ -29,9 +29,11 @@ import org.drasyl.peer.connection.message.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.time.Duration;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static java.util.concurrent.TimeUnit.*;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_HANDSHAKE;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_INITIALIZATION;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
@@ -51,16 +53,16 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBI
 public class NodeServerJoinGuard extends SimpleChannelDuplexHandler<Message<?>, Message<?>> {
     public static final String JOIN_GUARD = "nodeServerJoinGuard";
     private static final Logger LOG = LoggerFactory.getLogger(NodeServerJoinGuard.class);
-    private final long timeout;
+    private final Duration timeout;
     protected AtomicBoolean authenticated;
     private ScheduledFuture<?> timeoutFuture;
 
-    public NodeServerJoinGuard(long timeout) {
+    public NodeServerJoinGuard(Duration timeout) {
         this(new AtomicBoolean(false), timeout, null);
     }
 
     NodeServerJoinGuard(AtomicBoolean authenticated,
-                        long timeout,
+                        Duration timeout,
                         ScheduledFuture<?> timeoutFuture) {
         this.timeoutFuture = timeoutFuture;
         this.authenticated = authenticated;
@@ -78,7 +80,7 @@ public class NodeServerJoinGuard extends SimpleChannelDuplexHandler<Message<?>, 
                 LOG.debug("[{}]: Handshake did not take place successfully in {}ms. "
                         + "Connection is closed.", ctx.channel().id().asShortText(), timeout);
             }
-        }, timeout, TimeUnit.MILLISECONDS);
+        }, timeout.toMillis(), MILLISECONDS);
     }
 
     @Override

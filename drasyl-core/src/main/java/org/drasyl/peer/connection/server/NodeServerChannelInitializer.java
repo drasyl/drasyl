@@ -79,7 +79,7 @@ public class NodeServerChannelInitializer extends DefaultSessionInitializer {
         pipeline.addLast(QuitMessageHandler.QUIT_MESSAGE_HANDLER, QuitMessageHandler.INSTANCE);
 
         // Guards
-        pipeline.addLast(JOIN_GUARD, new NodeServerJoinGuard(server.getConfig().getServerHandshakeTimeout().toMillis()));
+        pipeline.addLast(JOIN_GUARD, new NodeServerJoinGuard(server.getConfig().getServerHandshakeTimeout()));
 
         // Server handler
         pipeline.addLast(HANDLER, new NodeServerConnectionHandler(this.server));

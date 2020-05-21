@@ -30,10 +30,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static java.time.Duration.ofMillis;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -74,7 +76,7 @@ class NodeServerJoinGuardTest {
             return mock(ScheduledFuture.class);
         });
 
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(false), 1L, timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(false), ofMillis(1), timeoutFuture);
 
         handler.channelActive(ctx);
 
@@ -85,7 +87,7 @@ class NodeServerJoinGuardTest {
 
     @Test
     void closeShouldCloseChannelAndCancelTimeoutTask() throws Exception {
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(false), 1L, timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(false), ofMillis(1), timeoutFuture);
 
         handler.close(ctx, promise);
 
@@ -95,7 +97,7 @@ class NodeServerJoinGuardTest {
 
     @Test
     void channelWrite0ShouldPassThroughMessageIfAuthenticated() throws Exception {
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(true), 1L, timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(true), ofMillis(1), timeoutFuture);
 
         handler.channelWrite0(ctx, msg, promise);
 
@@ -104,7 +106,7 @@ class NodeServerJoinGuardTest {
 
     @Test
     void channelWrite0ShouldPassThroughUnrestrictedMessageIfNotAuthenticated() throws Exception {
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(1L);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1));
 
         handler.channelWrite0(ctx, msg, promise);
 
@@ -113,7 +115,7 @@ class NodeServerJoinGuardTest {
 
     @Test
     void channelWrite0ShouldBlockNonUnrestrictedMessageIfNotAuthenticated() {
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(false), 1L, timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(false), ofMillis(1), timeoutFuture);
         msg = new RequestClientsStocktakingMessage();
 
         assertThrows(IllegalStateException.class, () -> handler.channelWrite0(ctx, msg, promise));
@@ -123,7 +125,7 @@ class NodeServerJoinGuardTest {
 
     @Test
     void channelRead0ShouldReplyWithStatusForbiddenForNonJoinMessageIfNotAuthenticated() throws Exception {
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(false), 1L, timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(false), ofMillis(1), timeoutFuture);
 
         handler.channelRead0(ctx, msg);
 
@@ -133,7 +135,7 @@ class NodeServerJoinGuardTest {
 
     @Test
     void channelRead0ShouldAuthenticateIfNotAuthenticatedAndJoinMessageReceived() throws Exception {
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(false), 1L, timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(false), ofMillis(1), timeoutFuture);
         msg = mock(JoinMessage.class);
 
         handler.channelRead0(ctx, msg);
@@ -146,7 +148,7 @@ class NodeServerJoinGuardTest {
 
     @Test
     void channelRead0ShouldReplyWithExceptionIfAuthenticatedAndJoinMessageReceived() throws Exception {
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(true), 1L, timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(true), ofMillis(1), timeoutFuture);
         msg = new JoinMessage(publicKey, Set.of());
 
         handler.channelRead0(ctx, msg);
@@ -159,7 +161,7 @@ class NodeServerJoinGuardTest {
 
     @Test
     void channelRead0ShouldPassThroughNonJoinMessageIfAuthenticated() throws Exception {
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(true), 1L, timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(true), ofMillis(1), timeoutFuture);
 
         handler.channelRead0(ctx, msg);
 
@@ -171,7 +173,7 @@ class NodeServerJoinGuardTest {
 
     @Test
     void exceptionCaughtShouldWriteExceptionToChannelAndThenCloseItIfNotAuthenticated() throws Exception {
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(false), 1L, timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(false), ofMillis(1), timeoutFuture);
         handler.exceptionCaught(ctx, cause);
 
         verify(ctx).writeAndFlush(any(ConnectionExceptionMessage.class));
@@ -180,7 +182,7 @@ class NodeServerJoinGuardTest {
 
     @Test
     void exceptionCaughtShouldNotWriteExceptionToChannelAndNotCloseItIfAuthenticated() throws Exception {
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(true), 1L, timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(true), ofMillis(1), timeoutFuture);
         handler.exceptionCaught(ctx, cause);
 
         verify(ctx, never()).writeAndFlush(any(ConnectionExceptionMessage.class));
