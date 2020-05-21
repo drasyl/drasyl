@@ -51,7 +51,7 @@ class AbstractNettyConnectionTest {
     private URI endpoint;
     private Identity myid;
     private String userAgent;
-    private MessageExceptionMessage messageExceptionMessage;
+    private ConnectionExceptionMessage connectionExceptionMessage;
     private RequestMessage<?> message;
     private ChannelFuture channelFuture;
     private AtomicBoolean isClosed;
@@ -68,7 +68,7 @@ class AbstractNettyConnectionTest {
         endpoint = new URI("ws://localhost:22527/");
         myid = IdentityTestHelper.random();
         userAgent = "";
-        messageExceptionMessage = mock(MessageExceptionMessage.class);
+        connectionExceptionMessage = mock(ConnectionExceptionMessage.class);
         message = mock(ApplicationMessage.class);
         channelFuture = mock(ChannelFuture.class);
         ChannelId channelId = mock(ChannelId.class);
@@ -137,7 +137,7 @@ class AbstractNettyConnectionTest {
 
         peerConnection.sendRequest(message).subscribe();
         peerConnection.send(message);
-        peerConnection.send(messageExceptionMessage);
+        peerConnection.send(connectionExceptionMessage);
         peerConnection.send(responseMessage);
 
         verify(channel, never()).writeAndFlush(any(Message.class));

@@ -32,10 +32,10 @@ import org.drasyl.peer.connection.server.NodeServerConnection;
 public interface ServerMessageAction<T extends Message<?>> extends MessageAction<T> {
     /**
      * Describes how the Server <code>nodeServer</code> should react when a {@link Message} of type
-     * <code>T</code> is received from Client in the connection <code>session</code>.
+     * <code>T</code> is received from Client in the connection <code>connection</code>.
      *
-     * @param session
+     * @param connection
      * @param nodeServer
      */
-    void onMessageServer(NodeServerConnection session, NodeServer nodeServer);
+    void onMessageServer(NodeServerConnection connection, NodeServer nodeServer);
 }

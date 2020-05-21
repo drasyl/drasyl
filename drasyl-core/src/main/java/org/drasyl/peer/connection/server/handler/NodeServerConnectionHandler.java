@@ -23,7 +23,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.handler.ConnectionGuard;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
@@ -160,7 +159,7 @@ public class NodeServerConnectionHandler extends SimpleChannelInboundHandler<Mes
             clientConnection = new NodeServerConnection(ctx.channel(), uri, identity,
                     Optional.ofNullable(jm.getUserAgent()).orElse("U/A"), server.getMessenger().getConnectionsManager());
             sessionReadyFuture.complete(clientConnection);
-            ctx.pipeline().remove(ConnectionGuard.CONNECTION_GUARD);
+            ctx.pipeline().remove(NodeServerNewConnectionsGuard.CONNECTION_GUARD);
         }
     }
 

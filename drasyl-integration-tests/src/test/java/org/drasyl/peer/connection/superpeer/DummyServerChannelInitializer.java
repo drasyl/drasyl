@@ -19,7 +19,7 @@
 package org.drasyl.peer.connection.superpeer;
 
 import io.netty.channel.ChannelPipeline;
-import org.drasyl.peer.connection.handler.ConnectionGuard;
+import org.drasyl.peer.connection.server.handler.NodeServerNewConnectionsGuard;
 import org.drasyl.peer.connection.server.NodeServer;
 import org.drasyl.peer.connection.server.NodeServerChannelInitializer;
 
@@ -31,6 +31,6 @@ public class DummyServerChannelInitializer extends NodeServerChannelInitializer 
     @Override
     protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
         pipeline.addLast(new IntegrationTestHandler());
-        pipeline.addLast(ConnectionGuard.CONNECTION_GUARD, new ConnectionGuard(server::isOpen));
+        pipeline.addLast(NodeServerNewConnectionsGuard.CONNECTION_GUARD, new NodeServerNewConnectionsGuard(server::isOpen));
     }
 }

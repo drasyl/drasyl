@@ -40,10 +40,11 @@ public class QuitMessageHandler extends SimpleChannelInboundHandler<QuitMessage>
     private static final Logger LOG = LoggerFactory.getLogger(QuitMessageHandler.class);
 
     private QuitMessageHandler() {
+        // singleton
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, QuitMessage msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, QuitMessage msg) {
         try {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("[{}]: received {}. Close channel", ctx.channel().id().asShortText(), msg);

@@ -28,7 +28,7 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import org.drasyl.peer.connection.DefaultSessionInitializer;
-import org.drasyl.peer.connection.handler.ConnectionGuard;
+import org.drasyl.peer.connection.server.handler.NodeServerNewConnectionsGuard;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.QuitMessageHandler;
 import org.drasyl.peer.connection.server.handler.NodeServerJoinGuard;
@@ -102,6 +102,6 @@ public class NodeServerChannelInitializer extends DefaultSessionInitializer {
 
     @Override
     protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
-        pipeline.addLast(ConnectionGuard.CONNECTION_GUARD, new ConnectionGuard(server::isOpen));
+        pipeline.addLast(NodeServerNewConnectionsGuard.CONNECTION_GUARD, new NodeServerNewConnectionsGuard(server::isOpen));
     }
 }

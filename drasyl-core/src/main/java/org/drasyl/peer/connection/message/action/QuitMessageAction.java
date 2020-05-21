@@ -32,9 +32,9 @@ public class QuitMessageAction extends AbstractMessageAction<QuitMessage> implem
     }
 
     @Override
-    public void onMessageServer(NodeServerConnection session,
+    public void onMessageServer(NodeServerConnection connection,
                                 NodeServer nodeServer) {
-        session.send(new StatusMessage(STATUS_OK, message.getId()));
-        nodeServer.getMessenger().getConnectionsManager().closeConnection(session, message.getReason());
+        connection.send(new StatusMessage(STATUS_OK, message.getId()));
+        nodeServer.getMessenger().getConnectionsManager().closeConnection(connection, message.getReason());
     }
 }
