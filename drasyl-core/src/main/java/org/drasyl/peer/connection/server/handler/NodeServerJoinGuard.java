@@ -34,7 +34,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_HANDSHAKE;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_INITIALIZATION;
-import static org.drasyl.peer.connection.message.MessageExceptionMessage.Error.MESSAGE_ERROR_ALREADY_JOINED;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
 
 /**
@@ -68,12 +67,11 @@ public class NodeServerJoinGuard extends SimpleChannelDuplexHandler<Message<?>, 
         this.timeout = timeout;
     }
 
-    /*
-     * Adds a runnable to the channel executor to emit a channel close event, when timeout is reached.
-     */
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
+
+        // schedule connection close if join did not take place within timeout
         timeoutFuture = ctx.executor().schedule(() -> {
             if (!timeoutFuture.isCancelled() && !authenticated.get()) {
                 ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE)).addListener(ChannelFutureListener.CLOSE);
@@ -86,8 +84,9 @@ public class NodeServerJoinGuard extends SimpleChannelDuplexHandler<Message<?>, 
     @Override
     protected void channelWrite0(ChannelHandlerContext ctx,
                                  Message<?> msg,
-                                 ChannelPromise promise) throws Exception {
+                                 ChannelPromise promise) {
         if (authenticated.get()) {
+            // passthrough all outgoing messages if client is authenticated
             ctx.write(msg, promise);
         }
         else {
@@ -103,21 +102,25 @@ public class NodeServerJoinGuard extends SimpleChannelDuplexHandler<Message<?>, 
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Message<?> request) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, Message<?> request) {
         if (authenticated.get()) {
             if (request instanceof JoinMessage) {
-                ctx.writeAndFlush(new MessageExceptionMessage(MESSAGE_ERROR_ALREADY_JOINED, request.getId()));
+                // reject duplicate join requests
+                ctx.writeAndFlush(new StatusMessage(STATUS_FORBIDDEN, request.getId()));
                 ReferenceCountUtil.release(request);
             }
             else {
+                // passthrough all ingoing messages if client is authenticated
                 ctx.fireChannelRead(request);
             }
         }
         else if (request instanceof JoinMessage && authenticated.compareAndSet(false, true)) {
+            // do join
             timeoutFuture.cancel(true);
             ctx.fireChannelRead(request);
         }
         else {
+            // reject all non-join messages if client is not authenticated
             ctx.writeAndFlush(new StatusMessage(STATUS_FORBIDDEN, request.getId()));
             ReferenceCountUtil.release(request);
             LOG.debug("[{}] Client is not authenticated. Inbound message was dropped: '{}'",
@@ -134,6 +137,7 @@ public class NodeServerJoinGuard extends SimpleChannelDuplexHandler<Message<?>, 
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         if (!authenticated.get()) {
+            // close connection if an error occurred before authentication
             ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_INITIALIZATION)).addListener(ChannelFutureListener.CLOSE);
         } else {
             super.exceptionCaught(ctx, cause);

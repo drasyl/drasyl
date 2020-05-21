@@ -30,8 +30,8 @@ public class RequestClientsStocktakingMessageAction extends AbstractMessageActio
     }
 
     @Override
-    public void onMessageServer(NodeServerConnection session,
+    public void onMessageServer(NodeServerConnection connection,
                                 NodeServer nodeServer) {
-        session.send(new ClientsStocktakingMessage(nodeServer.getPeersManager().getChildren(), message.getId()));
+        connection.send(new ClientsStocktakingMessage(nodeServer.getPeersManager().getChildren(), message.getId()));
     }
 }

@@ -151,7 +151,7 @@ class NodeServerJoinGuardTest {
 
         handler.channelRead0(ctx, msg);
 
-        verify(ctx).writeAndFlush(any(MessageExceptionMessage.class));
+        verify(ctx).writeAndFlush(new StatusMessage(STATUS_FORBIDDEN, msg.getId()));
         verify(timeoutFuture, never()).cancel(true);
         verify(ctx, never()).fireChannelRead(any(JoinMessage.class));
         assertTrue(handler.authenticated.get());

@@ -257,7 +257,7 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void multipleJoinMessagesWithinSameSessionShouldRespondedWithExceptionMessage() throws ExecutionException, InterruptedException, CryptoException {
+    void multipleJoinMessagesWithinSameSessionShouldRespondedWithStatusForbidden() throws ExecutionException, InterruptedException, CryptoException {
         // create connection
         TestNodeServerClientConnection session = clientSessionAfterJoin(server);
 
@@ -268,7 +268,7 @@ class NodeServerIT {
         // verify response
         ResponseMessage<?, ?> response = send.blockingGet();
 
-        assertThat(response, instanceOf(MessageExceptionMessage.class));
+        assertEquals(response, new StatusMessage(STATUS_FORBIDDEN, request.getId()));
     }
 
     @Test
