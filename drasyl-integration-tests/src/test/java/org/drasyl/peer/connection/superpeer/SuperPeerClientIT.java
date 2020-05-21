@@ -33,6 +33,7 @@ import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.PeerConnection;
 import org.drasyl.peer.connection.message.*;
 import org.drasyl.peer.connection.server.NodeServer;
 import org.junit.jupiter.api.*;
@@ -48,6 +49,7 @@ import java.util.concurrent.ExecutionException;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.event.EventCode.EVENT_NODE_OFFLINE;
 import static org.drasyl.event.EventCode.EVENT_NODE_ONLINE;
+import static org.drasyl.peer.connection.PeerConnection.CloseReason.REASON_SHUTTING_DOWN;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
@@ -78,7 +80,7 @@ class SuperPeerClientIT {
         identityManager = new IdentityManager(config);
         identityManager.loadOrCreateIdentity();
 
-        serverConfig = new DrasylNodeConfig(ConfigFactory.load("configs/DummyServer.conf"));
+        serverConfig = new DrasylNodeConfig(ConfigFactory.load("configs/SuperPeerClientIT-NodeServer.conf"));
         identityManagerServer = new IdentityManager(serverConfig);
         identityManagerServer.loadOrCreateIdentity();
         peersManager = new PeersManager();
@@ -114,18 +116,28 @@ class SuperPeerClientIT {
         receivedMessages.assertValue(new JoinMessage(identityManager.getKeyPair().getPublicKey(), server.getEntryPoints()));
     }
 
-    @Disabled("Muss noch implementiert werden")
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldSendXXXMessageOnClientSideDisconnect() throws SuperPeerClientException {
+    void clientShouldSendQuitMessageOnClientSideDisconnect() throws SuperPeerClientException {
+        TestObserver<Message<?>> receivedMessages = IntegrationTestHandler.receivedMessages().test();
+        TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
+        // start client
+        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
+        client.open(server.getEntryPoints());
+
+        // wait for node to become online, before closing it
+        emittedEvents.awaitCount(1);
+        client.close();
+
+        // verify emitted events
+        receivedMessages.awaitCount(2);
+        receivedMessages.assertValueAt(1, new QuitMessage(REASON_SHUTTING_DOWN));
     }
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldEmitNodeOfflineEventOnClientSideDisconnect() throws SuperPeerClientException {
-        CountDownLatch lock = new CountDownLatch(2);
-
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
@@ -188,7 +200,7 @@ class SuperPeerClientIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldEmitNodeOfflineEventAfterReceivingQuitMessage() throws SuperPeerClientException, InterruptedException {
+    void clientShouldEmitNodeOfflineEventAfterReceivingQuitMessage() throws SuperPeerClientException {
         TestObserver<Message<?>> receivedMessages = IntegrationTestHandler.receivedMessages().test();
         TestObserver<Event> emittedEvents = emittedEventsSubject.filter(e -> e.getCode() == EVENT_NODE_OFFLINE).test();
 
