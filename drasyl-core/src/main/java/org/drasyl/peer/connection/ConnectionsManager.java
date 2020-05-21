@@ -131,6 +131,10 @@ public class ConnectionsManager {
     }
 
     private void removeConnection(PeerConnection connection) {
+        if (connection instanceof SuperPeerClientConnection) {
+            superPeer = null;
+        }
+
         connections.remove(connection.getIdentity(), connection);
     }
 
