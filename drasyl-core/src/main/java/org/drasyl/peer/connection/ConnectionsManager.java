@@ -22,7 +22,6 @@ package org.drasyl.peer.connection;
 import com.google.common.collect.HashMultimap;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.PeerConnection.CloseReason;
-import org.drasyl.peer.connection.server.NodeServerConnection;
 import org.drasyl.peer.connection.superpeer.SuperPeerClientConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
