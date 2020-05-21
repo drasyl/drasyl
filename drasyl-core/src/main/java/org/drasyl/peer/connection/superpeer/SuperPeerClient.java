@@ -138,10 +138,8 @@ public class SuperPeerClient implements AutoCloseable {
             URI endpoint = getEndpoint();
             LOG.debug("Connect to Super Peer Endpoint '{}'", endpoint);
             try {
-                SuperPeerClientChannelBootstrap clientBootstrap = new SuperPeerClientChannelBootstrap(config, workerGroup, endpoint, this);
+                SuperPeerClientChannelBootstrap clientBootstrap = new SuperPeerClientChannelBootstrap(config, workerGroup, endpoint, entryPoints, this);
                 clientChannel = clientBootstrap.getChannel();
-                clientChannel.writeAndFlush(new JoinMessage(identityManager.getKeyPair().getPublicKey(), entryPoints))
-                        .syncUninterruptibly();
                 clientChannel.closeFuture().syncUninterruptibly();
                 onEvent.accept(new Event(EventCode.EVENT_NODE_OFFLINE, Node.of(identityManager.getIdentity())));
             }

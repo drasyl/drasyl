@@ -170,7 +170,7 @@ class NodeServerJoinGuardTest {
     }
 
     @Test
-    void exceptionCaughtShouldWriteExceptionToChannelAndThenCloseItIfNotAuthenticated() {
+    void exceptionCaughtShouldWriteExceptionToChannelAndThenCloseItIfNotAuthenticated() throws Exception {
         NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(false), 1L, timeoutFuture);
         handler.exceptionCaught(ctx, cause);
 
@@ -179,7 +179,7 @@ class NodeServerJoinGuardTest {
     }
 
     @Test
-    void exceptionCaughtShouldNotWriteExceptionToChannelAndNotCloseItIfAuthenticated() {
+    void exceptionCaughtShouldNotWriteExceptionToChannelAndNotCloseItIfAuthenticated() throws Exception {
         NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(true), 1L, timeoutFuture);
         handler.exceptionCaught(ctx, cause);
 
