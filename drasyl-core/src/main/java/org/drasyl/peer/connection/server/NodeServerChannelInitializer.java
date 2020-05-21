@@ -28,6 +28,7 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import org.drasyl.peer.connection.DefaultSessionInitializer;
+import org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler;
 import org.drasyl.peer.connection.server.handler.NodeServerNewConnectionsGuard;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.QuitMessageHandler;
@@ -77,6 +78,9 @@ public class NodeServerChannelInitializer extends DefaultSessionInitializer {
     protected void customStage(ChannelPipeline pipeline) {
         // QuitMessage handler
         pipeline.addLast(QuitMessageHandler.QUIT_MESSAGE_HANDLER, QuitMessageHandler.INSTANCE);
+
+        // ConnectionExceptionMessage Handler
+        pipeline.addLast(ConnectionExceptionMessageHandler.EXCEPTION_MESSAGE_HANDLER, ConnectionExceptionMessageHandler.INSTANCE);
 
         // Guards
         pipeline.addLast(JOIN_GUARD, new NodeServerJoinGuard(server.getConfig().getServerHandshakeTimeout().toMillis()));

@@ -34,8 +34,8 @@ import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_FO
 import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_INTERNAL;
 
 /**
- * This handler listens to exceptions on the pipeline and sends them as {@link
- * MessageExceptionMessage} to the peer.
+ * This handler listens to exceptions on the pipeline and sends them as {@link ExceptionMessage} to
+ * the peer.
  */
 public class ExceptionHandler extends ChannelDuplexHandler {
     public static final String EXCEPTION_HANDLER = "exceptionHandler";
