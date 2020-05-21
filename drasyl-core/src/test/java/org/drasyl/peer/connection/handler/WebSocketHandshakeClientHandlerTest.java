@@ -130,7 +130,7 @@ class WebSocketHandshakeClientHandlerTest {
     }
 
     @Test
-    void exceptionCaughtShouldAbortHandshakeAndCloseChannel() {
+    void exceptionCaughtShouldAbortHandshakeAndCloseChannel() throws Exception {
         when(handshakeFuture.isDone()).thenReturn(false);
 
         WebSocketHandshakeClientHandler handler = new WebSocketHandshakeClientHandler(handshaker, handshakeFuture);

@@ -30,6 +30,7 @@ import org.drasyl.util.WebSocketUtil;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
+import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 public class SuperPeerClientChannelBootstrap {
@@ -37,15 +38,18 @@ public class SuperPeerClientChannelBootstrap {
     private final EventLoopGroup workerGroup;
     private final URI endpoint;
     private final SuperPeerClientChannelInitializer superPeerClientChannelInitializer;
+    private final Set<URI> entryPoints;
     private final SuperPeerClient superPeerClient;
 
     public SuperPeerClientChannelBootstrap(DrasylNodeConfig config,
                                            EventLoopGroup workerGroup,
                                            URI endpoint,
+                                           Set<URI> entryPoints,
                                            SuperPeerClient superPeerClient) throws SuperPeerClientException {
         this.config = config;
         this.workerGroup = workerGroup;
         this.endpoint = endpoint;
+        this.entryPoints = entryPoints;
         this.superPeerClient = superPeerClient;
         String channelInitializer = config.getSuperPeerChannelInitializer();
 
@@ -72,9 +76,9 @@ public class SuperPeerClientChannelBootstrap {
     private SuperPeerClientChannelInitializer getChannelInitializer(String className) throws ClassNotFoundException,
             NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         Class<?> c = Class.forName(className);
-        Constructor<?> cons = c.getConstructor(DrasylNodeConfig.class, URI.class, SuperPeerClient.class);
+        Constructor<?> cons = c.getConstructor(DrasylNodeConfig.class, URI.class, Set.class, SuperPeerClient.class);
 
-        return (SuperPeerClientChannelInitializer) cons.newInstance(config, endpoint, superPeerClient);
+        return (SuperPeerClientChannelInitializer) cons.newInstance(config, endpoint, entryPoints, superPeerClient);
     }
 
     public Channel getChannel() throws SuperPeerClientException {
@@ -90,6 +94,7 @@ public class SuperPeerClientChannelBootstrap {
 
             try {
                 superPeerClientChannelInitializer.connectedFuture().get();
+//                superPeerClientChannelInitializer.getJoinHandler().joinFuture().syncUninterruptibly();
 
                 return channel;
             }

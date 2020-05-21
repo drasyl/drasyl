@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.peer.connection.superpeer;
 
 import io.netty.channel.ChannelPipeline;
@@ -30,6 +29,7 @@ import org.drasyl.peer.connection.AbstractClientInitializer;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.QuitMessageHandler;
 import org.drasyl.peer.connection.superpeer.handler.SuperPeerClientConnectionHandler;
+import org.drasyl.peer.connection.superpeer.handler.SuperPeerClientJoinHandler;
 import org.drasyl.peer.connection.superpeer.handler.SuperPeerClientWelcomeGuard;
 import org.drasyl.util.WebSocketUtil;
 import org.slf4j.Logger;
@@ -37,7 +37,9 @@ import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLException;
 import java.net.URI;
+import java.util.Set;
 
+import static org.drasyl.peer.connection.superpeer.handler.SuperPeerClientJoinHandler.JOIN_HANDLER;
 import static org.drasyl.peer.connection.superpeer.handler.SuperPeerClientWelcomeGuard.WELCOME_GUARD;
 
 /**
@@ -47,14 +49,20 @@ import static org.drasyl.peer.connection.superpeer.handler.SuperPeerClientWelcom
 public class SuperPeerClientChannelInitializer extends AbstractClientInitializer {
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClientChannelInitializer.class);
     private final DrasylNodeConfig config;
+    private final Set<URI> entryPoints;
     private final SuperPeerClient superPeerClient;
+    private final SuperPeerClientJoinHandler joinHandler;
 
     public SuperPeerClientChannelInitializer(DrasylNodeConfig config,
-                                             URI endpoint, SuperPeerClient superPeerClient) {
+                                             URI endpoint,
+                                             Set<URI> entryPoints,
+                                             SuperPeerClient superPeerClient) {
         super(config.getFlushBufferSize(), config.getSuperPeerIdleTimeout(),
                 config.getSuperPeerIdleRetries(), endpoint);
         this.config = config;
+        this.entryPoints = entryPoints;
         this.superPeerClient = superPeerClient;
+        joinHandler = new SuperPeerClientJoinHandler(this.superPeerClient.getIdentityManager().getKeyPair().getPublicKey(), this.entryPoints);
     }
 
     @Override
@@ -64,6 +72,8 @@ public class SuperPeerClientChannelInitializer extends AbstractClientInitializer
 
         // Guards
         pipeline.addLast(WELCOME_GUARD, new SuperPeerClientWelcomeGuard(config.getSuperPeerPublicKey(), superPeerClient.getIdentityManager().getKeyPair().getPublicKey()));
+
+        pipeline.addLast(JOIN_HANDLER, joinHandler);
 
         // Super peer handler
         pipeline.addLast(SuperPeerClientConnectionHandler.SUPER_PEER_HANDLER, new SuperPeerClientConnectionHandler(superPeerClient, target));
@@ -88,5 +98,9 @@ public class SuperPeerClientChannelInitializer extends AbstractClientInitializer
             }
         }
         return null;
+    }
+
+    public SuperPeerClientJoinHandler getJoinHandler() {
+        return joinHandler;
     }
 }

@@ -56,24 +56,27 @@ public class WebSocketHandshakeClientHandler extends SimpleChannelDuplexHandler<
     }
 
     @Override
-    public void channelActive(ChannelHandlerContext ctx) {
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        handshakeFuture.thenRun(ctx::fireChannelActive);
         handshaker.handshake(ctx.channel());
     }
 
     @Override
-    public void channelInactive(ChannelHandlerContext ctx) {
+    public void channelInactive(ChannelHandlerContext ctx) throws Exception {
+        super.channelInactive(ctx);
         if (LOG.isDebugEnabled()) {
             LOG.debug("[{}] WebSocket Client disconnected!", ctx.channel().id().asShortText());
         }
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         LOG.error("", cause);
         if (!handshakeFuture.isDone()) {
             handshakeFuture.completeExceptionally(cause);
+            ctx.close();
         }
-        ctx.close();
+        super.exceptionCaught(ctx, cause);
     }
 
     @Override

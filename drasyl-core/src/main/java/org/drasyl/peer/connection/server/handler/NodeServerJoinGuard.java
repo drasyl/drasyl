@@ -46,8 +46,8 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBI
  * If a {@link JoinMessage} was not received in {@link DrasylNodeConfig#getServerHandshakeTimeout()}
  * the connection will be closed.
  * <p>
- * This handler closes the channel if an exception occurs during before a {@link
- * JoinMessage} has been received.
+ * This handler closes the channel if an exception occurs before a {@link JoinMessage} has been
+ * received.
  */
 public class NodeServerJoinGuard extends SimpleChannelDuplexHandler<Message<?>, Message<?>> {
     public static final String JOIN_GUARD = "nodeServerJoinGuard";
@@ -60,7 +60,9 @@ public class NodeServerJoinGuard extends SimpleChannelDuplexHandler<Message<?>, 
         this(new AtomicBoolean(false), timeout, null);
     }
 
-    NodeServerJoinGuard(AtomicBoolean authenticated, long timeout, ScheduledFuture<?> timeoutFuture) {
+    NodeServerJoinGuard(AtomicBoolean authenticated,
+                        long timeout,
+                        ScheduledFuture<?> timeoutFuture) {
         this.timeoutFuture = timeoutFuture;
         this.authenticated = authenticated;
         this.timeout = timeout;
@@ -71,6 +73,7 @@ public class NodeServerJoinGuard extends SimpleChannelDuplexHandler<Message<?>, 
      */
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        super.channelActive(ctx);
         timeoutFuture = ctx.executor().schedule(() -> {
             if (!timeoutFuture.isCancelled() && !authenticated.get()) {
                 ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE)).addListener(ChannelFutureListener.CLOSE);
@@ -78,8 +81,6 @@ public class NodeServerJoinGuard extends SimpleChannelDuplexHandler<Message<?>, 
                         + "Connection is closed.", ctx.channel().id().asShortText(), timeout);
             }
         }, timeout, TimeUnit.MILLISECONDS);
-
-        ctx.fireChannelActive();
     }
 
     @Override
@@ -131,9 +132,11 @@ public class NodeServerJoinGuard extends SimpleChannelDuplexHandler<Message<?>, 
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
         if (!authenticated.get()) {
             ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_INITIALIZATION)).addListener(ChannelFutureListener.CLOSE);
+        } else {
+            super.exceptionCaught(ctx, cause);
         }
     }
 }
