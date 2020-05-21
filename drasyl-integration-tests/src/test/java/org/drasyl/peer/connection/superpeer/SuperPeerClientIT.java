@@ -21,7 +21,6 @@ package org.drasyl.peer.connection.superpeer;
 import com.typesafe.config.ConfigFactory;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.reactivex.rxjava3.annotations.NonNull;
 import io.reactivex.rxjava3.observers.TestObserver;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
@@ -33,7 +32,6 @@ import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.PeerConnection;
 import org.drasyl.peer.connection.message.*;
 import org.drasyl.peer.connection.server.NodeServer;
 import org.junit.jupiter.api.*;
@@ -42,16 +40,11 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import testutils.AnsiColor;
 import testutils.TestHelper;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutionException;
-
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.event.EventCode.EVENT_NODE_OFFLINE;
 import static org.drasyl.event.EventCode.EVENT_NODE_ONLINE;
 import static org.drasyl.peer.connection.PeerConnection.CloseReason.REASON_SHUTTING_DOWN;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Execution(ExecutionMode.SAME_THREAD)
 class SuperPeerClientIT {
