@@ -22,14 +22,13 @@ package org.drasyl;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.observers.TestObserver;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.event.Event;
 import org.drasyl.event.EventCode;
 import org.drasyl.util.Pair;
 import org.hamcrest.MatcherAssert;
-import org.hamcrest.Matchers;
 import org.junit.jupiter.api.*;
 import testutils.TestHelper;
 
@@ -39,7 +38,9 @@ import java.util.Set;
 import java.util.stream.Collectors;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.event.EventCode.EVENT_MESSAGE;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.contains;
 import static testutils.AnsiColor.COLOR_CYAN;
 import static testutils.AnsiColor.STYLE_REVERSED;
 
@@ -76,34 +77,34 @@ class DrasylNodeIT {
         // super super peer
         config = ConfigFactory.parseString("drasyl.server.bind-port = 22528\ndrasyl.super-peer.enabled = false").withFallback(ConfigFactory.load("configs/DrasylNodeIT-4c4fdd0957.conf"));
         Pair<DrasylNode, Observable<Event>> superSuperPeer = createNode(config);
-        MatcherAssert.assertThat(superSuperPeer.second().take(1).toList().blockingGet().stream().map(Event::getCode).collect(Collectors.toList()), Matchers.contains(EventCode.EVENT_NODE_UP));
+        MatcherAssert.assertThat(superSuperPeer.second().take(1).toList().blockingGet().stream().map(Event::getCode).collect(Collectors.toList()), contains(EventCode.EVENT_NODE_UP));
         TestHelper.colorizedPrintln("CREATED superSuperPeer", COLOR_CYAN, STYLE_REVERSED);
 
         // super peer
         config = ConfigFactory.parseString("drasyl.server.bind-port = 22529\ndrasyl.super-peer.public-key = \"03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a\"\ndrasyl.super-peer.endpoints = [\"ws://127.0.0.1:22528\"]").withFallback(ConfigFactory.load("configs/DrasylNodeIT-9df9214d78.conf"));
         Pair<DrasylNode, Observable<Event>> superPeer = createNode(config);
-        assertThat(superPeer.second().take(2).toList().blockingGet().stream().map(Event::getCode).collect(Collectors.toList()), Matchers.contains(EventCode.EVENT_NODE_UP, EventCode.EVENT_NODE_ONLINE));
+        assertThat(superPeer.second().take(2).toList().blockingGet().stream().map(Event::getCode).collect(Collectors.toList()), contains(EventCode.EVENT_NODE_UP, EventCode.EVENT_NODE_ONLINE));
         TestHelper.colorizedPrintln("CREATED superPeer", COLOR_CYAN, STYLE_REVERSED);
 
         // client1
         config = ConfigFactory.parseString("drasyl.server.enabled = false\ndrasyl.super-peer.public-key = \"030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22\"\ndrasyl.super-peer.endpoints = [\"ws://127.0.0.1:22529\"]").withFallback(ConfigFactory.load("configs/DrasylNodeIT-030f018704.conf"));
         Pair<DrasylNode, Observable<Event>> client1 = createNode(config);
-        assertThat(client1.second().take(2).toList().blockingGet().stream().map(Event::getCode).collect(Collectors.toList()), Matchers.contains(EventCode.EVENT_NODE_UP, EventCode.EVENT_NODE_ONLINE));
+        assertThat(client1.second().take(2).toList().blockingGet().stream().map(Event::getCode).collect(Collectors.toList()), contains(EventCode.EVENT_NODE_UP, EventCode.EVENT_NODE_ONLINE));
         TestHelper.colorizedPrintln("CREATED client1", COLOR_CYAN, STYLE_REVERSED);
 
         // client2
         config = ConfigFactory.parseString("drasyl.server.enabled = false\ndrasyl.super-peer.public-key = \"030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22\"\ndrasyl.super-peer.endpoints = [\"ws://127.0.0.1:22529\"]").withFallback(ConfigFactory.load("configs/DrasylNodeIT-be0300f1a4.conf"));
         Pair<DrasylNode, Observable<Event>> client2 = createNode(config);
-        assertThat(client2.second().take(2).toList().blockingGet().stream().map(Event::getCode).collect(Collectors.toList()), Matchers.contains(EventCode.EVENT_NODE_UP, EventCode.EVENT_NODE_ONLINE));
+        assertThat(client2.second().take(2).toList().blockingGet().stream().map(Event::getCode).collect(Collectors.toList()), contains(EventCode.EVENT_NODE_UP, EventCode.EVENT_NODE_ONLINE));
         TestHelper.colorizedPrintln("CREATED client2", COLOR_CYAN, STYLE_REVERSED);
 
         //
         // send messages
         //
-        Single<List<EventCode>> superSuperPeerMessages = superSuperPeer.second().map(e -> e.getCode()).filter(c -> c == EventCode.EVENT_MESSAGE).take(4).toList();
-        Single<List<EventCode>> superPeerMessages = superPeer.second().map(e -> e.getCode()).filter(c -> c == EventCode.EVENT_MESSAGE).take(4).toList();
-        Single<List<EventCode>> client1Messages = client1.second().map(e -> e.getCode()).filter(c -> c == EventCode.EVENT_MESSAGE).take(3).toList(); // TODO: sending to grandchildren is not yet supported
-        Single<List<EventCode>> client2Messages = client2.second().map(e -> e.getCode()).filter(c -> c == EventCode.EVENT_MESSAGE).take(3).toList(); // TODO: sending to grandchildren is not yet supported
+        TestObserver<EventCode> superSuperPeerMessages = superSuperPeer.second().map(e -> e.getCode()).filter(c -> c == EVENT_MESSAGE).test();
+        TestObserver<EventCode> superPeerMessages = superPeer.second().map(e -> e.getCode()).filter(c -> c == EVENT_MESSAGE).test();
+        TestObserver<EventCode> client1Messages = client1.second().map(e -> e.getCode()).filter(c -> c == EVENT_MESSAGE).test();
+        TestObserver<EventCode> client2Messages = client2.second().map(e -> e.getCode()).filter(c -> c == EVENT_MESSAGE).test();
 
 //        superPeer.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("SSP: " + e));
 //        superPeer.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("SP: " + e));
@@ -123,10 +124,10 @@ class DrasylNodeIT {
         //
         // verify
         //
-        assertThat(superSuperPeerMessages.blockingGet(), Matchers.contains(EventCode.EVENT_MESSAGE, EventCode.EVENT_MESSAGE, EventCode.EVENT_MESSAGE, EventCode.EVENT_MESSAGE));
-        assertThat(superPeerMessages.blockingGet(), Matchers.contains(EventCode.EVENT_MESSAGE, EventCode.EVENT_MESSAGE, EventCode.EVENT_MESSAGE, EventCode.EVENT_MESSAGE));
-        assertThat(client1Messages.blockingGet(), Matchers.contains(EventCode.EVENT_MESSAGE, EventCode.EVENT_MESSAGE, EventCode.EVENT_MESSAGE)); // TODO: sending to grandchildren is not yet supported
-        assertThat(client2Messages.blockingGet(), Matchers.contains(EventCode.EVENT_MESSAGE, EventCode.EVENT_MESSAGE, EventCode.EVENT_MESSAGE)); // TODO: sending to grandchildren is not yet supported
+        superSuperPeerMessages.awaitCount(4);
+        superPeerMessages.awaitCount(4);
+        client1Messages.awaitCount(3); // TODO: sending to grandchildren is not yet supported
+        client2Messages.awaitCount(3); // TODO: sending to grandchildren is not yet supported
     }
 
     private Pair<DrasylNode, Observable<Event>> createNode(Config config) throws DrasylException {

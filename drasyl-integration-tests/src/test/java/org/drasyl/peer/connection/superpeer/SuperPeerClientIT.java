@@ -21,11 +21,14 @@ package org.drasyl.peer.connection.superpeer;
 import com.typesafe.config.ConfigFactory;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.reactivex.rxjava3.annotations.NonNull;
+import io.reactivex.rxjava3.observers.TestObserver;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
+import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.event.Event;
-import org.drasyl.event.EventCode;
+import org.drasyl.event.Node;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.messenger.Messenger;
@@ -38,15 +41,14 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import testutils.AnsiColor;
 import testutils.TestHelper;
 
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.event.EventCode.EVENT_NODE_OFFLINE;
+import static org.drasyl.event.EventCode.EVENT_NODE_ONLINE;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @Execution(ExecutionMode.SAME_THREAD)
@@ -61,6 +63,7 @@ class SuperPeerClientIT {
     private NodeServer server;
     private Messenger messenger;
     private PeersManager peersManager;
+    private Subject<Event> emittedEventsSubject;
 
     @BeforeEach
     void setup(TestInfo info) throws DrasylException {
@@ -83,6 +86,7 @@ class SuperPeerClientIT {
 
         server = new NodeServer(identityManagerServer, messenger, peersManager, serverConfig, workerGroup, bossGroup);
         server.open();
+        emittedEventsSubject = ReplaySubject.create();
     }
 
     @AfterEach
@@ -97,147 +101,145 @@ class SuperPeerClientIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldSendJoinMessageOnConnect() throws SuperPeerClientException, ExecutionException, InterruptedException {
-        CompletableFuture<Message<?>> sentMessage = IntegrationTestHandler.sentMessages().firstElement().toCompletionStage().toCompletableFuture();
-        CompletableFuture<List<Message<?>>> receivedMessages = IntegrationTestHandler.receivedMessages().take(5).toList().toCompletionStage().toCompletableFuture();
+    void clientShouldSendJoinMessageOnConnect() throws SuperPeerClientException {
+        TestObserver<Message<?>> receivedMessages = IntegrationTestHandler.receivedMessages().test();
+
         // start client
         SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, event -> {
         });
         client.open(server.getEntryPoints());
-        sentMessage.join();
 
-        assertThat(receivedMessages.get(), hasItem(instanceOf(JoinMessage.class)));
+        // verify received messages
+        receivedMessages.awaitCount(1);
+        receivedMessages.assertValue(new JoinMessage(identityManager.getKeyPair().getPublicKey(), server.getEntryPoints()));
     }
 
     @Disabled("Muss noch implementiert werden")
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldSendXXXMessageOnClientSideDisconnect() throws SuperPeerClientException, ExecutionException, InterruptedException {
+    void clientShouldSendXXXMessageOnClientSideDisconnect() throws SuperPeerClientException {
 
     }
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldEmitNodeOfflineEventOnClientSideDisconnect() throws InterruptedException, SuperPeerClientException {
+    void clientShouldEmitNodeOfflineEventOnClientSideDisconnect() throws SuperPeerClientException {
         CountDownLatch lock = new CountDownLatch(2);
 
-        ReplaySubject<Event> subject = ReplaySubject.create();
+        TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
-        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, subject::onNext);
+        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
         client.open(server.getEntryPoints());
-        subject.subscribe(event -> {
-            if (lock.getCount() == 2) {
-                lock.countDown();
-                assertEquals(EventCode.EVENT_NODE_ONLINE, event.getCode());
-                client.close();
-            }
-            else if (lock.getCount() == 1) {
-                lock.countDown();
-                assertEquals(EventCode.EVENT_NODE_OFFLINE, event.getCode());
-            }
-        });
 
-        lock.await(TIMEOUT, MILLISECONDS);
-        assertEquals(0, lock.getCount());
+        // wait for node to become online, before closing it
+        emittedEvents.awaitCount(1);
+        client.close();
+
+        // verify emitted events
+        emittedEvents.awaitCount(2);
+        emittedEvents.assertValueAt(1, new Event(EVENT_NODE_OFFLINE, Node.of(identityManager.getIdentity())));
     }
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldRespondToPingMessageWithPongMessage() throws SuperPeerClientException, ExecutionException, InterruptedException {
-        CompletableFuture<Message<?>> sentMessage = IntegrationTestHandler.sentMessages().firstElement().toCompletionStage().toCompletableFuture();
-        CompletableFuture<List<Message<?>>> receivedMessages = IntegrationTestHandler.receivedMessages().take(2).toList().toCompletionStage().toCompletableFuture();
+    void clientShouldRespondToPingMessageWithPongMessage() throws SuperPeerClientException {
+        TestObserver<Message<?>> sentMessages = IntegrationTestHandler.sentMessages().test();
+        TestObserver<Message<?>> receivedMessages = IntegrationTestHandler.receivedMessages().test();
+
         // start client
         SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, event -> {
         });
         client.open(server.getEntryPoints());
-        sentMessage.join();
+        sentMessages.awaitCount(1);
 
-        IntegrationTestHandler.injectMessage(new PingMessage());
-        assertThat(receivedMessages.get(), hasItem(instanceOf(PongMessage.class)));
+        // send message
+        PingMessage request = new PingMessage();
+        IntegrationTestHandler.injectMessage(request);
+
+        // verify received message
+        receivedMessages.awaitCount(2);
+        receivedMessages.assertValueAt(1, new PongMessage(request.getId()));
     }
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldRespondToApplicationMessageWithStatusOk() throws SuperPeerClientException, ExecutionException, InterruptedException {
-        CompletableFuture<Message<?>> sentMessage = IntegrationTestHandler.sentMessages().firstElement().toCompletionStage().toCompletableFuture();
-        CompletableFuture<List<Message<?>>> receivedMessages = IntegrationTestHandler.receivedMessages().take(5).toList().toCompletionStage().toCompletableFuture();
+    void clientShouldRespondToApplicationMessageWithStatusOk() throws SuperPeerClientException {
+        TestObserver<Message<?>> sentMessages = IntegrationTestHandler.sentMessages().test();
+        TestObserver<Message<?>> receivedMessages = IntegrationTestHandler.receivedMessages().filter(m -> m instanceof StatusMessage).test();
+
         // start client
         SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, event -> {
         });
         client.open(server.getEntryPoints());
+        sentMessages.awaitCount(1);
 
-        sentMessage.join();
-
-        IntegrationTestHandler.injectMessage(new ApplicationMessage(TestHelper.random(), identityManager.getIdentity(), new byte[]{
+        // send message
+        ApplicationMessage request = new ApplicationMessage(TestHelper.random(), identityManager.getIdentity(), new byte[]{
                 0x00,
                 0x01
-        }));
+        });
+        IntegrationTestHandler.injectMessage(request);
 
-        assertThat(receivedMessages.get(), hasItem(hasProperty("code", is(STATUS_OK))));
+        // verify received message
+        receivedMessages.awaitCount(1);
+        receivedMessages.assertValueAt(0, new StatusMessage(STATUS_OK, request.getId()));
     }
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldEmitNodeOfflineEventAfterReceivingQuitMessage() throws SuperPeerClientException, InterruptedException, ExecutionException {
-        CountDownLatch lock = new CountDownLatch(1);
-        ReplaySubject<Event> subject = ReplaySubject.create();
-        CompletableFuture<Message<?>> receivedMessage = IntegrationTestHandler.receivedMessages().firstElement().toCompletionStage().toCompletableFuture();
+    void clientShouldEmitNodeOfflineEventAfterReceivingQuitMessage() throws SuperPeerClientException, InterruptedException {
+        TestObserver<Message<?>> receivedMessages = IntegrationTestHandler.receivedMessages().test();
+        TestObserver<Event> emittedEvents = emittedEventsSubject.filter(e -> e.getCode() == EVENT_NODE_OFFLINE).test();
+
         // start client
-        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, subject::onNext);
+        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
         client.open(server.getEntryPoints());
-        subject.subscribe(event -> {
-            if (event.getCode().equals(EventCode.EVENT_NODE_OFFLINE)) {
-                lock.countDown();
-            }
-        });
+        receivedMessages.awaitCount(1);
 
-        receivedMessage.join();
-
+        // send message
         IntegrationTestHandler.injectMessage(new QuitMessage());
-        lock.await(TIMEOUT, MILLISECONDS);
-        assertEquals(0, lock.getCount());
+
+        // verify emitted events
+        emittedEvents.awaitCount(1);
+        emittedEvents.assertValue(new Event(EVENT_NODE_OFFLINE, Node.of(identityManager.getIdentity())));
+    }
+
+
+    @Test
+    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+    void clientShouldEmitNodeOnlineEventAfterReceivingWelcomeMessage() throws SuperPeerClientException {
+        TestObserver<Event> emittedEvents = emittedEventsSubject.test();
+
+        // start client
+        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
+        client.open(server.getEntryPoints());
+
+        // verify emitted events
+        emittedEvents.awaitCount(1);
+        emittedEvents.assertValue(new Event(EVENT_NODE_ONLINE, new Node(identityManager.getIdentity())));
     }
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldEmitNodeOnlineEventAfterReceivingWelcomeMessage() throws InterruptedException, SuperPeerClientException {
-        CountDownLatch lock = new CountDownLatch(1);
-        // start client
-        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, event -> {
-            if (lock.getCount() == 1) {
-                assertEquals(EventCode.EVENT_NODE_ONLINE, event.getCode());
-                lock.countDown();
-            }
-        });
-        client.open(server.getEntryPoints());
-
-        lock.await(TIMEOUT, MILLISECONDS);
-        assertEquals(0, lock.getCount());
-    }
-
-    @Test
-    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldReconnectOnDisconnect() throws SuperPeerClientException, InterruptedException {
-        CountDownLatch lock = new CountDownLatch(2);
-
-        ReplaySubject<Event> subject = ReplaySubject.create();
+    void clientShouldReconnectOnDisconnect() throws SuperPeerClientException {
+        TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
-        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, subject::onNext);
+        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
         client.open(server.getEntryPoints());
-        subject.subscribe(event -> {
-            if (lock.getCount() > 0 && event.getCode().equals(EventCode.EVENT_NODE_ONLINE)) {
-                lock.countDown();
-            }
 
-            if (lock.getCount() == 1) {
-                client.close();
-                client.open(server.getEntryPoints());
-            }
-        });
+        emittedEvents.awaitCount(1);
+        // TODO: initiate disconnect from Server?
+        client.close();
+        client.open(server.getEntryPoints());
 
-        lock.await(TIMEOUT, MILLISECONDS);
-        assertEquals(0, lock.getCount());
+        // verify emitted events
+        emittedEvents.awaitCount(3);
+        emittedEvents.assertValues(
+                new Event(EVENT_NODE_ONLINE, new Node(identityManager.getIdentity())),
+                new Event(EVENT_NODE_OFFLINE, new Node(identityManager.getIdentity())),
+                new Event(EVENT_NODE_ONLINE, new Node(identityManager.getIdentity()))
+        );
     }
 }
