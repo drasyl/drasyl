@@ -125,13 +125,6 @@ public abstract class AbstractNettyConnection extends PeerConnection {
      */
     protected abstract Logger getLogger();
 
-    /**
-     * Returns the channel close future.
-     */
-    public ChannelFuture getCloseFuture() {
-        return channel.closeFuture();
-    }
-
     @Override
     protected void close(CloseReason reason) {
         if (isClosed.compareAndSet(false, true)) {
@@ -204,6 +197,13 @@ public abstract class AbstractNettyConnection extends PeerConnection {
         }
         AbstractNettyConnection that = (AbstractNettyConnection) o;
         return Objects.equals(connectionId, that.connectionId);
+    }
+
+    /**
+     * Returns the channel close future.
+     */
+    public ChannelFuture getCloseFuture() {
+        return channel.closeFuture();
     }
 
     @Override
