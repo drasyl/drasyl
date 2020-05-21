@@ -129,9 +129,17 @@ public class ConnectionsManager {
         }
     }
 
+    private void removeConnection(PeerConnection connection) {
+        if (connection instanceof SuperPeerClientConnection) {
+            superPeer = null;
+        }
+
+        connections.remove(connection.getIdentity(), connection);
+    }
+
     private void closeAndRemoveConnection(PeerConnection connection,
                                           CloseReason reason) {
-        connections.remove(connection.getIdentity(), connection);
+        removeConnection(connection);
         Optional.ofNullable(closeProcedures.remove(connection)).ifPresent(p -> {
             p.accept(reason);
             LOG.debug("Close and remove Connection '{}' for Node '{}' for Reason '{}'", connection, connection.getIdentity(), reason);
@@ -151,6 +159,22 @@ public class ConnectionsManager {
             lock.writeLock().lock();
 
             closeAndRemoveConnection(connection, reason);
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Removes <code>connection</code> from the list of available connections.
+     *
+     * @param connection the connection
+     */
+    public void removeClosingConnection(PeerConnection connection) {
+        try {
+            lock.writeLock().lock();
+
+            removeConnection(connection);
         }
         finally {
             lock.writeLock().unlock();

@@ -44,7 +44,7 @@ public class LoopbackPeerConnection extends PeerConnection {
     protected AtomicBoolean isClosed;
 
     /**
-     * Creates a new autoreferentially connection of this node.
+     * Creates a new LoopbackPeerConnection connection of this node.
      *
      * @param onEvent            reference to {@link DrasylNode#onEvent(Event)}
      * @param identity           reference to {@link Identity}
@@ -83,7 +83,7 @@ public class LoopbackPeerConnection extends PeerConnection {
         }
 
         if (!(message instanceof ApplicationMessage)) {
-            throw new IllegalArgumentException("AutoreferentialPeerConnection can only handle ApplicationMessage's.");
+            throw new IllegalArgumentException("LoopbackPeerConnection can only handle ApplicationMessage's.");
         }
 
         ApplicationMessage applicationMessage = (ApplicationMessage) message;
