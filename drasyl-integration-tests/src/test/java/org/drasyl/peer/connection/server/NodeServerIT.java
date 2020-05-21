@@ -23,6 +23,7 @@ import com.typesafe.config.ConfigFactory;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.reactivex.rxjava3.core.Single;
+import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.crypto.CryptoException;
@@ -31,7 +32,6 @@ import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.PeerConnection;
 import org.drasyl.peer.connection.message.*;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.parallel.Execution;
@@ -39,22 +39,23 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import testutils.AnsiColor;
 import testutils.TestHelper;
 
-import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.awaitility.Awaitility.with;
 import static org.awaitility.Durations.FIVE_MINUTES;
+import static org.drasyl.peer.connection.PeerConnection.CloseReason.REASON_NEW_SESSION;
+import static org.drasyl.peer.connection.PeerConnection.CloseReason.REASON_SHUTTING_DOWN;
+import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.*;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_SERVICE_UNAVAILABLE;
 import static org.drasyl.peer.connection.server.TestNodeServerClientConnection.clientSession;
 import static org.drasyl.peer.connection.server.TestNodeServerClientConnection.clientSessionAfterJoin;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.jupiter.api.Assertions.*;
 import static testutils.TestHelper.colorizedPrintln;
@@ -165,7 +166,7 @@ class NodeServerIT {
         TestNodeServerClientConnection session1 = clientSessionAfterJoin(server);
         TestNodeServerClientConnection session2 = clientSessionAfterJoin(server);
 
-        CompletableFuture<Message<?>> receivedMessage2 = session2.receivedMessages().firstElement().toCompletionStage().toCompletableFuture();
+        TestObserver<Message<?>> receivedMessages2 = session2.receivedMessages().test();
 
         // send message
         RequestMessage<?> request = new ApplicationMessage(session1.getIdentity(), session2.getIdentity(), new byte[]{
@@ -179,7 +180,8 @@ class NodeServerIT {
         ResponseMessage<?, ?> response1 = send1.blockingGet();
 
         assertEquals(new StatusMessage(StatusMessage.Code.STATUS_OK, request.getId()), response1);
-        assertEquals(request, receivedMessage2.get());
+        receivedMessages2.awaitCount(1);
+        receivedMessages2.assertValue(request);
     }
 
     @Test
@@ -188,14 +190,15 @@ class NodeServerIT {
         // create connection
         TestNodeServerClientConnection session = clientSession(server);
 
-        CompletableFuture<Message<?>> receivedMessage = session.receivedMessages().firstElement().toCompletionStage().toCompletableFuture();
+        TestObserver<Message<?>> receivedMessages = session.receivedMessages().test();
 
         // wait for timeout
         with().pollInSameThread().await().pollDelay(0, NANOSECONDS).atMost(FIVE_MINUTES)
                 .until(() -> session.isClosed().isDone());
 
         // verify response
-        assertThat(receivedMessage.get(), instanceOf(ConnectionExceptionMessage.class));
+        receivedMessages.awaitCount(1);
+        receivedMessages.assertValue(new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE));
     }
 
     @Test
@@ -217,13 +220,14 @@ class NodeServerIT {
         // create connection
         TestNodeServerClientConnection session = clientSession(server);
 
-        CompletableFuture<Message<?>> receivedMessage = session.receivedMessages().firstElement().toCompletionStage().toCompletableFuture();
+        TestObserver<Message<?>> receivedMessages = session.receivedMessages().test();
 
         // send message
         session.sendRawString("invalid message");
 
         // verify response
-        assertThat(receivedMessage.get(), instanceOf(ConnectionExceptionMessage.class));
+        receivedMessages.awaitCount(1);
+        receivedMessages.assertValue(new ConnectionExceptionMessage(CONNECTION_ERROR_INITIALIZATION));
     }
 
     @Test
@@ -233,8 +237,8 @@ class NodeServerIT {
         TestNodeServerClientConnection session1 = clientSession(server);
         TestNodeServerClientConnection session2 = clientSession(server);
 
-        CompletableFuture<List<Message<?>>> receivedMessages1 = session1.receivedMessages().take(2).toList().toCompletionStage().toCompletableFuture();
-        CompletableFuture<Message<?>> receivedMessage2 = session2.receivedMessages().firstElement().toCompletionStage().toCompletableFuture();
+        TestObserver<Message<?>> receivedMessages1 = session1.receivedMessages().test();
+        TestObserver<Message<?>> receivedMessages2 = session2.receivedMessages().test();
 
         // send messages
         CompressedPublicKey publicKey = CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3");
@@ -245,8 +249,10 @@ class NodeServerIT {
         session2.sendRequest(request2).blockingGet();
 
         // verify responses
-        assertThat(receivedMessages1.get(), contains(instanceOf(WelcomeMessage.class), equalTo(new QuitMessage(PeerConnection.CloseReason.REASON_NEW_SESSION))));
-        assertThat(receivedMessage2.get(), instanceOf(WelcomeMessage.class));
+        receivedMessages1.awaitCount(2);
+        receivedMessages1.assertValues(new WelcomeMessage(server.getMyIdentity().getKeyPair().getPublicKey(), server.getEntryPoints(), request1.getId()), new QuitMessage(REASON_NEW_SESSION));
+        receivedMessages1.awaitCount(1);
+        receivedMessages2.assertValue(new WelcomeMessage(server.getMyIdentity().getKeyPair().getPublicKey(), server.getEntryPoints(), request2.getId()));
     }
 
     @Test
@@ -271,13 +277,14 @@ class NodeServerIT {
         // create connection
         TestNodeServerClientConnection session = clientSession(server, false);
 
-        CompletableFuture<List<Message<?>>> receivedMessages = session.receivedMessages().take(3).toList().toCompletionStage().toCompletableFuture();
+        TestObserver<Message<?>> receivedMessages = session.receivedMessages().test();
 
         // wait until timeout
         Thread.sleep(server.getConfig().getServerIdleTimeout().toMillis() * (server.getConfig().getServerIdleRetries() + 1) + 1000);// NOSONAR
 
         // verify responses
-        assertThat(receivedMessages.get(), contains(instanceOf(PingMessage.class), instanceOf(PingMessage.class), instanceOf(ConnectionExceptionMessage.class)));
+        receivedMessages.awaitCount(3);
+        receivedMessages.assertValues(new PingMessage(), new PingMessage(), new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG));
     }
 
     @Test
@@ -336,7 +343,7 @@ class NodeServerIT {
         TestNodeServerClientConnection session1 = clientSessionAfterJoin(server);
         TestNodeServerClientConnection session2 = clientSessionAfterJoin(server);
 
-        CompletableFuture<Message<?>> receivedMessage = session2.receivedMessages().firstElement().toCompletionStage().toCompletableFuture();
+        TestObserver<Message<?>> receivedMessages = session2.receivedMessages().test();
 
         // create message with max allowed payload size
         byte[] bigPayload = new byte[config.getMaxContentLength()];
@@ -347,7 +354,8 @@ class NodeServerIT {
         session2.send(request);
 
         // verify response
-        assertEquals(receivedMessage.get(), request);
+        receivedMessages.awaitCount(1);
+        receivedMessages.assertValue(request);
     }
 
     @Disabled("Muss noch implementiert werden")
@@ -392,12 +400,13 @@ class NodeServerIT {
     void shuttingDownServerShouldSendLeaveMessage() throws ExecutionException, InterruptedException, CryptoException {
         TestNodeServerClientConnection session = clientSessionAfterJoin(server);
 
-        CompletableFuture<Message<?>> receivedMessage = session.receivedMessages().firstElement().toCompletionStage().toCompletableFuture();
+        TestObserver<Message<?>> receivedMessages = session.receivedMessages().test();
 
         server.close();
 
         // verify responses
-        assertEquals(new QuitMessage(PeerConnection.CloseReason.REASON_SHUTTING_DOWN), receivedMessage.get());
+        receivedMessages.awaitCount(1);
+        receivedMessages.assertValue(new QuitMessage(REASON_SHUTTING_DOWN));
     }
 
     @Test
