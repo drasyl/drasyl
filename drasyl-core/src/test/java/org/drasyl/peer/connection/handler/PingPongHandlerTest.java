@@ -39,7 +39,7 @@ class PingPongHandlerTest {
     private ChannelFuture channelFuture;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         ctx = mock(ChannelHandlerContext.class);
         evt = mock(IdleStateEvent.class);
         channelFuture = mock(ChannelFuture.class);
@@ -74,7 +74,7 @@ class PingPongHandlerTest {
             handler.userEventTriggered(ctx, evt);
         }
 
-        assertEquals(3, handler.counter.get());
+        assertEquals(3, handler.retries.get());
         verify(ctx, times(3)).writeAndFlush(any(PingMessage.class));
     }
 
@@ -100,7 +100,7 @@ class PingPongHandlerTest {
         PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
         handler.channelRead0(ctx, new PongMessage(correspondingId));
 
-        assertEquals(0, handler.counter.get());
+        assertEquals(0, handler.retries.get());
     }
 
     @Test
@@ -108,7 +108,7 @@ class PingPongHandlerTest {
         PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
         handler.channelRead0(ctx, new QuitMessage());
 
-        assertEquals(0, handler.counter.get());
+        assertEquals(0, handler.retries.get());
         verify(ctx).fireChannelRead(any(QuitMessage.class));
     }
 }

@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection.handler;
+package org.drasyl.peer.connection.server.handler;
 
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -24,6 +24,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.StatusMessage;
+import org.drasyl.peer.connection.server.NodeServer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,14 +34,15 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_SERVI
 
 /**
  * This handler acts as a channel creation guard. A new channel should not be created, if the {@code
- * isOpenSupplier} returns <code>false</code>.
+ * isOpenSupplier} returns <code>false</code>. Used by the {@link NodeServer} to prevent new
+ * connections from being established during shutdown.
  */
-public class ConnectionGuard extends SimpleChannelInboundHandler<Message<?>> {
+public class NodeServerNewConnectionsGuard extends SimpleChannelInboundHandler<Message<?>> {
     public static final String CONNECTION_GUARD = "connectionGuard";
-    private static final Logger LOG = LoggerFactory.getLogger(ConnectionGuard.class);
+    private static final Logger LOG = LoggerFactory.getLogger(NodeServerNewConnectionsGuard.class);
     private final BooleanSupplier isOpenSupplier;
 
-    public ConnectionGuard(BooleanSupplier isOpenSupplier) {
+    public NodeServerNewConnectionsGuard(BooleanSupplier isOpenSupplier) {
         this.isOpenSupplier = isOpenSupplier;
     }
 

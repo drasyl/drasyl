@@ -23,7 +23,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
-import io.netty.handler.timeout.IdleStateHandler;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.Message;
@@ -35,13 +34,14 @@ import java.util.concurrent.atomic.AtomicInteger;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_PING_PONG;
 
 /**
- * This handler answers automatically to {@link PingMessage}. When a {@link IdleStateHandler} is
- * registered, it's also ask periodically for a {@link PongMessage} from the peer.
+ * This handler acts as a health check for a connection. It periodically sends {@link PingMessage}s,
+ * which must be answered with a {@link PongMessage}. When a configured threshold of messages is not
+ * answered, the connection is considered unhealthy and is closed.
  */
 public class PingPongHandler extends SimpleChannelInboundHandler<Message<?>> {
     public static final String PING_PONG_HANDLER = "pingPongHandler";
-    protected final short retries;
-    protected final AtomicInteger counter;
+    protected final short maxRetries;
+    protected final AtomicInteger retries;
 
     /**
      * PingPongHandler with {@code 3} retries, until channel is closed.
@@ -53,25 +53,29 @@ public class PingPongHandler extends SimpleChannelInboundHandler<Message<?>> {
     /**
      * PingPongHandler with {@code retries} retries, until channel is closed.
      */
-    public PingPongHandler(short retries) {
-        this(retries, new AtomicInteger(0));
+    public PingPongHandler(short maxRetries) {
+        this(maxRetries, new AtomicInteger(0));
     }
 
-    PingPongHandler(short retries, AtomicInteger counter) {
+    PingPongHandler(short maxRetries, AtomicInteger retries) {
+        this.maxRetries = maxRetries;
         this.retries = retries;
-        this.counter = counter;
     }
 
     @Override
     public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
         super.userEventTriggered(ctx, evt);
+
+        // only send pings if channel is idle
         if (evt instanceof IdleStateEvent) {
             IdleStateEvent e = (IdleStateEvent) evt;
             if (e.state() == IdleState.READER_IDLE) {
-                if (counter.getAndIncrement() > retries) {
+                if (retries.getAndIncrement() > maxRetries) {
+                    // threshold reached, mark connection as unhealthy and close connection
                     ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG)).addListener(ChannelFutureListener.CLOSE);
                 }
                 else {
+                    // send (next) ping
                     ctx.writeAndFlush(new PingMessage());
                 }
             }
@@ -81,13 +85,16 @@ public class PingPongHandler extends SimpleChannelInboundHandler<Message<?>> {
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
         if (msg instanceof PingMessage) {
+            // reply to received ping with pong message
             ctx.writeAndFlush(new PongMessage(msg.getId()));
             ReferenceCountUtil.release(msg);
         }
         else if (msg instanceof PongMessage) {
-            counter.set(0);
+            // pong received, reset retries counter
+            retries.set(0);
         }
         else {
+            // passthrough all other messages
             ctx.fireChannelRead(msg);
         }
     }

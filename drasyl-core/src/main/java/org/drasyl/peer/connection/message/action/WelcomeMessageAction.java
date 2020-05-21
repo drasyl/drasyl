@@ -26,6 +26,8 @@ import org.drasyl.peer.connection.message.WelcomeMessage;
 import org.drasyl.peer.connection.superpeer.SuperPeerClient;
 import org.drasyl.peer.connection.superpeer.SuperPeerClientConnection;
 
+import static org.drasyl.event.EventCode.EVENT_NODE_ONLINE;
+
 public class WelcomeMessageAction extends AbstractMessageAction<WelcomeMessage> implements ClientMessageAction<WelcomeMessage> {
     public WelcomeMessageAction(WelcomeMessage message) {
         super(message);
@@ -34,6 +36,6 @@ public class WelcomeMessageAction extends AbstractMessageAction<WelcomeMessage> 
     @Override
     public void onMessageClient(SuperPeerClientConnection connection,
                                 SuperPeerClient superPeerClient) {
-        superPeerClient.getOnEvent().accept(new Event(EventCode.EVENT_NODE_ONLINE, Node.of(superPeerClient.getIdentityManager().getIdentity())));
+        superPeerClient.getOnEvent().accept(new Event(EVENT_NODE_ONLINE, Node.of(superPeerClient.getIdentityManager().getIdentity())));
     }
 }

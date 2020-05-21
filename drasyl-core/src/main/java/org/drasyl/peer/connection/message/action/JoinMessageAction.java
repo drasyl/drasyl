@@ -34,9 +34,9 @@ public class JoinMessageAction extends AbstractMessageAction<JoinMessage> implem
     }
 
     @Override
-    public void onMessageServer(NodeServerConnection session,
+    public void onMessageServer(NodeServerConnection connection,
                                 NodeServer nodeServer) {
-        requireNonNull(session);
+        requireNonNull(connection);
         requireNonNull(nodeServer);
 
         Identity peerIdentity = Identity.of(message.getPublicKey());
@@ -48,6 +48,6 @@ public class JoinMessageAction extends AbstractMessageAction<JoinMessage> implem
         nodeServer.getPeersManager().addPeer(peerIdentity, peerInformation);
         nodeServer.getPeersManager().addChildren(peerIdentity);
 
-        session.send(new WelcomeMessage(nodeServer.getMyIdentity().getKeyPair().getPublicKey(), nodeServer.getEntryPoints(), message.getId()));
+        connection.send(new WelcomeMessage(nodeServer.getMyIdentity().getKeyPair().getPublicKey(), nodeServer.getEntryPoints(), message.getId()));
     }
 }

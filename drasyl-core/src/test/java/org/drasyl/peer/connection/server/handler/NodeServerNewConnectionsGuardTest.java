@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection.handler;
+package org.drasyl.peer.connection.server.handler;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -30,7 +30,7 @@ import org.junit.jupiter.api.Test;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_SERVICE_UNAVAILABLE;
 import static org.mockito.Mockito.*;
 
-class ConnectionGuardTest {
+class NodeServerNewConnectionsGuardTest {
     private ChannelHandlerContext ctx;
     private Message<?> message;
     private ChannelFuture channelFuture;
@@ -49,7 +49,7 @@ class ConnectionGuardTest {
 
     @Test
     void shouldFireOnOpenGuard() {
-        ConnectionGuard handler = new ConnectionGuard(() -> true);
+        NodeServerNewConnectionsGuard handler = new NodeServerNewConnectionsGuard(() -> true);
 
         handler.channelRead0(ctx, message);
 
@@ -58,7 +58,7 @@ class ConnectionGuardTest {
 
     @Test
     void shouldCloseConnectionOnClosedGuard() {
-        ConnectionGuard handler = new ConnectionGuard(() -> false);
+        NodeServerNewConnectionsGuard handler = new NodeServerNewConnectionsGuard(() -> false);
 
         handler.channelRead0(ctx, message);
 

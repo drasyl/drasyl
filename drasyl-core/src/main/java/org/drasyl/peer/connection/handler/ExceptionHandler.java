@@ -23,7 +23,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.DecoderException;
 import org.drasyl.peer.connection.message.ExceptionMessage;
-import org.drasyl.peer.connection.message.MessageExceptionMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,7 +34,7 @@ import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_FO
 import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_INTERNAL;
 
 /**
- * This handler listens to exceptions on the pipeline and throws them as {@link
+ * This handler listens to exceptions on the pipeline and sends them as {@link
  * MessageExceptionMessage} to the peer.
  */
 public class ExceptionHandler extends ChannelDuplexHandler {
