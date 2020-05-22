@@ -18,8 +18,6 @@
  */
 package org.drasyl.peer.connection.message;
 
-import org.drasyl.peer.connection.message.action.MessageAction;
-
 /**
  * A message representing a PONG response.
  */
@@ -30,11 +28,6 @@ public class PongMessage extends AbstractResponseMessage<PingMessage, PongMessag
 
     protected PongMessage() {
         super();
-    }
-
-    @Override
-    public MessageAction<PongMessage> getAction() {
-        return null;
     }
 
     @Override

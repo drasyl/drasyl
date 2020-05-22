@@ -21,13 +21,10 @@ package org.drasyl.peer.connection.superpeer.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
+import org.drasyl.DrasylException;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.message.Message;
-import org.drasyl.peer.connection.message.RequestMessage;
-import org.drasyl.peer.connection.message.ResponseMessage;
-import org.drasyl.peer.connection.message.WelcomeMessage;
-import org.drasyl.peer.connection.message.action.ClientMessageAction;
-import org.drasyl.peer.connection.message.action.MessageAction;
+import org.drasyl.peer.PeerInformation;
+import org.drasyl.peer.connection.message.*;
 import org.drasyl.peer.connection.superpeer.SuperPeerClient;
 import org.drasyl.peer.connection.superpeer.SuperPeerClientConnection;
 import org.slf4j.Logger;
@@ -35,10 +32,13 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 
+import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_NOT_FOUND;
+import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
+
 /**
  * This handler mange in-/oncoming messages and pass them to the correct sub-function. It also
- * creates a new {@link SuperPeerClientConnection} object if a {@link WelcomeMessage} has pass the {@link
- * SuperPeerClientWelcomeGuard} guard.
+ * creates a new {@link SuperPeerClientConnection} object if a {@link WelcomeMessage} has pass the
+ * {@link SuperPeerClientWelcomeGuard} guard.
  */
 public class SuperPeerClientConnectionHandler extends SimpleChannelInboundHandler<Message<?>> {
     public static final String SUPER_PEER_HANDLER = "superPeerClientConnectionHandler";
@@ -71,14 +71,18 @@ public class SuperPeerClientConnectionHandler extends SimpleChannelInboundHandle
                     connection.setResponse((ResponseMessage<? extends RequestMessage<?>, ? extends Message<?>>) msg);
                 }
 
-                MessageAction<?> action = msg.getAction();
-                if (action != null) {
-                    if (action instanceof ClientMessageAction) {
-                        ((ClientMessageAction<?>) action).onMessageClient(connection, superPeerClient);
+                if (msg instanceof ApplicationMessage) {
+                    ApplicationMessage applicationMessage = (ApplicationMessage) msg;
+                    try {
+                        superPeerClient.getMessenger().send(applicationMessage);
+                        connection.send(new StatusMessage(STATUS_OK, applicationMessage.getId()));
                     }
-                    else {
-                        LOG.debug("Could not process the message {}", msg);
+                    catch (DrasylException e) {
+                        connection.send(new StatusMessage(STATUS_NOT_FOUND, applicationMessage.getId()));
                     }
+                }
+                else {
+                    LOG.debug("Could not process the message {}", msg);
                 }
             }
         }).addListener(future -> {
@@ -102,7 +106,18 @@ public class SuperPeerClientConnectionHandler extends SimpleChannelInboundHandle
                 LOG.debug("[{}]: Create new Connection from Channel {}", ctx.channel().id().asShortText(), ctx.channel().id());
             }
 
+            // create peer connection
             connection = new SuperPeerClientConnection(ctx.channel(), endpoint, identity, welcomeMessage.getUserAgent(), superPeerClient.getMessenger().getConnectionsManager());
+
+            // store peer information
+            PeerInformation peerInformation = new PeerInformation();
+            peerInformation.setPublicKey(welcomeMessage.getPublicKey());
+            peerInformation.addEndpoint(welcomeMessage.getEndpoints());
+            superPeerClient.getPeersManager().addPeer(identity, peerInformation);
+            superPeerClient.getPeersManager().setSuperPeer(identity);
+
+            // send confirmation
+            ctx.writeAndFlush(new StatusMessage(STATUS_OK, msg.getId()));
         }
     }
 }

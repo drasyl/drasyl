@@ -22,13 +22,10 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
+import org.drasyl.DrasylException;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.message.JoinMessage;
-import org.drasyl.peer.connection.message.Message;
-import org.drasyl.peer.connection.message.RequestMessage;
-import org.drasyl.peer.connection.message.ResponseMessage;
-import org.drasyl.peer.connection.message.action.MessageAction;
-import org.drasyl.peer.connection.message.action.ServerMessageAction;
+import org.drasyl.peer.PeerInformation;
+import org.drasyl.peer.connection.message.*;
 import org.drasyl.peer.connection.server.NodeServer;
 import org.drasyl.peer.connection.server.NodeServerConnection;
 import org.slf4j.Logger;
@@ -40,6 +37,9 @@ import java.net.URISyntaxException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
+import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_NOT_FOUND;
+import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
+
 /**
  * This handler mange in-/oncoming messages and pass them to the correct sub-function. It also
  * creates a new {@link NodeServerConnection} object if a {@link JoinMessage} has pass the
@@ -50,7 +50,7 @@ public class NodeServerConnectionHandler extends SimpleChannelInboundHandler<Mes
     private static final Logger LOG = LoggerFactory.getLogger(NodeServerConnectionHandler.class);
     private final NodeServer server;
     private final CompletableFuture<NodeServerConnection> sessionReadyFuture;
-    private NodeServerConnection clientConnection;
+    private NodeServerConnection connection;
     private URI uri;
 
     /**
@@ -79,11 +79,11 @@ public class NodeServerConnectionHandler extends SimpleChannelInboundHandler<Mes
 
     NodeServerConnectionHandler(NodeServer server,
                                 CompletableFuture<NodeServerConnection> sessionReadyFuture,
-                                NodeServerConnection clientConnection,
+                                NodeServerConnection connection,
                                 URI uri) {
         this.server = server;
         this.sessionReadyFuture = sessionReadyFuture;
-        this.clientConnection = clientConnection;
+        this.connection = connection;
         this.uri = uri;
     }
 
@@ -93,8 +93,8 @@ public class NodeServerConnectionHandler extends SimpleChannelInboundHandler<Mes
     @Override
     public void handlerAdded(final ChannelHandlerContext ctx) {
         ctx.channel().closeFuture().addListener(future -> {
-            if (clientConnection != null && !clientConnection.isClosed().isDone()) {
-                server.getMessenger().getConnectionsManager().removeClosingConnection(clientConnection);
+            if (connection != null && !connection.isClosed().isDone()) {
+                server.getMessenger().getConnectionsManager().removeClosingConnection(connection);
             }
         });
     }
@@ -106,19 +106,23 @@ public class NodeServerConnectionHandler extends SimpleChannelInboundHandler<Mes
     protected void channelRead0(ChannelHandlerContext ctx, Message<?> msg) throws Exception {
         ctx.executor().submit(() -> {
             createSession(ctx, msg);
-            if (clientConnection != null) {
+            if (connection != null) {
                 if (msg instanceof ResponseMessage) {
-                    clientConnection.setResponse((ResponseMessage<? extends RequestMessage<?>, ? extends Message<?>>) msg);
+                    connection.setResponse((ResponseMessage<? extends RequestMessage<?>, ? extends Message<?>>) msg);
                 }
 
-                MessageAction<?> action = msg.getAction();
-                if (action != null) {
-                    if (action instanceof ServerMessageAction) {
-                        ((ServerMessageAction<?>) action).onMessageServer(clientConnection, server);
+                if (msg instanceof ApplicationMessage) {
+                    ApplicationMessage applicationMessage = (ApplicationMessage) msg;
+                    try {
+                        server.getMessenger().send(applicationMessage);
+                        connection.send(new StatusMessage(STATUS_OK, applicationMessage.getId()));
                     }
-                    else {
-                        LOG.debug("Could not process the message {}", msg);
+                    catch (DrasylException e) {
+                        connection.send(new StatusMessage(STATUS_NOT_FOUND, applicationMessage.getId()));
                     }
+                }
+                else {
+                    LOG.debug("Could not process the message {}", msg);
                 }
             }
         }).addListener(future -> {
@@ -136,7 +140,7 @@ public class NodeServerConnectionHandler extends SimpleChannelInboundHandler<Mes
      * @param msg probably a {@link JoinMessage}
      */
     private void createSession(final ChannelHandlerContext ctx, Message<?> msg) {
-        if (msg instanceof JoinMessage && clientConnection == null) {
+        if (msg instanceof JoinMessage && connection == null) {
             JoinMessage jm = (JoinMessage) msg;
             Identity identity = Identity.of(jm.getPublicKey());
             Channel myChannel = ctx.channel();
@@ -154,9 +158,21 @@ public class NodeServerConnectionHandler extends SimpleChannelInboundHandler<Mes
                 LOG.debug("[{}]: Create new Connection from Channel {}", ctx.channel().id().asShortText(), ctx.channel().id());
             }
 
-            clientConnection = new NodeServerConnection(ctx.channel(), uri, identity,
+            // create peer connection
+            connection = new NodeServerConnection(ctx.channel(), uri, identity,
                     Optional.ofNullable(jm.getUserAgent()).orElse("U/A"), server.getMessenger().getConnectionsManager());
-            sessionReadyFuture.complete(clientConnection);
+            sessionReadyFuture.complete(connection);
+
+            // store peer information
+            PeerInformation peerInformation = new PeerInformation();
+            peerInformation.setPublicKey(jm.getPublicKey());
+            peerInformation.addEndpoint(jm.getEndpoints());
+            server.getPeersManager().addPeer(identity, peerInformation);
+            server.getPeersManager().addChildren(identity);
+
+            // send confirmation
+            ctx.writeAndFlush(new WelcomeMessage(server.getMyIdentity().getKeyPair().getPublicKey(), server.getEntryPoints(), jm.getId()));
+
             ctx.pipeline().remove(NodeServerNewConnectionsGuard.CONNECTION_GUARD);
         }
     }

@@ -47,11 +47,11 @@ import java.util.concurrent.ExecutionException;
 
 import static org.mockito.Mockito.mock;
 
-public class TestNodeServerClientConnection extends AbstractNettyConnection {
-    private final static Logger LOG = LoggerFactory.getLogger(TestNodeServerClientConnection.class);
+public class TestNodeServerConnection extends AbstractNettyConnection {
+    private final static Logger LOG = LoggerFactory.getLogger(TestNodeServerConnection.class);
     protected final Subject<Message<?>> receivedMessages;
 
-    public TestNodeServerClientConnection(Channel channel, URI targetSystem, Identity clientUID) {
+    public TestNodeServerConnection(Channel channel, URI targetSystem, Identity clientUID) {
         super(channel, targetSystem, clientUID, "JUnit-Test", mock(ConnectionsManager.class));
         receivedMessages = PublishSubject.create();
     }
@@ -65,7 +65,7 @@ public class TestNodeServerClientConnection extends AbstractNettyConnection {
             channel.writeAndFlush(new TextWebSocketFrame(string));
         }
         else {
-            LOG.info("[{} Can't send message {}", TestNodeServerClientConnection.this, string);
+            LOG.info("[{} Can't send message {}", TestNodeServerConnection.this, string);
         }
     }
 
@@ -77,7 +77,7 @@ public class TestNodeServerClientConnection extends AbstractNettyConnection {
     /**
      * Creates a new session to the given server with a random identity
      */
-    public static TestNodeServerClientConnection clientSession(NodeServer server) throws ExecutionException, InterruptedException {
+    public static TestNodeServerConnection clientSession(NodeServer server) throws ExecutionException, InterruptedException {
         URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
         return clientSession(serverEntryPoint,
                 TestHelper.random(), true, server.workerGroup);
@@ -86,12 +86,12 @@ public class TestNodeServerClientConnection extends AbstractNettyConnection {
     /**
      * Creates a new session.
      */
-    public static TestNodeServerClientConnection clientSession(URI targetSystem,
-                                                               Identity uid,
-                                                               boolean pingPong,
-                                                               EventLoopGroup eventLoopGroup) throws InterruptedException,
+    public static TestNodeServerConnection clientSession(URI targetSystem,
+                                                         Identity uid,
+                                                         boolean pingPong,
+                                                         EventLoopGroup eventLoopGroup) throws InterruptedException,
             ExecutionException {
-        CompletableFuture<TestNodeServerClientConnection> future = new CompletableFuture<>();
+        CompletableFuture<TestNodeServerConnection> future = new CompletableFuture<>();
 
         if (eventLoopGroup == null) {
             eventLoopGroup = new NioEventLoopGroup();
@@ -99,11 +99,11 @@ public class TestNodeServerClientConnection extends AbstractNettyConnection {
 
         OutboundConnectionFactory factory = new OutboundConnectionFactory(targetSystem, eventLoopGroup)
                 .handler(new SimpleChannelInboundHandler<Message>() {
-                    TestNodeServerClientConnection session;
+                    TestNodeServerConnection session;
 
                     @Override
                     public void handlerAdded(final ChannelHandlerContext ctx) {
-                        session = new TestNodeServerClientConnection(ctx.channel(), targetSystem, uid);
+                        session = new TestNodeServerConnection(ctx.channel(), targetSystem, uid);
                         future.complete(session);
                     }
 
@@ -144,8 +144,8 @@ public class TestNodeServerClientConnection extends AbstractNettyConnection {
     /**
      * Creates a new session to the given server.
      */
-    public static TestNodeServerClientConnection clientSession(NodeServer server,
-                                                               boolean pingPong) throws ExecutionException,
+    public static TestNodeServerConnection clientSession(NodeServer server,
+                                                         boolean pingPong) throws ExecutionException,
             InterruptedException {
         URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
         return clientSession(serverEntryPoint,
@@ -155,8 +155,8 @@ public class TestNodeServerClientConnection extends AbstractNettyConnection {
     /**
      * Creates a new session to the given server.
      */
-    public static TestNodeServerClientConnection clientSession(NodeServer server,
-                                                               Identity uid) throws ExecutionException, InterruptedException {
+    public static TestNodeServerConnection clientSession(NodeServer server,
+                                                         Identity uid) throws ExecutionException, InterruptedException {
         URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
         return clientSession(serverEntryPoint, uid, true, server.workerGroup);
     }
@@ -164,12 +164,12 @@ public class TestNodeServerClientConnection extends AbstractNettyConnection {
     /**
      * Creates a new session with the given sessionUID and joins the given server.
      */
-    public static TestNodeServerClientConnection clientSessionAfterJoin(NodeServer server) throws ExecutionException,
+    public static TestNodeServerConnection clientSessionAfterJoin(NodeServer server) throws ExecutionException,
             InterruptedException, CryptoException {
         KeyPair keyPair = Crypto.generateKeys();
         CompressedPublicKey publicKey = CompressedPublicKey.of(keyPair.getPublic());
         URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
-        TestNodeServerClientConnection session = clientSession(serverEntryPoint, Identity.of(publicKey), true, server.workerGroup);
+        TestNodeServerConnection session = clientSession(serverEntryPoint, Identity.of(publicKey), true, server.workerGroup);
         session.sendRequest(new JoinMessage(publicKey, Set.of())).blockingGet();
 
         return session;
@@ -178,9 +178,9 @@ public class TestNodeServerClientConnection extends AbstractNettyConnection {
     /**
      * Creates a new session.
      */
-    public static TestNodeServerClientConnection clientSession(URI targetSystem,
-                                                               Identity uid,
-                                                               boolean pingPong) throws ExecutionException, InterruptedException {
+    public static TestNodeServerConnection clientSession(URI targetSystem,
+                                                         Identity uid,
+                                                         boolean pingPong) throws ExecutionException, InterruptedException {
         return clientSession(targetSystem, uid, pingPong, null);
     }
 }

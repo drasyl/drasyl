@@ -20,8 +20,6 @@ package org.drasyl.peer.connection.message;
 
 import org.drasyl.crypto.Signature;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.message.action.ApplicationMessageAction;
-import org.drasyl.peer.connection.message.action.MessageAction;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -68,11 +66,6 @@ public class ApplicationMessage extends AbstractMessage<ApplicationMessage> impl
         this.sender = requireNonNull(sender);
         this.recipient = requireNonNull(recipient);
         this.payload = requireNonNull(payload);
-    }
-
-    @Override
-    public MessageAction<ApplicationMessage> getAction() {
-        return new ApplicationMessageAction(this);
     }
 
     @Override

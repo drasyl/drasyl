@@ -50,7 +50,6 @@ public abstract class AbstractNettyConnection extends PeerConnection {
     private final String channelId;
     protected AtomicBoolean isClosed;
     protected CompletableFuture<Boolean> closedCompletable;
-    protected ChannelFutureListener channelCloseFutureListener;
 
     /**
      * Creates a new connection with an unknown User-Agent.
@@ -83,21 +82,7 @@ public abstract class AbstractNettyConnection extends PeerConnection {
                                    ConnectionsManager connectionsManager) {
         this(channel, userAgent, identity, endpoint, new AtomicBoolean(false), new ConcurrentHashMap<>(), new CompletableFuture<>(), connectionsManager);
 
-        channelCloseFutureListener = future -> {
-            if (future.isSuccess()) {
-                if (getLogger().isDebugEnabled()) {
-                    getLogger().debug("[{}]: The channel have been closed successfully.", future.channel().id().asShortText());
-                }
-                closedCompletable.complete(true);
-            }
-            else {
-                if (getLogger().isDebugEnabled()) {
-                    getLogger().error("[{}]: The channel could not be closed: ", future.channel().id().asShortText(), future.cause());
-                }
-            }
-        };
-
-        this.channel.closeFuture().addListener(channelCloseFutureListener);
+        this.channel.closeFuture().addListener((ChannelFutureListener) this::onChannelClose);
     }
 
     protected AbstractNettyConnection(Channel channel,
@@ -121,9 +106,23 @@ public abstract class AbstractNettyConnection extends PeerConnection {
     }
 
     /**
-     * Returns the correct logger. Is needed for sub-classes.
+     * This method is called when the netty channel closes.
+     *
+     * @param future
      */
-    protected abstract Logger getLogger();
+    protected void onChannelClose(ChannelFuture future) {
+        if (future.isSuccess()) {
+            if (getLogger().isDebugEnabled()) {
+                getLogger().debug("[{}]: The channel have been closed successfully.", future.channel().id().asShortText());
+            }
+            closedCompletable.complete(true);
+        }
+        else {
+            if (getLogger().isDebugEnabled()) {
+                getLogger().error("[{}]: The channel could not be closed: ", future.channel().id().asShortText(), future.cause());
+            }
+        }
+    }
 
     @Override
     protected void close(CloseReason reason) {
@@ -132,6 +131,11 @@ public abstract class AbstractNettyConnection extends PeerConnection {
             channel.writeAndFlush(new QuitMessage(reason)).addListener(ChannelFutureListener.CLOSE);
         }
     }
+
+    /**
+     * Returns the correct logger. Is needed for sub-classes.
+     */
+    protected abstract Logger getLogger();
 
     @Override
     public void send(Message<?> message) {

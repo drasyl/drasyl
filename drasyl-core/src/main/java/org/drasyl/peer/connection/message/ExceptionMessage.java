@@ -21,7 +21,6 @@ package org.drasyl.peer.connection.message;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonValue;
-import org.drasyl.peer.connection.message.action.MessageAction;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -57,11 +56,6 @@ public class ExceptionMessage extends AbstractMessage<ExceptionMessage> implemen
      */
     public Error getError() {
         return error;
-    }
-
-    @Override
-    public MessageAction<ExceptionMessage> getAction() {
-        return null;
     }
 
     @Override

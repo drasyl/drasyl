@@ -25,12 +25,10 @@ import io.netty.channel.EventLoopGroup;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.event.Event;
-import org.drasyl.event.EventCode;
 import org.drasyl.event.Node;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.message.JoinMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -45,6 +43,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
 import static java.lang.Thread.sleep;
+import static org.drasyl.event.EventCode.EVENT_NODE_OFFLINE;
+import static org.drasyl.event.EventCode.EVENT_NODE_ONLINE;
 import static org.drasyl.peer.connection.PeerConnection.CloseReason.REASON_SHUTTING_DOWN;
 
 /**
@@ -64,7 +64,7 @@ public class SuperPeerClient implements AutoCloseable {
     private final AtomicBoolean opened;
     private final AtomicInteger nextEndpointPointer;
     private final AtomicInteger nextRetryDelayPointer;
-    private final Consumer<Event> onEvent;
+    private final Consumer<Event> eventConsumer;
     private Channel clientChannel;
     private final Function<Set<URI>, Thread> threadSupplier;
 
@@ -77,7 +77,7 @@ public class SuperPeerClient implements AutoCloseable {
                     AtomicBoolean opened,
                     AtomicInteger nextEndpointPointer,
                     AtomicInteger nextRetryDelayPointer,
-                    Consumer<Event> onEvent,
+                    Consumer<Event> eventConsumer,
                     Channel clientChannel,
                     Function<Set<URI>, Thread> threadSupplier) {
         this.identityManager = identityManager;
@@ -89,7 +89,7 @@ public class SuperPeerClient implements AutoCloseable {
         this.opened = opened;
         this.nextEndpointPointer = nextEndpointPointer;
         this.nextRetryDelayPointer = nextRetryDelayPointer;
-        this.onEvent = onEvent;
+        this.eventConsumer = eventConsumer;
         this.clientChannel = clientChannel;
         this.threadSupplier = threadSupplier;
     }
@@ -99,7 +99,7 @@ public class SuperPeerClient implements AutoCloseable {
                            PeersManager peersManager,
                            Messenger messenger,
                            EventLoopGroup workerGroup,
-                           Consumer<Event> onEvent) throws SuperPeerClientException {
+                           Consumer<Event> eventConsumer) throws SuperPeerClientException {
         try {
             endpoints = new HashSet<>();
             for (String endpoint : config.getSuperPeerEndpoints()) {
@@ -119,7 +119,7 @@ public class SuperPeerClient implements AutoCloseable {
             // The pointer should point to a random endpoint. This creates a distribution on different super peer's endpoints
             this.nextEndpointPointer = new AtomicInteger(endpoints.isEmpty() ? 0 : Crypto.randomNumber(endpoints.size()));
             this.nextRetryDelayPointer = new AtomicInteger(0);
-            this.onEvent = onEvent;
+            this.eventConsumer = eventConsumer;
             this.threadSupplier = myEntryPoints -> new Thread(() -> keepConnectionAlive(myEntryPoints));
         }
         catch (URISyntaxException e) {
@@ -140,8 +140,9 @@ public class SuperPeerClient implements AutoCloseable {
             try {
                 SuperPeerClientChannelBootstrap clientBootstrap = new SuperPeerClientChannelBootstrap(config, workerGroup, endpoint, entryPoints, this);
                 clientChannel = clientBootstrap.getChannel();
+                eventConsumer.accept(new Event(EVENT_NODE_ONLINE, Node.of(identityManager.getIdentity())));
                 clientChannel.closeFuture().syncUninterruptibly();
-                onEvent.accept(new Event(EventCode.EVENT_NODE_OFFLINE, Node.of(identityManager.getIdentity())));
+                eventConsumer.accept(new Event(EVENT_NODE_OFFLINE, Node.of(identityManager.getIdentity())));
             }
             catch (SuperPeerClientException e) {
                 LOG.warn("Error while trying to connect to Super Peer: {}", e.getMessage());
@@ -238,7 +239,7 @@ public class SuperPeerClient implements AutoCloseable {
         }
     }
 
-    public Consumer<Event> getOnEvent() {
-        return onEvent;
+    public Consumer<Event> getEventConsumer() {
+        return eventConsumer;
     }
 }

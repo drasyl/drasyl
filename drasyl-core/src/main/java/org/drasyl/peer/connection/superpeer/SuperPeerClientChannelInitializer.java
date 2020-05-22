@@ -52,7 +52,7 @@ public class SuperPeerClientChannelInitializer extends AbstractClientInitializer
     private final DrasylNodeConfig config;
     private final Set<URI> entryPoints;
     private final SuperPeerClient superPeerClient;
-    private final SuperPeerClientJoinHandler joinHandler;
+    private final SuperPeerClientWelcomeGuard welcomeGuard;
 
     public SuperPeerClientChannelInitializer(DrasylNodeConfig config,
                                              URI endpoint,
@@ -63,7 +63,11 @@ public class SuperPeerClientChannelInitializer extends AbstractClientInitializer
         this.config = config;
         this.entryPoints = entryPoints;
         this.superPeerClient = superPeerClient;
-        joinHandler = new SuperPeerClientJoinHandler(this.superPeerClient.getIdentityManager().getKeyPair().getPublicKey(), this.entryPoints);
+        welcomeGuard = new SuperPeerClientWelcomeGuard(this.config.getSuperPeerPublicKey(), this.superPeerClient.getIdentityManager().getKeyPair().getPublicKey(), this.config.getSuperPeerHandshakeTimeout());
+    }
+
+    public SuperPeerClientWelcomeGuard welcomeGuard() {
+        return welcomeGuard;
     }
 
     @Override
@@ -75,9 +79,9 @@ public class SuperPeerClientChannelInitializer extends AbstractClientInitializer
         pipeline.addLast(ConnectionExceptionMessageHandler.EXCEPTION_MESSAGE_HANDLER, ConnectionExceptionMessageHandler.INSTANCE);
 
         // Guards
-        pipeline.addLast(WELCOME_GUARD, new SuperPeerClientWelcomeGuard(config.getSuperPeerPublicKey(), superPeerClient.getIdentityManager().getKeyPair().getPublicKey(), config.getSuperPeerHandshakeTimeout()));
+        pipeline.addLast(WELCOME_GUARD, welcomeGuard);
 
-        pipeline.addLast(JOIN_HANDLER, joinHandler);
+        pipeline.addLast(JOIN_HANDLER, new SuperPeerClientJoinHandler(this.superPeerClient.getIdentityManager().getKeyPair().getPublicKey(), this.entryPoints));
 
         // Super peer handler
         pipeline.addLast(SuperPeerClientConnectionHandler.SUPER_PEER_HANDLER, new SuperPeerClientConnectionHandler(superPeerClient, target));
@@ -102,9 +106,5 @@ public class SuperPeerClientChannelInitializer extends AbstractClientInitializer
             }
         }
         return null;
-    }
-
-    public SuperPeerClientJoinHandler getJoinHandler() {
-        return joinHandler;
     }
 }

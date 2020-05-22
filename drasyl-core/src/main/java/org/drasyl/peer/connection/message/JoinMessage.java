@@ -19,8 +19,6 @@
 package org.drasyl.peer.connection.message;
 
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.peer.connection.message.action.JoinMessageAction;
-import org.drasyl.peer.connection.message.action.MessageAction;
 
 import java.net.URI;
 import java.util.Objects;
@@ -60,11 +58,6 @@ public class JoinMessage extends AbstractMessageWithUserAgent<JoinMessage> imple
      */
     public CompressedPublicKey getPublicKey() {
         return publicKey;
-    }
-
-    @Override
-    public MessageAction<JoinMessage> getAction() {
-        return new JoinMessageAction(this);
     }
 
     @Override

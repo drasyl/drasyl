@@ -18,9 +18,7 @@
  */
 package org.drasyl.peer.connection.superpeer.handler;
 
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
 import io.netty.channel.SimpleChannelInboundHandler;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.JoinMessage;
@@ -35,20 +33,13 @@ public class SuperPeerClientJoinHandler extends SimpleChannelInboundHandler<Mess
     public static final String JOIN_HANDLER = "superPeerClientJoinHandler";
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClientJoinHandler.class);
     private final Message<?> joinRequest;
-    private ChannelPromise joinFuture;
 
     public SuperPeerClientJoinHandler(CompressedPublicKey publicKey, Set<URI> endpoints) {
-        this(new JoinMessage(publicKey, endpoints), null);
+        this(new JoinMessage(publicKey, endpoints));
     }
 
-    SuperPeerClientJoinHandler(Message<?> joinRequest, ChannelPromise joinFuture) {
+    SuperPeerClientJoinHandler(Message<?> joinRequest) {
         this.joinRequest = joinRequest;
-        this.joinFuture = joinFuture;
-    }
-
-    @Override
-    public void handlerAdded(ChannelHandlerContext ctx) {
-        joinFuture = ctx.newPromise();
     }
 
     @Override
@@ -71,22 +62,16 @@ public class SuperPeerClientJoinHandler extends SimpleChannelInboundHandler<Mess
 
     private void confirmJoin(ChannelHandlerContext ctx) {
         LOG.debug("[{}]: Join confirmation received from super peer. Remove this handler from pipeline.", ctx.channel().id().asShortText());
-        joinFuture.setSuccess();
         ctx.pipeline().remove(this);
     }
 
     private void failJoin(ChannelHandlerContext ctx, Throwable cause) {
         LOG.trace("[{}]: Join failed: {}", ctx.channel().id().asShortText(), cause.getMessage());
-        joinFuture.setFailure(cause);
     }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx,
                                 Message msg) {
         ctx.fireChannelRead(msg);
-    }
-
-    public ChannelFuture joinFuture() {
-        return joinFuture;
     }
 }

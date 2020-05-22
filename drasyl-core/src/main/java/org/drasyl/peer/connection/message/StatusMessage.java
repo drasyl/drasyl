@@ -20,7 +20,6 @@ package org.drasyl.peer.connection.message;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import org.drasyl.peer.connection.message.action.MessageAction;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -108,11 +107,6 @@ public class StatusMessage extends AbstractResponseMessage<RequestMessage<?>, St
      */
     public Code getCode() {
         return code;
-    }
-
-    @Override
-    public MessageAction<StatusMessage> getAction() {
-        return null;
     }
 
     @Override

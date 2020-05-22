@@ -49,6 +49,7 @@ public class SuperPeerClientWelcomeGuard extends SimpleChannelDuplexHandler<Mess
     private final CompressedPublicKey ownPublicKey;
     private final Duration timeout;
     private ScheduledFuture<?> timeoutFuture;
+    private ChannelPromise handshakeFuture;
 
     public SuperPeerClientWelcomeGuard(String expectedPublicKey,
                                        CompressedPublicKey ownPublicKey,
@@ -71,13 +72,23 @@ public class SuperPeerClientWelcomeGuard extends SimpleChannelDuplexHandler<Mess
         this.timeout = timeout;
     }
 
+    public ChannelPromise handshakeFuture() {
+        return handshakeFuture;
+    }
+
+    @Override
+    public void handlerAdded(ChannelHandlerContext ctx) {
+        handshakeFuture = ctx.newPromise();
+    }
+
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
 
-        // schedule connection close if join confirmation did not take place within timeout
+        // schedule connection close if handshake did not take place within timeout
         timeoutFuture = ctx.executor().schedule(() -> {
             if (!timeoutFuture.isCancelled()) {
+                handshakeFuture.setFailure(new Exception("Timeout"));
                 ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE)).addListener(ChannelFutureListener.CLOSE);
                 LOG.debug("[{}]: Handshake did not take place successfully in {}ms. "
                         + "Connection is closed.", ctx.channel().id().asShortText(), timeout.toMillis());
@@ -86,9 +97,9 @@ public class SuperPeerClientWelcomeGuard extends SimpleChannelDuplexHandler<Mess
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx,
-                                Message<?> msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, Message<?> msg) {
         if (msg instanceof WelcomeMessage) {
+            // do handshake
             WelcomeMessage welcomeMessage = (WelcomeMessage) msg;
             CompressedPublicKey superPeerPublicKey = welcomeMessage.getPublicKey();
             if (expectedPublicKey != null && !superPeerPublicKey.equals(expectedPublicKey)) {
@@ -101,15 +112,16 @@ public class SuperPeerClientWelcomeGuard extends SimpleChannelDuplexHandler<Mess
             }
             else {
                 timeoutFuture.cancel(true);
+                handshakeFuture.setSuccess();
                 ctx.fireChannelRead(msg);
                 ctx.pipeline().remove(WELCOME_GUARD);
             }
         }
         else {
+            // reject all non-welcome messages if handshake is not done
             ctx.writeAndFlush(new StatusMessage(STATUS_FORBIDDEN, msg.getId()));
             ReferenceCountUtil.release(msg);
-            LOG.debug("[{}] Server is not authenticated. Inbound message was dropped: '{}'",
-                    ctx, msg);
+            LOG.debug("[{}] Server is not authenticated. Inbound message was dropped: '{}'", ctx, msg);
         }
     }
 
@@ -124,5 +136,17 @@ public class SuperPeerClientWelcomeGuard extends SimpleChannelDuplexHandler<Mess
             // is visible to the listening futures
             throw new IllegalStateException("Server has not yet responded with a welcome message. Outbound message was dropped: '" + msg + "'");
         }
+    }
+
+    @Override
+    public void close(ChannelHandlerContext ctx, ChannelPromise promise) {
+        timeoutFuture.cancel(true);
+        ctx.close(promise);
+    }
+
+    @Override
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        // close connection if an error occurred before handshake
+        ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_INITIALIZATION)).addListener(ChannelFutureListener.CLOSE);
     }
 }
