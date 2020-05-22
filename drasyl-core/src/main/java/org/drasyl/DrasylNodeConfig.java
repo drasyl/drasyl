@@ -64,6 +64,7 @@ public class DrasylNodeConfig {
     static final String SUPER_PEER_ENDPOINTS = "drasyl.super-peer.endpoints";
     static final String SUPER_PEER_PUBLIC_KEY = "drasyl.super-peer.public-key";
     static final String SUPER_PEER_RETRY_DELAYS = "drasyl.super-peer.retry-delays";
+    static final String SUPER_PEER_MAX_HANDSHAKE_TIMEOUT = "drasyl.super-peer.max-handshake-timeout";
     static final String SUPER_PEER_CHANNEL_INITIALIZER = "drasyl.super-peer.channel-initializer";
     static final String SUPER_PEER_IDLE_RETRIES = "drasyl.super-peer.idle.retries";
     static final String SUPER_PEER_IDLE_TIMEOUT = "drasyl.super-peer.idle.timeout";
@@ -89,6 +90,7 @@ public class DrasylNodeConfig {
     private final Set<String> superPeerEndpoints;
     private final String superPeerPublicKey;
     private final List<Duration> superPeerRetryDelays;
+    private final Duration superPeerHandshakeTimeout;
     private final String superPeerChannelInitializer;
     private final short superPeerIdleRetries;
     private final Duration superPeerIdleTimeout;
@@ -142,6 +144,7 @@ public class DrasylNodeConfig {
         this.superPeerEndpoints = new HashSet<>(config.getStringList(SUPER_PEER_ENDPOINTS));
         this.superPeerPublicKey = config.getString(SUPER_PEER_PUBLIC_KEY);
         this.superPeerRetryDelays = config.getDurationList(SUPER_PEER_RETRY_DELAYS);
+        this.superPeerHandshakeTimeout = config.getDuration(SUPER_PEER_MAX_HANDSHAKE_TIMEOUT);
         this.superPeerChannelInitializer = config.getString(SUPER_PEER_CHANNEL_INITIALIZER);
         this.superPeerIdleRetries = getShort(config, SUPER_PEER_IDLE_RETRIES);
         this.superPeerIdleTimeout = config.getDuration(SUPER_PEER_IDLE_TIMEOUT);
@@ -185,6 +188,7 @@ public class DrasylNodeConfig {
                      boolean superPeerEnabled, Set<String> superPeerEndpoints,
                      String superPeerPublicKey,
                      List<Duration> superPeerRetryDelays,
+                     Duration superPeerHandshakeTimeout,
                      String superPeerChannelInitializer,
                      short superPeerIdleRetries,
                      Duration superPeerIdleTimeout) {
@@ -209,6 +213,7 @@ public class DrasylNodeConfig {
         this.superPeerEndpoints = superPeerEndpoints;
         this.superPeerPublicKey = superPeerPublicKey;
         this.superPeerRetryDelays = superPeerRetryDelays;
+        this.superPeerHandshakeTimeout = superPeerHandshakeTimeout;
         this.superPeerChannelInitializer = superPeerChannelInitializer;
         this.superPeerIdleRetries = superPeerIdleRetries;
         this.superPeerIdleTimeout = superPeerIdleTimeout;
@@ -252,6 +257,10 @@ public class DrasylNodeConfig {
 
     public short getServerIdleRetries() {
         return serverIdleRetries;
+    }
+
+    public Duration getSuperPeerHandshakeTimeout() {
+        return superPeerHandshakeTimeout;
     }
 
     public Duration getServerIdleTimeout() {
@@ -312,7 +321,7 @@ public class DrasylNodeConfig {
 
     @Override
     public int hashCode() {
-        return Objects.hash(identityPublicKey, identityPrivateKey, identityPath, userAgent, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, maxContentLength, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout);
+        return Objects.hash(identityPublicKey, identityPrivateKey, identityPath, userAgent, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, maxContentLength, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout);
     }
 
     @Override
@@ -346,6 +355,7 @@ public class DrasylNodeConfig {
                 Objects.equals(superPeerEndpoints, that.superPeerEndpoints) &&
                 Objects.equals(superPeerPublicKey, that.superPeerPublicKey) &&
                 Objects.equals(superPeerRetryDelays, that.superPeerRetryDelays) &&
+                Objects.equals(superPeerHandshakeTimeout, that.superPeerHandshakeTimeout) &&
                 Objects.equals(superPeerChannelInitializer, that.superPeerChannelInitializer) &&
                 Objects.equals(superPeerIdleTimeout, that.superPeerIdleTimeout);
     }
@@ -374,6 +384,7 @@ public class DrasylNodeConfig {
                 ", superPeerEndpoints=" + superPeerEndpoints +
                 ", superPeerPublicKey='" + superPeerPublicKey + '\'' +
                 ", superPeerRetryDelays=" + superPeerRetryDelays +
+                ", superPeerHandshakeTimeout=" + superPeerHandshakeTimeout +
                 ", superPeerChannelInitializer='" + superPeerChannelInitializer + '\'' +
                 ", superPeerIdleRetries=" + superPeerIdleRetries +
                 ", superPeerIdleTimeout=" + superPeerIdleTimeout +

@@ -22,6 +22,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
+import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.handler.SimpleChannelDuplexHandler;
@@ -29,8 +30,10 @@ import org.drasyl.peer.connection.message.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_SUPER_PEER_SAME_PUBLIC_KEY;
-import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_SUPER_PEER_WRONG_PUBLIC_KEY;
+import java.time.Duration;
+
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.*;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
 
 /**
@@ -44,9 +47,12 @@ public class SuperPeerClientWelcomeGuard extends SimpleChannelDuplexHandler<Mess
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClientWelcomeGuard.class);
     private final CompressedPublicKey expectedPublicKey;
     private final CompressedPublicKey ownPublicKey;
+    private final Duration timeout;
+    private ScheduledFuture<?> timeoutFuture;
 
     public SuperPeerClientWelcomeGuard(String expectedPublicKey,
-                                       CompressedPublicKey ownPublicKey) {
+                                       CompressedPublicKey ownPublicKey,
+                                       Duration timeout) {
         CompressedPublicKey expectedPublicKey1;
         if (expectedPublicKey == null || expectedPublicKey.equals("")) {
             expectedPublicKey1 = null;
@@ -62,6 +68,21 @@ public class SuperPeerClientWelcomeGuard extends SimpleChannelDuplexHandler<Mess
         }
         this.expectedPublicKey = expectedPublicKey1;
         this.ownPublicKey = ownPublicKey;
+        this.timeout = timeout;
+    }
+
+    @Override
+    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+        super.channelActive(ctx);
+
+        // schedule connection close if join confirmation did not take place within timeout
+        timeoutFuture = ctx.executor().schedule(() -> {
+            if (!timeoutFuture.isCancelled()) {
+                ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE)).addListener(ChannelFutureListener.CLOSE);
+                LOG.debug("[{}]: Handshake did not take place successfully in {}ms. "
+                        + "Connection is closed.", ctx.channel().id().asShortText(), timeout.toMillis());
+            }
+        }, timeout.toMillis(), MILLISECONDS);
     }
 
     @Override
@@ -79,6 +100,7 @@ public class SuperPeerClientWelcomeGuard extends SimpleChannelDuplexHandler<Mess
                 ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_SUPER_PEER_SAME_PUBLIC_KEY)).addListener(ChannelFutureListener.CLOSE);
             }
             else {
+                timeoutFuture.cancel(true);
                 ctx.fireChannelRead(msg);
                 ctx.pipeline().remove(WELCOME_GUARD);
             }

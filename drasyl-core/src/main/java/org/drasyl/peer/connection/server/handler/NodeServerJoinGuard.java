@@ -78,7 +78,7 @@ public class NodeServerJoinGuard extends SimpleChannelDuplexHandler<Message<?>, 
             if (!timeoutFuture.isCancelled() && !authenticated.get()) {
                 ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE)).addListener(ChannelFutureListener.CLOSE);
                 LOG.debug("[{}]: Handshake did not take place successfully in {}ms. "
-                        + "Connection is closed.", ctx.channel().id().asShortText(), timeout);
+                        + "Connection is closed.", ctx.channel().id().asShortText(), timeout.toMillis());
             }
         }, timeout.toMillis(), MILLISECONDS);
     }

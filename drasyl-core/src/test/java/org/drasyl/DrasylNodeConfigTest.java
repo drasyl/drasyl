@@ -70,6 +70,7 @@ class DrasylNodeConfigTest {
     private Config typesafeConfig;
     private String identityPathAsString;
     private Supplier<Set<String>> networkAddressesProvider;
+    private Duration superPeerHandshakeTimeout;
 
     @BeforeEach
     void setUp() {
@@ -96,6 +97,7 @@ class DrasylNodeConfigTest {
         superPeerRetryDelays = mock(List.class);
         superPeerChannelInitializer = "org.drasyl.core.client.handler.SuperPeerClientInitializer";
         superPeerIdleRetries = 3;
+        superPeerHandshakeTimeout = ofSeconds(30);
         superPeerIdleTimeout = ofSeconds(60);
         typesafeConfig = mock(Config.class);
         identityPathAsString = "drasyl.identity.json";
@@ -129,6 +131,7 @@ class DrasylNodeConfigTest {
         when(typesafeConfig.getStringList(SUPER_PEER_ENDPOINTS)).thenReturn(new ArrayList<>(superPeerEndpoints));
         when(typesafeConfig.getString(SUPER_PEER_PUBLIC_KEY)).thenReturn(superPeerPublicKey);
         when(typesafeConfig.getDurationList(SUPER_PEER_RETRY_DELAYS)).thenReturn(superPeerRetryDelays);
+        when(typesafeConfig.getDuration(SUPER_PEER_MAX_HANDSHAKE_TIMEOUT)).thenReturn(superPeerHandshakeTimeout);
         when(typesafeConfig.getString(SUPER_PEER_CHANNEL_INITIALIZER)).thenReturn(superPeerChannelInitializer);
         when(typesafeConfig.getString(USER_AGENT)).thenReturn(userAgent);
         when(networkAddressesProvider.get()).thenReturn(Set.of("192.168.188.112"));
@@ -155,6 +158,7 @@ class DrasylNodeConfigTest {
         assertEquals(superPeerEndpoints, config.getSuperPeerEndpoints());
         assertEquals(superPeerPublicKey, config.getSuperPeerPublicKey());
         assertEquals(superPeerRetryDelays, config.getSuperPeerRetryDelays());
+        assertEquals(superPeerHandshakeTimeout, config.getSuperPeerHandshakeTimeout());
         assertEquals(superPeerChannelInitializer, config.getSuperPeerChannelInitializer());
     }
 
@@ -162,7 +166,7 @@ class DrasylNodeConfigTest {
     void toStringShouldMaskSecrets() {
         identityPrivateKey = "07e98a2f8162a4002825f810c0fbd69b0c42bd9cb4f74a21bc7807bc5acb4f5f";
 
-        DrasylNodeConfig config = new DrasylNodeConfig(loglevel, identityPublicKey, identityPrivateKey, identityPath, userAgent, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, maxContentLength, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout);
+        DrasylNodeConfig config = new DrasylNodeConfig(loglevel, identityPublicKey, identityPrivateKey, identityPath, userAgent, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, maxContentLength, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout);
 
         assertThat(config.toString(), not(containsString(identityPrivateKey)));
     }
