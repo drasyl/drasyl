@@ -75,7 +75,7 @@ public class SuperPeerClientChannelInitializer extends AbstractClientInitializer
         pipeline.addLast(ConnectionExceptionMessageHandler.EXCEPTION_MESSAGE_HANDLER, ConnectionExceptionMessageHandler.INSTANCE);
 
         // Guards
-        pipeline.addLast(WELCOME_GUARD, new SuperPeerClientWelcomeGuard(config.getSuperPeerPublicKey(), superPeerClient.getIdentityManager().getKeyPair().getPublicKey()));
+        pipeline.addLast(WELCOME_GUARD, new SuperPeerClientWelcomeGuard(config.getSuperPeerPublicKey(), superPeerClient.getIdentityManager().getKeyPair().getPublicKey(), config.getSuperPeerHandshakeTimeout()));
 
         pipeline.addLast(JOIN_HANDLER, joinHandler);
 
