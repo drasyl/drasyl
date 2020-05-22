@@ -22,22 +22,29 @@ package org.drasyl.peer.connection.server.handler;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.identity.CompressedKeyPair;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
+import org.drasyl.messenger.MessengerException;
+import org.drasyl.peer.PeerInformation;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.ConnectionsManager;
+import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
-import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.ResponseMessage;
-import org.drasyl.peer.connection.message.action.MessageAction;
-import org.drasyl.peer.connection.message.action.ServerMessageAction;
+import org.drasyl.peer.connection.message.WelcomeMessage;
 import org.drasyl.peer.connection.server.NodeServer;
 import org.drasyl.peer.connection.server.NodeServerConnection;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.*;
 
 class NodeServerConnectionHandlerTest {
@@ -47,13 +54,14 @@ class NodeServerConnectionHandlerTest {
     private EmbeddedChannel channel;
     private NodeServerConnection clientConnection;
     private ResponseMessage<?, ?> responseMessage;
-    private MessageAction messageAction;
-    private Message<?> message;
-    private ServerMessageAction serverMessageAction;
     private JoinMessage joinMessage;
     private CompressedPublicKey compressedPublicKey;
     private Messenger messenger;
     private ConnectionsManager connectionsManager;
+    private PeersManager peersManager;
+    private IdentityManager identityManager;
+    private CompressedKeyPair keyPair;
+    private ApplicationMessage applicationMessage;
 
     @BeforeEach
     void setUp() throws CryptoException {
@@ -62,25 +70,25 @@ class NodeServerConnectionHandlerTest {
         completableFuture = mock(CompletableFuture.class);
         clientConnection = mock(NodeServerConnection.class);
         responseMessage = mock(ResponseMessage.class);
-        messageAction = mock(MessageAction.class);
-        message = mock(Message.class);
-        serverMessageAction = mock(ServerMessageAction.class);
         joinMessage = mock(JoinMessage.class);
         compressedPublicKey = CompressedPublicKey.of("030b6adedef11147b3eea4b4f526f1226ffab218f2b81497e5175e6496f7aa929d");
         messenger = mock(Messenger.class);
         connectionsManager = mock(ConnectionsManager.class);
+        peersManager = mock(PeersManager.class);
+        identityManager = mock(IdentityManager.class);
+        keyPair = mock(CompressedKeyPair.class);
+        applicationMessage = mock(ApplicationMessage.class);
 
         ChannelHandler handler = new NodeServerConnectionHandler(nodeServer, completableFuture, clientConnection, uri);
         channel = new EmbeddedChannel(handler);
 
         when(nodeServer.getMessenger()).thenReturn(messenger);
         when(messenger.getConnectionsManager()).thenReturn(connectionsManager);
+        when(nodeServer.getPeersManager()).thenReturn(peersManager);
     }
 
     @Test
     void shouldSetResponseForResponseMessageIfSessionExists() {
-        when(responseMessage.getAction()).thenReturn(messageAction);
-
         ChannelHandler handler = new NodeServerConnectionHandler(nodeServer, completableFuture, clientConnection, uri);
         channel = new EmbeddedChannel(handler);
 
@@ -91,21 +99,23 @@ class NodeServerConnectionHandlerTest {
     }
 
     @Test
-    void shouldExecuteOnServerActionForMessageIfSessionExists() {
-        when(message.getAction()).thenReturn(serverMessageAction);
-
+    void shouldPassMessageToMessengerIfSessionExists() throws MessengerException {
         ChannelHandler handler = new NodeServerConnectionHandler(nodeServer, completableFuture, clientConnection, uri);
         channel = new EmbeddedChannel(handler);
 
-        channel.writeInbound(message);
+        channel.writeInbound(applicationMessage);
         channel.flush();
 
-        verify(serverMessageAction).onMessageServer(clientConnection, nodeServer);
+        verify(messenger).send(applicationMessage);
     }
 
     @Test
     void shouldCreateSessionOnJoinMessageIfNoSessionExists() {
         when(joinMessage.getPublicKey()).thenReturn(compressedPublicKey);
+        when(nodeServer.getEntryPoints()).thenReturn(Set.of(URI.create("ws://testURI")));
+        when(nodeServer.getMyIdentity()).thenReturn(identityManager);
+        when(identityManager.getKeyPair()).thenReturn(keyPair);
+        when(keyPair.getPublicKey()).thenReturn(compressedPublicKey);
 
         ChannelHandler handler = new NodeServerConnectionHandler(nodeServer, completableFuture, null, uri);
         channel = new EmbeddedChannel(handler);
@@ -114,6 +124,14 @@ class NodeServerConnectionHandlerTest {
         channel.flush();
 
         verify(completableFuture).complete(any());
+
+        PeerInformation myPeerInformation = new PeerInformation();
+        myPeerInformation.setPublicKey(joinMessage.getPublicKey());
+        myPeerInformation.addEndpoint(joinMessage.getEndpoints());
+        verify(peersManager).addPeer(Identity.of(compressedPublicKey), myPeerInformation);
+        verify(peersManager).addChildren(Identity.of(compressedPublicKey));
+
+        assertEquals(channel.readOutbound(), new WelcomeMessage(nodeServer.getMyIdentity().getKeyPair().getPublicKey(), nodeServer.getEntryPoints(), joinMessage.getId()));
     }
 
     @Test

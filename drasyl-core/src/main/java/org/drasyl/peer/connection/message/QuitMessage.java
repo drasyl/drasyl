@@ -20,8 +20,6 @@ package org.drasyl.peer.connection.message;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.drasyl.peer.connection.PeerConnection.CloseReason;
-import org.drasyl.peer.connection.message.action.MessageAction;
-import org.drasyl.peer.connection.message.action.QuitMessageAction;
 
 import java.util.Objects;
 
@@ -71,10 +69,5 @@ public class QuitMessage extends AbstractMessage<QuitMessage> implements Request
 
     public CloseReason getReason() {
         return reason;
-    }
-
-    @Override
-    public MessageAction<QuitMessage> getAction() {
-        return new QuitMessageAction(this);
     }
 }

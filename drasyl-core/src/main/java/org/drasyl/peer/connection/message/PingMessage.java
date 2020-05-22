@@ -18,17 +18,10 @@
  */
 package org.drasyl.peer.connection.message;
 
-import org.drasyl.peer.connection.message.action.MessageAction;
-
 /**
  * A message representing a PING request.
  */
 public class PingMessage extends AbstractMessage<PingMessage> implements RequestMessage<PingMessage>, UnrestrictedPassableMessage {
-    @Override
-    public MessageAction<PingMessage> getAction() {
-        return null;
-    }
-
     @Override
     public String toString() {
         return "PingMessage{" +

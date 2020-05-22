@@ -106,7 +106,7 @@ class SuperPeerClientIT {
 
         // verify received messages
         receivedMessages.awaitCount(1);
-        receivedMessages.assertValue(new JoinMessage(identityManager.getKeyPair().getPublicKey(), server.getEntryPoints()));
+        receivedMessages.assertValueAt(0, new JoinMessage(identityManager.getKeyPair().getPublicKey(), server.getEntryPoints()));
     }
 
     @Test
@@ -124,8 +124,8 @@ class SuperPeerClientIT {
         client.close();
 
         // verify emitted events
-        receivedMessages.awaitCount(2);
-        receivedMessages.assertValueAt(1, new QuitMessage(REASON_SHUTTING_DOWN));
+        receivedMessages.awaitCount(3);
+        receivedMessages.assertValueAt(2, new QuitMessage(REASON_SHUTTING_DOWN));
     }
 
     @Test
@@ -163,8 +163,8 @@ class SuperPeerClientIT {
         IntegrationTestHandler.injectMessage(request);
 
         // verify received message
-        receivedMessages.awaitCount(2);
-        receivedMessages.assertValueAt(1, new PongMessage(request.getId()));
+        receivedMessages.awaitCount(3);
+        receivedMessages.assertValueAt(2, new PongMessage(request.getId()));
     }
 
     @Test
@@ -187,8 +187,8 @@ class SuperPeerClientIT {
         IntegrationTestHandler.injectMessage(request);
 
         // verify received message
-        receivedMessages.awaitCount(1);
-        receivedMessages.assertValueAt(0, new StatusMessage(STATUS_OK, request.getId()));
+        receivedMessages.awaitCount(2);
+        receivedMessages.assertValueAt(1, new StatusMessage(STATUS_OK, request.getId()));
     }
 
     @Test

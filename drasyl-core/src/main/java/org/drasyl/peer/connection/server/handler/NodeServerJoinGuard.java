@@ -30,10 +30,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static java.util.concurrent.TimeUnit.*;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_HANDSHAKE;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_INITIALIZATION;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
@@ -54,18 +53,15 @@ public class NodeServerJoinGuard extends SimpleChannelDuplexHandler<Message<?>, 
     public static final String JOIN_GUARD = "nodeServerJoinGuard";
     private static final Logger LOG = LoggerFactory.getLogger(NodeServerJoinGuard.class);
     private final Duration timeout;
-    protected AtomicBoolean authenticated;
     private ScheduledFuture<?> timeoutFuture;
 
     public NodeServerJoinGuard(Duration timeout) {
-        this(new AtomicBoolean(false), timeout, null);
+        this(timeout, null);
     }
 
-    NodeServerJoinGuard(AtomicBoolean authenticated,
-                        Duration timeout,
+    NodeServerJoinGuard(Duration timeout,
                         ScheduledFuture<?> timeoutFuture) {
         this.timeoutFuture = timeoutFuture;
-        this.authenticated = authenticated;
         this.timeout = timeout;
     }
 
@@ -73,9 +69,9 @@ public class NodeServerJoinGuard extends SimpleChannelDuplexHandler<Message<?>, 
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
         super.channelActive(ctx);
 
-        // schedule connection close if join did not take place within timeout
+        // schedule connection close if handshake did not take place within timeout
         timeoutFuture = ctx.executor().schedule(() -> {
-            if (!timeoutFuture.isCancelled() && !authenticated.get()) {
+            if (!timeoutFuture.isCancelled()) {
                 ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE)).addListener(ChannelFutureListener.CLOSE);
                 LOG.debug("[{}]: Handshake did not take place successfully in {}ms. "
                         + "Connection is closed.", ctx.channel().id().asShortText(), timeout.toMillis());
@@ -87,62 +83,42 @@ public class NodeServerJoinGuard extends SimpleChannelDuplexHandler<Message<?>, 
     protected void channelWrite0(ChannelHandlerContext ctx,
                                  Message<?> msg,
                                  ChannelPromise promise) {
-        if (authenticated.get()) {
-            // passthrough all outgoing messages if client is authenticated
+        if (msg instanceof UnrestrictedPassableMessage) {
             ctx.write(msg, promise);
         }
         else {
-            if (msg instanceof UnrestrictedPassableMessage) {
-                ctx.write(msg, promise);
-            }
-            else {
-                ReferenceCountUtil.release(msg);
-                // is visible to the listening futures
-                throw new IllegalStateException("Client is not authenticated. Outbound message was dropped: '" + msg + "'");
-            }
+            // reject all non-welcome messages if handshake is not done
+            ctx.writeAndFlush(new StatusMessage(STATUS_FORBIDDEN, msg.getId()));
+            ReferenceCountUtil.release(msg);
+            LOG.debug("[{}] Client is not authenticated. Outbound message was dropped: '{}'", ctx, msg);
         }
     }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Message<?> request) {
-        if (authenticated.get()) {
-            if (request instanceof JoinMessage) {
-                // reject duplicate join requests
-                ctx.writeAndFlush(new StatusMessage(STATUS_FORBIDDEN, request.getId()));
-                ReferenceCountUtil.release(request);
-            }
-            else {
-                // passthrough all ingoing messages if client is authenticated
-                ctx.fireChannelRead(request);
-            }
-        }
-        else if (request instanceof JoinMessage && authenticated.compareAndSet(false, true)) {
-            // do join
+        if (request instanceof JoinMessage) {
+            // do handshake
             timeoutFuture.cancel(true);
             ctx.fireChannelRead(request);
+            ctx.pipeline().remove(JOIN_GUARD);
         }
         else {
-            // reject all non-join messages if client is not authenticated
+            // reject all non-join messages if handshake is not done
             ctx.writeAndFlush(new StatusMessage(STATUS_FORBIDDEN, request.getId()));
             ReferenceCountUtil.release(request);
-            LOG.debug("[{}] Client is not authenticated. Inbound message was dropped: '{}'",
-                    ctx, request);
+            LOG.debug("[{}] Client is not authenticated. Inbound message was dropped: '{}'", ctx, request);
         }
     }
 
     @Override
-    public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+    public void close(ChannelHandlerContext ctx, ChannelPromise promise) {
         timeoutFuture.cancel(true);
         ctx.close(promise);
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) throws Exception {
-        if (!authenticated.get()) {
-            // close connection if an error occurred before authentication
-            ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_INITIALIZATION)).addListener(ChannelFutureListener.CLOSE);
-        } else {
-            super.exceptionCaught(ctx, cause);
-        }
+    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+        // close connection if an error occurred before handshake
+        ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_INITIALIZATION)).addListener(ChannelFutureListener.CLOSE);
     }
 }

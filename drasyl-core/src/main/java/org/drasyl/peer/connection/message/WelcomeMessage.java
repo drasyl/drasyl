@@ -20,8 +20,6 @@ package org.drasyl.peer.connection.message;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.peer.connection.message.action.MessageAction;
-import org.drasyl.peer.connection.message.action.WelcomeMessageAction;
 
 import java.net.URI;
 import java.util.Objects;
@@ -66,11 +64,6 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent<WelcomeMessage>
 
     public Set<URI> getEndpoints() {
         return this.endpoints;
-    }
-
-    @Override
-    public MessageAction<WelcomeMessage> getAction() {
-        return new WelcomeMessageAction(this);
     }
 
     @Override

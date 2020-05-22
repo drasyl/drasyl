@@ -18,11 +18,9 @@
  */
 package org.drasyl.peer.connection.message;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
 import org.drasyl.crypto.Signable;
-import org.drasyl.peer.connection.message.action.MessageAction;
 import org.drasyl.peer.connection.server.NodeServer;
 
 /**
@@ -33,14 +31,12 @@ import org.drasyl.peer.connection.server.NodeServer;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
 @JsonSubTypes({
         @JsonSubTypes.Type(value = ApplicationMessage.class),
-        @JsonSubTypes.Type(value = ClientsStocktakingMessage.class),
         @JsonSubTypes.Type(value = ConnectionExceptionMessage.class),
         @JsonSubTypes.Type(value = ExceptionMessage.class),
         @JsonSubTypes.Type(value = JoinMessage.class),
         @JsonSubTypes.Type(value = QuitMessage.class),
         @JsonSubTypes.Type(value = PingMessage.class),
         @JsonSubTypes.Type(value = PongMessage.class),
-        @JsonSubTypes.Type(value = RequestClientsStocktakingMessage.class),
         @JsonSubTypes.Type(value = StatusMessage.class),
         @JsonSubTypes.Type(value = WelcomeMessage.class),
 })
@@ -52,13 +48,4 @@ public interface Message<T extends Message<?>> extends Signable {
      * @return
      */
     String getId();
-
-    /**
-     * Returns a {@link MessageAction} object that describes how a server or client should process
-     * received messages. Returns <code>null</code> if no processing is necessary.
-     *
-     * @return
-     */
-    @JsonIgnore
-    MessageAction<T> getAction();
 }

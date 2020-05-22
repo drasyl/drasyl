@@ -22,6 +22,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.identity.CompressedPublicKey;
@@ -30,18 +31,15 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import java.time.Duration;
-import java.util.Set;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.time.Duration.ofMillis;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class NodeServerJoinGuardTest {
+    private EmbeddedChannel channel;
     private ChannelHandlerContext ctx;
     private ScheduledFuture<?> timeoutFuture;
     private ChannelPromise promise;
@@ -50,6 +48,8 @@ class NodeServerJoinGuardTest {
     private EventExecutor eventExecutor;
     private ChannelFuture channelFuture;
     private Throwable cause;
+    private ApplicationMessage applicationMessage;
+    private JoinMessage joinMessage;
 
     @BeforeEach
     void setUp() {
@@ -63,6 +63,8 @@ class NodeServerJoinGuardTest {
         cause = mock(Throwable.class);
 
         when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
+        applicationMessage = mock(ApplicationMessage.class);
+        joinMessage = mock(JoinMessage.class);
     }
 
     // FIXME: fix test
@@ -76,7 +78,7 @@ class NodeServerJoinGuardTest {
             return mock(ScheduledFuture.class);
         });
 
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(false), ofMillis(1), timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1), timeoutFuture);
 
         handler.channelActive(ctx);
 
@@ -87,7 +89,7 @@ class NodeServerJoinGuardTest {
 
     @Test
     void closeShouldCloseChannelAndCancelTimeoutTask() throws Exception {
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(false), ofMillis(1), timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1), timeoutFuture);
 
         handler.close(ctx, promise);
 
@@ -96,16 +98,7 @@ class NodeServerJoinGuardTest {
     }
 
     @Test
-    void channelWrite0ShouldPassThroughMessageIfAuthenticated() throws Exception {
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(true), ofMillis(1), timeoutFuture);
-
-        handler.channelWrite0(ctx, msg, promise);
-
-        verify(ctx).write(any(QuitMessage.class), eq(promise));
-    }
-
-    @Test
-    void channelWrite0ShouldPassThroughUnrestrictedMessageIfNotAuthenticated() throws Exception {
+    void channelWrite0ShouldPassThroughUnrestrictedMessage() {
         NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1));
 
         handler.channelWrite0(ctx, msg, promise);
@@ -114,18 +107,21 @@ class NodeServerJoinGuardTest {
     }
 
     @Test
-    void channelWrite0ShouldBlockNonUnrestrictedMessageIfNotAuthenticated() {
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(false), ofMillis(1), timeoutFuture);
-        msg = new RequestClientsStocktakingMessage();
+    void shouldDenyNonUnrestrictedMessages() {
+        when(applicationMessage.getId()).thenReturn("123");
 
-        assertThrows(IllegalStateException.class, () -> handler.channelWrite0(ctx, msg, promise));
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1), timeoutFuture);
+        channel = new EmbeddedChannel(handler);
 
-        verify(ctx, never()).write(any(Message.class), eq(promise));
+        channel.writeInbound(applicationMessage);
+
+        assertEquals(new StatusMessage(STATUS_FORBIDDEN, "123"), channel.readOutbound());
+        assertNull(channel.readInbound());
     }
 
     @Test
-    void channelRead0ShouldReplyWithStatusForbiddenForNonJoinMessageIfNotAuthenticated() throws Exception {
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(false), ofMillis(1), timeoutFuture);
+    void channelRead0ShouldReplyWithStatusForbiddenForNonJoinMessage() {
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1), timeoutFuture);
 
         handler.channelRead0(ctx, msg);
 
@@ -134,58 +130,21 @@ class NodeServerJoinGuardTest {
     }
 
     @Test
-    void channelRead0ShouldAuthenticateIfNotAuthenticatedAndJoinMessageReceived() throws Exception {
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(false), ofMillis(1), timeoutFuture);
-        msg = mock(JoinMessage.class);
+    void shouldPassJoinMessage() {
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1), timeoutFuture);
+        channel = new EmbeddedChannel(handler);
 
-        handler.channelRead0(ctx, msg);
+        channel.writeInbound(joinMessage);
 
-        verify(ctx, never()).writeAndFlush(any(Message.class));
-        verify(timeoutFuture).cancel(true);
-        verify(ctx).fireChannelRead(any(JoinMessage.class));
-        assertTrue(handler.authenticated.get());
+        assertEquals(joinMessage, channel.readInbound());
     }
 
     @Test
-    void channelRead0ShouldReplyWithExceptionIfAuthenticatedAndJoinMessageReceived() throws Exception {
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(true), ofMillis(1), timeoutFuture);
-        msg = new JoinMessage(publicKey, Set.of());
-
-        handler.channelRead0(ctx, msg);
-
-        verify(ctx).writeAndFlush(new StatusMessage(STATUS_FORBIDDEN, msg.getId()));
-        verify(timeoutFuture, never()).cancel(true);
-        verify(ctx, never()).fireChannelRead(any(JoinMessage.class));
-        assertTrue(handler.authenticated.get());
-    }
-
-    @Test
-    void channelRead0ShouldPassThroughNonJoinMessageIfAuthenticated() throws Exception {
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(true), ofMillis(1), timeoutFuture);
-
-        handler.channelRead0(ctx, msg);
-
-        verify(ctx, never()).writeAndFlush(any(Message.class));
-        verify(timeoutFuture, never()).cancel(true);
-        verify(ctx, never()).fireChannelRead(any(JoinMessage.class));
-        assertTrue(handler.authenticated.get());
-    }
-
-    @Test
-    void exceptionCaughtShouldWriteExceptionToChannelAndThenCloseItIfNotAuthenticated() throws Exception {
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(false), ofMillis(1), timeoutFuture);
+    void exceptionCaughtShouldWriteExceptionToChannelAndThenCloseIt() {
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1), timeoutFuture);
         handler.exceptionCaught(ctx, cause);
 
         verify(ctx).writeAndFlush(any(ConnectionExceptionMessage.class));
         verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
-    }
-
-    @Test
-    void exceptionCaughtShouldNotWriteExceptionToChannelAndNotCloseItIfAuthenticated() throws Exception {
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(new AtomicBoolean(true), ofMillis(1), timeoutFuture);
-        handler.exceptionCaught(ctx, cause);
-
-        verify(ctx, never()).writeAndFlush(any(ConnectionExceptionMessage.class));
-        verify(channelFuture, never()).addListener(ChannelFutureListener.CLOSE);
     }
 }

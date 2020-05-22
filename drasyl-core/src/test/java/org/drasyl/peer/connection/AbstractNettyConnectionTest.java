@@ -224,7 +224,7 @@ class AbstractNettyConnectionTest {
         AbstractNettyConnection peerConnection = constructor
                 .newInstance(channel, endpoint, myid, connectionsManager);
 
-        peerConnection.channelCloseFutureListener.operationComplete(channelFuture);
+        peerConnection.onChannelClose(channelFuture);
 
         verify(channelFuture).addListener(any(ChannelFutureListener.class));
         assertEquals(peerConnection.getCloseFuture(), channelFuture);
@@ -245,7 +245,7 @@ class AbstractNettyConnectionTest {
         AbstractNettyConnection peerConnection = constructor
                 .newInstance(channel, endpoint, myid, connectionsManager);
 
-        peerConnection.channelCloseFutureListener.operationComplete(channelFuture);
+        peerConnection.onChannelClose(channelFuture);
 
         verify(channelFuture).addListener(any(ChannelFutureListener.class));
         assertEquals(peerConnection.getCloseFuture(), channelFuture);
