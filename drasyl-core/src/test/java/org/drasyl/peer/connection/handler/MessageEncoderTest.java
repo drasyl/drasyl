@@ -40,7 +40,7 @@ class MessageEncoderTest {
     }
 
     @Test
-    void writeOutboundShouldSerializeMessageObjectToJsonString() {
+    void shouldSerializeOutboundMessageToJsonString() {
         channel.writeOutbound(message);
         channel.flush();
 

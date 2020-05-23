@@ -40,7 +40,7 @@ class MessageDecoderTest {
     }
 
     @Test
-    void writeInboundShouldDeserializeJsonStringToMessageObject() {
+    void shouldDeserializeInboundJsonStringToMessage() {
         String json = "{\"@type\":\"" + QuitMessage.class.getSimpleName() + "\",\"id\":\"123\"}";
 
         channel.writeInbound(new TextWebSocketFrame(json));
@@ -50,7 +50,7 @@ class MessageDecoderTest {
     }
 
     @Test
-    void writeInboundShouldThrowExceptionIfDeserializationFail() {
+    void ShouldThrowExceptionIfInboundJsonStringDeserializationFail() {
         String json = "invalid";
 
         assertThrows(DecoderException.class, () -> {
