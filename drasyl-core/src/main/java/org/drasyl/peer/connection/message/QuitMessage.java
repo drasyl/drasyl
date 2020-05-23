@@ -26,7 +26,7 @@ import java.util.Objects;
 /**
  * A message representing a termination of a connection.
  */
-public class QuitMessage extends AbstractMessage<QuitMessage> implements RequestMessage<QuitMessage>, UnrestrictedPassableMessage {
+public class QuitMessage extends AbstractMessage<QuitMessage> implements RequestMessage<QuitMessage> {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final CloseReason reason;
 

@@ -98,12 +98,13 @@ class NodeServerJoinGuardTest {
     }
 
     @Test
-    void channelWrite0ShouldPassThroughUnrestrictedMessage() {
+    void shouldPassThroughOutgoingJoinMessage() {
         NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1));
+        EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        handler.channelWrite0(ctx, msg, promise);
+        channel.writeOutbound(joinMessage);
 
-        verify(ctx).write(any(QuitMessage.class), eq(promise));
+        assertEquals(joinMessage, channel.readOutbound());
     }
 
     @Test

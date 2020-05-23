@@ -21,7 +21,7 @@ package org.drasyl.peer.connection.message;
 /**
  * A message representing a PONG response.
  */
-public class PongMessage extends AbstractResponseMessage<PingMessage, PongMessage> implements UnrestrictedPassableMessage {
+public class PongMessage extends AbstractResponseMessage<PingMessage, PongMessage> {
     public PongMessage(String correspondingId) {
         super(correspondingId);
     }

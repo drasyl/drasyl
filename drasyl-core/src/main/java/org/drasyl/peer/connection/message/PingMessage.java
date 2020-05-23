@@ -21,7 +21,7 @@ package org.drasyl.peer.connection.message;
 /**
  * A message representing a PING request.
  */
-public class PingMessage extends AbstractMessage<PingMessage> implements RequestMessage<PingMessage>, UnrestrictedPassableMessage {
+public class PingMessage extends AbstractMessage<PingMessage> implements RequestMessage<PingMessage> {
     @Override
     public String toString() {
         return "PingMessage{" +
