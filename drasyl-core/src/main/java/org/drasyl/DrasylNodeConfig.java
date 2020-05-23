@@ -58,13 +58,13 @@ public class DrasylNodeConfig {
     static final String SERVER_IDLE_TIMEOUT = "drasyl.server.idle.timeout";
     static final String SERVER_SSL_ENABLED = "drasyl.server.ssl.enabled";
     static final String SERVER_SSL_PROTOCOLS = "drasyl.server.ssl.protocols";
-    static final String SERVER_MAX_HANDSHAKE_TIMEOUT = "drasyl.server.max-handshake-timeout";
+    static final String SERVER_HANDSHAKE_TIMEOUT = "drasyl.server.handshake-timeout";
     static final String SERVER_CHANNEL_INITIALIZER = "drasyl.server.channel-initializer";
     static final String SUPER_PEER_ENABLED = "drasyl.super-peer.enabled";
     static final String SUPER_PEER_ENDPOINTS = "drasyl.super-peer.endpoints";
     static final String SUPER_PEER_PUBLIC_KEY = "drasyl.super-peer.public-key";
     static final String SUPER_PEER_RETRY_DELAYS = "drasyl.super-peer.retry-delays";
-    static final String SUPER_PEER_MAX_HANDSHAKE_TIMEOUT = "drasyl.super-peer.max-handshake-timeout";
+    static final String SUPER_PEER_HANDSHAKE_TIMEOUT = "drasyl.super-peer.handshake-timeout";
     static final String SUPER_PEER_CHANNEL_INITIALIZER = "drasyl.super-peer.channel-initializer";
     static final String SUPER_PEER_IDLE_RETRIES = "drasyl.super-peer.idle.retries";
     static final String SUPER_PEER_IDLE_TIMEOUT = "drasyl.super-peer.idle.timeout";
@@ -124,7 +124,7 @@ public class DrasylNodeConfig {
         this.serverIdleRetries = getShort(config, SERVER_IDLE_RETRIES);
         this.serverIdleTimeout = config.getDuration(SERVER_IDLE_TIMEOUT);
         this.flushBufferSize = config.getInt(FLUSH_BUFFER_SIZE);
-        this.serverHandshakeTimeout = config.getDuration(SERVER_MAX_HANDSHAKE_TIMEOUT);
+        this.serverHandshakeTimeout = config.getDuration(SERVER_HANDSHAKE_TIMEOUT);
         this.serverChannelInitializer = config.getString(SERVER_CHANNEL_INITIALIZER);
         this.maxContentLength = (int) Math.min(config.getMemorySize(MAX_CONTENT_LENGTH).toBytes(), Integer.MAX_VALUE);
 
@@ -144,7 +144,7 @@ public class DrasylNodeConfig {
         this.superPeerEndpoints = new HashSet<>(config.getStringList(SUPER_PEER_ENDPOINTS));
         this.superPeerPublicKey = config.getString(SUPER_PEER_PUBLIC_KEY);
         this.superPeerRetryDelays = config.getDurationList(SUPER_PEER_RETRY_DELAYS);
-        this.superPeerHandshakeTimeout = config.getDuration(SUPER_PEER_MAX_HANDSHAKE_TIMEOUT);
+        this.superPeerHandshakeTimeout = config.getDuration(SUPER_PEER_HANDSHAKE_TIMEOUT);
         this.superPeerChannelInitializer = config.getString(SUPER_PEER_CHANNEL_INITIALIZER);
         this.superPeerIdleRetries = getShort(config, SUPER_PEER_IDLE_RETRIES);
         this.superPeerIdleTimeout = config.getDuration(SUPER_PEER_IDLE_TIMEOUT);
