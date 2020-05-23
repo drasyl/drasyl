@@ -121,7 +121,7 @@ class DrasylNodeConfigTest {
         when(typesafeConfig.getInt(SERVER_IDLE_RETRIES)).thenReturn(Short.valueOf(serverIdleRetries).intValue());
         when(typesafeConfig.getDuration(SERVER_IDLE_TIMEOUT)).thenReturn(serverIdleTimeout);
         when(typesafeConfig.getInt(FLUSH_BUFFER_SIZE)).thenReturn(flushBufferSize);
-        when(typesafeConfig.getDuration(SERVER_MAX_HANDSHAKE_TIMEOUT)).thenReturn(serverHandshakeTimeout);
+        when(typesafeConfig.getDuration(SERVER_HANDSHAKE_TIMEOUT)).thenReturn(serverHandshakeTimeout);
         when(typesafeConfig.getString(SERVER_CHANNEL_INITIALIZER)).thenReturn(serverChannelInitializer);
         when(typesafeConfig.getMemorySize(MAX_CONTENT_LENGTH)).thenReturn(ConfigMemorySize.ofBytes(maxContentLength));
         when(typesafeConfig.getBoolean(SERVER_SSL_ENABLED)).thenReturn(serverSSLEnabled);
@@ -131,7 +131,7 @@ class DrasylNodeConfigTest {
         when(typesafeConfig.getStringList(SUPER_PEER_ENDPOINTS)).thenReturn(new ArrayList<>(superPeerEndpoints));
         when(typesafeConfig.getString(SUPER_PEER_PUBLIC_KEY)).thenReturn(superPeerPublicKey);
         when(typesafeConfig.getDurationList(SUPER_PEER_RETRY_DELAYS)).thenReturn(superPeerRetryDelays);
-        when(typesafeConfig.getDuration(SUPER_PEER_MAX_HANDSHAKE_TIMEOUT)).thenReturn(superPeerHandshakeTimeout);
+        when(typesafeConfig.getDuration(SUPER_PEER_HANDSHAKE_TIMEOUT)).thenReturn(superPeerHandshakeTimeout);
         when(typesafeConfig.getString(SUPER_PEER_CHANNEL_INITIALIZER)).thenReturn(superPeerChannelInitializer);
         when(typesafeConfig.getString(USER_AGENT)).thenReturn(userAgent);
         when(networkAddressesProvider.get()).thenReturn(Set.of("192.168.188.112"));
