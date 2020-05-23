@@ -18,41 +18,33 @@
  */
 package org.drasyl.peer.connection.handler;
 
-import io.netty.channel.*;
+import io.netty.channel.embedded.EmbeddedChannel;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 
 class QuitMessageHandlerTest {
-    private ChannelHandlerContext ctx;
-    private ChannelFuture channelFuture;
     private QuitMessageHandler handler;
-    private QuitMessage msg;
+    private EmbeddedChannel channel;
 
     @BeforeEach
     void setUp() {
-        ctx = mock(ChannelHandlerContext.class);
         handler = QuitMessageHandler.INSTANCE;
-        Channel channel = mock(Channel.class);
-        ChannelId channelId = mock(ChannelId.class);
-        channelFuture = mock(ChannelFuture.class);
-        msg = new QuitMessage();
-
-        when(ctx.channel()).thenReturn(channel);
-        when(channel.id()).thenReturn(channelId);
-        when(channelId.asShortText()).thenReturn("123123");
-        when(ctx.writeAndFlush(any())).thenReturn(channelFuture);
+        channel = new EmbeddedChannel(handler);
     }
 
     @Test
-    void channelRead0ShouldSendStatusOkAndThenCloseChannel() throws Exception {
-        handler.channelRead0(ctx, msg);
+    void shouldReplyWithStatusOkAndThenCloseChannel() {
+        QuitMessage quitMessage = new QuitMessage();
+        channel.writeInbound(quitMessage);
+        channel.flush();
 
-        verify(ctx).writeAndFlush(new StatusMessage(STATUS_OK, msg.getId()));
-        verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
+        assertEquals(new StatusMessage(STATUS_OK, quitMessage.getId()), channel.readOutbound());
+        assertFalse(channel.isOpen());
     }
 }

@@ -21,6 +21,7 @@ package org.drasyl.peer.connection.handler;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import org.drasyl.peer.connection.message.*;
@@ -88,27 +89,38 @@ class PingPongHandlerTest {
     }
 
     @Test
-    void channelRead0ShouldReplyWithPongMessageToPingMessage() throws Exception {
+    void shouldReplyWithPongMessageToPingMessage() {
         PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
-        handler.channelRead0(ctx, new PingMessage());
+        EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        verify(ctx).writeAndFlush(any(PongMessage.class));
+        PingMessage pingMessage = new PingMessage();
+        channel.writeInbound(pingMessage);
+        channel.flush();
+
+        assertEquals(new PongMessage(pingMessage.getId()), channel.readOutbound());
     }
 
     @Test
-    void channelRead0ShouldResetCounterIfPingMessageReceived() throws Exception {
+    void shouldResetCounterIfPingMessageReceived() {
         PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
-        handler.channelRead0(ctx, new PongMessage(correspondingId));
+        EmbeddedChannel channel = new EmbeddedChannel(handler);
+
+        channel.writeInbound(new PongMessage(correspondingId));
+        channel.flush();
 
         assertEquals(0, handler.retries.get());
     }
 
     @Test
-    void channelRead0ShouldPassThroughAllUnrelatedMessages() throws Exception {
+    void shouldPassThroughAllUnrelatedMessages() {
         PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
-        handler.channelRead0(ctx, new QuitMessage());
+        EmbeddedChannel channel = new EmbeddedChannel(handler);
+
+        QuitMessage quitMessage = new QuitMessage();
+        channel.writeInbound(quitMessage);
+        channel.flush();
 
         assertEquals(0, handler.retries.get());
-        verify(ctx).fireChannelRead(any(QuitMessage.class));
+        assertEquals(quitMessage, channel.readInbound());
     }
 }
