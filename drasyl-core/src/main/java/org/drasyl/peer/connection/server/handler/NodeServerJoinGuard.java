@@ -83,7 +83,7 @@ public class NodeServerJoinGuard extends SimpleChannelDuplexHandler<Message<?>, 
     protected void channelWrite0(ChannelHandlerContext ctx,
                                  Message<?> msg,
                                  ChannelPromise promise) {
-        if (msg instanceof UnrestrictedPassableMessage) {
+        if (msg instanceof JoinMessage) {
             ctx.write(msg, promise);
         }
         else {

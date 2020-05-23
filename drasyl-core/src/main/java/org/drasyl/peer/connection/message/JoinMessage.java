@@ -29,7 +29,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * A message representing a join to the node server.
  */
-public class JoinMessage extends AbstractMessageWithUserAgent<JoinMessage> implements RequestMessage<JoinMessage>, UnrestrictedPassableMessage {
+public class JoinMessage extends AbstractMessageWithUserAgent<JoinMessage> implements RequestMessage<JoinMessage> {
     private final CompressedPublicKey publicKey;
     private final Set<URI> endpoints;
 

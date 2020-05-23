@@ -127,20 +127,22 @@ public class SuperPeerClientWelcomeGuard extends SimpleChannelDuplexHandler<Mess
 
     @Override
     protected void channelWrite0(ChannelHandlerContext ctx,
-                                 Message<?> msg, ChannelPromise promise) throws Exception {
-        if (msg instanceof UnrestrictedPassableMessage) {
+                                 Message<?> msg, ChannelPromise promise) {
+        if (msg instanceof JoinMessage) {
             ctx.write(msg, promise);
         }
         else {
             ReferenceCountUtil.release(msg);
             // is visible to the listening futures
-            throw new IllegalStateException("Server has not yet responded with a welcome message. Outbound message was dropped: '" + msg + "'");
+            throw new IllegalStateException("Server has not yet responded with a " + WelcomeMessage.class.getSimpleName() + ". Outbound message was dropped: '" + msg + "'");
         }
     }
 
     @Override
     public void close(ChannelHandlerContext ctx, ChannelPromise promise) {
-        timeoutFuture.cancel(true);
+        if (timeoutFuture != null) {
+            timeoutFuture.cancel(true);
+        }
         ctx.close(promise);
     }
 
