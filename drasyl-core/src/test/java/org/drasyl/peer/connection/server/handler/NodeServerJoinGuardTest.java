@@ -103,6 +103,7 @@ class NodeServerJoinGuardTest {
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeOutbound(joinMessage);
+        channel.flush();
 
         assertEquals(joinMessage, channel.readOutbound());
     }
