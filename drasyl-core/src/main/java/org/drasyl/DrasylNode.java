@@ -93,7 +93,7 @@ public abstract class DrasylNode {
         Sentry.getStoredClient().setRelease(DrasylNode.getVersion());
         INSTANCES = Collections.synchronizedList(new ArrayList<>());
         // https://github.com/netty/netty/issues/639#issuecomment-9263566
-        WORKER_GROUP = new NioEventLoopGroup(Math.min(2, ForkJoinPool.commonPool().getParallelism() * 2 / 3 - 2));
+        WORKER_GROUP = new NioEventLoopGroup(Math.min(2, Math.max(2, Runtime.getRuntime().availableProcessors() * 2 / 3 - 2)));
         BOSS_GROUP = new NioEventLoopGroup(2);
     }
 
