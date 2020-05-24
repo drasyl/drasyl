@@ -150,7 +150,7 @@ class SuperPeerClientIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldRespondToPingMessageWithPongMessage() throws SuperPeerClientException {
         TestObserver<Message<?>> sentMessages = IntegrationTestHandler.sentMessages().test();
-        TestObserver<Message<?>> receivedMessages = IntegrationTestHandler.receivedMessages().test();
+        TestObserver<Message<?>> receivedMessages = IntegrationTestHandler.receivedMessages().filter(m -> m instanceof PongMessage).test();
 
         // start client
         SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, event -> {
@@ -163,8 +163,8 @@ class SuperPeerClientIT {
         IntegrationTestHandler.injectMessage(request);
 
         // verify received message
-        receivedMessages.awaitCount(3);
-        receivedMessages.assertValueAt(2, new PongMessage(request.getId()));
+        receivedMessages.awaitCount(1);
+        receivedMessages.assertValueAt(0, new PongMessage(request.getId()));
     }
 
     @Test
