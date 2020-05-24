@@ -135,7 +135,7 @@ class AbstractNettyConnectionTest {
 
         when(responseMessage.getCorrespondingId()).thenReturn(msgID);
 
-        peerConnection.sendRequest(message).subscribe();
+        peerConnection.sendRequest(message).subscribe(r -> {}, e -> {});
         peerConnection.send(message);
         peerConnection.send(connectionExceptionMessage);
         peerConnection.send(responseMessage);
