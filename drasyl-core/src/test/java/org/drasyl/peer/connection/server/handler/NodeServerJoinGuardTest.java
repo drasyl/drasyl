@@ -78,7 +78,7 @@ class NodeServerJoinGuardTest {
             return mock(ScheduledFuture.class);
         });
 
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1), timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1000), timeoutFuture);
 
         handler.channelActive(ctx);
 
@@ -89,7 +89,7 @@ class NodeServerJoinGuardTest {
 
     @Test
     void closeShouldCloseChannelAndCancelTimeoutTask() throws Exception {
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1), timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1000), timeoutFuture);
 
         handler.close(ctx, promise);
 
@@ -99,7 +99,7 @@ class NodeServerJoinGuardTest {
 
     @Test
     void shouldPassThroughOutgoingJoinMessage() {
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1));
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1000));
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeOutbound(joinMessage);
@@ -112,7 +112,7 @@ class NodeServerJoinGuardTest {
     void shouldDenyNonUnrestrictedMessages() {
         when(applicationMessage.getId()).thenReturn("123");
 
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1), timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1000), timeoutFuture);
         channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(applicationMessage);
@@ -123,7 +123,7 @@ class NodeServerJoinGuardTest {
 
     @Test
     void channelRead0ShouldReplyWithStatusForbiddenForNonJoinMessage() {
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1), timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1000), timeoutFuture);
 
         handler.channelRead0(ctx, msg);
 
@@ -133,7 +133,7 @@ class NodeServerJoinGuardTest {
 
     @Test
     void shouldPassJoinMessage() {
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1), timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1000), timeoutFuture);
         channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(joinMessage);
@@ -143,7 +143,7 @@ class NodeServerJoinGuardTest {
 
     @Test
     void exceptionCaughtShouldWriteExceptionToChannelAndThenCloseIt() {
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1), timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1000), timeoutFuture);
         handler.exceptionCaught(ctx, cause);
 
         verify(ctx).writeAndFlush(any(ConnectionExceptionMessage.class));
