@@ -2,7 +2,6 @@ variables:
   APP_HOST: env.drasyl.org
 
 .deploy-base: &deploy-base
-  stage: review
   image: git.informatik.uni-hamburg.de:4567/sane/sane-build-images:docker-18.02-docker-compose-1.19-git-2.15.4
   script:
     - sh ./prepare-environment-docker-compose.sh > docker-compose.yml
@@ -13,7 +12,6 @@ variables:
   cache: {}
 
 .stop-base: &stop-base
-  stage: review
   image: git.informatik.uni-hamburg.de:4567/sane/sane-build-images:docker-18.02-docker-compose-1.19-git-2.15.4
   before_script:
     - git clone -n $CI_REPOSITORY_URL $CI_PROJECT_NAME
@@ -25,8 +23,9 @@ variables:
   # We don't need cache for stop a environment
   cache: {}
 
-deploy_review:
+review:
   <<: *deploy-base
+  stage: review
   variables:
     APP_IMAGE: "${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_SLUG}"
     APP_DEPLOY_HOST: "${CI_ENVIRONMENT_SLUG}.${APP_HOST}"
@@ -44,6 +43,7 @@ deploy_review:
 
 stop_review:
   <<: *stop-base
+  stage: review
   variables:
     GIT_STRATEGY: none
     APP_IMAGE: "${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_SLUG}"
@@ -60,8 +60,9 @@ stop_review:
   # We don't need cache for stop a review
   cache: {}
 
-deploy_staging:
+staging:
   <<: *deploy-base
+  stage: staging
   variables:
     APP_IMAGE: "${CI_REGISTRY_IMAGE}:latest"
     APP_DEPLOY_HOST: "staging.${APP_HOST}"
@@ -78,6 +79,7 @@ deploy_staging:
 
 stop_staging:
   <<: *stop-base
+  stage: staging
   variables:
     GIT_STRATEGY: none
     APP_IMAGE: "${CI_REGISTRY_IMAGE}:latest"
@@ -94,8 +96,9 @@ stop_staging:
   tags:
     - staging
 
-deploy_production:
+production:
   <<: *deploy-base
+  stage: production
   variables:
     APP_IMAGE: "${CI_REGISTRY_IMAGE}:latest"
     APP_DEPLOY_HOST: "production.${APP_HOST}"
@@ -114,6 +117,7 @@ deploy_production:
 
 stop_production:
   <<: *stop-base
+  stage: production
   variables:
     GIT_STRATEGY: none
     APP_IMAGE: "${CI_REGISTRY_IMAGE}:latest"

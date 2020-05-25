@@ -6,6 +6,8 @@ stages:
   - docker-test
   - review
   - dast
+  - staging
+  - production
 
 include:
   - local: /.gitlab-ci/Maven.gitlab-ci.yml # we have to use our own template, since GitLab's template uses JDK8, but we need JDK11
