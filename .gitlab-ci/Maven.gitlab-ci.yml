@@ -20,6 +20,7 @@ cache:
         - "*/target/failsafe-reports/TEST-*.xml"
     paths:
       - "drasyl-*.zip"
+  needs: []
 
 maven-verify:
   <<: *maven-base
