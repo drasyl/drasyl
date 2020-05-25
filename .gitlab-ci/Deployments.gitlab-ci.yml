@@ -43,7 +43,7 @@ review:
 
 stop_review:
   <<: *stop-base
-  stage: review
+  stage: cleanup
   variables:
     GIT_STRATEGY: none
     APP_IMAGE: "${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_SLUG}"
@@ -79,7 +79,7 @@ staging:
 
 stop_staging:
   <<: *stop-base
-  stage: staging
+  stage: cleanup
   variables:
     GIT_STRATEGY: none
     APP_IMAGE: "${CI_REGISTRY_IMAGE}:latest"
@@ -117,7 +117,7 @@ production:
 
 stop_production:
   <<: *stop-base
-  stage: production
+  stage: cleanup
   variables:
     GIT_STRATEGY: none
     APP_IMAGE: "${CI_REGISTRY_IMAGE}:latest"
