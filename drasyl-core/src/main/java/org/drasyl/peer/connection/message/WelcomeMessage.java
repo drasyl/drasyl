@@ -31,7 +31,7 @@ import static java.util.Objects.requireNonNull;
  * A message representing the welcome message of the node server, including fallback information and
  * the public key of the node server.
  */
-public class WelcomeMessage extends AbstractMessageWithUserAgent<WelcomeMessage> implements ResponseMessage<JoinMessage, WelcomeMessage> {
+public class WelcomeMessage extends AbstractMessageWithUserAgent implements ResponseMessage<JoinMessage> {
     private final CompressedPublicKey publicKey;
     private final Set<URI> endpoints;
     @JsonInclude(JsonInclude.Include.NON_NULL)

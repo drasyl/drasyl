@@ -43,7 +43,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @SuppressWarnings({ "squid:S00107", "java:S2160" })
 public abstract class AbstractNettyConnection extends PeerConnection {
-    protected final ConcurrentHashMap<String, SingleEmitter<ResponseMessage<?, ?>>> emitters;
+    protected final ConcurrentHashMap<String, SingleEmitter<ResponseMessage<?>>> emitters;
     protected final Channel channel;
     protected final String userAgent;
     protected final URI endpoint;
@@ -90,7 +90,7 @@ public abstract class AbstractNettyConnection extends PeerConnection {
                                       Identity identity,
                                       URI endpoint,
                                       AtomicBoolean isClosed,
-                                      ConcurrentHashMap<String, SingleEmitter<ResponseMessage<?, ?>>> emitters,
+                                      ConcurrentHashMap<String, SingleEmitter<ResponseMessage<?>>> emitters,
                                       CompletableFuture<Boolean> closedCompletable,
                                       ConnectionsManager connectionsManager) {
         super(identity);
@@ -149,7 +149,7 @@ public abstract class AbstractNettyConnection extends PeerConnection {
 
     @Override
     @SuppressWarnings("unchecked")
-    public Single<ResponseMessage<?, ?>> sendRequest(RequestMessage<?> message) {
+    public Single<ResponseMessage<?>> sendRequest(RequestMessage message) {
         return Single.create(emitter -> {
             if (isClosed.get()) {
                 emitter.onError(new IllegalStateException("This connection is already prompt to close."));
@@ -161,8 +161,8 @@ public abstract class AbstractNettyConnection extends PeerConnection {
     }
 
     @Override
-    public void setResponse(ResponseMessage<? extends RequestMessage<?>, ? extends Message> response) {
-        SingleEmitter<ResponseMessage<?, ?>> emitter = emitters.remove(response.getCorrespondingId());
+    public void setResponse(ResponseMessage<? extends RequestMessage> response) {
+        SingleEmitter<ResponseMessage<?>> emitter = emitters.remove(response.getCorrespondingId());
         if (emitter != null) {
             emitter.onSuccess(response);
         }

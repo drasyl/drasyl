@@ -83,14 +83,14 @@ public abstract class PeerConnection {
      * @return a {@link Single} object that can be fulfilled with a {@link Message response} to the
      * * message
      */
-    public abstract Single<ResponseMessage<?, ?>> sendRequest(RequestMessage<?> message);
+    public abstract Single<ResponseMessage<?>> sendRequest(RequestMessage message);
 
     /**
      * Sets the result of a {@link Single} object from a {@link #sendRequest(RequestMessage)} call.
      *
      * @param response the response
      */
-    public abstract void setResponse(ResponseMessage<? extends RequestMessage<?>, ? extends Message> response);
+    public abstract void setResponse(ResponseMessage<? extends RequestMessage> response);
 
     /**
      * Returns the User-Agent string.

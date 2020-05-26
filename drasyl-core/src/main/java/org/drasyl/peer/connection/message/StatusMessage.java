@@ -74,7 +74,7 @@ import static java.util.Objects.requireNonNull;
  * </ul>
  * </p>
  */
-public class StatusMessage extends AbstractResponseMessage<RequestMessage<?>, StatusMessage> {
+public class StatusMessage extends AbstractResponseMessage<RequestMessage> {
     private final Code code;
 
     protected StatusMessage() {

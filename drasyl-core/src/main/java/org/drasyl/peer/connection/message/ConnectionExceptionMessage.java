@@ -34,7 +34,7 @@ import static java.util.Objects.requireNonNull;
  * terminated after such a message. Such an exception should always be handled.
  */
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class ConnectionExceptionMessage extends AbstractMessage<ConnectionExceptionMessage> implements RequestMessage<ConnectionExceptionMessage> {
+public class ConnectionExceptionMessage extends AbstractMessage implements RequestMessage {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final Error error;
 

@@ -21,11 +21,9 @@ package org.drasyl.peer.connection.message;
 
 /**
  * Messages of this type represent a response to a previously received {@link RequestMessage}.
- *
- * @param <T>
  */
 @SuppressWarnings("java:S2326")
-public interface ResponseMessage<R extends RequestMessage<?>, T extends Message> extends Message {
+public interface ResponseMessage<R extends RequestMessage> extends Message {
     /**
      * Returns the id of the {@link RequestMessage} to which this response corresponds.
      *

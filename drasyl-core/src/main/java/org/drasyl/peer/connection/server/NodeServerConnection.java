@@ -76,7 +76,7 @@ public class NodeServerConnection extends AbstractNettyConnection {
                                    Identity identity,
                                    URI endpoint,
                                    AtomicBoolean isClosed,
-                                   ConcurrentHashMap<String, SingleEmitter<ResponseMessage<?, ?>>> emitters,
+                                   ConcurrentHashMap<String, SingleEmitter<ResponseMessage<?>>> emitters,
                                    CompletableFuture<Boolean> closedCompletable,
                                    ConnectionsManager connectionsManager) {
         super(myChannel, userAgent, identity, endpoint, isClosed, emitters, closedCompletable, connectionsManager);

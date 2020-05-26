@@ -52,12 +52,12 @@ class AbstractNettyConnectionTest {
     private Identity myid;
     private String userAgent;
     private ConnectionExceptionMessage connectionExceptionMessage;
-    private RequestMessage<?> message;
+    private RequestMessage message;
     private ChannelFuture channelFuture;
     private AtomicBoolean isClosed;
     private String msgID;
     private CompletableFuture<Boolean> closedCompletable;
-    private ResponseMessage<? extends RequestMessage<?>, ? extends Message> responseMessage;
+    private ResponseMessage<? extends RequestMessage> responseMessage;
     private ConnectionsManager connectionsManager;
     private PeerConnection.CloseReason reason;
 

@@ -53,7 +53,7 @@ class NodeServerConnectionHandlerTest {
     private CompletableFuture<NodeServerConnection> completableFuture;
     private EmbeddedChannel channel;
     private NodeServerConnection clientConnection;
-    private ResponseMessage<?, ?> responseMessage;
+    private ResponseMessage<?> responseMessage;
     private JoinMessage joinMessage;
     private CompressedPublicKey compressedPublicKey;
     private Messenger messenger;

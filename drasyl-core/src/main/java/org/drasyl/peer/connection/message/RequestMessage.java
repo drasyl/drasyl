@@ -16,14 +16,11 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.peer.connection.message;
 
 /**
  * Messages of this type represent a request. Responses to such a message are of type {@link
  * ResponseMessage}
- *
- * @param <T>
  */
-public interface RequestMessage<T extends Message> extends Message {
+public interface RequestMessage extends Message {
 }

@@ -23,7 +23,7 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
-public abstract class AbstractResponseMessage<R extends RequestMessage<?>, T extends Message> extends AbstractMessage<T> implements ResponseMessage<R, T> {
+public abstract class AbstractResponseMessage<R extends RequestMessage> extends AbstractMessage implements ResponseMessage<R> {
     protected final String correspondingId;
 
     protected AbstractResponseMessage() {
@@ -55,7 +55,7 @@ public abstract class AbstractResponseMessage<R extends RequestMessage<?>, T ext
         if (!super.equals(o)) {
             return false;
         }
-        AbstractResponseMessage<?, ?> that = (AbstractResponseMessage<?, ?>) o;
+        AbstractResponseMessage<?> that = (AbstractResponseMessage<?>) o;
         return Objects.equals(correspondingId, that.correspondingId);
     }
 }

@@ -27,7 +27,7 @@ import java.util.Objects;
 /**
  * Message that represents a message from one node to another one.
  */
-public abstract class AbstractMessage<T extends Message> implements Message {
+public abstract class AbstractMessage implements Message {
     protected final String id;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     protected Signature signature;
@@ -69,7 +69,7 @@ public abstract class AbstractMessage<T extends Message> implements Message {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        AbstractMessage<?> that = (AbstractMessage<?>) o;
+        AbstractMessage that = (AbstractMessage) o;
         return Objects.equals(signature, that.signature);
     }
 

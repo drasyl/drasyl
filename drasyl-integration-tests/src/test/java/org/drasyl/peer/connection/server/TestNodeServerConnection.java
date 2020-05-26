@@ -136,7 +136,7 @@ public class TestNodeServerConnection extends AbstractNettyConnection {
         receivedMessages.onNext(message);
 
         if (message instanceof ResponseMessage) {
-            ResponseMessage<RequestMessage<?>, Message> response = (ResponseMessage<RequestMessage<?>, Message>) message;
+            ResponseMessage<RequestMessage> response = (ResponseMessage<RequestMessage>) message;
             setResponse(response);
         }
     }

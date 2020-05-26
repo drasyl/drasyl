@@ -92,14 +92,14 @@ public class LoopbackPeerConnection extends PeerConnection {
 
     @Override
     @SuppressWarnings("unchecked")
-    public Single<ResponseMessage<?, ?>> sendRequest(RequestMessage<?> message) {
+    public Single<ResponseMessage<?>> sendRequest(RequestMessage message) {
         send(message);
 
         return Single.just(new StatusMessage(STATUS_OK, message.getId()));
     }
 
     @Override
-    public void setResponse(ResponseMessage<? extends RequestMessage<?>, ? extends Message> response) {
+    public void setResponse(ResponseMessage<? extends RequestMessage> response) {
         // Do nothing
     }
 
