@@ -55,7 +55,6 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_SERVI
 import static org.drasyl.peer.connection.server.TestNodeServerConnection.clientSession;
 import static org.drasyl.peer.connection.server.TestNodeServerConnection.clientSessionAfterJoin;
 import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.jupiter.api.Assertions.*;
 import static testutils.TestHelper.colorizedPrintln;

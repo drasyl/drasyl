@@ -43,7 +43,6 @@ import java.util.function.Consumer;
 import static java.time.Duration.ofSeconds;
 import static org.drasyl.peer.connection.PeerConnection.CloseReason.REASON_SHUTTING_DOWN;
 import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class SuperPeerClientTest {

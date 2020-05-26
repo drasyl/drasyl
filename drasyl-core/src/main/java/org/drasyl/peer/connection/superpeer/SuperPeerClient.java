@@ -19,7 +19,6 @@
 
 package org.drasyl.peer.connection.superpeer;
 
-import com.google.common.base.Function;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
 import org.drasyl.DrasylNodeConfig;
@@ -41,6 +40,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Function;
 
 import static java.lang.Thread.sleep;
 import static org.drasyl.event.EventCode.EVENT_NODE_OFFLINE;

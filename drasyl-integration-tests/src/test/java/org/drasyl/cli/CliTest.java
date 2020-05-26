@@ -28,7 +28,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.function.Supplier;
 
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 class CliTest {
