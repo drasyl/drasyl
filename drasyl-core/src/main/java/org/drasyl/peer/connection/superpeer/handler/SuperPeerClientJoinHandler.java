@@ -29,16 +29,16 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 import java.util.Set;
 
-public class SuperPeerClientJoinHandler extends SimpleChannelInboundHandler<Message<?>> {
+public class SuperPeerClientJoinHandler extends SimpleChannelInboundHandler<Message> {
     public static final String JOIN_HANDLER = "superPeerClientJoinHandler";
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClientJoinHandler.class);
-    private final Message<?> joinRequest;
+    private final Message joinRequest;
 
     public SuperPeerClientJoinHandler(CompressedPublicKey publicKey, Set<URI> endpoints) {
         this(new JoinMessage(publicKey, endpoints));
     }
 
-    SuperPeerClientJoinHandler(Message<?> joinRequest) {
+    SuperPeerClientJoinHandler(Message joinRequest) {
         this.joinRequest = joinRequest;
     }
 
@@ -49,7 +49,9 @@ public class SuperPeerClientJoinHandler extends SimpleChannelInboundHandler<Mess
     }
 
     private void initiateJoin(ChannelHandlerContext ctx) {
-        LOG.trace("[{}]: Send join request to server.", ctx.channel().id().asShortText());
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("[{}]: Send join request to server.", ctx.channel().id().asShortText());
+        }
         ctx.writeAndFlush(joinRequest).addListener(future -> {
             if (future.isSuccess()) {
                 confirmJoin(ctx);
@@ -61,12 +63,16 @@ public class SuperPeerClientJoinHandler extends SimpleChannelInboundHandler<Mess
     }
 
     private void confirmJoin(ChannelHandlerContext ctx) {
-        LOG.debug("[{}]: Join confirmation received from super peer. Remove this handler from pipeline.", ctx.channel().id().asShortText());
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("[{}]: Join confirmation received from super peer. Remove this handler from pipeline.", ctx.channel().id().asShortText());
+        }
         ctx.pipeline().remove(this);
     }
 
     private void failJoin(ChannelHandlerContext ctx, Throwable cause) {
-        LOG.trace("[{}]: Join failed: {}", ctx.channel().id().asShortText(), cause.getMessage());
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("[{}]: Join failed: {}", ctx.channel().id().asShortText(), cause.getMessage());
+        }
     }
 
     @Override

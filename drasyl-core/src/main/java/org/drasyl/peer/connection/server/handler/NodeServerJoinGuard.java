@@ -48,7 +48,7 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBI
  * This handler closes the channel if an exception occurs before a {@link JoinMessage} has been
  * received.
  */
-public class NodeServerJoinGuard extends SimpleChannelDuplexHandler<Message<?>, Message<?>> {
+public class NodeServerJoinGuard extends SimpleChannelDuplexHandler<Message, Message> {
     public static final String JOIN_GUARD = "nodeServerJoinGuard";
     private static final Logger LOG = LoggerFactory.getLogger(NodeServerJoinGuard.class);
     private final Duration timeout;
@@ -80,7 +80,7 @@ public class NodeServerJoinGuard extends SimpleChannelDuplexHandler<Message<?>, 
 
     @Override
     protected void channelWrite0(ChannelHandlerContext ctx,
-                                 Message<?> msg,
+                                 Message msg,
                                  ChannelPromise promise) {
         if (msg instanceof JoinMessage) {
             ctx.write(msg, promise);
@@ -94,7 +94,7 @@ public class NodeServerJoinGuard extends SimpleChannelDuplexHandler<Message<?>, 
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Message<?> request) {
+    protected void channelRead0(ChannelHandlerContext ctx, Message request) {
         if (request instanceof JoinMessage) {
             // do handshake
             timeoutFuture.cancel(true);

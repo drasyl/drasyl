@@ -45,7 +45,7 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
  * creates a new {@link NodeServerConnection} object if a {@link JoinMessage} has pass the
  * {@link NodeServerJoinGuard} guard.
  */
-public class NodeServerConnectionHandler extends SimpleChannelInboundHandler<Message<?>> {
+public class NodeServerConnectionHandler extends SimpleChannelInboundHandler<Message> {
     public static final String HANDLER = "nodeServerConnectionHandler";
     private static final Logger LOG = LoggerFactory.getLogger(NodeServerConnectionHandler.class);
     private final NodeServer server;
@@ -103,12 +103,12 @@ public class NodeServerConnectionHandler extends SimpleChannelInboundHandler<Mes
      * Reads an incoming message and pass it to the correct sub-function.
      */
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Message<?> msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
         ctx.executor().submit(() -> {
             createSession(ctx, msg);
             if (connection != null) {
                 if (msg instanceof ResponseMessage) {
-                    connection.setResponse((ResponseMessage<? extends RequestMessage<?>, ? extends Message<?>>) msg);
+                    connection.setResponse((ResponseMessage<? extends RequestMessage<?>, ? extends Message>) msg);
                 }
 
                 if (msg instanceof ApplicationMessage) {
@@ -139,7 +139,7 @@ public class NodeServerConnectionHandler extends SimpleChannelInboundHandler<Mes
      * @param ctx channel handler context
      * @param msg probably a {@link JoinMessage}
      */
-    private void createSession(final ChannelHandlerContext ctx, Message<?> msg) {
+    private void createSession(final ChannelHandlerContext ctx, Message msg) {
         if (msg instanceof JoinMessage && connection == null) {
             JoinMessage jm = (JoinMessage) msg;
             Identity identity = Identity.of(jm.getPublicKey());

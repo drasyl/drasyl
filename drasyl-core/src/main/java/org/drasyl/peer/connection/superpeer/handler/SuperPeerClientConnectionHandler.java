@@ -40,7 +40,7 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
  * creates a new {@link SuperPeerClientConnection} object if a {@link WelcomeMessage} has pass the
  * {@link SuperPeerClientWelcomeGuard} guard.
  */
-public class SuperPeerClientConnectionHandler extends SimpleChannelInboundHandler<Message<?>> {
+public class SuperPeerClientConnectionHandler extends SimpleChannelInboundHandler<Message> {
     public static final String SUPER_PEER_HANDLER = "superPeerClientConnectionHandler";
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClientConnectionHandler.class);
     private final SuperPeerClient superPeerClient;
@@ -63,12 +63,12 @@ public class SuperPeerClientConnectionHandler extends SimpleChannelInboundHandle
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx,
-                                Message<?> msg) throws Exception {
+                                Message msg) throws Exception {
         ctx.executor().submit(() -> {
             createConnection(ctx, msg);
             if (connection != null) {
                 if (msg instanceof ResponseMessage) {
-                    connection.setResponse((ResponseMessage<? extends RequestMessage<?>, ? extends Message<?>>) msg);
+                    connection.setResponse((ResponseMessage<? extends RequestMessage<?>, ? extends Message>) msg);
                 }
 
                 if (msg instanceof ApplicationMessage) {
@@ -97,7 +97,7 @@ public class SuperPeerClientConnectionHandler extends SimpleChannelInboundHandle
     /**
      * Creates a new {@link SuperPeerClientConnection}, if not already there.
      */
-    private void createConnection(final ChannelHandlerContext ctx, Message<?> msg) {
+    private void createConnection(final ChannelHandlerContext ctx, Message msg) {
         if (msg instanceof WelcomeMessage && connection == null) {
             WelcomeMessage welcomeMessage = (WelcomeMessage) msg;
             Identity identity = Identity.of(welcomeMessage.getPublicKey());

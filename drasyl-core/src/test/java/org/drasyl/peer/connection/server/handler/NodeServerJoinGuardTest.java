@@ -43,7 +43,7 @@ class NodeServerJoinGuardTest {
     private ChannelHandlerContext ctx;
     private ScheduledFuture<?> timeoutFuture;
     private ChannelPromise promise;
-    private Message<?> msg;
+    private Message msg;
     private CompressedPublicKey publicKey;
     private EventExecutor eventExecutor;
     private ChannelFuture channelFuture;

@@ -41,7 +41,7 @@ class WebSocketHandshakeClientHandlerTest {
     private WebSocketClientHandshaker handshaker;
     private CompletableFuture<Void> handshakeFuture;
     private ChannelHandlerContext ctx;
-    private Message<?> quitMessage;
+    private Message quitMessage;
     private Throwable cause;
     private FullHttpResponse fullHttpResponse;
     private CloseWebSocketFrame closeWebSocketFrame;

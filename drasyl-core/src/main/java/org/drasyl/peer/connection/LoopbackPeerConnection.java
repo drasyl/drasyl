@@ -77,7 +77,7 @@ public class LoopbackPeerConnection extends PeerConnection {
     }
 
     @Override
-    public void send(Message<?> message) {
+    public void send(Message message) {
         if (isClosed.get()) {
             return;
         }
@@ -99,7 +99,7 @@ public class LoopbackPeerConnection extends PeerConnection {
     }
 
     @Override
-    public void setResponse(ResponseMessage<? extends RequestMessage<?>, ? extends Message<?>> response) {
+    public void setResponse(ResponseMessage<? extends RequestMessage<?>, ? extends Message> response) {
         // Do nothing
     }
 

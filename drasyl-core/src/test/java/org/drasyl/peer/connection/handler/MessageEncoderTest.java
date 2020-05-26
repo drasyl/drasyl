@@ -29,7 +29,7 @@ import org.junit.jupiter.api.Test;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class MessageEncoderTest {
-    private Message<?> message;
+    private Message message;
     private EmbeddedChannel channel;
 
     @BeforeEach

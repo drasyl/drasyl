@@ -73,7 +73,7 @@ public abstract class PeerConnection {
      *
      * @param message message that should be sent
      */
-    public abstract void send(Message<?> message);
+    public abstract void send(Message message);
 
     /**
      * Sends a message to the peer and returns a {@link Single} object for potential responses to
@@ -90,7 +90,7 @@ public abstract class PeerConnection {
      *
      * @param response the response
      */
-    public abstract void setResponse(ResponseMessage<? extends RequestMessage<?>, ? extends Message<?>> response);
+    public abstract void setResponse(ResponseMessage<? extends RequestMessage<?>, ? extends Message> response);
 
     /**
      * Returns the User-Agent string.

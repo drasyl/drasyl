@@ -54,18 +54,22 @@ class HexUtilTest {
     @Disabled
     @Test
     @Benchmark
-    public void ownByteToString() {
+    void ownByteToString() {
         for (int i = 0; i < 10000000; i++) {
             HexUtil.toString(byteArray);
         }
+
+        assertTrue(true);
     }
 
     @Disabled
     @Test
     @Benchmark
-    public void bouncycastleByteToString() {
+    void bouncycastleByteToString() {
         for (int i = 0; i < 10000000; i++) {
             Hex.toHexString(byteArray);
         }
+
+        assertTrue(true);
     }
 }

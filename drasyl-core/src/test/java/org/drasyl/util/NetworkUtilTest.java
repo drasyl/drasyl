@@ -28,8 +28,8 @@ import static org.junit.jupiter.api.Assertions.*;
 class NetworkUtilTest {
     @Test
     void getIPTest() throws IOException {
-        assertNotEquals(NetworkUtil.getExternalIPAddress(), null);
-        assertNotEquals(NetworkUtil.getExternalIPAddress(), "");
+        assertNotNull(NetworkUtil.getExternalIPAddress());
+        assertNotEquals("", NetworkUtil.getExternalIPAddress());
     }
 
     @Test

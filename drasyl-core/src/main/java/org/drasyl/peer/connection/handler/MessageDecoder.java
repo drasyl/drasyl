@@ -54,7 +54,7 @@ public class MessageDecoder extends MessageToMessageDecoder<TextWebSocketFrame> 
         }
 
         try {
-            Message<?> message = requireNonNull(JSON_MAPPER.readValue(msg.text(), Message.class));
+            Message message = requireNonNull(JSON_MAPPER.readValue(msg.text(), Message.class));
             out.add(message);
         }
         catch (IOException e) {

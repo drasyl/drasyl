@@ -25,5 +25,5 @@ package org.drasyl.peer.connection.message;
  *
  * @param <T>
  */
-public interface RequestMessage<T extends Message<?>> extends Message<T> {
+public interface RequestMessage<T extends Message> extends Message {
 }

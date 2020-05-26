@@ -53,9 +53,6 @@ class MessageDecoderTest {
     void ShouldThrowExceptionIfInboundJsonStringDeserializationFail() {
         String json = "invalid";
 
-        assertThrows(DecoderException.class, () -> {
-            channel.writeInbound(new TextWebSocketFrame(json));
-            channel.flush();
-        });
+        assertThrows(DecoderException.class, () -> channel.writeInbound(new TextWebSocketFrame(json)));
     }
 }

@@ -97,7 +97,7 @@ class SuperPeerClientIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldSendJoinMessageOnConnect() throws SuperPeerClientException {
-        TestObserver<Message<?>> receivedMessages = IntegrationTestHandler.receivedMessages().test();
+        TestObserver<Message> receivedMessages = IntegrationTestHandler.receivedMessages().test();
 
         // start client
         SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, event -> {
@@ -112,7 +112,7 @@ class SuperPeerClientIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldSendQuitMessageOnClientSideDisconnect() throws SuperPeerClientException {
-        TestObserver<Message<?>> receivedMessages = IntegrationTestHandler.receivedMessages().test();
+        TestObserver<Message> receivedMessages = IntegrationTestHandler.receivedMessages().test();
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
@@ -149,8 +149,8 @@ class SuperPeerClientIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldRespondToPingMessageWithPongMessage() throws SuperPeerClientException {
-        TestObserver<Message<?>> sentMessages = IntegrationTestHandler.sentMessages().test();
-        TestObserver<Message<?>> receivedMessages = IntegrationTestHandler.receivedMessages().filter(m -> m instanceof PongMessage).test();
+        TestObserver<Message> sentMessages = IntegrationTestHandler.sentMessages().test();
+        TestObserver<Message> receivedMessages = IntegrationTestHandler.receivedMessages().filter(m -> m instanceof PongMessage).test();
 
         // start client
         SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, event -> {
@@ -170,8 +170,8 @@ class SuperPeerClientIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldRespondToApplicationMessageWithStatusOk() throws SuperPeerClientException {
-        TestObserver<Message<?>> sentMessages = IntegrationTestHandler.sentMessages().test();
-        TestObserver<Message<?>> receivedMessages = IntegrationTestHandler.receivedMessages().filter(m -> m instanceof StatusMessage).test();
+        TestObserver<Message> sentMessages = IntegrationTestHandler.sentMessages().test();
+        TestObserver<Message> receivedMessages = IntegrationTestHandler.receivedMessages().filter(m -> m instanceof StatusMessage).test();
 
         // start client
         SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, event -> {
@@ -194,7 +194,7 @@ class SuperPeerClientIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldEmitNodeOfflineEventAfterReceivingQuitMessage() throws SuperPeerClientException {
-        TestObserver<Message<?>> receivedMessages = IntegrationTestHandler.receivedMessages().test();
+        TestObserver<Message> receivedMessages = IntegrationTestHandler.receivedMessages().test();
         TestObserver<Event> emittedEvents = emittedEventsSubject.filter(e -> e.getCode() == EVENT_NODE_OFFLINE).test();
 
         // start client

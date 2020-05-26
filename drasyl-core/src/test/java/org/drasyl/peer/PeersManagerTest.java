@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.peer;
 
 import com.google.common.collect.ImmutableMap;
@@ -132,11 +131,9 @@ class PeersManagerTest {
 
     @Test
     void removePeerShouldThrowExceptionIfGivenPeerIsSuperPeer() {
-        assertThrows(IllegalArgumentException.class, () -> {
-            PeersManager manager = new PeersManager(lock, peers, children, superPeer);
+        PeersManager manager = new PeersManager(lock, peers, children, superPeer);
 
-            manager.removePeer(superPeer);
-        });
+        assertThrows(IllegalArgumentException.class, () -> manager.removePeer(superPeer));
     }
 
     @Test

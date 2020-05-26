@@ -37,7 +37,7 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_SERVI
  * isOpenSupplier} returns <code>false</code>. Used by the {@link NodeServer} to prevent new
  * connections from being established during shutdown.
  */
-public class NodeServerNewConnectionsGuard extends SimpleChannelInboundHandler<Message<?>> {
+public class NodeServerNewConnectionsGuard extends SimpleChannelInboundHandler<Message> {
     public static final String CONNECTION_GUARD = "connectionGuard";
     private static final Logger LOG = LoggerFactory.getLogger(NodeServerNewConnectionsGuard.class);
     private final BooleanSupplier isOpenSupplier;

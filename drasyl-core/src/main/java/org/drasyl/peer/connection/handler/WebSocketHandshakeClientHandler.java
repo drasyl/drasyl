@@ -36,7 +36,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * This handler performs the Websocket handshake.
  */
-public class WebSocketHandshakeClientHandler extends SimpleChannelDuplexHandler<Object, Message<?>> {
+public class WebSocketHandshakeClientHandler extends SimpleChannelDuplexHandler<Object, Message> {
     private static final Logger LOG = LoggerFactory.getLogger(WebSocketHandshakeClientHandler.class);
     private final WebSocketClientHandshaker handshaker;
     private final CompletableFuture<Void> handshakeFuture;
@@ -81,7 +81,7 @@ public class WebSocketHandshakeClientHandler extends SimpleChannelDuplexHandler<
 
     @Override
     protected void channelWrite0(ChannelHandlerContext ctx,
-                                 Message<?> msg,
+                                 Message msg,
                                  ChannelPromise promise) {
         handshakeFuture.join();
         ctx.write(msg);

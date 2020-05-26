@@ -143,7 +143,7 @@ class NodeServerIT {
         TestNodeServerConnection session1 = clientSessionAfterJoin(server);
         TestNodeServerConnection session2 = clientSessionAfterJoin(server);
 
-        TestObserver<Message<?>> receivedMessages2 = session2.receivedMessages().test();
+        TestObserver<Message> receivedMessages2 = session2.receivedMessages().test();
 
         // send message
         RequestMessage<?> request = new ApplicationMessage(session1.getIdentity(), session2.getIdentity(), new byte[]{
@@ -167,7 +167,7 @@ class NodeServerIT {
         // create connection
         TestNodeServerConnection session = clientSession(server);
 
-        TestObserver<Message<?>> receivedMessages = session.receivedMessages().test();
+        TestObserver<Message> receivedMessages = session.receivedMessages().test();
 
         // wait for timeout
         with().pollInSameThread().await().pollDelay(0, NANOSECONDS).atMost(FIVE_MINUTES)
@@ -197,7 +197,7 @@ class NodeServerIT {
         // create connection
         TestNodeServerConnection session = clientSession(server);
 
-        TestObserver<Message<?>> receivedMessages = session.receivedMessages().test();
+        TestObserver<Message> receivedMessages = session.receivedMessages().test();
 
         // send message
         session.sendRawString("invalid message");
@@ -214,8 +214,8 @@ class NodeServerIT {
         TestNodeServerConnection session1 = clientSession(server);
         TestNodeServerConnection session2 = clientSession(server);
 
-        TestObserver<Message<?>> receivedMessages1 = session1.receivedMessages().test();
-        TestObserver<Message<?>> receivedMessages2 = session2.receivedMessages().test();
+        TestObserver<Message> receivedMessages1 = session1.receivedMessages().test();
+        TestObserver<Message> receivedMessages2 = session2.receivedMessages().test();
 
         // send messages
         CompressedPublicKey publicKey = CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3");
@@ -238,7 +238,7 @@ class NodeServerIT {
         // create connection
         TestNodeServerConnection session = clientSession(server, false);
 
-        TestObserver<Message<?>> receivedMessages = session.receivedMessages().test();
+        TestObserver<Message> receivedMessages = session.receivedMessages().test();
 
         // wait until timeout
         Thread.sleep(server.getConfig().getServerIdleTimeout().toMillis() * (server.getConfig().getServerIdleRetries() + 1) + 1000);// NOSONAR
@@ -304,7 +304,7 @@ class NodeServerIT {
         TestNodeServerConnection session1 = clientSessionAfterJoin(server);
         TestNodeServerConnection session2 = clientSessionAfterJoin(server);
 
-        TestObserver<Message<?>> receivedMessages = session2.receivedMessages().test();
+        TestObserver<Message> receivedMessages = session2.receivedMessages().test();
 
         // create message with max allowed payload size
         byte[] bigPayload = new byte[config.getMaxContentLength()];
@@ -361,7 +361,7 @@ class NodeServerIT {
     void shuttingDownServerShouldSendLeaveMessage() throws ExecutionException, InterruptedException, CryptoException {
         TestNodeServerConnection session = clientSessionAfterJoin(server);
 
-        TestObserver<Message<?>> receivedMessages = session.receivedMessages().test();
+        TestObserver<Message> receivedMessages = session.receivedMessages().test();
 
         server.close();
 

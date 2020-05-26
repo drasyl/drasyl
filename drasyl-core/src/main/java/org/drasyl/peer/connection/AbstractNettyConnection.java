@@ -138,7 +138,7 @@ public abstract class AbstractNettyConnection extends PeerConnection {
     protected abstract Logger getLogger();
 
     @Override
-    public void send(Message<?> message) {
+    public void send(Message message) {
         if (message != null && !isClosed.get() && channel.isOpen()) {
             channel.writeAndFlush(message);
         }
@@ -161,7 +161,7 @@ public abstract class AbstractNettyConnection extends PeerConnection {
     }
 
     @Override
-    public void setResponse(ResponseMessage<? extends RequestMessage<?>, ? extends Message<?>> response) {
+    public void setResponse(ResponseMessage<? extends RequestMessage<?>, ? extends Message> response) {
         SingleEmitter<ResponseMessage<?, ?>> emitter = emitters.remove(response.getCorrespondingId());
         if (emitter != null) {
             emitter.onSuccess(response);

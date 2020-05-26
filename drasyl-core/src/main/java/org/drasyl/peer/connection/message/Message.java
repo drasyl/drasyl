@@ -25,8 +25,6 @@ import org.drasyl.peer.connection.server.NodeServer;
 
 /**
  * Describes messages that are sent by the {@link NodeServer} or a client.
- *
- * @param <T>
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
 @JsonSubTypes({
@@ -40,7 +38,7 @@ import org.drasyl.peer.connection.server.NodeServer;
         @JsonSubTypes.Type(value = StatusMessage.class),
         @JsonSubTypes.Type(value = WelcomeMessage.class),
 })
-public interface Message<T extends Message<?>> extends Signable {
+public interface Message extends Signable {
     /**
      * Returns the unique id of this message. Each message generates a random id when it is
      * created.

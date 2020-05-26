@@ -49,14 +49,14 @@ import static org.mockito.Mockito.mock;
 
 public class TestNodeServerConnection extends AbstractNettyConnection {
     private final static Logger LOG = LoggerFactory.getLogger(TestNodeServerConnection.class);
-    protected final Subject<Message<?>> receivedMessages;
+    protected final Subject<Message> receivedMessages;
 
     public TestNodeServerConnection(Channel channel, URI targetSystem, Identity clientUID) {
         super(channel, targetSystem, clientUID, "JUnit-Test", mock(ConnectionsManager.class));
         receivedMessages = PublishSubject.create();
     }
 
-    public Observable<Message<?>> receivedMessages() {
+    public Observable<Message> receivedMessages() {
         return receivedMessages;
     }
 
@@ -128,7 +128,7 @@ public class TestNodeServerConnection extends AbstractNettyConnection {
      *
      * @param message incoming message
      */
-    public void receiveMessage(Message<?> message) {
+    public void receiveMessage(Message message) {
         if (isClosed.get()) {
             return;
         }
@@ -136,7 +136,7 @@ public class TestNodeServerConnection extends AbstractNettyConnection {
         receivedMessages.onNext(message);
 
         if (message instanceof ResponseMessage) {
-            ResponseMessage<RequestMessage<?>, Message<?>> response = (ResponseMessage<RequestMessage<?>, Message<?>>) message;
+            ResponseMessage<RequestMessage<?>, Message> response = (ResponseMessage<RequestMessage<?>, Message>) message;
             setResponse(response);
         }
     }

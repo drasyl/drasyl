@@ -36,9 +36,9 @@ import java.util.concurrent.CompletableFuture;
  * <p>
  * <b>This handler is NOT thread safe! This handler should ONLY be used for testing!</b>
  */
-public class IntegrationTestHandler extends SimpleChannelDuplexHandler<Message<?>, Message<?>> {
-    private static final Subject<Message<?>> OUTBOUND_MESSAGES = PublishSubject.create();
-    private static final Subject<Message<?>> INBOUND_MESSAGES = PublishSubject.create();
+public class IntegrationTestHandler extends SimpleChannelDuplexHandler<Message, Message> {
+    private static final Subject<Message> OUTBOUND_MESSAGES = PublishSubject.create();
+    private static final Subject<Message> INBOUND_MESSAGES = PublishSubject.create();
     private static ChannelHandlerContext channelHandlerContext;
     private static CompletableFuture<Void> readyToSend = new CompletableFuture<>();
 
@@ -56,27 +56,27 @@ public class IntegrationTestHandler extends SimpleChannelDuplexHandler<Message<?
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx,
-                                Message<?> msg) {
+                                Message msg) {
         INBOUND_MESSAGES.onNext(msg);
         ctx.fireChannelRead(msg);
     }
 
     @Override
     protected void channelWrite0(ChannelHandlerContext ctx,
-                                 Message<?> msg, ChannelPromise promise) {
+                                 Message msg, ChannelPromise promise) {
         OUTBOUND_MESSAGES.onNext(msg);
         ctx.write(msg);
     }
 
-    public static Observable<Message<?>> receivedMessages() {
+    public static Observable<Message> receivedMessages() {
         return INBOUND_MESSAGES;
     }
 
-    public static Observable<Message<?>> sentMessages() {
+    public static Observable<Message> sentMessages() {
         return OUTBOUND_MESSAGES;
     }
 
-    public static void injectMessage(Message<?> message) {
+    public static void injectMessage(Message message) {
         readyToSend.join();
         channelHandlerContext.writeAndFlush(message);
     }

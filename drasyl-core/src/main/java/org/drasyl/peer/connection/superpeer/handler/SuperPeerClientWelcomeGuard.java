@@ -42,7 +42,7 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBI
  * received. Every other incoming message is also dropped unless a {@link WelcomeMessage} was
  * received.
  */
-public class SuperPeerClientWelcomeGuard extends SimpleChannelDuplexHandler<Message<?>, Message<?>> {
+public class SuperPeerClientWelcomeGuard extends SimpleChannelDuplexHandler<Message, Message> {
     public static final String WELCOME_GUARD = "superPeerClientWelcomeGuard";
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClientWelcomeGuard.class);
     private final CompressedPublicKey expectedPublicKey;
@@ -97,7 +97,7 @@ public class SuperPeerClientWelcomeGuard extends SimpleChannelDuplexHandler<Mess
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Message<?> msg) {
+    protected void channelRead0(ChannelHandlerContext ctx, Message msg) {
         if (msg instanceof WelcomeMessage) {
             // do handshake
             WelcomeMessage welcomeMessage = (WelcomeMessage) msg;
@@ -127,7 +127,7 @@ public class SuperPeerClientWelcomeGuard extends SimpleChannelDuplexHandler<Mess
 
     @Override
     protected void channelWrite0(ChannelHandlerContext ctx,
-                                 Message<?> msg, ChannelPromise promise) {
+                                 Message msg, ChannelPromise promise) {
         if (msg instanceof JoinMessage) {
             ctx.write(msg, promise);
         }

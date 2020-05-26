@@ -35,7 +35,7 @@ import java.util.List;
  * Encodes a {@link Message} into a {@link String} object.
  */
 @Sharable
-public class MessageEncoder extends MessageToMessageEncoder<Message<?>> {
+public class MessageEncoder extends MessageToMessageEncoder<Message> {
     public static final MessageEncoder INSTANCE = new MessageEncoder();
     public static final String MESSAGE_ENCODER = "messageEncoder";
     private static final Logger LOG = LoggerFactory.getLogger(MessageEncoder.class);
@@ -45,7 +45,7 @@ public class MessageEncoder extends MessageToMessageEncoder<Message<?>> {
     }
 
     @Override
-    protected void encode(ChannelHandlerContext ctx, Message<?> msg, List<Object> out) {
+    protected void encode(ChannelHandlerContext ctx, Message msg, List<Object> out) {
         if (LOG.isDebugEnabled()) {
             LOG.trace("[{}]: Send Message '{}'", ctx.channel().id().asShortText(), msg);
         }

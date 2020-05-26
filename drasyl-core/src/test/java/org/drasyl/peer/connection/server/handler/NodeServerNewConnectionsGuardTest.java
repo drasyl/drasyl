@@ -32,7 +32,7 @@ import static org.mockito.Mockito.*;
 
 class NodeServerNewConnectionsGuardTest {
     private ChannelHandlerContext ctx;
-    private Message<?> message;
+    private Message message;
     private ChannelFuture channelFuture;
 
     @BeforeEach

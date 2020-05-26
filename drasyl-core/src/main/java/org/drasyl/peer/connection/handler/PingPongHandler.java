@@ -38,7 +38,7 @@ import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Erro
  * which must be answered with a {@link PongMessage}. When a configured threshold of messages is not
  * answered, the connection is considered unhealthy and is closed.
  */
-public class PingPongHandler extends SimpleChannelInboundHandler<Message<?>> {
+public class PingPongHandler extends SimpleChannelInboundHandler<Message> {
     public static final String PING_PONG_HANDLER = "pingPongHandler";
     protected final short maxRetries;
     protected final AtomicInteger retries;

@@ -46,7 +46,7 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class AbstractNettyConnectionTest {
-    private ConcurrentHashMap<String, SingleEmitter<Message<?>>> emitters;
+    private ConcurrentHashMap<String, SingleEmitter<Message>> emitters;
     private Channel channel;
     private URI endpoint;
     private Identity myid;
@@ -57,7 +57,7 @@ class AbstractNettyConnectionTest {
     private AtomicBoolean isClosed;
     private String msgID;
     private CompletableFuture<Boolean> closedCompletable;
-    private ResponseMessage<? extends RequestMessage<?>, ? extends Message<?>> responseMessage;
+    private ResponseMessage<? extends RequestMessage<?>, ? extends Message> responseMessage;
     private ConnectionsManager connectionsManager;
     private PeerConnection.CloseReason reason;
 
@@ -146,7 +146,7 @@ class AbstractNettyConnectionTest {
     @ParameterizedTest
     @ValueSource(classes = { SuperPeerClientConnection.class, NodeServerConnection.class })
     void setResponseShouldCompleteTheSingle(Class<AbstractNettyConnection> clazz) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
-        SingleEmitter<Message<?>> singleEmitter = mock(SingleEmitter.class);
+        SingleEmitter<Message> singleEmitter = mock(SingleEmitter.class);
 
         Constructor<AbstractNettyConnection> constructor = clazz.getDeclaredConstructor(Channel.class, String.class,
                 Identity.class, URI.class, AtomicBoolean.class,

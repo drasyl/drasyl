@@ -28,7 +28,7 @@ import java.util.function.Supplier;
  * Represents a message that contains the user agent.
  */
 @SuppressWarnings({ "squid:S1444", "squid:ClassVariableVisibilityCheck" })
-public abstract class AbstractMessageWithUserAgent<T extends Message<?>> extends AbstractMessage<T> {
+public abstract class AbstractMessageWithUserAgent<T extends Message> extends AbstractMessage<T> {
     public static final Supplier<String> defaultUserAgentGenerator = () -> {
         // Fallback is required because of this problem: https://git.informatik.uni-hamburg.de/smartcity2019/sensornetz/issues/75
         Config conf = ConfigFactory.load()
