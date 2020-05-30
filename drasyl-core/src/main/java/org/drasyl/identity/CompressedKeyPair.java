@@ -20,6 +20,7 @@ package org.drasyl.identity;
 
 import org.drasyl.crypto.CryptoException;
 
+import java.security.KeyPair;
 import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Objects;
@@ -83,5 +84,9 @@ public class CompressedKeyPair {
     public static CompressedKeyPair of(PublicKey publicKey,
                                        PrivateKey privateKey) throws CryptoException {
         return new CompressedKeyPair(CompressedPublicKey.of(publicKey), CompressedPrivateKey.of(privateKey));
+    }
+
+    public static CompressedKeyPair of(KeyPair keyPair) throws CryptoException {
+        return of(keyPair.getPublic(), keyPair.getPrivate());
     }
 }

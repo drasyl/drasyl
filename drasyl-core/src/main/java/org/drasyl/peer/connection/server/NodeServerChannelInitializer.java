@@ -29,20 +29,20 @@ import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import org.drasyl.peer.connection.DefaultSessionInitializer;
 import org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler;
-import org.drasyl.peer.connection.server.handler.NodeServerNewConnectionsGuard;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.QuitMessageHandler;
-import org.drasyl.peer.connection.server.handler.NodeServerJoinGuard;
 import org.drasyl.peer.connection.server.handler.NodeServerConnectionHandler;
+import org.drasyl.peer.connection.server.handler.NodeServerJoinGuard;
 import org.drasyl.peer.connection.server.handler.NodeServerMissingWebSocketUpgradeErrorPage;
+import org.drasyl.peer.connection.server.handler.NodeServerNewConnectionsGuard;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLException;
 import java.security.cert.CertificateException;
 
-import static org.drasyl.peer.connection.server.handler.NodeServerJoinGuard.JOIN_GUARD;
 import static org.drasyl.peer.connection.server.handler.NodeServerConnectionHandler.HANDLER;
+import static org.drasyl.peer.connection.server.handler.NodeServerJoinGuard.JOIN_GUARD;
 
 /**
  * Creates a newly configured {@link ChannelPipeline} for the node server.
@@ -59,6 +59,41 @@ public class NodeServerChannelInitializer extends DefaultSessionInitializer {
     }
 
     @Override
+    protected void beforeMarshalStage(ChannelPipeline pipeline) {
+        pipeline.addLast(new HttpServerCodec());
+        pipeline.addLast(new HttpObjectAggregator(65536));
+        pipeline.addLast(new WebSocketServerCompressionHandler());
+        pipeline.addLast(new NodeServerMissingWebSocketUpgradeErrorPage(server.getIdentityManager()));
+        pipeline.addLast(new WebSocketServerProtocolHandler("/", null, true));
+    }
+
+    @Override
+    protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
+        pipeline.addLast(NodeServerNewConnectionsGuard.CONNECTION_GUARD, new NodeServerNewConnectionsGuard(server::isOpen));
+    }
+
+    @Override
+    protected void customStage(ChannelPipeline pipeline) {
+        // QuitMessage handler
+        pipeline.addLast(QuitMessageHandler.QUIT_MESSAGE_HANDLER, QuitMessageHandler.INSTANCE);
+
+        // ConnectionExceptionMessage Handler
+        pipeline.addLast(ConnectionExceptionMessageHandler.EXCEPTION_MESSAGE_HANDLER, ConnectionExceptionMessageHandler.INSTANCE);
+
+        // Guards
+        pipeline.addLast(JOIN_GUARD, new NodeServerJoinGuard(server.getIdentityManager().getKeyPair().getPublicKey(), server.getConfig().getServerHandshakeTimeout()));
+
+        // Server handler
+        pipeline.addLast(HANDLER, new NodeServerConnectionHandler(this.server));
+    }
+
+    @Override
+    protected void exceptionStage(ChannelPipeline pipeline) {
+        // Catch Errors
+        pipeline.addLast(ExceptionHandler.EXCEPTION_HANDLER, new ExceptionHandler());
+    }
+
+    @Override
     protected SslHandler generateSslContext(SocketChannel ch) {
         if (server.getConfig().getServerSSLEnabled()) {
             try {
@@ -72,40 +107,5 @@ public class NodeServerChannelInitializer extends DefaultSessionInitializer {
             }
         }
         return null;
-    }
-
-    @Override
-    protected void customStage(ChannelPipeline pipeline) {
-        // QuitMessage handler
-        pipeline.addLast(QuitMessageHandler.QUIT_MESSAGE_HANDLER, QuitMessageHandler.INSTANCE);
-
-        // ConnectionExceptionMessage Handler
-        pipeline.addLast(ConnectionExceptionMessageHandler.EXCEPTION_MESSAGE_HANDLER, ConnectionExceptionMessageHandler.INSTANCE);
-
-        // Guards
-        pipeline.addLast(JOIN_GUARD, new NodeServerJoinGuard(server.getConfig().getServerHandshakeTimeout()));
-
-        // Server handler
-        pipeline.addLast(HANDLER, new NodeServerConnectionHandler(this.server));
-    }
-
-    @Override
-    protected void exceptionStage(ChannelPipeline pipeline) {
-        // Catch Errors
-        pipeline.addLast(ExceptionHandler.EXCEPTION_HANDLER, new ExceptionHandler());
-    }
-
-    @Override
-    protected void beforeMarshalStage(ChannelPipeline pipeline) {
-        pipeline.addLast(new HttpServerCodec());
-        pipeline.addLast(new HttpObjectAggregator(65536));
-        pipeline.addLast(new WebSocketServerCompressionHandler());
-        pipeline.addLast(new NodeServerMissingWebSocketUpgradeErrorPage(server.getIdentityManager()));
-        pipeline.addLast(new WebSocketServerProtocolHandler("/", null, true));
-    }
-
-    @Override
-    protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
-        pipeline.addLast(NodeServerNewConnectionsGuard.CONNECTION_GUARD, new NodeServerNewConnectionsGuard(server::isOpen));
     }
 }

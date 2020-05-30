@@ -100,12 +100,12 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void joinMessageShouldBeRespondedWithWelcomeMessage() throws ExecutionException, InterruptedException {
+    void joinMessageShouldBeRespondedWithWelcomeMessage() throws ExecutionException, InterruptedException, CryptoException {
         // create connection
         TestNodeServerConnection session = clientSession(server);
 
         // send message
-        RequestMessage request = new JoinMessage(identityManager.getKeyPair().getPublicKey(), Set.of());
+        RequestMessage request = new JoinMessage(session.getPublicKey(), Set.of());
         Single<ResponseMessage<?>> send = session.sendRequest(request);
 
         // verify response
@@ -163,7 +163,7 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void notJoiningClientsShouldBeDroppedAfterTimeout() throws ExecutionException, InterruptedException {
+    void notJoiningClientsShouldBeDroppedAfterTimeout() throws ExecutionException, InterruptedException, CryptoException {
         // create connection
         TestNodeServerConnection session = clientSession(server);
 
@@ -193,7 +193,7 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void invalidMessageShouldBeRespondedWithExceptionMessage() throws ExecutionException, InterruptedException {
+    void invalidMessageShouldBeRespondedWithExceptionMessage() throws ExecutionException, InterruptedException, CryptoException {
         // create connection
         TestNodeServerConnection session = clientSession(server);
 
@@ -234,7 +234,7 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientsNotSendingPongMessageShouldBeDroppedAfterTimeout() throws ExecutionException, InterruptedException {
+    void clientsNotSendingPongMessageShouldBeDroppedAfterTimeout() throws ExecutionException, InterruptedException, CryptoException {
         // create connection
         TestNodeServerConnection session = clientSession(server, false);
 
@@ -263,7 +263,7 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void pingMessageShouldBeRespondedWithPongMessage() throws ExecutionException, InterruptedException {
+    void pingMessageShouldBeRespondedWithPongMessage() throws ExecutionException, InterruptedException, CryptoException {
         // create connection
         TestNodeServerConnection session = clientSession(server, false);
 
@@ -279,7 +279,7 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void nonAuthorizedClientSendingNonJoinMessageShouldBeRespondedWithStatusForbiddenMessage() throws ExecutionException, InterruptedException {
+    void nonAuthorizedClientSendingNonJoinMessageShouldBeRespondedWithStatusForbiddenMessage() throws ExecutionException, InterruptedException, CryptoException {
         // create connection
         TestNodeServerConnection session = clientSession(server);
 
