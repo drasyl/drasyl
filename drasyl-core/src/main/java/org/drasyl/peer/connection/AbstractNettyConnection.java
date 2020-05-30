@@ -31,7 +31,6 @@ import org.drasyl.peer.connection.message.ResponseMessage;
 import org.drasyl.peer.connection.server.NodeServerConnection;
 import org.slf4j.Logger;
 
-import java.net.URI;
 import java.text.MessageFormat;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
@@ -46,7 +45,6 @@ public abstract class AbstractNettyConnection extends PeerConnection {
     protected final ConcurrentHashMap<String, SingleEmitter<ResponseMessage<?>>> emitters;
     protected final Channel channel;
     protected final String userAgent;
-    protected final URI endpoint;
     private final String channelId;
     protected AtomicBoolean isClosed;
     protected CompletableFuture<Boolean> closedCompletable;
@@ -55,32 +53,28 @@ public abstract class AbstractNettyConnection extends PeerConnection {
      * Creates a new connection with an unknown User-Agent.
      *
      * @param channel            channel of the connection
-     * @param endpoint           the URI of the target system
      * @param identity           the identity of this {@link NodeServerConnection}
      * @param connectionsManager reference to the {@link ConnectionsManager}
      */
     public AbstractNettyConnection(Channel channel,
-                                   URI endpoint,
                                    Identity identity,
                                    ConnectionsManager connectionsManager) {
-        this(channel, endpoint, identity, "U/A", connectionsManager);
+        this(channel, identity, "U/A", connectionsManager);
     }
 
     /**
      * Creates a new connection.
      *
      * @param channel            channel of the connection
-     * @param endpoint           the URI of the target system
      * @param identity           the identity of this {@link NodeServerConnection}
      * @param userAgent          the User-Agent string
      * @param connectionsManager reference to the {@link ConnectionsManager}
      */
     public AbstractNettyConnection(Channel channel,
-                                   URI endpoint,
                                    Identity identity,
                                    String userAgent,
                                    ConnectionsManager connectionsManager) {
-        this(channel, userAgent, identity, endpoint, new AtomicBoolean(false), new ConcurrentHashMap<>(), new CompletableFuture<>(), connectionsManager);
+        this(channel, userAgent, identity, new AtomicBoolean(false), new ConcurrentHashMap<>(), new CompletableFuture<>(), connectionsManager);
 
         this.channel.closeFuture().addListener((ChannelFutureListener) this::onChannelClose);
     }
@@ -88,7 +82,6 @@ public abstract class AbstractNettyConnection extends PeerConnection {
     protected AbstractNettyConnection(Channel channel,
                                       String userAgent,
                                       Identity identity,
-                                      URI endpoint,
                                       AtomicBoolean isClosed,
                                       ConcurrentHashMap<String, SingleEmitter<ResponseMessage<?>>> emitters,
                                       CompletableFuture<Boolean> closedCompletable,
@@ -97,7 +90,6 @@ public abstract class AbstractNettyConnection extends PeerConnection {
         this.emitters = emitters;
         this.channel = channel;
         this.userAgent = userAgent;
-        this.endpoint = endpoint;
         this.isClosed = isClosed;
         this.closedCompletable = closedCompletable;
         this.channelId = channel.id().asShortText();
@@ -171,11 +163,6 @@ public abstract class AbstractNettyConnection extends PeerConnection {
     @Override
     public String getUserAgent() {
         return this.userAgent;
-    }
-
-    @Override
-    public URI getEndpoint() {
-        return this.endpoint;
     }
 
     @Override

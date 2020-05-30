@@ -28,7 +28,6 @@ import org.drasyl.peer.connection.server.NodeServerConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -41,41 +40,36 @@ public class SuperPeerClientConnection extends AbstractNettyConnection {
      * Creates a new connection with an unknown User-Agent.
      *
      * @param channel            channel of the connection
-     * @param endpoint           the URI of the target system
      * @param identity           the identity of this {@link NodeServerConnection}
      * @param connectionsManager reference to the {@link ConnectionsManager}
      */
     public SuperPeerClientConnection(Channel channel,
-                                     URI endpoint,
                                      Identity identity, ConnectionsManager connectionsManager) {
-        super(channel, endpoint, identity, connectionsManager);
+        super(channel, identity, connectionsManager);
     }
 
     /**
      * Creates a new connection.
      *
      * @param channel            channel of the connection
-     * @param endpoint           the URI of the target system
      * @param identity           the identity of this {@link NodeServerConnection}
      * @param userAgent          the User-Agent string
      * @param connectionsManager reference to the {@link ConnectionsManager}
      */
     public SuperPeerClientConnection(Channel channel,
-                                     URI endpoint,
                                      Identity identity,
                                      String userAgent, ConnectionsManager connectionsManager) {
-        super(channel, endpoint, identity, userAgent, connectionsManager);
+        super(channel, identity, userAgent, connectionsManager);
     }
 
     public SuperPeerClientConnection(Channel myChannel,
                                      String userAgent,
                                      Identity identity,
-                                     URI endpoint,
                                      AtomicBoolean isClosed,
                                      ConcurrentHashMap<String, SingleEmitter<ResponseMessage<?>>> emitters,
                                      CompletableFuture<Boolean> closedCompletable,
                                      ConnectionsManager connectionsManager) {
-        super(myChannel, userAgent, identity, endpoint, isClosed, emitters, closedCompletable, connectionsManager);
+        super(myChannel, userAgent, identity, isClosed, emitters, closedCompletable, connectionsManager);
     }
 
     @Override

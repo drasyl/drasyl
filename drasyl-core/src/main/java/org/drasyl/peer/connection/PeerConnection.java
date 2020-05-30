@@ -27,7 +27,6 @@ import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.ResponseMessage;
 
-import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
@@ -96,11 +95,6 @@ public abstract class PeerConnection {
      * Returns the User-Agent string.
      */
     public abstract String getUserAgent();
-
-    /**
-     * Returns the endpoint of this connection.
-     */
-    public abstract URI getEndpoint();
 
     /**
      * Returns the identity of the peer.

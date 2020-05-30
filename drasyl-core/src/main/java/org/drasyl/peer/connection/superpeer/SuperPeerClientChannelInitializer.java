@@ -84,7 +84,7 @@ public class SuperPeerClientChannelInitializer extends AbstractClientInitializer
         pipeline.addLast(JOIN_HANDLER, new SuperPeerClientJoinHandler(this.superPeerClient.getIdentityManager().getKeyPair().getPublicKey(), this.entryPoints));
 
         // Super peer handler
-        pipeline.addLast(SuperPeerClientConnectionHandler.SUPER_PEER_HANDLER, new SuperPeerClientConnectionHandler(superPeerClient, target));
+        pipeline.addLast(SuperPeerClientConnectionHandler.SUPER_PEER_HANDLER, new SuperPeerClientConnectionHandler(superPeerClient));
     }
 
     @Override

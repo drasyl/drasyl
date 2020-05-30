@@ -18,7 +18,6 @@
  */
 package org.drasyl.peer.connection.server.handler;
 
-import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
@@ -31,9 +30,7 @@ import org.drasyl.peer.connection.server.NodeServerConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.InetSocketAddress;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.Optional;
 import java.util.concurrent.CompletableFuture;
 
@@ -42,8 +39,8 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 
 /**
  * This handler mange in-/oncoming messages and pass them to the correct sub-function. It also
- * creates a new {@link NodeServerConnection} object if a {@link JoinMessage} has pass the
- * {@link NodeServerJoinGuard} guard.
+ * creates a new {@link NodeServerConnection} object if a {@link JoinMessage} has pass the {@link
+ * NodeServerJoinGuard} guard.
  */
 public class NodeServerConnectionHandler extends SimpleChannelInboundHandler<Message> {
     public static final String HANDLER = "nodeServerConnectionHandler";
@@ -51,7 +48,6 @@ public class NodeServerConnectionHandler extends SimpleChannelInboundHandler<Mes
     private final NodeServer server;
     private final CompletableFuture<NodeServerConnection> sessionReadyFuture;
     private NodeServerConnection connection;
-    private URI uri;
 
     /**
      * Creates a new instance of this {@link io.netty.channel.ChannelHandler}
@@ -84,7 +80,6 @@ public class NodeServerConnectionHandler extends SimpleChannelInboundHandler<Mes
         this.server = server;
         this.sessionReadyFuture = sessionReadyFuture;
         this.connection = connection;
-        this.uri = uri;
     }
 
     /*
@@ -143,23 +138,13 @@ public class NodeServerConnectionHandler extends SimpleChannelInboundHandler<Mes
         if (msg instanceof JoinMessage && connection == null) {
             JoinMessage jm = (JoinMessage) msg;
             Identity identity = Identity.of(jm.getPublicKey());
-            Channel myChannel = ctx.channel();
-
-            if (uri == null) {
-                try {
-                    uri = getRemoteAddr(myChannel);
-                }
-                catch (URISyntaxException e) {
-                    LOG.error("[{}]: Cannot determine URI: {}", ctx.channel().id().asShortText(), e.getMessage());
-                }
-            }
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("[{}]: Create new Connection from Channel {}", ctx.channel().id().asShortText(), ctx.channel().id());
             }
 
             // create peer connection
-            connection = new NodeServerConnection(ctx.channel(), uri, identity,
+            connection = new NodeServerConnection(ctx.channel(), identity,
                     Optional.ofNullable(jm.getUserAgent()).orElse("U/A"), server.getMessenger().getConnectionsManager());
             sessionReadyFuture.complete(connection);
 
@@ -175,15 +160,5 @@ public class NodeServerConnectionHandler extends SimpleChannelInboundHandler<Mes
 
             ctx.pipeline().remove(NodeServerNewConnectionsGuard.CONNECTION_GUARD);
         }
-    }
-
-    /**
-     * Returns the {@link URI} of a {@link Channel}.
-     *
-     * @param channel the channel
-     */
-    public static URI getRemoteAddr(Channel channel) throws URISyntaxException {
-        InetSocketAddress socketAddress = (InetSocketAddress) channel.remoteAddress();
-        return new URI("ws://" + socketAddress.getAddress().getHostAddress() + ":" + socketAddress.getPort() + "/"); // NOSONAR
     }
 }

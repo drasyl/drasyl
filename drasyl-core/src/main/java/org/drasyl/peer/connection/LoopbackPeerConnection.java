@@ -26,7 +26,6 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.*;
 import org.drasyl.util.Pair;
 
-import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -39,7 +38,6 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 @SuppressWarnings({ "java:S2160" })
 public class LoopbackPeerConnection extends PeerConnection {
     private final Consumer<Event> onEvent;
-    private final URI endpoint;
     protected CompletableFuture<Boolean> closedCompletable;
     protected AtomicBoolean isClosed;
 
@@ -48,23 +46,20 @@ public class LoopbackPeerConnection extends PeerConnection {
      *
      * @param onEvent            reference to {@link DrasylNode#onEvent(Event)}
      * @param identity           reference to {@link Identity}
-     * @param uri                the node endpoint
      * @param connectionsManager reference to the {@link ConnectionsManager}
      */
     public LoopbackPeerConnection(Consumer<Event> onEvent,
                                   Identity identity,
-                                  URI uri,
                                   ConnectionsManager connectionsManager) {
-        this(onEvent, identity, uri, new CompletableFuture<>(), new AtomicBoolean(false), connectionsManager);
+        this(onEvent, identity, new CompletableFuture<>(), new AtomicBoolean(false), connectionsManager);
     }
 
     LoopbackPeerConnection(Consumer<Event> onEvent,
-                           Identity identity, URI endpoint,
+                           Identity identity,
                            CompletableFuture<Boolean> closedCompletable,
                            AtomicBoolean isClosed, ConnectionsManager connectionsManager) {
         super(identity, connectionsManager);
         this.onEvent = onEvent;
-        this.endpoint = endpoint;
         this.closedCompletable = closedCompletable;
         this.isClosed = isClosed;
     }
@@ -106,11 +101,6 @@ public class LoopbackPeerConnection extends PeerConnection {
     @Override
     public String getUserAgent() {
         return AbstractMessageWithUserAgent.userAgentGenerator.get();
-    }
-
-    @Override
-    public URI getEndpoint() {
-        return endpoint;
     }
 
     @Override

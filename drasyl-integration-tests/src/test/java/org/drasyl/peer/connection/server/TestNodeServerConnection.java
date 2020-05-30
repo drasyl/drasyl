@@ -54,7 +54,7 @@ public class TestNodeServerConnection extends AbstractNettyConnection {
     private final CompressedKeyPair keyPair;
 
     public TestNodeServerConnection(Channel channel, URI targetSystem, CompressedKeyPair keyPair) {
-        super(channel, targetSystem, keyPair.getIdentity(), "JUnit-Test", mock(ConnectionsManager.class));
+        super(channel, keyPair.getIdentity(), "JUnit-Test", mock(ConnectionsManager.class));
         receivedMessages = PublishSubject.create();
         this.keyPair = keyPair;
     }

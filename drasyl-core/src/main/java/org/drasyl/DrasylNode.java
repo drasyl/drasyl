@@ -42,7 +42,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -376,7 +375,7 @@ public abstract class DrasylNode {
     }
 
     private void createLoopbackPeerConnection() {
-        new LoopbackPeerConnection(this::onEvent, identityManager.getIdentity(), URI.create("ws://127.0.0.1:" + config.getServerBindPort()), messenger.getConnectionsManager());
+        new LoopbackPeerConnection(this::onEvent, identityManager.getIdentity(), messenger.getConnectionsManager());
     }
 
     /**

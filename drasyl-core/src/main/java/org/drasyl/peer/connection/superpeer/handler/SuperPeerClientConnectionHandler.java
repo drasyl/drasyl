@@ -30,8 +30,6 @@ import org.drasyl.peer.connection.superpeer.SuperPeerClientConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URI;
-
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_NOT_FOUND;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 
@@ -44,12 +42,10 @@ public class SuperPeerClientConnectionHandler extends SimpleChannelInboundHandle
     public static final String SUPER_PEER_HANDLER = "superPeerClientConnectionHandler";
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClientConnectionHandler.class);
     private final SuperPeerClient superPeerClient;
-    private final URI endpoint;
     private SuperPeerClientConnection connection;
 
-    public SuperPeerClientConnectionHandler(SuperPeerClient superPeerClient, URI endpoint) {
+    public SuperPeerClientConnectionHandler(SuperPeerClient superPeerClient) {
         this.superPeerClient = superPeerClient;
-        this.endpoint = endpoint;
     }
 
     @Override
@@ -63,7 +59,7 @@ public class SuperPeerClientConnectionHandler extends SimpleChannelInboundHandle
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx,
-                                Message msg) throws Exception {
+                                Message msg) {
         ctx.executor().submit(() -> {
             createConnection(ctx, msg);
             if (connection != null) {
@@ -107,7 +103,7 @@ public class SuperPeerClientConnectionHandler extends SimpleChannelInboundHandle
             }
 
             // create peer connection
-            connection = new SuperPeerClientConnection(ctx.channel(), endpoint, identity, welcomeMessage.getUserAgent(), superPeerClient.getMessenger().getConnectionsManager());
+            connection = new SuperPeerClientConnection(ctx.channel(), identity, welcomeMessage.getUserAgent(), superPeerClient.getMessenger().getConnectionsManager());
 
             // store peer information
             PeerInformation peerInformation = new PeerInformation();
