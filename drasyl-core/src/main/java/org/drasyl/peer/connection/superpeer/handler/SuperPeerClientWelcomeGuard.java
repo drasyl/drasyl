@@ -104,11 +104,15 @@ public class SuperPeerClientWelcomeGuard extends SimpleChannelDuplexHandler<Mess
             CompressedPublicKey superPeerPublicKey = welcomeMessage.getPublicKey();
             if (expectedPublicKey != null && !superPeerPublicKey.equals(expectedPublicKey)) {
                 LOG.warn("Super Peer has sent an unexpected public key '{}'. This could indicate a configuration error or man-in-the-middle attack. Close connection.", superPeerPublicKey);
+                timeoutFuture.cancel(true);
+                handshakeFuture.setFailure(new Exception("Super Peer has sent an unexpected public key '" + superPeerPublicKey + "'. This could indicate a configuration error or man-in-the-middle attack. Close connection."));
                 ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_WRONG_PUBLIC_KEY)).addListener(ChannelFutureListener.CLOSE);
                 ReferenceCountUtil.release(request);
             }
             else if (superPeerPublicKey.equals(ownPublicKey)) {
                 LOG.warn("Super Peer has sent same public key. You can't use yourself as a Super Peer. This would mean an endless loop. This could indicate a configuration error. Close connection.");
+                timeoutFuture.cancel(true);
+                handshakeFuture.setFailure(new Exception("Super Peer has sent same public key. You can't use yourself as a Super Peer. This would mean an endless loop. This could indicate a configuration error. Close connection."));
                 ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_SAME_PUBLIC_KEY)).addListener(ChannelFutureListener.CLOSE);
                 ReferenceCountUtil.release(request);
             }
