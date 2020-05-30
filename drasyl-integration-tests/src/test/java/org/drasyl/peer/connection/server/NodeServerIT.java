@@ -227,9 +227,9 @@ class NodeServerIT {
 
         // verify responses
         receivedMessages1.awaitCount(2);
-        receivedMessages1.assertValues(new WelcomeMessage(server.getMyIdentity().getKeyPair().getPublicKey(), server.getEntryPoints(), request1.getId()), new QuitMessage(REASON_NEW_SESSION));
+        receivedMessages1.assertValues(new WelcomeMessage(server.getIdentityManager().getKeyPair().getPublicKey(), server.getEntryPoints(), request1.getId()), new QuitMessage(REASON_NEW_SESSION));
         receivedMessages1.awaitCount(1);
-        receivedMessages2.assertValue(new WelcomeMessage(server.getMyIdentity().getKeyPair().getPublicKey(), server.getEntryPoints(), request2.getId()));
+        receivedMessages2.assertValue(new WelcomeMessage(server.getIdentityManager().getKeyPair().getPublicKey(), server.getEntryPoints(), request2.getId()));
     }
 
     @Test

@@ -19,6 +19,7 @@
 package org.drasyl.identity;
 
 import org.drasyl.DrasylNodeConfig;
+import org.drasyl.crypto.CryptoException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
@@ -63,7 +64,7 @@ class IdentityManagerTest {
     }
 
     @Test
-    void loadOrCreateIdentityShouldLoadIdentityIfConfigContainsNoKeysAndFileIsPresent(@TempDir Path dir) throws IOException, IdentityManagerException {
+    void loadOrCreateIdentityShouldLoadIdentityIfConfigContainsNoKeysAndFileIsPresent(@TempDir Path dir) throws IOException, IdentityManagerException, CryptoException {
         Path path = Paths.get(dir.toString(), "my-identity.json");
         when(config.getIdentityPublicKey()).thenReturn("");
         when(config.getIdentityPrivateKey()).thenReturn("");
@@ -78,7 +79,13 @@ class IdentityManagerTest {
         IdentityManager identityManager = new IdentityManager(config);
         identityManager.loadOrCreateIdentity();
 
-        assertEquals(Identity.of("37ca8159a8"), identityManager.getIdentity());
+        assertEquals(
+                CompressedKeyPair.of(
+                        "0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9",
+                        "0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d"
+                ),
+                identityManager.getKeyPair()
+        );
     }
 
     @Test

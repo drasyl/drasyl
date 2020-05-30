@@ -171,7 +171,7 @@ public class NodeServerConnectionHandler extends SimpleChannelInboundHandler<Mes
             server.getPeersManager().addChildren(identity);
 
             // send confirmation
-            ctx.writeAndFlush(new WelcomeMessage(server.getMyIdentity().getKeyPair().getPublicKey(), server.getEntryPoints(), jm.getId()));
+            ctx.writeAndFlush(new WelcomeMessage(server.getIdentityManager().getKeyPair().getPublicKey(), server.getEntryPoints(), jm.getId()));
 
             ctx.pipeline().remove(NodeServerNewConnectionsGuard.CONNECTION_GUARD);
         }

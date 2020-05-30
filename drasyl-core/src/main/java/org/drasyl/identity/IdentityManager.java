@@ -44,20 +44,18 @@ public class IdentityManager {
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private final DrasylNodeConfig config;
     private CompressedKeyPair keyPair;
-    private Identity identity;
 
     /**
      * Manages the identity at the specified file path. If there is no identity at this file path
      * yet, a new one is created.
      */
     public IdentityManager(DrasylNodeConfig config) {
-        this(config, null, null);
+        this(config, null);
     }
 
-    IdentityManager(DrasylNodeConfig config, CompressedKeyPair keyPair, Identity identity) {
+    IdentityManager(DrasylNodeConfig config, CompressedKeyPair keyPair) {
         this.config = config;
         this.keyPair = keyPair;
-        this.identity = identity;
     }
 
     /**
@@ -93,8 +91,10 @@ public class IdentityManager {
                 this.keyPair = myKeyPair;
             }
         }
+    }
 
-        this.identity = Identity.of(keyPair.getPublicKey());
+    public Identity getIdentity() {
+        return keyPair.getIdentity();
     }
 
     /**
@@ -170,13 +170,6 @@ public class IdentityManager {
                 throw new IdentityManagerException("Unable to write identity to file '" + path + "': " + e.getMessage());
             }
         }
-    }
-
-    /**
-     * @return returns the node identity.
-     */
-    public Identity getIdentity() {
-        return requireNonNull(identity);
     }
 
     /**

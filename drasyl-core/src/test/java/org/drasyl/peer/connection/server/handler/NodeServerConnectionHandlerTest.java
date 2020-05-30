@@ -113,7 +113,7 @@ class NodeServerConnectionHandlerTest {
     void shouldCreateSessionOnJoinMessageIfNoSessionExists() {
         when(joinMessage.getPublicKey()).thenReturn(compressedPublicKey);
         when(nodeServer.getEntryPoints()).thenReturn(Set.of(URI.create("ws://testURI")));
-        when(nodeServer.getMyIdentity()).thenReturn(identityManager);
+        when(nodeServer.getIdentityManager()).thenReturn(identityManager);
         when(identityManager.getKeyPair()).thenReturn(keyPair);
         when(keyPair.getPublicKey()).thenReturn(compressedPublicKey);
 
@@ -131,7 +131,7 @@ class NodeServerConnectionHandlerTest {
         verify(peersManager).addPeer(Identity.of(compressedPublicKey), myPeerInformation);
         verify(peersManager).addChildren(Identity.of(compressedPublicKey));
 
-        assertEquals(channel.readOutbound(), new WelcomeMessage(nodeServer.getMyIdentity().getKeyPair().getPublicKey(), nodeServer.getEntryPoints(), joinMessage.getId()));
+        assertEquals(channel.readOutbound(), new WelcomeMessage(nodeServer.getIdentityManager().getKeyPair().getPublicKey(), nodeServer.getEntryPoints(), joinMessage.getId()));
     }
 
     @Test

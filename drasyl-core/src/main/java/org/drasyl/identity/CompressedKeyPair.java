@@ -27,15 +27,22 @@ import java.util.Objects;
 public class CompressedKeyPair {
     private final CompressedPublicKey publicKey;
     private final CompressedPrivateKey privateKey;
+    private final Identity identity;
 
     CompressedKeyPair() {
         publicKey = null;
         privateKey = null;
+        identity = null;
     }
 
     CompressedKeyPair(CompressedPublicKey publicKey, CompressedPrivateKey privateKey) {
         this.publicKey = publicKey;
         this.privateKey = privateKey;
+        this.identity = Identity.of(publicKey);
+    }
+
+    public Identity getIdentity() {
+        return identity;
     }
 
     public CompressedPublicKey getPublicKey() {

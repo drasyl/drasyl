@@ -179,7 +179,7 @@ public class NodeServer implements AutoCloseable {
         return opened.get();
     }
 
-    public IdentityManager getMyIdentity() {
+    public IdentityManager getIdentityManager() {
         return identityManager;
     }
 

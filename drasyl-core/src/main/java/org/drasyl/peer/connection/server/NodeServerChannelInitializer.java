@@ -100,7 +100,7 @@ public class NodeServerChannelInitializer extends DefaultSessionInitializer {
         pipeline.addLast(new HttpServerCodec());
         pipeline.addLast(new HttpObjectAggregator(65536));
         pipeline.addLast(new WebSocketServerCompressionHandler());
-        pipeline.addLast(new NodeServerMissingWebSocketUpgradeErrorPage(server.getMyIdentity()));
+        pipeline.addLast(new NodeServerMissingWebSocketUpgradeErrorPage(server.getIdentityManager()));
         pipeline.addLast(new WebSocketServerProtocolHandler("/", null, true));
     }
 
