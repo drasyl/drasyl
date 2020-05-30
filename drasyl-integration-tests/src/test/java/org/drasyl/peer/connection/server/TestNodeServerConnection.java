@@ -29,17 +29,18 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.identity.CompressedKeyPair;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.AbstractNettyConnection;
 import org.drasyl.peer.connection.ConnectionsManager;
-import org.drasyl.peer.connection.message.*;
-import testutils.TestHelper;
+import org.drasyl.peer.connection.message.JoinMessage;
+import org.drasyl.peer.connection.message.Message;
+import org.drasyl.peer.connection.message.RequestMessage;
+import org.drasyl.peer.connection.message.ResponseMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
-import java.security.KeyPair;
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -50,10 +51,12 @@ import static org.mockito.Mockito.mock;
 public class TestNodeServerConnection extends AbstractNettyConnection {
     private final static Logger LOG = LoggerFactory.getLogger(TestNodeServerConnection.class);
     protected final Subject<Message> receivedMessages;
+    private final CompressedKeyPair keyPair;
 
-    public TestNodeServerConnection(Channel channel, URI targetSystem, Identity clientUID) {
-        super(channel, targetSystem, clientUID, "JUnit-Test", mock(ConnectionsManager.class));
+    public TestNodeServerConnection(Channel channel, URI targetSystem, CompressedKeyPair keyPair) {
+        super(channel, targetSystem, keyPair.getIdentity(), "JUnit-Test", mock(ConnectionsManager.class));
         receivedMessages = PublishSubject.create();
+        this.keyPair = keyPair;
     }
 
     public Observable<Message> receivedMessages() {
@@ -77,17 +80,17 @@ public class TestNodeServerConnection extends AbstractNettyConnection {
     /**
      * Creates a new session to the given server with a random identity
      */
-    public static TestNodeServerConnection clientSession(NodeServer server) throws ExecutionException, InterruptedException {
+    public static TestNodeServerConnection clientSession(NodeServer server) throws ExecutionException, InterruptedException, CryptoException {
         URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
         return clientSession(serverEntryPoint,
-                TestHelper.random(), true, server.workerGroup);
+                CompressedKeyPair.of(Crypto.generateKeys()), true, server.workerGroup);
     }
 
     /**
      * Creates a new session.
      */
     public static TestNodeServerConnection clientSession(URI targetSystem,
-                                                         Identity uid,
+                                                         CompressedKeyPair keyPair,
                                                          boolean pingPong,
                                                          EventLoopGroup eventLoopGroup) throws InterruptedException,
             ExecutionException {
@@ -103,7 +106,7 @@ public class TestNodeServerConnection extends AbstractNettyConnection {
 
                     @Override
                     public void handlerAdded(final ChannelHandlerContext ctx) {
-                        session = new TestNodeServerConnection(ctx.channel(), targetSystem, uid);
+                        session = new TestNodeServerConnection(ctx.channel(), targetSystem, keyPair);
                         future.complete(session);
                     }
 
@@ -145,20 +148,9 @@ public class TestNodeServerConnection extends AbstractNettyConnection {
      * Creates a new session to the given server.
      */
     public static TestNodeServerConnection clientSession(NodeServer server,
-                                                         boolean pingPong) throws ExecutionException,
-            InterruptedException {
+                                                         CompressedKeyPair keyPair) throws ExecutionException, InterruptedException {
         URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
-        return clientSession(serverEntryPoint,
-                TestHelper.random(), pingPong, server.workerGroup);
-    }
-
-    /**
-     * Creates a new session to the given server.
-     */
-    public static TestNodeServerConnection clientSession(NodeServer server,
-                                                         Identity uid) throws ExecutionException, InterruptedException {
-        URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
-        return clientSession(serverEntryPoint, uid, true, server.workerGroup);
+        return clientSession(serverEntryPoint, keyPair, true, server.workerGroup);
     }
 
     /**
@@ -166,21 +158,33 @@ public class TestNodeServerConnection extends AbstractNettyConnection {
      */
     public static TestNodeServerConnection clientSessionAfterJoin(NodeServer server) throws ExecutionException,
             InterruptedException, CryptoException {
-        KeyPair keyPair = Crypto.generateKeys();
-        CompressedPublicKey publicKey = CompressedPublicKey.of(keyPair.getPublic());
-        URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
-        TestNodeServerConnection session = clientSession(serverEntryPoint, Identity.of(publicKey), true, server.workerGroup);
-        session.sendRequest(new JoinMessage(publicKey, Set.of())).blockingGet();
+        TestNodeServerConnection session = clientSession(server, true);
+        session.sendRequest(new JoinMessage(session.getPublicKey(), Set.of())).blockingGet();
 
         return session;
+    }
+
+    /**
+     * Creates a new session to the given server.
+     */
+    public static TestNodeServerConnection clientSession(NodeServer server,
+                                                         boolean pingPong) throws ExecutionException,
+            InterruptedException, CryptoException {
+        URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
+        return clientSession(serverEntryPoint,
+                CompressedKeyPair.of(Crypto.generateKeys()), pingPong, server.workerGroup);
+    }
+
+    public CompressedPublicKey getPublicKey() {
+        return keyPair.getPublicKey();
     }
 
     /**
      * Creates a new session.
      */
     public static TestNodeServerConnection clientSession(URI targetSystem,
-                                                         Identity uid,
+                                                         CompressedKeyPair keyPair,
                                                          boolean pingPong) throws ExecutionException, InterruptedException {
-        return clientSession(targetSystem, uid, pingPong, null);
+        return clientSession(targetSystem, keyPair, pingPong, null);
     }
 }

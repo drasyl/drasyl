@@ -97,31 +97,33 @@ public class SuperPeerClientWelcomeGuard extends SimpleChannelDuplexHandler<Mess
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Message msg) {
-        if (msg instanceof WelcomeMessage) {
+    protected void channelRead0(ChannelHandlerContext ctx, Message request) {
+        if (request instanceof WelcomeMessage) {
             // do handshake
-            WelcomeMessage welcomeMessage = (WelcomeMessage) msg;
+            WelcomeMessage welcomeMessage = (WelcomeMessage) request;
             CompressedPublicKey superPeerPublicKey = welcomeMessage.getPublicKey();
             if (expectedPublicKey != null && !superPeerPublicKey.equals(expectedPublicKey)) {
                 LOG.warn("Super Peer has sent an unexpected public key '{}'. This could indicate a configuration error or man-in-the-middle attack. Close connection.", superPeerPublicKey);
-                ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_SUPER_PEER_WRONG_PUBLIC_KEY)).addListener(ChannelFutureListener.CLOSE);
+                ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_WRONG_PUBLIC_KEY)).addListener(ChannelFutureListener.CLOSE);
+                ReferenceCountUtil.release(request);
             }
             else if (superPeerPublicKey.equals(ownPublicKey)) {
                 LOG.warn("Super Peer has sent same public key. You can't use yourself as a Super Peer. This would mean an endless loop. This could indicate a configuration error. Close connection.");
-                ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_SUPER_PEER_SAME_PUBLIC_KEY)).addListener(ChannelFutureListener.CLOSE);
+                ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_SAME_PUBLIC_KEY)).addListener(ChannelFutureListener.CLOSE);
+                ReferenceCountUtil.release(request);
             }
             else {
                 timeoutFuture.cancel(true);
                 handshakeFuture.setSuccess();
-                ctx.fireChannelRead(msg);
+                ctx.fireChannelRead(request);
                 ctx.pipeline().remove(WELCOME_GUARD);
             }
         }
         else {
             // reject all non-welcome messages if handshake is not done
-            ctx.writeAndFlush(new StatusMessage(STATUS_FORBIDDEN, msg.getId()));
-            ReferenceCountUtil.release(msg);
-            LOG.debug("[{}] Server is not authenticated. Inbound message was dropped: '{}'", ctx, msg);
+            ctx.writeAndFlush(new StatusMessage(STATUS_FORBIDDEN, request.getId()));
+            ReferenceCountUtil.release(request);
+            LOG.debug("[{}] Server is not authenticated. Inbound message was dropped: '{}'", ctx, request);
         }
     }
 

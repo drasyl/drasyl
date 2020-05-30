@@ -34,6 +34,7 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.TimeUnit;
 
 import static java.time.Duration.ofMillis;
+import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_SAME_PUBLIC_KEY;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -78,7 +79,7 @@ class NodeServerJoinGuardTest {
             return mock(ScheduledFuture.class);
         });
 
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1000), timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(publicKey, ofMillis(1000), timeoutFuture);
 
         handler.channelActive(ctx);
 
@@ -88,8 +89,8 @@ class NodeServerJoinGuardTest {
     }
 
     @Test
-    void closeShouldCloseChannelAndCancelTimeoutTask() throws Exception {
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1000), timeoutFuture);
+    void closeShouldCloseChannelAndCancelTimeoutTask() {
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(publicKey, ofMillis(1000), timeoutFuture);
 
         handler.close(ctx, promise);
 
@@ -98,21 +99,34 @@ class NodeServerJoinGuardTest {
     }
 
     @Test
-    void shouldPassThroughOutgoingJoinMessage() {
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1000));
+    void shouldPassThroughIncomingJoinMessage() {
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(publicKey, ofMillis(1000));
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        channel.writeOutbound(joinMessage);
+        channel.writeInbound(joinMessage);
         channel.flush();
 
-        assertEquals(joinMessage, channel.readOutbound());
+        assertEquals(joinMessage, channel.readInbound());
+    }
+
+    @Test
+    void shouldRejectIncomingJoinMessageWithSamePublicKey() {
+        when(joinMessage.getPublicKey()).thenReturn(publicKey);
+
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(publicKey, ofMillis(1000));
+        EmbeddedChannel channel = new EmbeddedChannel(handler);
+
+        channel.writeInbound(joinMessage);
+        channel.flush();
+
+        assertEquals(new ConnectionExceptionMessage(CONNECTION_ERROR_SAME_PUBLIC_KEY), channel.readOutbound());
     }
 
     @Test
     void shouldDenyNonUnrestrictedMessages() {
         when(applicationMessage.getId()).thenReturn("123");
 
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1000), timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(publicKey, ofMillis(1000), timeoutFuture);
         channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(applicationMessage);
@@ -123,7 +137,7 @@ class NodeServerJoinGuardTest {
 
     @Test
     void channelRead0ShouldReplyWithStatusForbiddenForNonJoinMessage() {
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1000), timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(publicKey, ofMillis(1000), timeoutFuture);
 
         handler.channelRead0(ctx, msg);
 
@@ -133,7 +147,7 @@ class NodeServerJoinGuardTest {
 
     @Test
     void shouldPassJoinMessage() {
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1000), timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(publicKey, ofMillis(1000), timeoutFuture);
         channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(joinMessage);
@@ -143,7 +157,7 @@ class NodeServerJoinGuardTest {
 
     @Test
     void exceptionCaughtShouldWriteExceptionToChannelAndThenCloseIt() {
-        NodeServerJoinGuard handler = new NodeServerJoinGuard(ofMillis(1000), timeoutFuture);
+        NodeServerJoinGuard handler = new NodeServerJoinGuard(publicKey, ofMillis(1000), timeoutFuture);
         handler.exceptionCaught(ctx, cause);
 
         verify(ctx).writeAndFlush(any(ConnectionExceptionMessage.class));

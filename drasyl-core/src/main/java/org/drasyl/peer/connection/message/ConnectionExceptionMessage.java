@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.peer.connection.message;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -95,8 +94,8 @@ public class ConnectionExceptionMessage extends AbstractMessage implements Reque
         CONNECTION_ERROR_INTERNAL("Internal Error occurred."),
         CONNECTION_ERROR_HANDSHAKE("Handshake did not take place within timeout."),
         CONNECTION_ERROR_PING_PONG("Too many Ping Messages were not answered with a Pong Message."),
-        CONNECTION_ERROR_SUPER_PEER_SAME_PUBLIC_KEY("Super Peer has sent same Public Key. You can't use yourself as a Super Peer. This would cause a routing loop. This could indicate a configuration error."),
-        CONNECTION_ERROR_SUPER_PEER_WRONG_PUBLIC_KEY("Super Peer has sent an unexpected Public Key. This could indicate a configuration error or man-in-the-middle attack.");
+        CONNECTION_ERROR_SAME_PUBLIC_KEY("Peer has sent same Public Key. You can't connect to yourself. This would cause a routing loop. This could indicate a configuration error."),
+        CONNECTION_ERROR_WRONG_PUBLIC_KEY("Peer has sent an unexpected Public Key. This could indicate a configuration error or man-in-the-middle attack.");
         private static final Map<String, Error> errors = new HashMap<>();
 
         static {
