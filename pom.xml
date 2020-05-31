@@ -193,6 +193,7 @@
         <module>drasyl-core</module>
         <module>drasyl-integration-tests</module>
         <module>drasyl-examples</module>
+        <module>drasyl-performance-tests</module>
     </modules>
 
     <properties>

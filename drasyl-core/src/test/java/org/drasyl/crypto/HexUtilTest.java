@@ -19,9 +19,7 @@
 package org.drasyl.crypto;
 
 import org.bouncycastle.util.encoders.Hex;
-import org.drasyl.Benchmark;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -49,27 +47,5 @@ class HexUtilTest {
     void shouldThrowExceptionOnNotConformStringRepresentations() {
         assertThrows(IllegalArgumentException.class, () -> HexUtil.fromString("A"));
         assertThrows(IllegalArgumentException.class, () -> HexUtil.fromString("0Z"));
-    }
-
-    @Disabled
-    @Test
-    @Benchmark
-    void ownByteToString() {
-        for (int i = 0; i < 10000000; i++) {
-            HexUtil.toString(byteArray);
-        }
-
-        assertTrue(true);
-    }
-
-    @Disabled
-    @Test
-    @Benchmark
-    void bouncycastleByteToString() {
-        for (int i = 0; i < 10000000; i++) {
-            Hex.toHexString(byteArray);
-        }
-
-        assertTrue(true);
     }
 }
