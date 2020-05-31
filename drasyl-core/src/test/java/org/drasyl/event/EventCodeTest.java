@@ -26,7 +26,7 @@ class EventCodeTest {
     @Test
     void isNodeEvent() {
         Assertions.assertTrue(EventCode.EVENT_NODE_UP.isNodeEvent());
-        Assertions.assertFalse(EventCode.EVENT_PEER_P2P.isNodeEvent());
+        Assertions.assertFalse(EventCode.EVENT_PEER_DIRECT.isNodeEvent());
     }
 
     @Test

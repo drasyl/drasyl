@@ -62,7 +62,7 @@ public enum EventCode {
     /**
      * This event signals that the node has established a direct connection to a peer.
      */
-    EVENT_PEER_P2P,
+    EVENT_PEER_DIRECT,
 
     /**
      * This event signals that the node has established a connection via a relay to a peer.

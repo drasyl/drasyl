@@ -24,7 +24,7 @@ import java.util.Objects;
 
 /**
  * Used by {@link Event} to describe an event related to a Peer (e.g. {@link
- * EventCode#EVENT_PEER_P2P}, {@link EventCode#EVENT_PEER_P2P}).
+ * EventCode#EVENT_PEER_DIRECT}, {@link EventCode#EVENT_PEER_DIRECT}).
  */
 public class Peer {
     private final Identity address;
