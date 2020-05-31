@@ -18,6 +18,8 @@
  */
 package org.drasyl.identity;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.drasyl.crypto.CryptoException;
 
 import java.security.KeyPair;
@@ -25,18 +27,15 @@ import java.security.PrivateKey;
 import java.security.PublicKey;
 import java.util.Objects;
 
+import static org.drasyl.util.SecretUtil.maskSecret;
+
 public class CompressedKeyPair {
     private final CompressedPublicKey publicKey;
     private final CompressedPrivateKey privateKey;
     private final Identity identity;
 
-    CompressedKeyPair() {
-        publicKey = null;
-        privateKey = null;
-        identity = null;
-    }
-
-    CompressedKeyPair(CompressedPublicKey publicKey, CompressedPrivateKey privateKey) {
+    @JsonCreator
+    CompressedKeyPair(@JsonProperty("publicKey") CompressedPublicKey publicKey, @JsonProperty("privateKey") CompressedPrivateKey privateKey) {
         this.publicKey = publicKey;
         this.privateKey = privateKey;
         this.identity = Identity.of(publicKey);
@@ -56,7 +55,7 @@ public class CompressedKeyPair {
 
     @Override
     public int hashCode() {
-        return Objects.hash(publicKey, privateKey);
+        return Objects.hash(publicKey, privateKey, identity);
     }
 
     @Override
@@ -69,7 +68,17 @@ public class CompressedKeyPair {
         }
         CompressedKeyPair that = (CompressedKeyPair) o;
         return Objects.equals(publicKey, that.publicKey) &&
-                Objects.equals(privateKey, that.privateKey);
+                Objects.equals(privateKey, that.privateKey) &&
+                Objects.equals(identity, that.identity);
+    }
+
+    @Override
+    public String toString() {
+        return "CompressedKeyPair{" +
+                "publicKey=" + publicKey +
+                ", privateKey=" + maskSecret(privateKey) +
+                ", identity=" + identity +
+                '}';
     }
 
     public static CompressedKeyPair of(CompressedPublicKey publicKey,
@@ -81,12 +90,12 @@ public class CompressedKeyPair {
         return new CompressedKeyPair(CompressedPublicKey.of(publicKey), CompressedPrivateKey.of(privateKey));
     }
 
+    public static CompressedKeyPair of(KeyPair keyPair) throws CryptoException {
+        return of(keyPair.getPublic(), keyPair.getPrivate());
+    }
+
     public static CompressedKeyPair of(PublicKey publicKey,
                                        PrivateKey privateKey) throws CryptoException {
         return new CompressedKeyPair(CompressedPublicKey.of(publicKey), CompressedPrivateKey.of(privateKey));
-    }
-
-    public static CompressedKeyPair of(KeyPair keyPair) throws CryptoException {
-        return of(keyPair.getPublic(), keyPair.getPrivate());
     }
 }
