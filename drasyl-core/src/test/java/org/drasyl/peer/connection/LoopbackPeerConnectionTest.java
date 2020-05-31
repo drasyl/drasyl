@@ -89,21 +89,8 @@ class LoopbackPeerConnectionTest {
         LoopbackPeerConnection con = new LoopbackPeerConnection(onEvent, identity, closedCompletable, isClosed, connectionsManager);
         JoinMessage joinMessage = mock(JoinMessage.class);
 
-        assertThrows(IllegalArgumentException.class, () -> con.sendRequest(joinMessage));
+        assertThrows(IllegalArgumentException.class, () -> con.send(joinMessage));
         verifyNoInteractions(onEvent);
-    }
-
-    @Test
-    void shouldReturnStatusSingle() {
-        LoopbackPeerConnection con = new LoopbackPeerConnection(onEvent, identity, closedCompletable, isClosed, connectionsManager);
-
-        ApplicationMessage message = new ApplicationMessage(Identity.of(Crypto.randomString(5)), Identity.of(Crypto.randomString(5)), new byte[]{
-                0x00,
-                0x01
-        });
-
-        assertEquals(new StatusMessage(STATUS_OK, message.getId()), con.sendRequest(message).blockingGet());
-        verify(onEvent).accept(any(Event.class));
     }
 
     @Test
@@ -117,16 +104,5 @@ class LoopbackPeerConnectionTest {
         assertNotEquals(con, con2);
         assertNotEquals(con, mock(LoopbackPeerConnection.class));
         assertEquals(con.hashCode(), con.hashCode());
-    }
-
-    @Test
-    void doNothingOnSetResponse() {
-        LoopbackPeerConnection con = new LoopbackPeerConnection(onEvent, identity, closedCompletable, isClosed, connectionsManager);
-        con.setResponse(mock(ResponseMessage.class));
-
-        verifyNoInteractions(onEvent);
-        verifyNoInteractions(identity);
-        verifyNoInteractions(isClosed);
-        verifyNoInteractions(closedCompletable);
     }
 }

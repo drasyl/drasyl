@@ -88,17 +88,6 @@ class NodeServerConnectionHandlerTest {
     }
 
     @Test
-    void shouldSetResponseForResponseMessageIfSessionExists() {
-        ChannelHandler handler = new NodeServerConnectionHandler(nodeServer, completableFuture, clientConnection, uri);
-        channel = new EmbeddedChannel(handler);
-
-        channel.writeInbound(responseMessage);
-        channel.flush();
-
-        verify(clientConnection).setResponse(responseMessage);
-    }
-
-    @Test
     void shouldPassMessageToMessengerIfSessionExists() throws MessengerException {
         ChannelHandler handler = new NodeServerConnectionHandler(nodeServer, completableFuture, clientConnection, uri);
         channel = new EmbeddedChannel(handler);

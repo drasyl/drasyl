@@ -102,10 +102,6 @@ public class NodeServerConnectionHandler extends SimpleChannelInboundHandler<Mes
         ctx.executor().submit(() -> {
             createSession(ctx, msg);
             if (connection != null) {
-                if (msg instanceof ResponseMessage) {
-                    connection.setResponse((ResponseMessage<? extends RequestMessage>) msg);
-                }
-
                 if (msg instanceof ApplicationMessage) {
                     ApplicationMessage applicationMessage = (ApplicationMessage) msg;
                     try {

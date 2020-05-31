@@ -41,6 +41,7 @@ import testutils.TestHelper;
 
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -106,10 +107,10 @@ class NodeServerIT {
 
         // send message
         RequestMessage request = new JoinMessage(session.getPublicKey(), Set.of());
-        Single<ResponseMessage<?>> send = session.sendRequest(request);
+        CompletableFuture<ResponseMessage<?>> send = session.sendRequest(request);
 
         // verify response
-        ResponseMessage<?> response = send.blockingGet();
+        ResponseMessage<?> response = send.get();
 
         assertThat(response, instanceOf(WelcomeMessage.class));
     }
@@ -123,14 +124,14 @@ class NodeServerIT {
 
         // send messages
         RequestMessage request1 = new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of());
-        Single<ResponseMessage<?>> send1 = session1.sendRequest(request1);
+        CompletableFuture<ResponseMessage<?>> send1 = session1.sendRequest(request1);
 
         RequestMessage request2 = new JoinMessage(CompressedPublicKey.of("0340a4f2adbddeedc8f9ace30e3f18713a3405f43f4871b4bac9624fe80d2056a7"), Set.of());
-        Single<ResponseMessage<?>> send2 = session2.sendRequest(request2);
+        CompletableFuture<ResponseMessage<?>> send2 = session2.sendRequest(request2);
 
         // verify responses
-        ResponseMessage<?> response1 = send1.blockingGet();
-        ResponseMessage<?> response2 = send2.blockingGet();
+        ResponseMessage<?> response1 = send1.get();
+        ResponseMessage<?> response2 = send2.get();
 
         assertThat(response1, instanceOf(WelcomeMessage.class));
         assertThat(response2, instanceOf(WelcomeMessage.class));
@@ -151,10 +152,10 @@ class NodeServerIT {
                 0x01,
                 0x02
         });
-        Single<ResponseMessage<?>> send1 = session1.sendRequest(request);
+        CompletableFuture<ResponseMessage<?>> send1 = session1.sendRequest(request);
 
         // verify responses
-        ResponseMessage<?> response1 = send1.blockingGet();
+        ResponseMessage<?> response1 = send1.get();
 
         assertEquals(new StatusMessage(StatusMessage.Code.STATUS_OK, request.getId()), response1);
         receivedMessages2.awaitCount(1);
@@ -220,10 +221,10 @@ class NodeServerIT {
         // send messages
         CompressedPublicKey publicKey = CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3");
         RequestMessage request1 = new JoinMessage(publicKey, Set.of());
-        session1.sendRequest(request1).blockingGet();
+        session1.sendRequest(request1).join();
 
         RequestMessage request2 = new JoinMessage(publicKey, Set.of());
-        session2.sendRequest(request2).blockingGet();
+        session2.sendRequest(request2).join();
 
         // verify responses
         receivedMessages1.awaitCount(2);
@@ -269,10 +270,10 @@ class NodeServerIT {
 
         // send message
         RequestMessage request = new PingMessage();
-        Single<ResponseMessage<?>> send = session.sendRequest(request);
+        CompletableFuture<ResponseMessage<?>> send = session.sendRequest(request);
 
         // verify response
-        ResponseMessage<?> response = send.blockingGet();
+        ResponseMessage<?> response = send.get();
 
         assertEquals(new PongMessage(request.getId()), response);
     }
@@ -288,10 +289,10 @@ class NodeServerIT {
                 0x00,
                 0x01
         });
-        Single<ResponseMessage<?>> send = session.sendRequest(request);
+        CompletableFuture<ResponseMessage<?>> send = session.sendRequest(request);
 
         // verify response
-        ResponseMessage<?> response = send.blockingGet();
+        ResponseMessage<?> response = send.get();
 
         assertEquals(new StatusMessage(STATUS_FORBIDDEN, request.getId()), response);
     }
@@ -379,10 +380,10 @@ class NodeServerIT {
 
         // send message
         RequestMessage request = new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of());
-        Single<ResponseMessage<?>> send = session.sendRequest(request);
+        CompletableFuture<ResponseMessage<?>> send = session.sendRequest(request);
 
         // verify response
-        ResponseMessage<?> received = send.blockingGet();
+        ResponseMessage<?> received = send.get();
 
         assertEquals(new StatusMessage(STATUS_SERVICE_UNAVAILABLE, request.getId()), received);
     }

@@ -25,6 +25,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.crypto.Crypto;
@@ -44,19 +45,23 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
+import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.mockito.Mockito.mock;
 
 public class TestNodeServerConnection extends AbstractNettyConnection {
     private final static Logger LOG = LoggerFactory.getLogger(TestNodeServerConnection.class);
     protected final Subject<Message> receivedMessages;
+    protected final ConcurrentHashMap<String, CompletableFuture<ResponseMessage<?>>> futures;
     private final CompressedKeyPair keyPair;
 
-    public TestNodeServerConnection(Channel channel, URI targetSystem, CompressedKeyPair keyPair) {
+    public TestNodeServerConnection(Channel channel, CompressedKeyPair keyPair) {
         super(channel, keyPair.getIdentity(), "JUnit-Test", mock(ConnectionsManager.class));
         receivedMessages = PublishSubject.create();
         this.keyPair = keyPair;
+        futures = new ConcurrentHashMap<>();
     }
 
     public Observable<Message> receivedMessages() {
@@ -106,7 +111,7 @@ public class TestNodeServerConnection extends AbstractNettyConnection {
 
                     @Override
                     public void handlerAdded(final ChannelHandlerContext ctx) {
-                        session = new TestNodeServerConnection(ctx.channel(), targetSystem, keyPair);
+                        session = new TestNodeServerConnection(ctx.channel(), keyPair);
                         future.complete(session);
                     }
 
@@ -145,6 +150,18 @@ public class TestNodeServerConnection extends AbstractNettyConnection {
     }
 
     /**
+     * Sets the result of a {@link Single} object from a {@link #sendRequest(RequestMessage)} call.
+     *
+     * @param response the response
+     */
+    private void setResponse(ResponseMessage<? extends RequestMessage> response) {
+        CompletableFuture<ResponseMessage<?>> future = futures.remove(response.getCorrespondingId());
+        if (future != null) {
+            future.complete(response);
+        }
+    }
+
+    /**
      * Creates a new session to the given server.
      */
     public static TestNodeServerConnection clientSession(NodeServer server,
@@ -159,7 +176,7 @@ public class TestNodeServerConnection extends AbstractNettyConnection {
     public static TestNodeServerConnection clientSessionAfterJoin(NodeServer server) throws ExecutionException,
             InterruptedException, CryptoException {
         TestNodeServerConnection session = clientSession(server, true);
-        session.sendRequest(new JoinMessage(session.getPublicKey(), Set.of())).blockingGet();
+        session.sendRequest(new JoinMessage(session.getPublicKey(), Set.of())).join();
 
         return session;
     }
@@ -173,6 +190,29 @@ public class TestNodeServerConnection extends AbstractNettyConnection {
         URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
         return clientSession(serverEntryPoint,
                 CompressedKeyPair.of(Crypto.generateKeys()), pingPong, server.workerGroup);
+    }
+
+    /**
+     * Sends a message to the peer and returns a {@link Single} object for potential responses to
+     * this message.
+     *
+     * @param message message that should be sent
+     * @return a {@link Single} object that can be fulfilled with a {@link Message response} to the
+     * message
+     */
+    @SuppressWarnings("unchecked")
+    public CompletableFuture<ResponseMessage<?>> sendRequest(RequestMessage message) {
+        if (isClosed.get()) {
+            return failedFuture(new IllegalStateException("This connection is already prompt to close."));
+        }
+
+        CompletableFuture<ResponseMessage<?>> future = new CompletableFuture<>();
+
+        if (futures.putIfAbsent(message.getId(), future) == null) {
+            send(message);
+        }
+
+        return future;
     }
 
     public CompressedPublicKey getPublicKey() {

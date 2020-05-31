@@ -19,16 +19,13 @@
 package org.drasyl.peer.connection.server;
 
 import io.netty.channel.Channel;
-import io.reactivex.rxjava3.core.SingleEmitter;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.AbstractNettyConnection;
 import org.drasyl.peer.connection.ConnectionsManager;
-import org.drasyl.peer.connection.message.ResponseMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
@@ -70,10 +67,9 @@ public class NodeServerConnection extends AbstractNettyConnection {
                                    String userAgent,
                                    Identity identity,
                                    AtomicBoolean isClosed,
-                                   ConcurrentHashMap<String, SingleEmitter<ResponseMessage<?>>> emitters,
                                    CompletableFuture<Boolean> closedCompletable,
                                    ConnectionsManager connectionsManager) {
-        super(myChannel, userAgent, identity, isClosed, emitters, closedCompletable, connectionsManager);
+        super(myChannel, userAgent, identity, isClosed, closedCompletable, connectionsManager);
     }
 
     @Override

@@ -21,12 +21,10 @@ package org.drasyl.peer.connection;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
-import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.core.SingleEmitter;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.QuitMessage;
-import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.ResponseMessage;
 import org.drasyl.peer.connection.server.NodeServerConnection;
 import org.slf4j.Logger;
@@ -42,7 +40,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 @SuppressWarnings({ "squid:S00107", "java:S2160" })
 public abstract class AbstractNettyConnection extends PeerConnection {
-    protected final ConcurrentHashMap<String, SingleEmitter<ResponseMessage<?>>> emitters;
     protected final Channel channel;
     protected final String userAgent;
     private final String channelId;
@@ -74,7 +71,7 @@ public abstract class AbstractNettyConnection extends PeerConnection {
                                    Identity identity,
                                    String userAgent,
                                    ConnectionsManager connectionsManager) {
-        this(channel, userAgent, identity, new AtomicBoolean(false), new ConcurrentHashMap<>(), new CompletableFuture<>(), connectionsManager);
+        this(channel, userAgent, identity, new AtomicBoolean(false), new CompletableFuture<>(), connectionsManager);
 
         this.channel.closeFuture().addListener((ChannelFutureListener) this::onChannelClose);
     }
@@ -83,11 +80,9 @@ public abstract class AbstractNettyConnection extends PeerConnection {
                                       String userAgent,
                                       Identity identity,
                                       AtomicBoolean isClosed,
-                                      ConcurrentHashMap<String, SingleEmitter<ResponseMessage<?>>> emitters,
                                       CompletableFuture<Boolean> closedCompletable,
                                       ConnectionsManager connectionsManager) {
         super(identity);
-        this.emitters = emitters;
         this.channel = channel;
         this.userAgent = userAgent;
         this.isClosed = isClosed;
@@ -119,7 +114,6 @@ public abstract class AbstractNettyConnection extends PeerConnection {
     @Override
     protected void close(CloseReason reason) {
         if (isClosed.compareAndSet(false, true)) {
-            emitters.clear();
             channel.writeAndFlush(new QuitMessage(reason)).addListener(ChannelFutureListener.CLOSE);
         }
     }
@@ -136,27 +130,6 @@ public abstract class AbstractNettyConnection extends PeerConnection {
         }
         else {
             getLogger().info("[{} Can't send message {}", AbstractNettyConnection.this, message);
-        }
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public Single<ResponseMessage<?>> sendRequest(RequestMessage message) {
-        return Single.create(emitter -> {
-            if (isClosed.get()) {
-                emitter.onError(new IllegalStateException("This connection is already prompt to close."));
-            }
-            else if (emitters.putIfAbsent(message.getId(), emitter) == null) {
-                send(message);
-            }
-        });
-    }
-
-    @Override
-    public void setResponse(ResponseMessage<? extends RequestMessage> response) {
-        SingleEmitter<ResponseMessage<?>> emitter = emitters.remove(response.getCorrespondingId());
-        if (emitter != null) {
-            emitter.onSuccess(response);
         }
     }
 

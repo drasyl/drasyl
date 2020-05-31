@@ -18,19 +18,18 @@
  */
 package org.drasyl.peer.connection;
 
-import io.reactivex.rxjava3.core.Single;
 import org.drasyl.DrasylNode;
 import org.drasyl.event.Event;
 import org.drasyl.event.EventCode;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.message.*;
+import org.drasyl.peer.connection.message.AbstractMessageWithUserAgent;
+import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.peer.connection.message.Message;
 import org.drasyl.util.Pair;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
-
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 
 /**
  * The {@link LoopbackPeerConnection} object models an loobback connection of this node.
@@ -83,19 +82,6 @@ public class LoopbackPeerConnection extends PeerConnection {
 
         ApplicationMessage applicationMessage = (ApplicationMessage) message;
         onEvent.accept(new Event(EventCode.EVENT_MESSAGE, Pair.of(applicationMessage.getSender(), applicationMessage.getPayload())));
-    }
-
-    @Override
-    @SuppressWarnings("unchecked")
-    public Single<ResponseMessage<?>> sendRequest(RequestMessage message) {
-        send(message);
-
-        return Single.just(new StatusMessage(STATUS_OK, message.getId()));
-    }
-
-    @Override
-    public void setResponse(ResponseMessage<? extends RequestMessage> response) {
-        // Do nothing
     }
 
     @Override

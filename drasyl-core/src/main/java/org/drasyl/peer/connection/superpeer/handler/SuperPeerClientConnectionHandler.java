@@ -63,10 +63,6 @@ public class SuperPeerClientConnectionHandler extends SimpleChannelInboundHandle
         ctx.executor().submit(() -> {
             createConnection(ctx, msg);
             if (connection != null) {
-                if (msg instanceof ResponseMessage) {
-                    connection.setResponse((ResponseMessage<? extends RequestMessage>) msg);
-                }
-
                 if (msg instanceof ApplicationMessage) {
                     ApplicationMessage applicationMessage = (ApplicationMessage) msg;
                     try {
