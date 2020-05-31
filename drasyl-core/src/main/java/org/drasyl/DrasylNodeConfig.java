@@ -36,6 +36,8 @@ import java.util.Set;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
+import static org.drasyl.util.SecretUtil.maskSecret;
+
 /**
  * This class represents the configuration for a {@link DrasylNode}. For example, it defines the
  * identity and the Super Peer.
@@ -389,27 +391,5 @@ public class DrasylNodeConfig {
                 ", superPeerIdleRetries=" + superPeerIdleRetries +
                 ", superPeerIdleTimeout=" + superPeerIdleTimeout +
                 '}';
-    }
-
-    /**
-     * This method replaces each character in the return of toString() with a asterisk. Can be used
-     * to mask secrets.
-     *
-     * @param secret
-     * @return
-     */
-    private static String maskSecret(Object secret) {
-        if (secret != null) {
-            String secretStr = secret.toString();
-            if (secretStr != null) {
-                return "*".repeat(secretStr.length());
-            }
-            else {
-                return null;
-            }
-        }
-        else {
-            return null;
-        }
     }
 }
