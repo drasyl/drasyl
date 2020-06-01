@@ -116,10 +116,10 @@ public class PeersManager {
             lock.writeLock().lock();
 
             if (superPeer == identity) {
-                throw new IllegalArgumentException("Peer is cannot be removed. It is defined as Super Peer");
+                throw new IllegalArgumentException("Peer cannot be removed. It is defined as Super Peer");
             }
             if (children.contains(identity)) {
-                throw new IllegalArgumentException("Peer is cannot be removed. It is defined as Children");
+                throw new IllegalArgumentException("Peer cannot be removed. It is defined as Children");
             }
 
             return peers.remove(identity);
@@ -138,10 +138,10 @@ public class PeersManager {
             // validate
             for (Identity identity : identities) {
                 if (superPeer == identity) {
-                    throw new IllegalArgumentException("Peer is cannot be removed. It is defined as Super Peer");
+                    throw new IllegalArgumentException("Peer cannot be removed. It is defined as Super Peer");
                 }
                 if (children.contains(identity)) {
-                    throw new IllegalArgumentException("Peer is cannot be removed. It is defined as Children");
+                    throw new IllegalArgumentException("Peer cannot be removed. It is defined as Children");
                 }
             }
 
