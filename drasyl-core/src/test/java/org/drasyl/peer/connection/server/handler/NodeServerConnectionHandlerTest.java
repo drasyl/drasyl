@@ -16,121 +16,152 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.peer.connection.server.handler;
 
-import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
-import org.drasyl.crypto.CryptoException;
-import org.drasyl.identity.CompressedKeyPair;
+import io.netty.util.concurrent.EventExecutor;
+import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.identity.Identity;
-import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
-import org.drasyl.messenger.MessengerException;
-import org.drasyl.peer.PeerInformation;
-import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.AbstractNettyConnection;
 import org.drasyl.peer.connection.ConnectionsManager;
-import org.drasyl.peer.connection.message.ApplicationMessage;
-import org.drasyl.peer.connection.message.JoinMessage;
-import org.drasyl.peer.connection.message.ResponseMessage;
-import org.drasyl.peer.connection.message.WelcomeMessage;
+import org.drasyl.peer.connection.message.*;
 import org.drasyl.peer.connection.server.NodeServer;
-import org.drasyl.peer.connection.server.NodeServerConnection;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import java.net.URI;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.TimeUnit;
 
+import static java.time.Duration.ofMillis;
+import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_SAME_PUBLIC_KEY;
+import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.*;
 
 class NodeServerConnectionHandlerTest {
-    private NodeServer nodeServer;
-    private URI uri;
-    private CompletableFuture<NodeServerConnection> completableFuture;
     private EmbeddedChannel channel;
-    private NodeServerConnection clientConnection;
-    private ResponseMessage<?> responseMessage;
-    private JoinMessage joinMessage;
-    private CompressedPublicKey compressedPublicKey;
-    private Messenger messenger;
-    private ConnectionsManager connectionsManager;
-    private PeersManager peersManager;
-    private IdentityManager identityManager;
-    private CompressedKeyPair keyPair;
+    private ChannelHandlerContext ctx;
+    private ScheduledFuture<?> timeoutFuture;
+    private ChannelPromise promise;
+    private Message msg;
+    private CompressedPublicKey publicKey;
+    private EventExecutor eventExecutor;
+    private ChannelFuture channelFuture;
+    private Throwable cause;
     private ApplicationMessage applicationMessage;
+    private JoinMessage joinMessage;
+    private NodeServer server;
+    private ConnectionsManager connectionsManager;
+    private Messenger messenger;
+    private CompletableFuture<Void> handshakeFuture;
+    private AbstractNettyConnection connection;
+    private JoinMessage requestMessage;
 
     @BeforeEach
-    void setUp() throws CryptoException {
-        nodeServer = mock(NodeServer.class);
-        uri = URI.create("ws://example.com");
-        completableFuture = mock(CompletableFuture.class);
-        clientConnection = mock(NodeServerConnection.class);
-        responseMessage = mock(ResponseMessage.class);
-        joinMessage = mock(JoinMessage.class);
-        compressedPublicKey = CompressedPublicKey.of("030b6adedef11147b3eea4b4f526f1226ffab218f2b81497e5175e6496f7aa929d");
-        messenger = mock(Messenger.class);
+    void setUp() {
+        ctx = mock(ChannelHandlerContext.class);
+        promise = mock(ChannelPromise.class);
+        timeoutFuture = mock(ScheduledFuture.class);
+        msg = new QuitMessage();
+        publicKey = mock(CompressedPublicKey.class);
+        eventExecutor = mock(EventExecutor.class);
+        channelFuture = mock(ChannelFuture.class);
+        cause = mock(Throwable.class);
+        server = mock(NodeServer.class);
         connectionsManager = mock(ConnectionsManager.class);
-        peersManager = mock(PeersManager.class);
-        identityManager = mock(IdentityManager.class);
-        keyPair = mock(CompressedKeyPair.class);
+        messenger = mock(Messenger.class);
+        handshakeFuture = mock(CompletableFuture.class);
+        connection = mock(AbstractNettyConnection.class);
+        requestMessage = mock(JoinMessage.class);
+
+        when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
         applicationMessage = mock(ApplicationMessage.class);
+        joinMessage = mock(JoinMessage.class);
+    }
 
-        ChannelHandler handler = new NodeServerConnectionHandler(nodeServer, completableFuture, clientConnection, uri);
-        channel = new EmbeddedChannel(handler);
+    // FIXME: fix test
+    @Disabled("Muss implementiert werden")
+    @Test
+    void channelActiveShouldThrowExceptionAndCloseChannelOnTimeout() throws Exception {
+        when(ctx.executor()).thenReturn(eventExecutor);
+        when(eventExecutor.schedule(any(Runnable.class), any(), any(TimeUnit.class))).then(invocation -> {
+            Runnable runnable = invocation.getArgument(0, Runnable.class);
+            runnable.run();
+            return mock(ScheduledFuture.class);
+        });
 
-        when(nodeServer.getMessenger()).thenReturn(messenger);
-        when(messenger.getConnectionsManager()).thenReturn(connectionsManager);
-        when(nodeServer.getPeersManager()).thenReturn(peersManager);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(connectionsManager, ofMillis(1000), handshakeFuture, connection, timeoutFuture, requestMessage, publicKey, server);
+
+        handler.channelActive(ctx);
+
+        verify(ctx).writeAndFlush(any(ConnectionExceptionMessage.class));
+        verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
+        verify(ctx).close();
     }
 
     @Test
-    void shouldPassMessageToMessengerIfSessionExists() throws MessengerException {
-        ChannelHandler handler = new NodeServerConnectionHandler(nodeServer, completableFuture, clientConnection, uri);
+    void closeShouldCloseChannelAndCancelTimeoutTask() {
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(connectionsManager, ofMillis(1000), handshakeFuture, connection, timeoutFuture, requestMessage, publicKey, server);
+
+        handler.close(ctx, promise);
+
+        verify(timeoutFuture).cancel(true);
+        verify(ctx).close(promise);
+    }
+
+    @Test
+    void shouldRejectIncomingJoinMessageWithSamePublicKey() {
+        when(server.getMessenger()).thenReturn(messenger);
+        when(messenger.getConnectionsManager()).thenReturn(connectionsManager);
+        when(joinMessage.getPublicKey()).thenReturn(publicKey);
+        when(connection.isClosed()).thenReturn(new CompletableFuture<>());
+
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(connectionsManager, ofMillis(1000), handshakeFuture, connection, timeoutFuture, null, publicKey, server);
+        EmbeddedChannel channel = new EmbeddedChannel(handler);
+
+        channel.writeInbound(joinMessage);
+        channel.flush();
+
+        assertEquals(new ConnectionExceptionMessage(CONNECTION_ERROR_SAME_PUBLIC_KEY), channel.readOutbound());
+    }
+
+    @Test
+    void shouldDenyNonUnrestrictedMessages() {
+        when(applicationMessage.getId()).thenReturn("123");
+
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(connectionsManager, ofMillis(1000), handshakeFuture, connection, timeoutFuture, requestMessage, publicKey, server);
         channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(applicationMessage);
-        channel.flush();
 
-        verify(messenger).send(applicationMessage);
+        assertEquals(new StatusMessage(STATUS_FORBIDDEN, "123"), channel.readOutbound());
+        assertNull(channel.readInbound());
     }
 
     @Test
-    void shouldCreateSessionOnJoinMessageIfNoSessionExists() {
-        when(joinMessage.getPublicKey()).thenReturn(compressedPublicKey);
-        when(nodeServer.getEntryPoints()).thenReturn(Set.of(URI.create("ws://testURI")));
-        when(nodeServer.getIdentityManager()).thenReturn(identityManager);
-        when(identityManager.getKeyPair()).thenReturn(keyPair);
-        when(keyPair.getPublicKey()).thenReturn(compressedPublicKey);
-
-        ChannelHandler handler = new NodeServerConnectionHandler(nodeServer, completableFuture, null, uri);
+    void channelRead0ShouldReplyWithStatusForbiddenForNonJoinMessage() {
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(connectionsManager, ofMillis(1000), handshakeFuture, connection, timeoutFuture, requestMessage, publicKey, server);
         channel = new EmbeddedChannel(handler);
 
-        channel.writeInbound(joinMessage);
-        channel.flush();
+        channel.writeInbound(msg);
 
-        verify(completableFuture).complete(any());
-
-        PeerInformation myPeerInformation = new PeerInformation();
-        myPeerInformation.setPublicKey(joinMessage.getPublicKey());
-        myPeerInformation.addEndpoint(joinMessage.getEndpoints());
-        verify(peersManager).addPeer(Identity.of(compressedPublicKey), myPeerInformation);
-        verify(peersManager).addChildren(Identity.of(compressedPublicKey));
-
-        assertEquals(channel.readOutbound(), new WelcomeMessage(nodeServer.getIdentityManager().getKeyPair().getPublicKey(), nodeServer.getEntryPoints(), joinMessage.getId()));
+        assertEquals(new StatusMessage(STATUS_FORBIDDEN, msg.getId()), channel.readOutbound());
+        assertNull(channel.readInbound());
     }
 
     @Test
-    void shouldCreateNoSessionOnJoinMessageIfSessionExists() {
-        ChannelHandler handler = new NodeServerConnectionHandler(nodeServer, completableFuture, clientConnection, uri);
-        channel = new EmbeddedChannel(handler);
+    void exceptionCaughtShouldWriteExceptionToChannelAndThenCloseIt() {
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(connectionsManager, ofMillis(1000), handshakeFuture, connection, timeoutFuture, requestMessage, publicKey, server);
+        handler.exceptionCaught(ctx, cause);
 
-        channel.writeInbound(joinMessage);
-        channel.flush();
-
-        verify(completableFuture, never()).complete(any());
+        verify(ctx).writeAndFlush(any(ConnectionExceptionMessage.class));
+        verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
     }
 }

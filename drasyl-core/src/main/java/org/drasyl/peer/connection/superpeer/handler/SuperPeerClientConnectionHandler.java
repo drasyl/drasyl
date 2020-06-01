@@ -19,97 +19,117 @@
 package org.drasyl.peer.connection.superpeer.handler;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.util.ReferenceCountUtil;
 import org.drasyl.DrasylException;
+import org.drasyl.crypto.CryptoException;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeerInformation;
+import org.drasyl.peer.connection.AbstractNettyConnection;
+import org.drasyl.peer.connection.handler.AbstractThreeWayHandshakeClientHandler;
 import org.drasyl.peer.connection.message.*;
 import org.drasyl.peer.connection.superpeer.SuperPeerClient;
 import org.drasyl.peer.connection.superpeer.SuperPeerClientConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
+import java.time.Duration;
+import java.util.Set;
+
+import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_WRONG_PUBLIC_KEY;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_NOT_FOUND;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 
 /**
- * This handler mange in-/oncoming messages and pass them to the correct sub-function. It also
- * creates a new {@link SuperPeerClientConnection} object if a {@link WelcomeMessage} has pass the
- * {@link SuperPeerClientWelcomeGuard} guard.
+ * This handler performs the handshake with the server and processes incoming messages during the
+ * session.
+ * <p>
+ * The handshake is initiated by a {@link JoinMessage} sent by the client, which is answered with a
+ * {@link WelcomeMessage} from the server. The client must then confirm this message with a {@link
+ * StatusMessage}.
  */
-public class SuperPeerClientConnectionHandler extends SimpleChannelInboundHandler<Message> {
-    public static final String SUPER_PEER_HANDLER = "superPeerClientConnectionHandler";
+public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeClientHandler<JoinMessage, WelcomeMessage> {
+    public static final String SUPER_PEER_CLIENT_CONNECTION_HANDLER = "superPeerClientConnectionHandler";
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClientConnectionHandler.class);
+    private final CompressedPublicKey expectedPublicKey;
+    private final CompressedPublicKey ownPublicKey;
     private final SuperPeerClient superPeerClient;
-    private SuperPeerClientConnection connection;
 
-    public SuperPeerClientConnectionHandler(SuperPeerClient superPeerClient) {
+    public SuperPeerClientConnectionHandler(String expectedPublicKey,
+                                            CompressedPublicKey ownPublicKey,
+                                            Set<URI> endpoints,
+                                            SuperPeerClient superPeerClient,
+                                            Duration timeout) {
+        super(superPeerClient.getMessenger().getConnectionsManager(), timeout, new JoinMessage(ownPublicKey, endpoints));
+        CompressedPublicKey expectedPublicKey1;
+        if (expectedPublicKey == null || expectedPublicKey.equals("")) {
+            expectedPublicKey1 = null;
+        }
+        else {
+            try {
+                expectedPublicKey1 = CompressedPublicKey.of(expectedPublicKey);
+            }
+            catch (CryptoException e) {
+                LOG.error("", e);
+                expectedPublicKey1 = null;
+            }
+        }
+        this.expectedPublicKey = expectedPublicKey1;
+        this.ownPublicKey = ownPublicKey;
         this.superPeerClient = superPeerClient;
     }
 
     @Override
-    public void handlerAdded(final ChannelHandlerContext ctx) {
-        ctx.channel().closeFuture().addListener(future -> {
-            if (connection != null && !connection.isClosed().isDone()) {
-                superPeerClient.getMessenger().getConnectionsManager().removeClosingConnection(connection);
-            }
-        });
+    protected Logger getLogger() {
+        return LOG;
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx,
-                                Message msg) {
-        ctx.executor().submit(() -> {
-            createConnection(ctx, msg);
-            if (connection != null) {
-                if (msg instanceof ApplicationMessage) {
-                    ApplicationMessage applicationMessage = (ApplicationMessage) msg;
-                    try {
-                        superPeerClient.getMessenger().send(applicationMessage);
-                        connection.send(new StatusMessage(STATUS_OK, applicationMessage.getId()));
-                    }
-                    catch (DrasylException e) {
-                        connection.send(new StatusMessage(STATUS_NOT_FOUND, applicationMessage.getId()));
-                    }
-                }
-                else {
-                    LOG.debug("Could not process the message {}", msg);
-                }
-            }
-        }).addListener(future -> {
-            if (!future.isSuccess()) {
-                LOG.debug("Could not process the message {}: ", msg, future.cause());
-            }
-
-            ReferenceCountUtil.release(msg);
-        });
+    protected ConnectionExceptionMessage.Error validateSessionOffer(WelcomeMessage offerMessage) {
+        CompressedPublicKey superPeerPublicKey = offerMessage.getPublicKey();
+        if (expectedPublicKey != null && !superPeerPublicKey.equals(expectedPublicKey)) {
+            return CONNECTION_ERROR_WRONG_PUBLIC_KEY;
+        }
+        else if (superPeerPublicKey.equals(ownPublicKey)) {
+            return CONNECTION_ERROR_WRONG_PUBLIC_KEY;
+        }
+        else {
+            return null;
+        }
     }
 
-    /**
-     * Creates a new {@link SuperPeerClientConnection}, if not already there.
-     */
-    private void createConnection(final ChannelHandlerContext ctx, Message msg) {
-        if (msg instanceof WelcomeMessage && connection == null) {
-            WelcomeMessage welcomeMessage = (WelcomeMessage) msg;
-            Identity identity = Identity.of(welcomeMessage.getPublicKey());
-
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("[{}]: Create new Connection from Channel {}", ctx.channel().id().asShortText(), ctx.channel().id());
+    @Override
+    protected void processMessageAfterHandshake(AbstractNettyConnection connection,
+                                                Message message) {
+        if (message instanceof ApplicationMessage) {
+            ApplicationMessage applicationMessage = (ApplicationMessage) message;
+            try {
+                superPeerClient.getMessenger().send(applicationMessage);
+                connection.send(new StatusMessage(STATUS_OK, applicationMessage.getId()));
             }
-
-            // create peer connection
-            connection = new SuperPeerClientConnection(ctx.channel(), identity, welcomeMessage.getUserAgent(), superPeerClient.getMessenger().getConnectionsManager());
-
-            // store peer information
-            PeerInformation peerInformation = new PeerInformation();
-            peerInformation.setPublicKey(welcomeMessage.getPublicKey());
-            peerInformation.addEndpoint(welcomeMessage.getEndpoints());
-            superPeerClient.getPeersManager().addPeer(identity, peerInformation);
-            superPeerClient.getPeersManager().setSuperPeer(identity);
-
-            // send confirmation
-            ctx.writeAndFlush(new StatusMessage(STATUS_OK, msg.getId()));
+            catch (DrasylException e) {
+                connection.send(new StatusMessage(STATUS_NOT_FOUND, applicationMessage.getId()));
+            }
         }
+        else {
+            LOG.debug("Could not process the message {}", message);
+        }
+    }
+
+    @Override
+    protected AbstractNettyConnection createConnection(final ChannelHandlerContext ctx, WelcomeMessage offerMessage) {
+        Identity identity = Identity.of(offerMessage.getPublicKey());
+
+        // create peer connection
+        SuperPeerClientConnection connection = new SuperPeerClientConnection(ctx.channel(), identity, offerMessage.getUserAgent(), superPeerClient.getMessenger().getConnectionsManager());
+
+        // store peer information
+        PeerInformation peerInformation = new PeerInformation();
+        peerInformation.setPublicKey(offerMessage.getPublicKey());
+        peerInformation.addEndpoint(offerMessage.getEndpoints());
+        superPeerClient.getPeersManager().addPeer(identity, peerInformation);
+        superPeerClient.getPeersManager().setSuperPeer(identity);
+
+        return connection;
     }
 }

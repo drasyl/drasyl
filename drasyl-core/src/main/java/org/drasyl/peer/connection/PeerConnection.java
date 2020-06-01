@@ -20,12 +20,9 @@ package org.drasyl.peer.connection;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
-import io.reactivex.rxjava3.core.Single;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.Message;
-import org.drasyl.peer.connection.message.RequestMessage;
-import org.drasyl.peer.connection.message.ResponseMessage;
 
 import java.util.HashMap;
 import java.util.Map;

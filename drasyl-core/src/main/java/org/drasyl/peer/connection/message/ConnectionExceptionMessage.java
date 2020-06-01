@@ -92,7 +92,8 @@ public class ConnectionExceptionMessage extends AbstractMessage implements Reque
     public enum Error {
         CONNECTION_ERROR_INITIALIZATION("Error occurred during initialization stage."),
         CONNECTION_ERROR_INTERNAL("Internal Error occurred."),
-        CONNECTION_ERROR_HANDSHAKE("Handshake did not take place within timeout."),
+        CONNECTION_ERROR_HANDSHAKE_TIMEOUT("Handshake did not take place within timeout."),
+        CONNECTION_ERROR_HANDSHAKE_REJECTED("Handshake has been rejected by other peer."),
         CONNECTION_ERROR_PING_PONG("Too many Ping Messages were not answered with a Pong Message."),
         CONNECTION_ERROR_SAME_PUBLIC_KEY("Peer has sent same Public Key. You can't connect to yourself. This would cause a routing loop. This could indicate a configuration error."),
         CONNECTION_ERROR_WRONG_PUBLIC_KEY("Peer has sent an unexpected Public Key. This could indicate a configuration error or man-in-the-middle attack.");

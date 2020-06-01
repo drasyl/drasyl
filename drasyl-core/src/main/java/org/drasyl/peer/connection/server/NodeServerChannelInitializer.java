@@ -32,7 +32,6 @@ import org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.QuitMessageHandler;
 import org.drasyl.peer.connection.server.handler.NodeServerConnectionHandler;
-import org.drasyl.peer.connection.server.handler.NodeServerJoinGuard;
 import org.drasyl.peer.connection.server.handler.NodeServerMissingWebSocketUpgradeErrorPage;
 import org.drasyl.peer.connection.server.handler.NodeServerNewConnectionsGuard;
 import org.slf4j.Logger;
@@ -41,8 +40,7 @@ import org.slf4j.LoggerFactory;
 import javax.net.ssl.SSLException;
 import java.security.cert.CertificateException;
 
-import static org.drasyl.peer.connection.server.handler.NodeServerConnectionHandler.HANDLER;
-import static org.drasyl.peer.connection.server.handler.NodeServerJoinGuard.JOIN_GUARD;
+import static org.drasyl.peer.connection.server.handler.NodeServerConnectionHandler.NODE_SERVER_CONNECTION_HANDLER;
 
 /**
  * Creates a newly configured {@link ChannelPipeline} for the node server.
@@ -80,11 +78,8 @@ public class NodeServerChannelInitializer extends DefaultSessionInitializer {
         // ConnectionExceptionMessage Handler
         pipeline.addLast(ConnectionExceptionMessageHandler.EXCEPTION_MESSAGE_HANDLER, ConnectionExceptionMessageHandler.INSTANCE);
 
-        // Guards
-        pipeline.addLast(JOIN_GUARD, new NodeServerJoinGuard(server.getIdentityManager().getKeyPair().getPublicKey(), server.getConfig().getServerHandshakeTimeout()));
-
         // Server handler
-        pipeline.addLast(HANDLER, new NodeServerConnectionHandler(this.server));
+        pipeline.addLast(NODE_SERVER_CONNECTION_HANDLER, new NodeServerConnectionHandler(server.getIdentityManager().getKeyPair().getPublicKey(), server.getConfig().getServerHandshakeTimeout(), server));
     }
 
     @Override

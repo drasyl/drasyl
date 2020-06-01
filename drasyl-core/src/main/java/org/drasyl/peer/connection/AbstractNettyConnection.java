@@ -21,19 +21,18 @@ package org.drasyl.peer.connection;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
-import io.reactivex.rxjava3.core.SingleEmitter;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.QuitMessage;
-import org.drasyl.peer.connection.message.ResponseMessage;
 import org.drasyl.peer.connection.server.NodeServerConnection;
 import org.slf4j.Logger;
 
 import java.text.MessageFormat;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * The {@link AbstractNettyConnection} object models an in- or outbound connection by netty.
@@ -125,7 +124,8 @@ public abstract class AbstractNettyConnection extends PeerConnection {
 
     @Override
     public void send(Message message) {
-        if (message != null && !isClosed.get() && channel.isOpen()) {
+        requireNonNull(message);
+        if (!isClosed.get() && channel.isOpen()) {
             channel.writeAndFlush(message);
         }
         else {
