@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl;
 
 import com.typesafe.config.Config;
@@ -28,19 +27,15 @@ import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.event.Event;
 import org.drasyl.event.EventCode;
 import org.drasyl.util.Pair;
-import org.hamcrest.MatcherAssert;
 import org.junit.jupiter.api.*;
 import testutils.TestHelper;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.event.EventCode.EVENT_MESSAGE;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.contains;
+import static org.drasyl.event.EventCode.*;
 import static testutils.AnsiColor.COLOR_CYAN;
 import static testutils.AnsiColor.STYLE_REVERSED;
 
@@ -77,25 +72,25 @@ class DrasylNodeIT {
         // super super peer
         config = ConfigFactory.parseString("drasyl.server.bind-port = 22528\ndrasyl.super-peer.enabled = false").withFallback(ConfigFactory.load("configs/DrasylNodeIT-4c4fdd0957.conf"));
         Pair<DrasylNode, Observable<Event>> superSuperPeer = createNode(config);
-        MatcherAssert.assertThat(superSuperPeer.second().take(1).toList().blockingGet().stream().map(Event::getCode).collect(Collectors.toList()), contains(EventCode.EVENT_NODE_UP));
+        superSuperPeer.second().filter(e -> e.getCode() == EVENT_NODE_UP).test().awaitCount(1);
         TestHelper.colorizedPrintln("CREATED superSuperPeer", COLOR_CYAN, STYLE_REVERSED);
 
         // super peer
         config = ConfigFactory.parseString("drasyl.server.bind-port = 22529\ndrasyl.super-peer.public-key = \"03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a\"\ndrasyl.super-peer.endpoints = [\"ws://127.0.0.1:22528\"]").withFallback(ConfigFactory.load("configs/DrasylNodeIT-9df9214d78.conf"));
         Pair<DrasylNode, Observable<Event>> superPeer = createNode(config);
-        assertThat(superPeer.second().take(2).toList().blockingGet().stream().map(Event::getCode).collect(Collectors.toList()), contains(EventCode.EVENT_NODE_UP, EventCode.EVENT_NODE_ONLINE));
+        superPeer.second().filter(e -> e.getCode() == EVENT_NODE_ONLINE).test().awaitCount(1);
         TestHelper.colorizedPrintln("CREATED superPeer", COLOR_CYAN, STYLE_REVERSED);
 
         // client1
         config = ConfigFactory.parseString("drasyl.server.enabled = false\ndrasyl.super-peer.public-key = \"030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22\"\ndrasyl.super-peer.endpoints = [\"ws://127.0.0.1:22529\"]").withFallback(ConfigFactory.load("configs/DrasylNodeIT-030f018704.conf"));
         Pair<DrasylNode, Observable<Event>> client1 = createNode(config);
-        assertThat(client1.second().take(2).toList().blockingGet().stream().map(Event::getCode).collect(Collectors.toList()), contains(EventCode.EVENT_NODE_UP, EventCode.EVENT_NODE_ONLINE));
+        client1.second().filter(e -> e.getCode() == EVENT_NODE_ONLINE).test().awaitCount(1);
         TestHelper.colorizedPrintln("CREATED client1", COLOR_CYAN, STYLE_REVERSED);
 
         // client2
         config = ConfigFactory.parseString("drasyl.server.enabled = false\ndrasyl.super-peer.public-key = \"030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22\"\ndrasyl.super-peer.endpoints = [\"ws://127.0.0.1:22529\"]").withFallback(ConfigFactory.load("configs/DrasylNodeIT-be0300f1a4.conf"));
         Pair<DrasylNode, Observable<Event>> client2 = createNode(config);
-        assertThat(client2.second().take(2).toList().blockingGet().stream().map(Event::getCode).collect(Collectors.toList()), contains(EventCode.EVENT_NODE_UP, EventCode.EVENT_NODE_ONLINE));
+        client2.second().filter(e -> e.getCode() == EVENT_NODE_ONLINE).test().awaitCount(1);
         TestHelper.colorizedPrintln("CREATED client2", COLOR_CYAN, STYLE_REVERSED);
 
         //
