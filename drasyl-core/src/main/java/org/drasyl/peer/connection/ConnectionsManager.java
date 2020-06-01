@@ -16,10 +16,11 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.peer.connection;
 
 import com.google.common.collect.HashMultimap;
+import org.drasyl.event.Event;
+import org.drasyl.event.Peer;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.PeerConnection.CloseReason;
 import org.drasyl.peer.connection.superpeer.SuperPeerClientConnection;
@@ -36,6 +37,8 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.event.EventCode.EVENT_PEER_DIRECT;
+import static org.drasyl.event.EventCode.EVENT_PEER_RELAY;
 import static org.drasyl.peer.connection.PeerConnection.CloseReason.REASON_NEW_SESSION;
 
 /**
@@ -50,19 +53,22 @@ public class ConnectionsManager {
     private final ReadWriteLock lock;
     private final HashMultimap<Identity, PeerConnection> connections;
     private final Map<PeerConnection, Consumer<CloseReason>> closeProcedures;
+    private final Consumer<Event> eventConsumer;
     private Identity superPeer;
 
-    public ConnectionsManager() {
-        this(new ReentrantReadWriteLock(true), HashMultimap.create(), new HashMap<>(), null);
+    public ConnectionsManager(Consumer<Event> eventConsumer) {
+        this(new ReentrantReadWriteLock(true), HashMultimap.create(), new HashMap<>(), eventConsumer, null);
     }
 
-    public ConnectionsManager(ReadWriteLock lock,
-                              HashMultimap<Identity, PeerConnection> connections,
-                              Map<PeerConnection, Consumer<CloseReason>> closeProcedures,
-                              Identity superPeer) {
+    ConnectionsManager(ReadWriteLock lock,
+                       HashMultimap<Identity, PeerConnection> connections,
+                       Map<PeerConnection, Consumer<CloseReason>> closeProcedures,
+                       Consumer<Event> eventConsumer,
+                       Identity superPeer) {
         this.lock = requireNonNull(lock);
         this.connections = requireNonNull(connections);
         this.closeProcedures = requireNonNull(closeProcedures);
+        this.eventConsumer = eventConsumer;
         this.superPeer = superPeer;
     }
 
@@ -107,34 +113,34 @@ public class ConnectionsManager {
         try {
             lock.writeLock().lock();
 
-            LOG.debug("Add Connection '{}' for Node '{}'", connection, connection.getIdentity());
+            Identity identity = connection.getIdentity();
+            LOG.debug("Add Connection '{}' for Node '{}'", connection, identity);
 
             // remember super peer identity for fast lookup
             if (connection instanceof SuperPeerClientConnection) {
-                superPeer = connection.getIdentity();
+                superPeer = identity;
             }
 
-            Optional<PeerConnection> existingConnection = connections.get(connection.getIdentity()).stream().filter(c -> c.getClass() == connection.getClass()).findFirst();
+            boolean firstConnection = !connections.containsKey(identity);
+
+            Optional<PeerConnection> existingConnection = connections.get(identity).stream().filter(c -> c.getClass() == connection.getClass()).findFirst();
             if (existingConnection.isPresent()) {
-                LOG.debug("A Connection of this type already exists for Node '{}'. Replace and close existing Connection '{}' before adding new Connection '{}'", connection.getIdentity(), existingConnection.get(), connection);
+                LOG.debug("A Connection of this type already exists for Node '{}'. Replace and close existing Connection '{}' before adding new Connection '{}'", identity, existingConnection.get(), connection);
 
                 closeAndRemoveConnection(existingConnection.get(), REASON_NEW_SESSION);
             }
 
-            connections.put(connection.getIdentity(), connection);
+            connections.put(identity, connection);
             closeProcedures.put(connection, closeProcedure);
+
+            // send event
+            if (firstConnection) {
+                eventConsumer.accept(new Event(EVENT_PEER_DIRECT, new Peer(identity)));
+            }
         }
         finally {
             lock.writeLock().unlock();
         }
-    }
-
-    private void removeConnection(PeerConnection connection) {
-        if (connection instanceof SuperPeerClientConnection) {
-            superPeer = null;
-        }
-
-        connections.remove(connection.getIdentity(), connection);
     }
 
     private void closeAndRemoveConnection(PeerConnection connection,
@@ -144,6 +150,15 @@ public class ConnectionsManager {
             p.accept(reason);
             LOG.debug("Close and remove Connection '{}' for Node '{}' for Reason '{}'", connection, connection.getIdentity(), reason);
         });
+    }
+
+    private void removeConnection(PeerConnection connection) {
+        if (connection instanceof SuperPeerClientConnection) {
+            superPeer = null;
+        }
+
+        Identity identity = connection.getIdentity();
+        connections.remove(identity, connection);
     }
 
     /**
@@ -159,9 +174,21 @@ public class ConnectionsManager {
             lock.writeLock().lock();
 
             closeAndRemoveConnection(connection, reason);
+
+            // send event
+            Identity identity = connection.getIdentity();
+
+            conditionalSendPeerRelayEvent(identity);
         }
         finally {
             lock.writeLock().unlock();
+        }
+    }
+
+    private void conditionalSendPeerRelayEvent(Identity identity) {
+        boolean wasLastConnection = !connections.containsKey(identity);
+        if (wasLastConnection) {
+            eventConsumer.accept(new Event(EVENT_PEER_RELAY, new Peer(identity)));
         }
     }
 
@@ -175,6 +202,7 @@ public class ConnectionsManager {
             lock.writeLock().lock();
 
             removeConnection(connection);
+            conditionalSendPeerRelayEvent(connection.getIdentity());
         }
         finally {
             lock.writeLock().unlock();
@@ -200,6 +228,8 @@ public class ConnectionsManager {
             for (PeerConnection peerConnection : connectionsOfType) {
                 closeAndRemoveConnection(peerConnection, reason);
             }
+
+            conditionalSendPeerRelayEvent(identity);
         }
         finally {
             lock.writeLock().unlock();
@@ -221,6 +251,7 @@ public class ConnectionsManager {
             Set<PeerConnection> connectionsOfType = connections.values().stream().filter(c -> c.getClass() == clazz).collect(Collectors.toSet());
             for (PeerConnection peerConnection : connectionsOfType) {
                 closeAndRemoveConnection(peerConnection, reason);
+                conditionalSendPeerRelayEvent(peerConnection.getIdentity());
             }
         }
         finally {

@@ -21,6 +21,9 @@ package org.drasyl.peer.connection;
 
 import com.google.common.collect.HashMultimap;
 import org.drasyl.crypto.Crypto;
+import org.drasyl.event.Event;
+import org.drasyl.event.EventCode;
+import org.drasyl.event.Peer;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.PeerConnection.CloseReason;
 import org.drasyl.peer.connection.superpeer.SuperPeerClientConnection;
@@ -33,6 +36,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
 
+import static org.drasyl.event.EventCode.EVENT_PEER_DIRECT;
+import static org.drasyl.event.EventCode.EVENT_PEER_RELAY;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -51,6 +56,7 @@ class ConnectionsManagerTest {
     private Identity superPeer;
     private SuperPeerClientConnection superPeerClientConnection;
     private Consumer<CloseReason> superPeerRunnable;
+    private Consumer<Event> eventConsumer;
 
     @BeforeEach
     void setUp() {
@@ -68,6 +74,7 @@ class ConnectionsManagerTest {
         runnable2 = mock(Consumer.class);
         superPeerRunnable = mock(Consumer.class);
         superPeer = mock(Identity.class);
+        eventConsumer = mock(Consumer.class);
 
         when(lock.writeLock()).thenReturn(writeLock);
         when(lock.readLock()).thenReturn(readLock);
@@ -82,7 +89,7 @@ class ConnectionsManagerTest {
 
     @Test
     void getConnectionShouldReturnDirectConnectionIfItsTheBestConnectionForGivenIdentity() {
-        ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures, superPeer);
+        ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures, eventConsumer, superPeer);
         connectionsManager.addConnection(peerConnection, runnable1);
 
         Assertions.assertEquals(peerConnection, connectionsManager.getConnection(identity));
@@ -92,7 +99,7 @@ class ConnectionsManagerTest {
 
     @Test
     void getConnectionShouldReturnSuperPeerConnectionIfItsTheBestConnectionForGivenIdentity() {
-        ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures, superPeer);
+        ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures, eventConsumer, superPeer);
         connectionsManager.addConnection(superPeerClientConnection, superPeerRunnable);
 
         Assertions.assertEquals(superPeerClientConnection, connectionsManager.getConnection(identity));
@@ -102,7 +109,7 @@ class ConnectionsManagerTest {
 
     @Test
     void getConnectionShouldReturnNullIfNoConnectionIsAvailable() {
-        ConnectionsManager connectionsManager = new ConnectionsManager(lock, HashMultimap.create(), Map.of(), null);
+        ConnectionsManager connectionsManager = new ConnectionsManager(lock, HashMultimap.create(), Map.of(), eventConsumer, null);
 
         assertNull(connectionsManager.getConnection(identity));
         verify(readLock).lock();
@@ -111,48 +118,52 @@ class ConnectionsManagerTest {
 
     @Test
     void addConnectionShouldCloseExistingConnectionAndAddConnectionToListOfAllConnections() {
-        ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures, null);
+        ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures, eventConsumer, null);
         connectionsManager.addConnection(peerConnection, runnable1);
         connectionsManager.addConnection(peerConnection2, runnable2);
 
         verify(runnable1).accept(CloseReason.REASON_NEW_SESSION);
         assertTrue(connections.containsEntry(identity, peerConnection2));
+        verify(eventConsumer).accept(new Event(EVENT_PEER_DIRECT, new Peer(peerConnection.getIdentity())));
         verify(writeLock, times(2)).lock();
         verify(writeLock, times(2)).unlock();
     }
 
     @Test
     void closeConnectionShouldCloseAndRemoveFromListOfAllConnections() {
-        ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures, null);
+        ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures, eventConsumer, null);
         connectionsManager.addConnection(peerConnection, runnable1);
         connectionsManager.closeConnection(peerConnection, reason);
 
         assertFalse(connections.containsEntry(identity, peerConnection));
         verify(runnable1).accept(reason);
+        verify(eventConsumer).accept(new Event(EVENT_PEER_RELAY, new Peer(peerConnection.getIdentity())));
         verify(writeLock, times(2)).lock();
         verify(writeLock, times(2)).unlock();
     }
 
     @Test
     void closeConnectionOfTypeForIdentityShouldCloseAndRemoveAllConnectionsOfGivenTypeForGivenIdentity() {
-        ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures, null);
+        ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures, eventConsumer, null);
         connectionsManager.addConnection(peerConnection, runnable1);
         connectionsManager.closeConnectionOfTypeForIdentity(identity, peerConnection.getClass(), reason);
 
         assertFalse(connections.containsEntry(identity, peerConnection));
         verify(runnable1).accept(reason);
+        verify(eventConsumer).accept(new Event(EVENT_PEER_RELAY, new Peer(peerConnection.getIdentity())));
         verify(writeLock, times(2)).lock();
         verify(writeLock, times(2)).unlock();
     }
 
     @Test
     void closeConnectionsOfTypeShouldCloseAndRemoveAllConnectionsOfGivenType() {
-        ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures, null);
+        ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures, eventConsumer, null);
         connectionsManager.addConnection(peerConnection, runnable1);
         connectionsManager.closeConnectionsOfType(peerConnection.getClass(), reason);
 
         assertFalse(connections.containsEntry(identity, peerConnection));
         verify(runnable1).accept(reason);
+        verify(eventConsumer).accept(new Event(EVENT_PEER_RELAY, new Peer(peerConnection.getIdentity())));
         verify(writeLock, times(2)).lock();
         verify(writeLock, times(2)).unlock();
     }

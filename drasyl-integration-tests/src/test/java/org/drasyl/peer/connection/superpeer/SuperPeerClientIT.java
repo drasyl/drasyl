@@ -49,10 +49,10 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 @Execution(ExecutionMode.SAME_THREAD)
 class SuperPeerClientIT {
     public static final long TIMEOUT = 10000L;
-    private EventLoopGroup workerGroup;
-    private EventLoopGroup bossGroup;
     DrasylNodeConfig config;
     DrasylNodeConfig serverConfig;
+    private EventLoopGroup workerGroup;
+    private EventLoopGroup bossGroup;
     private IdentityManager identityManager;
     private IdentityManager identityManagerServer;
     private NodeServer server;
@@ -77,7 +77,8 @@ class SuperPeerClientIT {
         identityManagerServer = new IdentityManager(serverConfig);
         identityManagerServer.loadOrCreateIdentity();
         peersManager = new PeersManager();
-        messenger = new Messenger();
+        messenger = new Messenger(event -> {
+        });
 
         server = new NodeServer(identityManagerServer, messenger, peersManager, serverConfig, workerGroup, bossGroup);
         server.open();
@@ -209,7 +210,6 @@ class SuperPeerClientIT {
         emittedEvents.awaitCount(1);
         emittedEvents.assertValue(new Event(EVENT_NODE_OFFLINE, Node.of(identityManager.getIdentity())));
     }
-
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)

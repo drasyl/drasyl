@@ -18,11 +18,13 @@
  */
 package org.drasyl.messenger;
 
+import org.drasyl.event.Event;
 import org.drasyl.peer.connection.ConnectionsManager;
 import org.drasyl.peer.connection.PeerConnection;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 
 import java.util.Optional;
+import java.util.function.Consumer;
 
 import static java.util.Optional.ofNullable;
 
@@ -33,12 +35,12 @@ import static java.util.Optional.ofNullable;
 public class Messenger {
     private final ConnectionsManager connectionsManager;
 
-    public Messenger() {
-        this(new ConnectionsManager());
+    Messenger(ConnectionsManager connectionsManager) {
+        this.connectionsManager = connectionsManager;
     }
 
-    public Messenger(ConnectionsManager connectionsManager) {
-        this.connectionsManager = connectionsManager;
+    public Messenger(Consumer<Event> eventConsumer) {
+        this(new ConnectionsManager(eventConsumer));
     }
 
     public ConnectionsManager getConnectionsManager() {

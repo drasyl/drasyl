@@ -22,7 +22,6 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeConfig;
@@ -84,7 +83,8 @@ class NodeServerIT {
         identityManager = new IdentityManager(config);
         identityManager.loadOrCreateIdentity();
         peersManager = new PeersManager();
-        messenger = new Messenger();
+        messenger = new Messenger(event -> {
+        });
 
         server = new NodeServer(identityManager, messenger, peersManager, config, workerGroup, bossGroup);
         server.open();

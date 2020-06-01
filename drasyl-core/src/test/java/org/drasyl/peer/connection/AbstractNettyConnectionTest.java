@@ -23,6 +23,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelId;
 import org.drasyl.crypto.Crypto;
+import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityTestHelper;
 import org.drasyl.peer.connection.message.*;
@@ -37,6 +38,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -54,6 +56,7 @@ class AbstractNettyConnectionTest {
     private ResponseMessage<? extends RequestMessage> responseMessage;
     private ConnectionsManager connectionsManager;
     private PeerConnection.CloseReason reason;
+    private Consumer<Event> eventConsumer;
 
     @BeforeEach
     void setUp() {
@@ -70,6 +73,7 @@ class AbstractNettyConnectionTest {
         responseMessage = mock(StatusMessage.class);
         connectionsManager = mock(ConnectionsManager.class);
         reason = PeerConnection.CloseReason.REASON_SHUTTING_DOWN;
+        eventConsumer = mock(Consumer.class);
 
         when(channel.closeFuture()).thenReturn(channelFuture);
         when(channel.id()).thenReturn(channelId);
@@ -102,7 +106,7 @@ class AbstractNettyConnectionTest {
     @ParameterizedTest
     @ValueSource(classes = { SuperPeerClientConnection.class, NodeServerConnection.class })
     void closeShouldFreeMemory(Class<AbstractNettyConnection> clazz) throws NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
-        ConnectionsManager connectionsManager = new ConnectionsManager();
+        ConnectionsManager connectionsManager = new ConnectionsManager(eventConsumer);
         Constructor<AbstractNettyConnection> constructor = clazz.getDeclaredConstructor(Channel.class, String.class,
                 Identity.class, AtomicBoolean.class,
                 CompletableFuture.class, ConnectionsManager.class);

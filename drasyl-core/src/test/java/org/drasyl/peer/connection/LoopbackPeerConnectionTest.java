@@ -21,7 +21,9 @@ package org.drasyl.peer.connection;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.message.*;
+import org.drasyl.peer.connection.message.AbstractMessageWithUserAgent;
+import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.peer.connection.message.JoinMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -29,7 +31,6 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -40,6 +41,7 @@ class LoopbackPeerConnectionTest {
     private AtomicBoolean isClosed;
     private ConnectionsManager connectionsManager;
     private PeerConnection.CloseReason reason;
+    private Consumer<Event> eventConsumer;
 
     @BeforeEach
     void setUp() {
@@ -49,6 +51,7 @@ class LoopbackPeerConnectionTest {
         isClosed = mock(AtomicBoolean.class);
         connectionsManager = mock(ConnectionsManager.class);
         reason = PeerConnection.CloseReason.REASON_SHUTTING_DOWN;
+        eventConsumer = mock(Consumer.class);
     }
 
     @Test
@@ -67,7 +70,7 @@ class LoopbackPeerConnectionTest {
 
     @Test
     void sendShouldNotSendIfClosed() {
-        ConnectionsManager connectionsManager = new ConnectionsManager();
+        ConnectionsManager connectionsManager = new ConnectionsManager(eventConsumer);
         LoopbackPeerConnection con = new LoopbackPeerConnection(onEvent, identity, closedCompletable, isClosed, connectionsManager);
 
         ApplicationMessage message = new ApplicationMessage(Identity.of(Crypto.randomString(5)), Identity.of(Crypto.randomString(5)), new byte[]{
