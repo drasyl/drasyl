@@ -27,6 +27,7 @@ import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.messenger.Messenger;
@@ -45,13 +46,13 @@ import java.util.concurrent.ExecutionException;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
+import static org.awaitility.Awaitility.await;
 import static org.awaitility.Awaitility.with;
 import static org.awaitility.Durations.FIVE_MINUTES;
 import static org.drasyl.peer.connection.PeerConnection.CloseReason.REASON_NEW_SESSION;
 import static org.drasyl.peer.connection.PeerConnection.CloseReason.REASON_SHUTTING_DOWN;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.*;
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_SERVICE_UNAVAILABLE;
+import static org.drasyl.peer.connection.message.StatusMessage.Code.*;
 import static org.drasyl.peer.connection.server.TestNodeServerConnection.clientSession;
 import static org.drasyl.peer.connection.server.TestNodeServerConnection.clientSessionAfterJoin;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -157,7 +158,7 @@ class NodeServerIT {
         // verify responses
         ResponseMessage<?> response1 = send1.get();
 
-        assertEquals(new StatusMessage(StatusMessage.Code.STATUS_OK, request.getId()), response1);
+        assertEquals(new StatusMessage(STATUS_OK, request.getId()), response1);
         receivedMessages2.awaitCount(1);
         receivedMessages2.assertValue(request);
     }
@@ -176,7 +177,7 @@ class NodeServerIT {
 
         // verify response
         receivedMessages.awaitCount(1);
-        receivedMessages.assertValue(new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE));
+        receivedMessages.assertValue(new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE_TIMEOUT));
     }
 
     @Test
@@ -220,16 +221,20 @@ class NodeServerIT {
 
         // send messages
         CompressedPublicKey publicKey = CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3");
+        Identity identity = Identity.of(publicKey);
         RequestMessage request1 = new JoinMessage(publicKey, Set.of());
-        session1.sendRequest(request1).join();
+        ResponseMessage<?> response1 = session1.sendRequest(request1).get();
+        session1.send(new StatusMessage(STATUS_OK, response1.getId()));
+        await().until(() -> server.getMessenger().getConnectionsManager().getConnection(identity) != null);
 
         RequestMessage request2 = new JoinMessage(publicKey, Set.of());
-        session2.sendRequest(request2).join();
+        ResponseMessage<?> response2 = session2.sendRequest(request2).join();
+        session2.send(new StatusMessage(STATUS_OK, response2.getId()));
 
         // verify responses
         receivedMessages1.awaitCount(2);
         receivedMessages1.assertValues(new WelcomeMessage(server.getIdentityManager().getKeyPair().getPublicKey(), server.getEntryPoints(), request1.getId()), new QuitMessage(REASON_NEW_SESSION));
-        receivedMessages1.awaitCount(1);
+        receivedMessages2.awaitCount(1);
         receivedMessages2.assertValue(new WelcomeMessage(server.getIdentityManager().getKeyPair().getPublicKey(), server.getEntryPoints(), request2.getId()));
     }
 

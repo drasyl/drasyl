@@ -94,7 +94,7 @@ public class SuperPeerClientChannelBootstrap {
 
             try {
                 superPeerClientChannelInitializer.connectedFuture().get();
-                superPeerClientChannelInitializer.welcomeGuard().handshakeFuture().syncUninterruptibly();
+                superPeerClientChannelInitializer.handshakeFuture().get();
 
                 return channel;
             }

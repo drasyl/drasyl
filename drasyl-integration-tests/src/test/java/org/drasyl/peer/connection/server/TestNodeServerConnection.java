@@ -34,10 +34,7 @@ import org.drasyl.identity.CompressedKeyPair;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.AbstractNettyConnection;
 import org.drasyl.peer.connection.ConnectionsManager;
-import org.drasyl.peer.connection.message.JoinMessage;
-import org.drasyl.peer.connection.message.Message;
-import org.drasyl.peer.connection.message.RequestMessage;
-import org.drasyl.peer.connection.message.ResponseMessage;
+import org.drasyl.peer.connection.message.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -49,6 +46,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
 
 import static java.util.concurrent.CompletableFuture.failedFuture;
+import static org.awaitility.Awaitility.await;
+import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 import static org.mockito.Mockito.mock;
 
 public class TestNodeServerConnection extends AbstractNettyConnection {
@@ -176,7 +175,9 @@ public class TestNodeServerConnection extends AbstractNettyConnection {
     public static TestNodeServerConnection clientSessionAfterJoin(NodeServer server) throws ExecutionException,
             InterruptedException, CryptoException {
         TestNodeServerConnection session = clientSession(server, true);
-        session.sendRequest(new JoinMessage(session.getPublicKey(), Set.of())).join();
+        ResponseMessage<?> responseMessage = session.sendRequest(new JoinMessage(session.getPublicKey(), Set.of())).get();
+        session.send(new StatusMessage(STATUS_OK, responseMessage.getId()));
+        await().until(() -> server.getMessenger().getConnectionsManager().getConnection(session.getIdentity()) != null);
 
         return session;
     }

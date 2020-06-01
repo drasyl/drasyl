@@ -30,8 +30,6 @@ import org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.QuitMessageHandler;
 import org.drasyl.peer.connection.superpeer.handler.SuperPeerClientConnectionHandler;
-import org.drasyl.peer.connection.superpeer.handler.SuperPeerClientJoinHandler;
-import org.drasyl.peer.connection.superpeer.handler.SuperPeerClientWelcomeGuard;
 import org.drasyl.util.WebSocketUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -39,9 +37,9 @@ import org.slf4j.LoggerFactory;
 import javax.net.ssl.SSLException;
 import java.net.URI;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
-import static org.drasyl.peer.connection.superpeer.handler.SuperPeerClientJoinHandler.JOIN_HANDLER;
-import static org.drasyl.peer.connection.superpeer.handler.SuperPeerClientWelcomeGuard.WELCOME_GUARD;
+import static org.drasyl.peer.connection.superpeer.handler.SuperPeerClientConnectionHandler.SUPER_PEER_CLIENT_CONNECTION_HANDLER;
 
 /**
  * Creates a newly configured {@link ChannelPipeline} for a ClientConnection to a node server.
@@ -52,7 +50,7 @@ public class SuperPeerClientChannelInitializer extends AbstractClientInitializer
     private final DrasylNodeConfig config;
     private final Set<URI> entryPoints;
     private final SuperPeerClient superPeerClient;
-    private final SuperPeerClientWelcomeGuard welcomeGuard;
+    private final SuperPeerClientConnectionHandler clientHandler;
 
     public SuperPeerClientChannelInitializer(DrasylNodeConfig config,
                                              URI endpoint,
@@ -63,11 +61,11 @@ public class SuperPeerClientChannelInitializer extends AbstractClientInitializer
         this.config = config;
         this.entryPoints = entryPoints;
         this.superPeerClient = superPeerClient;
-        welcomeGuard = new SuperPeerClientWelcomeGuard(this.config.getSuperPeerPublicKey(), this.superPeerClient.getIdentityManager().getKeyPair().getPublicKey(), this.config.getSuperPeerHandshakeTimeout());
+        clientHandler = new SuperPeerClientConnectionHandler(this.config.getSuperPeerPublicKey(), this.superPeerClient.getIdentityManager().getKeyPair().getPublicKey(), entryPoints, superPeerClient, this.config.getSuperPeerHandshakeTimeout());
     }
 
-    public SuperPeerClientWelcomeGuard welcomeGuard() {
-        return welcomeGuard;
+    public CompletableFuture<Void> handshakeFuture() {
+        return clientHandler.handshakeFuture();
     }
 
     @Override
@@ -78,13 +76,8 @@ public class SuperPeerClientChannelInitializer extends AbstractClientInitializer
         // ConnectionExceptionMessage Handler
         pipeline.addLast(ConnectionExceptionMessageHandler.EXCEPTION_MESSAGE_HANDLER, ConnectionExceptionMessageHandler.INSTANCE);
 
-        // Guards
-        pipeline.addLast(WELCOME_GUARD, welcomeGuard);
-
-        pipeline.addLast(JOIN_HANDLER, new SuperPeerClientJoinHandler(this.superPeerClient.getIdentityManager().getKeyPair().getPublicKey(), this.entryPoints));
-
         // Super peer handler
-        pipeline.addLast(SuperPeerClientConnectionHandler.SUPER_PEER_HANDLER, new SuperPeerClientConnectionHandler(superPeerClient));
+        pipeline.addLast(SUPER_PEER_CLIENT_CONNECTION_HANDLER, clientHandler);
     }
 
     @Override
