@@ -43,8 +43,8 @@ import java.util.function.Consumer;
 import java.util.function.Function;
 
 import static java.lang.Thread.sleep;
-import static org.drasyl.event.EventCode.EVENT_NODE_OFFLINE;
-import static org.drasyl.event.EventCode.EVENT_NODE_ONLINE;
+import static org.drasyl.event.EventType.EVENT_NODE_OFFLINE;
+import static org.drasyl.event.EventType.EVENT_NODE_ONLINE;
 import static org.drasyl.peer.connection.PeerConnection.CloseReason.REASON_SHUTTING_DOWN;
 
 /**

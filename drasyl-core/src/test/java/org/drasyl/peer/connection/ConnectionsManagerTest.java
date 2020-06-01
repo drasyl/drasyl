@@ -22,7 +22,6 @@ package org.drasyl.peer.connection;
 import com.google.common.collect.HashMultimap;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.event.Event;
-import org.drasyl.event.EventCode;
 import org.drasyl.event.Peer;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.PeerConnection.CloseReason;
@@ -36,8 +35,8 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
 
-import static org.drasyl.event.EventCode.EVENT_PEER_DIRECT;
-import static org.drasyl.event.EventCode.EVENT_PEER_RELAY;
+import static org.drasyl.event.EventType.EVENT_PEER_DIRECT;
+import static org.drasyl.event.EventType.EVENT_PEER_RELAY;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 

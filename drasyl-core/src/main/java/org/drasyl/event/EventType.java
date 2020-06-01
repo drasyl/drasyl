@@ -21,7 +21,7 @@ package org.drasyl.event;
 /**
  * Is used by {@link Event} to define the type of an Event.
  */
-public enum EventCode {
+public enum EventType {
     /**
      * This event signals that the node has been started.
      */

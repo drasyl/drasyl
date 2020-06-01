@@ -24,22 +24,22 @@ import java.util.Objects;
 
 /**
  * Used by {@link Event} to describe an event related to a Peer (e.g. {@link
- * EventCode#EVENT_PEER_DIRECT}, {@link EventCode#EVENT_PEER_DIRECT}).
+ * EventType#EVENT_PEER_DIRECT}, {@link EventType#EVENT_PEER_DIRECT}).
  */
 public class Peer {
-    private final Identity address;
+    private final Identity identity;
 
-    public Peer(Identity address) {
-        this.address = address;
+    public Peer(Identity identity) {
+        this.identity = identity;
     }
 
-    public Identity getAddress() {
-        return address;
+    public Identity getIdentity() {
+        return identity;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(address);
+        return Objects.hash(identity);
     }
 
     @Override
@@ -51,13 +51,13 @@ public class Peer {
             return false;
         }
         Peer peer = (Peer) o;
-        return Objects.equals(address, peer.address);
+        return Objects.equals(identity, peer.identity);
     }
 
     @Override
     public String toString() {
         return "Peer{" +
-                "address=" + address +
+                "identity=" + identity +
                 '}';
     }
 }

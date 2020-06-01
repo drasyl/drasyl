@@ -19,7 +19,7 @@
 package org.drasyl;
 
 import org.drasyl.event.Event;
-import org.drasyl.event.EventCode;
+import org.drasyl.event.EventType;
 import org.drasyl.event.Node;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
@@ -105,7 +105,7 @@ class DrasylNodeTest {
         });
         drasylNode.start().join();
 
-        verify(drasylNode).onEvent(new Event(EventCode.EVENT_NODE_UP, new Node(identity)));
+        verify(drasylNode).onEvent(new Event(EventType.EVENT_NODE_UP, new Node(identity)));
     }
 
     @Test
@@ -120,8 +120,8 @@ class DrasylNodeTest {
         });
         drasylNode.shutdown().join();
 
-        verify(drasylNode).onEvent(new Event(EventCode.EVENT_NODE_DOWN, new Node(identity)));
-        verify(drasylNode).onEvent(new Event(EventCode.EVENT_NODE_NORMAL_TERMINATION, new Node(identity)));
+        verify(drasylNode).onEvent(new Event(EventType.EVENT_NODE_DOWN, new Node(identity)));
+        verify(drasylNode).onEvent(new Event(EventType.EVENT_NODE_NORMAL_TERMINATION, new Node(identity)));
     }
 
     @Test

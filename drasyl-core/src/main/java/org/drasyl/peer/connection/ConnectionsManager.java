@@ -37,8 +37,8 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.event.EventCode.EVENT_PEER_DIRECT;
-import static org.drasyl.event.EventCode.EVENT_PEER_RELAY;
+import static org.drasyl.event.EventType.EVENT_PEER_DIRECT;
+import static org.drasyl.event.EventType.EVENT_PEER_RELAY;
 import static org.drasyl.peer.connection.PeerConnection.CloseReason.REASON_NEW_SESSION;
 
 /**

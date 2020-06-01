@@ -18,6 +18,9 @@
  */
 package org.drasyl.crypto;
 
+/**
+ * A CryptoException is thrown by {@link Crypto} when errors occur.
+ */
 public class CryptoException extends Exception {
     public CryptoException(String message, Exception cause) {
         super(message, cause);

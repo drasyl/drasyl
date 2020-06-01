@@ -24,19 +24,19 @@ import java.util.Objects;
 
 /**
  * Used by {@link Event} to describe an event related to the local Node (e.g. {@link
- * EventCode#EVENT_NODE_UP}, {@link EventCode#EVENT_NODE_ONLINE}, {@link
- * EventCode#EVENT_NODE_IDENTITY_COLLISION}).
+ * EventType#EVENT_NODE_UP}, {@link EventType#EVENT_NODE_ONLINE}, {@link
+ * EventType#EVENT_NODE_IDENTITY_COLLISION}).
  */
 public class Node {
-    private final Identity address;
+    private final Identity identity;
 
     public Node(Identity address) {
-        this.address = address;
+        this.identity = address;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(address);
+        return Objects.hash(identity);
     }
 
     @Override
@@ -48,21 +48,21 @@ public class Node {
             return false;
         }
         Node node = (Node) o;
-        return Objects.equals(address, node.address);
+        return Objects.equals(identity, node.identity);
     }
 
     @Override
     public String toString() {
         return "Node{" +
-                "address=" + getAddress() +
+                "identity=" + getIdentity() +
                 '}';
     }
 
-    public Identity getAddress() {
-        return address;
+    public Identity getIdentity() {
+        return identity;
     }
 
-    public static Node of(Identity address) {
-        return new Node(address);
+    public static Node of(Identity identity) {
+        return new Node(identity);
     }
 }

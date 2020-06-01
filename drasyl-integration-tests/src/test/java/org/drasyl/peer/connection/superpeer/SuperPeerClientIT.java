@@ -41,8 +41,8 @@ import testutils.AnsiColor;
 import testutils.TestHelper;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.event.EventCode.EVENT_NODE_OFFLINE;
-import static org.drasyl.event.EventCode.EVENT_NODE_ONLINE;
+import static org.drasyl.event.EventType.EVENT_NODE_OFFLINE;
+import static org.drasyl.event.EventType.EVENT_NODE_ONLINE;
 import static org.drasyl.peer.connection.PeerConnection.CloseReason.REASON_SHUTTING_DOWN;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 
@@ -196,7 +196,7 @@ class SuperPeerClientIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldEmitNodeOfflineEventAfterReceivingQuitMessage() throws SuperPeerClientException {
         TestObserver<Message> receivedMessages = IntegrationTestHandler.receivedMessages().test();
-        TestObserver<Event> emittedEvents = emittedEventsSubject.filter(e -> e.getCode() == EVENT_NODE_OFFLINE).test();
+        TestObserver<Event> emittedEvents = emittedEventsSubject.filter(e -> e.getType() == EVENT_NODE_OFFLINE).test();
 
         // start client
         SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);

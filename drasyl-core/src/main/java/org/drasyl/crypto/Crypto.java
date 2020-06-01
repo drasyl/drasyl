@@ -52,6 +52,7 @@ public class Crypto {
     }
 
     Crypto() {
+        // util class
     }
 
     public static KeyPair generateKeys() {

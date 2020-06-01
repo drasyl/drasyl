@@ -77,7 +77,7 @@ public class ChatGUI extends Application {
             node = new DrasylNode() {
                 @Override
                 public void onEvent(Event event) {
-                    switch (event.getCode()) {
+                    switch (event.getType()) {
                         case EVENT_MESSAGE:
                             parseMessage(event.getMessage());
                             break;
@@ -85,8 +85,8 @@ public class ChatGUI extends Application {
                             if (!online.isDone()) {
                                 online.complete(null);
                             }
-                            myID = event.getNode().getAddress();
-                            txtArea.appendText("[~System~]: The node is online. Your address is: " + event.getNode().getAddress().getId() + "\n");
+                            myID = event.getNode().getIdentity();
+                            txtArea.appendText("[~System~]: The node is online. Your address is: " + event.getNode().getIdentity().getId() + "\n");
                             break;
                         case EVENT_NODE_OFFLINE:
                             txtArea.appendText("[~System~]: The node is offline. No messages can be sent at the moment. Wait until node comes back online.\n");

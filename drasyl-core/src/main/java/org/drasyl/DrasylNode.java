@@ -51,7 +51,7 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.concurrent.CompletableFuture.runAsync;
-import static org.drasyl.event.EventCode.*;
+import static org.drasyl.event.EventType.*;
 import static org.drasyl.peer.connection.PeerConnection.CloseReason.REASON_SHUTTING_DOWN;
 
 /**

@@ -20,7 +20,7 @@ package org.drasyl.peer.connection;
 
 import org.drasyl.DrasylNode;
 import org.drasyl.event.Event;
-import org.drasyl.event.EventCode;
+import org.drasyl.event.EventType;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.AbstractMessageWithUserAgent;
 import org.drasyl.peer.connection.message.ApplicationMessage;
@@ -81,7 +81,7 @@ public class LoopbackPeerConnection extends PeerConnection {
         }
 
         ApplicationMessage applicationMessage = (ApplicationMessage) message;
-        onEvent.accept(new Event(EventCode.EVENT_MESSAGE, Pair.of(applicationMessage.getSender(), applicationMessage.getPayload())));
+        onEvent.accept(new Event(EventType.EVENT_MESSAGE, Pair.of(applicationMessage.getSender(), applicationMessage.getPayload())));
     }
 
     @Override

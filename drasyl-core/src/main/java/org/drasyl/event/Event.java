@@ -28,53 +28,53 @@ import java.util.Objects;
  * peers, connections or incoming messages.
  */
 public class Event {
-    private final EventCode code;
+    private final EventType type;
     private final Node node;
     private final Peer peer;
     private final Pair<Identity, byte[]> message;
 
-    Event(EventCode code, Node node, Peer peer, Pair<Identity, byte[]> message) {
-        this.code = code;
+    Event(EventType type, Node node, Peer peer, Pair<Identity, byte[]> message) {
+        this.type = type;
         this.node = node;
         this.peer = peer;
         this.message = message;
     }
 
-    public Event(EventCode code, Node node) {
-        if (!code.isNodeEvent()) {
+    public Event(EventType type, Node node) {
+        if (!type.isNodeEvent()) {
             throw new IllegalArgumentException("Given code must refer to a node!");
         }
 
-        this.code = code;
+        this.type = type;
         this.node = node;
         peer = null;
         message = null;
     }
 
-    public Event(EventCode code, Peer peer) {
-        if (!code.isPeerEvent()) {
+    public Event(EventType type, Peer peer) {
+        if (!type.isPeerEvent()) {
             throw new IllegalArgumentException("Given code must refer to a peer!");
         }
 
-        this.code = code;
+        this.type = type;
         node = null;
         this.peer = peer;
         message = null;
     }
 
-    public Event(EventCode code, Pair<Identity, byte[]> message) {
-        if (!code.isMessageEvent()) {
+    public Event(EventType type, Pair<Identity, byte[]> message) {
+        if (!type.isMessageEvent()) {
             throw new IllegalArgumentException("Given code must refer to a message!");
         }
 
-        this.code = code;
+        this.type = type;
         node = null;
         peer = null;
         this.message = message;
     }
 
-    public EventCode getCode() {
-        return code;
+    public EventType getType() {
+        return type;
     }
 
     public Node getNode() {
@@ -91,7 +91,7 @@ public class Event {
 
     @Override
     public int hashCode() {
-        return Objects.hash(code, node, peer, message);
+        return Objects.hash(type, node, peer, message);
     }
 
     @Override
@@ -103,7 +103,7 @@ public class Event {
             return false;
         }
         Event event = (Event) o;
-        return code == event.code &&
+        return type == event.type &&
                 Objects.equals(node, event.node) &&
                 Objects.equals(peer, event.peer) &&
                 Objects.equals(message, event.message);
@@ -112,7 +112,7 @@ public class Event {
     @Override
     public String toString() {
         return "Event{" +
-                "code=" + code +
+                "code=" + type +
                 ", node=" + node +
                 ", peer=" + peer +
                 ", message=" + message +

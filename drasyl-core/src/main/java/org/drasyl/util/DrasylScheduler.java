@@ -50,6 +50,7 @@ public class DrasylScheduler {
     }
 
     private DrasylScheduler() {
+        // util class
     }
 
     public static Scheduler getInstance() {

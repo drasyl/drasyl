@@ -51,14 +51,14 @@ public class Chat {
         DrasylNode node = new DrasylNode(config) {
             @Override
             public void onEvent(Event event) {
-                switch (event.getCode()) {
+                switch (event.getType()) {
                     case EVENT_MESSAGE:
                         Pair<Identity, byte[]> message = event.getMessage();
                         System.out.println("From " + message.first().getId() + ": " + new String(message.second()));
                         break;
                     case EVENT_NODE_ONLINE:
                         online.complete(null);
-                        System.out.println("Online! Your Address is: " + event.getNode().getAddress().getId());
+                        System.out.println("Online! Your Address is: " + event.getNode().getIdentity().getId());
                         break;
                     case EVENT_NODE_OFFLINE:
                         System.out.println("Offline! No messages can be sent at the moment. Wait until node comes back online.");

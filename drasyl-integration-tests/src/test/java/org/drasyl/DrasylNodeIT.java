@@ -25,7 +25,7 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.event.Event;
-import org.drasyl.event.EventCode;
+import org.drasyl.event.EventType;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.*;
 import testutils.TestHelper;
@@ -35,7 +35,7 @@ import java.util.List;
 import java.util.Set;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.event.EventCode.*;
+import static org.drasyl.event.EventType.*;
 import static testutils.AnsiColor.COLOR_CYAN;
 import static testutils.AnsiColor.STYLE_REVERSED;
 
@@ -72,34 +72,34 @@ class DrasylNodeIT {
         // super super peer
         config = ConfigFactory.parseString("drasyl.server.bind-port = 22528\ndrasyl.super-peer.enabled = false").withFallback(ConfigFactory.load("configs/DrasylNodeIT-4c4fdd0957.conf"));
         Pair<DrasylNode, Observable<Event>> superSuperPeer = createNode(config);
-        superSuperPeer.second().filter(e -> e.getCode() == EVENT_NODE_UP).test().awaitCount(1);
+        superSuperPeer.second().filter(e -> e.getType() == EVENT_NODE_UP).test().awaitCount(1);
         TestHelper.colorizedPrintln("CREATED superSuperPeer", COLOR_CYAN, STYLE_REVERSED);
 
         // super peer
         config = ConfigFactory.parseString("drasyl.server.bind-port = 22529\ndrasyl.super-peer.public-key = \"03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a\"\ndrasyl.super-peer.endpoints = [\"ws://127.0.0.1:22528\"]").withFallback(ConfigFactory.load("configs/DrasylNodeIT-9df9214d78.conf"));
         Pair<DrasylNode, Observable<Event>> superPeer = createNode(config);
-        superPeer.second().filter(e -> e.getCode() == EVENT_NODE_ONLINE).test().awaitCount(1);
+        superPeer.second().filter(e -> e.getType() == EVENT_NODE_ONLINE).test().awaitCount(1);
         TestHelper.colorizedPrintln("CREATED superPeer", COLOR_CYAN, STYLE_REVERSED);
 
         // client1
         config = ConfigFactory.parseString("drasyl.server.enabled = false\ndrasyl.super-peer.public-key = \"030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22\"\ndrasyl.super-peer.endpoints = [\"ws://127.0.0.1:22529\"]").withFallback(ConfigFactory.load("configs/DrasylNodeIT-030f018704.conf"));
         Pair<DrasylNode, Observable<Event>> client1 = createNode(config);
-        client1.second().filter(e -> e.getCode() == EVENT_NODE_ONLINE).test().awaitCount(1);
+        client1.second().filter(e -> e.getType() == EVENT_NODE_ONLINE).test().awaitCount(1);
         TestHelper.colorizedPrintln("CREATED client1", COLOR_CYAN, STYLE_REVERSED);
 
         // client2
         config = ConfigFactory.parseString("drasyl.server.enabled = false\ndrasyl.super-peer.public-key = \"030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22\"\ndrasyl.super-peer.endpoints = [\"ws://127.0.0.1:22529\"]").withFallback(ConfigFactory.load("configs/DrasylNodeIT-be0300f1a4.conf"));
         Pair<DrasylNode, Observable<Event>> client2 = createNode(config);
-        client2.second().filter(e -> e.getCode() == EVENT_NODE_ONLINE).test().awaitCount(1);
+        client2.second().filter(e -> e.getType() == EVENT_NODE_ONLINE).test().awaitCount(1);
         TestHelper.colorizedPrintln("CREATED client2", COLOR_CYAN, STYLE_REVERSED);
 
         //
         // send messages
         //
-        TestObserver<EventCode> superSuperPeerMessages = superSuperPeer.second().map(e -> e.getCode()).filter(c -> c == EVENT_MESSAGE).test();
-        TestObserver<EventCode> superPeerMessages = superPeer.second().map(e -> e.getCode()).filter(c -> c == EVENT_MESSAGE).test();
-        TestObserver<EventCode> client1Messages = client1.second().map(e -> e.getCode()).filter(c -> c == EVENT_MESSAGE).test();
-        TestObserver<EventCode> client2Messages = client2.second().map(e -> e.getCode()).filter(c -> c == EVENT_MESSAGE).test();
+        TestObserver<EventType> superSuperPeerMessages = superSuperPeer.second().map(e -> e.getType()).filter(c -> c == EVENT_MESSAGE).test();
+        TestObserver<EventType> superPeerMessages = superPeer.second().map(e -> e.getType()).filter(c -> c == EVENT_MESSAGE).test();
+        TestObserver<EventType> client1Messages = client1.second().map(e -> e.getType()).filter(c -> c == EVENT_MESSAGE).test();
+        TestObserver<EventType> client2Messages = client2.second().map(e -> e.getType()).filter(c -> c == EVENT_MESSAGE).test();
 
 //        superPeer.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("SSP: " + e));
 //        superPeer.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("SP: " + e));
