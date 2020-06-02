@@ -28,6 +28,7 @@ import org.drasyl.DrasylNodeConfig;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.ConnectionsManager;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -46,6 +47,7 @@ public class NodeServer implements AutoCloseable {
     public final ServerBootstrap serverBootstrap;
     private final IdentityManager identityManager;
     private final PeersManager peersManager;
+    private final ConnectionsManager connectionsManager;
     private final DrasylNodeConfig config;
     private final Messenger messenger;
     private final AtomicBoolean opened;
@@ -53,7 +55,6 @@ public class NodeServer implements AutoCloseable {
     private NodeServerChannelBootstrap nodeServerChannelBootstrap;
     private int actualPort;
     private Set<URI> actualEndpoints;
-
     /**
      * Starts a node server for forwarding messages to child peers.<br> Default Port: 22527
      *
@@ -67,9 +68,10 @@ public class NodeServer implements AutoCloseable {
     public NodeServer(IdentityManager identityManager,
                       Messenger messenger,
                       PeersManager peersManager,
+                      ConnectionsManager connectionsManager,
                       EventLoopGroup workerGroup,
                       EventLoopGroup bossGroup) throws DrasylException {
-        this(identityManager, messenger, peersManager, ConfigFactory.load(), workerGroup, bossGroup);
+        this(identityManager, messenger, peersManager, connectionsManager, ConfigFactory.load(), workerGroup, bossGroup);
     }
 
     /**
@@ -86,10 +88,11 @@ public class NodeServer implements AutoCloseable {
     public NodeServer(IdentityManager identityManager,
                       Messenger messenger,
                       PeersManager peersManager,
+                      ConnectionsManager connectionsManager,
                       Config config,
                       EventLoopGroup workerGroup,
                       EventLoopGroup bossGroup) throws DrasylException {
-        this(identityManager, messenger, peersManager, new DrasylNodeConfig(config), workerGroup, bossGroup);
+        this(identityManager, messenger, peersManager, connectionsManager, new DrasylNodeConfig(config), workerGroup, bossGroup);
     }
 
     /**
@@ -105,10 +108,11 @@ public class NodeServer implements AutoCloseable {
     public NodeServer(IdentityManager identityManager,
                       Messenger messenger,
                       PeersManager peersManager,
+                      ConnectionsManager connectionsManager,
                       DrasylNodeConfig config,
                       EventLoopGroup workerGroup,
                       EventLoopGroup bossGroup) throws NodeServerException {
-        this(identityManager, messenger, peersManager, config,
+        this(identityManager, messenger, peersManager, connectionsManager, config,
                 null, new ServerBootstrap(),
                 workerGroup, bossGroup,
                 null, new AtomicBoolean(false), -1, new HashSet<>());
@@ -119,6 +123,7 @@ public class NodeServer implements AutoCloseable {
     NodeServer(IdentityManager identityManager,
                Messenger messenger,
                PeersManager peersManager,
+               ConnectionsManager connectionsManager,
                DrasylNodeConfig config,
                Channel serverChannel,
                ServerBootstrap serverBootstrap,
@@ -130,6 +135,7 @@ public class NodeServer implements AutoCloseable {
                Set<URI> actualEndpoints) {
         this.identityManager = identityManager;
         this.peersManager = peersManager;
+        this.connectionsManager = connectionsManager;
         this.config = config;
         this.serverChannel = serverChannel;
         this.serverBootstrap = serverBootstrap;
@@ -140,6 +146,10 @@ public class NodeServer implements AutoCloseable {
         this.messenger = messenger;
         this.actualPort = actualPort;
         this.actualEndpoints = actualEndpoints;
+    }
+
+    public ConnectionsManager getConnectionsManager() {
+        return connectionsManager;
     }
 
     public Messenger getMessenger() {
@@ -233,7 +243,7 @@ public class NodeServer implements AutoCloseable {
     @Override
     public void close() {
         if (opened.compareAndSet(true, false)) {
-            messenger.getConnectionsManager().closeConnectionsOfType(NodeServerConnection.class, REASON_SHUTTING_DOWN);
+            connectionsManager.closeConnectionsOfType(NodeServerConnection.class, REASON_SHUTTING_DOWN);
 
             if (serverChannel != null && serverChannel.isOpen()) {
                 serverChannel.close().syncUninterruptibly();

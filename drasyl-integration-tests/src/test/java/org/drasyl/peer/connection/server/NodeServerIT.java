@@ -32,6 +32,7 @@ import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.ConnectionsManager;
 import org.drasyl.peer.connection.message.*;
 import org.junit.jupiter.api.*;
 import org.junit.jupiter.api.parallel.Execution;
@@ -73,6 +74,7 @@ class NodeServerIT {
     private NodeServer server;
     private Messenger messenger;
     private PeersManager peersManager;
+    private ConnectionsManager connectionsManager;
 
     @BeforeEach
     void setup(TestInfo info) throws DrasylException {
@@ -84,10 +86,11 @@ class NodeServerIT {
         identityManager = new IdentityManager(config);
         identityManager.loadOrCreateIdentity();
         peersManager = new PeersManager();
-        messenger = new Messenger(event -> {
+        connectionsManager = new ConnectionsManager(event -> {
         });
+        messenger = new Messenger(connectionsManager);
 
-        server = new NodeServer(identityManager, messenger, peersManager, config, workerGroup, bossGroup);
+        server = new NodeServer(identityManager, messenger, peersManager, connectionsManager, config, workerGroup, bossGroup);
         server.open();
     }
 
@@ -225,7 +228,7 @@ class NodeServerIT {
         RequestMessage request1 = new JoinMessage(publicKey, Set.of());
         ResponseMessage<?> response1 = session1.sendRequest(request1).get();
         session1.send(new StatusMessage(STATUS_OK, response1.getId()));
-        await().until(() -> server.getMessenger().getConnectionsManager().getConnection(address) != null);
+        await().until(() -> server.getConnectionsManager().getConnection(address) != null);
 
         RequestMessage request2 = new JoinMessage(publicKey, Set.of());
         ResponseMessage<?> response2 = session2.sendRequest(request2).join();
@@ -345,7 +348,7 @@ class NodeServerIT {
 
     @Test
     void shouldOpenAndCloseGracefully() throws DrasylException {
-        NodeServer server = new NodeServer(identityManager, messenger, peersManager, workerGroup, bossGroup);
+        NodeServer server = new NodeServer(identityManager, messenger, peersManager, connectionsManager, workerGroup, bossGroup);
 
         server.open();
         server.close();
@@ -357,7 +360,7 @@ class NodeServerIT {
     void openShouldFailIfInvalidPortIsGiven() throws DrasylException {
         Config config =
                 ConfigFactory.parseString("drasyl.server.bind-port = 72522").withFallback(ConfigFactory.load());
-        NodeServer server = new NodeServer(identityManager, messenger, peersManager, config, workerGroup, bossGroup);
+        NodeServer server = new NodeServer(identityManager, messenger, peersManager, connectionsManager, config, workerGroup, bossGroup);
 
         assertThrows(NodeServerException.class, server::open);
     }

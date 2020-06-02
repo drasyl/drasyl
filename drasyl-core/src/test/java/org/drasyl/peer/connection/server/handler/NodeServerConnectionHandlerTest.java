@@ -119,7 +119,6 @@ class NodeServerConnectionHandlerTest {
     @Test
     void shouldRejectIncomingJoinMessageWithSamePublicKey() {
         when(server.getMessenger()).thenReturn(messenger);
-        when(messenger.getConnectionsManager()).thenReturn(connectionsManager);
         when(joinMessage.getPublicKey()).thenReturn(publicKey);
         when(connection.isClosed()).thenReturn(new CompletableFuture<>());
 

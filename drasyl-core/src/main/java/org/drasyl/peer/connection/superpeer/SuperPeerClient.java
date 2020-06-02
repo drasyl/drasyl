@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.peer.connection.superpeer;
 
 import io.netty.channel.Channel;
@@ -28,6 +27,7 @@ import org.drasyl.event.Node;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.ConnectionsManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -60,19 +60,21 @@ public class SuperPeerClient implements AutoCloseable {
     private final IdentityManager identityManager;
     private final Messenger messenger;
     private final PeersManager peersManager;
+    private final ConnectionsManager connectionsManager;
     private final Set<URI> endpoints;
     private final AtomicBoolean opened;
     private final AtomicInteger nextEndpointPointer;
     private final AtomicInteger nextRetryDelayPointer;
     private final Consumer<Event> eventConsumer;
-    private Channel clientChannel;
     private final Function<Set<URI>, Thread> threadSupplier;
+    private Channel clientChannel;
 
     SuperPeerClient(DrasylNodeConfig config,
                     IdentityManager identityManager,
                     PeersManager peersManager,
                     Messenger messenger,
                     EventLoopGroup workerGroup,
+                    ConnectionsManager connectionsManager,
                     Set<URI> endpoints,
                     AtomicBoolean opened,
                     AtomicInteger nextEndpointPointer,
@@ -85,6 +87,7 @@ public class SuperPeerClient implements AutoCloseable {
         this.peersManager = peersManager;
         this.config = config;
         this.workerGroup = workerGroup;
+        this.connectionsManager = connectionsManager;
         this.endpoints = endpoints;
         this.opened = opened;
         this.nextEndpointPointer = nextEndpointPointer;
@@ -99,6 +102,7 @@ public class SuperPeerClient implements AutoCloseable {
                            PeersManager peersManager,
                            Messenger messenger,
                            EventLoopGroup workerGroup,
+                           ConnectionsManager connectionsManager,
                            Consumer<Event> eventConsumer) throws SuperPeerClientException {
         try {
             endpoints = new HashSet<>();
@@ -113,6 +117,7 @@ public class SuperPeerClient implements AutoCloseable {
             this.identityManager = identityManager;
             this.messenger = messenger;
             this.peersManager = peersManager;
+            this.connectionsManager = connectionsManager;
             this.config = config;
             this.workerGroup = workerGroup;
             this.opened = new AtomicBoolean(false);
@@ -124,12 +129,6 @@ public class SuperPeerClient implements AutoCloseable {
         }
         catch (URISyntaxException e) {
             throw new SuperPeerClientException("Unable to parse super peer endpoints: " + e.getMessage());
-        }
-    }
-
-    public void open(Set<URI> entryPoints) {
-        if (opened.compareAndSet(false, true)) {
-            threadSupplier.apply(entryPoints).start();
         }
     }
 
@@ -216,6 +215,12 @@ public class SuperPeerClient implements AutoCloseable {
         return config.getSuperPeerRetryDelays().get(nextRetryDelayPointer.get());
     }
 
+    public void open(Set<URI> entryPoints) {
+        if (opened.compareAndSet(false, true)) {
+            threadSupplier.apply(entryPoints).start();
+        }
+    }
+
     public IdentityManager getIdentityManager() {
         return identityManager;
     }
@@ -231,7 +236,7 @@ public class SuperPeerClient implements AutoCloseable {
     @Override
     public void close() {
         if (opened.compareAndSet(true, false)) {
-            messenger.getConnectionsManager().closeConnectionsOfType(SuperPeerClientConnection.class, REASON_SHUTTING_DOWN);
+            connectionsManager.closeConnectionsOfType(SuperPeerClientConnection.class, REASON_SHUTTING_DOWN);
 
             if (clientChannel != null && clientChannel.isOpen()) {
                 clientChannel.close().syncUninterruptibly();
@@ -239,7 +244,7 @@ public class SuperPeerClient implements AutoCloseable {
         }
     }
 
-    public Consumer<Event> getEventConsumer() {
-        return eventConsumer;
+    public ConnectionsManager getConnectionsManager() {
+        return connectionsManager;
     }
 }
