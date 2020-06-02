@@ -21,7 +21,7 @@ package org.drasyl;
 import org.drasyl.event.Event;
 import org.drasyl.event.EventType;
 import org.drasyl.event.Node;
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.Address;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
@@ -47,11 +47,11 @@ class DrasylNodeTest {
     private PeersManager peersManager;
     private Node node;
     private Event event;
-    private Pair<Identity, byte[]> message;
-    private Identity recipient;
-    private Identity sender;
+    private Pair<Address, byte[]> message;
+    private Address recipient;
+    private Address sender;
     private byte[] payload;
-    private Identity identity;
+    private Address address;
     private AtomicBoolean started;
     private CompletableFuture<Void> startSequence;
     private CompletableFuture<Void> shutdownSequence;
@@ -67,11 +67,11 @@ class DrasylNodeTest {
         peersManager = mock(PeersManager.class);
         event = mock(Event.class);
         node = mock(Node.class);
-        recipient = mock(Identity.class);
-        sender = mock(Identity.class);
+        recipient = mock(Address.class);
+        sender = mock(Address.class);
         payload = new byte[]{ 0x4f };
         message = Pair.of(sender, payload);
-        identity = mock(Identity.class);
+        address = mock(Address.class);
         started = mock(AtomicBoolean.class);
         startSequence = mock(CompletableFuture.class);
         shutdownSequence = mock(CompletableFuture.class);
@@ -95,7 +95,7 @@ class DrasylNodeTest {
 
     @Test
     void startShouldEmitUpEventOnSuccessfulStart() {
-        when(identityManager.getIdentity()).thenReturn(identity);
+        when(identityManager.getAddress()).thenReturn(address);
         when(messenger.getConnectionsManager()).thenReturn(connectionsManager);
 
         DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, server, superPeerClient, new AtomicBoolean(false), startSequence, shutdownSequence) {
@@ -105,12 +105,12 @@ class DrasylNodeTest {
         });
         drasylNode.start().join();
 
-        verify(drasylNode).onEvent(new Event(EventType.EVENT_NODE_UP, new Node(identity)));
+        verify(drasylNode).onEvent(new Event(EventType.EVENT_NODE_UP, new Node(address)));
     }
 
     @Test
     void shutdownShouldEmitDownAndNormalTerminationEventOnSuccessfulShutdown() {
-        when(identityManager.getIdentity()).thenReturn(identity);
+        when(identityManager.getAddress()).thenReturn(address);
         when(messenger.getConnectionsManager()).thenReturn(connectionsManager);
 
         DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, server, superPeerClient, new AtomicBoolean(true), startSequence, shutdownSequence) {
@@ -120,8 +120,8 @@ class DrasylNodeTest {
         });
         drasylNode.shutdown().join();
 
-        verify(drasylNode).onEvent(new Event(EventType.EVENT_NODE_DOWN, new Node(identity)));
-        verify(drasylNode).onEvent(new Event(EventType.EVENT_NODE_NORMAL_TERMINATION, new Node(identity)));
+        verify(drasylNode).onEvent(new Event(EventType.EVENT_NODE_DOWN, new Node(address)));
+        verify(drasylNode).onEvent(new Event(EventType.EVENT_NODE_NORMAL_TERMINATION, new Node(address)));
     }
 
     @Test
@@ -136,7 +136,7 @@ class DrasylNodeTest {
 
     @Test
     void sendShouldCallMessenger() throws DrasylException {
-        when(identityManager.getIdentity()).thenReturn(identity);
+        when(identityManager.getAddress()).thenReturn(address);
 
         DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, server, superPeerClient, started, startSequence, shutdownSequence) {
             @Override

@@ -61,7 +61,7 @@ public class SuperPeerClientChannelInitializer extends AbstractClientInitializer
         this.config = config;
         this.entryPoints = entryPoints;
         this.superPeerClient = superPeerClient;
-        clientHandler = new SuperPeerClientConnectionHandler(this.config.getSuperPeerPublicKey(), this.superPeerClient.getIdentityManager().getKeyPair().getPublicKey(), entryPoints, superPeerClient, this.config.getSuperPeerHandshakeTimeout());
+        clientHandler = new SuperPeerClientConnectionHandler(this.config.getSuperPeerPublicKey(), this.superPeerClient.getIdentityManager().getIdentity().getPublicKey(), entryPoints, superPeerClient, this.config.getSuperPeerHandshakeTimeout());
     }
 
     public CompletableFuture<Void> handshakeFuture() {

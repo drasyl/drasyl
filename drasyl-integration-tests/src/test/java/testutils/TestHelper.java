@@ -20,7 +20,7 @@ package testutils;
 
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.crypto.Crypto;
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.Address;
 import org.drasyl.peer.connection.server.NodeServer;
 import org.drasyl.peer.connection.server.NodeServerException;
 import org.drasyl.util.NetworkUtil;
@@ -106,7 +106,7 @@ public final class TestHelper {
                 .until(() -> NetworkUtil.available(port));
     }
 
-    public static Identity random() {
-        return Identity.of(Crypto.randomString(5));
+    public static Address random() {
+        return Address.of(Crypto.randomString(5));
     }
 }

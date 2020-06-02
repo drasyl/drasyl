@@ -24,9 +24,9 @@ import net.javacrumbs.jsonunit.core.Option;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.Signature;
+import org.drasyl.identity.Address;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.identity.Identity;
-import org.drasyl.identity.IdentityTestHelper;
+import org.drasyl.identity.AddressTestHelper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -45,8 +45,8 @@ class ApplicationMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
     KeyPair keyPair;
     CompressedPublicKey senderPubKey;
-    Identity sender;
-    Identity recipient;
+    Address sender;
+    Address recipient;
     private String id;
     private Signature signature;
     private ApplicationMessage message;
@@ -55,8 +55,8 @@ class ApplicationMessageTest {
     void setUp() throws CryptoException {
         keyPair = Crypto.generateKeys();
         senderPubKey = CompressedPublicKey.of(keyPair.getPublic());
-        sender = Identity.of(senderPubKey);
-        recipient = IdentityTestHelper.random();
+        sender = Address.of(senderPubKey);
+        recipient = AddressTestHelper.random();
         id = "id";
         signature = mock(Signature.class);
     }
@@ -67,12 +67,12 @@ class ApplicationMessageTest {
 
         assertThatJson(JSON_MAPPER.writeValueAsString(message))
                 .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo("{\"@type\":\"ApplicationMessage\",\"id\":\"" + message.getId() + "\",\"sender\":\"" + sender.getId() + "\",\"recipient\":\"" + recipient.getId() + "\",\"payload\":\"AAEC\"}");
+                .isEqualTo("{\"@type\":\"ApplicationMessage\",\"id\":\"" + message.getId() + "\",\"sender\":\"" + sender + "\",\"recipient\":\"" + recipient + "\",\"payload\":\"AAEC\"}");
     }
 
     @Test
     void fromJson() throws IOException {
-        String json = "{\"@type\":\"ApplicationMessage\",\"id\":\"" + id + "\",\"sender\":\"" + sender.getId() + "\",\"recipient\":\"" + recipient.getId() + "\",\"payload\":\"AAEC\"}";
+        String json = "{\"@type\":\"ApplicationMessage\",\"id\":\"" + id + "\",\"sender\":\"" + sender + "\",\"recipient\":\"" + recipient + "\",\"payload\":\"AAEC\"}";
 
         ApplicationMessage message = JSON_MAPPER.readValue(json, ApplicationMessage.class);
 

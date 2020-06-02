@@ -21,7 +21,7 @@ package org.drasyl.peer.connection;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.Address;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.server.NodeServerConnection;
@@ -49,39 +49,39 @@ public abstract class AbstractNettyConnection extends PeerConnection {
      * Creates a new connection with an unknown User-Agent.
      *
      * @param channel            channel of the connection
-     * @param identity           the identity of this {@link NodeServerConnection}
+     * @param address           the identity of this {@link NodeServerConnection}
      * @param connectionsManager reference to the {@link ConnectionsManager}
      */
     public AbstractNettyConnection(Channel channel,
-                                   Identity identity,
+                                   Address address,
                                    ConnectionsManager connectionsManager) {
-        this(channel, identity, "U/A", connectionsManager);
+        this(channel, address, "U/A", connectionsManager);
     }
 
     /**
      * Creates a new connection.
      *
      * @param channel            channel of the connection
-     * @param identity           the identity of this {@link NodeServerConnection}
+     * @param address           the identity of this {@link NodeServerConnection}
      * @param userAgent          the User-Agent string
      * @param connectionsManager reference to the {@link ConnectionsManager}
      */
     public AbstractNettyConnection(Channel channel,
-                                   Identity identity,
+                                   Address address,
                                    String userAgent,
                                    ConnectionsManager connectionsManager) {
-        this(channel, userAgent, identity, new AtomicBoolean(false), new CompletableFuture<>(), connectionsManager);
+        this(channel, userAgent, address, new AtomicBoolean(false), new CompletableFuture<>(), connectionsManager);
 
         this.channel.closeFuture().addListener((ChannelFutureListener) this::onChannelClose);
     }
 
     protected AbstractNettyConnection(Channel channel,
                                       String userAgent,
-                                      Identity identity,
+                                      Address address,
                                       AtomicBoolean isClosed,
                                       CompletableFuture<Boolean> closedCompletable,
                                       ConnectionsManager connectionsManager) {
-        super(identity);
+        super(address);
         this.channel = channel;
         this.userAgent = userAgent;
         this.isClosed = isClosed;
@@ -172,6 +172,6 @@ public abstract class AbstractNettyConnection extends PeerConnection {
 
     @Override
     public String toString() {
-        return MessageFormat.format("{0} [{1}/Channel:{2}]", getClass().getSimpleName(), identity, channelId);
+        return MessageFormat.format("{0} [{1}/Channel:{2}]", getClass().getSimpleName(), address, channelId);
     }
 }

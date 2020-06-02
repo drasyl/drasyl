@@ -21,8 +21,8 @@ package org.drasyl.peer.connection.superpeer.handler;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.DrasylException;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.identity.Address;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.connection.AbstractNettyConnection;
 import org.drasyl.peer.connection.handler.AbstractThreeWayHandshakeClientHandler;
@@ -85,20 +85,6 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
     }
 
     @Override
-    protected ConnectionExceptionMessage.Error validateSessionOffer(WelcomeMessage offerMessage) {
-        CompressedPublicKey superPeerPublicKey = offerMessage.getPublicKey();
-        if (expectedPublicKey != null && !superPeerPublicKey.equals(expectedPublicKey)) {
-            return CONNECTION_ERROR_WRONG_PUBLIC_KEY;
-        }
-        else if (superPeerPublicKey.equals(ownPublicKey)) {
-            return CONNECTION_ERROR_WRONG_PUBLIC_KEY;
-        }
-        else {
-            return null;
-        }
-    }
-
-    @Override
     protected void processMessageAfterHandshake(AbstractNettyConnection connection,
                                                 Message message) {
         if (message instanceof ApplicationMessage) {
@@ -117,18 +103,33 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
     }
 
     @Override
-    protected AbstractNettyConnection createConnection(final ChannelHandlerContext ctx, WelcomeMessage offerMessage) {
-        Identity identity = Identity.of(offerMessage.getPublicKey());
+    protected ConnectionExceptionMessage.Error validateSessionOffer(WelcomeMessage offerMessage) {
+        CompressedPublicKey superPeerPublicKey = offerMessage.getPublicKey();
+        if (expectedPublicKey != null && !superPeerPublicKey.equals(expectedPublicKey)) {
+            return CONNECTION_ERROR_WRONG_PUBLIC_KEY;
+        }
+        else if (superPeerPublicKey.equals(ownPublicKey)) {
+            return CONNECTION_ERROR_WRONG_PUBLIC_KEY;
+        }
+        else {
+            return null;
+        }
+    }
+
+    @Override
+    protected AbstractNettyConnection createConnection(final ChannelHandlerContext ctx,
+                                                       WelcomeMessage offerMessage) {
+        Address address = Address.of(offerMessage.getPublicKey());
 
         // create peer connection
-        SuperPeerClientConnection connection = new SuperPeerClientConnection(ctx.channel(), identity, offerMessage.getUserAgent(), superPeerClient.getMessenger().getConnectionsManager());
+        SuperPeerClientConnection connection = new SuperPeerClientConnection(ctx.channel(), address, offerMessage.getUserAgent(), superPeerClient.getMessenger().getConnectionsManager());
 
         // store peer information
         PeerInformation peerInformation = new PeerInformation();
         peerInformation.setPublicKey(offerMessage.getPublicKey());
         peerInformation.addEndpoint(offerMessage.getEndpoints());
-        superPeerClient.getPeersManager().addPeer(identity, peerInformation);
-        superPeerClient.getPeersManager().setSuperPeer(identity);
+        superPeerClient.getPeersManager().addPeer(address, peerInformation);
+        superPeerClient.getPeersManager().setSuperPeer(address);
 
         return connection;
     }

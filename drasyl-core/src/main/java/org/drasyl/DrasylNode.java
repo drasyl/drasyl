@@ -28,7 +28,7 @@ import io.sentry.Sentry;
 import io.sentry.event.User;
 import org.drasyl.event.Event;
 import org.drasyl.event.Node;
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.Address;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.messenger.Messenger;
@@ -167,7 +167,7 @@ public abstract class DrasylNode {
     }
 
     public synchronized void send(String recipient, byte[] payload) throws DrasylException {
-        send(Identity.of(recipient), payload);
+        send(Address.of(recipient), payload);
     }
 
     /**
@@ -180,8 +180,8 @@ public abstract class DrasylNode {
      * @param payload   the payload of a message
      * @throws DrasylException if an error occurs during the processing
      */
-    public synchronized void send(Identity recipient, byte[] payload) throws DrasylException {
-        messenger.send(new ApplicationMessage(identityManager.getIdentity(), recipient, payload));
+    public synchronized void send(Address recipient, byte[] payload) throws DrasylException {
+        messenger.send(new ApplicationMessage(identityManager.getAddress(), recipient, payload));
     }
 
     /**
@@ -195,7 +195,7 @@ public abstract class DrasylNode {
      * @throws DrasylException if an error occurs during the processing
      */
     public synchronized void send(String recipient, String payload) throws DrasylException {
-        send(Identity.of(recipient), payload);
+        send(Address.of(recipient), payload);
     }
 
     /**
@@ -208,7 +208,7 @@ public abstract class DrasylNode {
      * @param payload   the payload of a message
      * @throws DrasylException if an error occurs during the processing
      */
-    public synchronized void send(Identity recipient, String payload) throws DrasylException {
+    public synchronized void send(Address recipient, String payload) throws DrasylException {
         send(recipient, payload.getBytes());
     }
 
@@ -232,16 +232,16 @@ public abstract class DrasylNode {
             // The shutdown of the node includes up to two phases, which are performed sequentially
             // 1st Phase: Stop Super Peer Client (if started)
             // 2nd Phase: Stop local server (if started)
-            onEvent(new Event(EVENT_NODE_DOWN, new Node(identityManager.getIdentity())));
-            LOG.info("Shutdown drasyl Node with Identity '{}'...", identityManager.getIdentity().getId());
+            onEvent(new Event(EVENT_NODE_DOWN, new Node(identityManager.getAddress())));
+            LOG.info("Shutdown drasyl Node with Identity '{}'...", identityManager.getIdentity());
             shutdownSequence = runAsync(this::stopSuperPeerClient)
                     .thenRun(this::stopServer)
                     .thenRun(this::destroyLoopbackPeerConnection)
                     .whenComplete((r, e) -> {
                         try {
                             if (e == null) {
-                                onEvent(new Event(EVENT_NODE_NORMAL_TERMINATION, new Node(identityManager.getIdentity())));
-                                LOG.info("drasyl Node with Identity '{}' has shut down", identityManager.getIdentity().getId());
+                                onEvent(new Event(EVENT_NODE_NORMAL_TERMINATION, new Node(identityManager.getAddress())));
+                                LOG.info("drasyl Node with Identity '{}' has shut down", identityManager.getIdentity());
                             }
                             else {
                                 started.set(false);
@@ -268,7 +268,7 @@ public abstract class DrasylNode {
         try {
             identityManager.loadOrCreateIdentity();
             LOG.debug("Using Identity '{}'", identityManager.getIdentity());
-            Sentry.getContext().setUser(new User(identityManager.getIdentity().getId(), null, null, null));
+            Sentry.getContext().setUser(new User(identityManager.getAddress().toString(), null, null, null));
         }
         catch (IdentityManagerException e) {
             throw new CompletionException(e);
@@ -332,11 +332,11 @@ public abstract class DrasylNode {
                     .thenRun(this::startSuperPeerClient)
                     .whenComplete((r, e) -> {
                         if (e == null) {
-                            onEvent(new Event(EVENT_NODE_UP, new Node(identityManager.getIdentity())));
-                            LOG.info("drasyl Node with Identity '{}' has started", identityManager.getIdentity().getId());
+                            onEvent(new Event(EVENT_NODE_UP, new Node(identityManager.getAddress())));
+                            LOG.info("drasyl Node with Identity '{}' has started", identityManager.getIdentity());
                         }
                         else {
-                            onEvent(new Event(EVENT_NODE_UNRECOVERABLE_ERROR, new Node(identityManager.getIdentity())));
+                            onEvent(new Event(EVENT_NODE_UNRECOVERABLE_ERROR, new Node(identityManager.getAddress())));
                             LOG.info("Could not start drasyl Node: {}", e.getMessage());
                             LOG.info("Stop all running components...");
                             this.stopServer();
@@ -375,7 +375,7 @@ public abstract class DrasylNode {
     }
 
     private void createLoopbackPeerConnection() {
-        new LoopbackPeerConnection(this::onEvent, identityManager.getIdentity(), messenger.getConnectionsManager());
+        new LoopbackPeerConnection(this::onEvent, identityManager.getAddress(), messenger.getConnectionsManager());
     }
 
     /**

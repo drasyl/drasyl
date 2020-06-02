@@ -50,7 +50,7 @@ class IdentityManagerTest {
         IdentityManager identityManager = new IdentityManager(config);
         identityManager.loadOrCreateIdentity();
 
-        assertEquals(Identity.of("37ca8159a8"), identityManager.getIdentity());
+        assertEquals(Address.of("37ca8159a8"), identityManager.getAddress());
     }
 
     @Test
@@ -80,11 +80,11 @@ class IdentityManagerTest {
         identityManager.loadOrCreateIdentity();
 
         assertEquals(
-                CompressedKeyPair.of(
+                Identity.of(
                         "0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9",
                         "0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d"
                 ),
-                identityManager.getKeyPair()
+                identityManager.getIdentity()
         );
     }
 
@@ -110,6 +110,6 @@ class IdentityManagerTest {
         IdentityManager identityManager = new IdentityManager(config);
         identityManager.loadOrCreateIdentity();
 
-        assertNotNull(identityManager.getIdentity());
+        assertNotNull(identityManager.getAddress());
     }
 }

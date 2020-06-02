@@ -18,43 +18,39 @@
  */
 package org.drasyl.identity;
 
-import com.fasterxml.jackson.annotation.JsonValue;
-import com.google.re2j.Pattern;
-import org.apache.commons.codec.digest.DigestUtils;
+import org.drasyl.crypto.CryptoException;
 
+import java.security.PrivateKey;
+import java.security.PublicKey;
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.util.SecretUtil.maskSecret;
 
-/**
- * This class models the identity of a drasyl node. The identity is derived from the SHA-256 hash of
- * the public key and is 10 hexadecimal characters long.
- */
 public class Identity {
-    private static final Pattern syntax = Pattern.compile("^[a-f0-9]{10}$");
-    @JsonValue
-    private final String id;
+    private final Address address;
+    private final CompressedPublicKey publicKey;
+    private final CompressedPrivateKey privateKey;
 
-    protected Identity() {
-        this.id = null;
+    Identity(Address address,
+             CompressedPublicKey publicKey,
+             CompressedPrivateKey privateKey) {
+        this.address = requireNonNull(address);
+        this.publicKey = requireNonNull(publicKey);
+        this.privateKey = privateKey;
     }
 
-    Identity(String id) {
-        requireNonNull(id);
-        if (!isValid(id)) {
-            throw new IllegalArgumentException("This is not a valid Identity: '" + id + "'");
-        }
-
-        this.id = id;
+    public CompressedPublicKey getPublicKey() {
+        return publicKey;
     }
 
-    public static boolean isValid(String id) {
-        return syntax.matches(id);
+    public CompressedPrivateKey getPrivateKey() {
+        return privateKey;
     }
 
     @Override
     public int hashCode() {
-        return 31 * Objects.hashCode(id);
+        return Objects.hash(address, publicKey, privateKey);
     }
 
     @Override
@@ -66,44 +62,45 @@ public class Identity {
             return false;
         }
         Identity identity = (Identity) o;
-        return Objects.equals(id, identity.id);
+        return Objects.equals(address, identity.address) &&
+                Objects.equals(publicKey, identity.publicKey) &&
+                Objects.equals(privateKey, identity.privateKey);
     }
 
     @Override
     public String toString() {
         return "Identity{" +
-                "id=" + id +
-                "}";
+                "address=" + address +
+                ", publicKey=" + publicKey +
+                ", privateKey=" + maskSecret(privateKey) +
+                '}';
     }
 
-    public static Identity of(CompressedPublicKey compressedPublicKey) {
-        requireNonNull(compressedPublicKey);
-        String cpk = compressedPublicKey.toString();
-        String hash = DigestUtils.sha256Hex(cpk);
-        String shortID = hash.substring(0, Math.min(hash.length(), 10));
-        return new Identity(shortID);
+    public CompressedKeyPair getKeyPair() {
+        return CompressedKeyPair.of(publicKey, privateKey);
     }
 
-    public static Identity of(String id) {
-        return new Identity(id);
+    public Address getAddress() {
+        return address;
     }
 
-    /**
-     * Checks whether the identity corresponds to the compressed public key.
-     *
-     * @param compressedPublicKey the {@link CompressedPublicKey} to be checked
-     * @param identity            the {@link Identity} to be checked
-     * @return true, iff the compressedPublicKey corresponds to the given identity
-     */
-    public static boolean verify(CompressedPublicKey compressedPublicKey, Identity identity) {
-        requireNonNull(compressedPublicKey);
-        requireNonNull(identity);
-        String hash = DigestUtils.sha256Hex(compressedPublicKey.toString());
-
-        return hash.startsWith(identity.getId());
+    public static Identity of(CompressedPublicKey publicKey) {
+        return of(publicKey, null);
     }
 
-    public String getId() {
-        return id;
+    public static Identity of(CompressedPublicKey publicKey, CompressedPrivateKey privateKey) {
+        return new Identity(Address.of(publicKey), publicKey, privateKey);
+    }
+
+    public static Identity of(String publicKey, String privateKey) throws CryptoException {
+        return of(CompressedKeyPair.of(publicKey, privateKey));
+    }
+
+    public static Identity of(CompressedKeyPair keyPair) {
+        return of(keyPair.getPublicKey(), keyPair.getPrivateKey());
+    }
+
+    public static Identity of(PublicKey publicKey, PrivateKey privateKey) throws CryptoException {
+        return of(CompressedKeyPair.of(publicKey, privateKey));
     }
 }

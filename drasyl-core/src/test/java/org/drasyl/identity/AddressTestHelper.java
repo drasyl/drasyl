@@ -20,8 +20,8 @@ package org.drasyl.identity;
 
 import org.drasyl.crypto.Crypto;
 
-public class IdentityTestHelper {
-    public static Identity random() {
-        return Identity.of(Crypto.randomString(5));
+public class AddressTestHelper {
+    public static Address random() {
+        return Address.of(Crypto.randomString(5));
     }
 }

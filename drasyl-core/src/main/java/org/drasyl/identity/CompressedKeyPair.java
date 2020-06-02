@@ -32,17 +32,12 @@ import static org.drasyl.util.SecretUtil.maskSecret;
 public class CompressedKeyPair {
     private final CompressedPublicKey publicKey;
     private final CompressedPrivateKey privateKey;
-    private final Identity identity;
 
     @JsonCreator
-    CompressedKeyPair(@JsonProperty("publicKey") CompressedPublicKey publicKey, @JsonProperty("privateKey") CompressedPrivateKey privateKey) {
+    CompressedKeyPair(@JsonProperty("publicKey") CompressedPublicKey publicKey,
+                      @JsonProperty("privateKey") CompressedPrivateKey privateKey) {
         this.publicKey = publicKey;
         this.privateKey = privateKey;
-        this.identity = Identity.of(publicKey);
-    }
-
-    public Identity getIdentity() {
-        return identity;
     }
 
     public CompressedPublicKey getPublicKey() {
@@ -55,7 +50,7 @@ public class CompressedKeyPair {
 
     @Override
     public int hashCode() {
-        return Objects.hash(publicKey, privateKey, identity);
+        return Objects.hash(publicKey, privateKey);
     }
 
     @Override
@@ -68,8 +63,7 @@ public class CompressedKeyPair {
         }
         CompressedKeyPair that = (CompressedKeyPair) o;
         return Objects.equals(publicKey, that.publicKey) &&
-                Objects.equals(privateKey, that.privateKey) &&
-                Objects.equals(identity, that.identity);
+                Objects.equals(privateKey, that.privateKey);
     }
 
     @Override
@@ -77,7 +71,6 @@ public class CompressedKeyPair {
         return "CompressedKeyPair{" +
                 "publicKey=" + publicKey +
                 ", privateKey=" + maskSecret(privateKey) +
-                ", identity=" + identity +
                 '}';
     }
 
