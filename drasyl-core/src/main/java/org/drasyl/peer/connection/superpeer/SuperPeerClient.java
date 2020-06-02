@@ -226,6 +226,8 @@ public class SuperPeerClient implements AutoCloseable {
     @Override
     public void close() {
         if (opened.compareAndSet(true, false)) {
+            // FIXME: update peer information (peersManager)
+
             connectionsManager.closeConnectionsOfType(SuperPeerClientConnection.class, REASON_SHUTTING_DOWN);
 
             if (clientChannel != null && clientChannel.isOpen()) {

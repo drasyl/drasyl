@@ -226,6 +226,9 @@ public class NodeServer implements AutoCloseable {
     @Override
     public void close() {
         if (opened.compareAndSet(true, false)) {
+            // update peer information
+            peersManager.unsetSuperPeer();
+
             connectionsManager.closeConnectionsOfType(NodeServerConnection.class, REASON_SHUTTING_DOWN);
 
             if (serverChannel != null && serverChannel.isOpen()) {
