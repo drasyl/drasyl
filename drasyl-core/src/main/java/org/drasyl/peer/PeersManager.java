@@ -20,7 +20,7 @@ package org.drasyl.peer;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.Address;
 import org.drasyl.util.Pair;
 
 import java.util.*;
@@ -42,23 +42,23 @@ import static java.util.Objects.requireNonNull;
  */
 public class PeersManager {
     private final ReadWriteLock lock;
-    private final Map<Identity, PeerInformation> peers;
-    private final Set<Identity> children;
-    private Identity superPeer;
+    private final Map<Address, PeerInformation> peers;
+    private final Set<Address> children;
+    private Address superPeer;
 
     public PeersManager() {
         this(new ReentrantReadWriteLock(true), new HashMap<>(), new HashSet<>(), null);
     }
 
-    public PeersManager(ReadWriteLock lock, Map<Identity, PeerInformation> peers,
-                        Set<Identity> children, Identity superPeer) {
+    public PeersManager(ReadWriteLock lock, Map<Address, PeerInformation> peers,
+                        Set<Address> children, Address superPeer) {
         this.lock = lock;
         this.peers = peers;
         this.children = children;
         this.superPeer = superPeer;
     }
 
-    public Map<Identity, PeerInformation> getPeers() {
+    public Map<Address, PeerInformation> getPeers() {
         try {
             lock.readLock().lock();
 
@@ -69,34 +69,34 @@ public class PeersManager {
         }
     }
 
-    public boolean isPeer(Identity identity) {
-        requireNonNull(identity);
+    public boolean isPeer(Address address) {
+        requireNonNull(address);
 
         try {
             lock.readLock().lock();
 
-            return peers.containsKey(identity);
+            return peers.containsKey(address);
         }
         finally {
             lock.readLock().unlock();
         }
     }
 
-    public void addPeer(Identity identity,
+    public void addPeer(Address address,
                         PeerInformation peerInformation) {
-        requireNonNull(identity);
+        requireNonNull(address);
         requireNonNull(peerInformation);
 
         try {
             lock.writeLock().lock();
-            peers.put(identity, peerInformation);
+            peers.put(address, peerInformation);
         }
         finally {
             lock.writeLock().unlock();
         }
     }
 
-    public void addPeers(Map<? extends Identity, ? extends PeerInformation> peers) {
+    public void addPeers(Map<? extends Address, ? extends PeerInformation> peers) {
         requireNonNull(peers);
 
         try {
@@ -109,45 +109,45 @@ public class PeersManager {
         }
     }
 
-    public PeerInformation removePeer(Identity identity) {
-        requireNonNull(identity);
+    public PeerInformation removePeer(Address address) {
+        requireNonNull(address);
 
         try {
             lock.writeLock().lock();
 
-            if (superPeer == identity) {
+            if (superPeer == address) {
                 throw new IllegalArgumentException("Peer cannot be removed. It is defined as Super Peer");
             }
-            if (children.contains(identity)) {
+            if (children.contains(address)) {
                 throw new IllegalArgumentException("Peer cannot be removed. It is defined as Children");
             }
 
-            return peers.remove(identity);
+            return peers.remove(address);
         }
         finally {
             lock.writeLock().unlock();
         }
     }
 
-    public void removePeers(Identity... identities) {
+    public void removePeers(Address... identities) {
         requireNonNull(identities);
 
         try {
             lock.writeLock().lock();
 
             // validate
-            for (Identity identity : identities) {
-                if (superPeer == identity) {
+            for (Address address : identities) {
+                if (superPeer == address) {
                     throw new IllegalArgumentException("Peer cannot be removed. It is defined as Super Peer");
                 }
-                if (children.contains(identity)) {
+                if (children.contains(address)) {
                     throw new IllegalArgumentException("Peer cannot be removed. It is defined as Children");
                 }
             }
 
             // remove
-            for (Identity identity : identities) {
-                peers.remove(identity);
+            for (Address address : identities) {
+                peers.remove(address);
             }
         }
         finally {
@@ -155,7 +155,7 @@ public class PeersManager {
         }
     }
 
-    public Set<Identity> getChildren() {
+    public Set<Address> getChildren() {
         try {
             lock.readLock().lock();
 
@@ -166,28 +166,28 @@ public class PeersManager {
         }
     }
 
-    public boolean isChildren(Identity identity) {
-        requireNonNull(identity);
+    public boolean isChildren(Address address) {
+        requireNonNull(address);
 
         try {
             lock.readLock().lock();
 
-            return children.contains(identity);
+            return children.contains(address);
         }
         finally {
             lock.readLock().unlock();
         }
     }
 
-    public boolean addChildren(Identity... identities) {
+    public boolean addChildren(Address... identities) {
         requireNonNull(identities);
 
         try {
             lock.writeLock().lock();
 
             // validate
-            for (Identity identity : identities) {
-                if (!peers.containsKey(identity)) {
+            for (Address address : identities) {
+                if (!peers.containsKey(address)) {
                     throw new IllegalArgumentException("Peer cannot be set as a child. There are no Peer Information available");
                 }
             }
@@ -200,7 +200,7 @@ public class PeersManager {
         }
     }
 
-    public boolean removeChildren(Identity... identities) {
+    public boolean removeChildren(Address... identities) {
         requireNonNull(identities);
 
         try {
@@ -213,13 +213,13 @@ public class PeersManager {
         }
     }
 
-    public PeerInformation getPeer(Identity identity) {
-        requireNonNull(identity);
+    public PeerInformation getPeer(Address address) {
+        requireNonNull(address);
 
         try {
             lock.readLock().lock();
 
-            return peers.get(identity);
+            return peers.get(address);
         }
         finally {
             lock.readLock().unlock();
@@ -232,7 +232,7 @@ public class PeersManager {
      *
      * @return
      */
-    public Pair<Identity, PeerInformation> getSuperPeer() {
+    public Pair<Address, PeerInformation> getSuperPeer() {
         try {
             lock.readLock().lock();
 
@@ -248,30 +248,30 @@ public class PeersManager {
         }
     }
 
-    public void setSuperPeer(Identity identity) {
-        requireNonNull(identity);
+    public void setSuperPeer(Address address) {
+        requireNonNull(address);
 
         try {
             lock.writeLock().lock();
 
-            if (!peers.containsKey(identity)) {
+            if (!peers.containsKey(address)) {
                 throw new IllegalArgumentException("Peer cannot be set as a Super Peer. There are no Peer Information available");
             }
 
-            this.superPeer = identity;
+            this.superPeer = address;
         }
         finally {
             lock.writeLock().unlock();
         }
     }
 
-    public boolean isSuperPeer(Identity identity) {
-        requireNonNull(identity);
+    public boolean isSuperPeer(Address address) {
+        requireNonNull(address);
 
         try {
             lock.readLock().lock();
 
-            return Objects.equals(superPeer, identity);
+            return Objects.equals(superPeer, address);
         }
         finally {
             lock.readLock().unlock();

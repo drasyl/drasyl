@@ -21,7 +21,7 @@ package org.drasyl.peer.connection;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import org.drasyl.crypto.Crypto;
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.Address;
 import org.drasyl.peer.connection.message.Message;
 
 import java.util.HashMap;
@@ -37,15 +37,15 @@ import java.util.concurrent.CompletableFuture;
 @SuppressWarnings({ "java:S1452" })
 public abstract class PeerConnection {
     protected final String connectionId = Crypto.randomString(8);
-    protected Identity identity;
+    protected Address address;
 
-    protected PeerConnection(Identity identity) {
-        this.identity = identity;
+    protected PeerConnection(Address address) {
+        this.address = address;
     }
 
-    public PeerConnection(Identity identity,
+    public PeerConnection(Address address,
                           ConnectionsManager connectionsManager) {
-        this.identity = identity;
+        this.address = address;
         connectionsManager.addConnection(this, this::close);
     }
 
@@ -79,8 +79,8 @@ public abstract class PeerConnection {
     /**
      * Returns the identity of the peer.
      */
-    public Identity getIdentity() {
-        return identity;
+    public Address getAddress() {
+        return address;
     }
 
     /**

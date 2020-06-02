@@ -20,7 +20,7 @@ package org.drasyl.peer;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.Address;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,10 +41,10 @@ class PeersManagerTest {
     private ReadWriteLock lock;
     private Lock readLock;
     private Lock writeLock;
-    private Map<Identity, PeerInformation> peers;
-    private Set<Identity> children;
-    private Identity superPeer;
-    private Identity identity;
+    private Map<Address, PeerInformation> peers;
+    private Set<Address> children;
+    private Address superPeer;
+    private Address address;
     private PeerInformation peer;
 
     @BeforeEach
@@ -54,8 +54,8 @@ class PeersManagerTest {
         writeLock = mock(Lock.class);
         peers = mock(Map.class);
         children = mock(Set.class);
-        superPeer = mock(Identity.class);
-        identity = mock(Identity.class);
+        superPeer = mock(Address.class);
+        address = mock(Address.class);
         peer = mock(PeerInformation.class);
 
         when(lock.writeLock()).thenReturn(writeLock);
@@ -68,21 +68,21 @@ class PeersManagerTest {
 
     @Test
     void getPeersShouldReturnAnImmutableListOfAllPeers() {
-        PeersManager manager = new PeersManager(lock, Map.of(identity, peer), children, superPeer);
+        PeersManager manager = new PeersManager(lock, Map.of(address, peer), children, superPeer);
 
-        Map<Identity, PeerInformation> peers = manager.getPeers();
+        Map<Address, PeerInformation> peers = manager.getPeers();
 
         assertThat(peers, instanceOf(ImmutableMap.class));
-        assertThat(peers, hasEntry(identity, peer));
+        assertThat(peers, hasEntry(address, peer));
         verify(readLock).lock();
         verify(readLock).unlock();
     }
 
     @Test
     void isPeerShouldReturnTrueIfGivenIdentityIsAKnownPeer() {
-        PeersManager manager = new PeersManager(lock, Map.of(identity, peer), children, superPeer);
+        PeersManager manager = new PeersManager(lock, Map.of(address, peer), children, superPeer);
 
-        assertTrue(manager.isPeer(identity));
+        assertTrue(manager.isPeer(address));
         verify(readLock).lock();
         verify(readLock).unlock();
     }
@@ -91,7 +91,7 @@ class PeersManagerTest {
     void isPeerShouldReturnFalseIfGivenIdentityIsAUnknownPeer() {
         PeersManager manager = new PeersManager(lock, Map.of(), children, superPeer);
 
-        assertFalse(manager.isPeer(identity));
+        assertFalse(manager.isPeer(address));
         verify(readLock).lock();
         verify(readLock).unlock();
     }
@@ -100,9 +100,9 @@ class PeersManagerTest {
     void addPeerShouldAddPeerToListOfKnownPeers() {
         PeersManager manager = new PeersManager(lock, peers, children, superPeer);
 
-        manager.addPeer(identity, peer);
+        manager.addPeer(address, peer);
 
-        verify(peers).put(identity, peer);
+        verify(peers).put(address, peer);
         verify(writeLock).lock();
         verify(writeLock).unlock();
     }
@@ -111,9 +111,9 @@ class PeersManagerTest {
     void addPeersShouldAddGivenPeersToListOfKnownPeers() {
         PeersManager manager = new PeersManager(lock, peers, children, superPeer);
 
-        manager.addPeers(Map.of(identity, peer));
+        manager.addPeers(Map.of(address, peer));
 
-        verify(peers).putAll(Map.of(identity, peer));
+        verify(peers).putAll(Map.of(address, peer));
         verify(writeLock).lock();
         verify(writeLock).unlock();
     }
@@ -122,9 +122,9 @@ class PeersManagerTest {
     void removePeerShouldRemovePeerFromListOfKnownPeers() {
         PeersManager manager = new PeersManager(lock, peers, children, superPeer);
 
-        manager.removePeer(identity);
+        manager.removePeer(address);
 
-        verify(peers).remove(identity);
+        verify(peers).remove(address);
         verify(writeLock).lock();
         verify(writeLock).unlock();
     }
@@ -138,17 +138,17 @@ class PeersManagerTest {
 
     @Test
     void removePeerShouldThrowExceptionIfGivenPeerIsChildren() {
-        PeersManager manager = new PeersManager(lock, peers, Set.of(identity), superPeer);
-        assertThrows(IllegalArgumentException.class, () -> manager.removePeer(identity));
+        PeersManager manager = new PeersManager(lock, peers, Set.of(address), superPeer);
+        assertThrows(IllegalArgumentException.class, () -> manager.removePeer(address));
     }
 
     @Test
     void removePeersShouldRemoveGivenPeersFromListOfKnownPeers() {
         PeersManager manager = new PeersManager(lock, peers, children, superPeer);
 
-        manager.removePeers(identity);
+        manager.removePeers(address);
 
-        verify(peers).remove(identity);
+        verify(peers).remove(address);
         verify(writeLock).lock();
         verify(writeLock).unlock();
     }
@@ -161,27 +161,27 @@ class PeersManagerTest {
 
     @Test
     void removePeersShouldThrowExceptionIfGivenPeersContainChildren() {
-        PeersManager manager = new PeersManager(lock, peers, Set.of(identity), superPeer);
-        assertThrows(IllegalArgumentException.class, () -> manager.removePeers(identity));
+        PeersManager manager = new PeersManager(lock, peers, Set.of(address), superPeer);
+        assertThrows(IllegalArgumentException.class, () -> manager.removePeers(address));
     }
 
     @Test
     void getChildrenShouldReturnAnImmutableSetOfAllChildren() {
-        PeersManager manager = new PeersManager(lock, peers, Set.of(identity), superPeer);
+        PeersManager manager = new PeersManager(lock, peers, Set.of(address), superPeer);
 
-        Set<Identity> children = manager.getChildren();
+        Set<Address> children = manager.getChildren();
 
         assertThat(children, instanceOf(ImmutableSet.class));
-        assertThat(children, hasItem(identity));
+        assertThat(children, hasItem(address));
         verify(readLock).lock();
         verify(readLock).unlock();
     }
 
     @Test
     void isChildrenShouldTrueIfGivenIdentityIsAChildren() {
-        PeersManager manager = new PeersManager(lock, peers, Set.of(identity), superPeer);
+        PeersManager manager = new PeersManager(lock, peers, Set.of(address), superPeer);
 
-        assertTrue(manager.isChildren(identity));
+        assertTrue(manager.isChildren(address));
         verify(readLock).lock();
         verify(readLock).unlock();
     }
@@ -190,18 +190,18 @@ class PeersManagerTest {
     void isChildrenShouldFalseIfGivenIdentityIsNotAChildren() {
         PeersManager manager = new PeersManager(lock, peers, Set.of(), superPeer);
 
-        assertFalse(manager.isChildren(identity));
+        assertFalse(manager.isChildren(address));
         verify(readLock).lock();
         verify(readLock).unlock();
     }
 
     @Test
     void addChildrenShouldAddChildrenToListOfChildren() {
-        PeersManager manager = new PeersManager(lock, Map.of(identity, peer), children, superPeer);
+        PeersManager manager = new PeersManager(lock, Map.of(address, peer), children, superPeer);
 
-        manager.addChildren(identity);
+        manager.addChildren(address);
 
-        verify(children).addAll(List.of(identity));
+        verify(children).addAll(List.of(address));
         verify(writeLock).lock();
         verify(writeLock).unlock();
     }
@@ -209,25 +209,25 @@ class PeersManagerTest {
     @Test
     void addChildrenShouldThrowExceptionWhenChildrenIsNotKnown() {
         PeersManager manager = new PeersManager(lock, Map.of(), children, superPeer);
-        assertThrows(IllegalArgumentException.class, () -> manager.addChildren(identity));
+        assertThrows(IllegalArgumentException.class, () -> manager.addChildren(address));
     }
 
     @Test
     void removeChildrenShouldRemoveChildrenFromListOfChildren() {
         PeersManager manager = new PeersManager(lock, peers, children, superPeer);
 
-        manager.removeChildren(identity);
+        manager.removeChildren(address);
 
-        verify(children).removeAll(List.of(identity));
+        verify(children).removeAll(List.of(address));
         verify(writeLock).lock();
         verify(writeLock).unlock();
     }
 
     @Test
     void getPeerShouldReturnInformationOfGivenPeer() {
-        PeersManager manager = new PeersManager(lock, Map.of(identity, peer), children, superPeer);
+        PeersManager manager = new PeersManager(lock, Map.of(address, peer), children, superPeer);
 
-        assertEquals(peer, manager.getPeer(identity));
+        assertEquals(peer, manager.getPeer(address));
         verify(readLock).lock();
         verify(readLock).unlock();
     }
@@ -255,7 +255,7 @@ class PeersManagerTest {
     @Test
     void setSuperPeerShouldThrowExceptionWhenSuperPeerIsNotKnown() {
         PeersManager manager = new PeersManager(lock, Map.of(), children, superPeer);
-        assertThrows(IllegalArgumentException.class, () -> manager.setSuperPeer(identity));
+        assertThrows(IllegalArgumentException.class, () -> manager.setSuperPeer(address));
     }
 
     @Test

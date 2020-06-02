@@ -18,7 +18,7 @@
  */
 package org.drasyl.event;
 
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.Address;
 import org.drasyl.util.Pair;
 
 import java.util.Objects;
@@ -31,9 +31,9 @@ public class Event {
     private final EventType type;
     private final Node node;
     private final Peer peer;
-    private final Pair<Identity, byte[]> message;
+    private final Pair<Address, byte[]> message;
 
-    Event(EventType type, Node node, Peer peer, Pair<Identity, byte[]> message) {
+    Event(EventType type, Node node, Peer peer, Pair<Address, byte[]> message) {
         this.type = type;
         this.node = node;
         this.peer = peer;
@@ -62,7 +62,7 @@ public class Event {
         message = null;
     }
 
-    public Event(EventType type, Pair<Identity, byte[]> message) {
+    public Event(EventType type, Pair<Address, byte[]> message) {
         if (!type.isMessageEvent()) {
             throw new IllegalArgumentException("Given code must refer to a message!");
         }
@@ -85,7 +85,7 @@ public class Event {
         return peer;
     }
 
-    public Pair<Identity, byte[]> getMessage() {
+    public Pair<Address, byte[]> getMessage() {
         return message;
     }
 

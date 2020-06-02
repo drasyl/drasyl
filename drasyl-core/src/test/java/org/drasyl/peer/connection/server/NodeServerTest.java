@@ -26,9 +26,9 @@ import io.netty.util.concurrent.Future;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.crypto.Crypto;
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.Address;
 import org.drasyl.identity.IdentityManager;
-import org.drasyl.identity.IdentityTestHelper;
+import org.drasyl.identity.AddressTestHelper;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.ApplicationMessage;
@@ -84,8 +84,8 @@ class NodeServerTest {
 
         message = mock(ApplicationMessage.class);
         String msgID = Crypto.randomString(16);
-        Identity identity1 = IdentityTestHelper.random();
-        Identity identity2 = IdentityTestHelper.random();
+        Address address1 = AddressTestHelper.random();
+        Address address2 = AddressTestHelper.random();
 
         when(serverBootstrap.group(any(), any())).thenReturn(serverBootstrap);
         when(serverBootstrap.channel(any())).thenReturn(serverBootstrap);
@@ -98,8 +98,8 @@ class NodeServerTest {
         when(nodeServerChannelBootstrap.getChannel()).thenReturn(serverChannel);
         when(serverChannel.closeFuture()).thenReturn(channelFuture);
 
-        when(message.getSender()).thenReturn(identity1);
-        when(message.getRecipient()).thenReturn(identity2);
+        when(message.getSender()).thenReturn(address1);
+        when(message.getRecipient()).thenReturn(address2);
         when(message.getId()).thenReturn(msgID);
     }
 

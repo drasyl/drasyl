@@ -26,8 +26,8 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.identity.Address;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.messenger.Messenger;
@@ -148,7 +148,7 @@ class NodeServerIT {
         TestObserver<Message> receivedMessages2 = session2.receivedMessages().test();
 
         // send message
-        RequestMessage request = new ApplicationMessage(session1.getIdentity(), session2.getIdentity(), new byte[]{
+        RequestMessage request = new ApplicationMessage(session1.getAddress(), session2.getAddress(), new byte[]{
                 0x00,
                 0x01,
                 0x02
@@ -221,11 +221,11 @@ class NodeServerIT {
 
         // send messages
         CompressedPublicKey publicKey = CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3");
-        Identity identity = Identity.of(publicKey);
+        Address address = Address.of(publicKey);
         RequestMessage request1 = new JoinMessage(publicKey, Set.of());
         ResponseMessage<?> response1 = session1.sendRequest(request1).get();
         session1.send(new StatusMessage(STATUS_OK, response1.getId()));
-        await().until(() -> server.getMessenger().getConnectionsManager().getConnection(identity) != null);
+        await().until(() -> server.getMessenger().getConnectionsManager().getConnection(address) != null);
 
         RequestMessage request2 = new JoinMessage(publicKey, Set.of());
         ResponseMessage<?> response2 = session2.sendRequest(request2).join();
@@ -233,9 +233,9 @@ class NodeServerIT {
 
         // verify responses
         receivedMessages1.awaitCount(2);
-        receivedMessages1.assertValues(new WelcomeMessage(server.getIdentityManager().getKeyPair().getPublicKey(), server.getEntryPoints(), request1.getId()), new QuitMessage(REASON_NEW_SESSION));
+        receivedMessages1.assertValues(new WelcomeMessage(server.getIdentityManager().getIdentity().getPublicKey(), server.getEntryPoints(), request1.getId()), new QuitMessage(REASON_NEW_SESSION));
         receivedMessages2.awaitCount(1);
-        receivedMessages2.assertValue(new WelcomeMessage(server.getIdentityManager().getKeyPair().getPublicKey(), server.getEntryPoints(), request2.getId()));
+        receivedMessages2.assertValue(new WelcomeMessage(server.getIdentityManager().getIdentity().getPublicKey(), server.getEntryPoints(), request2.getId()));
     }
 
     @Test
@@ -317,7 +317,7 @@ class NodeServerIT {
         new Random().nextBytes(bigPayload);
 
         // send message
-        RequestMessage request = new ApplicationMessage(session1.getIdentity(), session2.getIdentity(), bigPayload);
+        RequestMessage request = new ApplicationMessage(session1.getAddress(), session2.getAddress(), bigPayload);
         session2.send(request);
 
         // verify response
@@ -338,7 +338,7 @@ class NodeServerIT {
         new Random().nextBytes(bigPayload);
 
         // send message
-        RequestMessage request = new ApplicationMessage(session1.getIdentity(), session2.getIdentity(), bigPayload);
+        RequestMessage request = new ApplicationMessage(session1.getAddress(), session2.getAddress(), bigPayload);
 
         assertThrows(DrasylException.class, () -> session2.send(request));
     }

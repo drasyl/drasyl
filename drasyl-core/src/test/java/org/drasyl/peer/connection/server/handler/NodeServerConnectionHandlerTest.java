@@ -25,7 +25,7 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.*;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.connection.AbstractNettyConnection;
 import org.drasyl.peer.connection.ConnectionsManager;

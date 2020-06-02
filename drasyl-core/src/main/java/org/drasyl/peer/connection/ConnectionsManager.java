@@ -21,7 +21,7 @@ package org.drasyl.peer.connection;
 import com.google.common.collect.HashMultimap;
 import org.drasyl.event.Event;
 import org.drasyl.event.Peer;
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.Address;
 import org.drasyl.peer.connection.PeerConnection.CloseReason;
 import org.drasyl.peer.connection.superpeer.SuperPeerClientConnection;
 import org.slf4j.Logger;
@@ -51,20 +51,20 @@ import static org.drasyl.peer.connection.PeerConnection.CloseReason.REASON_NEW_S
 public class ConnectionsManager {
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionsManager.class);
     private final ReadWriteLock lock;
-    private final HashMultimap<Identity, PeerConnection> connections;
+    private final HashMultimap<Address, PeerConnection> connections;
     private final Map<PeerConnection, Consumer<CloseReason>> closeProcedures;
     private final Consumer<Event> eventConsumer;
-    private Identity superPeer;
+    private Address superPeer;
 
     public ConnectionsManager(Consumer<Event> eventConsumer) {
         this(new ReentrantReadWriteLock(true), HashMultimap.create(), new HashMap<>(), eventConsumer, null);
     }
 
     ConnectionsManager(ReadWriteLock lock,
-                       HashMultimap<Identity, PeerConnection> connections,
+                       HashMultimap<Address, PeerConnection> connections,
                        Map<PeerConnection, Consumer<CloseReason>> closeProcedures,
                        Consumer<Event> eventConsumer,
-                       Identity superPeer) {
+                       Address superPeer) {
         this.lock = requireNonNull(lock);
         this.connections = requireNonNull(connections);
         this.closeProcedures = requireNonNull(closeProcedures);
@@ -78,13 +78,13 @@ public class ConnectionsManager {
      * <p>
      * The shortest connections (e.g. direct connection) are rated as best.
      *
-     * @param identity the identity
+     * @param address the identity
      */
-    public PeerConnection getConnection(Identity identity) {
+    public PeerConnection getConnection(Address address) {
         try {
             lock.readLock().lock();
 
-            Optional<PeerConnection> connection = connections.get(identity).stream().min(ConnectionComparator.INSTANCE);
+            Optional<PeerConnection> connection = connections.get(address).stream().min(ConnectionComparator.INSTANCE);
 
             // super peer fallback
             if (!connection.isPresent() && superPeer != null) {
@@ -113,29 +113,29 @@ public class ConnectionsManager {
         try {
             lock.writeLock().lock();
 
-            Identity identity = connection.getIdentity();
-            LOG.debug("Add Connection '{}' for Node '{}'", connection, identity);
+            Address address = connection.getAddress();
+            LOG.debug("Add Connection '{}' for Node '{}'", connection, address);
 
             // remember super peer identity for fast lookup
             if (connection instanceof SuperPeerClientConnection) {
-                superPeer = identity;
+                superPeer = address;
             }
 
-            boolean firstConnection = !connections.containsKey(identity);
+            boolean firstConnection = !connections.containsKey(address);
 
-            Optional<PeerConnection> existingConnection = connections.get(identity).stream().filter(c -> c.getClass() == connection.getClass()).findFirst();
+            Optional<PeerConnection> existingConnection = connections.get(address).stream().filter(c -> c.getClass() == connection.getClass()).findFirst();
             if (existingConnection.isPresent()) {
-                LOG.debug("A Connection of this type already exists for Node '{}'. Replace and close existing Connection '{}' before adding new Connection '{}'", identity, existingConnection.get(), connection);
+                LOG.debug("A Connection of this type already exists for Node '{}'. Replace and close existing Connection '{}' before adding new Connection '{}'", address, existingConnection.get(), connection);
 
                 closeAndRemoveConnection(existingConnection.get(), REASON_NEW_SESSION);
             }
 
-            connections.put(identity, connection);
+            connections.put(address, connection);
             closeProcedures.put(connection, closeProcedure);
 
             // send event
             if (firstConnection) {
-                eventConsumer.accept(new Event(EVENT_PEER_DIRECT, new Peer(identity)));
+                eventConsumer.accept(new Event(EVENT_PEER_DIRECT, new Peer(address)));
             }
         }
         finally {
@@ -148,7 +148,7 @@ public class ConnectionsManager {
         removeConnection(connection);
         Optional.ofNullable(closeProcedures.remove(connection)).ifPresent(p -> {
             p.accept(reason);
-            LOG.debug("Close and remove Connection '{}' for Node '{}' for Reason '{}'", connection, connection.getIdentity(), reason);
+            LOG.debug("Close and remove Connection '{}' for Node '{}' for Reason '{}'", connection, connection.getAddress(), reason);
         });
     }
 
@@ -157,8 +157,8 @@ public class ConnectionsManager {
             superPeer = null;
         }
 
-        Identity identity = connection.getIdentity();
-        connections.remove(identity, connection);
+        Address address = connection.getAddress();
+        connections.remove(address, connection);
     }
 
     /**
@@ -176,19 +176,19 @@ public class ConnectionsManager {
             closeAndRemoveConnection(connection, reason);
 
             // send event
-            Identity identity = connection.getIdentity();
+            Address address = connection.getAddress();
 
-            conditionalSendPeerRelayEvent(identity);
+            conditionalSendPeerRelayEvent(address);
         }
         finally {
             lock.writeLock().unlock();
         }
     }
 
-    private void conditionalSendPeerRelayEvent(Identity identity) {
-        boolean wasLastConnection = !connections.containsKey(identity);
+    private void conditionalSendPeerRelayEvent(Address address) {
+        boolean wasLastConnection = !connections.containsKey(address);
         if (wasLastConnection) {
-            eventConsumer.accept(new Event(EVENT_PEER_RELAY, new Peer(identity)));
+            eventConsumer.accept(new Event(EVENT_PEER_RELAY, new Peer(address)));
         }
     }
 
@@ -202,7 +202,7 @@ public class ConnectionsManager {
             lock.writeLock().lock();
 
             removeConnection(connection);
-            conditionalSendPeerRelayEvent(connection.getIdentity());
+            conditionalSendPeerRelayEvent(connection.getAddress());
         }
         finally {
             lock.writeLock().unlock();
@@ -214,22 +214,22 @@ public class ConnectionsManager {
      * <code>identity</code>. <code>reason</code> is sent to the connected peers as the reason for
      * the closure.
      *
-     * @param identity the identity
+     * @param address the identity
      * @param clazz    the class
      * @param reason   reason why this connection is closed
      */
-    public void closeConnectionOfTypeForIdentity(Identity identity,
+    public void closeConnectionOfTypeForIdentity(Address address,
                                                  Class<? extends PeerConnection> clazz,
                                                  CloseReason reason) {
         try {
             lock.writeLock().lock();
 
-            Set<PeerConnection> connectionsOfType = connections.get(identity).stream().filter(c -> c.getClass() == clazz).collect(Collectors.toSet());
+            Set<PeerConnection> connectionsOfType = connections.get(address).stream().filter(c -> c.getClass() == clazz).collect(Collectors.toSet());
             for (PeerConnection peerConnection : connectionsOfType) {
                 closeAndRemoveConnection(peerConnection, reason);
             }
 
-            conditionalSendPeerRelayEvent(identity);
+            conditionalSendPeerRelayEvent(address);
         }
         finally {
             lock.writeLock().unlock();
@@ -251,7 +251,7 @@ public class ConnectionsManager {
             Set<PeerConnection> connectionsOfType = connections.values().stream().filter(c -> c.getClass() == clazz).collect(Collectors.toSet());
             for (PeerConnection peerConnection : connectionsOfType) {
                 closeAndRemoveConnection(peerConnection, reason);
-                conditionalSendPeerRelayEvent(peerConnection.getIdentity());
+                conditionalSendPeerRelayEvent(peerConnection.getAddress());
             }
         }
         finally {

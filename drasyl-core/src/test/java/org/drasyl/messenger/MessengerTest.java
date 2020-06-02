@@ -19,7 +19,7 @@
 package org.drasyl.messenger;
 
 import org.drasyl.DrasylException;
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.Address;
 import org.drasyl.peer.connection.ConnectionsManager;
 import org.drasyl.peer.connection.PeerConnection;
 import org.drasyl.peer.connection.message.ApplicationMessage;
@@ -29,16 +29,16 @@ import org.junit.jupiter.api.Test;
 import static org.mockito.Mockito.*;
 
 class MessengerTest {
-    private Identity sender;
-    private Identity recipient;
+    private Address sender;
+    private Address recipient;
     private byte[] payload;
     private PeerConnection peerConnection;
     private ConnectionsManager connectionsManager;
 
     @BeforeEach
     void setUp() {
-        sender = mock(Identity.class);
-        recipient = mock(Identity.class);
+        sender = mock(Address.class);
+        recipient = mock(Address.class);
         payload = new byte[]{ 0x4f };
         peerConnection = mock(PeerConnection.class);
         connectionsManager = mock(ConnectionsManager.class);

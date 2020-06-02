@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.peer.connection.server.handler;
 
 import io.netty.buffer.ByteBuf;
@@ -30,7 +29,6 @@ import io.netty.handler.codec.http.*;
 import io.netty.util.CharsetUtil;
 import org.drasyl.DrasylNode;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.IdentityManager;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static io.netty.handler.codec.http.HttpHeaderNames.SERVER;
@@ -43,10 +41,10 @@ import static io.netty.handler.codec.http.HttpResponseStatus.*;
  * upgrade.
  */
 public class NodeServerMissingWebSocketUpgradeErrorPage extends SimpleChannelInboundHandler<FullHttpRequest> {
-    private final IdentityManager identityManager;
+    private final Identity identity;
 
-    public NodeServerMissingWebSocketUpgradeErrorPage(IdentityManager identityManager) {
-        this.identityManager = identityManager;
+    public NodeServerMissingWebSocketUpgradeErrorPage(Identity identity) {
+        this.identity = identity;
     }
 
     @Override
@@ -60,7 +58,6 @@ public class NodeServerMissingWebSocketUpgradeErrorPage extends SimpleChannelInb
 
         // response with node information on HEAD request
         if (HEAD.equals(req.method())) {
-            Identity identity = identityManager.getIdentity();
             generateHeaders(ctx, req, identity, OK);
             return;
         }
@@ -74,7 +71,6 @@ public class NodeServerMissingWebSocketUpgradeErrorPage extends SimpleChannelInb
 
         if ("/".equals(req.uri()) || "/index.html".equals(req.uri()) || "/index.htm".equals(req.uri())) {
             // display custom bad request error page for root path
-            Identity identity = identityManager.getIdentity();
             generateHeaders(ctx, req, identity, BAD_REQUEST);
         }
         else {
@@ -90,7 +86,8 @@ public class NodeServerMissingWebSocketUpgradeErrorPage extends SimpleChannelInb
                                         HttpResponseStatus status) {
         ByteBuf content = getContent(identity);
         FullHttpResponse res = new DefaultFullHttpResponse(req.protocolVersion(), status, content);
-        res.headers().set("x-identity", identity.getId());
+        res.headers().set("x-address", identity.getAddress());
+        res.headers().set("x-public-key", identity.getPublicKey());
         res.headers().set(CONTENT_TYPE, "text/html; charset=UTF-8");
         HttpUtil.setContentLength(res, content.readableBytes());
         sendHttpResponse(ctx, res);
@@ -121,7 +118,7 @@ public class NodeServerMissingWebSocketUpgradeErrorPage extends SimpleChannelInb
                         "<h1>Bad Request</h1>\n" +
                         "<p>Not a WebSocket Handshake Request: Missing Upgrade.</p>\n" +
                         "<hr>\n" +
-                        "<address>drasyl/" + DrasylNode.getVersion() + " with Identity " + identity.getId() + "</address>\n" +
+                        "<address>drasyl/" + DrasylNode.getVersion() + " with Address " + identity.getAddress() + " and Public Key " + identity.getPublicKey() + "</address>\n" +
                         "</body></html>\n", CharsetUtil.UTF_8);
     }
 }

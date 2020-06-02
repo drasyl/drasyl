@@ -140,9 +140,9 @@ public class SuperPeerClient implements AutoCloseable {
             try {
                 SuperPeerClientChannelBootstrap clientBootstrap = new SuperPeerClientChannelBootstrap(config, workerGroup, endpoint, entryPoints, this);
                 clientChannel = clientBootstrap.getChannel();
-                eventConsumer.accept(new Event(EVENT_NODE_ONLINE, Node.of(identityManager.getIdentity())));
+                eventConsumer.accept(new Event(EVENT_NODE_ONLINE, Node.of(identityManager.getAddress())));
                 clientChannel.closeFuture().syncUninterruptibly();
-                eventConsumer.accept(new Event(EVENT_NODE_OFFLINE, Node.of(identityManager.getIdentity())));
+                eventConsumer.accept(new Event(EVENT_NODE_OFFLINE, Node.of(identityManager.getAddress())));
             }
             catch (SuperPeerClientException e) {
                 LOG.warn("Error while trying to connect to Super Peer: {}", e.getMessage());

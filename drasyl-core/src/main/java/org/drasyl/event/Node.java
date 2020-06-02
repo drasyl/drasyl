@@ -18,7 +18,7 @@
  */
 package org.drasyl.event;
 
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.Address;
 
 import java.util.Objects;
 
@@ -28,15 +28,15 @@ import java.util.Objects;
  * EventType#EVENT_NODE_IDENTITY_COLLISION}).
  */
 public class Node {
-    private final Identity identity;
+    private final Address address;
 
-    public Node(Identity address) {
-        this.identity = address;
+    public Node(Address address) {
+        this.address = address;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(identity);
+        return Objects.hash(address);
     }
 
     @Override
@@ -48,21 +48,21 @@ public class Node {
             return false;
         }
         Node node = (Node) o;
-        return Objects.equals(identity, node.identity);
+        return Objects.equals(address, node.address);
     }
 
     @Override
     public String toString() {
         return "Node{" +
-                "identity=" + getIdentity() +
+                "address=" + getAddress() +
                 '}';
     }
 
-    public Identity getIdentity() {
-        return identity;
+    public Address getAddress() {
+        return address;
     }
 
-    public static Node of(Identity identity) {
-        return new Node(identity);
+    public static Node of(Address address) {
+        return new Node(address);
     }
 }

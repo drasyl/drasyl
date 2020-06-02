@@ -107,7 +107,7 @@ class SuperPeerClientIT {
 
         // verify received messages
         receivedMessages.awaitCount(1);
-        receivedMessages.assertValueAt(0, new JoinMessage(identityManager.getKeyPair().getPublicKey(), server.getEntryPoints()));
+        receivedMessages.assertValueAt(0, new JoinMessage(identityManager.getIdentity().getPublicKey(), server.getEntryPoints()));
     }
 
     @Test
@@ -144,7 +144,7 @@ class SuperPeerClientIT {
 
         // verify emitted events
         emittedEvents.awaitCount(2);
-        emittedEvents.assertValueAt(1, new Event(EVENT_NODE_OFFLINE, Node.of(identityManager.getIdentity())));
+        emittedEvents.assertValueAt(1, new Event(EVENT_NODE_OFFLINE, Node.of(identityManager.getAddress())));
     }
 
     @Test
@@ -181,7 +181,7 @@ class SuperPeerClientIT {
         sentMessages.awaitCount(1);
 
         // send message
-        ApplicationMessage request = new ApplicationMessage(TestHelper.random(), identityManager.getIdentity(), new byte[]{
+        ApplicationMessage request = new ApplicationMessage(TestHelper.random(), identityManager.getAddress(), new byte[]{
                 0x00,
                 0x01
         });
@@ -208,7 +208,7 @@ class SuperPeerClientIT {
 
         // verify emitted events
         emittedEvents.awaitCount(1);
-        emittedEvents.assertValue(new Event(EVENT_NODE_OFFLINE, Node.of(identityManager.getIdentity())));
+        emittedEvents.assertValue(new Event(EVENT_NODE_OFFLINE, Node.of(identityManager.getAddress())));
     }
 
     @Test
@@ -222,7 +222,7 @@ class SuperPeerClientIT {
 
         // verify emitted events
         emittedEvents.awaitCount(1);
-        emittedEvents.assertValue(new Event(EVENT_NODE_ONLINE, new Node(identityManager.getIdentity())));
+        emittedEvents.assertValue(new Event(EVENT_NODE_ONLINE, new Node(identityManager.getAddress())));
     }
 
     @Test
@@ -242,9 +242,9 @@ class SuperPeerClientIT {
         // verify emitted events
         emittedEvents.awaitCount(3);
         emittedEvents.assertValues(
-                new Event(EVENT_NODE_ONLINE, new Node(identityManager.getIdentity())),
-                new Event(EVENT_NODE_OFFLINE, new Node(identityManager.getIdentity())),
-                new Event(EVENT_NODE_ONLINE, new Node(identityManager.getIdentity()))
+                new Event(EVENT_NODE_ONLINE, new Node(identityManager.getAddress())),
+                new Event(EVENT_NODE_OFFLINE, new Node(identityManager.getAddress())),
+                new Event(EVENT_NODE_ONLINE, new Node(identityManager.getAddress()))
         );
     }
 }

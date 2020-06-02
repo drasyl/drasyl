@@ -25,46 +25,46 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
-class IdentityTest {
+class AddressTest {
     private CompressedPublicKey compressedPublicKey;
-    private Identity identity;
+    private Address address;
 
     @BeforeEach
     void setUp() {
-        identity = Identity.of("41eaac1ee8");
+        address = Address.of("41eaac1ee8");
         compressedPublicKey = mock(CompressedPublicKey.class);
         when(compressedPublicKey.toString()).thenReturn("ead3151c64AAAABBBBCCCCDDDDEEEEFFFF");
     }
 
     @Test
-    void toStringCase() {
-        assertEquals("Identity{id=41eaac1ee8}", identity.toString());
+    void testToString() {
+        assertEquals("41eaac1ee8", address.toString());
     }
 
     @Test
     void illegalIdentityShouldThrowException() {
-        assertThrows(IllegalArgumentException.class, () -> Identity.of("1234567890a"));
-        assertThrows(IllegalArgumentException.class, () -> Identity.of("123456789"));
-        assertThrows(NullPointerException.class, () -> Identity.of((String) null));
-        assertThrows(NullPointerException.class, () -> Identity.of((CompressedPublicKey) null));
-        assertThrows(NullPointerException.class, () -> Identity.verify(null, identity));
-        assertThrows(NullPointerException.class, () -> Identity.verify(compressedPublicKey, null));
+        assertThrows(IllegalArgumentException.class, () -> Address.of("1234567890a"));
+        assertThrows(IllegalArgumentException.class, () -> Address.of("123456789"));
+        assertThrows(NullPointerException.class, () -> Address.of((String) null));
+        assertThrows(NullPointerException.class, () -> Address.of((CompressedPublicKey) null));
+        assertThrows(NullPointerException.class, () -> Address.verify(null, address));
+        assertThrows(NullPointerException.class, () -> Address.verify(compressedPublicKey, null));
     }
 
     @Test
     void aValidIdentityShouldBeCreatedFromACompressedPublicKey() {
-        assertEquals(identity, Identity.of(compressedPublicKey));
+        assertEquals(address, Address.of(compressedPublicKey));
     }
 
     @Test
     void sameIdShouldBeEquals() {
-        Identity id2 = Identity.of("41eaac1ee8");
+        Address id2 = Address.of("41eaac1ee8");
 
-        assertEquals(identity, id2);
-        assertEquals(identity, identity);
-        assertEquals(identity.hashCode(), id2.hashCode());
-        assertEquals(identity.getId(), id2.getId());
-        assertNotEquals(Identity.of("0987654321"), identity);
-        assertNotEquals(null, identity);
+        assertEquals(address, id2);
+        assertEquals(address, address);
+        assertEquals(address.hashCode(), id2.hashCode());
+        assertEquals(address.getAddress(), id2.getAddress());
+        assertNotEquals(Address.of("0987654321"), address);
+        assertNotEquals(null, address);
     }
 }

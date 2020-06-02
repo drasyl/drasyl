@@ -21,9 +21,8 @@ package org.drasyl.peer.connection.server.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.DrasylException;
-import org.drasyl.DrasylNodeConfig;
+import org.drasyl.identity.Address;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.connection.AbstractNettyConnection;
 import org.drasyl.peer.connection.ConnectionsManager;
@@ -120,24 +119,24 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
     @Override
     protected WelcomeMessage offerSession(ChannelHandlerContext ctx,
                                           JoinMessage requestMessage) {
-        return new WelcomeMessage(server.getIdentityManager().getKeyPair().getPublicKey(), server.getEntryPoints(), requestMessage.getId());
+        return new WelcomeMessage(server.getIdentityManager().getIdentity().getPublicKey(), server.getEntryPoints(), requestMessage.getId());
     }
 
     @Override
     protected AbstractNettyConnection createConnection(ChannelHandlerContext ctx,
                                                        JoinMessage requestMessage) {
-        Identity identity = Identity.of(requestMessage.getPublicKey());
+        Address address = Address.of(requestMessage.getPublicKey());
 
         // create peer connection
-        NodeServerConnection connection = new NodeServerConnection(ctx.channel(), identity,
+        NodeServerConnection connection = new NodeServerConnection(ctx.channel(), address,
                 Optional.ofNullable(requestMessage.getUserAgent()).orElse("U/A"), server.getMessenger().getConnectionsManager());
 
         // store peer information
         PeerInformation peerInformation = new PeerInformation();
         peerInformation.setPublicKey(requestMessage.getPublicKey());
         peerInformation.addEndpoint(requestMessage.getEndpoints());
-        server.getPeersManager().addPeer(identity, peerInformation);
-        server.getPeersManager().addChildren(identity);
+        server.getPeersManager().addPeer(address, peerInformation);
+        server.getPeersManager().addChildren(address);
 
         return connection;
     }

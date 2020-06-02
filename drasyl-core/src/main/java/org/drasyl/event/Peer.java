@@ -18,7 +18,7 @@
  */
 package org.drasyl.event;
 
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.Address;
 
 import java.util.Objects;
 
@@ -27,19 +27,19 @@ import java.util.Objects;
  * EventType#EVENT_PEER_DIRECT}, {@link EventType#EVENT_PEER_DIRECT}).
  */
 public class Peer {
-    private final Identity identity;
+    private final Address address;
 
-    public Peer(Identity identity) {
-        this.identity = identity;
+    public Peer(Address address) {
+        this.address = address;
     }
 
-    public Identity getIdentity() {
-        return identity;
+    public Address getAddress() {
+        return address;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(identity);
+        return Objects.hash(address);
     }
 
     @Override
@@ -51,13 +51,13 @@ public class Peer {
             return false;
         }
         Peer peer = (Peer) o;
-        return Objects.equals(identity, peer.identity);
+        return Objects.equals(address, peer.address);
     }
 
     @Override
     public String toString() {
         return "Peer{" +
-                "identity=" + identity +
+                "identity=" + address +
                 '}';
     }
 }

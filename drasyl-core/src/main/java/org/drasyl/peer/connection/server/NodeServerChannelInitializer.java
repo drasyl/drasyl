@@ -61,7 +61,7 @@ public class NodeServerChannelInitializer extends DefaultSessionInitializer {
         pipeline.addLast(new HttpServerCodec());
         pipeline.addLast(new HttpObjectAggregator(65536));
         pipeline.addLast(new WebSocketServerCompressionHandler());
-        pipeline.addLast(new NodeServerMissingWebSocketUpgradeErrorPage(server.getIdentityManager()));
+        pipeline.addLast(new NodeServerMissingWebSocketUpgradeErrorPage(server.getIdentityManager().getIdentity()));
         pipeline.addLast(new WebSocketServerProtocolHandler("/", null, true));
     }
 
@@ -79,7 +79,7 @@ public class NodeServerChannelInitializer extends DefaultSessionInitializer {
         pipeline.addLast(ConnectionExceptionMessageHandler.EXCEPTION_MESSAGE_HANDLER, ConnectionExceptionMessageHandler.INSTANCE);
 
         // Server handler
-        pipeline.addLast(NODE_SERVER_CONNECTION_HANDLER, new NodeServerConnectionHandler(server.getIdentityManager().getKeyPair().getPublicKey(), server.getConfig().getServerHandshakeTimeout(), server));
+        pipeline.addLast(NODE_SERVER_CONNECTION_HANDLER, new NodeServerConnectionHandler(server.getIdentityManager().getIdentity().getPublicKey(), server.getConfig().getServerHandshakeTimeout(), server));
     }
 
     @Override

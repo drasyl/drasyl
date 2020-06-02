@@ -19,7 +19,7 @@
 package org.drasyl.peer.connection.message;
 
 import org.drasyl.crypto.Signature;
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.Address;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -33,8 +33,8 @@ import static java.util.Objects.requireNonNull;
  * A message that is sent by an application running on drasyl.
  */
 public class ApplicationMessage extends AbstractMessage implements RequestMessage {
-    private final Identity recipient;
-    private final Identity sender;
+    private final Address recipient;
+    private final Address sender;
     private final byte[] payload;
 
     protected ApplicationMessage() {
@@ -45,8 +45,8 @@ public class ApplicationMessage extends AbstractMessage implements RequestMessag
 
     ApplicationMessage(String id,
                        Signature signature,
-                       Identity recipient,
-                       Identity sender,
+                       Address recipient,
+                       Address sender,
                        byte[] payload) {
         super(id);
         setSignature(signature);
@@ -62,7 +62,7 @@ public class ApplicationMessage extends AbstractMessage implements RequestMessag
      * @param recipient The recipient
      * @param payload   The data to be sent
      */
-    public ApplicationMessage(Identity sender, Identity recipient, byte[] payload) {
+    public ApplicationMessage(Address sender, Address recipient, byte[] payload) {
         this.sender = requireNonNull(sender);
         this.recipient = requireNonNull(recipient);
         this.payload = requireNonNull(payload);
@@ -118,11 +118,11 @@ public class ApplicationMessage extends AbstractMessage implements RequestMessag
         return new ApplicationMessage(message.getId(), message.getSignature(), message.getRecipient(), message.getSender(), message.getPayload());
     }
 
-    public Identity getRecipient() {
+    public Address getRecipient() {
         return recipient;
     }
 
-    public Identity getSender() {
+    public Address getSender() {
         return sender;
     }
 

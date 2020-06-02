@@ -35,7 +35,7 @@ import javafx.stage.Stage;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.event.Event;
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.Address;
 import org.drasyl.util.Pair;
 
 import java.io.IOException;
@@ -53,8 +53,8 @@ public class ChatGUI extends Application {
     private TextField recipientIDInput;
     private TextField chatField;
     private TextArea txtArea;
-    private Identity recipient;
-    private Identity myID;
+    private Address recipient;
+    private Address myID;
     private String username;
     private Stage stage;
     private DrasylNode node;
@@ -85,8 +85,8 @@ public class ChatGUI extends Application {
                             if (!online.isDone()) {
                                 online.complete(null);
                             }
-                            myID = event.getNode().getIdentity();
-                            txtArea.appendText("[~System~]: The node is online. Your address is: " + event.getNode().getIdentity().getId() + "\n");
+                            myID = event.getNode().getAddress();
+                            txtArea.appendText("[~System~]: The node is online. Your address is: " + event.getNode().getAddress() + "\n");
                             break;
                         case EVENT_NODE_OFFLINE:
                             txtArea.appendText("[~System~]: The node is offline. No messages can be sent at the moment. Wait until node comes back online.\n");
@@ -121,7 +121,7 @@ public class ChatGUI extends Application {
         }
     }
 
-    private void parseMessage(Pair<Identity, byte[]> payload) {
+    private void parseMessage(Pair<Address, byte[]> payload) {
         try {
             Message msg = jackson.readValue(new String(payload.second()), Message.class);
 
@@ -141,7 +141,7 @@ public class ChatGUI extends Application {
 
         Label myIDLabel = new Label("Your ID is: ");
         GridPane.setConstraints(myIDLabel, 0, 0);
-        TextField myIDTextField = new TextField(myID.getId());
+        TextField myIDTextField = new TextField(myID.getAddress());
         myIDTextField.setEditable(false);
         GridPane.setConstraints(myIDTextField, 1, 0);
 
@@ -164,10 +164,10 @@ public class ChatGUI extends Application {
     }
 
     private void initAction(ActionEvent actionEvent) {
-        if (validateInput(usernameInput, s -> !s.isEmpty()) && validateInput(recipientIDInput, Identity::isValid)) {
+        if (validateInput(usernameInput, s -> !s.isEmpty()) && validateInput(recipientIDInput, Address::isValid)) {
             username = usernameInput.getText();
             stage.setTitle("[" + username + "] Drasyl Chat");
-            recipient = Identity.of(recipientIDInput.getText());
+            recipient = Address.of(recipientIDInput.getText());
 
             stage.setScene(chatScene);
         }
