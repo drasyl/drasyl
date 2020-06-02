@@ -22,17 +22,17 @@ import ch.qos.logback.classic.Level;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
+import org.drasyl.crypto.CryptoException;
+import org.drasyl.identity.CompressedPrivateKey;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.util.NetworkUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Objects;
-import java.util.Set;
+import java.util.*;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -43,7 +43,6 @@ import static org.drasyl.util.SecretUtil.maskSecret;
  * identity and the Super Peer.
  */
 public class DrasylNodeConfig {
-    private static final Logger LOG = LoggerFactory.getLogger(DrasylNodeConfig.class); // NOSONAR
     //======================================== Config Paths ========================================
     static final String LOGLEVEL = "drasyl.loglevel";
     static final String IDENTITY_PUBLIC_KEY = "drasyl.identity.public-key";
@@ -72,8 +71,8 @@ public class DrasylNodeConfig {
     static final String SUPER_PEER_IDLE_TIMEOUT = "drasyl.super-peer.idle.timeout";
     //======================================= Config Values ========================================
     private final Level loglevel; // NOSONAR
-    private final String identityPublicKey;
-    private final String identityPrivateKey;
+    private final CompressedPublicKey identityPublicKey;
+    private final CompressedPrivateKey identityPrivateKey;
     private final Path identityPath;
     private final String userAgent;
     private final String serverBindHost;
@@ -85,12 +84,12 @@ public class DrasylNodeConfig {
     private final boolean serverSSLEnabled;
     private final List<String> serverSSLProtocols;
     private final Duration serverHandshakeTimeout;
-    private final Set<String> serverEndpoints;
+    private final Set<URI> serverEndpoints;
     private final String serverChannelInitializer;
     private final int maxContentLength;
     private final boolean superPeerEnabled;
-    private final Set<String> superPeerEndpoints;
-    private final String superPeerPublicKey;
+    private final Set<URI> superPeerEndpoints;
+    private final CompressedPublicKey superPeerPublicKey;
     private final List<Duration> superPeerRetryDelays;
     private final Duration superPeerHandshakeTimeout;
     private final String superPeerChannelInitializer;
@@ -111,13 +110,23 @@ public class DrasylNodeConfig {
         config.checkValid(ConfigFactory.defaultReference(), "drasyl");
 
         // init
-        this.loglevel = Level.valueOf(config.getString(LOGLEVEL));
+        this.loglevel = getLoglevel(config, LOGLEVEL);
         this.userAgent = config.getString(USER_AGENT);
 
         // init identity config
-        this.identityPublicKey = config.getString(IDENTITY_PUBLIC_KEY);
-        this.identityPrivateKey = config.getString(IDENTITY_PRIVATE_KEY);
-        this.identityPath = Paths.get(config.getString(IDENTITY_PATH));
+        if (!config.getString(IDENTITY_PUBLIC_KEY).isEmpty()) {
+            this.identityPublicKey = getPublicKey(config, IDENTITY_PUBLIC_KEY);
+        }
+        else {
+            this.identityPublicKey = null;
+        }
+        if (!config.getString(IDENTITY_PRIVATE_KEY).isEmpty()) {
+            this.identityPrivateKey = getPrivateKey(config, IDENTITY_PRIVATE_KEY);
+        }
+        else {
+            this.identityPrivateKey = null;
+        }
+        this.identityPath = getPath(config, IDENTITY_PATH);
 
         // Init server config
         this.serverEnabled = config.getBoolean(SERVER_ENABLED);
@@ -134,22 +143,71 @@ public class DrasylNodeConfig {
         this.serverSSLProtocols = config.getStringList(SERVER_SSL_PROTOCOLS);
 
         if (!config.getStringList(SERVER_ENDPOINTS).isEmpty()) {
-            this.serverEndpoints = new HashSet<>(config.getStringList(SERVER_ENDPOINTS));
+            this.serverEndpoints = new HashSet<>(getUriList(config, SERVER_ENDPOINTS));
         }
         else {
             String scheme = serverSSLEnabled ? "wss" : "ws";
-            this.serverEndpoints = networkAddressesProvider.get().stream().map(a -> scheme + "://" + a + ":" + serverBindPort).collect(Collectors.toSet());
+            this.serverEndpoints = networkAddressesProvider.get().stream().map(a -> URI.create(scheme + "://" + a + ":" + serverBindPort)).collect(Collectors.toSet());
         }
 
         // Init super peer config
         this.superPeerEnabled = config.getBoolean(SUPER_PEER_ENABLED);
-        this.superPeerEndpoints = new HashSet<>(config.getStringList(SUPER_PEER_ENDPOINTS));
-        this.superPeerPublicKey = config.getString(SUPER_PEER_PUBLIC_KEY);
+        this.superPeerEndpoints = new HashSet<>(getUriList(config, SUPER_PEER_ENDPOINTS));
+        if (!config.getString(SUPER_PEER_PUBLIC_KEY).equals("")) {
+            this.superPeerPublicKey = getPublicKey(config, SUPER_PEER_PUBLIC_KEY);
+        }
+        else {
+            this.superPeerPublicKey = null;
+        }
         this.superPeerRetryDelays = config.getDurationList(SUPER_PEER_RETRY_DELAYS);
         this.superPeerHandshakeTimeout = config.getDuration(SUPER_PEER_HANDSHAKE_TIMEOUT);
         this.superPeerChannelInitializer = config.getString(SUPER_PEER_CHANNEL_INITIALIZER);
         this.superPeerIdleRetries = getShort(config, SUPER_PEER_IDLE_RETRIES);
         this.superPeerIdleTimeout = config.getDuration(SUPER_PEER_IDLE_TIMEOUT);
+    }
+
+    private Level getLoglevel(Config config, String path) {
+        return Level.valueOf(config.getString(path));
+    }
+
+    /**
+     * Gets the compressed public key at the given path. Similar to {@link Config}, an exception is
+     * thrown for an invalid value.
+     *
+     * @param config
+     * @param path
+     * @return
+     */
+    private CompressedPublicKey getPublicKey(Config config, String path) {
+        try {
+            String stringValue = config.getString(path);
+            return CompressedPublicKey.of(stringValue);
+        }
+        catch (CryptoException | IllegalArgumentException e) {
+            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "compressed public key", "invalid-value: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Gets the compressed private key at the given path. Similar to {@link Config}, an exception is
+     * thrown for an invalid value.
+     *
+     * @param config
+     * @param path
+     * @return
+     */
+    private CompressedPrivateKey getPrivateKey(Config config, String path) {
+        try {
+            String stringValue = config.getString(path);
+            return CompressedPrivateKey.of(stringValue);
+        }
+        catch (CryptoException | IllegalArgumentException e) {
+            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "compressed private key", "invalid-value: " + e.getMessage());
+        }
+    }
+
+    private Path getPath(Config config, String path) {
+        return Paths.get(config.getString(path));
     }
 
     /**
@@ -169,10 +227,24 @@ public class DrasylNodeConfig {
         return (short) integerValue;
     }
 
+    private List<URI> getUriList(Config config, String path) {
+        List<String> stringListValue = config.getStringList(path);
+        List<URI> uriList = new ArrayList<>();
+        try {
+            for (String stringValue : stringListValue) {
+                uriList.add(new URI(stringValue));
+            }
+        }
+        catch (URISyntaxException e) {
+            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "url", "invalid-value: " + e.getMessage());
+        }
+        return uriList;
+    }
+
     @SuppressWarnings({ "java:S107" })
     DrasylNodeConfig(Level loglevel,
-                     String identityPublicKey,
-                     String identityPrivateKey,
+                     CompressedPublicKey identityPublicKey,
+                     CompressedPrivateKey identityPrivateKey,
                      Path identityPath,
                      String userAgent,
                      String serverBindHost,
@@ -184,11 +256,11 @@ public class DrasylNodeConfig {
                      boolean serverSSLEnabled,
                      List<String> serverSSLProtocols,
                      Duration serverHandshakeTimeout,
-                     Set<String> serverEndpoints,
+                     Set<URI> serverEndpoints,
                      String serverChannelInitializer,
                      int maxContentLength,
-                     boolean superPeerEnabled, Set<String> superPeerEndpoints,
-                     String superPeerPublicKey,
+                     boolean superPeerEnabled, Set<URI> superPeerEndpoints,
+                     CompressedPublicKey superPeerPublicKey,
                      List<Duration> superPeerRetryDelays,
                      Duration superPeerHandshakeTimeout,
                      String superPeerChannelInitializer,
@@ -237,11 +309,11 @@ public class DrasylNodeConfig {
         return this.userAgent;
     }
 
-    public String getIdentityPublicKey() {
+    public CompressedPublicKey getIdentityPublicKey() {
         return identityPublicKey;
     }
 
-    public String getIdentityPrivateKey() {
+    public CompressedPrivateKey getIdentityPrivateKey() {
         return identityPrivateKey;
     }
 
@@ -281,7 +353,7 @@ public class DrasylNodeConfig {
         return serverHandshakeTimeout;
     }
 
-    public Set<String> getServerEndpoints() {
+    public Set<URI> getServerEndpoints() {
         return serverEndpoints;
     }
 
@@ -297,11 +369,11 @@ public class DrasylNodeConfig {
         return superPeerEnabled;
     }
 
-    public Set<String> getSuperPeerEndpoints() {
+    public Set<URI> getSuperPeerEndpoints() {
         return superPeerEndpoints;
     }
 
-    public String getSuperPeerPublicKey() {
+    public CompressedPublicKey getSuperPeerPublicKey() {
         return superPeerPublicKey;
     }
 

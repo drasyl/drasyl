@@ -89,15 +89,15 @@ public class Identity {
     }
 
     public static Identity of(CompressedPublicKey publicKey, CompressedPrivateKey privateKey) {
-        return new Identity(Address.of(publicKey), publicKey, privateKey);
-    }
-
-    public static Identity of(String publicKey, String privateKey) throws CryptoException {
         return of(CompressedKeyPair.of(publicKey, privateKey));
     }
 
     public static Identity of(CompressedKeyPair keyPair) {
-        return of(keyPair.getPublicKey(), keyPair.getPrivateKey());
+        return new Identity(Address.of(keyPair.getPublicKey()), keyPair.getPublicKey(), keyPair.getPrivateKey());
+    }
+
+    public static Identity of(String publicKey, String privateKey) throws CryptoException {
+        return of(CompressedKeyPair.of(publicKey, privateKey));
     }
 
     public static Identity of(PublicKey publicKey, PrivateKey privateKey) throws CryptoException {

@@ -68,12 +68,12 @@ public class IdentityManager {
      * @throws IdentityManagerException
      */
     public void loadOrCreateIdentity() throws IdentityManagerException {
-        if (!config.getIdentityPublicKey().isEmpty() || !config.getIdentityPrivateKey().isEmpty()) {
+        if (config.getIdentityPublicKey() != null && config.getIdentityPrivateKey() != null) {
             LOG.debug("Load identity specified in config");
             try {
                 this.identity = Identity.of(config.getIdentityPublicKey(), config.getIdentityPrivateKey());
             }
-            catch (IllegalArgumentException | CryptoException e) {
+            catch (IllegalArgumentException e) {
                 throw new IdentityManagerException("Identity read from configuration seems invalid: " + e.getMessage());
             }
         }

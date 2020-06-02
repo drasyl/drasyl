@@ -27,6 +27,7 @@ import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.identity.*;
 import org.drasyl.messenger.Messenger;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.AbstractNettyConnection;
 import org.drasyl.peer.connection.ConnectionsManager;
 import org.drasyl.peer.connection.message.*;
@@ -35,6 +36,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -63,6 +65,8 @@ class NodeServerConnectionHandlerTest {
     private CompletableFuture<Void> handshakeFuture;
     private AbstractNettyConnection connection;
     private JoinMessage requestMessage;
+    private Identity identity;
+    private PeersManager peersManager;
 
     @BeforeEach
     void setUp() {
@@ -80,6 +84,8 @@ class NodeServerConnectionHandlerTest {
         handshakeFuture = mock(CompletableFuture.class);
         connection = mock(AbstractNettyConnection.class);
         requestMessage = mock(JoinMessage.class);
+        identity = mock(Identity.class);
+        peersManager = mock(PeersManager.class);
 
         when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
         applicationMessage = mock(ApplicationMessage.class);
@@ -97,7 +103,7 @@ class NodeServerConnectionHandlerTest {
             return mock(ScheduledFuture.class);
         });
 
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(connectionsManager, ofMillis(1000), handshakeFuture, connection, timeoutFuture, requestMessage, publicKey, server);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(identity, peersManager, connectionsManager, messenger, Set.of(), ofMillis(1000), handshakeFuture, connection, timeoutFuture, requestMessage);
 
         handler.channelActive(ctx);
 
@@ -108,7 +114,7 @@ class NodeServerConnectionHandlerTest {
 
     @Test
     void closeShouldCloseChannelAndCancelTimeoutTask() {
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(connectionsManager, ofMillis(1000), handshakeFuture, connection, timeoutFuture, requestMessage, publicKey, server);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(identity, peersManager, connectionsManager, messenger, Set.of(), ofMillis(1000), handshakeFuture, connection, timeoutFuture, requestMessage);
 
         handler.close(ctx, promise);
 
@@ -121,8 +127,9 @@ class NodeServerConnectionHandlerTest {
         when(server.getMessenger()).thenReturn(messenger);
         when(joinMessage.getPublicKey()).thenReturn(publicKey);
         when(connection.isClosed()).thenReturn(new CompletableFuture<>());
+        when(identity.getPublicKey()).thenReturn(publicKey);
 
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(connectionsManager, ofMillis(1000), handshakeFuture, connection, timeoutFuture, null, publicKey, server);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(identity, peersManager, connectionsManager, messenger, Set.of(), ofMillis(1000), handshakeFuture, connection, timeoutFuture, null);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(joinMessage);
@@ -135,7 +142,7 @@ class NodeServerConnectionHandlerTest {
     void shouldDenyNonUnrestrictedMessages() {
         when(applicationMessage.getId()).thenReturn("123");
 
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(connectionsManager, ofMillis(1000), handshakeFuture, connection, timeoutFuture, requestMessage, publicKey, server);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(identity, peersManager, connectionsManager, messenger, Set.of(), ofMillis(1000), handshakeFuture, connection, timeoutFuture, requestMessage);
         channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(applicationMessage);
@@ -146,7 +153,7 @@ class NodeServerConnectionHandlerTest {
 
     @Test
     void channelRead0ShouldReplyWithStatusForbiddenForNonJoinMessage() {
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(connectionsManager, ofMillis(1000), handshakeFuture, connection, timeoutFuture, requestMessage, publicKey, server);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(identity, peersManager, connectionsManager, messenger, Set.of(), ofMillis(1000), handshakeFuture, connection, timeoutFuture, requestMessage);
         channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(msg);
@@ -157,7 +164,7 @@ class NodeServerConnectionHandlerTest {
 
     @Test
     void exceptionCaughtShouldWriteExceptionToChannelAndThenCloseIt() {
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(connectionsManager, ofMillis(1000), handshakeFuture, connection, timeoutFuture, requestMessage, publicKey, server);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(identity, peersManager, connectionsManager, messenger, Set.of(), ofMillis(1000), handshakeFuture, connection, timeoutFuture, requestMessage);
         handler.exceptionCaught(ctx, cause);
 
         verify(ctx).writeAndFlush(any(ConnectionExceptionMessage.class));

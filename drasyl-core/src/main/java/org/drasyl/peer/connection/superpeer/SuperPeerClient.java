@@ -32,9 +32,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.time.Duration;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -104,32 +102,24 @@ public class SuperPeerClient implements AutoCloseable {
                            EventLoopGroup workerGroup,
                            ConnectionsManager connectionsManager,
                            Consumer<Event> eventConsumer) throws SuperPeerClientException {
-        try {
-            endpoints = new HashSet<>();
-            for (String endpoint : config.getSuperPeerEndpoints()) {
-                endpoints.add(new URI(endpoint));
-            }
+        endpoints = config.getSuperPeerEndpoints();
 
-            if (endpoints.isEmpty()) {
-                throw new SuperPeerClientException("At least one Super Peer Endpoint must be specified.");
-            }
+        if (endpoints.isEmpty()) {
+            throw new SuperPeerClientException("At least one Super Peer Endpoint must be specified.");
+        }
 
-            this.identityManager = identityManager;
-            this.messenger = messenger;
-            this.peersManager = peersManager;
-            this.connectionsManager = connectionsManager;
-            this.config = config;
-            this.workerGroup = workerGroup;
-            this.opened = new AtomicBoolean(false);
-            // The pointer should point to a random endpoint. This creates a distribution on different super peer's endpoints
-            this.nextEndpointPointer = new AtomicInteger(endpoints.isEmpty() ? 0 : Crypto.randomNumber(endpoints.size()));
-            this.nextRetryDelayPointer = new AtomicInteger(0);
-            this.eventConsumer = eventConsumer;
-            this.threadSupplier = myEntryPoints -> new Thread(() -> keepConnectionAlive(myEntryPoints));
-        }
-        catch (URISyntaxException e) {
-            throw new SuperPeerClientException("Unable to parse super peer endpoints: " + e.getMessage());
-        }
+        this.identityManager = identityManager;
+        this.messenger = messenger;
+        this.peersManager = peersManager;
+        this.connectionsManager = connectionsManager;
+        this.config = config;
+        this.workerGroup = workerGroup;
+        this.opened = new AtomicBoolean(false);
+        // The pointer should point to a random endpoint. This creates a distribution on different super peer's endpoints
+        this.nextEndpointPointer = new AtomicInteger(endpoints.isEmpty() ? 0 : Crypto.randomNumber(endpoints.size()));
+        this.nextRetryDelayPointer = new AtomicInteger(0);
+        this.eventConsumer = eventConsumer;
+        this.threadSupplier = myEntryPoints -> new Thread(() -> keepConnectionAlive(myEntryPoints));
     }
 
     void keepConnectionAlive(Set<URI> entryPoints) {

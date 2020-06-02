@@ -32,13 +32,13 @@ import org.drasyl.peer.connection.ConnectionsManager;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.net.URISyntaxException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.Collectors;
 
 import static org.drasyl.peer.connection.PeerConnection.CloseReason.REASON_SHUTTING_DOWN;
+import static org.drasyl.util.UriUtil.overridePort;
 
 @SuppressWarnings({ "squid:S00107" })
 public class NodeServer implements AutoCloseable {
@@ -55,6 +55,7 @@ public class NodeServer implements AutoCloseable {
     private NodeServerChannelBootstrap nodeServerChannelBootstrap;
     private int actualPort;
     private Set<URI> actualEndpoints;
+
     /**
      * Starts a node server for forwarding messages to child peers.<br> Default Port: 22527
      *
@@ -203,30 +204,12 @@ public class NodeServer implements AutoCloseable {
             InetSocketAddress socketAddress = (InetSocketAddress) serverChannel.localAddress();
             actualPort = socketAddress.getPort();
             actualEndpoints = config.getServerEndpoints().stream()
-                    .map(a -> {
-                        URI uri = URI.create(a);
+                    .map(uri -> {
                         if (uri.getPort() == 0) {
                             return overridePort(uri, getPort());
                         }
                         return uri;
                     }).collect(Collectors.toSet());
-        }
-    }
-
-    /**
-     * This method sets the port in <code>uri</code> to <code>port</code> and returns the resulting
-     * URI.
-     *
-     * @param uri
-     * @param port
-     * @return
-     */
-    private URI overridePort(URI uri, int port) {
-        try {
-            return new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), port, uri.getPath(), uri.getQuery(), uri.getFragment());
-        }
-        catch (URISyntaxException e) {
-            throw new IllegalArgumentException(e.getMessage(), e);
         }
     }
 
