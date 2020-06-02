@@ -20,14 +20,15 @@ package org.drasyl.peer.connection.superpeer.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.DrasylException;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.Address;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeerInformation;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.AbstractNettyConnection;
+import org.drasyl.peer.connection.ConnectionsManager;
 import org.drasyl.peer.connection.handler.AbstractThreeWayHandshakeClientHandler;
 import org.drasyl.peer.connection.message.*;
-import org.drasyl.peer.connection.superpeer.SuperPeerClient;
 import org.drasyl.peer.connection.superpeer.SuperPeerClientConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -53,30 +54,23 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClientConnectionHandler.class);
     private final CompressedPublicKey expectedPublicKey;
     private final CompressedPublicKey ownPublicKey;
-    private final SuperPeerClient superPeerClient;
+    private final PeersManager peersManager;
+    private final ConnectionsManager connectionsManager;
+    private final Messenger messenger;
 
-    public SuperPeerClientConnectionHandler(String expectedPublicKey,
+    public SuperPeerClientConnectionHandler(CompressedPublicKey expectedPublicKey,
                                             CompressedPublicKey ownPublicKey,
                                             Set<URI> endpoints,
-                                            SuperPeerClient superPeerClient,
-                                            Duration timeout) {
-        super(superPeerClient.getConnectionsManager(), timeout, new JoinMessage(ownPublicKey, endpoints));
-        CompressedPublicKey expectedPublicKey1;
-        if (expectedPublicKey == null || expectedPublicKey.equals("")) {
-            expectedPublicKey1 = null;
-        }
-        else {
-            try {
-                expectedPublicKey1 = CompressedPublicKey.of(expectedPublicKey);
-            }
-            catch (CryptoException e) {
-                LOG.error("", e);
-                expectedPublicKey1 = null;
-            }
-        }
-        this.expectedPublicKey = expectedPublicKey1;
+                                            Duration timeout,
+                                            PeersManager peersManager,
+                                            ConnectionsManager connectionsManager,
+                                            Messenger messenger) {
+        super(connectionsManager, timeout, new JoinMessage(ownPublicKey, endpoints));
+        this.expectedPublicKey = expectedPublicKey;
         this.ownPublicKey = ownPublicKey;
-        this.superPeerClient = superPeerClient;
+        this.peersManager = peersManager;
+        this.connectionsManager = connectionsManager;
+        this.messenger = messenger;
     }
 
     @Override
@@ -90,7 +84,7 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
         if (message instanceof ApplicationMessage) {
             ApplicationMessage applicationMessage = (ApplicationMessage) message;
             try {
-                superPeerClient.getMessenger().send(applicationMessage);
+                messenger.send(applicationMessage);
                 connection.send(new StatusMessage(STATUS_OK, applicationMessage.getId()));
             }
             catch (DrasylException e) {
@@ -122,14 +116,14 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
         Address address = Address.of(offerMessage.getPublicKey());
 
         // create peer connection
-        SuperPeerClientConnection connection = new SuperPeerClientConnection(ctx.channel(), address, offerMessage.getUserAgent(), superPeerClient.getConnectionsManager());
+        SuperPeerClientConnection connection = new SuperPeerClientConnection(ctx.channel(), address, offerMessage.getUserAgent(), connectionsManager);
 
         // store peer information
         PeerInformation peerInformation = new PeerInformation();
         peerInformation.setPublicKey(offerMessage.getPublicKey());
         peerInformation.addEndpoint(offerMessage.getEndpoints());
-        superPeerClient.getPeersManager().addPeer(address, peerInformation);
-        superPeerClient.getPeersManager().setSuperPeer(address);
+        peersManager.addPeer(address, peerInformation);
+        peersManager.setSuperPeer(address);
 
         return connection;
     }

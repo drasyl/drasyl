@@ -16,20 +16,22 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl;
 
 import ch.qos.logback.classic.Level;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigMemorySize;
+import org.drasyl.crypto.CryptoException;
+import org.drasyl.identity.CompressedPrivateKey;
+import org.drasyl.identity.CompressedPublicKey;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -40,12 +42,14 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 class DrasylNodeConfigTest {
     private Level loglevel;
-    private String identityPublicKey;
-    private String identityPrivateKey;
+    private CompressedPublicKey identityPublicKey;
+    private CompressedPrivateKey identityPrivateKey;
     private Path identityPath;
     private String userAgent;
     private String serverBindHost;
@@ -57,12 +61,12 @@ class DrasylNodeConfigTest {
     private boolean serverSSLEnabled;
     private List<String> serverSSLProtocols;
     private Duration serverHandshakeTimeout;
-    private Set<String> serverEndpoints;
+    private Set<URI> serverEndpoints;
     private String serverChannelInitializer;
     private int maxContentLength;
     private boolean superPeerEnabled;
-    private Set<String> superPeerEndpoints;
-    private String superPeerPublicKey;
+    private Set<URI> superPeerEndpoints;
+    private CompressedPublicKey superPeerPublicKey;
     private List<Duration> superPeerRetryDelays;
     private String superPeerChannelInitializer;
     private short superPeerIdleRetries;
@@ -75,8 +79,8 @@ class DrasylNodeConfigTest {
     @BeforeEach
     void setUp() {
         loglevel = Level.WARN;
-        identityPublicKey = "";
-        identityPrivateKey = "";
+        identityPublicKey = mock(CompressedPublicKey.class);
+        identityPrivateKey = mock(CompressedPrivateKey.class);
         identityPath = mock(Path.class);
         userAgent = "";
         serverBindHost = "0.0.0.0";
@@ -92,8 +96,8 @@ class DrasylNodeConfigTest {
         serverChannelInitializer = "org.drasyl.core.server.handler.NodeServerInitializer";
         maxContentLength = 1024;
         superPeerEnabled = true;
-        superPeerEndpoints = Set.of("ws://foo.bar:123", "wss://example.com");
-        superPeerPublicKey = "";
+        superPeerEndpoints = Set.of(URI.create("ws://foo.bar:123"), URI.create("wss://example.com"));
+        superPeerPublicKey = mock(CompressedPublicKey.class);
         superPeerRetryDelays = mock(List.class);
         superPeerChannelInitializer = "org.drasyl.core.client.handler.SuperPeerClientInitializer";
         superPeerIdleRetries = 3;
@@ -112,8 +116,8 @@ class DrasylNodeConfigTest {
     void shouldReadConfigProperly() {
         when(typesafeConfig.getString(SERVER_BIND_HOST)).thenReturn(serverBindHost);
         when(typesafeConfig.getInt(SERVER_BIND_PORT)).thenReturn(serverBindPort);
-        when(typesafeConfig.getString(IDENTITY_PUBLIC_KEY)).thenReturn(identityPublicKey);
-        when(typesafeConfig.getString(IDENTITY_PRIVATE_KEY)).thenReturn(identityPrivateKey);
+        when(typesafeConfig.getString(IDENTITY_PUBLIC_KEY)).thenReturn("");
+        when(typesafeConfig.getString(IDENTITY_PRIVATE_KEY)).thenReturn("");
         when(typesafeConfig.getString(IDENTITY_PATH)).thenReturn(identityPathAsString);
         when(typesafeConfig.getBoolean(SERVER_ENABLED)).thenReturn(serverEnabled);
         when(typesafeConfig.getString(SERVER_BIND_HOST)).thenReturn(serverBindHost);
@@ -126,10 +130,10 @@ class DrasylNodeConfigTest {
         when(typesafeConfig.getMemorySize(MAX_CONTENT_LENGTH)).thenReturn(ConfigMemorySize.ofBytes(maxContentLength));
         when(typesafeConfig.getBoolean(SERVER_SSL_ENABLED)).thenReturn(serverSSLEnabled);
         when(typesafeConfig.getStringList(SERVER_SSL_PROTOCOLS)).thenReturn(serverSSLProtocols);
-        when(typesafeConfig.getStringList(SERVER_ENDPOINTS)).thenReturn(new ArrayList(serverEndpoints));
+        when(typesafeConfig.getStringList(SERVER_ENDPOINTS)).thenReturn(List.of());
         when(typesafeConfig.getBoolean(SUPER_PEER_ENABLED)).thenReturn(superPeerEnabled);
-        when(typesafeConfig.getStringList(SUPER_PEER_ENDPOINTS)).thenReturn(new ArrayList<>(superPeerEndpoints));
-        when(typesafeConfig.getString(SUPER_PEER_PUBLIC_KEY)).thenReturn(superPeerPublicKey);
+        when(typesafeConfig.getStringList(SUPER_PEER_ENDPOINTS)).thenReturn(List.of("ws://foo.bar:123", "wss://example.com"));
+        when(typesafeConfig.getString(SUPER_PEER_PUBLIC_KEY)).thenReturn("");
         when(typesafeConfig.getDurationList(SUPER_PEER_RETRY_DELAYS)).thenReturn(superPeerRetryDelays);
         when(typesafeConfig.getDuration(SUPER_PEER_HANDSHAKE_TIMEOUT)).thenReturn(superPeerHandshakeTimeout);
         when(typesafeConfig.getString(SUPER_PEER_CHANNEL_INITIALIZER)).thenReturn(superPeerChannelInitializer);
@@ -141,8 +145,8 @@ class DrasylNodeConfigTest {
         assertEquals(serverBindHost, config.getServerBindHost());
         assertEquals(serverBindPort, config.getServerBindPort());
         assertEquals(userAgent, config.getUserAgent());
-        assertEquals(identityPublicKey, config.getIdentityPublicKey());
-        assertEquals(identityPrivateKey, config.getIdentityPrivateKey());
+        assertNull(config.getIdentityPublicKey());
+        assertNull(config.getIdentityPrivateKey());
         assertEquals(Paths.get("drasyl.identity.json"), config.getIdentityPath());
         assertEquals(serverEnabled, config.isServerEnabled());
         assertEquals(serverSSLEnabled, config.getServerSSLEnabled());
@@ -151,23 +155,23 @@ class DrasylNodeConfigTest {
         assertEquals(flushBufferSize, config.getFlushBufferSize());
         assertEquals(serverSSLProtocols, config.getServerSSLProtocols());
         assertEquals(serverHandshakeTimeout, config.getServerHandshakeTimeout());
-        assertEquals(Set.of("ws://192.168.188.112:22527"), config.getServerEndpoints());
+        assertEquals(Set.of(URI.create("ws://192.168.188.112:22527")), config.getServerEndpoints());
         assertEquals(serverChannelInitializer, config.getServerChannelInitializer());
         assertEquals(maxContentLength, config.getMaxContentLength());
         assertEquals(superPeerEnabled, config.isSuperPeerEnabled());
         assertEquals(superPeerEndpoints, config.getSuperPeerEndpoints());
-        assertEquals(superPeerPublicKey, config.getSuperPeerPublicKey());
+        assertNull(config.getSuperPeerPublicKey());
         assertEquals(superPeerRetryDelays, config.getSuperPeerRetryDelays());
         assertEquals(superPeerHandshakeTimeout, config.getSuperPeerHandshakeTimeout());
         assertEquals(superPeerChannelInitializer, config.getSuperPeerChannelInitializer());
     }
 
     @Test
-    void toStringShouldMaskSecrets() {
-        identityPrivateKey = "07e98a2f8162a4002825f810c0fbd69b0c42bd9cb4f74a21bc7807bc5acb4f5f";
+    void toStringShouldMaskSecrets() throws CryptoException {
+        identityPrivateKey = CompressedPrivateKey.of("07e98a2f8162a4002825f810c0fbd69b0c42bd9cb4f74a21bc7807bc5acb4f5f");
 
         DrasylNodeConfig config = new DrasylNodeConfig(loglevel, identityPublicKey, identityPrivateKey, identityPath, userAgent, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, maxContentLength, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout);
 
-        assertThat(config.toString(), not(containsString(identityPrivateKey)));
+        assertThat(config.toString(), not(containsString(identityPrivateKey.getCompressedKey())));
     }
 }

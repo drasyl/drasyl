@@ -40,15 +40,15 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_SERVI
 public class NodeServerNewConnectionsGuard extends SimpleChannelInboundHandler<Message> {
     public static final String CONNECTION_GUARD = "connectionGuard";
     private static final Logger LOG = LoggerFactory.getLogger(NodeServerNewConnectionsGuard.class);
-    private final BooleanSupplier isOpenSupplier;
+    private final BooleanSupplier acceptNewConnectionsSupplier;
 
-    public NodeServerNewConnectionsGuard(BooleanSupplier isOpenSupplier) {
-        this.isOpenSupplier = isOpenSupplier;
+    public NodeServerNewConnectionsGuard(BooleanSupplier acceptNewConnectionsSupplier) {
+        this.acceptNewConnectionsSupplier = acceptNewConnectionsSupplier;
     }
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Message msg) {
-        if (isOpenSupplier.getAsBoolean()) {
+        if (acceptNewConnectionsSupplier.getAsBoolean()) {
             ctx.fireChannelRead(msg);
         }
         else {

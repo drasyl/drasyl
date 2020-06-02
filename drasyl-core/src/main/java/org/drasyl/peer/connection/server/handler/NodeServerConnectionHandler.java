@@ -23,18 +23,22 @@ import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.DrasylException;
 import org.drasyl.identity.Address;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
+import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeerInformation;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.AbstractNettyConnection;
 import org.drasyl.peer.connection.ConnectionsManager;
 import org.drasyl.peer.connection.handler.AbstractThreeWayHandshakeServerHandler;
 import org.drasyl.peer.connection.message.*;
-import org.drasyl.peer.connection.server.NodeServer;
 import org.drasyl.peer.connection.server.NodeServerConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.Optional;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_SAME_PUBLIC_KEY;
@@ -57,28 +61,36 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServerHandler<JoinMessage, WelcomeMessage> {
     public static final String NODE_SERVER_CONNECTION_HANDLER = "nodeServerConnectionHandler";
     private static final Logger LOG = LoggerFactory.getLogger(NodeServerConnectionHandler.class);
-    private final CompressedPublicKey publicKey;
-    private final NodeServer server;
+    private final PeersManager peersManager;
+    private final Messenger messenger;
+    private final Set<URI> entryPoints;
+    private final Identity identity;
 
-    public NodeServerConnectionHandler(CompressedPublicKey publicKey,
-                                       Duration timeout,
-                                       NodeServer server) {
-        super(server.getConnectionsManager(), timeout);
-        this.publicKey = publicKey;
-        this.server = server;
+    public NodeServerConnectionHandler(Identity identity,
+                                       PeersManager peersManager,
+                                       ConnectionsManager connectionsManager,
+                                       Messenger messenger,
+                                       Set<URI> entryPoints, Duration timeout) {
+        super(connectionsManager, timeout);
+        this.peersManager = peersManager;
+        this.messenger = messenger;
+        this.entryPoints = entryPoints;
+        this.identity = identity;
     }
 
-    NodeServerConnectionHandler(ConnectionsManager connectionsManager,
-                                Duration timeout,
+    NodeServerConnectionHandler(Identity identity,
+                                PeersManager peersManager,
+                                ConnectionsManager connectionsManager,
+                                Messenger messenger, Set<URI> entryPoints, Duration timeout,
                                 CompletableFuture<Void> handshakeFuture,
                                 AbstractNettyConnection connection,
                                 ScheduledFuture<?> timeoutFuture,
-                                JoinMessage requestMessage,
-                                CompressedPublicKey publicKey,
-                                NodeServer server) {
+                                JoinMessage requestMessage) {
         super(connectionsManager, timeout, handshakeFuture, connection, timeoutFuture, requestMessage);
-        this.publicKey = publicKey;
-        this.server = server;
+        this.peersManager = peersManager;
+        this.messenger = messenger;
+        this.entryPoints = entryPoints;
+        this.identity = identity;
     }
 
     @Override
@@ -92,7 +104,7 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
         if (message instanceof ApplicationMessage) {
             ApplicationMessage applicationMessage = (ApplicationMessage) message;
             try {
-                server.getMessenger().send(applicationMessage);
+                messenger.send(applicationMessage);
                 connection.send(new StatusMessage(STATUS_OK, applicationMessage.getId()));
             }
             catch (DrasylException e) {
@@ -108,7 +120,7 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
     protected ConnectionExceptionMessage.Error validateSessionRequest(JoinMessage requestMessage) {
         CompressedPublicKey clientPublicKey = requestMessage.getPublicKey();
 
-        if (publicKey.equals(clientPublicKey)) {
+        if (identity.getPublicKey().equals(clientPublicKey)) {
             return CONNECTION_ERROR_SAME_PUBLIC_KEY;
         }
         else {
@@ -119,7 +131,7 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
     @Override
     protected WelcomeMessage offerSession(ChannelHandlerContext ctx,
                                           JoinMessage requestMessage) {
-        return new WelcomeMessage(server.getIdentityManager().getIdentity().getPublicKey(), server.getEntryPoints(), requestMessage.getId());
+        return new WelcomeMessage(identity.getPublicKey(), entryPoints, requestMessage.getId());
     }
 
     @Override
@@ -129,14 +141,14 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
 
         // create peer connection
         NodeServerConnection connection = new NodeServerConnection(ctx.channel(), address,
-                Optional.ofNullable(requestMessage.getUserAgent()).orElse("U/A"), server.getConnectionsManager());
+                Optional.ofNullable(requestMessage.getUserAgent()).orElse("U/A"), connectionsManager);
 
         // store peer information
         PeerInformation peerInformation = new PeerInformation();
         peerInformation.setPublicKey(requestMessage.getPublicKey());
         peerInformation.addEndpoint(requestMessage.getEndpoints());
-        server.getPeersManager().addPeer(address, peerInformation);
-        server.getPeersManager().addChildren(address);
+        peersManager.addPeer(address, peerInformation);
+        peersManager.addChildren(address);
 
         return connection;
     }

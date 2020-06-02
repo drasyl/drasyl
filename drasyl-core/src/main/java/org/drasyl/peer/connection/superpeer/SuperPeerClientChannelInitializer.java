@@ -48,7 +48,6 @@ import static org.drasyl.peer.connection.superpeer.handler.SuperPeerClientConnec
 public class SuperPeerClientChannelInitializer extends AbstractClientInitializer {
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClientChannelInitializer.class);
     private final DrasylNodeConfig config;
-    private final Set<URI> entryPoints;
     private final SuperPeerClient superPeerClient;
     private final SuperPeerClientConnectionHandler clientHandler;
 
@@ -59,9 +58,8 @@ public class SuperPeerClientChannelInitializer extends AbstractClientInitializer
         super(config.getFlushBufferSize(), config.getSuperPeerIdleTimeout(),
                 config.getSuperPeerIdleRetries(), endpoint);
         this.config = config;
-        this.entryPoints = entryPoints;
         this.superPeerClient = superPeerClient;
-        clientHandler = new SuperPeerClientConnectionHandler(this.config.getSuperPeerPublicKey(), this.superPeerClient.getIdentityManager().getIdentity().getPublicKey(), entryPoints, superPeerClient, this.config.getSuperPeerHandshakeTimeout());
+        clientHandler = new SuperPeerClientConnectionHandler(this.config.getSuperPeerPublicKey(), this.superPeerClient.getIdentityManager().getIdentity().getPublicKey(), entryPoints, this.config.getSuperPeerHandshakeTimeout(), superPeerClient.getPeersManager(), superPeerClient.getConnectionsManager(), superPeerClient.getMessenger());
     }
 
     public CompletableFuture<Void> handshakeFuture() {

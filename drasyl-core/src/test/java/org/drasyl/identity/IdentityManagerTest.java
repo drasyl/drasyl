@@ -43,9 +43,9 @@ class IdentityManagerTest {
     }
 
     @Test
-    void loadOrCreateIdentityShouldLoadValidIdentityFromConfig() throws IdentityManagerException {
-        when(config.getIdentityPublicKey()).thenReturn("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9");
-        when(config.getIdentityPrivateKey()).thenReturn("0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d");
+    void loadOrCreateIdentityShouldLoadValidIdentityFromConfig() throws IdentityManagerException, CryptoException {
+        when(config.getIdentityPublicKey()).thenReturn(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"));
+        when(config.getIdentityPrivateKey()).thenReturn(CompressedPrivateKey.of("0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d"));
 
         IdentityManager identityManager = new IdentityManager(config);
         identityManager.loadOrCreateIdentity();
@@ -54,20 +54,8 @@ class IdentityManagerTest {
     }
 
     @Test
-    void loadOrCreateIdentityShouldRejectInvalidIdentityFromConfig() {
-        when(config.getIdentityPublicKey()).thenReturn("this is garbage");
-        when(config.getIdentityPrivateKey()).thenReturn("");
-
-        IdentityManager identityManager = new IdentityManager(config);
-
-        assertThrows(IdentityManagerException.class, identityManager::loadOrCreateIdentity);
-    }
-
-    @Test
     void loadOrCreateIdentityShouldLoadIdentityIfConfigContainsNoKeysAndFileIsPresent(@TempDir Path dir) throws IOException, IdentityManagerException, CryptoException {
         Path path = Paths.get(dir.toString(), "my-identity.json");
-        when(config.getIdentityPublicKey()).thenReturn("");
-        when(config.getIdentityPrivateKey()).thenReturn("");
         when(config.getIdentityPath()).thenReturn(path);
 
         // create existing file with identity
@@ -91,8 +79,6 @@ class IdentityManagerTest {
     @Test
     void loadOrCreateIdentityShouldThrowExceptionIfConfigContainsNoKeysAndPathDoesNotExist(@TempDir Path dir) {
         Path path = Paths.get(dir.toString(), "non-existing", "my-identity.json");
-        when(config.getIdentityPublicKey()).thenReturn("");
-        when(config.getIdentityPrivateKey()).thenReturn("");
         when(config.getIdentityPath()).thenReturn(path);
 
         IdentityManager identityManager = new IdentityManager(config);
@@ -103,8 +89,6 @@ class IdentityManagerTest {
     @Test
     void loadOrCreateIdentityShouldCreateNewIdentityIfConfigContainsNoKeysAndFileIsAbsent(@TempDir Path dir) throws IdentityManagerException {
         Path path = Paths.get(dir.toString(), "my-identity.json");
-        when(config.getIdentityPublicKey()).thenReturn("");
-        when(config.getIdentityPrivateKey()).thenReturn("");
         when(config.getIdentityPath()).thenReturn(path);
 
         IdentityManager identityManager = new IdentityManager(config);

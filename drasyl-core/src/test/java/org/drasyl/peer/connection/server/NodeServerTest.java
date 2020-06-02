@@ -27,8 +27,8 @@ import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.identity.Address;
-import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.AddressTestHelper;
+import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.ConnectionsManager;
@@ -39,6 +39,7 @@ import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -95,7 +96,7 @@ class NodeServerTest {
         when(serverBootstrap.childOption(any(), any())).thenReturn(serverBootstrap);
         when(bossGroup.shutdownGracefully()).thenReturn(future);
         when(workerGroup.shutdownGracefully()).thenReturn(future);
-        when(config.getServerEndpoints()).thenReturn(Set.of("ws://localhost:22527/"));
+        when(config.getServerEndpoints()).thenReturn(Set.of(URI.create("ws://localhost:22527/")));
         when(nodeServerChannelBootstrap.getChannel()).thenReturn(serverChannel);
         when(serverChannel.closeFuture()).thenReturn(channelFuture);
 
