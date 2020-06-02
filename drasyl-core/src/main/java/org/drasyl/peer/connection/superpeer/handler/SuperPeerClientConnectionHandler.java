@@ -60,7 +60,7 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
                                             Set<URI> endpoints,
                                             SuperPeerClient superPeerClient,
                                             Duration timeout) {
-        super(superPeerClient.getMessenger().getConnectionsManager(), timeout, new JoinMessage(ownPublicKey, endpoints));
+        super(superPeerClient.getConnectionsManager(), timeout, new JoinMessage(ownPublicKey, endpoints));
         CompressedPublicKey expectedPublicKey1;
         if (expectedPublicKey == null || expectedPublicKey.equals("")) {
             expectedPublicKey1 = null;
@@ -122,7 +122,7 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
         Address address = Address.of(offerMessage.getPublicKey());
 
         // create peer connection
-        SuperPeerClientConnection connection = new SuperPeerClientConnection(ctx.channel(), address, offerMessage.getUserAgent(), superPeerClient.getMessenger().getConnectionsManager());
+        SuperPeerClientConnection connection = new SuperPeerClientConnection(ctx.channel(), address, offerMessage.getUserAgent(), superPeerClient.getConnectionsManager());
 
         // store peer information
         PeerInformation peerInformation = new PeerInformation();

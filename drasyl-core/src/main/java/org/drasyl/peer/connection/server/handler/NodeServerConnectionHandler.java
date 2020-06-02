@@ -63,7 +63,7 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
     public NodeServerConnectionHandler(CompressedPublicKey publicKey,
                                        Duration timeout,
                                        NodeServer server) {
-        super(server.getMessenger().getConnectionsManager(), timeout);
+        super(server.getConnectionsManager(), timeout);
         this.publicKey = publicKey;
         this.server = server;
     }
@@ -129,7 +129,7 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
 
         // create peer connection
         NodeServerConnection connection = new NodeServerConnection(ctx.channel(), address,
-                Optional.ofNullable(requestMessage.getUserAgent()).orElse("U/A"), server.getMessenger().getConnectionsManager());
+                Optional.ofNullable(requestMessage.getUserAgent()).orElse("U/A"), server.getConnectionsManager());
 
         // store peer information
         PeerInformation peerInformation = new PeerInformation();

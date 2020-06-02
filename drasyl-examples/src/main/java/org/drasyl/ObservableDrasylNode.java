@@ -26,6 +26,7 @@ import org.drasyl.event.Event;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.ConnectionsManager;
 import org.drasyl.peer.connection.server.NodeServer;
 import org.drasyl.peer.connection.superpeer.SuperPeerClient;
 import org.drasyl.util.DrasylScheduler;
@@ -54,6 +55,7 @@ public class ObservableDrasylNode extends DrasylNode {
     ObservableDrasylNode(DrasylNodeConfig config,
                          IdentityManager identityManager,
                          PeersManager peersManager,
+                         ConnectionsManager connectionsManager,
                          Messenger messenger,
                          NodeServer server,
                          SuperPeerClient superPeerClient,
@@ -61,7 +63,7 @@ public class ObservableDrasylNode extends DrasylNode {
                          CompletableFuture<Void> startSequence,
                          CompletableFuture<Void> shutdownSequence,
                          Subject<Event> events) {
-        super(config, identityManager, peersManager, messenger, server, superPeerClient, started, startSequence, shutdownSequence);
+        super(config, identityManager, peersManager, connectionsManager, messenger, server, superPeerClient, started, startSequence, shutdownSequence);
         this.events = events;
     }
 

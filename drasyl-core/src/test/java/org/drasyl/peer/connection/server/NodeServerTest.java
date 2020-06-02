@@ -31,6 +31,7 @@ import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.AddressTestHelper;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.ConnectionsManager;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,9 +46,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class NodeServerTest {
@@ -64,6 +63,7 @@ class NodeServerTest {
     private CompletableFuture<Void> stoppedFuture;
     private ApplicationMessage message;
     private NodeServerChannelBootstrap nodeServerChannelBootstrap;
+    private ConnectionsManager connectionsManager;
 
     @BeforeEach
     void setUp() throws InterruptedException, NodeServerException {
@@ -81,6 +81,7 @@ class NodeServerTest {
         Future future = mock(Future.class);
         nodeServerChannelBootstrap = mock(NodeServerChannelBootstrap.class);
         ChannelFuture channelFuture = mock(ChannelFuture.class);
+        connectionsManager = mock(ConnectionsManager.class);
 
         message = mock(ApplicationMessage.class);
         String msgID = Crypto.randomString(16);
@@ -112,7 +113,7 @@ class NodeServerTest {
     void openShouldSetOpenToTrue() throws NodeServerException {
         when(serverChannel.localAddress()).thenReturn(mock(InetSocketAddress.class));
 
-        NodeServer server = new NodeServer(identityManager, messenger, peersManager,
+        NodeServer server = new NodeServer(identityManager, messenger, peersManager, connectionsManager,
                 config, serverChannel, serverBootstrap, workerGroup, bossGroup,
                 nodeServerChannelBootstrap, new AtomicBoolean(false), -1, new HashSet<>());
         server.open();
@@ -122,7 +123,7 @@ class NodeServerTest {
 
     @Test
     void openShouldDoNothingIfServerHasAlreadyBeenStarted() throws NodeServerException {
-        NodeServer server = new NodeServer(identityManager, messenger, peersManager,
+        NodeServer server = new NodeServer(identityManager, messenger, peersManager, connectionsManager,
                 config, serverChannel, serverBootstrap, workerGroup, bossGroup,
                 nodeServerChannelBootstrap, new AtomicBoolean(true), -1, new HashSet<>());
 
@@ -133,7 +134,7 @@ class NodeServerTest {
 
     @Test
     void closeShouldDoNothingIfServerHasAlreadyBeenShutDown() {
-        NodeServer server = new NodeServer(identityManager, messenger, peersManager,
+        NodeServer server = new NodeServer(identityManager, messenger, peersManager, connectionsManager,
                 config, serverChannel, serverBootstrap, workerGroup, bossGroup,
                 nodeServerChannelBootstrap, new AtomicBoolean(false), -1, new HashSet<>());
 
@@ -144,7 +145,7 @@ class NodeServerTest {
 
     @Test
     void correctObjectCreation() throws DrasylException {
-        NodeServer server = new NodeServer(identityManager, messenger, peersManager, workerGroup, bossGroup);
+        NodeServer server = new NodeServer(identityManager, messenger, peersManager, connectionsManager, workerGroup, bossGroup);
 
         assertNotNull(server.getBossGroup());
         assertNotNull(server.getConfig());

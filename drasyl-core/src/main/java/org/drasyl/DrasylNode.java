@@ -33,6 +33,7 @@ import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.ConnectionsManager;
 import org.drasyl.peer.connection.LoopbackPeerConnection;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.server.NodeServer;
@@ -98,6 +99,7 @@ public abstract class DrasylNode {
     private final DrasylNodeConfig config;
     private final IdentityManager identityManager;
     private final PeersManager peersManager;
+    private final ConnectionsManager connectionsManager;
     private final Messenger messenger;
     private final NodeServer server;
     private final SuperPeerClient superPeerClient;
@@ -122,9 +124,10 @@ public abstract class DrasylNode {
             this.config = new DrasylNodeConfig(config);
             this.identityManager = new IdentityManager(this.config);
             this.peersManager = new PeersManager();
-            this.messenger = new Messenger(this::onEvent);
-            this.server = new NodeServer(identityManager, messenger, peersManager, config, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP);
-            this.superPeerClient = new SuperPeerClient(this.config, identityManager, peersManager, messenger, DrasylNode.WORKER_GROUP, this::onEvent);
+            this.connectionsManager = new ConnectionsManager(this::onEvent);
+            this.messenger = new Messenger(this.connectionsManager);
+            this.server = new NodeServer(identityManager, messenger, peersManager, connectionsManager, config, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP);
+            this.superPeerClient = new SuperPeerClient(this.config, identityManager, peersManager, messenger, DrasylNode.WORKER_GROUP, connectionsManager, this::onEvent);
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = new CompletableFuture<>();
@@ -149,6 +152,7 @@ public abstract class DrasylNode {
     DrasylNode(DrasylNodeConfig config,
                IdentityManager identityManager,
                PeersManager peersManager,
+               ConnectionsManager connectionsManager,
                Messenger messenger,
                NodeServer server,
                SuperPeerClient superPeerClient,
@@ -158,6 +162,7 @@ public abstract class DrasylNode {
         this.config = config;
         this.identityManager = identityManager;
         this.peersManager = peersManager;
+        this.connectionsManager = connectionsManager;
         this.messenger = messenger;
         this.server = server;
         this.superPeerClient = superPeerClient;
@@ -300,7 +305,7 @@ public abstract class DrasylNode {
     }
 
     private void destroyLoopbackPeerConnection() {
-        messenger.getConnectionsManager().closeConnectionsOfType(LoopbackPeerConnection.class, REASON_SHUTTING_DOWN);
+        connectionsManager.closeConnectionsOfType(LoopbackPeerConnection.class, REASON_SHUTTING_DOWN);
     }
 
     /**
@@ -375,7 +380,7 @@ public abstract class DrasylNode {
     }
 
     private void createLoopbackPeerConnection() {
-        new LoopbackPeerConnection(this::onEvent, identityManager.getAddress(), messenger.getConnectionsManager());
+        new LoopbackPeerConnection(this::onEvent, identityManager.getAddress(), connectionsManager);
     }
 
     /**
