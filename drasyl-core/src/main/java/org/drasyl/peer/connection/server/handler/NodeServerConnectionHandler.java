@@ -21,7 +21,6 @@ package org.drasyl.peer.connection.server.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.DrasylException;
-import org.drasyl.identity.Address;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
@@ -140,7 +139,6 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
     protected AbstractNettyConnection createConnection(ChannelHandlerContext ctx,
                                                        JoinMessage requestMessage) {
         Identity identity = Identity.of(requestMessage.getPublicKey());
-        Address address = identity.getAddress();
 
         // create peer connection
         NodeServerConnection connection = new NodeServerConnection(ctx.channel(), identity,
@@ -150,8 +148,8 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
         PeerInformation peerInformation = new PeerInformation();
         peerInformation.setPublicKey(requestMessage.getPublicKey());
         peerInformation.addEndpoint(requestMessage.getEndpoints());
-        peersManager.addPeer(address, peerInformation);
-        peersManager.addChildren(address);
+        peersManager.addPeer(identity, peerInformation);
+        peersManager.addChildren(identity);
 
         return connection;
     }

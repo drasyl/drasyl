@@ -21,7 +21,6 @@ package org.drasyl.peer.connection.superpeer.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.DrasylException;
-import org.drasyl.identity.Address;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
@@ -135,7 +134,6 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
     protected AbstractNettyConnection createConnection(final ChannelHandlerContext ctx,
                                                        WelcomeMessage offerMessage) {
         Identity identity = Identity.of(offerMessage.getPublicKey());
-        Address address = identity.getAddress();
 
         // create peer connection
         SuperPeerClientConnection connection = new SuperPeerClientConnection(ctx.channel(), identity, offerMessage.getUserAgent(), connectionsManager);
@@ -144,8 +142,8 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
         PeerInformation peerInformation = new PeerInformation();
         peerInformation.setPublicKey(offerMessage.getPublicKey());
         peerInformation.addEndpoint(offerMessage.getEndpoints());
-        peersManager.addPeer(address, peerInformation);
-        peersManager.setSuperPeer(address);
+        peersManager.addPeer(identity, peerInformation);
+        peersManager.setSuperPeer(identity);
 
         return connection;
     }
