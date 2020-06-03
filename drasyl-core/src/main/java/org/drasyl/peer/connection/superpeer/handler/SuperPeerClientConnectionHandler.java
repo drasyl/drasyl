@@ -19,6 +19,7 @@
 package org.drasyl.peer.connection.superpeer.handler;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.DrasylException;
 import org.drasyl.identity.Address;
 import org.drasyl.identity.CompressedPublicKey;
@@ -36,6 +37,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 import java.time.Duration;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_WRONG_PUBLIC_KEY;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_NOT_FOUND;
@@ -66,6 +68,24 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
                                             ConnectionsManager connectionsManager,
                                             Messenger messenger) {
         super(connectionsManager, timeout, new JoinMessage(ownPublicKey, endpoints));
+        this.expectedPublicKey = expectedPublicKey;
+        this.ownPublicKey = ownPublicKey;
+        this.peersManager = peersManager;
+        this.connectionsManager = connectionsManager;
+        this.messenger = messenger;
+    }
+
+    SuperPeerClientConnectionHandler(CompressedPublicKey expectedPublicKey,
+                                     CompressedPublicKey ownPublicKey,
+                                     PeersManager peersManager,
+                                     ConnectionsManager connectionsManager,
+                                     Messenger messenger,
+                                     Duration timeout,
+                                     CompletableFuture<Void> handshakeFuture,
+                                     AbstractNettyConnection connection,
+                                     ScheduledFuture<?> timeoutFuture,
+                                     JoinMessage requestMessage) {
+        super(connectionsManager, timeout, handshakeFuture, connection, timeoutFuture, requestMessage);
         this.expectedPublicKey = expectedPublicKey;
         this.ownPublicKey = ownPublicKey;
         this.peersManager = peersManager;

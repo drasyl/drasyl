@@ -18,14 +18,12 @@
  */
 package org.drasyl.peer.connection.server.handler;
 
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
+import io.netty.channel.*;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.identity.*;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.AbstractNettyConnection;
@@ -41,10 +39,11 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static java.time.Duration.ofMillis;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_SAME_PUBLIC_KEY;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class NodeServerConnectionHandlerTest {
@@ -67,6 +66,9 @@ class NodeServerConnectionHandlerTest {
     private JoinMessage requestMessage;
     private Identity identity;
     private PeersManager peersManager;
+    private QuitMessage quitMessage;
+    private ChannelId channelId;
+    private Channel nettyChannel;
 
     @BeforeEach
     void setUp() {
@@ -86,6 +88,9 @@ class NodeServerConnectionHandlerTest {
         requestMessage = mock(JoinMessage.class);
         identity = mock(Identity.class);
         peersManager = mock(PeersManager.class);
+        quitMessage = mock(QuitMessage.class);
+        nettyChannel = mock(Channel.class);
+        channelId = mock(ChannelId.class);
 
         when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
         applicationMessage = mock(ApplicationMessage.class);
@@ -164,10 +169,29 @@ class NodeServerConnectionHandlerTest {
 
     @Test
     void exceptionCaughtShouldWriteExceptionToChannelAndThenCloseIt() {
+        when(ctx.channel()).thenReturn(nettyChannel);
+        when(nettyChannel.id()).thenReturn(channelId);
+
         NodeServerConnectionHandler handler = new NodeServerConnectionHandler(identity, peersManager, connectionsManager, messenger, Set.of(), ofMillis(1000), handshakeFuture, connection, timeoutFuture, requestMessage);
         handler.exceptionCaught(ctx, cause);
 
         verify(ctx).writeAndFlush(any(ConnectionExceptionMessage.class));
         verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
+    }
+
+    @Test
+    void shouldReplyWithStatusOkAndThenCloseChannelIfHandshakeIsDone() {
+        when(handshakeFuture.isDone()).thenReturn(true);
+        when(quitMessage.getId()).thenReturn("123");
+        when(connection.isClosed()).thenReturn(completedFuture(null));
+
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(identity, peersManager, connectionsManager, messenger, Set.of(), ofMillis(1000), handshakeFuture, connection, timeoutFuture, requestMessage);
+        channel = new EmbeddedChannel(handler);
+
+        channel.writeInbound(quitMessage);
+        channel.flush();
+
+        assertEquals(new StatusMessage(STATUS_OK, quitMessage.getId()), channel.readOutbound());
+        assertFalse(channel.isOpen());
     }
 }

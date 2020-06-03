@@ -27,6 +27,7 @@ import org.drasyl.peer.connection.AbstractNettyConnection;
 import org.drasyl.peer.connection.ConnectionsManager;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.Message;
+import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.slf4j.Logger;
 
@@ -37,6 +38,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_HANDSHAKE_TIMEOUT;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_INITIALIZATION;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
+import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 
 public abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandler<Message, Message> {
     protected final ConnectionsManager connectionsManager;
@@ -84,9 +86,14 @@ public abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDupl
 
     @Override
     public void channelRead0(ChannelHandlerContext ctx, Message msg) {
+        ReferenceCountUtil.release(msg);
+
         ctx.executor().submit(() -> {
             if (!handshakeFuture.isDone()) {
                 doHandshake(ctx, msg);
+            }
+            else if (msg instanceof QuitMessage) {
+                quitSession(ctx, (QuitMessage) msg);
             }
             else {
                 processMessageAfterHandshake(connection, msg);
@@ -115,6 +122,14 @@ public abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDupl
     }
 
     protected abstract void doHandshake(ChannelHandlerContext ctx, Message message);
+
+    private void quitSession(ChannelHandlerContext ctx, QuitMessage quitMessage) {
+        if (getLogger().isTraceEnabled()) {
+            getLogger().trace("[{}]: received {}. Close channel for reason '{}'", ctx.channel().id().asShortText(), QuitMessage.class.getSimpleName(), quitMessage.getReason());
+        }
+
+        ctx.writeAndFlush(new StatusMessage(STATUS_OK, quitMessage.getId())).addListener(ChannelFutureListener.CLOSE);
+    }
 
     protected abstract void processMessageAfterHandshake(AbstractNettyConnection connection,
                                                          Message msg);
@@ -149,7 +164,9 @@ public abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDupl
     @Override
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         if (!handshakeFuture.isDone()) {
-            getLogger().warn("Exception during handshake occured: ", cause);
+            if (getLogger().isWarnEnabled()) {
+                getLogger().warn("[{}]: Exception during handshake occurred: ", ctx.channel().id().asShortText(), cause);
+            }
             // close connection if an error occurred before handshake
             ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_INITIALIZATION)).addListener(ChannelFutureListener.CLOSE);
         }

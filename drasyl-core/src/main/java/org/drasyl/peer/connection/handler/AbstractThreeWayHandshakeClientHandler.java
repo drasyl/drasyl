@@ -56,8 +56,6 @@ public abstract class AbstractThreeWayHandshakeClientHandler<R extends RequestMe
 
     @Override
     protected void doHandshake(ChannelHandlerContext ctx, Message message) {
-        ReferenceCountUtil.release(message);
-
         try {
             O offerMessage = (O) message;
             ConnectionExceptionMessage.Error error = validateSessionOffer(offerMessage);
