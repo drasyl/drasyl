@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.identity.Address;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.Message;
 
 import java.util.HashMap;
@@ -37,15 +38,15 @@ import java.util.concurrent.CompletableFuture;
 @SuppressWarnings({ "java:S1452" })
 public abstract class PeerConnection {
     protected final String connectionId = Crypto.randomString(8);
-    protected Address address;
+    protected Identity identity;
 
-    protected PeerConnection(Address address) {
-        this.address = address;
+    protected PeerConnection(Identity identity) {
+        this.identity = identity;
     }
 
-    public PeerConnection(Address address,
+    public PeerConnection(Identity identity,
                           ConnectionsManager connectionsManager) {
-        this.address = address;
+        this.identity = identity;
         connectionsManager.addConnection(this, this::close);
     }
 
@@ -56,6 +57,13 @@ public abstract class PeerConnection {
      * @param reason reason why this connection is closed
      */
     protected abstract void close(CloseReason reason);
+
+    /**
+     * Returns the identity of the peer.
+     */
+    public Identity getIdentity() {
+        return identity;
+    }
 
     /**
      * @return Returns the unique id of this connection.
@@ -77,10 +85,10 @@ public abstract class PeerConnection {
     public abstract String getUserAgent();
 
     /**
-     * Returns the identity of the peer.
+     * Returns the address of the peer.
      */
     public Address getAddress() {
-        return address;
+        return identity.getAddress();
     }
 
     /**

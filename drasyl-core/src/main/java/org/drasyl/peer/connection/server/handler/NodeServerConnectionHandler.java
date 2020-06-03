@@ -139,10 +139,11 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
     @Override
     protected AbstractNettyConnection createConnection(ChannelHandlerContext ctx,
                                                        JoinMessage requestMessage) {
-        Address address = Address.of(requestMessage.getPublicKey());
+        Identity identity = Identity.of(requestMessage.getPublicKey());
+        Address address = identity.getAddress();
 
         // create peer connection
-        NodeServerConnection connection = new NodeServerConnection(ctx.channel(), address,
+        NodeServerConnection connection = new NodeServerConnection(ctx.channel(), identity,
                 Optional.ofNullable(requestMessage.getUserAgent()).orElse("U/A"), connectionsManager);
 
         // store peer information

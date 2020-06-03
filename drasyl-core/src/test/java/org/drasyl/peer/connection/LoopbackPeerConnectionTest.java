@@ -21,6 +21,7 @@ package org.drasyl.peer.connection;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Address;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.AbstractMessageWithUserAgent;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
@@ -36,7 +37,7 @@ import static org.mockito.Mockito.*;
 
 class LoopbackPeerConnectionTest {
     private Consumer<Event> onEvent;
-    private Address address;
+    private Identity identity;
     private CompletableFuture<Boolean> closedCompletable;
     private AtomicBoolean isClosed;
     private ConnectionsManager connectionsManager;
@@ -46,7 +47,7 @@ class LoopbackPeerConnectionTest {
     @BeforeEach
     void setUp() {
         onEvent = mock(Consumer.class);
-        address = mock(Address.class);
+        identity = mock(Identity.class);
         closedCompletable = mock(CompletableFuture.class);
         isClosed = mock(AtomicBoolean.class);
         connectionsManager = mock(ConnectionsManager.class);
@@ -56,7 +57,7 @@ class LoopbackPeerConnectionTest {
 
     @Test
     void sendShouldTriggerEvent() {
-        LoopbackPeerConnection con = new LoopbackPeerConnection(onEvent, address, closedCompletable, isClosed, connectionsManager);
+        LoopbackPeerConnection con = new LoopbackPeerConnection(onEvent, identity, closedCompletable, isClosed, connectionsManager);
 
         ApplicationMessage message = new ApplicationMessage(Address.of(Crypto.randomString(5)), Address.of(Crypto.randomString(5)), new byte[]{
                 0x00,
@@ -71,7 +72,7 @@ class LoopbackPeerConnectionTest {
     @Test
     void sendShouldNotSendIfClosed() {
         ConnectionsManager connectionsManager = new ConnectionsManager(eventConsumer);
-        LoopbackPeerConnection con = new LoopbackPeerConnection(onEvent, address, closedCompletable, isClosed, connectionsManager);
+        LoopbackPeerConnection con = new LoopbackPeerConnection(onEvent, identity, closedCompletable, isClosed, connectionsManager);
 
         ApplicationMessage message = new ApplicationMessage(Address.of(Crypto.randomString(5)), Address.of(Crypto.randomString(5)), new byte[]{
                 0x00,
@@ -89,7 +90,7 @@ class LoopbackPeerConnectionTest {
 
     @Test
     void shouldThrowExceptionIfMessageIsNotAnApplicationMessage() {
-        LoopbackPeerConnection con = new LoopbackPeerConnection(onEvent, address, closedCompletable, isClosed, connectionsManager);
+        LoopbackPeerConnection con = new LoopbackPeerConnection(onEvent, identity, closedCompletable, isClosed, connectionsManager);
         JoinMessage joinMessage = mock(JoinMessage.class);
 
         assertThrows(IllegalArgumentException.class, () -> con.send(joinMessage));
@@ -98,11 +99,11 @@ class LoopbackPeerConnectionTest {
 
     @Test
     void getterTest() {
-        LoopbackPeerConnection con = new LoopbackPeerConnection(onEvent, address, connectionsManager);
-        LoopbackPeerConnection con2 = new LoopbackPeerConnection(onEvent, address, connectionsManager);
+        LoopbackPeerConnection con = new LoopbackPeerConnection(onEvent, identity, connectionsManager);
+        LoopbackPeerConnection con2 = new LoopbackPeerConnection(onEvent, identity, connectionsManager);
 
         assertEquals(AbstractMessageWithUserAgent.userAgentGenerator.get(), con.getUserAgent());
-        assertEquals(address, con.getAddress());
+        assertEquals(identity, con.getIdentity());
         assertEquals(con, con);
         assertNotEquals(con, con2);
         assertNotEquals(con, mock(LoopbackPeerConnection.class));

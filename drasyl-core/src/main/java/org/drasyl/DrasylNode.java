@@ -380,7 +380,7 @@ public abstract class DrasylNode {
     }
 
     private void createLoopbackPeerConnection() {
-        new LoopbackPeerConnection(this::onEvent, identityManager.getAddress(), connectionsManager);
+        new LoopbackPeerConnection(this::onEvent, identityManager.getIdentity(), connectionsManager);
     }
 
     /**

@@ -20,6 +20,7 @@ package org.drasyl.peer.connection.server;
 
 import io.netty.channel.Channel;
 import org.drasyl.identity.Address;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.AbstractNettyConnection;
 import org.drasyl.peer.connection.ConnectionsManager;
 import org.slf4j.Logger;
@@ -39,37 +40,37 @@ public class NodeServerConnection extends AbstractNettyConnection {
      * Creates a new connection with an unknown User-Agent.
      *
      * @param channel            channel of the connection
-     * @param address           the identity of this {@link NodeServerConnection}
+     * @param identity           the identity of this {@link NodeServerConnection}
      * @param connectionsManager reference to the {@link ConnectionsManager}
      */
     public NodeServerConnection(Channel channel,
-                                Address address,
+                                Identity identity,
                                 ConnectionsManager connectionsManager) {
-        super(channel, address, connectionsManager);
+        super(channel, identity, connectionsManager);
     }
 
     /**
      * Creates a new connection.
      *
      * @param channel            channel of the connection
-     * @param address           the identity of this {@link NodeServerConnection}
+     * @param identity           the identity of this {@link NodeServerConnection}
      * @param userAgent          the User-Agent string
      * @param connectionsManager reference to the {@link ConnectionsManager}
      */
     public NodeServerConnection(Channel channel,
-                                Address address,
+                                Identity identity,
                                 String userAgent,
                                 ConnectionsManager connectionsManager) {
-        super(channel, address, userAgent, connectionsManager);
+        super(channel, identity, userAgent, connectionsManager);
     }
 
     protected NodeServerConnection(Channel myChannel,
                                    String userAgent,
-                                   Address address,
+                                   Identity identity,
                                    AtomicBoolean isClosed,
                                    CompletableFuture<Boolean> closedCompletable,
                                    ConnectionsManager connectionsManager) {
-        super(myChannel, userAgent, address, isClosed, closedCompletable, connectionsManager);
+        super(myChannel, userAgent, identity, isClosed, closedCompletable, connectionsManager);
     }
 
     @Override

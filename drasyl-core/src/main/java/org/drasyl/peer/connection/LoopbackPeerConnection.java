@@ -22,6 +22,7 @@ import org.drasyl.DrasylNode;
 import org.drasyl.event.Event;
 import org.drasyl.event.EventType;
 import org.drasyl.identity.Address;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.AbstractMessageWithUserAgent;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.Message;
@@ -44,20 +45,20 @@ public class LoopbackPeerConnection extends PeerConnection {
      * Creates a new LoopbackPeerConnection connection of this node.
      *
      * @param onEvent            reference to {@link DrasylNode#onEvent(Event)}
-     * @param address           reference to {@link Address}
+     * @param identity           reference to {@link Identity}
      * @param connectionsManager reference to the {@link ConnectionsManager}
      */
     public LoopbackPeerConnection(Consumer<Event> onEvent,
-                                  Address address,
+                                  Identity identity,
                                   ConnectionsManager connectionsManager) {
-        this(onEvent, address, new CompletableFuture<>(), new AtomicBoolean(false), connectionsManager);
+        this(onEvent, identity, new CompletableFuture<>(), new AtomicBoolean(false), connectionsManager);
     }
 
     LoopbackPeerConnection(Consumer<Event> onEvent,
-                           Address address,
+                           Identity identity,
                            CompletableFuture<Boolean> closedCompletable,
                            AtomicBoolean isClosed, ConnectionsManager connectionsManager) {
-        super(address, connectionsManager);
+        super(identity, connectionsManager);
         this.onEvent = onEvent;
         this.closedCompletable = closedCompletable;
         this.isClosed = isClosed;
