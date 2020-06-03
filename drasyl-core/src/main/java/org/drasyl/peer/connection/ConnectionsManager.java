@@ -197,7 +197,7 @@ public class ConnectionsManager {
      *
      * @param connection the connection
      */
-    public void removeClosingConnection(PeerConnection connection) {
+    public void removeClosedConnection(PeerConnection connection) {
         try {
             lock.writeLock().lock();
 

@@ -68,7 +68,7 @@ public abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDupl
     public void handlerAdded(ChannelHandlerContext ctx) {
         ctx.channel().closeFuture().addListener(future -> {
             if (connection != null && !connection.isClosed().isDone()) {
-                connectionsManager.removeClosingConnection(connection);
+                connectionsManager.removeClosedConnection(connection);
             }
         });
     }
