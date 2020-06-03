@@ -28,7 +28,6 @@ import org.drasyl.DrasylNodeConfig;
 import org.drasyl.peer.connection.AbstractClientInitializer;
 import org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
-import org.drasyl.peer.connection.handler.QuitMessageHandler;
 import org.drasyl.peer.connection.superpeer.handler.SuperPeerClientConnectionHandler;
 import org.drasyl.util.WebSocketUtil;
 import org.slf4j.Logger;
@@ -68,13 +67,10 @@ public class SuperPeerClientChannelInitializer extends AbstractClientInitializer
 
     @Override
     protected void customStage(ChannelPipeline pipeline) {
-        // QuitMessage handler
-        pipeline.addLast(QuitMessageHandler.QUIT_MESSAGE_HANDLER, QuitMessageHandler.INSTANCE);
-
-        // ConnectionExceptionMessage Handler
+        // Exception handler
         pipeline.addLast(ConnectionExceptionMessageHandler.EXCEPTION_MESSAGE_HANDLER, ConnectionExceptionMessageHandler.INSTANCE);
 
-        // Super peer handler
+        // Client handler
         pipeline.addLast(SUPER_PEER_CLIENT_CONNECTION_HANDLER, clientHandler);
     }
 

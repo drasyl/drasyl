@@ -30,7 +30,6 @@ import io.netty.handler.ssl.util.SelfSignedCertificate;
 import org.drasyl.peer.connection.DefaultSessionInitializer;
 import org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
-import org.drasyl.peer.connection.handler.QuitMessageHandler;
 import org.drasyl.peer.connection.server.handler.NodeServerConnectionHandler;
 import org.drasyl.peer.connection.server.handler.NodeServerMissingWebSocketUpgradeErrorPage;
 import org.drasyl.peer.connection.server.handler.NodeServerNewConnectionsGuard;
@@ -72,10 +71,7 @@ public class NodeServerChannelInitializer extends DefaultSessionInitializer {
 
     @Override
     protected void customStage(ChannelPipeline pipeline) {
-        // QuitMessage handler
-        pipeline.addLast(QuitMessageHandler.QUIT_MESSAGE_HANDLER, QuitMessageHandler.INSTANCE);
-
-        // ConnectionExceptionMessage Handler
+        // Exception handler
         pipeline.addLast(ConnectionExceptionMessageHandler.EXCEPTION_MESSAGE_HANDLER, ConnectionExceptionMessageHandler.INSTANCE);
 
         // Server handler

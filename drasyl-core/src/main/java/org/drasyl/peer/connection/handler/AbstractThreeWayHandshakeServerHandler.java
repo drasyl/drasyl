@@ -56,8 +56,6 @@ public abstract class AbstractThreeWayHandshakeServerHandler<R extends RequestMe
 
     @Override
     protected void doHandshake(ChannelHandlerContext ctx, Message message) {
-        ReferenceCountUtil.release(message);
-
         try {
             if (message instanceof RequestMessage && this.requestMessage == null) {
                 this.requestMessage = (R) message;
