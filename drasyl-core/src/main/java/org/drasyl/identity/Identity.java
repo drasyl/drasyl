@@ -36,7 +36,7 @@ public class Identity {
              CompressedPublicKey publicKey,
              CompressedPrivateKey privateKey) {
         this.address = requireNonNull(address);
-        this.publicKey = requireNonNull(publicKey);
+        this.publicKey = publicKey;
         this.privateKey = privateKey;
     }
 
@@ -50,7 +50,7 @@ public class Identity {
 
     @Override
     public int hashCode() {
-        return Objects.hash(address, publicKey, privateKey);
+        return Objects.hash(address);
     }
 
     @Override
@@ -62,9 +62,7 @@ public class Identity {
             return false;
         }
         Identity identity = (Identity) o;
-        return Objects.equals(address, identity.address) &&
-                Objects.equals(publicKey, identity.publicKey) &&
-                Objects.equals(privateKey, identity.privateKey);
+        return Objects.equals(address, identity.address);
     }
 
     @Override
@@ -82,6 +80,10 @@ public class Identity {
 
     public Address getAddress() {
         return address;
+    }
+
+    public static Identity of(Address address) {
+        return new Identity(address, null, null);
     }
 
     public static Identity of(CompressedPublicKey publicKey) {

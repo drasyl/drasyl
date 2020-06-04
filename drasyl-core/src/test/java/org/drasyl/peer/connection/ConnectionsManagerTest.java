@@ -16,14 +16,12 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.peer.connection;
 
 import com.google.common.collect.HashMultimap;
-import org.drasyl.crypto.Crypto;
 import org.drasyl.event.Event;
 import org.drasyl.event.Peer;
-import org.drasyl.identity.Address;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.PeerConnection.CloseReason;
 import org.drasyl.peer.connection.superpeer.SuperPeerClientConnection;
 import org.junit.jupiter.api.Assertions;
@@ -44,15 +42,15 @@ class ConnectionsManagerTest {
     private ReadWriteLock lock;
     private Lock readLock;
     private Lock writeLock;
-    private HashMultimap<Address, PeerConnection> connections;
+    private HashMultimap<Identity, PeerConnection> connections;
     private Map<PeerConnection, Consumer<CloseReason>> closeProcedures;
-    private Address address;
+    private Identity identity;
     private PeerConnection peerConnection;
     private PeerConnection peerConnection2;
     private CloseReason reason;
     private Consumer<CloseReason> runnable1;
     private Consumer<CloseReason> runnable2;
-    private Address superPeer;
+    private Identity superPeer;
     private SuperPeerClientConnection superPeerClientConnection;
     private Consumer<CloseReason> superPeerRunnable;
     private Consumer<Event> eventConsumer;
@@ -64,7 +62,7 @@ class ConnectionsManagerTest {
         writeLock = mock(Lock.class);
         connections = HashMultimap.create();
         closeProcedures = mock(Map.class);
-        address = Address.of(Crypto.randomString(5));
+        identity = mock(Identity.class);
         peerConnection = mock(PeerConnection.class);
         peerConnection2 = mock(PeerConnection.class);
         superPeerClientConnection = mock(SuperPeerClientConnection.class);
@@ -72,15 +70,15 @@ class ConnectionsManagerTest {
         runnable1 = mock(Consumer.class);
         runnable2 = mock(Consumer.class);
         superPeerRunnable = mock(Consumer.class);
-        superPeer = mock(Address.class);
+        superPeer = mock(Identity.class);
         eventConsumer = mock(Consumer.class);
 
         when(lock.writeLock()).thenReturn(writeLock);
         when(lock.readLock()).thenReturn(readLock);
 
-        when(peerConnection.getAddress()).thenReturn(address);
-        when(peerConnection2.getAddress()).thenReturn(address);
-        when(superPeerClientConnection.getAddress()).thenReturn(superPeer);
+        when(peerConnection.getIdentity()).thenReturn(identity);
+        when(peerConnection2.getIdentity()).thenReturn(identity);
+        when(superPeerClientConnection.getIdentity()).thenReturn(superPeer);
         when(closeProcedures.remove(eq(peerConnection))).thenReturn(runnable1);
         when(closeProcedures.remove(eq(peerConnection2))).thenReturn(runnable2);
         when(closeProcedures.remove(eq(superPeerClientConnection))).thenReturn(superPeerRunnable);
@@ -91,7 +89,7 @@ class ConnectionsManagerTest {
         ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures, eventConsumer, superPeer);
         connectionsManager.addConnection(peerConnection, runnable1);
 
-        Assertions.assertEquals(peerConnection, connectionsManager.getConnection(address));
+        Assertions.assertEquals(peerConnection, connectionsManager.getConnection(identity));
         verify(readLock).lock();
         verify(readLock).unlock();
     }
@@ -101,7 +99,7 @@ class ConnectionsManagerTest {
         ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures, eventConsumer, superPeer);
         connectionsManager.addConnection(superPeerClientConnection, superPeerRunnable);
 
-        Assertions.assertEquals(superPeerClientConnection, connectionsManager.getConnection(address));
+        Assertions.assertEquals(superPeerClientConnection, connectionsManager.getConnection(identity));
         verify(readLock).lock();
         verify(readLock).unlock();
     }
@@ -110,7 +108,7 @@ class ConnectionsManagerTest {
     void getConnectionShouldReturnNullIfNoConnectionIsAvailable() {
         ConnectionsManager connectionsManager = new ConnectionsManager(lock, HashMultimap.create(), Map.of(), eventConsumer, null);
 
-        assertNull(connectionsManager.getConnection(address));
+        assertNull(connectionsManager.getConnection(identity));
         verify(readLock).lock();
         verify(readLock).unlock();
     }
@@ -122,8 +120,8 @@ class ConnectionsManagerTest {
         connectionsManager.addConnection(peerConnection2, runnable2);
 
         verify(runnable1).accept(CloseReason.REASON_NEW_SESSION);
-        assertTrue(connections.containsEntry(address, peerConnection2));
-        verify(eventConsumer).accept(new Event(EVENT_PEER_DIRECT, new Peer(peerConnection.getAddress())));
+        assertTrue(connections.containsEntry(identity, peerConnection2));
+        verify(eventConsumer).accept(new Event(EVENT_PEER_DIRECT, new Peer(peerConnection.getIdentity())));
         verify(writeLock, times(2)).lock();
         verify(writeLock, times(2)).unlock();
     }
@@ -134,9 +132,9 @@ class ConnectionsManagerTest {
         connectionsManager.addConnection(peerConnection, runnable1);
         connectionsManager.closeConnection(peerConnection, reason);
 
-        assertFalse(connections.containsEntry(address, peerConnection));
+        assertFalse(connections.containsEntry(identity, peerConnection));
         verify(runnable1).accept(reason);
-        verify(eventConsumer).accept(new Event(EVENT_PEER_RELAY, new Peer(peerConnection.getAddress())));
+        verify(eventConsumer).accept(new Event(EVENT_PEER_RELAY, new Peer(peerConnection.getIdentity())));
         verify(writeLock, times(2)).lock();
         verify(writeLock, times(2)).unlock();
     }
@@ -145,11 +143,11 @@ class ConnectionsManagerTest {
     void closeConnectionOfTypeForIdentityShouldCloseAndRemoveAllConnectionsOfGivenTypeForGivenIdentity() {
         ConnectionsManager connectionsManager = new ConnectionsManager(lock, connections, closeProcedures, eventConsumer, null);
         connectionsManager.addConnection(peerConnection, runnable1);
-        connectionsManager.closeConnectionOfTypeForIdentity(address, peerConnection.getClass(), reason);
+        connectionsManager.closeConnectionOfTypeForIdentity(identity, peerConnection.getClass(), reason);
 
-        assertFalse(connections.containsEntry(address, peerConnection));
+        assertFalse(connections.containsEntry(identity, peerConnection));
         verify(runnable1).accept(reason);
-        verify(eventConsumer).accept(new Event(EVENT_PEER_RELAY, new Peer(peerConnection.getAddress())));
+        verify(eventConsumer).accept(new Event(EVENT_PEER_RELAY, new Peer(peerConnection.getIdentity())));
         verify(writeLock, times(2)).lock();
         verify(writeLock, times(2)).unlock();
     }
@@ -160,9 +158,9 @@ class ConnectionsManagerTest {
         connectionsManager.addConnection(peerConnection, runnable1);
         connectionsManager.closeConnectionsOfType(peerConnection.getClass(), reason);
 
-        assertFalse(connections.containsEntry(address, peerConnection));
+        assertFalse(connections.containsEntry(identity, peerConnection));
         verify(runnable1).accept(reason);
-        verify(eventConsumer).accept(new Event(EVENT_PEER_RELAY, new Peer(peerConnection.getAddress())));
+        verify(eventConsumer).accept(new Event(EVENT_PEER_RELAY, new Peer(peerConnection.getIdentity())));
         verify(writeLock, times(2)).lock();
         verify(writeLock, times(2)).unlock();
     }

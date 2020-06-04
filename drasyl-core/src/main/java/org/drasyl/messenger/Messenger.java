@@ -18,6 +18,8 @@
  */
 package org.drasyl.messenger;
 
+import org.drasyl.identity.Address;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.ConnectionsManager;
 import org.drasyl.peer.connection.PeerConnection;
 import org.drasyl.peer.connection.message.ApplicationMessage;
@@ -38,7 +40,10 @@ public class Messenger {
     }
 
     public void send(ApplicationMessage message) throws MessengerException {
-        Optional<PeerConnection> connection = ofNullable(this.connectionsManager.getConnection(message.getRecipient()));
+        Address recipientAddress = message.getRecipient();
+        Identity recipientIdentity = Identity.of(recipientAddress);
+
+        Optional<PeerConnection> connection = ofNullable(this.connectionsManager.getConnection(recipientIdentity));
 
         if (connection.isPresent()) {
             connection.get().send(message);

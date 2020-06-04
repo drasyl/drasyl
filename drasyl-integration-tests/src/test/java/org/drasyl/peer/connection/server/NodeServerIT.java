@@ -26,10 +26,7 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.identity.Address;
-import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.identity.IdentityManager;
-import org.drasyl.identity.IdentityManagerException;
+import org.drasyl.identity.*;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.ConnectionsManager;
@@ -224,11 +221,11 @@ class NodeServerIT {
 
         // send messages
         CompressedPublicKey publicKey = CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3");
-        Address address = Address.of(publicKey);
+        Identity identity = Identity.of(publicKey);
         RequestMessage request1 = new JoinMessage(publicKey, Set.of());
         ResponseMessage<?> response1 = session1.sendRequest(request1).get();
         session1.send(new StatusMessage(STATUS_OK, response1.getId()));
-        await().until(() -> server.getConnectionsManager().getConnection(address) != null);
+        await().until(() -> server.getConnectionsManager().getConnection(identity) != null);
 
         RequestMessage request2 = new JoinMessage(publicKey, Set.of());
         ResponseMessage<?> response2 = session2.sendRequest(request2).join();

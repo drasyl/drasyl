@@ -177,7 +177,7 @@ public class TestNodeServerConnection extends AbstractNettyConnection {
         TestNodeServerConnection session = clientSession(server, true);
         ResponseMessage<?> responseMessage = session.sendRequest(new JoinMessage(session.getPublicKey(), Set.of())).get();
         session.send(new StatusMessage(STATUS_OK, responseMessage.getId()));
-        await().until(() -> server.getConnectionsManager().getConnection(session.getAddress()) != null);
+        await().until(() -> server.getConnectionsManager().getConnection(session.getIdentity()) != null);
 
         return session;
     }
