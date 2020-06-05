@@ -35,8 +35,14 @@ import java.util.function.Consumer;
 
 import static org.drasyl.event.EventType.EVENT_PEER_DIRECT;
 import static org.drasyl.event.EventType.EVENT_PEER_RELAY;
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class ConnectionsManagerTest {
     private ReadWriteLock lock;

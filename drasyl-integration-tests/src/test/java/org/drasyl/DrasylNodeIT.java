@@ -27,14 +27,20 @@ import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.event.Event;
 import org.drasyl.event.EventType;
 import org.drasyl.util.Pair;
-import org.junit.jupiter.api.*;
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.Timeout;
 
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.event.EventType.*;
+import static org.drasyl.event.EventType.EVENT_MESSAGE;
+import static org.drasyl.event.EventType.EVENT_NODE_ONLINE;
+import static org.drasyl.event.EventType.EVENT_NODE_UP;
 import static testutils.AnsiColor.COLOR_CYAN;
 import static testutils.AnsiColor.STYLE_REVERSED;
 import static testutils.TestHelper.colorizedPrintln;

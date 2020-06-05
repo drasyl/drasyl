@@ -28,7 +28,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.util.function.Supplier;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class CliTest {
     private HelpFormatter formatter;

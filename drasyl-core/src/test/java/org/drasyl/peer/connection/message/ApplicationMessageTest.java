@@ -25,8 +25,8 @@ import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.Signature;
 import org.drasyl.identity.Address;
-import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.AddressTestHelper;
+import org.drasyl.identity.CompressedPublicKey;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

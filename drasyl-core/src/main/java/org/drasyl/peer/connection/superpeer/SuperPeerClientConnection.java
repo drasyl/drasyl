@@ -19,7 +19,6 @@
 package org.drasyl.peer.connection.superpeer;
 
 import io.netty.channel.Channel;
-import org.drasyl.identity.Address;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.AbstractNettyConnection;
 import org.drasyl.peer.connection.ConnectionsManager;

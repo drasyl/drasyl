@@ -24,9 +24,13 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelId;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.event.Event;
-import org.drasyl.identity.Address;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.message.*;
+import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
+import org.drasyl.peer.connection.message.QuitMessage;
+import org.drasyl.peer.connection.message.RequestMessage;
+import org.drasyl.peer.connection.message.ResponseMessage;
+import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.server.NodeServerConnection;
 import org.drasyl.peer.connection.superpeer.SuperPeerClientConnection;
 import org.junit.jupiter.api.AfterEach;
@@ -40,8 +44,17 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.validateMockitoUsage;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class AbstractNettyConnectionTest {
     private Channel channel;

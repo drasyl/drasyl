@@ -35,7 +35,11 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.AbstractNettyConnection;
 import org.drasyl.peer.connection.ConnectionsManager;
-import org.drasyl.peer.connection.message.*;
+import org.drasyl.peer.connection.message.JoinMessage;
+import org.drasyl.peer.connection.message.Message;
+import org.drasyl.peer.connection.message.RequestMessage;
+import org.drasyl.peer.connection.message.ResponseMessage;
+import org.drasyl.peer.connection.message.StatusMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

@@ -19,9 +19,9 @@
 package org.drasyl.peer.connection.superpeer;
 
 import io.netty.channel.ChannelPipeline;
-import org.drasyl.peer.connection.server.handler.NodeServerNewConnectionsGuard;
 import org.drasyl.peer.connection.server.NodeServer;
 import org.drasyl.peer.connection.server.NodeServerChannelInitializer;
+import org.drasyl.peer.connection.server.handler.NodeServerNewConnectionsGuard;
 
 public class DummyServerChannelInitializer extends NodeServerChannelInitializer {
     public DummyServerChannelInitializer(NodeServer server) {

@@ -52,7 +52,10 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.concurrent.CompletableFuture.runAsync;
-import static org.drasyl.event.EventType.*;
+import static org.drasyl.event.EventType.EVENT_NODE_DOWN;
+import static org.drasyl.event.EventType.EVENT_NODE_NORMAL_TERMINATION;
+import static org.drasyl.event.EventType.EVENT_NODE_UNRECOVERABLE_ERROR;
+import static org.drasyl.event.EventType.EVENT_NODE_UP;
 import static org.drasyl.peer.connection.PeerConnection.CloseReason.REASON_SHUTTING_DOWN;
 
 /**
@@ -269,17 +272,6 @@ public abstract class DrasylNode {
         return shutdownSequence;
     }
 
-    private void loadIdentity() {
-        try {
-            identityManager.loadOrCreateIdentity();
-            LOG.debug("Using Identity '{}'", identityManager.getIdentity());
-            Sentry.getContext().setUser(new User(identityManager.getAddress().toString(), null, null, null));
-        }
-        catch (IdentityManagerException e) {
-            throw new CompletionException(e);
-        }
-    }
-
     /**
      * Should unregister from the Super Peer and stop the client. Should do nothing if the client is
      * not registered or not started.
@@ -376,6 +368,17 @@ public abstract class DrasylNode {
         }
         catch (IOException e) {
             return null;
+        }
+    }
+
+    private void loadIdentity() {
+        try {
+            identityManager.loadOrCreateIdentity();
+            LOG.debug("Using Identity '{}'", identityManager.getIdentity());
+            Sentry.getContext().setUser(new User(identityManager.getAddress().toString(), null, null, null));
+        }
+        catch (IdentityManagerException e) {
+            throw new CompletionException(e);
         }
     }
 

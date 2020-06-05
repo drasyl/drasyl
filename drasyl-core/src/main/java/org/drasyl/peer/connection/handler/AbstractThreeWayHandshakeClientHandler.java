@@ -19,11 +19,14 @@
 package org.drasyl.peer.connection.handler;
 
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.peer.connection.AbstractNettyConnection;
 import org.drasyl.peer.connection.ConnectionsManager;
-import org.drasyl.peer.connection.message.*;
+import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
+import org.drasyl.peer.connection.message.Message;
+import org.drasyl.peer.connection.message.RequestMessage;
+import org.drasyl.peer.connection.message.ResponseMessage;
+import org.drasyl.peer.connection.message.StatusMessage;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
