@@ -109,7 +109,8 @@ class NodeServerIT {
         config = new DrasylNodeConfig(ConfigFactory.load("configs/NodeServerIT.conf"));
         identityManager = new IdentityManager(config);
         identityManager.loadOrCreateIdentity();
-        peersManager = new PeersManager();
+        peersManager = new PeersManager(event -> {
+        });
         connectionsManager = new ConnectionsManager(event -> {
         });
         messenger = new Messenger(connectionsManager);

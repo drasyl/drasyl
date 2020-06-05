@@ -127,7 +127,6 @@ class ConnectionsManagerTest {
 
         verify(runnable1).accept(CloseReason.REASON_NEW_SESSION);
         assertTrue(connections.containsEntry(identity, peerConnection2));
-        verify(eventConsumer).accept(new Event(EVENT_PEER_DIRECT, new Peer(peerConnection.getIdentity())));
         verify(writeLock, times(2)).lock();
         verify(writeLock, times(2)).unlock();
     }

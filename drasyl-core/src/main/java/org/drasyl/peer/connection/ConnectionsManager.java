@@ -132,11 +132,6 @@ public class ConnectionsManager {
 
             connections.put(identity, connection);
             closeProcedures.put(connection, closeProcedure);
-
-            // send event
-            if (firstConnection) {
-                eventConsumer.accept(new Event(EVENT_PEER_DIRECT, new Peer(identity)));
-            }
         }
         finally {
             lock.writeLock().unlock();

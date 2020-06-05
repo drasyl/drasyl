@@ -126,7 +126,7 @@ public abstract class DrasylNode {
         try {
             this.config = new DrasylNodeConfig(config);
             this.identityManager = new IdentityManager(this.config);
-            this.peersManager = new PeersManager();
+            this.peersManager = new PeersManager(this::onEvent);
             this.connectionsManager = new ConnectionsManager(this::onEvent);
             this.messenger = new Messenger(this.connectionsManager);
             this.server = new NodeServer(identityManager, messenger, peersManager, connectionsManager, config, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP);

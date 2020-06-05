@@ -20,6 +20,8 @@ package org.drasyl.peer;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
+import org.drasyl.event.Event;
+import org.drasyl.event.Peer;
 import org.drasyl.identity.Identity;
 import org.drasyl.util.Pair;
 
@@ -31,8 +33,11 @@ import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
+import java.util.function.Consumer;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.event.EventType.EVENT_PEER_DIRECT;
+import static org.drasyl.event.EventType.EVENT_PEER_RELAY;
 
 /**
  * This class contains information about other peers. This includes the identities, public keys,
@@ -49,18 +54,23 @@ public class PeersManager {
     private final ReadWriteLock lock;
     private final Map<Identity, PeerInformation> peers;
     private final Set<Identity> children;
+    private final Consumer<Event> eventConsumer;
     private Identity superPeer;
 
-    public PeersManager() {
-        this(new ReentrantReadWriteLock(true), new HashMap<>(), new HashSet<>(), null);
+    public PeersManager(Consumer<Event> eventConsumer) {
+        this(new ReentrantReadWriteLock(true), new HashMap<>(), new HashSet<>(), null, eventConsumer);
     }
 
-    public PeersManager(ReadWriteLock lock, Map<Identity, PeerInformation> peers,
-                        Set<Identity> children, Identity superPeer) {
+    PeersManager(ReadWriteLock lock,
+                 Map<Identity, PeerInformation> peers,
+                 Set<Identity> children,
+                 Identity superPeer,
+                 Consumer<Event> eventConsumer) {
         this.lock = lock;
         this.peers = peers;
         this.children = children;
         this.superPeer = superPeer;
+        this.eventConsumer = eventConsumer;
     }
 
     public Map<Identity, PeerInformation> getPeers() {
@@ -74,90 +84,59 @@ public class PeersManager {
         }
     }
 
-    public boolean isPeer(Identity identity) {
-        requireNonNull(identity);
-
-        try {
-            lock.readLock().lock();
-
-            return peers.containsKey(identity);
-        }
-        finally {
-            lock.readLock().unlock();
-        }
-    }
-
-    public void addPeer(Identity identity,
-                        PeerInformation peerInformation) {
+    public void addPeerInformation(Identity identity,
+                                   PeerInformation peerInformation) {
         requireNonNull(identity);
         requireNonNull(peerInformation);
 
         try {
             lock.writeLock().lock();
 
-            peers.put(identity, peerInformation);
+            PeerInformation existingInformation = peers.computeIfAbsent(identity, i -> PeerInformation.of());
+            addInformationAndConditionalEventTrigger(identity, existingInformation, peerInformation);
         }
         finally {
             lock.writeLock().unlock();
         }
     }
 
-    public void addPeers(Map<? extends Identity, ? extends PeerInformation> peers) {
-        requireNonNull(peers);
+    private void addInformationAndConditionalEventTrigger(Identity identity,
+                                                          PeerInformation existingInformation,
+                                                          PeerInformation peerInformation) {
+        int existingPathCount = existingInformation.getPaths().size();
+        existingInformation.add(peerInformation);
+        int newPathCount = existingInformation.getPaths().size();
 
-        try {
-            lock.writeLock().lock();
-
-            this.peers.putAll(peers);
-        }
-        finally {
-            lock.writeLock().unlock();
+        if (existingPathCount == 0 && newPathCount > 0) {
+            eventConsumer.accept(new Event(EVENT_PEER_DIRECT, new Peer(identity)));
         }
     }
 
-    public PeerInformation removePeer(Identity identity) {
+    public void removePeerInformation(Identity identity,
+                                      PeerInformation peerInformation) {
         requireNonNull(identity);
+        requireNonNull(peerInformation);
 
         try {
             lock.writeLock().lock();
 
-            if (superPeer == identity) {
-                throw new IllegalArgumentException("Peer cannot be removed. It is defined as Super Peer");
-            }
-            if (children.contains(identity)) {
-                throw new IllegalArgumentException("Peer cannot be removed. It is defined as Children");
-            }
-
-            return peers.remove(identity);
+            PeerInformation existingInformation = peers.computeIfAbsent(identity, i -> PeerInformation.of());
+            removeInformationAndConditionalEventTrigger(identity, existingInformation, peerInformation);
         }
         finally {
             lock.writeLock().unlock();
         }
     }
 
-    public void removePeers(Identity... identities) {
-        requireNonNull(identities);
+    private void removeInformationAndConditionalEventTrigger(Identity identity,
+                                                             PeerInformation existingInformation,
+                                                             PeerInformation peerInformation) {
+        int existingPathCount = existingInformation.getPaths().size();
+        existingInformation.remove(peerInformation);
+        int newPathCount = existingInformation.getPaths().size();
 
-        try {
-            lock.writeLock().lock();
-
-            // validate
-            for (Identity identity : identities) {
-                if (superPeer == identity) {
-                    throw new IllegalArgumentException("Peer cannot be removed. It is defined as Super Peer");
-                }
-                if (children.contains(identity)) {
-                    throw new IllegalArgumentException("Peer cannot be removed. It is defined as Children");
-                }
-            }
-
-            // remove
-            for (Identity identity : identities) {
-                peers.remove(identity);
-            }
-        }
-        finally {
-            lock.writeLock().unlock();
+        if (existingPathCount > 0 && newPathCount == 0) {
+            eventConsumer.accept(new Event(EVENT_PEER_RELAY, new Peer(identity)));
         }
     }
 
@@ -185,46 +164,39 @@ public class PeersManager {
         }
     }
 
-    public boolean addChildren(Identity... identities) {
+    public void addChildren(Identity... identities) {
         requireNonNull(identities);
 
         try {
             lock.writeLock().lock();
 
-            // validate
-            for (Identity identity : identities) {
-                if (!peers.containsKey(identity)) {
-                    throw new IllegalArgumentException("Peer cannot be set as a child. There are no Peer Information available");
-                }
-            }
-
-            // add
-            return children.addAll(List.of(identities));
+            children.addAll(List.of(identities));
         }
         finally {
             lock.writeLock().unlock();
         }
     }
 
-    public boolean removeChildren(Identity... identities) {
+    public void removeChildren(Identity... identities) {
         requireNonNull(identities);
 
         try {
             lock.writeLock().lock();
 
-            return children.removeAll(List.of(identities));
+            children.removeAll(List.of(identities));
         }
         finally {
             lock.writeLock().unlock();
         }
     }
 
-    public PeerInformation getPeer(Identity identity) {
+    public PeerInformation getPeerInformation(Identity identity) {
         requireNonNull(identity);
 
         try {
             lock.readLock().lock();
 
+            peers.computeIfAbsent(identity, i -> PeerInformation.of());
             return peers.get(identity);
         }
         finally {
@@ -246,7 +218,8 @@ public class PeersManager {
                 return null;
             }
             else {
-                return Pair.of(superPeer, peers.get(superPeer));
+                PeerInformation peerInformation = peers.computeIfAbsent(superPeer, i -> PeerInformation.of());
+                return Pair.of(superPeer, peerInformation);
             }
         }
         finally {
@@ -259,10 +232,6 @@ public class PeersManager {
 
         try {
             lock.writeLock().lock();
-
-            if (!peers.containsKey(identity)) {
-                throw new IllegalArgumentException("Peer cannot be set as a Super Peer. There are no Peer Information available");
-            }
 
             this.superPeer = identity;
         }
@@ -296,17 +265,19 @@ public class PeersManager {
     }
 
     /**
-     * Shortcut for call {@link #addPeer(Identity, PeerInformation)} and {@link
+     * Shortcut for call {@link #addPeerInformation(Identity, PeerInformation)} and {@link
      * #setSuperPeer(Identity)}.
      */
-    public void addPeerAndSetSuperPeer(Identity identity, PeerInformation peerInformation) {
+    public void addPeerInformationAndSetSuperPeer(Identity identity,
+                                                  PeerInformation peerInformation) {
         requireNonNull(identity);
         requireNonNull(peerInformation);
 
         try {
             lock.writeLock().lock();
 
-            peers.put(identity, peerInformation);
+            PeerInformation existingInformation = peers.computeIfAbsent(identity, i -> PeerInformation.of());
+            addInformationAndConditionalEventTrigger(identity, existingInformation, peerInformation);
             superPeer = identity;
         }
         finally {
@@ -315,17 +286,19 @@ public class PeersManager {
     }
 
     /**
-     * Shortcut for call {@link #addPeer(Identity, PeerInformation)} and {@link
+     * Shortcut for call {@link #addPeerInformation(Identity, PeerInformation)} and {@link
      * #addChildren(Identity...)}.
      */
-    public void addPeerAndAddChildren(Identity identity, PeerInformation peerInformation) {
+    public void addPeerInformationAndAddChildren(Identity identity,
+                                                 PeerInformation peerInformation) {
         requireNonNull(identity);
         requireNonNull(peerInformation);
 
         try {
             lock.writeLock().lock();
 
-            peers.put(identity, peerInformation);
+            PeerInformation existingInformation = peers.computeIfAbsent(identity, i -> PeerInformation.of());
+            addInformationAndConditionalEventTrigger(identity, existingInformation, peerInformation);
             children.add(identity);
         }
         finally {
@@ -334,22 +307,20 @@ public class PeersManager {
     }
 
     /**
-     * Shortcut for call {@link #unsetSuperPeer()} and {@link #removePeer(Identity)}.
+     * Shortcut for call {@link #unsetSuperPeer()} and {@link #removePeerInformation(Identity,
+     * PeerInformation)}.
      *
      * @return
      */
-    public PeerInformation unsetSuperPeerAndRemovePeer(Identity identity) {
-        requireNonNull(identity);
+    public void unsetSuperPeerAndRemovePeerInformation(PeerInformation peerInformation) {
+        requireNonNull(peerInformation);
 
         try {
             lock.writeLock().lock();
 
-            if (children.contains(identity)) {
-                throw new IllegalArgumentException("Peer cannot be removed. It is defined as Children");
-            }
-
+            PeerInformation existingInformation = peers.computeIfAbsent(superPeer, i -> PeerInformation.of());
+            removeInformationAndConditionalEventTrigger(superPeer, existingInformation, peerInformation);
             superPeer = null;
-            return peers.remove(identity);
         }
         finally {
             lock.writeLock().unlock();
@@ -357,21 +328,22 @@ public class PeersManager {
     }
 
     /**
-     * Shortcut for call {@link #removeChildren(Identity...)} and {@link #removePeer(Identity)}.
+     * Shortcut for call {@link #removeChildren(Identity...)} and {@link
+     * #removePeerInformation(Identity, PeerInformation)}.
      *
      * @return
      */
-    public Pair<Boolean, PeerInformation> removeChildrenAndRemovePeer(Identity identity) {
+    public void removeChildrenAndRemovePeerInformation(Identity identity,
+                                                       PeerInformation peerInformation) {
         requireNonNull(identity);
+        requireNonNull(peerInformation);
 
         try {
             lock.writeLock().lock();
 
-            if (superPeer == identity) {
-                throw new IllegalArgumentException("Peer cannot be removed. It is defined as Super Peer");
-            }
-
-            return Pair.of(children.remove(identity), peers.remove(identity));
+            PeerInformation existingInformation = peers.computeIfAbsent(superPeer, i -> PeerInformation.of());
+            removeInformationAndConditionalEventTrigger(identity, existingInformation, peerInformation);
+            children.remove(identity);
         }
         finally {
             lock.writeLock().unlock();

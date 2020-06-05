@@ -21,6 +21,7 @@ package org.drasyl.peer;
 import com.google.common.collect.ImmutableSet;
 
 import java.net.URI;
+import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -33,18 +34,20 @@ import java.util.Set;
  */
 public class PeerInformation {
     private final Set<URI> endpoints;
+    private final Set<Path> paths;
 
-    PeerInformation(Set<URI> endpoints) {
+    PeerInformation(Set<URI> endpoints, Set<Path> paths) {
         this.endpoints = endpoints;
-    }
-
-    public Set<URI> getEndpoints() {
-        return ImmutableSet.copyOf(endpoints);
+        this.paths = paths;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(endpoints);
+        return Objects.hash(endpoints, paths);
+    }
+
+    public Set<URI> getEndpoints() {
+        return ImmutableSet.copyOf(endpoints);
     }
 
     @Override
@@ -56,17 +59,45 @@ public class PeerInformation {
             return false;
         }
         PeerInformation that = (PeerInformation) o;
-        return Objects.equals(endpoints, that.endpoints);
+        return Objects.equals(endpoints, that.endpoints) &&
+                Objects.equals(paths, that.paths);
     }
 
     @Override
     public String toString() {
         return "PeerInformation{" +
                 "endpoints=" + endpoints +
+                ", paths=" + paths +
                 '}';
     }
 
+    public void add(PeerInformation other) {
+        endpoints.addAll(other.getEndpoints());
+        paths.addAll(other.getPaths());
+    }
+
+    public Set<Path> getPaths() {
+        return paths;
+    }
+
+    public void remove(PeerInformation other) {
+        endpoints.removeAll(other.getEndpoints());
+        paths.removeAll(other.getPaths());
+    }
+
     public static PeerInformation of(Set<URI> endpoints) {
-        return new PeerInformation(endpoints);
+        return of(endpoints, Set.of());
+    }
+
+    public static PeerInformation of(Set<URI> endpoints, Set<Path> paths) {
+        return new PeerInformation(endpoints, paths);
+    }
+
+    public static PeerInformation of(Set<URI> endpoints, Path path) {
+        return of(endpoints, new HashSet<>(Set.of(path)));
+    }
+
+    public static PeerInformation of() {
+        return of(new HashSet<>(), new HashSet<>());
     }
 }

@@ -88,7 +88,8 @@ class SuperPeerClientIT {
         serverConfig = new DrasylNodeConfig(ConfigFactory.load("configs/SuperPeerClientIT-NodeServer.conf"));
         identityManagerServer = new IdentityManager(serverConfig);
         identityManagerServer.loadOrCreateIdentity();
-        peersManager = new PeersManager();
+        peersManager = new PeersManager(event -> {
+        });
         connectionsManager = new ConnectionsManager(event -> {
         });
         messenger = new Messenger(connectionsManager);
