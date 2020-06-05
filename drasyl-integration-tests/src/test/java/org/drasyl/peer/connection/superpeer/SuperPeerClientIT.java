@@ -147,7 +147,7 @@ class SuperPeerClientIT {
 
         // verify emitted events
         emittedEvents.awaitCount(2);
-        emittedEvents.assertValueAt(1, new Event(EVENT_NODE_OFFLINE, Node.of(identityManager.getAddress())));
+        emittedEvents.assertValueAt(1, new Event(EVENT_NODE_OFFLINE, Node.of(identityManager.getIdentity())));
     }
 
     @Test
@@ -211,7 +211,7 @@ class SuperPeerClientIT {
 
         // verify emitted events
         emittedEvents.awaitCount(1);
-        emittedEvents.assertValue(new Event(EVENT_NODE_OFFLINE, Node.of(identityManager.getAddress())));
+        emittedEvents.assertValue(new Event(EVENT_NODE_OFFLINE, Node.of(identityManager.getIdentity())));
     }
 
     @Test
@@ -225,7 +225,7 @@ class SuperPeerClientIT {
 
         // verify emitted events
         emittedEvents.awaitCount(1);
-        emittedEvents.assertValue(new Event(EVENT_NODE_ONLINE, new Node(identityManager.getAddress())));
+        emittedEvents.assertValue(new Event(EVENT_NODE_ONLINE, new Node(identityManager.getIdentity())));
     }
 
     @Test
@@ -245,9 +245,9 @@ class SuperPeerClientIT {
         // verify emitted events
         emittedEvents.awaitCount(3);
         emittedEvents.assertValues(
-                new Event(EVENT_NODE_ONLINE, new Node(identityManager.getAddress())),
-                new Event(EVENT_NODE_OFFLINE, new Node(identityManager.getAddress())),
-                new Event(EVENT_NODE_ONLINE, new Node(identityManager.getAddress()))
+                new Event(EVENT_NODE_ONLINE, new Node(identityManager.getIdentity())),
+                new Event(EVENT_NODE_OFFLINE, new Node(identityManager.getIdentity())),
+                new Event(EVENT_NODE_ONLINE, new Node(identityManager.getIdentity()))
         );
     }
 }

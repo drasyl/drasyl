@@ -85,8 +85,8 @@ public class ChatGUI extends Application {
                             if (!online.isDone()) {
                                 online.complete(null);
                             }
-                            myID = event.getNode().getAddress();
-                            txtArea.appendText("[~System~]: The node is online. Your address is: " + event.getNode().getAddress() + "\n");
+                            myID = event.getNode().getIdentity().getAddress();
+                            txtArea.appendText("[~System~]: The node is online. Your address is: " + myID + "\n");
                             break;
                         case EVENT_NODE_OFFLINE:
                             txtArea.appendText("[~System~]: The node is offline. No messages can be sent at the moment. Wait until node comes back online.\n");

@@ -58,7 +58,7 @@ public class Chat {
                         break;
                     case EVENT_NODE_ONLINE:
                         online.complete(null);
-                        System.out.println("Online! Your Address is: " + event.getNode().getAddress().toString());
+                        System.out.println("Online! Your Address is: " + event.getNode().getIdentity().getAddress());
                         break;
                     case EVENT_NODE_OFFLINE:
                         System.out.println("Offline! No messages can be sent at the moment. Wait until node comes back online.");

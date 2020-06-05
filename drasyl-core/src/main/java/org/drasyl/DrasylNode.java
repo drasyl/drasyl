@@ -237,7 +237,7 @@ public abstract class DrasylNode {
             // The shutdown of the node includes up to two phases, which are performed sequentially
             // 1st Phase: Stop Super Peer Client (if started)
             // 2nd Phase: Stop local server (if started)
-            onEvent(new Event(EVENT_NODE_DOWN, new Node(identityManager.getAddress())));
+            onEvent(new Event(EVENT_NODE_DOWN, new Node(identityManager.getIdentity())));
             LOG.info("Shutdown drasyl Node with Identity '{}'...", identityManager.getIdentity());
             shutdownSequence = runAsync(this::stopSuperPeerClient)
                     .thenRun(this::stopServer)
@@ -245,7 +245,7 @@ public abstract class DrasylNode {
                     .whenComplete((r, e) -> {
                         try {
                             if (e == null) {
-                                onEvent(new Event(EVENT_NODE_NORMAL_TERMINATION, new Node(identityManager.getAddress())));
+                                onEvent(new Event(EVENT_NODE_NORMAL_TERMINATION, new Node(identityManager.getIdentity())));
                                 LOG.info("drasyl Node with Identity '{}' has shut down", identityManager.getIdentity());
                             }
                             else {
@@ -337,11 +337,11 @@ public abstract class DrasylNode {
                     .thenRun(this::startSuperPeerClient)
                     .whenComplete((r, e) -> {
                         if (e == null) {
-                            onEvent(new Event(EVENT_NODE_UP, new Node(identityManager.getAddress())));
+                            onEvent(new Event(EVENT_NODE_UP, new Node(identityManager.getIdentity())));
                             LOG.info("drasyl Node with Identity '{}' has started", identityManager.getIdentity());
                         }
                         else {
-                            onEvent(new Event(EVENT_NODE_UNRECOVERABLE_ERROR, new Node(identityManager.getAddress())));
+                            onEvent(new Event(EVENT_NODE_UNRECOVERABLE_ERROR, new Node(identityManager.getIdentity())));
                             LOG.info("Could not start drasyl Node: {}", e.getMessage());
                             LOG.info("Stop all running components...");
                             this.stopServer();
