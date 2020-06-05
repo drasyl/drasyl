@@ -20,7 +20,6 @@ package org.drasyl.peer.connection.superpeer.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.DrasylException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
@@ -29,10 +28,8 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.AbstractNettyConnection;
 import org.drasyl.peer.connection.ConnectionsManager;
 import org.drasyl.peer.connection.handler.AbstractThreeWayHandshakeClientHandler;
-import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
-import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
 import org.drasyl.peer.connection.superpeer.SuperPeerClientConnection;
@@ -45,8 +42,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_WRONG_PUBLIC_KEY;
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_NOT_FOUND;
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 
 /**
  * This handler performs the handshake with the server and processes incoming messages during the
@@ -63,7 +58,6 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
     private final CompressedPublicKey ownPublicKey;
     private final PeersManager peersManager;
     private final ConnectionsManager connectionsManager;
-    private final Messenger messenger;
 
     public SuperPeerClientConnectionHandler(CompressedPublicKey expectedPublicKey,
                                             CompressedPublicKey ownPublicKey,
@@ -72,12 +66,11 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
                                             PeersManager peersManager,
                                             ConnectionsManager connectionsManager,
                                             Messenger messenger) {
-        super(connectionsManager, timeout, new JoinMessage(ownPublicKey, endpoints));
+        super(connectionsManager, timeout, messenger, new JoinMessage(ownPublicKey, endpoints));
         this.expectedPublicKey = expectedPublicKey;
         this.ownPublicKey = ownPublicKey;
         this.peersManager = peersManager;
         this.connectionsManager = connectionsManager;
-        this.messenger = messenger;
     }
 
     SuperPeerClientConnectionHandler(CompressedPublicKey expectedPublicKey,
@@ -90,35 +83,16 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
                                      AbstractNettyConnection connection,
                                      ScheduledFuture<?> timeoutFuture,
                                      JoinMessage requestMessage) {
-        super(connectionsManager, timeout, handshakeFuture, connection, timeoutFuture, requestMessage);
+        super(connectionsManager, timeout, messenger, handshakeFuture, connection, timeoutFuture, requestMessage);
         this.expectedPublicKey = expectedPublicKey;
         this.ownPublicKey = ownPublicKey;
         this.peersManager = peersManager;
         this.connectionsManager = connectionsManager;
-        this.messenger = messenger;
     }
 
     @Override
     protected Logger getLogger() {
         return LOG;
-    }
-
-    @Override
-    protected void processMessageAfterHandshake(AbstractNettyConnection connection,
-                                                Message message) {
-        if (message instanceof ApplicationMessage) {
-            ApplicationMessage applicationMessage = (ApplicationMessage) message;
-            try {
-                messenger.send(applicationMessage);
-                connection.send(new StatusMessage(STATUS_OK, applicationMessage.getId()));
-            }
-            catch (DrasylException e) {
-                connection.send(new StatusMessage(STATUS_NOT_FOUND, applicationMessage.getId()));
-            }
-        }
-        else {
-            LOG.debug("Could not process the message {}", message);
-        }
     }
 
     @Override

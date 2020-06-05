@@ -20,7 +20,6 @@ package org.drasyl.peer.connection.server.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.DrasylException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
@@ -29,11 +28,8 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.AbstractNettyConnection;
 import org.drasyl.peer.connection.ConnectionsManager;
 import org.drasyl.peer.connection.handler.AbstractThreeWayHandshakeServerHandler;
-import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
-import org.drasyl.peer.connection.message.Message;
-import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
 import org.drasyl.peer.connection.server.NodeServerConnection;
 import org.slf4j.Logger;
@@ -46,8 +42,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_SAME_PUBLIC_KEY;
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_NOT_FOUND;
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 
 /**
  * Acts as a guard for in- and outbound connections. A channel is only created, when a {@link
@@ -66,7 +60,6 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
     public static final String NODE_SERVER_CONNECTION_HANDLER = "nodeServerConnectionHandler";
     private static final Logger LOG = LoggerFactory.getLogger(NodeServerConnectionHandler.class);
     private final PeersManager peersManager;
-    private final Messenger messenger;
     private final Set<URI> entryPoints;
     private final Identity identity;
 
@@ -75,9 +68,8 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
                                        ConnectionsManager connectionsManager,
                                        Messenger messenger,
                                        Set<URI> entryPoints, Duration timeout) {
-        super(connectionsManager, timeout);
+        super(connectionsManager, timeout, messenger);
         this.peersManager = peersManager;
-        this.messenger = messenger;
         this.entryPoints = entryPoints;
         this.identity = identity;
     }
@@ -92,9 +84,8 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
                                 AbstractNettyConnection connection,
                                 ScheduledFuture<?> timeoutFuture,
                                 JoinMessage requestMessage) {
-        super(connectionsManager, timeout, handshakeFuture, connection, timeoutFuture, requestMessage);
+        super(connectionsManager, timeout, messenger, handshakeFuture, connection, timeoutFuture, requestMessage);
         this.peersManager = peersManager;
-        this.messenger = messenger;
         this.entryPoints = entryPoints;
         this.identity = identity;
     }
@@ -102,24 +93,6 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
     @Override
     protected Logger getLogger() {
         return LOG;
-    }
-
-    @Override
-    protected void processMessageAfterHandshake(AbstractNettyConnection connection,
-                                                Message message) {
-        if (message instanceof ApplicationMessage) {
-            ApplicationMessage applicationMessage = (ApplicationMessage) message;
-            try {
-                messenger.send(applicationMessage);
-                connection.send(new StatusMessage(STATUS_OK, applicationMessage.getId()));
-            }
-            catch (DrasylException e) {
-                connection.send(new StatusMessage(STATUS_NOT_FOUND, applicationMessage.getId()));
-            }
-        }
-        else {
-            LOG.debug("Could not process the message {}", message);
-        }
     }
 
     @Override

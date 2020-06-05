@@ -20,6 +20,7 @@ package org.drasyl.peer.connection.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
+import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.connection.AbstractNettyConnection;
 import org.drasyl.peer.connection.ConnectionsManager;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
@@ -42,18 +43,21 @@ public abstract class AbstractThreeWayHandshakeClientHandler<R extends RequestMe
     private final R requestMessage;
 
     protected AbstractThreeWayHandshakeClientHandler(ConnectionsManager connectionsManager,
-                                                     Duration timeout, R requestMessage) {
-        super(connectionsManager, timeout);
+                                                     Duration timeout,
+                                                     Messenger messenger,
+                                                     R requestMessage) {
+        super(connectionsManager, timeout, messenger);
         this.requestMessage = requestMessage;
     }
 
     protected AbstractThreeWayHandshakeClientHandler(ConnectionsManager connectionsManager,
                                                      Duration timeout,
+                                                     Messenger messenger,
                                                      CompletableFuture<Void> handshakeFuture,
                                                      AbstractNettyConnection connection,
                                                      ScheduledFuture<?> timeoutFuture,
                                                      R requestMessage) {
-        super(connectionsManager, timeout, handshakeFuture, connection, timeoutFuture);
+        super(connectionsManager, timeout, messenger, handshakeFuture, connection, timeoutFuture);
         this.requestMessage = requestMessage;
     }
 

@@ -23,8 +23,11 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.ScheduledFuture;
+import org.drasyl.DrasylException;
+import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.connection.AbstractNettyConnection;
 import org.drasyl.peer.connection.ConnectionsManager;
+import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.QuitMessage;
@@ -38,27 +41,32 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_HANDSHAKE_TIMEOUT;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_INITIALIZATION;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
+import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_NOT_FOUND;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 
 public abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandler<Message, Message> {
     protected final ConnectionsManager connectionsManager;
     protected final Duration timeout;
     protected final CompletableFuture<Void> handshakeFuture;
+    protected final Messenger messenger;
     protected AbstractNettyConnection connection;
     protected ScheduledFuture<?> timeoutFuture;
 
     protected AbstractThreeWayHandshakeHandler(ConnectionsManager connectionsManager,
-                                               Duration timeout) {
-        this(connectionsManager, timeout, new CompletableFuture<>(), null, null);
+                                               Duration timeout,
+                                               Messenger messenger) {
+        this(connectionsManager, timeout, messenger, new CompletableFuture<>(), null, null);
     }
 
     protected AbstractThreeWayHandshakeHandler(ConnectionsManager connectionsManager,
                                                Duration timeout,
+                                               Messenger messenger,
                                                CompletableFuture<Void> handshakeFuture,
                                                AbstractNettyConnection connection,
                                                ScheduledFuture<?> timeoutFuture) {
         this.connectionsManager = connectionsManager;
         this.timeout = timeout;
+        this.messenger = messenger;
         this.handshakeFuture = handshakeFuture;
         this.connection = connection;
         this.timeoutFuture = timeoutFuture;
@@ -131,8 +139,22 @@ public abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDupl
         ctx.writeAndFlush(new StatusMessage(STATUS_OK, quitMessage.getId())).addListener(ChannelFutureListener.CLOSE);
     }
 
-    protected abstract void processMessageAfterHandshake(AbstractNettyConnection connection,
-                                                         Message msg);
+    protected void processMessageAfterHandshake(AbstractNettyConnection connection,
+                                                Message message) {
+        if (message instanceof ApplicationMessage) {
+            ApplicationMessage applicationMessage = (ApplicationMessage) message;
+            try {
+                messenger.send(applicationMessage);
+                connection.send(new StatusMessage(STATUS_OK, applicationMessage.getId()));
+            }
+            catch (DrasylException e) {
+                connection.send(new StatusMessage(STATUS_NOT_FOUND, applicationMessage.getId()));
+            }
+        }
+        else {
+            getLogger().debug("Could not process the message {}", message);
+        }
+    }
 
     @Override
     public void channelActive(ChannelHandlerContext ctx) throws Exception {
