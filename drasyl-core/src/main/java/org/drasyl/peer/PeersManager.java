@@ -94,6 +94,7 @@ public class PeersManager {
 
         try {
             lock.writeLock().lock();
+
             peers.put(identity, peerInformation);
         }
         finally {
@@ -288,6 +289,44 @@ public class PeersManager {
             lock.writeLock().lock();
 
             superPeer = null;
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Shortcut for call {@link #addPeer(Identity, PeerInformation)} and {@link
+     * #setSuperPeer(Identity)}.
+     */
+    public void addPeerAndSetSuperPeer(Identity identity, PeerInformation peerInformation) {
+        requireNonNull(identity);
+        requireNonNull(peerInformation);
+
+        try {
+            lock.writeLock().lock();
+
+            peers.put(identity, peerInformation);
+            superPeer = identity;
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Shortcut for call {@link #addPeer(Identity, PeerInformation)} and {@link
+     * #addChildren(Identity...)}.
+     */
+    public void addPeerAndAddChildren(Identity identity, PeerInformation peerInformation) {
+        requireNonNull(identity);
+        requireNonNull(peerInformation);
+
+        try {
+            lock.writeLock().lock();
+
+            peers.put(identity, peerInformation);
+            children.add(identity);
         }
         finally {
             lock.writeLock().unlock();

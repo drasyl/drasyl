@@ -294,4 +294,28 @@ class PeersManagerTest {
         verify(writeLock).lock();
         verify(writeLock).unlock();
     }
+
+    @Test
+    void addPeerAndSetSuperPeerShouldAddPeerToListOfKnownPeersAndSetGivenIdentityAsSuperPeer() {
+        PeersManager manager = new PeersManager(lock, peers, children, superPeer);
+
+        manager.addPeerAndSetSuperPeer(identity, peer);
+
+        verify(peers).put(identity, peer);
+        assertEquals(identity, manager.getSuperPeer().first());
+        verify(writeLock).lock();
+        verify(writeLock).unlock();
+    }
+
+    @Test
+    void addPeerAndAddChildrenShouldAddPeerToListOfKnownPeersAndToListOfChildren() {
+        PeersManager manager = new PeersManager(lock, peers, children, superPeer);
+
+        manager.addPeerAndAddChildren(identity, peer);
+
+        verify(peers).put(identity, peer);
+        verify(children).add(identity);
+        verify(writeLock).lock();
+        verify(writeLock).unlock();
+    }
 }
