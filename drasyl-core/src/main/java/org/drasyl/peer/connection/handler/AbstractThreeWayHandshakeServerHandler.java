@@ -40,6 +40,7 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
  * for a request message for a new session from the client. The request is then confirmed by sending
  * an offer message to the client. It then waits for the client to confirm the offer.
  */
+@SuppressWarnings({ "java:S110" })
 public abstract class AbstractThreeWayHandshakeServerHandler<R extends RequestMessage, O extends ResponseMessage<?>> extends AbstractThreeWayHandshakeHandler {
     private R requestMessage;
 

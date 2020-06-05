@@ -145,7 +145,7 @@ public class ChatGUI extends Application {
 
         Label myIDLabel = new Label("Your ID is: ");
         GridPane.setConstraints(myIDLabel, 0, 0);
-        TextField myIDTextField = new TextField(myID.getAddress());
+        TextField myIDTextField = new TextField(myID.getId());
         myIDTextField.setEditable(false);
         GridPane.setConstraints(myIDTextField, 1, 0);
 

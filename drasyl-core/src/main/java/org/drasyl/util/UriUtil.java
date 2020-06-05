@@ -22,6 +22,10 @@ import java.net.URI;
 import java.net.URISyntaxException;
 
 public class UriUtil {
+    private UriUtil() {
+        // util class
+    }
+
     /**
      * This method sets the port in <code>uri</code> to <code>port</code> and returns the resulting
      * URI.

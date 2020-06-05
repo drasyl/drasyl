@@ -182,6 +182,7 @@ public class DrasylNodeConfig {
      * @param path
      * @return
      */
+    @SuppressWarnings({ "java:S1192" })
     private CompressedPublicKey getPublicKey(Config config, String path) {
         try {
             String stringValue = config.getString(path);
@@ -200,6 +201,7 @@ public class DrasylNodeConfig {
      * @param path
      * @return
      */
+    @SuppressWarnings({ "java:S1192" })
     private CompressedPrivateKey getPrivateKey(Config config, String path) {
         try {
             String stringValue = config.getString(path);

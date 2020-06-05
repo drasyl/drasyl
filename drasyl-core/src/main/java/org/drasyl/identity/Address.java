@@ -33,19 +33,19 @@ import static java.util.Objects.requireNonNull;
 public class Address {
     private static final Pattern syntax = Pattern.compile("^[a-f0-9]{10}$");
     @JsonValue
-    private final String address;
+    private final String id;
 
     protected Address() {
-        this.address = null;
+        this.id = null;
     }
 
-    Address(String address) {
-        requireNonNull(address);
-        if (!isValid(address)) {
-            throw new IllegalArgumentException("This is not a valid Address: '" + address + "'");
+    Address(String id) {
+        requireNonNull(id);
+        if (!isValid(id)) {
+            throw new IllegalArgumentException("This is not a valid Address: '" + id + "'");
         }
 
-        this.address = address;
+        this.id = id;
     }
 
     public static boolean isValid(String id) {
@@ -54,7 +54,7 @@ public class Address {
 
     @Override
     public int hashCode() {
-        return 31 * Objects.hashCode(address);
+        return 31 * Objects.hashCode(id);
     }
 
     @Override
@@ -66,12 +66,12 @@ public class Address {
             return false;
         }
         Address address = (Address) o;
-        return Objects.equals(this.address, address.address);
+        return Objects.equals(this.id, address.id);
     }
 
     @Override
     public String toString() {
-        return address;
+        return id;
     }
 
     public static Address of(CompressedPublicKey compressedPublicKey) {
@@ -98,10 +98,10 @@ public class Address {
         requireNonNull(address);
         String hash = DigestUtils.sha256Hex(compressedPublicKey.toString());
 
-        return hash.startsWith(address.getAddress());
+        return hash.startsWith(address.getId());
     }
 
-    public String getAddress() {
-        return address;
+    public String getId() {
+        return id;
     }
 }

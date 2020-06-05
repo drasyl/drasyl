@@ -65,7 +65,7 @@ class AddressTest {
         assertEquals(address, id2);
         assertEquals(address, address);
         assertEquals(address.hashCode(), id2.hashCode());
-        assertEquals(address.getAddress(), id2.getAddress());
+        assertEquals(address.getId(), id2.getId());
         assertNotEquals(Address.of("0987654321"), address);
         assertNotEquals(null, address);
     }

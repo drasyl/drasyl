@@ -55,7 +55,7 @@ import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Erro
  * This handler closes the channel if an exception occurs before a {@link JoinMessage} has been
  * received.
  */
-@SuppressWarnings({ "java:S107" })
+@SuppressWarnings({ "java:S107", "java:S110" })
 public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServerHandler<JoinMessage, WelcomeMessage> {
     public static final String NODE_SERVER_CONNECTION_HANDLER = "nodeServerConnectionHandler";
     private static final Logger LOG = LoggerFactory.getLogger(NodeServerConnectionHandler.class);
@@ -116,18 +116,18 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
     @Override
     protected AbstractNettyConnection createConnection(ChannelHandlerContext ctx,
                                                        JoinMessage requestMessage) {
-        Identity identity = Identity.of(requestMessage.getPublicKey());
+        Identity clientIdentity = Identity.of(requestMessage.getPublicKey());
 
         // create peer connection
-        NodeServerConnection connection = new NodeServerConnection(ctx.channel(), identity,
+        NodeServerConnection connection = new NodeServerConnection(ctx.channel(), clientIdentity,
                 Optional.ofNullable(requestMessage.getUserAgent()).orElse("U/A"), connectionsManager);
 
         // store peer information
         PeerInformation peerInformation = new PeerInformation();
         peerInformation.setPublicKey(requestMessage.getPublicKey());
         peerInformation.addEndpoint(requestMessage.getEndpoints());
-        peersManager.addPeer(identity, peerInformation);
-        peersManager.addChildren(identity);
+        peersManager.addPeer(clientIdentity, peerInformation);
+        peersManager.addChildren(clientIdentity);
 
         return connection;
     }

@@ -51,13 +51,13 @@ import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Erro
  * {@link WelcomeMessage} from the server. The client must then confirm this message with a {@link
  * StatusMessage}.
  */
+@SuppressWarnings({ "java:S110" })
 public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeClientHandler<JoinMessage, WelcomeMessage> {
     public static final String SUPER_PEER_CLIENT_CONNECTION_HANDLER = "superPeerClientConnectionHandler";
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClientConnectionHandler.class);
     private final CompressedPublicKey expectedPublicKey;
     private final CompressedPublicKey ownPublicKey;
     private final PeersManager peersManager;
-    private final ConnectionsManager connectionsManager;
 
     public SuperPeerClientConnectionHandler(CompressedPublicKey expectedPublicKey,
                                             CompressedPublicKey ownPublicKey,
@@ -70,9 +70,9 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
         this.expectedPublicKey = expectedPublicKey;
         this.ownPublicKey = ownPublicKey;
         this.peersManager = peersManager;
-        this.connectionsManager = connectionsManager;
     }
 
+    @SuppressWarnings({ "java:S107" })
     SuperPeerClientConnectionHandler(CompressedPublicKey expectedPublicKey,
                                      CompressedPublicKey ownPublicKey,
                                      PeersManager peersManager,
@@ -87,7 +87,6 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
         this.expectedPublicKey = expectedPublicKey;
         this.ownPublicKey = ownPublicKey;
         this.peersManager = peersManager;
-        this.connectionsManager = connectionsManager;
     }
 
     @Override

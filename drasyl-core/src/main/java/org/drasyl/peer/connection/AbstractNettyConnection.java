@@ -66,6 +66,7 @@ public abstract class AbstractNettyConnection extends PeerConnection {
      * @param userAgent          the User-Agent string
      * @param connectionsManager reference to the {@link ConnectionsManager}
      */
+    @SuppressWarnings({ "java:S1905" })
     public AbstractNettyConnection(Channel channel,
                                    Identity identity,
                                    String userAgent,
