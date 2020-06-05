@@ -16,28 +16,29 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.event;
 
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertTrue;
+
 class EventTypeTest {
     @Test
     void isNodeEvent() {
-        Assertions.assertTrue(EventType.EVENT_NODE_UP.isNodeEvent());
+        assertTrue(EventType.EVENT_NODE_UP.isNodeEvent());
         Assertions.assertFalse(EventType.EVENT_PEER_DIRECT.isNodeEvent());
     }
 
     @Test
     void isPeerEvent() {
-        Assertions.assertTrue(EventType.EVENT_PEER_RELAY.isPeerEvent());
+        assertTrue(EventType.EVENT_PEER_RELAY.isPeerEvent());
         Assertions.assertFalse(EventType.EVENT_NODE_DOWN.isPeerEvent());
     }
 
     @Test
     void isMessageEvent() {
-        Assertions.assertTrue(EventType.EVENT_MESSAGE.isMessageEvent());
+        assertTrue(EventType.EVENT_MESSAGE.isMessageEvent());
         Assertions.assertFalse(EventType.EVENT_NODE_OFFLINE.isMessageEvent());
     }
 }
