@@ -137,7 +137,7 @@ public class PeersManager {
         int newPathCount = existingInformation.getPaths().size();
 
         if (existingPathCount > 0 && newPathCount == 0) {
-            if (identity.equals(superPeer)) {
+            if (identity.equals(superPeer) || superPeer == null) {
                 eventConsumer.accept(new Event(EVENT_PEER_UNREACHABLE, new Peer(identity)));
             }
             else {
