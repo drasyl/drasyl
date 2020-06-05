@@ -38,6 +38,7 @@ import java.util.function.Consumer;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.event.EventType.EVENT_PEER_DIRECT;
 import static org.drasyl.event.EventType.EVENT_PEER_RELAY;
+import static org.drasyl.event.EventType.EVENT_PEER_UNREACHABLE;
 
 /**
  * This class contains information about other peers. This includes the identities, public keys,
@@ -136,7 +137,12 @@ public class PeersManager {
         int newPathCount = existingInformation.getPaths().size();
 
         if (existingPathCount > 0 && newPathCount == 0) {
-            eventConsumer.accept(new Event(EVENT_PEER_RELAY, new Peer(identity)));
+            if (identity.equals(superPeer)) {
+                eventConsumer.accept(new Event(EVENT_PEER_UNREACHABLE, new Peer(identity)));
+            }
+            else {
+                eventConsumer.accept(new Event(EVENT_PEER_RELAY, new Peer(identity)));
+            }
         }
     }
 
