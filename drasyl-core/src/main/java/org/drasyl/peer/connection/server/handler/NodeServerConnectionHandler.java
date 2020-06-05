@@ -123,9 +123,7 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
                 Optional.ofNullable(requestMessage.getUserAgent()).orElse("U/A"), connectionsManager);
 
         // store peer information
-        PeerInformation peerInformation = new PeerInformation();
-        peerInformation.setPublicKey(requestMessage.getPublicKey());
-        peerInformation.addEndpoint(requestMessage.getEndpoints());
+        PeerInformation peerInformation = PeerInformation.of(clientIdentity, requestMessage.getEndpoints());
         peersManager.addPeer(clientIdentity, peerInformation);
         peersManager.addChildren(clientIdentity);
 

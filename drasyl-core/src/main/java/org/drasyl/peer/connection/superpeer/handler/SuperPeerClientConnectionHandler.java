@@ -117,9 +117,7 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
         SuperPeerClientConnection connection = new SuperPeerClientConnection(ctx.channel(), identity, offerMessage.getUserAgent(), connectionsManager);
 
         // store peer information
-        PeerInformation peerInformation = new PeerInformation();
-        peerInformation.setPublicKey(offerMessage.getPublicKey());
-        peerInformation.addEndpoint(offerMessage.getEndpoints());
+        PeerInformation peerInformation = PeerInformation.of(identity, offerMessage.getEndpoints());
         peersManager.addPeer(identity, peerInformation);
         peersManager.setSuperPeer(identity);
 

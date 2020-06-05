@@ -19,11 +19,10 @@
 package org.drasyl.peer;
 
 import com.google.common.collect.ImmutableSet;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
 
 import java.net.URI;
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
@@ -38,17 +37,12 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  */
 public class PeerInformation {
     private final ReadWriteLock lock = new ReentrantReadWriteLock(true);
+    private final Identity identity;
     private final Set<URI> endpoints;
-    private CompressedPublicKey publicKey;
 
-    public PeerInformation() {
-        this(new HashSet<>(), null);
-    }
-
-    PeerInformation(Set<URI> endpoints,
-                    CompressedPublicKey publicKey) {
+    PeerInformation(Identity identity, Set<URI> endpoints) {
+        this.identity = identity;
         this.endpoints = endpoints;
-        this.publicKey = publicKey;
     }
 
     public Set<URI> getEndpoints() {
@@ -101,33 +95,9 @@ public class PeerInformation {
         }
     }
 
-    public CompressedPublicKey getPublicKey() {
-        try {
-            lock.readLock().lock();
-
-            return publicKey;
-        }
-        finally {
-            lock.readLock().unlock();
-        }
-    }
-
-    public void setPublicKey(CompressedPublicKey publicKey) {
-        Objects.requireNonNull(endpoints);
-
-        try {
-            lock.writeLock().lock();
-
-            this.publicKey = publicKey;
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-    }
-
     @Override
     public int hashCode() {
-        return Objects.hash(endpoints, publicKey);
+        return Objects.hash(identity, endpoints);
     }
 
     @Override
@@ -139,15 +109,30 @@ public class PeerInformation {
             return false;
         }
         PeerInformation that = (PeerInformation) o;
-        return Objects.equals(endpoints, that.endpoints) &&
-                Objects.equals(publicKey, that.publicKey);
+        return Objects.equals(identity, that.identity) &&
+                Objects.equals(endpoints, that.endpoints);
     }
 
     @Override
     public String toString() {
         return "PeerInformation{" +
-                "endpoints=" + endpoints +
-                ", publicKey=" + publicKey +
+                "publicKey=" + identity +
+                ", endpoints=" + endpoints +
                 '}';
+    }
+
+    public Identity getIdentity() {
+        try {
+            lock.readLock().lock();
+
+            return identity;
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public static PeerInformation of(Identity identity, Set<URI> endpoints) {
+        return new PeerInformation(identity, endpoints);
     }
 }
