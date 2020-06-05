@@ -39,6 +39,7 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
  * automatically requests the server for a new session. The server must confirm this request and
  * then offers the client a session. Then the client has to confirm the offered session again.
  */
+@SuppressWarnings({ "java:S110" })
 public abstract class AbstractThreeWayHandshakeClientHandler<R extends RequestMessage, O extends ResponseMessage<?>> extends AbstractThreeWayHandshakeHandler {
     private final R requestMessage;
 
