@@ -19,14 +19,10 @@
 package org.drasyl.peer;
 
 import com.google.common.collect.ImmutableSet;
-import org.drasyl.identity.Identity;
 
 import java.net.URI;
-import java.util.Collection;
 import java.util.Objects;
 import java.util.Set;
-import java.util.concurrent.locks.ReadWriteLock;
-import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 /**
  * Contains information on a specific peer (e.g. identity, public key, and known endpoints).
@@ -36,68 +32,19 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
  * </p>
  */
 public class PeerInformation {
-    private final ReadWriteLock lock = new ReentrantReadWriteLock(true);
-    private final Identity identity;
     private final Set<URI> endpoints;
 
-    PeerInformation(Identity identity, Set<URI> endpoints) {
-        this.identity = identity;
+    PeerInformation(Set<URI> endpoints) {
         this.endpoints = endpoints;
     }
 
     public Set<URI> getEndpoints() {
-        try {
-            lock.readLock().lock();
-
-            return ImmutableSet.copyOf(endpoints);
-        }
-        finally {
-            lock.readLock().unlock();
-        }
-    }
-
-    public boolean addEndpoint(URI... endpoints) {
-        Objects.requireNonNull(endpoints);
-
-        try {
-            lock.writeLock().lock();
-
-            return this.endpoints.addAll(Set.of(endpoints));
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    public boolean addEndpoint(Collection<URI> endpoints) {
-        Objects.requireNonNull(endpoints);
-
-        try {
-            lock.writeLock().lock();
-
-            return this.endpoints.addAll(endpoints);
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    public boolean removeEndpoint(URI... endpoints) {
-        Objects.requireNonNull(endpoints);
-
-        try {
-            lock.writeLock().lock();
-
-            return this.endpoints.removeAll(Set.of(endpoints));
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
+        return ImmutableSet.copyOf(endpoints);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(identity, endpoints);
+        return Objects.hash(endpoints);
     }
 
     @Override
@@ -109,30 +56,17 @@ public class PeerInformation {
             return false;
         }
         PeerInformation that = (PeerInformation) o;
-        return Objects.equals(identity, that.identity) &&
-                Objects.equals(endpoints, that.endpoints);
+        return Objects.equals(endpoints, that.endpoints);
     }
 
     @Override
     public String toString() {
         return "PeerInformation{" +
-                "publicKey=" + identity +
-                ", endpoints=" + endpoints +
+                "endpoints=" + endpoints +
                 '}';
     }
 
-    public Identity getIdentity() {
-        try {
-            lock.readLock().lock();
-
-            return identity;
-        }
-        finally {
-            lock.readLock().unlock();
-        }
-    }
-
-    public static PeerInformation of(Identity identity, Set<URI> endpoints) {
-        return new PeerInformation(identity, endpoints);
+    public static PeerInformation of(Set<URI> endpoints) {
+        return new PeerInformation(endpoints);
     }
 }
