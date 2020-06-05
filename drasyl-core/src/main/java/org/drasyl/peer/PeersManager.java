@@ -332,4 +332,49 @@ public class PeersManager {
             lock.writeLock().unlock();
         }
     }
+
+    /**
+     * Shortcut for call {@link #unsetSuperPeer()} and {@link #removePeer(Identity)}.
+     *
+     * @return
+     */
+    public PeerInformation unsetSuperPeerAndRemovePeer(Identity identity) {
+        requireNonNull(identity);
+
+        try {
+            lock.writeLock().lock();
+
+            if (children.contains(identity)) {
+                throw new IllegalArgumentException("Peer cannot be removed. It is defined as Children");
+            }
+
+            superPeer = null;
+            return peers.remove(identity);
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Shortcut for call {@link #removeChildren(Identity...)} and {@link #removePeer(Identity)}.
+     *
+     * @return
+     */
+    public Pair<Boolean, PeerInformation> removeChildrenAndRemovePeer(Identity identity) {
+        requireNonNull(identity);
+
+        try {
+            lock.writeLock().lock();
+
+            if (superPeer == identity) {
+                throw new IllegalArgumentException("Peer cannot be removed. It is defined as Super Peer");
+            }
+
+            return Pair.of(children.remove(identity), peers.remove(identity));
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
 }
