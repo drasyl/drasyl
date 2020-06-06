@@ -18,6 +18,8 @@
  */
 package org.drasyl.identity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import org.drasyl.crypto.CryptoException;
 
 import java.security.PrivateKey;
@@ -30,6 +32,7 @@ import static org.drasyl.util.SecretUtil.maskSecret;
 public class Identity {
     private final Address address;
     private final CompressedPublicKey publicKey;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
     private final CompressedPrivateKey privateKey;
 
     Identity(Address address,
@@ -74,6 +77,7 @@ public class Identity {
                 '}';
     }
 
+    @JsonIgnore
     public CompressedKeyPair getKeyPair() {
         return CompressedKeyPair.of(publicKey, privateKey);
     }

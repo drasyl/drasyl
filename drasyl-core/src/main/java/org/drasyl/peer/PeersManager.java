@@ -18,11 +18,13 @@
  */
 package org.drasyl.peer;
 
+import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.ImmutableSet;
 import org.drasyl.event.Event;
 import org.drasyl.event.Peer;
 import org.drasyl.identity.Identity;
+import org.drasyl.util.MapAsArrayOfPairsJsonSerializer;
 import org.drasyl.util.Pair;
 
 import java.util.HashMap;
@@ -53,6 +55,7 @@ import static org.drasyl.event.EventType.EVENT_PEER_UNREACHABLE;
  */
 public class PeersManager {
     private final ReadWriteLock lock;
+    @JsonSerialize(using = MapAsArrayOfPairsJsonSerializer.class)
     private final Map<Identity, PeerInformation> peers;
     private final Set<Identity> children;
     private final Consumer<Event> eventConsumer;

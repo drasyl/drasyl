@@ -18,6 +18,8 @@
  */
 package org.drasyl.peer.connection.server.handler;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufUtil;
 import io.netty.buffer.Unpooled;
@@ -35,6 +37,9 @@ import io.netty.handler.codec.http.HttpUtil;
 import io.netty.util.CharsetUtil;
 import org.drasyl.DrasylNode;
 import org.drasyl.identity.Identity;
+import org.drasyl.peer.PeersManager;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static io.netty.handler.codec.http.HttpHeaderNames.SERVER;
@@ -49,11 +54,15 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
  * This handler returns an HTML error page if the HTTP request does not perform a Websocket
  * upgrade.
  */
-public class NodeServerMissingWebSocketUpgradeErrorPage extends SimpleChannelInboundHandler<FullHttpRequest> {
+public class NodeServerHttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
+    private static final Logger LOG = LoggerFactory.getLogger(NodeServerHttpHandler.class);
     private final Identity identity;
+    private final PeersManager peersManager;
 
-    public NodeServerMissingWebSocketUpgradeErrorPage(Identity identity) {
+    public NodeServerHttpHandler(Identity identity,
+                                 PeersManager peersManager) {
         this.identity = identity;
+        this.peersManager = peersManager;
     }
 
     @Override
@@ -81,6 +90,14 @@ public class NodeServerMissingWebSocketUpgradeErrorPage extends SimpleChannelInb
         if ("/".equals(req.uri()) || "/index.html".equals(req.uri()) || "/index.htm".equals(req.uri())) {
             // display custom bad request error page for root path
             generateHeaders(ctx, req, identity, BAD_REQUEST);
+        }
+        else if ("/peers.json".equals(req.uri())) {
+            DefaultFullHttpResponse res = new DefaultFullHttpResponse(req.protocolVersion(), FORBIDDEN,
+                    getPeers(peersManager));
+            res.headers().set("x-address", identity.getAddress());
+            res.headers().set("x-public-key", identity.getPublicKey());
+            res.headers().set(CONTENT_TYPE, "application/json; charset=UTF-8");
+            sendHttpResponse(ctx, res);
         }
         else {
             // return "not found" for all other pathes
@@ -115,6 +132,17 @@ public class NodeServerMissingWebSocketUpgradeErrorPage extends SimpleChannelInb
         // Send the response and close the connection
         ChannelFuture future = ctx.writeAndFlush(res);
         future.addListener(ChannelFutureListener.CLOSE);
+    }
+
+    public static ByteBuf getPeers(PeersManager peersManager) {
+        ObjectMapper objectMapper = new ObjectMapper();
+        try {
+            return Unpooled.copiedBuffer(objectMapper.writeValueAsString(peersManager), CharsetUtil.UTF_8);
+        }
+        catch (JsonProcessingException e) {
+            LOG.error("Unable to create peers list:", e);
+            return Unpooled.copiedBuffer("Unable to create peers list.", CharsetUtil.UTF_8);
+        }
     }
 
     public static ByteBuf getContent(Identity identity) {

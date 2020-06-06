@@ -31,7 +31,7 @@ import org.drasyl.peer.connection.DefaultSessionInitializer;
 import org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.server.handler.NodeServerConnectionHandler;
-import org.drasyl.peer.connection.server.handler.NodeServerMissingWebSocketUpgradeErrorPage;
+import org.drasyl.peer.connection.server.handler.NodeServerHttpHandler;
 import org.drasyl.peer.connection.server.handler.NodeServerNewConnectionsGuard;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -60,7 +60,7 @@ public class NodeServerChannelInitializer extends DefaultSessionInitializer {
         pipeline.addLast(new HttpServerCodec());
         pipeline.addLast(new HttpObjectAggregator(65536));
         pipeline.addLast(new WebSocketServerCompressionHandler());
-        pipeline.addLast(new NodeServerMissingWebSocketUpgradeErrorPage(server.getIdentityManager().getIdentity()));
+        pipeline.addLast(new NodeServerHttpHandler(server.getIdentityManager().getIdentity(), server.getPeersManager()));
         pipeline.addLast(new WebSocketServerProtocolHandler("/", null, true));
     }
 

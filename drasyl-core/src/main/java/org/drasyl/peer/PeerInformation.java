@@ -18,6 +18,7 @@
  */
 package org.drasyl.peer;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.google.common.collect.ImmutableSet;
 
 import java.net.URI;
@@ -34,6 +35,7 @@ import java.util.Set;
  */
 public class PeerInformation {
     private final Set<URI> endpoints;
+    @JsonIgnore
     private final Set<Path> paths;
 
     PeerInformation(Set<URI> endpoints, Set<Path> paths) {

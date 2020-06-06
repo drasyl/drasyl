@@ -18,6 +18,9 @@
  */
 package org.drasyl.util;
 
+import com.fasterxml.jackson.annotation.JsonFormat;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 import java.io.Serializable;
 import java.util.Objects;
 
@@ -26,6 +29,7 @@ import java.util.Objects;
  * <p>
  * Inspired by: https://github.com/javatuples/javatuples/blob/master/src/main/java/org/javatuples/Pair.java
  */
+@JsonFormat(shape = JsonFormat.Shape.ARRAY)
 @SuppressWarnings({ "squid:S4144" })
 public class Pair<A, B> implements Serializable {
     private final A first; // NOSONAR
@@ -71,6 +75,7 @@ public class Pair<A, B> implements Serializable {
     /**
      * @return the first element
      */
+    @JsonProperty("first")
     public A first() {
         return this.first;
     }
@@ -78,6 +83,7 @@ public class Pair<A, B> implements Serializable {
     /**
      * @return the second element
      */
+    @JsonProperty("second")
     public B second() {
         return this.second;
     }
