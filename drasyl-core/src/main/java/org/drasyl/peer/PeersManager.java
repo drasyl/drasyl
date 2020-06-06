@@ -93,8 +93,9 @@ public class PeersManager {
         try {
             lock.writeLock().lock();
 
+            boolean created = !peers.containsKey(identity);
             PeerInformation existingInformation = peers.computeIfAbsent(identity, i -> PeerInformation.of());
-            addInformationAndConditionalEventTrigger(identity, existingInformation, peerInformation);
+            addInformationAndConditionalEventTrigger(identity, existingInformation, peerInformation, created);
         }
         finally {
             lock.writeLock().unlock();
@@ -103,13 +104,17 @@ public class PeersManager {
 
     private void addInformationAndConditionalEventTrigger(Identity identity,
                                                           PeerInformation existingInformation,
-                                                          PeerInformation peerInformation) {
+                                                          PeerInformation peerInformation,
+                                                          boolean created) {
         int existingPathCount = existingInformation.getPaths().size();
         existingInformation.add(peerInformation);
         int newPathCount = existingInformation.getPaths().size();
 
         if (existingPathCount == 0 && newPathCount > 0) {
             eventConsumer.accept(new Event(EVENT_PEER_DIRECT, new Peer(identity)));
+        }
+        else if (created && newPathCount == 0) {
+            eventConsumer.accept(new Event(EVENT_PEER_RELAY, new Peer(identity)));
         }
     }
 
@@ -282,8 +287,9 @@ public class PeersManager {
         try {
             lock.writeLock().lock();
 
+            boolean created = !peers.containsKey(identity);
             PeerInformation existingInformation = peers.computeIfAbsent(identity, i -> PeerInformation.of());
-            addInformationAndConditionalEventTrigger(identity, existingInformation, peerInformation);
+            addInformationAndConditionalEventTrigger(identity, existingInformation, peerInformation, created);
             superPeer = identity;
         }
         finally {
@@ -303,8 +309,9 @@ public class PeersManager {
         try {
             lock.writeLock().lock();
 
+            boolean created = !peers.containsKey(identity);
             PeerInformation existingInformation = peers.computeIfAbsent(identity, i -> PeerInformation.of());
-            addInformationAndConditionalEventTrigger(identity, existingInformation, peerInformation);
+            addInformationAndConditionalEventTrigger(identity, existingInformation, peerInformation, created);
             children.add(identity);
         }
         finally {
