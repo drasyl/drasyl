@@ -51,9 +51,10 @@ public abstract class AbstractThreeWayHandshakeServerHandler<R extends RequestMe
                                                      Messenger messenger,
                                                      CompletableFuture<Void> handshakeFuture,
                                                      ScheduledFuture<?> timeoutFuture,
-                                                     R requestMessage) {
+                                                     R requestMessage, O offerMessage) {
         super(timeout, messenger, handshakeFuture, timeoutFuture);
         this.requestMessage = requestMessage;
+        this.offerMessage = offerMessage;
     }
 
     @Override

@@ -37,6 +37,7 @@ import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
+import org.drasyl.peer.connection.message.WelcomeMessage;
 import org.drasyl.peer.connection.server.NodeServer;
 import org.drasyl.peer.connection.server.NodeServerChannelGroup;
 import org.junit.jupiter.api.BeforeEach;
@@ -80,6 +81,7 @@ class NodeServerConnectionHandlerTest {
     private ChannelId channelId;
     private Channel nettyChannel;
     private NodeServerChannelGroup channelGroup;
+    private WelcomeMessage offerMessage;
 
     @BeforeEach
     void setUp() {
@@ -101,6 +103,7 @@ class NodeServerConnectionHandlerTest {
         nettyChannel = mock(Channel.class);
         channelId = mock(ChannelId.class);
         channelGroup = mock(NodeServerChannelGroup.class);
+        offerMessage = mock(WelcomeMessage.class);
 
         when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
         applicationMessage = mock(ApplicationMessage.class);
@@ -109,7 +112,7 @@ class NodeServerConnectionHandlerTest {
 
     @Test
     void shouldSendExceptionMessageIfHandshakeIsNotDoneInTime() {
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(identity, peersManager, Set.of(), ofMillis(0), messenger, handshakeFuture, timeoutFuture, requestMessage, channelGroup);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(identity, peersManager, Set.of(), ofMillis(0), messenger, handshakeFuture, timeoutFuture, requestMessage, channelGroup, offerMessage);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         assertEquals(new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE_TIMEOUT), channel.readOutbound());
@@ -117,7 +120,7 @@ class NodeServerConnectionHandlerTest {
 
     @Test
     void closeBeforeTimeoutShouldNotSendHandshakeTimeoutExceptionMessage() {
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(identity, peersManager, Set.of(), ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, channelGroup);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(identity, peersManager, Set.of(), ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, channelGroup, offerMessage);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
         channel.close();
 
@@ -130,7 +133,7 @@ class NodeServerConnectionHandlerTest {
         when(joinMessage.getPublicKey()).thenReturn(publicKey);
         when(identity.getPublicKey()).thenReturn(publicKey);
 
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(identity, peersManager, Set.of(), ofMillis(1000), messenger, handshakeFuture, timeoutFuture, null, channelGroup);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(identity, peersManager, Set.of(), ofMillis(1000), messenger, handshakeFuture, timeoutFuture, null, channelGroup, offerMessage);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(joinMessage);
@@ -143,7 +146,7 @@ class NodeServerConnectionHandlerTest {
     void shouldRejectUnexpectedMessagesDuringHandshake() {
         when(applicationMessage.getId()).thenReturn("123");
 
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(identity, peersManager, Set.of(), ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, channelGroup);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(identity, peersManager, Set.of(), ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, channelGroup, offerMessage);
         channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(applicationMessage);
@@ -157,7 +160,7 @@ class NodeServerConnectionHandlerTest {
         when(ctx.channel()).thenReturn(nettyChannel);
         when(nettyChannel.id()).thenReturn(channelId);
 
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(identity, peersManager, Set.of(), ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, channelGroup);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(identity, peersManager, Set.of(), ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, channelGroup, offerMessage);
         handler.exceptionCaught(ctx, cause);
 
         verify(ctx).writeAndFlush(any(ConnectionExceptionMessage.class));
@@ -169,7 +172,7 @@ class NodeServerConnectionHandlerTest {
         when(handshakeFuture.isDone()).thenReturn(true);
         when(quitMessage.getId()).thenReturn("123");
 
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(identity, peersManager, Set.of(), ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, channelGroup);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(identity, peersManager, Set.of(), ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, channelGroup, offerMessage);
         channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(quitMessage);

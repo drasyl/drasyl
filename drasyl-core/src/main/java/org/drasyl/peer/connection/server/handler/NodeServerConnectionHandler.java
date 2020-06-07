@@ -84,8 +84,9 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
                                 CompletableFuture<Void> handshakeFuture,
                                 ScheduledFuture<?> timeoutFuture,
                                 JoinMessage requestMessage,
-                                NodeServerChannelGroup channelGroup) {
-        super(timeout, messenger, handshakeFuture, timeoutFuture, requestMessage);
+                                NodeServerChannelGroup channelGroup,
+                                WelcomeMessage offerMessage) {
+        super(timeout, messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         this.peersManager = peersManager;
         this.entryPoints = entryPoints;
         this.identity = identity;
