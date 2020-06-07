@@ -247,9 +247,6 @@ public abstract class DrasylNode {
     public CompletableFuture<Void> shutdown() {
         if (started.compareAndSet(true, false)) {
             DrasylNode self = this;
-            // The shutdown of the node includes up to two phases, which are performed sequentially
-            // 1st Phase: Stop Super Peer Client (if started)
-            // 2nd Phase: Stop local server (if started)
             onEvent(new Event(EVENT_NODE_DOWN, new Node(identityManager.getIdentity())));
             LOG.info("Shutdown drasyl Node with Identity '{}'...", identityManager.getIdentity());
             shutdownSequence = runAsync(this::stopSuperPeerClient)
@@ -327,10 +324,6 @@ public abstract class DrasylNode {
     public CompletableFuture<Void> start() {
         if (started.compareAndSet(false, true)) {
             INSTANCES.add(this);
-            // The start of the node includes up to three phases, which are performed sequentially
-            // 1st Phase: Load identity (and create if necessary)
-            // 2nd Phase: Start local server (if enabled)
-            // 3rd Phase: Start Super Peer Client (if declared)
             LOG.info("Start drasyl Node v{}...", DrasylNode.getVersion());
             LOG.debug("The following configuration will be used: {}", config);
             startSequence = runAsync(this::loadIdentity)
