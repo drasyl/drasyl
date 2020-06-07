@@ -58,21 +58,25 @@ public class PeersManager {
     @JsonSerialize(using = MapAsArrayOfPairsJsonSerializer.class)
     private final Map<Identity, PeerInformation> peers;
     private final Set<Identity> children;
+    @JsonSerialize(using = MapAsArrayOfPairsJsonSerializer.class)
+    private final Map<Identity, Identity> grandchildren;
     private final Consumer<Event> eventConsumer;
     private Identity superPeer;
 
     public PeersManager(Consumer<Event> eventConsumer) {
-        this(new ReentrantReadWriteLock(true), new HashMap<>(), new HashSet<>(), null, eventConsumer);
+        this(new ReentrantReadWriteLock(true), new HashMap<>(), new HashSet<>(), new HashMap<>(), null, eventConsumer);
     }
 
     PeersManager(ReadWriteLock lock,
                  Map<Identity, PeerInformation> peers,
                  Set<Identity> children,
+                 Map<Identity, Identity> grandchildren,
                  Identity superPeer,
                  Consumer<Event> eventConsumer) {
         this.lock = lock;
         this.peers = peers;
         this.children = children;
+        this.grandchildren = grandchildren;
         this.superPeer = superPeer;
         this.eventConsumer = eventConsumer;
     }
@@ -198,6 +202,37 @@ public class PeersManager {
             lock.writeLock().lock();
 
             children.removeAll(List.of(identities));
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public Map<Identity, Identity> getGrandchildren() {
+        return grandchildren;
+    }
+
+    public void addGrandchildren(Identity identity, Identity children) {
+        requireNonNull(identity);
+        requireNonNull(children);
+
+        try {
+            lock.writeLock().lock();
+
+            grandchildren.put(identity, children);
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public void removeGrandchildren(Identity identity) {
+        requireNonNull(identity);
+
+        try {
+            lock.writeLock().lock();
+
+            grandchildren.remove(identity);
         }
         finally {
             lock.writeLock().unlock();
@@ -334,9 +369,11 @@ public class PeersManager {
         try {
             lock.writeLock().lock();
 
-            PeerInformation existingInformation = peers.computeIfAbsent(superPeer, i -> PeerInformation.of());
-            removeInformationAndConditionalEventTrigger(superPeer, existingInformation, peerInformation);
-            superPeer = null;
+            if (superPeer != null) {
+                PeerInformation existingInformation = peers.computeIfAbsent(superPeer, i -> PeerInformation.of());
+                removeInformationAndConditionalEventTrigger(superPeer, existingInformation, peerInformation);
+                superPeer = null;
+            }
         }
         finally {
             lock.writeLock().unlock();
@@ -357,12 +394,72 @@ public class PeersManager {
         try {
             lock.writeLock().lock();
 
-            PeerInformation existingInformation = peers.computeIfAbsent(superPeer, i -> PeerInformation.of());
+            PeerInformation existingInformation = peers.computeIfAbsent(identity, i -> PeerInformation.of());
             removeInformationAndConditionalEventTrigger(identity, existingInformation, peerInformation);
             children.remove(identity);
         }
         finally {
             lock.writeLock().unlock();
         }
+    }
+
+    /**
+     * Shortcut for call {@link #addPeerInformation(Identity, PeerInformation)} (Identity...)} and
+     * {@link #addGrandchildren(Identity, Identity)}.
+     *
+     * @return
+     */
+    public void addPeerInformationAndAddGrandchildren(Identity identity,
+                                                      PeerInformation peerInformation,
+                                                      Identity clientIdentity) {
+        requireNonNull(identity);
+        requireNonNull(peerInformation);
+        requireNonNull(clientIdentity);
+
+        try {
+            lock.writeLock().lock();
+
+            boolean created = !peers.containsKey(identity);
+            PeerInformation existingInformation = peers.computeIfAbsent(identity, i -> PeerInformation.of());
+            addInformationAndConditionalEventTrigger(identity, existingInformation, peerInformation, created);
+            grandchildren.put(identity, clientIdentity);
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    /**
+     * Shortcut for call {@link #removeGrandchildren(Identity)} and {@link
+     * #removePeerInformation(Identity, PeerInformation)}.
+     *
+     * @return
+     */
+    public void removeGrandchildrenAndRemovePeerInformation(Identity identity,
+                                                            PeerInformation peerInformation) {
+        requireNonNull(identity);
+        requireNonNull(peerInformation);
+
+        try {
+            lock.writeLock().lock();
+
+            PeerInformation existingInformation = peers.computeIfAbsent(identity, i -> PeerInformation.of());
+            removeInformationAndConditionalEventTrigger(identity, existingInformation, peerInformation);
+            grandchildren.remove(identity);
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    @Override
+    public String toString() {
+        return "PeersManager{" +
+                "peers=" + peers +
+                ", children=" + children +
+                ", grandchildren=" + grandchildren +
+                ", eventConsumer=" + eventConsumer +
+                ", superPeer=" + superPeer +
+                '}';
     }
 }

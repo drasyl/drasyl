@@ -53,6 +53,10 @@ class PeersManagerTest {
     @Mock
     private Set<Identity> children;
     @Mock
+    private Map<Identity, Identity> grandchildren;
+    @Mock
+    private Identity identity;
+    @Mock
     private Identity superPeer;
     @Mock
     private Lock writeLock;
@@ -60,11 +64,11 @@ class PeersManagerTest {
     private Lock readLock;
     @Mock
     private Consumer<Event> eventConsumer;
-    @InjectMocks
     private PeersManager underTest;
 
     @BeforeEach
     void setUp() {
+        underTest = new PeersManager(lock, peers, children, grandchildren, superPeer, eventConsumer);
     }
 
     @Nested
@@ -150,7 +154,7 @@ class PeersManagerTest {
         void setup() {
             when(lock.readLock()).thenReturn(readLock);
 
-            underTest = new PeersManager(lock, peers, Set.of(), superPeer, eventConsumer);
+            underTest = new PeersManager(lock, peers, Set.of(), grandchildren, superPeer, eventConsumer);
         }
 
         @Test
