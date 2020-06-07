@@ -18,9 +18,9 @@
  */
 package org.drasyl.peer;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 import org.drasyl.event.Event;
 import org.drasyl.event.Peer;
 import org.drasyl.identity.Identity;
@@ -36,6 +36,7 @@ import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
+import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.event.EventType.EVENT_PEER_DIRECT;
@@ -59,7 +60,7 @@ public class PeersManager {
     private final Map<Identity, PeerInformation> peers;
     private final Set<Identity> children;
     @JsonSerialize(using = MapAsArrayOfPairsJsonSerializer.class)
-    private final Map<Identity, Identity> grandchildren;
+    private final Map<Identity, Identity> grandchildrenRoutes;
     private final Consumer<Event> eventConsumer;
     private Identity superPeer;
 
@@ -70,13 +71,13 @@ public class PeersManager {
     PeersManager(ReadWriteLock lock,
                  Map<Identity, PeerInformation> peers,
                  Set<Identity> children,
-                 Map<Identity, Identity> grandchildren,
+                 Map<Identity, Identity> grandchildrenRoutes,
                  Identity superPeer,
                  Consumer<Event> eventConsumer) {
         this.lock = lock;
         this.peers = peers;
         this.children = children;
-        this.grandchildren = grandchildren;
+        this.grandchildrenRoutes = grandchildrenRoutes;
         this.superPeer = superPeer;
         this.eventConsumer = eventConsumer;
     }
@@ -158,11 +159,15 @@ public class PeersManager {
         }
     }
 
-    public Set<Identity> getChildren() {
+    @JsonIgnore
+    public Map<Identity, PeerInformation> getChildrenAndGrandchildren() {
         try {
             lock.readLock().lock();
 
-            return ImmutableSet.copyOf(children);
+            return ImmutableMap.copyOf(peers.entrySet().stream()
+                    .filter(e -> children.contains(e.getKey()) || grandchildrenRoutes.containsKey(e.getKey()))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
+            );
         }
         finally {
             lock.readLock().unlock();
@@ -208,31 +213,38 @@ public class PeersManager {
         }
     }
 
-    public Map<Identity, Identity> getGrandchildren() {
-        return grandchildren;
+    public Map<Identity, Identity> getGrandchildrenRoutes() {
+        try {
+            lock.readLock().lock();
+
+            return ImmutableMap.copyOf(grandchildrenRoutes);
+        }
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
-    public void addGrandchildren(Identity identity, Identity children) {
-        requireNonNull(identity);
+    public void addGrandchildrenRoute(Identity grandchildren, Identity children) {
+        requireNonNull(grandchildren);
         requireNonNull(children);
 
         try {
             lock.writeLock().lock();
 
-            grandchildren.put(identity, children);
+            grandchildrenRoutes.put(grandchildren, children);
         }
         finally {
             lock.writeLock().unlock();
         }
     }
 
-    public void removeGrandchildren(Identity identity) {
-        requireNonNull(identity);
+    public void removeGrandchildrenRoute(Identity grandchildren) {
+        requireNonNull(grandchildren);
 
         try {
             lock.writeLock().lock();
 
-            grandchildren.remove(identity);
+            grandchildrenRoutes.remove(grandchildren);
         }
         finally {
             lock.writeLock().unlock();
@@ -405,24 +417,24 @@ public class PeersManager {
 
     /**
      * Shortcut for call {@link #addPeerInformation(Identity, PeerInformation)} (Identity...)} and
-     * {@link #addGrandchildren(Identity, Identity)}.
+     * {@link #addGrandchildrenRoute(Identity, Identity)}.
      *
      * @return
      */
-    public void addPeerInformationAndAddGrandchildren(Identity identity,
-                                                      PeerInformation peerInformation,
-                                                      Identity clientIdentity) {
-        requireNonNull(identity);
-        requireNonNull(peerInformation);
-        requireNonNull(clientIdentity);
+    public void addPeerInformationAndAddGrandchildren(Identity grandchildren,
+                                                      PeerInformation grandchildrenInformation,
+                                                      Identity children) {
+        requireNonNull(grandchildren);
+        requireNonNull(grandchildrenInformation);
+        requireNonNull(children);
 
         try {
             lock.writeLock().lock();
 
-            boolean created = !peers.containsKey(identity);
-            PeerInformation existingInformation = peers.computeIfAbsent(identity, i -> PeerInformation.of());
-            addInformationAndConditionalEventTrigger(identity, existingInformation, peerInformation, created);
-            grandchildren.put(identity, clientIdentity);
+            boolean created = !peers.containsKey(grandchildren);
+            PeerInformation existingInformation = peers.computeIfAbsent(grandchildren, i -> PeerInformation.of());
+            addInformationAndConditionalEventTrigger(grandchildren, existingInformation, grandchildrenInformation, created);
+            grandchildrenRoutes.put(grandchildren, children);
         }
         finally {
             lock.writeLock().unlock();
@@ -430,25 +442,40 @@ public class PeersManager {
     }
 
     /**
-     * Shortcut for call {@link #removeGrandchildren(Identity)} and {@link
+     * Shortcut for call {@link #removeGrandchildrenRoute(Identity)} and {@link
      * #removePeerInformation(Identity, PeerInformation)}.
      *
      * @return
      */
-    public void removeGrandchildrenAndRemovePeerInformation(Identity identity,
-                                                            PeerInformation peerInformation) {
-        requireNonNull(identity);
-        requireNonNull(peerInformation);
+    public void removeGrandchildrenRouteAndRemovePeerInformation(Identity grandchildren,
+                                                                 PeerInformation grandchildrenInformation) {
+        requireNonNull(grandchildren);
+        requireNonNull(grandchildrenInformation);
 
         try {
             lock.writeLock().lock();
 
-            PeerInformation existingInformation = peers.computeIfAbsent(identity, i -> PeerInformation.of());
-            removeInformationAndConditionalEventTrigger(identity, existingInformation, peerInformation);
-            grandchildren.remove(identity);
+            PeerInformation existingInformation = peers.computeIfAbsent(grandchildren, i -> PeerInformation.of());
+            removeInformationAndConditionalEventTrigger(grandchildren, existingInformation, grandchildrenInformation);
+            grandchildrenRoutes.remove(grandchildren);
         }
         finally {
             lock.writeLock().unlock();
+        }
+    }
+
+    @JsonSerialize(using = MapAsArrayOfPairsJsonSerializer.class)
+    public Map<Identity, PeerInformation> getChildren() {
+        try {
+            lock.readLock().lock();
+
+            return ImmutableMap.copyOf(peers.entrySet().stream()
+                    .filter(e -> children.contains(e.getKey()))
+                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
+            );
+        }
+        finally {
+            lock.readLock().unlock();
         }
     }
 
@@ -457,7 +484,7 @@ public class PeersManager {
         return "PeersManager{" +
                 "peers=" + peers +
                 ", children=" + children +
-                ", grandchildren=" + grandchildren +
+                ", grandchildrenRoutes=" + grandchildrenRoutes +
                 ", eventConsumer=" + eventConsumer +
                 ", superPeer=" + superPeer +
                 '}';
