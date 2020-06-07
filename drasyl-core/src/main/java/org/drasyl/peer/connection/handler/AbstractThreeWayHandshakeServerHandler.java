@@ -43,6 +43,7 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 @SuppressWarnings({ "java:S110" })
 public abstract class AbstractThreeWayHandshakeServerHandler<R extends RequestMessage, O extends ResponseMessage<?>> extends AbstractThreeWayHandshakeHandler {
     private R requestMessage;
+    private O offerMessage;
 
     protected AbstractThreeWayHandshakeServerHandler(ConnectionsManager connectionsManager,
                                                      Duration timeout,
@@ -68,14 +69,14 @@ public abstract class AbstractThreeWayHandshakeServerHandler<R extends RequestMe
                 this.requestMessage = (R) message;
                 ConnectionExceptionMessage.Error error = validateSessionRequest(requestMessage);
                 if (error == null) {
-                    O offerMessage = offerSession(ctx, requestMessage);
+                    offerMessage = offerSession(ctx, requestMessage);
                     ctx.writeAndFlush(offerMessage);
                 }
                 else {
                     rejectSession(ctx, error);
                 }
             }
-            else if (message instanceof StatusMessage) {
+            else if (message instanceof StatusMessage && offerMessage.getId().equals(((StatusMessage) message).getCorrespondingId())) {
                 StatusMessage confirmMessage = (StatusMessage) message;
 
                 if (confirmMessage.getCode() == STATUS_OK) {
