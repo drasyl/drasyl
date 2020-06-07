@@ -106,6 +106,10 @@ public class Identity {
         return of(CompressedKeyPair.of(publicKey, privateKey));
     }
 
+    public static Identity of(String publicKey) throws CryptoException {
+        return of(CompressedPublicKey.of(publicKey), null);
+    }
+
     public static Identity of(PublicKey publicKey, PrivateKey privateKey) throws CryptoException {
         return of(CompressedKeyPair.of(publicKey, privateKey));
     }
