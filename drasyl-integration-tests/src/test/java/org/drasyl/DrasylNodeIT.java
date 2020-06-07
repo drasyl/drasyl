@@ -81,7 +81,7 @@ class DrasylNodeIT {
      * Two clients, one Super Peer and one Super Super Peer will be created for this test.
      */
     @Nested
-    class WhenNothingIsDisabled {
+    class WhenIntraVmDiscoveryIsDisabled {
         private Pair<DrasylNode, Observable<Event>> superSuperPeer;
         private Pair<DrasylNode, Observable<Event>> superPeer;
         private Pair<DrasylNode, Observable<Event>> client1;
@@ -96,7 +96,8 @@ class DrasylNodeIT {
 
             // super super peer
             config = ConfigFactory.parseString("drasyl.server.bind-port = 22528\n" +
-                    "drasyl.super-peer.enabled = false")
+                    "drasyl.super-peer.enabled = false\n" +
+                    "drasyl.intra-vm-discovery.enabled = false")
                     .withFallback(ConfigFactory.load("configs/DrasylNodeIT-4c4fdd0957.conf"));
             superSuperPeer = createNode(config);
             superSuperPeer.second().filter(e -> e.getType() == EVENT_NODE_UP).test().awaitCount(1);
@@ -105,7 +106,8 @@ class DrasylNodeIT {
             // super peer
             config = ConfigFactory.parseString("drasyl.server.bind-port = 22529\n" +
                     "drasyl.super-peer.public-key = \"03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a\"\n" +
-                    "drasyl.super-peer.endpoints = [\"ws://127.0.0.1:22528\"]")
+                    "drasyl.super-peer.endpoints = [\"ws://127.0.0.1:22528\"]\n" +
+                    "drasyl.intra-vm-discovery.enabled = false")
                     .withFallback(ConfigFactory.load("configs/DrasylNodeIT-9df9214d78.conf"));
             superPeer = createNode(config);
             superPeer.second().filter(e -> e.getType() == EVENT_NODE_ONLINE).test().awaitCount(1);
@@ -114,7 +116,8 @@ class DrasylNodeIT {
             // client1
             config = ConfigFactory.parseString("drasyl.server.enabled = false\n" +
                     "drasyl.super-peer.public-key = \"030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22\"\n" +
-                    "drasyl.super-peer.endpoints = [\"ws://127.0.0.1:22529\"]").withFallback(ConfigFactory.load("configs/DrasylNodeIT-030f018704.conf"));
+                    "drasyl.super-peer.endpoints = [\"ws://127.0.0.1:22529\"]\n" +
+                    "drasyl.intra-vm-discovery.enabled = false").withFallback(ConfigFactory.load("configs/DrasylNodeIT-030f018704.conf"));
             client1 = createNode(config);
             client1.second().filter(e -> e.getType() == EVENT_NODE_ONLINE).test().awaitCount(1);
             colorizedPrintln("CREATED client1", COLOR_CYAN, STYLE_REVERSED);
@@ -122,7 +125,8 @@ class DrasylNodeIT {
             // client2
             config = ConfigFactory.parseString("drasyl.server.enabled = false\n" +
                     "drasyl.super-peer.public-key = \"030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22\"\n" +
-                    "drasyl.super-peer.endpoints = [\"ws://127.0.0.1:22529\"]").withFallback(ConfigFactory.load("configs/DrasylNodeIT-be0300f1a4.conf"));
+                    "drasyl.super-peer.endpoints = [\"ws://127.0.0.1:22529\"]\n" +
+                    "drasyl.intra-vm-discovery.enabled = false").withFallback(ConfigFactory.load("configs/DrasylNodeIT-be0300f1a4.conf"));
             client2 = createNode(config);
             client2.second().filter(e -> e.getType() == EVENT_NODE_ONLINE).test().awaitCount(1);
             colorizedPrintln("CREATED client2", COLOR_CYAN, STYLE_REVERSED);
@@ -174,6 +178,94 @@ class DrasylNodeIT {
      */
     @Nested
     class WhenServerAndSuperPeerAreDisabled {
+        private Pair<DrasylNode, Observable<Event>> node1;
+        private Pair<DrasylNode, Observable<Event>> node2;
+        private Pair<DrasylNode, Observable<Event>> node3;
+        private Pair<DrasylNode, Observable<Event>> node4;
+
+        @BeforeEach
+        void setUp() throws DrasylException {
+            //
+            // create nodes
+            //
+            Config config;
+
+            // super super peer
+            config = ConfigFactory.parseString("drasyl.server.enabled = false\n" +
+                    "drasyl.super-peer.enabled = false")
+                    .withFallback(ConfigFactory.load("configs/DrasylNodeIT-4c4fdd0957.conf"));
+            node1 = createNode(config);
+            node1.second().filter(e -> e.getType() == EVENT_NODE_UP).test().awaitCount(1);
+            colorizedPrintln("CREATED node1", COLOR_CYAN, STYLE_REVERSED);
+
+            // super peer
+            config = ConfigFactory.parseString("drasyl.server.enabled = false\n" +
+                    "drasyl.super-peer.enabled = false")
+                    .withFallback(ConfigFactory.load("configs/DrasylNodeIT-9df9214d78.conf"));
+            node2 = createNode(config);
+            node2.second().filter(e -> e.getType() == EVENT_NODE_UP).test().awaitCount(1);
+            colorizedPrintln("CREATED node2", COLOR_CYAN, STYLE_REVERSED);
+
+            // client1
+            config = ConfigFactory.parseString("drasyl.server.enabled = false\n" +
+                    "drasyl.super-peer.enabled = false").withFallback(ConfigFactory.load("configs/DrasylNodeIT-030f018704.conf"));
+            node3 = createNode(config);
+            node3.second().filter(e -> e.getType() == EVENT_NODE_UP).test().awaitCount(1);
+            colorizedPrintln("CREATED node3", COLOR_CYAN, STYLE_REVERSED);
+
+            // client2
+            config = ConfigFactory.parseString("drasyl.server.enabled = false\n" +
+                    "drasyl.super-peer.enabled = false").withFallback(ConfigFactory.load("configs/DrasylNodeIT-be0300f1a4.conf"));
+            node4 = createNode(config);
+            node4.second().filter(e -> e.getType() == EVENT_NODE_UP).test().awaitCount(1);
+            colorizedPrintln("CREATED node4", COLOR_CYAN, STYLE_REVERSED);
+        }
+
+        /**
+         * This test ensures that sent application messages are delivered to the recipient. All
+         * nodes send messages to every other node (including themselves). At the end, a check is
+         * made to ensure that all nodes have received all messages.
+         */
+        @Test
+        @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+        void applicationMessagesShouldBeDelivered() throws DrasylException {
+            //
+            // send messages
+            //
+            TestObserver<EventType> superSuperPeerMessages = node1.second().map(e -> e.getType()).filter(c -> c == EVENT_MESSAGE).test();
+            TestObserver<EventType> superPeerMessages = node2.second().map(e -> e.getType()).filter(c -> c == EVENT_MESSAGE).test();
+            TestObserver<EventType> client1Messages = node3.second().map(e -> e.getType()).filter(c -> c == EVENT_MESSAGE).test();
+            TestObserver<EventType> client2Messages = node4.second().map(e -> e.getType()).filter(c -> c == EVENT_MESSAGE).test();
+
+//        superPeer.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("SSP: " + e));
+//        superPeer.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("SP: " + e));
+//        client1.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("C1: " + e));
+//        client2.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("C2: " + e));
+
+            Set<String> identities = Set.of("4c4fdd0957", "9df9214d78", "030f018704", "be0300f1a4");
+            for (String recipient : identities) {
+                node1.first().send(recipient, "Hallo Welt");
+                node2.first().send(recipient, "Hallo Welt");
+                node3.first().send(recipient, "Hallo Welt");
+                node4.first().send(recipient, "Hallo Welt");
+            }
+
+            //
+            // verify
+            //
+            superSuperPeerMessages.awaitCount(4);
+            superPeerMessages.awaitCount(4);
+            client1Messages.awaitCount(4);
+            client2Messages.awaitCount(4);
+        }
+    }
+
+    /**
+     * Four nodes with disabled sever, disabled super peer and disabled intra vm discovery will be
+     * created for this test.
+     */
+    @Nested
+    class WhenServerAndSuperPeerAndIntraVmDiscoveryAreDisabled {
         private Pair<DrasylNode, Observable<Event>> node1;
         private Pair<DrasylNode, Observable<Event>> node2;
         private Pair<DrasylNode, Observable<Event>> node3;

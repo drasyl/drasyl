@@ -34,6 +34,7 @@ import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.intravm.IntraVmDiscovery;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.server.NodeServer;
 import org.drasyl.peer.connection.server.NodeServerException;
@@ -102,6 +103,7 @@ public abstract class DrasylNode {
     private final IdentityManager identityManager;
     private final PeersManager peersManager;
     private final Messenger messenger;
+    private final IntraVmDiscovery intraVmDiscovery;
     private final NodeServer server;
     private final SuperPeerClient superPeerClient;
     private final AtomicBoolean started;
@@ -127,6 +129,7 @@ public abstract class DrasylNode {
             this.identityManager = new IdentityManager(this.config);
             this.peersManager = new PeersManager(this::onEvent);
             this.messenger = new Messenger();
+            this.intraVmDiscovery = new IntraVmDiscovery(identityManager::getIdentity, messenger, peersManager, this::onEvent);
             this.server = new NodeServer(identityManager, messenger, peersManager, this.config, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP);
             this.superPeerClient = new SuperPeerClient(this.config, identityManager, peersManager, messenger, DrasylNode.WORKER_GROUP, this::onEvent);
             this.started = new AtomicBoolean();
@@ -166,6 +169,7 @@ public abstract class DrasylNode {
                IdentityManager identityManager,
                PeersManager peersManager,
                Messenger messenger,
+               IntraVmDiscovery intraVmDiscovery,
                NodeServer server,
                SuperPeerClient superPeerClient,
                AtomicBoolean started,
@@ -176,6 +180,7 @@ public abstract class DrasylNode {
         this.identityManager = identityManager;
         this.peersManager = peersManager;
         this.messenger = messenger;
+        this.intraVmDiscovery = intraVmDiscovery;
         this.server = server;
         this.superPeerClient = superPeerClient;
         this.started = started;
@@ -251,6 +256,7 @@ public abstract class DrasylNode {
             LOG.info("Shutdown drasyl Node with Identity '{}'...", identityManager.getIdentity());
             shutdownSequence = runAsync(this::stopSuperPeerClient)
                     .thenRun(this::stopServer)
+                    .thenRun(this::stopIntraVmDiscovery)
                     .thenRun(this::destroyLoopbackPeerConnection)
                     .whenComplete((r, e) -> {
                         try {
@@ -303,6 +309,14 @@ public abstract class DrasylNode {
         }
     }
 
+    private void stopIntraVmDiscovery() {
+        if (config.isIntraVmDiscoveryEnabled()) {
+            LOG.info("Stop Intra VM Discovery...");
+            intraVmDiscovery.close();
+            LOG.info("Intra VM Discovery stopped.");
+        }
+    }
+
     private void destroyLoopbackPeerConnection() {
         messenger.unsetLoopbackSink();
     }
@@ -327,6 +341,7 @@ public abstract class DrasylNode {
             LOG.info("Start drasyl Node v{}...", DrasylNode.getVersion());
             LOG.debug("The following configuration will be used: {}", config);
             startSequence = runAsync(this::loadIdentity)
+                    .thenRun(this::startIntraVmDiscovery)
                     .thenRun(this::createLoopbackPeerConnection)
                     .thenRun(this::startServer)
                     .thenRun(this::startSuperPeerClient)
@@ -382,6 +397,14 @@ public abstract class DrasylNode {
         }
         catch (IdentityManagerException e) {
             throw new CompletionException(e);
+        }
+    }
+
+    private void startIntraVmDiscovery() {
+        if (config.isIntraVmDiscoveryEnabled()) {
+            LOG.debug("Start Intra VM Discovery...");
+            intraVmDiscovery.open();
+            LOG.debug("Intra VM Discovery started.");
         }
     }
 
