@@ -123,7 +123,7 @@ class SuperPeerClientIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldSendQuitMessageOnClientSideDisconnect() throws SuperPeerClientException {
-        TestObserver<Message> receivedMessages = IntegrationTestHandler.receivedMessages().test();
+        TestObserver<Message> receivedMessages = IntegrationTestHandler.receivedMessages().filter(m -> m instanceof QuitMessage).test();
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
@@ -135,8 +135,8 @@ class SuperPeerClientIT {
         client.close();
 
         // verify emitted events
-        receivedMessages.awaitCount(3);
-        receivedMessages.assertValueAt(2, new QuitMessage(REASON_SHUTTING_DOWN));
+        receivedMessages.awaitCount(1);
+        receivedMessages.assertValueAt(0, new QuitMessage(REASON_SHUTTING_DOWN));
     }
 
     @Test
