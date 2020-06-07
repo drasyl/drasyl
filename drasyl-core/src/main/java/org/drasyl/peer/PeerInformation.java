@@ -102,4 +102,8 @@ public class PeerInformation {
     public static PeerInformation of() {
         return of(new HashSet<>(), new HashSet<>());
     }
+
+    public static PeerInformation of(Path path) {
+        return of(new HashSet<>(), path);
+    }
 }
