@@ -35,15 +35,20 @@ import java.util.stream.Collectors;
  */
 public class Messenger {
     private MessageSink loopbackSink;
+    private MessageSink intraVmSink;
     private MessageSink serverSink;
     private MessageSink superPeerSink;
 
     public Messenger() {
-        this(null, null, null);
+        this(null, null, null, null);
     }
 
-    Messenger(MessageSink loopbackSink, MessageSink serverSink, MessageSink superPeerSink) {
+    Messenger(MessageSink loopbackSink,
+              MessageSink intraVmSink,
+              MessageSink serverSink,
+              MessageSink superPeerSink) {
         this.loopbackSink = loopbackSink;
+        this.intraVmSink = intraVmSink;
         this.serverSink = serverSink;
         this.superPeerSink = superPeerSink;
     }
@@ -65,7 +70,7 @@ public class Messenger {
         Address recipientAddress = message.getRecipient();
         Identity identity = Identity.of(recipientAddress);
 
-        List<MessageSink> messageSinks = Lists.newArrayList(loopbackSink, serverSink, superPeerSink)
+        List<MessageSink> messageSinks = Lists.newArrayList(loopbackSink, intraVmSink, serverSink, superPeerSink)
                 .stream().filter(Objects::nonNull).collect(Collectors.toList());
         for (MessageSink messageSink : messageSinks) {
             try {
@@ -86,6 +91,14 @@ public class Messenger {
 
     public void unsetLoopbackSink() {
         this.loopbackSink = null;
+    }
+
+    public void setIntraVmSink(MessageSink intraVmSink) {
+        this.intraVmSink = intraVmSink;
+    }
+
+    public void unsetIntraVmSink() {
+        this.intraVmSink = null;
     }
 
     public void setServerSink(MessageSink serverSink) {
