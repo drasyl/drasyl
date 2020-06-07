@@ -73,6 +73,7 @@ public class DrasylNodeConfig {
     static final String SUPER_PEER_CHANNEL_INITIALIZER = "drasyl.super-peer.channel-initializer";
     static final String SUPER_PEER_IDLE_RETRIES = "drasyl.super-peer.idle.retries";
     static final String SUPER_PEER_IDLE_TIMEOUT = "drasyl.super-peer.idle.timeout";
+    static final String INTRA_VM_DISCOVERY_ENABLED = "drasyl.intra-vm-discovery.enabled";
     //======================================= Config Values ========================================
     private final Level loglevel; // NOSONAR
     private final CompressedPublicKey identityPublicKey;
@@ -99,6 +100,7 @@ public class DrasylNodeConfig {
     private final String superPeerChannelInitializer;
     private final short superPeerIdleRetries;
     private final Duration superPeerIdleTimeout;
+    private final boolean intraVmDiscoveryEnabled;
 
     /**
      * Creates a new config for a drasyl node.
@@ -168,6 +170,8 @@ public class DrasylNodeConfig {
         this.superPeerChannelInitializer = config.getString(SUPER_PEER_CHANNEL_INITIALIZER);
         this.superPeerIdleRetries = getShort(config, SUPER_PEER_IDLE_RETRIES);
         this.superPeerIdleTimeout = config.getDuration(SUPER_PEER_IDLE_TIMEOUT);
+
+        this.intraVmDiscoveryEnabled = config.getBoolean(INTRA_VM_DISCOVERY_ENABLED);
     }
 
     private Level getLoglevel(Config config, String path) {
@@ -271,7 +275,8 @@ public class DrasylNodeConfig {
                      Duration superPeerHandshakeTimeout,
                      String superPeerChannelInitializer,
                      short superPeerIdleRetries,
-                     Duration superPeerIdleTimeout) {
+                     Duration superPeerIdleTimeout,
+                     boolean intraVmDiscoveryEnabled) {
         this.loglevel = loglevel;
         this.identityPublicKey = identityPublicKey;
         this.identityPrivateKey = identityPrivateKey;
@@ -297,6 +302,7 @@ public class DrasylNodeConfig {
         this.superPeerChannelInitializer = superPeerChannelInitializer;
         this.superPeerIdleRetries = superPeerIdleRetries;
         this.superPeerIdleTimeout = superPeerIdleTimeout;
+        this.intraVmDiscoveryEnabled = intraVmDiscoveryEnabled;
     }
 
     public Level getLoglevel() {
@@ -399,9 +405,13 @@ public class DrasylNodeConfig {
         return superPeerIdleTimeout;
     }
 
+    public boolean isIntraVmDiscoveryEnabled() {
+        return intraVmDiscoveryEnabled;
+    }
+
     @Override
     public int hashCode() {
-        return Objects.hash(identityPublicKey, identityPrivateKey, identityPath, userAgent, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, maxContentLength, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout);
+        return Objects.hash(identityPublicKey, identityPrivateKey, identityPath, userAgent, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, maxContentLength, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled);
     }
 
     @Override
@@ -437,7 +447,8 @@ public class DrasylNodeConfig {
                 Objects.equals(superPeerRetryDelays, that.superPeerRetryDelays) &&
                 Objects.equals(superPeerHandshakeTimeout, that.superPeerHandshakeTimeout) &&
                 Objects.equals(superPeerChannelInitializer, that.superPeerChannelInitializer) &&
-                Objects.equals(superPeerIdleTimeout, that.superPeerIdleTimeout);
+                Objects.equals(superPeerIdleTimeout, that.superPeerIdleTimeout) &&
+                intraVmDiscoveryEnabled == that.intraVmDiscoveryEnabled;
     }
 
     @Override
@@ -468,6 +479,7 @@ public class DrasylNodeConfig {
                 ", superPeerChannelInitializer='" + superPeerChannelInitializer + '\'' +
                 ", superPeerIdleRetries=" + superPeerIdleRetries +
                 ", superPeerIdleTimeout=" + superPeerIdleTimeout +
+                ", intraVmDiscoveryEnabled=" + intraVmDiscoveryEnabled +
                 '}';
     }
 }
