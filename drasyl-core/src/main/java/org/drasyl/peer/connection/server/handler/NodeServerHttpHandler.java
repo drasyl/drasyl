@@ -141,7 +141,7 @@ public class NodeServerHttpHandler extends SimpleChannelInboundHandler<FullHttpR
         }
         catch (JsonProcessingException e) {
             LOG.error("Unable to create peers list:", e);
-            return Unpooled.copiedBuffer("Unable to create peers list.", CharsetUtil.UTF_8);
+            return Unpooled.copiedBuffer("{\"error\":\"Unable to create peers list.\"}", CharsetUtil.UTF_8);
         }
     }
 
