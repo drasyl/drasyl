@@ -19,15 +19,18 @@
 package org.drasyl.peer.connection.superpeer;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.EventLoopGroup;
+import io.netty.util.AttributeKey;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.event.Event;
 import org.drasyl.event.Node;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.ConnectionsManager;
+import org.drasyl.peer.connection.message.QuitMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +46,7 @@ import java.util.function.Function;
 import static java.lang.Thread.sleep;
 import static org.drasyl.event.EventType.EVENT_NODE_OFFLINE;
 import static org.drasyl.event.EventType.EVENT_NODE_ONLINE;
-import static org.drasyl.peer.connection.PeerConnection.CloseReason.REASON_SHUTTING_DOWN;
+import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 
 /**
  * This class represents the link between <code>DrasylNode</code> and the super peer. It is
@@ -52,13 +55,13 @@ import static org.drasyl.peer.connection.PeerConnection.CloseReason.REASON_SHUTT
  */
 @SuppressWarnings({ "java:S107", "java:S4818" })
 public class SuperPeerClient implements AutoCloseable {
+    public static final AttributeKey<Identity> ATTRIBUTE_IDENTITY = AttributeKey.valueOf("identity");
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClient.class);
     private final DrasylNodeConfig config;
     private final EventLoopGroup workerGroup;
     private final IdentityManager identityManager;
     private final Messenger messenger;
     private final PeersManager peersManager;
-    private final ConnectionsManager connectionsManager;
     private final Set<URI> endpoints;
     private final AtomicBoolean opened;
     private final AtomicInteger nextEndpointPointer;
@@ -72,7 +75,6 @@ public class SuperPeerClient implements AutoCloseable {
                     PeersManager peersManager,
                     Messenger messenger,
                     EventLoopGroup workerGroup,
-                    ConnectionsManager connectionsManager,
                     Set<URI> endpoints,
                     AtomicBoolean opened,
                     AtomicInteger nextEndpointPointer,
@@ -85,7 +87,6 @@ public class SuperPeerClient implements AutoCloseable {
         this.peersManager = peersManager;
         this.config = config;
         this.workerGroup = workerGroup;
-        this.connectionsManager = connectionsManager;
         this.endpoints = endpoints;
         this.opened = opened;
         this.nextEndpointPointer = nextEndpointPointer;
@@ -100,7 +101,6 @@ public class SuperPeerClient implements AutoCloseable {
                            PeersManager peersManager,
                            Messenger messenger,
                            EventLoopGroup workerGroup,
-                           ConnectionsManager connectionsManager,
                            Consumer<Event> eventConsumer) throws SuperPeerClientException {
         endpoints = config.getSuperPeerEndpoints();
 
@@ -111,7 +111,6 @@ public class SuperPeerClient implements AutoCloseable {
         this.identityManager = identityManager;
         this.messenger = messenger;
         this.peersManager = peersManager;
-        this.connectionsManager = connectionsManager;
         this.config = config;
         this.workerGroup = workerGroup;
         this.opened = new AtomicBoolean(false);
@@ -225,18 +224,12 @@ public class SuperPeerClient implements AutoCloseable {
 
     @Override
     public void close() {
-        if (opened.compareAndSet(true, false)) {
-            // FIXME: update peer information (peersManager)
+        if (opened.compareAndSet(true, false) && clientChannel != null && clientChannel.isOpen()) {
+            // send quit message and close connections
+            clientChannel.writeAndFlush(new QuitMessage(REASON_SHUTTING_DOWN)).addListener(ChannelFutureListener.CLOSE);
 
-            connectionsManager.closeConnectionsOfType(SuperPeerClientConnection.class, REASON_SHUTTING_DOWN);
-
-            if (clientChannel != null && clientChannel.isOpen()) {
-                clientChannel.close().syncUninterruptibly();
-            }
+            clientChannel.close().syncUninterruptibly();
+            clientChannel = null;
         }
-    }
-
-    public ConnectionsManager getConnectionsManager() {
-        return connectionsManager;
     }
 }

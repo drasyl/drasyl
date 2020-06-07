@@ -21,8 +21,6 @@ package org.drasyl.peer.connection.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.messenger.Messenger;
-import org.drasyl.peer.connection.AbstractNettyConnection;
-import org.drasyl.peer.connection.ConnectionsManager;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
@@ -43,22 +41,17 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 public abstract class AbstractThreeWayHandshakeClientHandler<R extends RequestMessage, O extends ResponseMessage<?>> extends AbstractThreeWayHandshakeHandler {
     private final R requestMessage;
 
-    protected AbstractThreeWayHandshakeClientHandler(ConnectionsManager connectionsManager,
-                                                     Duration timeout,
-                                                     Messenger messenger,
-                                                     R requestMessage) {
-        super(connectionsManager, timeout, messenger);
+    protected AbstractThreeWayHandshakeClientHandler(Duration timeout, Messenger messenger, R requestMessage) {
+        super(timeout, messenger);
         this.requestMessage = requestMessage;
     }
 
-    protected AbstractThreeWayHandshakeClientHandler(ConnectionsManager connectionsManager,
-                                                     Duration timeout,
+    protected AbstractThreeWayHandshakeClientHandler(Duration timeout,
                                                      Messenger messenger,
                                                      CompletableFuture<Void> handshakeFuture,
-                                                     AbstractNettyConnection connection,
                                                      ScheduledFuture<?> timeoutFuture,
                                                      R requestMessage) {
-        super(connectionsManager, timeout, messenger, handshakeFuture, connection, timeoutFuture);
+        super(timeout, messenger, handshakeFuture, timeoutFuture);
         this.requestMessage = requestMessage;
     }
 
@@ -112,10 +105,10 @@ public abstract class AbstractThreeWayHandshakeClientHandler<R extends RequestMe
         }
 
         timeoutFuture.cancel(true);
-        connection = createConnection(ctx, offerMessage);
+        createConnection(ctx, offerMessage);
         handshakeFuture.complete(null);
     }
 
-    protected abstract AbstractNettyConnection createConnection(final ChannelHandlerContext ctx,
-                                                                O offerMessage);
+    protected abstract void createConnection(ChannelHandlerContext ctx,
+                                             O offerMessage);
 }

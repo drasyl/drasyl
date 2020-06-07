@@ -48,10 +48,6 @@ public class PeerInformation {
         return Objects.hash(endpoints, paths);
     }
 
-    public Set<URI> getEndpoints() {
-        return ImmutableSet.copyOf(endpoints);
-    }
-
     @Override
     public boolean equals(Object o) {
         if (this == o) {
@@ -63,6 +59,10 @@ public class PeerInformation {
         PeerInformation that = (PeerInformation) o;
         return Objects.equals(endpoints, that.endpoints) &&
                 Objects.equals(paths, that.paths);
+    }
+
+    public Set<URI> getEndpoints() {
+        return ImmutableSet.copyOf(endpoints);
     }
 
     @Override

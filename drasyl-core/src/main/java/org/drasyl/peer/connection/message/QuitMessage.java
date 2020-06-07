@@ -18,9 +18,12 @@
  */
 package org.drasyl.peer.connection.message;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
-import org.drasyl.peer.connection.PeerConnection.CloseReason;
+import com.fasterxml.jackson.annotation.JsonValue;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Objects;
 
 /**
@@ -69,5 +72,39 @@ public class QuitMessage extends AbstractMessage implements RequestMessage {
 
     public CloseReason getReason() {
         return reason;
+    }
+
+    /**
+     * Specifies the reason for closing the connection.
+     */
+    public enum CloseReason {
+        REASON_NEW_SESSION("New Connection with this Identity has been created."),
+        REASON_SHUTTING_DOWN("Peer is shutting down.");
+        private static final Map<String, CloseReason> reasons = new HashMap<>();
+
+        static {
+            for (CloseReason description : values()) {
+                reasons.put(description.getDescription(), description);
+            }
+        }
+
+        private final String description;
+
+        CloseReason(String description) {
+            this.description = description;
+        }
+
+        /**
+         * @return a human readable representation of the reason.
+         */
+        @JsonValue
+        public String getDescription() {
+            return description;
+        }
+
+        @JsonCreator
+        public static CloseReason from(String description) {
+            return reasons.get(description);
+        }
     }
 }

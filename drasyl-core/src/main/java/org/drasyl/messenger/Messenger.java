@@ -18,38 +18,89 @@
  */
 package org.drasyl.messenger;
 
+import com.google.common.collect.Lists;
+import org.drasyl.MessageSink;
+import org.drasyl.NoPathToIdentityException;
 import org.drasyl.identity.Address;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.ConnectionsManager;
-import org.drasyl.peer.connection.PeerConnection;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 
-import java.util.Optional;
-
-import static java.util.Optional.ofNullable;
+import java.util.List;
+import java.util.Objects;
+import java.util.stream.Collectors;
 
 /**
  * The Messenger is responsible for handling the outgoing message flow and sending messages to the
  * recipient.
  */
 public class Messenger {
-    private final ConnectionsManager connectionsManager;
+    private MessageSink loopbackSink;
+    private MessageSink serverSink;
+    private MessageSink superPeerSink;
 
-    public Messenger(ConnectionsManager connectionsManager) {
-        this.connectionsManager = connectionsManager;
+    public Messenger() {
+        this(null, null, null);
     }
 
+    Messenger(MessageSink loopbackSink, MessageSink serverSink, MessageSink superPeerSink) {
+        this.loopbackSink = loopbackSink;
+        this.serverSink = serverSink;
+        this.superPeerSink = superPeerSink;
+    }
+
+    /**
+     * Sends <code>message</code> to the recipient defined in the message. Throws a {@link
+     * MessengerException} if sending is not possible (e.g. because no path to the peer exists).
+     * <p>
+     * The method tries to choose the best path to send the message to the recipient. Thus, it first
+     * checks whether the recipient can be reached locally. Then it searches for direct connections
+     * to the recipient. If there is no direct connection, the message is relayed to the Super
+     * Peer.
+     *
+     * @param message message to be sent
+     * @throws MessengerException if sending is not possible (e.g. because no path to the peer
+     *                            exists)
+     */
     public void send(ApplicationMessage message) throws MessengerException {
         Address recipientAddress = message.getRecipient();
-        Identity recipientIdentity = Identity.of(recipientAddress);
+        Identity identity = Identity.of(recipientAddress);
 
-        Optional<PeerConnection> connection = ofNullable(this.connectionsManager.getConnection(recipientIdentity));
+        List<MessageSink> messageSinks = Lists.newArrayList(loopbackSink, serverSink, superPeerSink)
+                .stream().filter(Objects::nonNull).collect(Collectors.toList());
+        for (MessageSink messageSink : messageSinks) {
+            try {
+                messageSink.send(identity, message);
+                return;
+            }
+            catch (NoPathToIdentityException e) {
+                // do nothing (continue with next MessageSink)
+            }
+        }
 
-        if (connection.isPresent()) {
-            connection.get().send(message);
-        }
-        else {
-            throw new MessengerException("Unable to send '" + message.toString() + "': Neither Connection to Recipient nor Super Peer available");
-        }
+        throw new NoPathToIdentityException(identity);
+    }
+
+    public void setLoopbackSink(MessageSink loopbackSink) {
+        this.loopbackSink = loopbackSink;
+    }
+
+    public void unsetLoopbackSink() {
+        this.loopbackSink = null;
+    }
+
+    public void setServerSink(MessageSink serverSink) {
+        this.serverSink = serverSink;
+    }
+
+    public void unsetServerSink() {
+        this.serverSink = null;
+    }
+
+    public void setSuperPeerSink(MessageSink superPeerSink) {
+        this.superPeerSink = superPeerSink;
+    }
+
+    public void unsetRelaySink() {
+        this.superPeerSink = null;
     }
 }

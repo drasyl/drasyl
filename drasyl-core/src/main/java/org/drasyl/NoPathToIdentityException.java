@@ -16,29 +16,17 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.event;
+package org.drasyl;
 
-import org.junit.jupiter.api.Test;
+import org.drasyl.identity.Identity;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-class EventTypeTest {
-    @Test
-    void isNodeEvent() {
-        assertTrue(EventType.EVENT_NODE_UP.isNodeEvent());
-        assertFalse(EventType.EVENT_PEER_DIRECT.isNodeEvent());
-    }
-
-    @Test
-    void isPeerEvent() {
-        assertTrue(EventType.EVENT_PEER_RELAY.isPeerEvent());
-        assertFalse(EventType.EVENT_NODE_DOWN.isPeerEvent());
-    }
-
-    @Test
-    void isMessageEvent() {
-        assertTrue(EventType.EVENT_MESSAGE.isMessageEvent());
-        assertFalse(EventType.EVENT_NODE_OFFLINE.isMessageEvent());
+/**
+ * Is thrown by {@link MessageSink} if it can be excluded that no path to the specified identity
+ * exists.
+ */
+@SuppressWarnings({ "java:S110" })
+public class NoPathToIdentityException extends MessageSinkException {
+    public NoPathToIdentityException(Identity identity) {
+        super("No Path to " + identity);
     }
 }

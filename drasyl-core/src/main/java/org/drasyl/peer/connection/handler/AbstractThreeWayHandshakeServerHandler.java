@@ -21,8 +21,6 @@ package org.drasyl.peer.connection.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.messenger.Messenger;
-import org.drasyl.peer.connection.AbstractNettyConnection;
-import org.drasyl.peer.connection.ConnectionsManager;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
@@ -45,20 +43,16 @@ public abstract class AbstractThreeWayHandshakeServerHandler<R extends RequestMe
     private R requestMessage;
     private O offerMessage;
 
-    protected AbstractThreeWayHandshakeServerHandler(ConnectionsManager connectionsManager,
-                                                     Duration timeout,
-                                                     Messenger messenger) {
-        super(connectionsManager, timeout, messenger);
+    protected AbstractThreeWayHandshakeServerHandler(Duration timeout, Messenger messenger) {
+        super(timeout, messenger);
     }
 
-    protected AbstractThreeWayHandshakeServerHandler(ConnectionsManager connectionsManager,
-                                                     Duration timeout,
+    protected AbstractThreeWayHandshakeServerHandler(Duration timeout,
                                                      Messenger messenger,
                                                      CompletableFuture<Void> handshakeFuture,
-                                                     AbstractNettyConnection connection,
                                                      ScheduledFuture<?> timeoutFuture,
                                                      R requestMessage) {
-        super(connectionsManager, timeout, messenger, handshakeFuture, connection, timeoutFuture);
+        super(timeout, messenger, handshakeFuture, timeoutFuture);
         this.requestMessage = requestMessage;
     }
 
@@ -105,10 +99,10 @@ public abstract class AbstractThreeWayHandshakeServerHandler<R extends RequestMe
         }
 
         timeoutFuture.cancel(true);
-        connection = createConnection(ctx, requestMessage);
+        createConnection(ctx, requestMessage);
         handshakeFuture.complete(null);
     }
 
-    protected abstract AbstractNettyConnection createConnection(final ChannelHandlerContext ctx,
-                                                                R requestMessage);
+    protected abstract void createConnection(final ChannelHandlerContext ctx,
+                                             R requestMessage);
 }

@@ -18,26 +18,25 @@
  */
 package org.drasyl.peer.connection.server.handler;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
+import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.AbstractNettyConnection;
-import org.drasyl.peer.connection.ConnectionsManager;
 import org.drasyl.peer.connection.handler.AbstractThreeWayHandshakeServerHandler;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
-import org.drasyl.peer.connection.server.NodeServerConnection;
+import org.drasyl.peer.connection.server.NodeServerChannelGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.time.Duration;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
@@ -62,32 +61,35 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
     private final PeersManager peersManager;
     private final Set<URI> entryPoints;
     private final Identity identity;
+    private final NodeServerChannelGroup channelGroup;
 
     public NodeServerConnectionHandler(Identity identity,
                                        PeersManager peersManager,
-                                       ConnectionsManager connectionsManager,
+                                       Set<URI> entryPoints,
+                                       Duration timeout,
                                        Messenger messenger,
-                                       Set<URI> entryPoints, Duration timeout) {
-        super(connectionsManager, timeout, messenger);
+                                       NodeServerChannelGroup channelGroup) {
+        super(timeout, messenger);
         this.peersManager = peersManager;
         this.entryPoints = entryPoints;
         this.identity = identity;
+        this.channelGroup = channelGroup;
     }
 
     NodeServerConnectionHandler(Identity identity,
                                 PeersManager peersManager,
-                                ConnectionsManager connectionsManager,
-                                Messenger messenger,
                                 Set<URI> entryPoints,
                                 Duration timeout,
+                                Messenger messenger,
                                 CompletableFuture<Void> handshakeFuture,
-                                AbstractNettyConnection connection,
                                 ScheduledFuture<?> timeoutFuture,
-                                JoinMessage requestMessage) {
-        super(connectionsManager, timeout, messenger, handshakeFuture, connection, timeoutFuture, requestMessage);
+                                JoinMessage requestMessage,
+                                NodeServerChannelGroup channelGroup) {
+        super(timeout, messenger, handshakeFuture, timeoutFuture, requestMessage);
         this.peersManager = peersManager;
         this.entryPoints = entryPoints;
         this.identity = identity;
+        this.channelGroup = channelGroup;
     }
 
     @Override
@@ -114,18 +116,19 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
     }
 
     @Override
-    protected AbstractNettyConnection createConnection(ChannelHandlerContext ctx,
-                                                       JoinMessage requestMessage) {
+    protected void createConnection(ChannelHandlerContext ctx,
+                                    JoinMessage requestMessage) {
         Identity clientIdentity = Identity.of(requestMessage.getPublicKey());
+        Channel channel = ctx.channel();
+        Path path = channel::writeAndFlush;
+        PeerInformation peerInformation = PeerInformation.of(requestMessage.getEndpoints(), path);
 
-        // create peer connection
-        NodeServerConnection connection = new NodeServerConnection(ctx.channel(), clientIdentity,
-                Optional.ofNullable(requestMessage.getUserAgent()).orElse("U/A"), connectionsManager);
+        channelGroup.add(clientIdentity, channel);
+
+        // remove peer information on disconnect
+        channel.closeFuture().addListener(future -> peersManager.removeChildrenAndRemovePeerInformation(clientIdentity, peerInformation));
 
         // store peer information
-        PeerInformation peerInformation = PeerInformation.of(requestMessage.getEndpoints());
         peersManager.addPeerInformationAndAddChildren(clientIdentity, peerInformation);
-
-        return connection;
     }
 }

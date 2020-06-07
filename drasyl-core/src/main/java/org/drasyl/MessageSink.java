@@ -16,29 +16,23 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.event;
+package org.drasyl;
 
-import org.junit.jupiter.api.Test;
+import org.drasyl.identity.Identity;
+import org.drasyl.peer.connection.message.Message;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-
-class EventTypeTest {
-    @Test
-    void isNodeEvent() {
-        assertTrue(EventType.EVENT_NODE_UP.isNodeEvent());
-        assertFalse(EventType.EVENT_PEER_DIRECT.isNodeEvent());
-    }
-
-    @Test
-    void isPeerEvent() {
-        assertTrue(EventType.EVENT_PEER_RELAY.isPeerEvent());
-        assertFalse(EventType.EVENT_NODE_DOWN.isPeerEvent());
-    }
-
-    @Test
-    void isMessageEvent() {
-        assertTrue(EventType.EVENT_MESSAGE.isMessageEvent());
-        assertFalse(EventType.EVENT_NODE_OFFLINE.isMessageEvent());
-    }
+/**
+ * Implement this interface and add the object to the {@link org.drasyl.messenger.Messenger} to
+ * provide new communication paths for the node
+ */
+public interface MessageSink {
+    /**
+     * Sends <code>message</code> to <code>recipient</code>.
+     *
+     * @param recipient recipient of the message
+     * @param message   message to be sent
+     * @throws MessageSinkException if sending is not possible (e.g. because no path to the peer
+     *                              exists)
+     */
+    void send(Identity recipient, Message message) throws MessageSinkException;
 }
