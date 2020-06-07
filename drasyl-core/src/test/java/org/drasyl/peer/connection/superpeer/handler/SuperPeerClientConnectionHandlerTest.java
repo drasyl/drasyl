@@ -23,8 +23,6 @@ import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.AbstractNettyConnection;
-import org.drasyl.peer.connection.ConnectionsManager;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
@@ -34,7 +32,6 @@ import org.junit.jupiter.api.Test;
 import java.util.concurrent.CompletableFuture;
 
 import static java.time.Duration.ofMillis;
-import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -46,20 +43,16 @@ class SuperPeerClientConnectionHandlerTest {
     private CompressedPublicKey expectedPublicKey;
     private CompressedPublicKey ownPublicKey;
     private PeersManager peersManager;
-    private ConnectionsManager connectionsManager;
     private Messenger messenger;
     private QuitMessage quitMessage;
-    private AbstractNettyConnection connection;
     private CompletableFuture<Void> handshakeFuture;
     private ScheduledFuture<?> timeoutFuture;
     private JoinMessage requestMessage;
 
     @BeforeEach
     void setUp() {
-        connectionsManager = mock(ConnectionsManager.class);
         messenger = mock(Messenger.class);
         handshakeFuture = mock(CompletableFuture.class);
-        connection = mock(AbstractNettyConnection.class);
         peersManager = mock(PeersManager.class);
         quitMessage = mock(QuitMessage.class);
         timeoutFuture = mock(ScheduledFuture.class);
@@ -72,9 +65,8 @@ class SuperPeerClientConnectionHandlerTest {
     void shouldReplyWithStatusOkAndThenCloseChannelIfHandshakeIsDone() {
         when(handshakeFuture.isDone()).thenReturn(true);
         when(quitMessage.getId()).thenReturn("123");
-        when(connection.isClosed()).thenReturn(completedFuture(null));
 
-        SuperPeerClientConnectionHandler handler = new SuperPeerClientConnectionHandler(expectedPublicKey, ownPublicKey, peersManager, connectionsManager, messenger, ofMillis(1000), handshakeFuture, connection, timeoutFuture, requestMessage);
+        SuperPeerClientConnectionHandler handler = new SuperPeerClientConnectionHandler(expectedPublicKey, ownPublicKey, peersManager, messenger, ofMillis(1000), handshakeFuture, timeoutFuture, requestMessage);
         channel = new EmbeddedChannel(handler);
         channel.readOutbound();
         channel.flush();

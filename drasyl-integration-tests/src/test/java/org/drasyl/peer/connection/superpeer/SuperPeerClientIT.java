@@ -32,7 +32,6 @@ import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.ConnectionsManager;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.Message;
@@ -54,7 +53,7 @@ import testutils.TestHelper;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.event.EventType.EVENT_NODE_OFFLINE;
 import static org.drasyl.event.EventType.EVENT_NODE_ONLINE;
-import static org.drasyl.peer.connection.PeerConnection.CloseReason.REASON_SHUTTING_DOWN;
+import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 
 @Execution(ExecutionMode.SAME_THREAD)
@@ -70,7 +69,6 @@ class SuperPeerClientIT {
     private Messenger messenger;
     private PeersManager peersManager;
     private Subject<Event> emittedEventsSubject;
-    private ConnectionsManager connectionsManager;
 
     @BeforeEach
     void setup(TestInfo info) throws DrasylException {
@@ -90,11 +88,9 @@ class SuperPeerClientIT {
         identityManagerServer.loadOrCreateIdentity();
         peersManager = new PeersManager(event -> {
         });
-        connectionsManager = new ConnectionsManager(event -> {
-        });
-        messenger = new Messenger(connectionsManager);
+        messenger = new Messenger();
 
-        server = new NodeServer(identityManagerServer, messenger, peersManager, connectionsManager, serverConfig, workerGroup, bossGroup);
+        server = new NodeServer(identityManagerServer, messenger, peersManager, serverConfig, workerGroup, bossGroup);
         server.open();
         emittedEventsSubject = ReplaySubject.create();
     }
@@ -115,7 +111,7 @@ class SuperPeerClientIT {
         TestObserver<Message> receivedMessages = IntegrationTestHandler.receivedMessages().test();
 
         // start client
-        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, connectionsManager, event -> {
+        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, event -> {
         });
         client.open(server.getEntryPoints());
 
@@ -131,7 +127,7 @@ class SuperPeerClientIT {
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
-        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, connectionsManager, emittedEventsSubject::onNext);
+        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
         client.open(server.getEntryPoints());
 
         // wait for node to become online, before closing it
@@ -149,7 +145,7 @@ class SuperPeerClientIT {
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
-        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, connectionsManager, emittedEventsSubject::onNext);
+        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
         client.open(server.getEntryPoints());
 
         // wait for node to become online, before closing it
@@ -168,7 +164,7 @@ class SuperPeerClientIT {
         TestObserver<Message> receivedMessages = IntegrationTestHandler.receivedMessages().filter(m -> m instanceof PongMessage).test();
 
         // start client
-        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, connectionsManager, event -> {
+        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, event -> {
         });
         client.open(server.getEntryPoints());
         sentMessages.awaitCount(1);
@@ -189,7 +185,7 @@ class SuperPeerClientIT {
         TestObserver<Message> receivedMessages = IntegrationTestHandler.receivedMessages().filter(m -> m instanceof StatusMessage).test();
 
         // start client
-        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, connectionsManager, event -> {
+        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, event -> {
         });
         client.open(server.getEntryPoints());
         sentMessages.awaitCount(1);
@@ -213,7 +209,7 @@ class SuperPeerClientIT {
         TestObserver<Event> emittedEvents = emittedEventsSubject.filter(e -> e.getType() == EVENT_NODE_OFFLINE).test();
 
         // start client
-        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, connectionsManager, emittedEventsSubject::onNext);
+        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
         client.open(server.getEntryPoints());
         receivedMessages.awaitCount(1);
 
@@ -231,7 +227,7 @@ class SuperPeerClientIT {
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
-        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, connectionsManager, emittedEventsSubject::onNext);
+        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
         client.open(server.getEntryPoints());
 
         // verify emitted events
@@ -245,7 +241,7 @@ class SuperPeerClientIT {
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
-        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, connectionsManager, emittedEventsSubject::onNext);
+        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
         client.open(server.getEntryPoints());
 
         emittedEvents.awaitCount(1);

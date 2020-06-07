@@ -75,7 +75,7 @@ public class NodeServerChannelInitializer extends DefaultSessionInitializer {
         pipeline.addLast(ConnectionExceptionMessageHandler.EXCEPTION_MESSAGE_HANDLER, ConnectionExceptionMessageHandler.INSTANCE);
 
         // Server handler
-        pipeline.addLast(NODE_SERVER_CONNECTION_HANDLER, new NodeServerConnectionHandler(server.getIdentityManager().getIdentity(), server.getPeersManager(), server.getConnectionsManager(), server.getMessenger(), server.getEntryPoints(), server.getConfig().getServerHandshakeTimeout()));
+        pipeline.addLast(NODE_SERVER_CONNECTION_HANDLER, new NodeServerConnectionHandler(server.getIdentityManager().getIdentity(), server.getPeersManager(), server.getEntryPoints(), server.getConfig().getServerHandshakeTimeout(), server.getMessenger(), server.getChannelGroup()));
     }
 
     @Override

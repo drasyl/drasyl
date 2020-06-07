@@ -18,21 +18,21 @@
  */
 package org.drasyl.peer.connection.superpeer.handler;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
+import org.drasyl.NoPathToIdentityException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
+import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.AbstractNettyConnection;
-import org.drasyl.peer.connection.ConnectionsManager;
 import org.drasyl.peer.connection.handler.AbstractThreeWayHandshakeClientHandler;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
-import org.drasyl.peer.connection.superpeer.SuperPeerClientConnection;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -64,9 +64,8 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
                                             Set<URI> endpoints,
                                             Duration timeout,
                                             PeersManager peersManager,
-                                            ConnectionsManager connectionsManager,
                                             Messenger messenger) {
-        super(connectionsManager, timeout, messenger, new JoinMessage(ownPublicKey, endpoints));
+        super(timeout, messenger, new JoinMessage(ownPublicKey, endpoints));
         this.expectedPublicKey = expectedPublicKey;
         this.ownPublicKey = ownPublicKey;
         this.peersManager = peersManager;
@@ -76,17 +75,20 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
     SuperPeerClientConnectionHandler(CompressedPublicKey expectedPublicKey,
                                      CompressedPublicKey ownPublicKey,
                                      PeersManager peersManager,
-                                     ConnectionsManager connectionsManager,
                                      Messenger messenger,
                                      Duration timeout,
                                      CompletableFuture<Void> handshakeFuture,
-                                     AbstractNettyConnection connection,
                                      ScheduledFuture<?> timeoutFuture,
                                      JoinMessage requestMessage) {
-        super(connectionsManager, timeout, messenger, handshakeFuture, connection, timeoutFuture, requestMessage);
+        super(timeout, messenger, handshakeFuture, timeoutFuture, requestMessage);
         this.expectedPublicKey = expectedPublicKey;
         this.ownPublicKey = ownPublicKey;
         this.peersManager = peersManager;
+    }
+
+    @Override
+    public void handlerAdded(ChannelHandlerContext ctx) {
+        ctx.channel().closeFuture().addListener(future -> messenger.unsetRelaySink());
     }
 
     @Override
@@ -109,18 +111,26 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
     }
 
     @Override
-    protected AbstractNettyConnection createConnection(final ChannelHandlerContext ctx,
-                                                       WelcomeMessage offerMessage) {
+    protected void createConnection(ChannelHandlerContext ctx,
+                                    WelcomeMessage offerMessage) {
         Identity identity = Identity.of(offerMessage.getPublicKey());
+        Channel channel = ctx.channel();
+        Path path = channel::writeAndFlush;
+        PeerInformation peerInformation = PeerInformation.of(offerMessage.getEndpoints(), path);
 
-        // create peer connection
-        SuperPeerClientConnection connection = new SuperPeerClientConnection(ctx.channel(), identity, offerMessage.getUserAgent(), connectionsManager);
+        // remove peer information on disconnect
+        channel.closeFuture().addListener(future -> peersManager.unsetSuperPeerAndRemovePeerInformation(peerInformation));
 
         // store peer information
-        PeerInformation peerInformation = PeerInformation.of(offerMessage.getEndpoints(), message -> {
-        });
         peersManager.addPeerInformationAndSetSuperPeer(identity, peerInformation);
 
-        return connection;
+        messenger.setSuperPeerSink((recipient, message) -> {
+            if (channel.isWritable()) {
+                channel.writeAndFlush(message);
+            }
+            else {
+                throw new NoPathToIdentityException(recipient);
+            }
+        });
     }
 }

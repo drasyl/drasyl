@@ -26,7 +26,6 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.ConnectionsManager;
 import org.drasyl.peer.connection.server.NodeServer;
 import org.drasyl.peer.connection.superpeer.SuperPeerClient;
 import org.drasyl.util.Pair;
@@ -61,7 +60,7 @@ class DrasylNodeTest {
     private CompletableFuture<Void> startSequence;
     private CompletableFuture<Void> shutdownSequence;
     private SuperPeerClient superPeerClient;
-    private ConnectionsManager connectionsManager;
+    private MessageSink messageSink;
     private Address address;
 
     @BeforeEach
@@ -82,7 +81,7 @@ class DrasylNodeTest {
         startSequence = mock(CompletableFuture.class);
         shutdownSequence = mock(CompletableFuture.class);
         superPeerClient = mock(SuperPeerClient.class);
-        connectionsManager = mock(ConnectionsManager.class);
+        messageSink = mock(MessageSink.class);
         address = mock(Address.class);
     }
 
@@ -92,7 +91,7 @@ class DrasylNodeTest {
 
     @Test
     void startShouldReturnSameFutureIfStartHasAlreadyBeenTriggered() {
-        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, connectionsManager, messenger, server, superPeerClient, new AtomicBoolean(true), startSequence, shutdownSequence) {
+        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, server, superPeerClient, new AtomicBoolean(true), startSequence, shutdownSequence, messageSink) {
             @Override
             public void onEvent(Event event) {
             }
@@ -105,7 +104,7 @@ class DrasylNodeTest {
         when(identityManager.getAddress()).thenReturn(address);
         when(identityManager.getIdentity()).thenReturn(identity);
 
-        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, connectionsManager, messenger, server, superPeerClient, new AtomicBoolean(false), startSequence, shutdownSequence) {
+        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, server, superPeerClient, new AtomicBoolean(false), startSequence, shutdownSequence, messageSink) {
             @Override
             public void onEvent(Event event) {
             }
@@ -119,7 +118,7 @@ class DrasylNodeTest {
     void shutdownShouldEmitDownAndNormalTerminationEventOnSuccessfulShutdown() {
         when(identityManager.getIdentity()).thenReturn(identity);
 
-        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, connectionsManager, messenger, server, superPeerClient, new AtomicBoolean(true), startSequence, shutdownSequence) {
+        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, server, superPeerClient, new AtomicBoolean(true), startSequence, shutdownSequence, messageSink) {
             @Override
             public void onEvent(Event event) {
             }
@@ -132,7 +131,7 @@ class DrasylNodeTest {
 
     @Test
     void shutdownShouldReturnSameFutureIfShutdownHasAlreadyBeenTriggered() {
-        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, connectionsManager, messenger, server, superPeerClient, new AtomicBoolean(false), startSequence, shutdownSequence) {
+        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, server, superPeerClient, new AtomicBoolean(false), startSequence, shutdownSequence, messageSink) {
             @Override
             public void onEvent(Event event) {
             }
@@ -144,7 +143,7 @@ class DrasylNodeTest {
     void sendShouldCallMessenger() throws DrasylException {
         when(identityManager.getAddress()).thenReturn(address);
 
-        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, connectionsManager, messenger, server, superPeerClient, started, startSequence, shutdownSequence) {
+        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, server, superPeerClient, started, startSequence, shutdownSequence, messageSink) {
             @Override
             public void onEvent(Event event) {
             }

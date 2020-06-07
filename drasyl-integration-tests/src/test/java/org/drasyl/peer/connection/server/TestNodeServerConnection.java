@@ -19,6 +19,8 @@
 package org.drasyl.peer.connection.server;
 
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
@@ -30,11 +32,10 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.identity.Address;
 import org.drasyl.identity.CompressedKeyPair;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.AbstractNettyConnection;
-import org.drasyl.peer.connection.ConnectionsManager;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
@@ -44,28 +45,88 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
+import java.text.MessageFormat;
 import java.time.Duration;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.awaitility.Awaitility.await;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
-import static org.mockito.Mockito.mock;
 
-public class TestNodeServerConnection extends AbstractNettyConnection {
+/**
+ * A {@link TestNodeServerConnection} object represents a connection to another peer, e.g. local or
+ * remote. For this purpose, this object provides a standardized interface so that the actual
+ * connection type is abstracted and the same operations are always available.
+ */
+@SuppressWarnings({ "java:S1452" })
+public class TestNodeServerConnection {
     private final static Logger LOG = LoggerFactory.getLogger(TestNodeServerConnection.class);
+    protected final String connectionId = Crypto.randomString(8);
+    protected final Channel channel;
+    protected final String userAgent;
+    protected final String channelId;
     protected final Subject<Message> receivedMessages;
     protected final ConcurrentHashMap<String, CompletableFuture<ResponseMessage<?>>> futures;
-    private final CompressedKeyPair keyPair;
+    protected final CompressedKeyPair keyPair;
+    protected Identity identity;
+    protected AtomicBoolean isClosed;
+    protected CompletableFuture<Boolean> closedCompletable;
 
+    /**
+     * Creates a new connection.
+     *
+     * @param channel  channel of the connection
+     * @param identity the identity of this {@link TestNodeServerConnection}
+     */
     public TestNodeServerConnection(Channel channel, Identity identity) {
-        super(channel, identity, "JUnit-Test", mock(ConnectionsManager.class));
-        receivedMessages = PublishSubject.create();
+        this(identity, channel, "JUnit-Test", new AtomicBoolean(false), new CompletableFuture<>());
+
+        this.channel.closeFuture().addListener((ChannelFutureListener) this::onChannelClose);
+    }
+
+    protected TestNodeServerConnection(Identity identity,
+                                       Channel channel,
+                                       String userAgent,
+                                       AtomicBoolean isClosed,
+                                       CompletableFuture<Boolean> closedCompletable) {
+        this.identity = identity;
+        this.channel = channel;
+        this.userAgent = userAgent;
+        this.channelId = channel.id().asShortText();
+        this.isClosed = isClosed;
+        this.closedCompletable = closedCompletable;
+        this.receivedMessages = PublishSubject.create();
+        this.futures = new ConcurrentHashMap<>();
         this.keyPair = identity.getKeyPair();
-        futures = new ConcurrentHashMap<>();
+    }
+
+    /**
+     * This method is called when the netty channel closes.
+     *
+     * @param future
+     */
+    protected void onChannelClose(ChannelFuture future) {
+        if (future.isSuccess()) {
+            if (getLogger().isDebugEnabled()) {
+                getLogger().debug("[{}]: The channel have been closed successfully.", future.channel().id().asShortText());
+            }
+            closedCompletable.complete(true);
+        }
+        else {
+            if (getLogger().isDebugEnabled()) {
+                getLogger().error("[{}]: The channel could not be closed: ", future.channel().id().asShortText(), future.cause());
+            }
+        }
+    }
+
+    protected Logger getLogger() {
+        return TestNodeServerConnection.LOG;
     }
 
     public Observable<Message> receivedMessages() {
@@ -81,9 +142,85 @@ public class TestNodeServerConnection extends AbstractNettyConnection {
         }
     }
 
+    /**
+     * Returns the identity of the peer.
+     */
+    public Identity getIdentity() {
+        return identity;
+    }
+
+    public void send(Message message) {
+        requireNonNull(message);
+        if (!isClosed.get() && channel.isOpen()) {
+            channel.writeAndFlush(message);
+        }
+        else {
+            getLogger().info("[{} Can't send message {}", TestNodeServerConnection.this, message);
+        }
+    }
+
+    public String getUserAgent() {
+        return this.userAgent;
+    }
+
+    /**
+     * Returns the address of the peer.
+     */
+    public Address getAddress() {
+        return identity.getAddress();
+    }
+
+    public CompletableFuture<Boolean> isClosed() {
+        return closedCompletable;
+    }
+
     @Override
-    protected Logger getLogger() {
-        return LOG;
+    public int hashCode() {
+        return Objects.hash(connectionId);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        TestNodeServerConnection that = (TestNodeServerConnection) o;
+        return Objects.equals(connectionId, that.connectionId);
+    }
+
+    @Override
+    public String toString() {
+        return MessageFormat.format("{0} [{1}/Channel:{2}]", getClass().getSimpleName(), identity.getAddress(), channelId);
+    }
+
+    /**
+     * Sends a message to the peer and returns a {@link Single} object for potential responses to
+     * this message.
+     *
+     * @param message message that should be sent
+     * @return a {@link Single} object that can be fulfilled with a {@link Message response} to the
+     * message
+     */
+    @SuppressWarnings("unchecked")
+    public CompletableFuture<ResponseMessage<?>> sendRequest(RequestMessage message) {
+        if (isClosed.get()) {
+            return failedFuture(new IllegalStateException("This connection is already prompt to close."));
+        }
+
+        CompletableFuture<ResponseMessage<?>> future = new CompletableFuture<>();
+
+        if (futures.putIfAbsent(message.getId(), future) == null) {
+            send(message);
+        }
+
+        return future;
+    }
+
+    public CompressedPublicKey getPublicKey() {
+        return keyPair.getPublicKey();
     }
 
     /**
@@ -91,7 +228,7 @@ public class TestNodeServerConnection extends AbstractNettyConnection {
      */
     public static TestNodeServerConnection clientSession(NodeServer server) throws ExecutionException, InterruptedException, CryptoException {
         URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
-        return clientSession(serverEntryPoint, Identity.of(CompressedKeyPair.of(Crypto.generateKeys())), true, server.workerGroup);
+        return TestNodeServerConnection.clientSession(serverEntryPoint, Identity.of(CompressedKeyPair.of(Crypto.generateKeys())), true, server.workerGroup);
     }
 
     /**
@@ -170,7 +307,7 @@ public class TestNodeServerConnection extends AbstractNettyConnection {
     public static TestNodeServerConnection clientSession(NodeServer server,
                                                          Identity identity) throws ExecutionException, InterruptedException {
         URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
-        return clientSession(serverEntryPoint, identity, true, server.workerGroup);
+        return TestNodeServerConnection.clientSession(serverEntryPoint, identity, true, server.workerGroup);
     }
 
     /**
@@ -178,10 +315,10 @@ public class TestNodeServerConnection extends AbstractNettyConnection {
      */
     public static TestNodeServerConnection clientSessionAfterJoin(NodeServer server) throws ExecutionException,
             InterruptedException, CryptoException {
-        TestNodeServerConnection session = clientSession(server, true);
+        TestNodeServerConnection session = TestNodeServerConnection.clientSession(server, true);
         ResponseMessage<?> responseMessage = session.sendRequest(new JoinMessage(session.getPublicKey(), Set.of())).get();
         session.send(new StatusMessage(STATUS_OK, responseMessage.getId()));
-        await().until(() -> server.getConnectionsManager().getConnection(session.getIdentity()) != null);
+        await().until(() -> server.getChannelGroup().find(session.getIdentity()) != null);
 
         return session;
     }
@@ -193,35 +330,8 @@ public class TestNodeServerConnection extends AbstractNettyConnection {
                                                          boolean pingPong) throws ExecutionException,
             InterruptedException, CryptoException {
         URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
-        return clientSession(serverEntryPoint,
+        return TestNodeServerConnection.clientSession(serverEntryPoint,
                 Identity.of(CompressedKeyPair.of(Crypto.generateKeys())), pingPong, server.workerGroup);
-    }
-
-    /**
-     * Sends a message to the peer and returns a {@link Single} object for potential responses to
-     * this message.
-     *
-     * @param message message that should be sent
-     * @return a {@link Single} object that can be fulfilled with a {@link Message response} to the
-     * message
-     */
-    @SuppressWarnings("unchecked")
-    public CompletableFuture<ResponseMessage<?>> sendRequest(RequestMessage message) {
-        if (isClosed.get()) {
-            return failedFuture(new IllegalStateException("This connection is already prompt to close."));
-        }
-
-        CompletableFuture<ResponseMessage<?>> future = new CompletableFuture<>();
-
-        if (futures.putIfAbsent(message.getId(), future) == null) {
-            send(message);
-        }
-
-        return future;
-    }
-
-    public CompressedPublicKey getPublicKey() {
-        return keyPair.getPublicKey();
     }
 
     /**
@@ -230,6 +340,6 @@ public class TestNodeServerConnection extends AbstractNettyConnection {
     public static TestNodeServerConnection clientSession(URI targetSystem,
                                                          Identity identity,
                                                          boolean pingPong) throws ExecutionException, InterruptedException {
-        return clientSession(targetSystem, identity, pingPong, null);
+        return TestNodeServerConnection.clientSession(targetSystem, identity, pingPong, null);
     }
 }

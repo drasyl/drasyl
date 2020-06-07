@@ -31,7 +31,6 @@ import org.drasyl.identity.AddressTestHelper;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.ConnectionsManager;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,11 +39,8 @@ import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -65,12 +61,9 @@ class NodeServerTest {
     private ServerBootstrap serverBootstrap;
     private EventLoopGroup workerGroup;
     private EventLoopGroup bossGroup;
-    private List<Runnable> beforeCloseListeners;
-    private CompletableFuture<Void> startedFuture;
-    private CompletableFuture<Void> stoppedFuture;
     private ApplicationMessage message;
     private NodeServerChannelBootstrap nodeServerChannelBootstrap;
-    private ConnectionsManager connectionsManager;
+    private NodeServerChannelGroup channelGroup;
 
     @BeforeEach
     void setUp() throws InterruptedException, NodeServerException {
@@ -82,13 +75,10 @@ class NodeServerTest {
         serverBootstrap = mock(ServerBootstrap.class);
         workerGroup = mock(EventLoopGroup.class);
         bossGroup = mock(EventLoopGroup.class);
-        beforeCloseListeners = new ArrayList<>();
-        startedFuture = new CompletableFuture<>();
-        stoppedFuture = new CompletableFuture<>();
         Future future = mock(Future.class);
         nodeServerChannelBootstrap = mock(NodeServerChannelBootstrap.class);
         ChannelFuture channelFuture = mock(ChannelFuture.class);
-        connectionsManager = mock(ConnectionsManager.class);
+        channelGroup = mock(NodeServerChannelGroup.class);
 
         message = mock(ApplicationMessage.class);
         String msgID = Crypto.randomString(16);
@@ -120,9 +110,9 @@ class NodeServerTest {
     void openShouldSetOpenToTrue() throws NodeServerException {
         when(serverChannel.localAddress()).thenReturn(mock(InetSocketAddress.class));
 
-        NodeServer server = new NodeServer(identityManager, messenger, peersManager, connectionsManager,
+        NodeServer server = new NodeServer(identityManager, messenger, peersManager,
                 config, serverChannel, serverBootstrap, workerGroup, bossGroup,
-                nodeServerChannelBootstrap, new AtomicBoolean(false), -1, new HashSet<>());
+                nodeServerChannelBootstrap, new AtomicBoolean(false), -1, new HashSet<>(), channelGroup);
         server.open();
 
         assertTrue(server.isOpen());
@@ -130,9 +120,9 @@ class NodeServerTest {
 
     @Test
     void openShouldDoNothingIfServerHasAlreadyBeenStarted() throws NodeServerException {
-        NodeServer server = new NodeServer(identityManager, messenger, peersManager, connectionsManager,
+        NodeServer server = new NodeServer(identityManager, messenger, peersManager,
                 config, serverChannel, serverBootstrap, workerGroup, bossGroup,
-                nodeServerChannelBootstrap, new AtomicBoolean(true), -1, new HashSet<>());
+                nodeServerChannelBootstrap, new AtomicBoolean(true), -1, new HashSet<>(), channelGroup);
 
         server.open();
 
@@ -141,9 +131,9 @@ class NodeServerTest {
 
     @Test
     void closeShouldDoNothingIfServerHasAlreadyBeenShutDown() {
-        NodeServer server = new NodeServer(identityManager, messenger, peersManager, connectionsManager,
+        NodeServer server = new NodeServer(identityManager, messenger, peersManager,
                 config, serverChannel, serverBootstrap, workerGroup, bossGroup,
-                nodeServerChannelBootstrap, new AtomicBoolean(false), -1, new HashSet<>());
+                nodeServerChannelBootstrap, new AtomicBoolean(false), -1, new HashSet<>(), channelGroup);
 
         server.close();
 
@@ -152,7 +142,7 @@ class NodeServerTest {
 
     @Test
     void correctObjectCreation() throws DrasylException {
-        NodeServer server = new NodeServer(identityManager, messenger, peersManager, connectionsManager, workerGroup, bossGroup);
+        NodeServer server = new NodeServer(identityManager, messenger, peersManager, workerGroup, bossGroup);
 
         assertNotNull(server.getBossGroup());
         assertNotNull(server.getConfig());

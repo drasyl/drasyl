@@ -27,18 +27,18 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.sentry.Sentry;
 import io.sentry.event.User;
 import org.drasyl.event.Event;
+import org.drasyl.event.EventType;
 import org.drasyl.event.Node;
 import org.drasyl.identity.Address;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.ConnectionsManager;
-import org.drasyl.peer.connection.LoopbackPeerConnection;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.server.NodeServer;
 import org.drasyl.peer.connection.server.NodeServerException;
 import org.drasyl.peer.connection.superpeer.SuperPeerClient;
+import org.drasyl.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -56,7 +56,6 @@ import static org.drasyl.event.EventType.EVENT_NODE_DOWN;
 import static org.drasyl.event.EventType.EVENT_NODE_NORMAL_TERMINATION;
 import static org.drasyl.event.EventType.EVENT_NODE_UNRECOVERABLE_ERROR;
 import static org.drasyl.event.EventType.EVENT_NODE_UP;
-import static org.drasyl.peer.connection.PeerConnection.CloseReason.REASON_SHUTTING_DOWN;
 
 /**
  * Represents a node in the drasyl Overlay Network. Applications that want to run on drasyl must
@@ -102,11 +101,11 @@ public abstract class DrasylNode {
     private final DrasylNodeConfig config;
     private final IdentityManager identityManager;
     private final PeersManager peersManager;
-    private final ConnectionsManager connectionsManager;
     private final Messenger messenger;
     private final NodeServer server;
     private final SuperPeerClient superPeerClient;
     private final AtomicBoolean started;
+    private final MessageSink loopbackMessageSink;
     private CompletableFuture<Void> startSequence;
     private CompletableFuture<Void> shutdownSequence;
 
@@ -127,13 +126,24 @@ public abstract class DrasylNode {
             this.config = new DrasylNodeConfig(config);
             this.identityManager = new IdentityManager(this.config);
             this.peersManager = new PeersManager(this::onEvent);
-            this.connectionsManager = new ConnectionsManager(this::onEvent);
-            this.messenger = new Messenger(this.connectionsManager);
-            this.server = new NodeServer(identityManager, messenger, peersManager, connectionsManager, config, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP);
-            this.superPeerClient = new SuperPeerClient(this.config, identityManager, peersManager, messenger, DrasylNode.WORKER_GROUP, connectionsManager, this::onEvent);
+            this.messenger = new Messenger();
+            this.server = new NodeServer(identityManager, messenger, peersManager, this.config, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP);
+            this.superPeerClient = new SuperPeerClient(this.config, identityManager, peersManager, messenger, DrasylNode.WORKER_GROUP, this::onEvent);
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = new CompletableFuture<>();
+            this.loopbackMessageSink = (identity, message) -> {
+                if (!identityManager.getIdentity().equals(identity)) {
+                    throw new NoPathToIdentityException(identity);
+                }
+
+                if (!(message instanceof ApplicationMessage)) {
+                    throw new IllegalArgumentException("DrasylNode.messageSink can only handle messages of type " + ApplicationMessage.class.getSimpleName());
+                }
+
+                ApplicationMessage applicationMessage = (ApplicationMessage) message;
+                onEvent(new Event(EventType.EVENT_MESSAGE, Pair.of(applicationMessage.getSender(), applicationMessage.getPayload())));
+            };
 
             // set config level of all drasyl loggers
             LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
@@ -155,23 +165,23 @@ public abstract class DrasylNode {
     DrasylNode(DrasylNodeConfig config,
                IdentityManager identityManager,
                PeersManager peersManager,
-               ConnectionsManager connectionsManager,
                Messenger messenger,
                NodeServer server,
                SuperPeerClient superPeerClient,
                AtomicBoolean started,
                CompletableFuture<Void> startSequence,
-               CompletableFuture<Void> shutdownSequence) {
+               CompletableFuture<Void> shutdownSequence,
+               MessageSink loopbackMessageSink) {
         this.config = config;
         this.identityManager = identityManager;
         this.peersManager = peersManager;
-        this.connectionsManager = connectionsManager;
         this.messenger = messenger;
         this.server = server;
         this.superPeerClient = superPeerClient;
         this.started = started;
         this.startSequence = startSequence;
         this.shutdownSequence = shutdownSequence;
+        this.loopbackMessageSink = loopbackMessageSink;
     }
 
     public synchronized void send(String recipient, byte[] payload) throws DrasylException {
@@ -297,7 +307,7 @@ public abstract class DrasylNode {
     }
 
     private void destroyLoopbackPeerConnection() {
-        connectionsManager.closeConnectionsOfType(LoopbackPeerConnection.class, REASON_SHUTTING_DOWN);
+        messenger.unsetLoopbackSink();
     }
 
     /**
@@ -383,7 +393,7 @@ public abstract class DrasylNode {
     }
 
     private void createLoopbackPeerConnection() {
-        new LoopbackPeerConnection(this::onEvent, identityManager.getIdentity(), connectionsManager);
+        messenger.setLoopbackSink(loopbackMessageSink);
     }
 
     /**
