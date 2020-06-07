@@ -65,7 +65,7 @@ public abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDupl
     protected void processUnexpectedMessageDuringHandshake(ChannelHandlerContext ctx,
                                                            Message message) {
         if (getLogger().isTraceEnabled()) {
-            getLogger().trace("[{}] Handshake is not completed. Inbound message was rejected: '{}'", ctx, message);
+            getLogger().trace("[{}] Handshake is not completed. Inbound message was rejected: '{}'", ctx.channel().id().asShortText(), message);
         }
         // reject all non-request messages if handshake is not done
         ctx.writeAndFlush(new StatusMessage(STATUS_FORBIDDEN, message.getId()));
