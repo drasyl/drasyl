@@ -17,7 +17,7 @@ services:
       CONFIG_FORCE_drasyl_loglevel: DEBUG
       CONFIG_FORCE_drasyl_identity_public__key: $DRASYL_PUBLIC_KEY
       CONFIG_FORCE_drasyl_identity_private__key: $DRASYL_PRIVATE_KEY
-      CONFIG_FORCE_drasyl_entry__points_0: wss://${APP_DEPLOY_HOST}
+      CONFIG_FORCE_drasyl_server_endpoints_0: wss://${APP_DEPLOY_HOST}
       CONFIG_FORCE_drasyl_super__peer_enabled: "false"
       SENTRY_DNS: ${SENTRY_DNS}
       SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT}
