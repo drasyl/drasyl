@@ -74,7 +74,7 @@ class JoinMessageTest {
     void fromJson() throws IOException {
         String json = "{\"@type\":\"JoinMessage\",\"id\":\"4AE5CDCD8C21719F8E779F21\",\"userAgent\":\"\",\"publicKey\":\"" + publicKey.getCompressedKey() + "\",\"endpoints\":[\"ws://test\"]}";
 
-        assertThat(JSON_MAPPER.readValue(json, Message.class), instanceOf(JoinMessage.class));
+        assertEquals(JSON_MAPPER.readValue(json, Message.class), new JoinMessage(publicKey, Set.of(URI.create("ws://test"))));
     }
 
     @Test
