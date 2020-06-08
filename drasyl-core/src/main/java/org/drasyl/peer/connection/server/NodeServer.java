@@ -27,6 +27,7 @@ import io.netty.channel.group.ChannelGroupFutureListener;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.NoPathToIdentityException;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
@@ -210,6 +211,12 @@ public class NodeServer implements AutoCloseable {
                         return uri;
                     }).collect(Collectors.toSet());
             messenger.setServerSink((recipient, message) -> {
+                // if recipient is a grandchild, we must send message to appropriate child
+                Identity grandchildrenPath = peersManager.getGrandchildrenRoutes().get(recipient);
+                if (grandchildrenPath != null) {
+                    recipient = grandchildrenPath;
+                }
+
                 try {
                     channelGroup.writeAndFlush(recipient, message);
                 }
@@ -238,11 +245,13 @@ public class NodeServer implements AutoCloseable {
 
             // send quit message to all clients and close connections
             channelGroup.writeAndFlush(new QuitMessage(REASON_SHUTTING_DOWN))
-                    .addListener((ChannelGroupFutureListener) future -> future.group().close());
+                    .addListener((ChannelGroupFutureListener) future -> {
+                        future.group().close();
 
-            // shutdown server
-            serverChannel.close().syncUninterruptibly();
-            serverChannel = null;
+                        // shutdown server
+                        serverChannel.close();
+                        serverChannel = null;
+                    });
         }
     }
 }

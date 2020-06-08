@@ -21,53 +21,36 @@ package org.drasyl.peer.connection.message;
 import org.drasyl.identity.CompressedPublicKey;
 
 import java.net.URI;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 
-/**
- * A message representing a join to the node server.
- */
-public class JoinMessage extends AbstractMessageWithUserAgent implements RequestMessage {
+public class RegisterGrandchildMessage extends AbstractMessage implements RequestMessage {
     private final CompressedPublicKey publicKey;
     private final Set<URI> endpoints;
-    private final Map<CompressedPublicKey, Set<URI>> childrenAndGrandchildren;
 
-    protected JoinMessage() {
+    protected RegisterGrandchildMessage() {
         publicKey = null;
         endpoints = null;
-        childrenAndGrandchildren = null;
     }
 
     /**
-     * Creates a new join message.
+     * Creates a new register grandchild message.
      *
-     * @param publicKey the public key of the joining node
-     * @param endpoints the endpoints of the joining node
+     * @param publicKey the public key of the new client
      */
-    public JoinMessage(CompressedPublicKey publicKey,
-                       Set<URI> endpoints,
-                       Map<CompressedPublicKey, Set<URI>> childrenAndGrandchildren) {
+    public RegisterGrandchildMessage(CompressedPublicKey publicKey, Set<URI> endpoints) {
         this.publicKey = requireNonNull(publicKey);
         this.endpoints = requireNonNull(endpoints);
-        this.childrenAndGrandchildren = requireNonNull(childrenAndGrandchildren);
     }
 
-    public Map<CompressedPublicKey, Set<URI>> getChildrenAndGrandchildren() {
-        return this.childrenAndGrandchildren;
+    public CompressedPublicKey getPublicKey() {
+        return publicKey;
     }
 
     public Set<URI> getEndpoints() {
         return this.endpoints;
-    }
-
-    /**
-     * @return the public key of the joining node
-     */
-    public CompressedPublicKey getPublicKey() {
-        return publicKey;
     }
 
     @Override
@@ -86,20 +69,17 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
         if (!super.equals(o)) {
             return false;
         }
-        JoinMessage join = (JoinMessage) o;
-        return Objects.equals(publicKey, join.publicKey) &&
-                Objects.equals(endpoints, join.endpoints) &&
-                Objects.equals(childrenAndGrandchildren, join.childrenAndGrandchildren);
+        RegisterGrandchildMessage registerGrandchildMessage = (RegisterGrandchildMessage) o;
+        return Objects.equals(publicKey, registerGrandchildMessage.publicKey) &&
+                Objects.equals(endpoints, registerGrandchildMessage.endpoints);
     }
 
     @Override
     public String toString() {
-        return "JoinMessage{" +
+        return "RegisterGrandchildMessage{" +
                 "publicKey=" + publicKey +
                 ", endpoints=" + endpoints +
-                ", childrenAndGrandchildren=" + childrenAndGrandchildren +
                 ", id='" + id + '\'' +
-                ", signature=" + signature +
                 '}';
     }
 }

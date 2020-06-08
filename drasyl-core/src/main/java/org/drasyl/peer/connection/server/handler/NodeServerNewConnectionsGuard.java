@@ -49,16 +49,12 @@ public class NodeServerNewConnectionsGuard extends SimpleChannelInboundHandler<M
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, Message msg) {
         if (acceptNewConnectionsSupplier.getAsBoolean()) {
+            ReferenceCountUtil.retain(msg);
             ctx.fireChannelRead(msg);
         }
         else {
-            try {
-                ctx.writeAndFlush(new StatusMessage(STATUS_SERVICE_UNAVAILABLE, msg.getId())).addListener(ChannelFutureListener.CLOSE);
-                LOG.debug("ConnectionGuard blocked creation of channel {}.", ctx.channel().id());
-            }
-            finally {
-                ReferenceCountUtil.release(msg);
-            }
+            ctx.writeAndFlush(new StatusMessage(STATUS_SERVICE_UNAVAILABLE, msg.getId())).addListener(ChannelFutureListener.CLOSE);
+            LOG.debug("ConnectionGuard blocked creation of channel {}.", ctx.channel().id());
         }
     }
 }

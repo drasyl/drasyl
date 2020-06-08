@@ -30,17 +30,25 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.handler.AbstractThreeWayHandshakeServerHandler;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
+import org.drasyl.peer.connection.message.Message;
+import org.drasyl.peer.connection.message.RegisterGrandchildMessage;
+import org.drasyl.peer.connection.message.StatusMessage;
+import org.drasyl.peer.connection.message.UnregisterGrandchildMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
 import org.drasyl.peer.connection.server.NodeServerChannelGroup;
+import org.drasyl.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_SAME_PUBLIC_KEY;
+import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
+import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE_IDENTITY;
 
 /**
  * Acts as a guard for in- and outbound connections. A channel is only created, when a {@link
@@ -48,7 +56,7 @@ import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Erro
  * received. Every other incoming message is also dropped unless a {@link JoinMessage} was
  * received.
  * <p>
- * If a {@link JoinMessage} was not received in {@link DrasylNodeConfig#getServerHandshakeTimeout()}
+ * If a {@link JoinMessage} was not received in {@link org.drasyl.DrasylNodeConfig#getServerHandshakeTimeout()}
  * the connection will be closed.
  * <p>
  * This handler closes the channel if an exception occurs before a {@link JoinMessage} has been
@@ -121,15 +129,121 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
                                     JoinMessage requestMessage) {
         Identity clientIdentity = Identity.of(requestMessage.getPublicKey());
         Channel channel = ctx.channel();
-        Path path = channel::writeAndFlush;
-        PeerInformation peerInformation = PeerInformation.of(requestMessage.getEndpoints(), path);
+        Path path = ctx::writeAndFlush; // We start at this point to save resources
+        PeerInformation clientInformation = PeerInformation.of(requestMessage.getEndpoints(), path);
 
         channelGroup.add(clientIdentity, channel);
 
         // remove peer information on disconnect
-        channel.closeFuture().addListener(future -> peersManager.removeChildrenAndRemovePeerInformation(clientIdentity, peerInformation));
+        channel.closeFuture().addListener(future -> peersManager.removeChildrenAndRemovePeerInformation(clientIdentity, clientInformation));
 
         // store peer information
-        peersManager.addPeerInformationAndAddChildren(clientIdentity, peerInformation);
+        peersManager.addPeerInformationAndAddChildren(clientIdentity, clientInformation);
+
+        // inform super peer about my new children
+        registerGrandchildAtSuperPeer(ctx, clientIdentity, clientInformation);
+
+        // store peer's children (my grandchildren) information
+        for (Map.Entry<CompressedPublicKey, Set<URI>> grandchild : requestMessage.getChildrenAndGrandchildren().entrySet()) {
+            Identity grandchildIdentity = Identity.of(grandchild.getKey());
+            PeerInformation grandchildInformation = PeerInformation.of(grandchild.getValue());
+            registerGrandchild(ctx, grandchildIdentity, grandchildInformation);
+        }
+    }
+
+    private void registerGrandchildAtSuperPeer(ChannelHandlerContext ctx,
+                                               Identity grandchildIdentity,
+                                               PeerInformation grandchildInformation) {
+        Pair<Identity, PeerInformation> superPeer = peersManager.getSuperPeer();
+        if (superPeer != null) {
+            PeerInformation superPeerInformation = superPeer.second();
+            Path superPeerPath = superPeerInformation.getPaths().iterator().next();
+            if (superPeerPath != null) {
+                Channel channel = ctx.channel();
+                channel.closeFuture().addListener(future -> unregisterGrandchildAtSuperPeer(ctx, grandchildIdentity, grandchildInformation));
+                if (getLogger().isDebugEnabled()) {
+                    getLogger().debug("[{}]: Register Grandchild {} at Super Peer", channel.id().asShortText(), grandchildIdentity);
+                }
+                superPeerPath.send(new RegisterGrandchildMessage(grandchildIdentity.getPublicKey(), grandchildInformation.getEndpoints()));
+            }
+        }
+    }
+
+    private void unregisterGrandchildAtSuperPeer(ChannelHandlerContext ctx,
+                                                 Identity grandchildIdentity,
+                                                 PeerInformation grandchildInformation) {
+        Pair<Identity, PeerInformation> superPeer = peersManager.getSuperPeer();
+        if (superPeer != null) {
+            PeerInformation superPeerInformation = superPeer.second();
+            Path superPeerPath = superPeerInformation.getPaths().iterator().next();
+            if (superPeerPath != null) {
+                Channel channel = ctx.channel();
+                if (getLogger().isDebugEnabled()) {
+                    getLogger().debug("[{}]: Unregister Grandchild {} at Super Peer", channel.id().asShortText(), grandchildIdentity);
+                }
+                superPeerPath.send(new UnregisterGrandchildMessage(grandchildIdentity.getPublicKey(), grandchildInformation.getEndpoints()));
+            }
+        }
+    }
+
+    @Override
+    protected void processMessageAfterHandshake(ChannelHandlerContext ctx,
+                                                Message message) {
+        if (message instanceof RegisterGrandchildMessage) {
+            RegisterGrandchildMessage registerGrandchildMessage = (RegisterGrandchildMessage) message;
+            Identity grandchildIdentity = Identity.of(registerGrandchildMessage.getPublicKey());
+            PeerInformation grandchildInformation = PeerInformation.of(registerGrandchildMessage.getEndpoints());
+            registerGrandchild(ctx, grandchildIdentity, grandchildInformation);
+            ctx.writeAndFlush(new StatusMessage(STATUS_OK, registerGrandchildMessage.getId()));
+        }
+        else if (message instanceof UnregisterGrandchildMessage) {
+            UnregisterGrandchildMessage unregisterGrandchildMessage = (UnregisterGrandchildMessage) message;
+            Identity grandchildIdentity = Identity.of(unregisterGrandchildMessage.getPublicKey());
+            PeerInformation grandchildInformation = PeerInformation.of(unregisterGrandchildMessage.getEndpoints());
+            unregisterGrandchild(ctx, grandchildIdentity, grandchildInformation);
+            ctx.writeAndFlush(new StatusMessage(STATUS_OK, unregisterGrandchildMessage.getId()));
+        }
+        else {
+            super.processMessageAfterHandshake(ctx, message);
+        }
+    }
+
+    private void registerGrandchild(ChannelHandlerContext ctx,
+                                    Identity grandchildIdentity,
+                                    PeerInformation grandchildInformation) {
+        Channel channel = ctx.channel();
+
+        if (getLogger().isDebugEnabled()) {
+            getLogger().debug("[{}]: Client want to register Grandchild {}", channel.id().asShortText(), grandchildIdentity);
+        }
+
+        // register grandchild at super peer
+        registerGrandchildAtSuperPeer(ctx, grandchildIdentity, grandchildInformation);
+
+        // remove peer information on disconnect
+        channel.closeFuture().addListener(future -> peersManager.removeGrandchildrenRouteAndRemovePeerInformation(grandchildIdentity, grandchildInformation));
+
+        // store peer information
+        Identity clientIdentity = channel.attr(ATTRIBUTE_IDENTITY).get();
+        if (getLogger().isDebugEnabled()) {
+            getLogger().debug("[{}]: Client {} can Route to {}", channel.id().asShortText(), clientIdentity, grandchildIdentity);
+        }
+        peersManager.addPeerInformationAndAddGrandchildren(grandchildIdentity, grandchildInformation, clientIdentity);
+    }
+
+    private void unregisterGrandchild(ChannelHandlerContext ctx,
+                                      Identity grandchildIdentity,
+                                      PeerInformation grandchildInformation) {
+        Channel channel = ctx.channel();
+
+        if (getLogger().isDebugEnabled()) {
+            getLogger().debug("[{}]: Client want to unregister Grandchild {}", channel.id().asShortText(), grandchildIdentity);
+        }
+
+        // unregister grandchild at super peer
+        unregisterGrandchildAtSuperPeer(ctx, grandchildIdentity, grandchildInformation);
+
+        // remove peer information
+        peersManager.removeGrandchildrenRouteAndRemovePeerInformation(grandchildIdentity, grandchildInformation);
     }
 }

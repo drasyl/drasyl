@@ -24,11 +24,15 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.drasyl.DrasylNodeConfig;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.net.BindException;
 
 public class NodeServerChannelBootstrap {
+    private static final Logger LOG = LoggerFactory.getLogger(NodeServerChannelBootstrap.class);
     private final NodeServer nodeServer;
     private final ServerBootstrap serverBootstrap;
     private final DrasylNodeConfig config;
@@ -79,6 +83,11 @@ public class NodeServerChannelBootstrap {
 //                .handler(new LoggingHandler(LogLevel.INFO))
                     .childHandler(relayServerInitializer)
                     .bind(config.getServerBindHost(), config.getServerBindPort())
+                    .addListener(event -> {
+                        if (event.cause() instanceof BindException) {
+                            LOG.error("An error occurred during binding the address `{}:{}`", config.getServerBindHost(), config.getServerBindPort(), event.cause());
+                        }
+                    })
                     .syncUninterruptibly()
                     .channel();
         }

@@ -40,6 +40,7 @@ import java.net.URI;
 import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.stream.Collectors;
 
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_WRONG_PUBLIC_KEY;
 
@@ -65,7 +66,15 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
                                             Duration timeout,
                                             PeersManager peersManager,
                                             Messenger messenger) {
-        super(timeout, messenger, new JoinMessage(ownPublicKey, endpoints));
+        super(
+                timeout,
+                messenger,
+                new JoinMessage(
+                        ownPublicKey,
+                        endpoints,
+                        peersManager.getChildrenAndGrandchildren().entrySet().stream().collect(Collectors.toMap(e -> e.getKey().getPublicKey(), e -> e.getValue().getEndpoints()))
+                )
+        );
         this.expectedPublicKey = expectedPublicKey;
         this.ownPublicKey = ownPublicKey;
         this.peersManager = peersManager;
@@ -115,7 +124,7 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
                                     WelcomeMessage offerMessage) {
         Identity identity = Identity.of(offerMessage.getPublicKey());
         Channel channel = ctx.channel();
-        Path path = channel::writeAndFlush;
+        Path path = ctx::writeAndFlush; // We start at this point to save resources
         PeerInformation peerInformation = PeerInformation.of(offerMessage.getEndpoints(), path);
 
         // remove peer information on disconnect
@@ -126,7 +135,7 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
 
         messenger.setSuperPeerSink((recipient, message) -> {
             if (channel.isWritable()) {
-                channel.writeAndFlush(message);
+                ctx.writeAndFlush(message);
             }
             else {
                 throw new NoPathToIdentityException(recipient);

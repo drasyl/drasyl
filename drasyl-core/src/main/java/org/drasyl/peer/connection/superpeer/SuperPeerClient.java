@@ -228,7 +228,7 @@ public class SuperPeerClient implements AutoCloseable {
             // send quit message and close connections
             clientChannel.writeAndFlush(new QuitMessage(REASON_SHUTTING_DOWN)).addListener(ChannelFutureListener.CLOSE);
 
-            clientChannel.close().syncUninterruptibly();
+            clientChannel.closeFuture().syncUninterruptibly();
             clientChannel = null;
         }
     }

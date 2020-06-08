@@ -180,7 +180,7 @@ class SuperPeerClientTest {
     @Test
     void closeShouldCloseConnectionIfClientIsOpen() {
         when(channel.isOpen()).thenReturn(true);
-        when(channel.close()).thenReturn(channelFuture);
+        when(channel.closeFuture()).thenReturn(channelFuture);
         when(channel.writeAndFlush(any())).thenReturn(channelFuture);
 
         SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, endpoints, new AtomicBoolean(true), nextEndpointPointer, nextRetryDelayPointer, onEvent, channel, threadSupplier);
@@ -188,7 +188,7 @@ class SuperPeerClientTest {
         client.close();
 
         verify(channel).writeAndFlush(new QuitMessage(REASON_SHUTTING_DOWN));
-        verify(channel).close();
+        verify(channel).closeFuture();
     }
 
     @Test

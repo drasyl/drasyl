@@ -35,6 +35,9 @@
     <logger name="io.netty" level="error">
     </logger>
 
+    <logger name="io.netty.util.ResourceLeakDetector" level="debug">
+    </logger>
+
     <root level="debug">
         <appender-ref ref="STDOUT"/>
     </root>
