@@ -30,7 +30,7 @@ import java.util.Objects;
 public class Node {
     private final Identity identity;
 
-    public Node(Identity identity) {
+    Node(Identity identity) {
         this.identity = identity;
     }
 

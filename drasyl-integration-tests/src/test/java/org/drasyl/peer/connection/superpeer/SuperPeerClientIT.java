@@ -240,7 +240,7 @@ class SuperPeerClientIT {
 
         // verify emitted events
         emittedEvents.awaitCount(1);
-        emittedEvents.assertValue(new Event(EVENT_NODE_ONLINE, new Node(identityManager.getIdentity())));
+        emittedEvents.assertValue(new Event(EVENT_NODE_ONLINE, Node.of(identityManager.getIdentity())));
     }
 
     @Test
@@ -260,9 +260,9 @@ class SuperPeerClientIT {
         // verify emitted events
         emittedEvents.awaitCount(3);
         emittedEvents.assertValues(
-                new Event(EVENT_NODE_ONLINE, new Node(identityManager.getIdentity())),
-                new Event(EVENT_NODE_OFFLINE, new Node(identityManager.getIdentity())),
-                new Event(EVENT_NODE_ONLINE, new Node(identityManager.getIdentity()))
+                new Event(EVENT_NODE_ONLINE, Node.of(identityManager.getIdentity())),
+                new Event(EVENT_NODE_OFFLINE, Node.of(identityManager.getIdentity())),
+                new Event(EVENT_NODE_ONLINE, Node.of(identityManager.getIdentity()))
         );
     }
 }
