@@ -64,13 +64,13 @@ public abstract class DefaultSessionInitializer extends ChannelInitializer<Socke
     protected void initChannel(SocketChannel ch) {
         ChannelPipeline pipeline = ch.pipeline();
 
-        beforeSslStage(ch);
-        sslStage(ch);
-        afterSslStage(ch);
-
         beforeBufferStage(pipeline);
         bufferStage(pipeline);
         afterBufferStage(pipeline);
+
+        beforeSslStage(ch);
+        sslStage(ch);
+        afterSslStage(ch);
 
         beforeMarshalStage(pipeline);
         marshalStage(pipeline);

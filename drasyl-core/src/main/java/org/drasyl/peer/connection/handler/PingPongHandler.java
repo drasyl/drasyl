@@ -83,11 +83,10 @@ public class PingPongHandler extends SimpleChannelInboundHandler<Message> {
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Message msg) throws Exception {
+    protected void channelRead0(ChannelHandlerContext ctx, Message msg) {
         if (msg instanceof PingMessage) {
             // reply to received ping with pong message
             ctx.writeAndFlush(new PongMessage(msg.getId()));
-            ReferenceCountUtil.release(msg);
         }
         else if (msg instanceof PongMessage) {
             // pong received, reset retries counter

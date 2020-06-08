@@ -31,6 +31,7 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.net.URI;
 import java.security.KeyPair;
+import java.util.Map;
 import java.util.Set;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
@@ -44,6 +45,7 @@ class JoinMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
     private CompressedPublicKey publicKey;
     private Set<URI> endpoints;
+    private Map<CompressedPublicKey, Set<URI>> childrenAndGrandchildren;
 
     @BeforeEach
     void setUp() throws CryptoException {
@@ -51,6 +53,7 @@ class JoinMessageTest {
         KeyPair keyPair = Crypto.generateKeys();
         publicKey = CompressedPublicKey.of(keyPair.getPublic());
         endpoints = Set.of(URI.create("ws://test"));
+        childrenAndGrandchildren = Map.of();
     }
 
     @AfterEach
@@ -60,11 +63,11 @@ class JoinMessageTest {
 
     @Test
     void toJson() throws JsonProcessingException {
-        JoinMessage message = new JoinMessage(publicKey, endpoints);
+        JoinMessage message = new JoinMessage(publicKey, endpoints, childrenAndGrandchildren);
 
         assertThatJson(JSON_MAPPER.writeValueAsString(message))
                 .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo("{\"@type\":\"JoinMessage\",\"id\":\"" + message.getId() + "\",\"userAgent\":\"\",\"publicKey\":\"" + publicKey.getCompressedKey() + "\",\"endpoints\":[\"ws://test\"]}");
+                .isEqualTo("{\"@type\":\"JoinMessage\",\"id\":\"" + message.getId() + "\",\"userAgent\":\"\",\"publicKey\":\"" + publicKey.getCompressedKey() + "\",\"endpoints\":[\"ws://test\"],\"childrenAndGrandchildren\":{}}");
 
         // Ignore toString()
         message.toString();
@@ -79,18 +82,18 @@ class JoinMessageTest {
 
     @Test
     void nullTest() {
-        assertThrows(NullPointerException.class, () -> new JoinMessage(null, endpoints), "Join requires a public key");
+        assertThrows(NullPointerException.class, () -> new JoinMessage(null, endpoints, childrenAndGrandchildren), "Join requires a public key");
 
-        assertThrows(NullPointerException.class, () -> new JoinMessage(publicKey, null), "Join requires endpoints");
+        assertThrows(NullPointerException.class, () -> new JoinMessage(publicKey, null, childrenAndGrandchildren), "Join requires endpoints");
 
-        assertThrows(NullPointerException.class, () -> new JoinMessage(null, null), "Join requires a public key and endpoints");
+        assertThrows(NullPointerException.class, () -> new JoinMessage(null, null, childrenAndGrandchildren), "Join requires a public key and endpoints");
     }
 
     @Test
     void testEquals() throws CryptoException {
-        JoinMessage message1 = new JoinMessage(publicKey, endpoints);
-        JoinMessage message2 = new JoinMessage(publicKey, endpoints);
-        JoinMessage message3 = new JoinMessage(CompressedPublicKey.of(Crypto.generateKeys().getPublic()), Set.of());
+        JoinMessage message1 = new JoinMessage(publicKey, endpoints, childrenAndGrandchildren);
+        JoinMessage message2 = new JoinMessage(publicKey, endpoints, childrenAndGrandchildren);
+        JoinMessage message3 = new JoinMessage(CompressedPublicKey.of(Crypto.generateKeys().getPublic()), Set.of(), Map.of());
 
         assertEquals(message1, message2);
         assertNotEquals(message2, message3);
@@ -98,9 +101,9 @@ class JoinMessageTest {
 
     @Test
     void testHashCode() throws CryptoException {
-        JoinMessage message1 = new JoinMessage(publicKey, endpoints);
-        JoinMessage message2 = new JoinMessage(publicKey, endpoints);
-        JoinMessage message3 = new JoinMessage(CompressedPublicKey.of(Crypto.generateKeys().getPublic()), Set.of());
+        JoinMessage message1 = new JoinMessage(publicKey, endpoints, childrenAndGrandchildren);
+        JoinMessage message2 = new JoinMessage(publicKey, endpoints, childrenAndGrandchildren);
+        JoinMessage message3 = new JoinMessage(CompressedPublicKey.of(Crypto.generateKeys().getPublic()), Set.of(), Map.of());
 
         assertEquals(message1.hashCode(), message2.hashCode());
         assertNotEquals(message2.hashCode(), message3.hashCode());

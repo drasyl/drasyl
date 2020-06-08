@@ -56,6 +56,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import testutils.AnsiColor;
 import testutils.TestHelper;
 
+import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -131,7 +132,7 @@ class NodeServerIT {
         TestNodeServerConnection session = clientSession(server);
 
         // send message
-        RequestMessage request = new JoinMessage(session.getPublicKey(), Set.of());
+        RequestMessage request = new JoinMessage(session.getPublicKey(), Set.of(), Map.of());
         CompletableFuture<ResponseMessage<?>> send = session.sendRequest(request);
 
         // verify response
@@ -148,10 +149,10 @@ class NodeServerIT {
         TestNodeServerConnection session2 = clientSession(server);
 
         // send messages
-        RequestMessage request1 = new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of());
+        RequestMessage request1 = new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of(), Map.of());
         CompletableFuture<ResponseMessage<?>> send1 = session1.sendRequest(request1);
 
-        RequestMessage request2 = new JoinMessage(CompressedPublicKey.of("0340a4f2adbddeedc8f9ace30e3f18713a3405f43f4871b4bac9624fe80d2056a7"), Set.of());
+        RequestMessage request2 = new JoinMessage(CompressedPublicKey.of("0340a4f2adbddeedc8f9ace30e3f18713a3405f43f4871b4bac9624fe80d2056a7"), Set.of(), Map.of());
         CompletableFuture<ResponseMessage<?>> send2 = session2.sendRequest(request2);
 
         // verify responses
@@ -246,12 +247,12 @@ class NodeServerIT {
         // send messages
         CompressedPublicKey publicKey = CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3");
         Identity identity = Identity.of(publicKey);
-        RequestMessage request1 = new JoinMessage(publicKey, Set.of());
+        RequestMessage request1 = new JoinMessage(publicKey, Set.of(), Map.of());
         ResponseMessage<?> response1 = session1.sendRequest(request1).get();
         session1.send(new StatusMessage(STATUS_OK, response1.getId()));
         await().until(() -> server.getChannelGroup().find(identity) != null);
 
-        RequestMessage request2 = new JoinMessage(publicKey, Set.of());
+        RequestMessage request2 = new JoinMessage(publicKey, Set.of(), Map.of());
         ResponseMessage<?> response2 = session2.sendRequest(request2).join();
         session2.send(new StatusMessage(STATUS_OK, response2.getId()));
 
@@ -408,7 +409,7 @@ class NodeServerIT {
         server.close();
 
         // send message
-        RequestMessage request = new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of());
+        RequestMessage request = new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of(), Map.of());
         CompletableFuture<ResponseMessage<?>> send = session.sendRequest(request);
 
         // verify response

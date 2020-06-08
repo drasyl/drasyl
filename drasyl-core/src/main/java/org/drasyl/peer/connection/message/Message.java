@@ -37,7 +37,9 @@ import org.drasyl.peer.connection.server.NodeServer;
         @JsonSubTypes.Type(value = QuitMessage.class),
         @JsonSubTypes.Type(value = PingMessage.class),
         @JsonSubTypes.Type(value = PongMessage.class),
+        @JsonSubTypes.Type(value = RegisterGrandchildMessage.class),
         @JsonSubTypes.Type(value = StatusMessage.class),
+        @JsonSubTypes.Type(value = UnregisterGrandchildMessage.class),
         @JsonSubTypes.Type(value = WelcomeMessage.class),
 })
 @JsonIgnoreProperties(ignoreUnknown = true)

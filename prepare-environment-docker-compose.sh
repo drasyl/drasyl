@@ -21,6 +21,7 @@ services:
       CONFIG_FORCE_drasyl_super__peer_enabled: "false"
       SENTRY_DNS: ${SENTRY_DNS}
       SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT}
+      JAVA_OPTS: ${JAVA_OPTS}
     networks:
       - default
       - proxy

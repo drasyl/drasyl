@@ -28,6 +28,7 @@ import org.drasyl.DrasylNodeConfig;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.identity.Address;
 import org.drasyl.identity.AddressTestHelper;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
@@ -40,6 +41,7 @@ import org.junit.jupiter.api.Test;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -64,6 +66,7 @@ class NodeServerTest {
     private ApplicationMessage message;
     private NodeServerChannelBootstrap nodeServerChannelBootstrap;
     private NodeServerChannelGroup channelGroup;
+    private Map<Identity, Identity> grandchildren;
 
     @BeforeEach
     void setUp() throws InterruptedException, NodeServerException {
@@ -79,6 +82,7 @@ class NodeServerTest {
         nodeServerChannelBootstrap = mock(NodeServerChannelBootstrap.class);
         ChannelFuture channelFuture = mock(ChannelFuture.class);
         channelGroup = mock(NodeServerChannelGroup.class);
+        grandchildren = Map.of();
 
         message = mock(ApplicationMessage.class);
         String msgID = Crypto.randomString(16);

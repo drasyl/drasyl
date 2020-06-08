@@ -47,6 +47,7 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 import java.text.MessageFormat;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -316,7 +317,7 @@ public class TestNodeServerConnection {
     public static TestNodeServerConnection clientSessionAfterJoin(NodeServer server) throws ExecutionException,
             InterruptedException, CryptoException {
         TestNodeServerConnection session = TestNodeServerConnection.clientSession(server, true);
-        ResponseMessage<?> responseMessage = session.sendRequest(new JoinMessage(session.getPublicKey(), Set.of())).get();
+        ResponseMessage<?> responseMessage = session.sendRequest(new JoinMessage(session.getPublicKey(), Set.of(), Map.of())).get();
         session.send(new StatusMessage(STATUS_OK, responseMessage.getId()));
         await().until(() -> server.getChannelGroup().find(session.getIdentity()) != null);
 
