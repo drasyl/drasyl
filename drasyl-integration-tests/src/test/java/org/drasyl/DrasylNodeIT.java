@@ -42,6 +42,8 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.event.EventType.EVENT_MESSAGE;
 import static org.drasyl.event.EventType.EVENT_NODE_ONLINE;
 import static org.drasyl.event.EventType.EVENT_NODE_UP;
+import static org.drasyl.event.EventType.EVENT_PEER_DIRECT;
+import static org.drasyl.event.EventType.EVENT_PEER_RELAY;
 import static testutils.AnsiColor.COLOR_CYAN;
 import static testutils.AnsiColor.STYLE_REVERSED;
 import static testutils.TestHelper.colorizedPrintln;
@@ -155,9 +157,7 @@ class DrasylNodeIT {
 
             Set<String> identities = Set.of("4c4fdd0957", "9df9214d78", "030f018704", "be0300f1a4");
             for (String recipient : identities) {
-                if (!recipient.equals("030f018704") && !recipient.equals("be0300f1a4")) { // TODO: sending to grandchildren is not yet supported
-                    superSuperPeer.first().send(recipient, "Hallo Welt");
-                }
+                superSuperPeer.first().send(recipient, "Hallo Welt");
                 superPeer.first().send(recipient, "Hallo Welt");
                 client1.first().send(recipient, "Hallo Welt");
                 client2.first().send(recipient, "Hallo Welt");
@@ -168,8 +168,34 @@ class DrasylNodeIT {
             //
             superSuperPeerMessages.awaitCount(4);
             superPeerMessages.awaitCount(4);
-            client1Messages.awaitCount(3); // TODO: sending to grandchildren is not yet supported
-            client2Messages.awaitCount(3); // TODO: sending to grandchildren is not yet supported
+            client1Messages.awaitCount(4);
+            client2Messages.awaitCount(4);
+        }
+
+        @Test
+        @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+        void correctPeerEventsShouldBeEmitted() {
+            //
+            // send messages
+            //
+            TestObserver<EventType> superSuperPeerEvents = superSuperPeer.second().map(Event::getType).filter(EventType::isPeerEvent).test();
+            TestObserver<EventType> superPeerEvents = superPeer.second().map(Event::getType).filter(EventType::isPeerEvent).test();
+            TestObserver<EventType> client1Events = client1.second().map(Event::getType).filter(EventType::isPeerEvent).test();
+            TestObserver<EventType> client2Events = client2.second().map(Event::getType).filter(EventType::isPeerEvent).test();
+
+//            superSuperPeer.second().subscribe(e -> System.err.println("SSP: " + e));
+//            superPeer.second().subscribe(e -> System.err.println("SP: " + e));
+//            client1.second().subscribe(e -> System.err.println("C1: " + e));
+//            client2.second().subscribe(e -> System.err.println("C2: " + e));
+
+            superSuperPeerEvents.awaitCount(3);
+            superSuperPeerEvents.assertValues(EVENT_PEER_DIRECT, EVENT_PEER_RELAY, EVENT_PEER_RELAY);
+            superPeerEvents.awaitCount(3);
+            superPeerEvents.assertValues(EVENT_PEER_DIRECT, EVENT_PEER_DIRECT, EVENT_PEER_DIRECT);
+            client1Events.awaitCount(1);
+            client1Events.assertValues(EVENT_PEER_DIRECT);
+            client2Events.awaitCount(1);
+            client2Events.assertValues(EVENT_PEER_DIRECT);
         }
     }
 
@@ -257,6 +283,27 @@ class DrasylNodeIT {
             superPeerMessages.awaitCount(4);
             client1Messages.awaitCount(4);
             client2Messages.awaitCount(4);
+        }
+
+        @Test
+        @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+        void correctPeerEventsShouldBeEmitted() {
+            //
+            // send messages
+            //
+            TestObserver<EventType> node1Events = node1.second().map(Event::getType).filter(EventType::isPeerEvent).test();
+            TestObserver<EventType> node2Events = node2.second().map(Event::getType).filter(EventType::isPeerEvent).test();
+            TestObserver<EventType> node3Events = node3.second().map(Event::getType).filter(EventType::isPeerEvent).test();
+            TestObserver<EventType> node4Events = node4.second().map(Event::getType).filter(EventType::isPeerEvent).test();
+
+            node1Events.awaitCount(3);
+            node1Events.assertValues(EVENT_PEER_DIRECT, EVENT_PEER_DIRECT, EVENT_PEER_DIRECT);
+            node2Events.awaitCount(3);
+            node2Events.assertValues(EVENT_PEER_DIRECT, EVENT_PEER_DIRECT, EVENT_PEER_DIRECT);
+            node3Events.awaitCount(3);
+            node3Events.assertValues(EVENT_PEER_DIRECT, EVENT_PEER_DIRECT, EVENT_PEER_DIRECT);
+            node4Events.awaitCount(3);
+            node4Events.assertValues(EVENT_PEER_DIRECT, EVENT_PEER_DIRECT, EVENT_PEER_DIRECT);
         }
     }
 

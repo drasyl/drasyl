@@ -43,6 +43,7 @@ public class IntegrationTestHandler extends SimpleChannelDuplexHandler<Message, 
     private static CompletableFuture<Void> readyToSend = new CompletableFuture<>();
 
     public IntegrationTestHandler() {
+        super(false, false, false);
         readyToSend = new CompletableFuture<>();
     }
 
@@ -65,7 +66,7 @@ public class IntegrationTestHandler extends SimpleChannelDuplexHandler<Message, 
     protected void channelWrite0(ChannelHandlerContext ctx,
                                  Message msg, ChannelPromise promise) {
         OUTBOUND_MESSAGES.onNext(msg);
-        ctx.write(msg);
+        ctx.write(msg, promise);
     }
 
     public static Observable<Message> receivedMessages() {

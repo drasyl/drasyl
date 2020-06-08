@@ -30,6 +30,7 @@ review:
     APP_IMAGE: "${CI_REGISTRY_IMAGE}:${CI_COMMIT_REF_SLUG}"
     APP_DEPLOY_HOST: "${CI_ENVIRONMENT_SLUG}.${APP_HOST}"
     SENTRY_ENVIRONMENT: "review/${CI_COMMIT_REF_NAME}"
+    JAVA_OPTS: "-Dio.netty.leakDetectionLevel=PARANOID"
   environment:
     name: review/$CI_COMMIT_REF_NAME
     url: https://$CI_ENVIRONMENT_SLUG.$APP_HOST
@@ -69,6 +70,7 @@ staging:
     SENTRY_ENVIRONMENT: staging
     DRASYL_PUBLIC_KEY: 03096ae3080a369829a44847d5af1f652bef3f9921e9e1bbad64970babe6d3c502
     # DRASYL_PRIVATE_KEY is defined securely in GitLab CI/CD Settings
+    JAVA_OPTS: "-Dio.netty.leakDetectionLevel=PARANOID"
   environment:
     name: staging
     url: https://staging.$APP_HOST

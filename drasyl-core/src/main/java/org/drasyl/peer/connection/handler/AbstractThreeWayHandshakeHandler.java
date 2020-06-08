@@ -56,6 +56,7 @@ public abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDupl
                                                Messenger messenger,
                                                CompletableFuture<Void> handshakeFuture,
                                                ScheduledFuture<?> timeoutFuture) {
+        super(true, false, false);
         this.timeout = timeout;
         this.messenger = messenger;
         this.handshakeFuture = handshakeFuture;
@@ -75,8 +76,6 @@ public abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDupl
 
     @Override
     public void channelRead0(ChannelHandlerContext ctx, Message msg) {
-        ReferenceCountUtil.release(msg);
-
         ctx.executor().submit(() -> {
             if (!handshakeFuture.isDone()) {
                 doHandshake(ctx, msg);
@@ -91,11 +90,11 @@ public abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDupl
     }
 
     @Override
-    public void close(ChannelHandlerContext ctx, ChannelPromise promise) {
+    public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
         if (timeoutFuture != null) {
             timeoutFuture.cancel(true);
         }
-        ctx.close(promise);
+        super.close(ctx, promise);
     }
 
     @Override
@@ -105,8 +104,10 @@ public abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDupl
             ctx.write(msg, promise);
         }
         else {
+            IllegalStateException exception = new IllegalStateException("Handshake is not done yet. Outbound message was dropped: '" + msg + "'");
             ReferenceCountUtil.release(msg);
-            throw new IllegalStateException("Handshake is not done yet. Outbound message was dropped: '" + msg + "'");
+            promise.setFailure(exception);
+            throw exception;
         }
     }
 

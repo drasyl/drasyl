@@ -21,7 +21,6 @@ package org.drasyl.peer.connection.handler;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
-import io.netty.util.ReferenceCountUtil;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,14 +40,9 @@ public class ConnectionExceptionMessageHandler extends SimpleChannelInboundHandl
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx, ConnectionExceptionMessage msg) {
-        try {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("[{}]: received {}. Close channel", ctx.channel().id().asShortText(), msg);
-            }
-            ctx.close();
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("[{}]: received {}. Close channel", ctx.channel().id().asShortText(), msg);
         }
-        finally {
-            ReferenceCountUtil.release(msg);
-        }
+        ctx.close();
     }
 }

@@ -53,20 +53,22 @@ import java.net.SocketAddress;
  * </pre>
  * <p>
  * Be aware that depending of the constructor parameters it will release all handled messages by
- * passing them to {@link ReferenceCountUtil#release(Object)}. In this case you may need to use
- * {@link ReferenceCountUtil#retain(Object)} if you pass the object to the next handler in the
- * {@link ChannelPipeline}.
+ * passing them to {@link ReferenceCountUtil#release(Object)} and fulfills the corresponding {@link
+ * ChannelPromise} in the {@link #channelWrite0} method. In this case you may need to use {@link
+ * ReferenceCountUtil#retain(Object)} if you pass the object to the next handler in the {@link
+ * ChannelPipeline}.
  */
 public abstract class SimpleChannelDuplexHandler<I, O> extends SimpleChannelInboundHandler<I> implements ChannelOutboundHandler {
     private final TypeParameterMatcher outboundMatcher;
     private final boolean outboundAutoRelease;
+    private final boolean autoFulfillPromise;
 
     /**
-     * see {@link #SimpleChannelDuplexHandler(boolean, boolean)} with {@code true} as boolean
-     * parameters.
+     * see {@link #SimpleChannelDuplexHandler(boolean, boolean, boolean)} with {@code true} as
+     * boolean parameters.
      */
     protected SimpleChannelDuplexHandler() {
-        this(true, true);
+        this(true, true, true);
     }
 
     /**
@@ -77,20 +79,25 @@ public abstract class SimpleChannelDuplexHandler<I, O> extends SimpleChannelInbo
      *                            automatically by passing them to {@link ReferenceCountUtil#release(Object)}.
      * @param outboundAutoRelease {@code true} if outbound handled messages should be released
      *                            automatically by passing them to {@link ReferenceCountUtil#release(Object)}.
+     * @param autoFulfillPromise  {@code true} if outbound {@link ChannelPromise} should be
+     *                            fulfilled automatically
      */
-    protected SimpleChannelDuplexHandler(boolean inboundAutoRelease, boolean outboundAutoRelease) {
+    protected SimpleChannelDuplexHandler(boolean inboundAutoRelease,
+                                         boolean outboundAutoRelease,
+                                         boolean autoFulfillPromise) {
         super(inboundAutoRelease);
         this.outboundAutoRelease = outboundAutoRelease;
+        this.autoFulfillPromise = autoFulfillPromise;
         this.outboundMatcher = TypeParameterMatcher.find(this, SimpleChannelDuplexHandler.class, "O");
     }
 
     /**
-     * see {@link #SimpleChannelDuplexHandler(Class, Class, boolean, boolean)} with {@code true} as
-     * boolean values.
+     * see {@link #SimpleChannelDuplexHandler(Class, Class, boolean, boolean, boolean)} with {@code
+     * true} as boolean values.
      */
     protected SimpleChannelDuplexHandler(Class<? extends I> inboundMessageType,
                                          Class<? extends O> outboundMessageType) {
-        this(inboundMessageType, outboundMessageType, true, true);
+        this(inboundMessageType, outboundMessageType, true, true, true);
     }
 
     /**
@@ -102,13 +109,17 @@ public abstract class SimpleChannelDuplexHandler<I, O> extends SimpleChannelInbo
      *                            automatically by passing them to {@link ReferenceCountUtil#release(Object)}.
      * @param outboundAutoRelease {@code true} if outbound handled messages should be released
      *                            automatically by passing them to {@link ReferenceCountUtil#release(Object)}.
+     * @param autoFulfillPromise  {@code true} if outbound {@link ChannelPromise} should be
+     *                            fulfilled automatically
      */
     protected SimpleChannelDuplexHandler(Class<? extends I> inboundMessageType,
                                          Class<? extends O> outboundMessageType,
                                          boolean inboundAutoRelease,
-                                         boolean outboundAutoRelease) {
+                                         boolean outboundAutoRelease,
+                                         boolean autoFulfillPromise) {
         super(inboundMessageType, inboundAutoRelease);
         this.outboundAutoRelease = outboundAutoRelease;
+        this.autoFulfillPromise = autoFulfillPromise;
         this.outboundMatcher = TypeParameterMatcher.get(outboundMessageType);
     }
 
@@ -175,8 +186,13 @@ public abstract class SimpleChannelDuplexHandler<I, O> extends SimpleChannelInbo
             }
         }
         finally {
+            // Discarding and releasing outbound data ...
             if (outboundAutoRelease && release) {
                 ReferenceCountUtil.release(msg);
+                if (autoFulfillPromise) {
+                    // ... and notify the ChannelPromise
+                    promise.setSuccess();
+                }
             }
         }
     }

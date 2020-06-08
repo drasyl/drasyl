@@ -47,6 +47,7 @@ public class WebSocketHandshakeClientHandler extends SimpleChannelDuplexHandler<
 
     WebSocketHandshakeClientHandler(WebSocketClientHandshaker handshaker,
                                     CompletableFuture<Void> handshakeFuture) {
+        super(true, false, false);
         this.handshaker = handshaker;
         this.handshakeFuture = handshakeFuture;
     }
@@ -84,7 +85,7 @@ public class WebSocketHandshakeClientHandler extends SimpleChannelDuplexHandler<
                                  Message msg,
                                  ChannelPromise promise) {
         handshakeFuture.join();
-        ctx.write(msg);
+        ctx.write(msg, promise);
     }
 
     @Override
