@@ -68,7 +68,7 @@ class DrasylNodeIT {
     }
 
     private Pair<DrasylNode, Observable<Event>> createNode(Config config) throws DrasylException {
-        Subject<Event> subject = ReplaySubject.create();
+        Subject<Event> subject = ReplaySubject.<Event>create().toSerialized();
         DrasylNode node = new DrasylNode(config) {
             @Override
             public void onEvent(Event event) {

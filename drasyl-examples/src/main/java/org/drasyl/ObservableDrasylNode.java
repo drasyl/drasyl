@@ -49,7 +49,7 @@ public class ObservableDrasylNode extends DrasylNode {
 
     public ObservableDrasylNode(Config config) throws DrasylException {
         super(config);
-        this.events = PublishSubject.create();
+        this.events = PublishSubject.<Event>create().toSerialized();
     }
 
     ObservableDrasylNode(DrasylNodeConfig config,

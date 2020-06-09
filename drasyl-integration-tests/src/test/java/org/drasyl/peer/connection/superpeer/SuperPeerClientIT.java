@@ -106,8 +106,8 @@ class SuperPeerClientIT {
 
         server = new NodeServer(identityManagerServer, messengerServer, peersManagerServer, superPeerConnected, serverConfig, serverWorkerGroup, bossGroup);
         server.open();
-        emittedEventsSubject = ReplaySubject.create();
-        superPeerConnected = BehaviorSubject.createDefault(false);
+        emittedEventsSubject = ReplaySubject.<Event>create().toSerialized();
+        superPeerConnected = BehaviorSubject.createDefault(false).toSerialized();
     }
 
     @AfterEach
