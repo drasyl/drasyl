@@ -78,6 +78,7 @@
                         <descriptor>src/assembly/dist.xml</descriptor>
                     </descriptors>
                     <finalName>drasyl-${project.version}</finalName>
+                    <outputDirectory>${project.parent.basedir}</outputDirectory>
                     <appendAssemblyId>false</appendAssemblyId>
                 </configuration>
                 <executions>

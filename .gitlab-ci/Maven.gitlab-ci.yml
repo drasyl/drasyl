@@ -10,7 +10,6 @@ cache:
 
 .maven-base: &maven-base
   after_script:
-    - mv drasyl-cli/target/drasyl-*.zip .
     - '/bin/bash coverage-jacoco.sh'
   coverage: '/\d+.\d+ \% covered/'
   artifacts:
