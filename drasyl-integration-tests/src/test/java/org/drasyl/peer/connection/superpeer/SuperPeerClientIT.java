@@ -52,6 +52,7 @@ import testutils.AnsiColor;
 import testutils.TestHelper;
 
 import java.util.Map;
+import java.util.Set;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.event.EventType.EVENT_NODE_OFFLINE;
@@ -258,9 +259,9 @@ class SuperPeerClientIT {
         // verify emitted events
         emittedEvents.awaitCount(3);
         emittedEvents.assertValues(
-                new Event(EVENT_NODE_ONLINE, Node.of(identityManager.getIdentity())),
-                new Event(EVENT_NODE_OFFLINE, Node.of(identityManager.getIdentity())),
-                new Event(EVENT_NODE_ONLINE, Node.of(identityManager.getIdentity()))
+                new Event(EVENT_NODE_ONLINE, Node.of(identityManager.getIdentity(), Set.of())),
+                new Event(EVENT_NODE_OFFLINE, Node.of(identityManager.getIdentity(), Set.of())),
+                new Event(EVENT_NODE_ONLINE, Node.of(identityManager.getIdentity(), Set.of()))
         );
     }
 }

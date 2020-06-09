@@ -252,7 +252,7 @@ public abstract class DrasylNode {
     public CompletableFuture<Void> shutdown() {
         if (started.compareAndSet(true, false)) {
             DrasylNode self = this;
-            onEvent(new Event(EVENT_NODE_DOWN, Node.of(identityManager.getIdentity())));
+            onEvent(new Event(EVENT_NODE_DOWN, Node.of(identityManager.getIdentity(), server.getEntryPoints())));
             LOG.info("Shutdown drasyl Node with Identity '{}'...", identityManager.getIdentity());
             shutdownSequence = runAsync(this::stopSuperPeerClient)
                     .thenRun(this::stopServer)
@@ -261,7 +261,7 @@ public abstract class DrasylNode {
                     .whenComplete((r, e) -> {
                         try {
                             if (e == null) {
-                                onEvent(new Event(EVENT_NODE_NORMAL_TERMINATION, Node.of(identityManager.getIdentity())));
+                                onEvent(new Event(EVENT_NODE_NORMAL_TERMINATION, Node.of(identityManager.getIdentity(), server.getEntryPoints())));
                                 LOG.info("drasyl Node with Identity '{}' has shut down", identityManager.getIdentity());
                             }
                             else {
@@ -347,11 +347,11 @@ public abstract class DrasylNode {
                     .thenRun(this::startSuperPeerClient)
                     .whenComplete((r, e) -> {
                         if (e == null) {
-                            onEvent(new Event(EVENT_NODE_UP, Node.of(identityManager.getIdentity())));
+                            onEvent(new Event(EVENT_NODE_UP, Node.of(identityManager.getIdentity(), server.getEntryPoints())));
                             LOG.info("drasyl Node with Identity '{}' has started", identityManager.getIdentity());
                         }
                         else {
-                            onEvent(new Event(EVENT_NODE_UNRECOVERABLE_ERROR, Node.of(identityManager.getIdentity())));
+                            onEvent(new Event(EVENT_NODE_UNRECOVERABLE_ERROR, Node.of(identityManager.getIdentity(), server.getEntryPoints())));
                             LOG.info("Could not start drasyl Node: {}", e.getMessage());
                             LOG.info("Stop all running components...");
                             this.stopServer();
