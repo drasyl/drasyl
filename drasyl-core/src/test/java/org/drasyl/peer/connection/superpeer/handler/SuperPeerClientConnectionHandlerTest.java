@@ -26,16 +26,21 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
+import org.drasyl.peer.connection.server.handler.NodeServerConnectionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static java.time.Duration.ofMillis;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
+import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_SERVICE_UNAVAILABLE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class SuperPeerClientConnectionHandlerTest {
@@ -48,6 +53,7 @@ class SuperPeerClientConnectionHandlerTest {
     private CompletableFuture<Void> handshakeFuture;
     private ScheduledFuture<?> timeoutFuture;
     private JoinMessage requestMessage;
+    private StatusMessage statusMessage;
 
     @BeforeEach
     void setUp() {
@@ -59,6 +65,7 @@ class SuperPeerClientConnectionHandlerTest {
         requestMessage = mock(JoinMessage.class);
         expectedPublicKey = mock(CompressedPublicKey.class);
         ownPublicKey = mock(CompressedPublicKey.class);
+        statusMessage = mock(StatusMessage.class);
     }
 
     @Test
@@ -68,7 +75,7 @@ class SuperPeerClientConnectionHandlerTest {
 
         SuperPeerClientConnectionHandler handler = new SuperPeerClientConnectionHandler(expectedPublicKey, ownPublicKey, peersManager, messenger, ofMillis(1000), handshakeFuture, timeoutFuture, requestMessage);
         channel = new EmbeddedChannel(handler);
-        channel.readOutbound();
+        channel.readOutbound(); // join message
         channel.flush();
 
         channel.writeInbound(quitMessage);
@@ -76,5 +83,22 @@ class SuperPeerClientConnectionHandlerTest {
 
         assertEquals(new StatusMessage(STATUS_OK, quitMessage.getId()), channel.readOutbound());
         assertFalse(channel.isOpen());
+    }
+
+    @Test
+    void shouldFailHandshakeIfServerReplyWithStatusUnavailableOnWelcomeMessage() {
+        when(handshakeFuture.isDone()).thenReturn(false);
+        when(requestMessage.getId()).thenReturn("123");
+        when(statusMessage.getCorrespondingId()).thenReturn("123");
+        when(statusMessage.getCode()).thenReturn(STATUS_SERVICE_UNAVAILABLE);
+
+        SuperPeerClientConnectionHandler handler = new SuperPeerClientConnectionHandler(expectedPublicKey, ownPublicKey, peersManager, messenger, ofMillis(1000), handshakeFuture, timeoutFuture, requestMessage);
+        channel = new EmbeddedChannel(handler);
+        channel.readOutbound(); // join message
+        channel.flush();
+
+        channel.writeInbound(statusMessage);
+
+        verify(handshakeFuture).completeExceptionally(any());
     }
 }

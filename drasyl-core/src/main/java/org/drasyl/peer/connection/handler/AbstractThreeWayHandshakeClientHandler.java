@@ -57,20 +57,30 @@ public abstract class AbstractThreeWayHandshakeClientHandler<R extends RequestMe
 
     @Override
     protected void doHandshake(ChannelHandlerContext ctx, Message message) {
-        try {
-            O offerMessage = (O) message;
-            ConnectionExceptionMessage.Error error = validateSessionOffer(offerMessage);
-            if (error == null) {
-                confirmSession(ctx, offerMessage);
-
-                // send confirmation
-                ctx.writeAndFlush(new StatusMessage(STATUS_OK, offerMessage.getId()));
+        if (message instanceof ResponseMessage && ((ResponseMessage) message).getCorrespondingId().equals(requestMessage.getId())) {
+            if (message instanceof StatusMessage && ((StatusMessage) message).getCode() != STATUS_OK) {
+                requestFailed(ctx, ((StatusMessage) message).getCode());
             }
             else {
-                rejectSession(ctx, error);
+                try {
+                    O offerMessage = (O) message;
+                    ConnectionExceptionMessage.Error error = validateSessionOffer(offerMessage);
+                    if (error == null) {
+                        confirmSession(ctx, offerMessage);
+
+                        // send confirmation
+                        ctx.writeAndFlush(new StatusMessage(STATUS_OK, offerMessage.getId()));
+                    }
+                    else {
+                        rejectSession(ctx, error);
+                    }
+                }
+                catch (ClassCastException e) {
+                    processUnexpectedMessageDuringHandshake(ctx, message);
+                }
             }
         }
-        catch (ClassCastException e) {
+        else {
             processUnexpectedMessageDuringHandshake(ctx, message);
         }
     }
@@ -87,6 +97,15 @@ public abstract class AbstractThreeWayHandshakeClientHandler<R extends RequestMe
             getLogger().trace("[{}]: Send request message to Super Peer.", ctx.channel().id().asShortText());
         }
         ctx.writeAndFlush(requestMessage);
+    }
+
+    private void requestFailed(ChannelHandlerContext ctx, StatusMessage.Code code) {
+        if (getLogger().isTraceEnabled()) {
+            getLogger().trace("[{}]: Session request has been rejected: {}", ctx.channel().id().asShortText(), code);
+        }
+
+        timeoutFuture.cancel(true);
+        handshakeFuture.completeExceptionally(new Exception(code.toString()));
     }
 
     /**
