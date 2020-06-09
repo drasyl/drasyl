@@ -20,7 +20,9 @@ package org.drasyl.event;
 
 import org.drasyl.identity.Identity;
 
+import java.net.URI;
 import java.util.Objects;
+import java.util.Set;
 
 /**
  * Used by {@link Event} to describe an event related to the local Node (e.g. {@link
@@ -29,14 +31,16 @@ import java.util.Objects;
  */
 public class Node {
     private final Identity identity;
+    private final Set<URI> endpoints;
 
-    Node(Identity identity) {
+    Node(Identity identity, Set<URI> endpoints) {
         this.identity = identity;
+        this.endpoints = endpoints;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(identity);
+        return Objects.hash(identity, endpoints);
     }
 
     @Override
@@ -48,13 +52,15 @@ public class Node {
             return false;
         }
         Node node = (Node) o;
-        return Objects.equals(identity, node.identity);
+        return Objects.equals(identity, node.identity) &&
+                Objects.equals(endpoints, node.endpoints);
     }
 
     @Override
     public String toString() {
         return "Node{" +
-                "identity=" + getIdentity() +
+                "identity=" + identity +
+                ", endpoints=" + endpoints +
                 '}';
     }
 
@@ -62,7 +68,15 @@ public class Node {
         return identity;
     }
 
+    public Set<URI> getEndpoints() {
+        return endpoints;
+    }
+
     public static Node of(Identity identity) {
-        return new Node(identity);
+        return of(identity, Set.of());
+    }
+
+    public static Node of(Identity identity, Set<URI> endpoints) {
+        return new Node(identity, endpoints);
     }
 }
