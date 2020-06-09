@@ -21,12 +21,10 @@ package org.drasyl.peer.connection.superpeer;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.EventLoopGroup;
-import io.netty.util.AttributeKey;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.event.Event;
 import org.drasyl.event.Node;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
@@ -55,7 +53,6 @@ import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_
  */
 @SuppressWarnings({ "java:S107", "java:S4818" })
 public class SuperPeerClient implements AutoCloseable {
-    public static final AttributeKey<Identity> ATTRIBUTE_IDENTITY = AttributeKey.valueOf("identity");
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClient.class);
     private final DrasylNodeConfig config;
     private final EventLoopGroup workerGroup;
