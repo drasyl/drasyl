@@ -64,7 +64,7 @@ public class ObservableDrasylNode extends DrasylNode {
                          CompletableFuture<Void> shutdownSequence,
                          Subject<Event> events,
                          MessageSink messageSink) {
-        super(config, identityManager, peersManager, messenger, intraVmDiscovery, server, superPeerClient, started, startSequence, shutdownSequence, messageSink);
+        super(config, identityManager, peersManager, messenger, intraVmDiscovery, superPeerClient, server, started, startSequence, shutdownSequence, messageSink);
         this.events = events;
     }
 

@@ -22,6 +22,7 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeConfig;
@@ -98,6 +99,7 @@ class NodeServerIT {
     private NodeServer server;
     private Messenger messenger;
     private PeersManager peersManager;
+    private Observable<Boolean> superPeerConnected;
 
     @BeforeEach
     void setup(TestInfo info) throws DrasylException {
@@ -111,8 +113,9 @@ class NodeServerIT {
         peersManager = new PeersManager(event -> {
         });
         messenger = new Messenger();
+        superPeerConnected = Observable.just(false);
 
-        server = new NodeServer(identityManager, messenger, peersManager, config, workerGroup, bossGroup);
+        server = new NodeServer(identityManager, messenger, peersManager, superPeerConnected, config, workerGroup, bossGroup);
         server.open();
     }
 
@@ -370,7 +373,7 @@ class NodeServerIT {
 
     @Test
     void shouldOpenAndCloseGracefully() throws DrasylException {
-        NodeServer server = new NodeServer(identityManager, messenger, peersManager, workerGroup, bossGroup);
+        NodeServer server = new NodeServer(identityManager, messenger, peersManager, workerGroup, bossGroup, superPeerConnected);
 
         server.open();
         server.close();
@@ -382,7 +385,7 @@ class NodeServerIT {
     void openShouldFailIfInvalidPortIsGiven() throws DrasylException {
         Config config =
                 ConfigFactory.parseString("drasyl.server.bind-port = 72522").withFallback(ConfigFactory.load());
-        NodeServer server = new NodeServer(identityManager, messenger, peersManager, config, workerGroup, bossGroup);
+        NodeServer server = new NodeServer(identityManager, messenger, peersManager, superPeerConnected, config, workerGroup, bossGroup);
 
         assertThrows(NodeServerException.class, server::open);
     }

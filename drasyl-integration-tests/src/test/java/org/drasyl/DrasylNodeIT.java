@@ -116,7 +116,6 @@ class DrasylNodeIT {
             superPeer = createNode(config);
             Event superPeerNodeUp = superPeer.second().filter(e -> e.getType() == EVENT_NODE_UP).firstElement().blockingGet();
             int superPeerPort = superPeerNodeUp.getNode().getEndpoints().iterator().next().getPort();
-            superPeer.second().filter(e -> e.getType() == EVENT_NODE_ONLINE).test().awaitCount(1);
             colorizedPrintln("CREATED superPeer", COLOR_CYAN, STYLE_REVERSED);
 
             // client1
@@ -125,7 +124,6 @@ class DrasylNodeIT {
                     "drasyl.super-peer.endpoints = [\"ws://127.0.0.1:" + superPeerPort + "\"]\n" +
                     "drasyl.intra-vm-discovery.enabled = false").withFallback(ConfigFactory.load("configs/DrasylNodeIT-030f018704.conf"));
             client1 = createNode(config);
-            client1.second().filter(e -> e.getType() == EVENT_NODE_ONLINE).test().awaitCount(1);
             colorizedPrintln("CREATED client1", COLOR_CYAN, STYLE_REVERSED);
 
             // client2
@@ -134,8 +132,12 @@ class DrasylNodeIT {
                     "drasyl.super-peer.endpoints = [\"ws://127.0.0.1:" + superPeerPort + "\"]\n" +
                     "drasyl.intra-vm-discovery.enabled = false").withFallback(ConfigFactory.load("configs/DrasylNodeIT-be0300f1a4.conf"));
             client2 = createNode(config);
-            client2.second().filter(e -> e.getType() == EVENT_NODE_ONLINE).test().awaitCount(1);
             colorizedPrintln("CREATED client2", COLOR_CYAN, STYLE_REVERSED);
+
+            superSuperPeer.second().filter(e -> e.getType() == EVENT_NODE_UP).test().awaitCount(1);
+            superPeer.second().filter(e -> e.getType() == EVENT_NODE_ONLINE).test().awaitCount(1);
+            client1.second().filter(e -> e.getType() == EVENT_NODE_ONLINE).test().awaitCount(1);
+            client2.second().filter(e -> e.getType() == EVENT_NODE_ONLINE).test().awaitCount(1);
         }
 
         /**
@@ -225,7 +227,6 @@ class DrasylNodeIT {
                     "drasyl.super-peer.enabled = false")
                     .withFallback(ConfigFactory.load("configs/DrasylNodeIT-4c4fdd0957.conf"));
             node1 = createNode(config);
-            node1.second().filter(e -> e.getType() == EVENT_NODE_UP).test().awaitCount(1);
             colorizedPrintln("CREATED node1", COLOR_CYAN, STYLE_REVERSED);
 
             // super peer
@@ -233,22 +234,24 @@ class DrasylNodeIT {
                     "drasyl.super-peer.enabled = false")
                     .withFallback(ConfigFactory.load("configs/DrasylNodeIT-9df9214d78.conf"));
             node2 = createNode(config);
-            node2.second().filter(e -> e.getType() == EVENT_NODE_UP).test().awaitCount(1);
             colorizedPrintln("CREATED node2", COLOR_CYAN, STYLE_REVERSED);
 
             // client1
             config = ConfigFactory.parseString("drasyl.server.enabled = false\n" +
                     "drasyl.super-peer.enabled = false").withFallback(ConfigFactory.load("configs/DrasylNodeIT-030f018704.conf"));
             node3 = createNode(config);
-            node3.second().filter(e -> e.getType() == EVENT_NODE_UP).test().awaitCount(1);
             colorizedPrintln("CREATED node3", COLOR_CYAN, STYLE_REVERSED);
 
             // client2
             config = ConfigFactory.parseString("drasyl.server.enabled = false\n" +
                     "drasyl.super-peer.enabled = false").withFallback(ConfigFactory.load("configs/DrasylNodeIT-be0300f1a4.conf"));
             node4 = createNode(config);
-            node4.second().filter(e -> e.getType() == EVENT_NODE_UP).test().awaitCount(1);
             colorizedPrintln("CREATED node4", COLOR_CYAN, STYLE_REVERSED);
+
+            node1.second().filter(e -> e.getType() == EVENT_NODE_UP).test().awaitCount(1);
+            node2.second().filter(e -> e.getType() == EVENT_NODE_UP).test().awaitCount(1);
+            node3.second().filter(e -> e.getType() == EVENT_NODE_UP).test().awaitCount(1);
+            node4.second().filter(e -> e.getType() == EVENT_NODE_UP).test().awaitCount(1);
         }
 
         /**

@@ -66,7 +66,7 @@ public class NodeServerChannelInitializer extends DefaultSessionInitializer {
 
     @Override
     protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
-        pipeline.addLast(NodeServerNewConnectionsGuard.CONNECTION_GUARD, new NodeServerNewConnectionsGuard(server::isOpen));
+        pipeline.addLast(NodeServerNewConnectionsGuard.CONNECTION_GUARD, new NodeServerNewConnectionsGuard(() -> server.isOpen() && (!server.getConfig().isSuperPeerEnabled() || server.getSuperPeerConnected().blockingFirst())));
     }
 
     @Override
