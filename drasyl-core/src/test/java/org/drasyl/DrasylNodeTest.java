@@ -114,7 +114,7 @@ class DrasylNodeTest {
         });
         drasylNode.start().join();
 
-        verify(drasylNode).onEvent(new Event(EventType.EVENT_NODE_UP, Node.of(identity, server.getEntryPoints())));
+        verify(drasylNode).onEvent(new Event(EventType.EVENT_NODE_UP, Node.of(identity, server.getEndpoints())));
     }
 
     @Test
@@ -128,8 +128,8 @@ class DrasylNodeTest {
         });
         drasylNode.shutdown().join();
 
-        verify(drasylNode).onEvent(new Event(EventType.EVENT_NODE_DOWN, Node.of(identity, server.getEntryPoints())));
-        verify(drasylNode).onEvent(new Event(EventType.EVENT_NODE_NORMAL_TERMINATION, Node.of(identity, server.getEntryPoints())));
+        verify(drasylNode).onEvent(new Event(EventType.EVENT_NODE_DOWN, Node.of(identity, server.getEndpoints())));
+        verify(drasylNode).onEvent(new Event(EventType.EVENT_NODE_NORMAL_TERMINATION, Node.of(identity, server.getEndpoints())));
     }
 
     @Test
