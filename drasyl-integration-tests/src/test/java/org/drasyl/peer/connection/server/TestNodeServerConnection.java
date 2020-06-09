@@ -228,8 +228,8 @@ public class TestNodeServerConnection {
      * Creates a new session to the given server with a random identity
      */
     public static TestNodeServerConnection clientSession(NodeServer server) throws ExecutionException, InterruptedException, CryptoException {
-        URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
-        return TestNodeServerConnection.clientSession(serverEntryPoint, Identity.of(CompressedKeyPair.of(Crypto.generateKeys())), true, server.workerGroup);
+        URI serverEndpoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
+        return TestNodeServerConnection.clientSession(serverEndpoint, Identity.of(CompressedKeyPair.of(Crypto.generateKeys())), true, server.workerGroup);
     }
 
     /**
@@ -307,8 +307,8 @@ public class TestNodeServerConnection {
      */
     public static TestNodeServerConnection clientSession(NodeServer server,
                                                          Identity identity) throws ExecutionException, InterruptedException {
-        URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
-        return TestNodeServerConnection.clientSession(serverEntryPoint, identity, true, server.workerGroup);
+        URI serverEndpoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
+        return TestNodeServerConnection.clientSession(serverEndpoint, identity, true, server.workerGroup);
     }
 
     /**
@@ -330,8 +330,8 @@ public class TestNodeServerConnection {
     public static TestNodeServerConnection clientSession(NodeServer server,
                                                          boolean pingPong) throws ExecutionException,
             InterruptedException, CryptoException {
-        URI serverEntryPoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
-        return TestNodeServerConnection.clientSession(serverEntryPoint,
+        URI serverEndpoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
+        return TestNodeServerConnection.clientSession(serverEndpoint,
                 Identity.of(CompressedKeyPair.of(Crypto.generateKeys())), pingPong, server.workerGroup);
     }
 

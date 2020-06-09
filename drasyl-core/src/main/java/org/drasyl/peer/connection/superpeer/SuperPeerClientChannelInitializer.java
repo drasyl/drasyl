@@ -51,12 +51,12 @@ public class SuperPeerClientChannelInitializer extends AbstractClientInitializer
 
     public SuperPeerClientChannelInitializer(DrasylNodeConfig config,
                                              URI endpoint,
-                                             Set<URI> entryPoints,
+                                             Set<URI> endpoints,
                                              SuperPeerClient superPeerClient) {
         super(config.getFlushBufferSize(), config.getSuperPeerIdleTimeout(),
                 config.getSuperPeerIdleRetries(), endpoint);
         this.config = config;
-        clientHandler = new SuperPeerClientConnectionHandler(this.config.getSuperPeerPublicKey(), superPeerClient.getIdentityManager().getIdentity().getPublicKey(), entryPoints, this.config.getSuperPeerHandshakeTimeout(), superPeerClient.getPeersManager(), superPeerClient.getMessenger());
+        clientHandler = new SuperPeerClientConnectionHandler(this.config.getSuperPeerPublicKey(), superPeerClient.getIdentityManager().getIdentity().getPublicKey(), endpoints, this.config.getSuperPeerHandshakeTimeout(), superPeerClient.getPeersManager(), superPeerClient.getMessenger());
     }
 
     public CompletableFuture<Void> handshakeFuture() {

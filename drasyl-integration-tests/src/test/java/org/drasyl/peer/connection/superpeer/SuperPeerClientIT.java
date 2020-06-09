@@ -40,9 +40,7 @@ import org.drasyl.peer.connection.message.PongMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.server.NodeServer;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
@@ -121,11 +119,11 @@ class SuperPeerClientIT {
         // start client
         SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, event -> {
         });
-        client.open(server.getEntryPoints());
+        client.open(server.getEndpoints());
 
         // verify received messages
         receivedMessages.awaitCount(1);
-        receivedMessages.assertValueAt(0, new JoinMessage(identityManager.getIdentity().getPublicKey(), server.getEntryPoints(), Map.of()));
+        receivedMessages.assertValueAt(0, new JoinMessage(identityManager.getIdentity().getPublicKey(), server.getEndpoints(), Map.of()));
     }
 
     @Disabled("Race Condition error")
@@ -136,7 +134,7 @@ class SuperPeerClientIT {
 
         // start client
         SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
-        client.open(server.getEntryPoints());
+        client.open(server.getEndpoints());
 
         // wait for node to become online, before closing it
         emittedEvents.awaitCount(1);
@@ -154,7 +152,7 @@ class SuperPeerClientIT {
 
         // start client
         SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
-        client.open(server.getEntryPoints());
+        client.open(server.getEndpoints());
 
         // wait for node to become online, before closing it
         emittedEvents.awaitCount(1);
@@ -174,7 +172,7 @@ class SuperPeerClientIT {
         // start client
         SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, event -> {
         });
-        client.open(server.getEntryPoints());
+        client.open(server.getEndpoints());
         sentMessages.awaitCount(1);
 
         // send message
@@ -195,7 +193,7 @@ class SuperPeerClientIT {
         // start client
         SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, event -> {
         });
-        client.open(server.getEntryPoints());
+        client.open(server.getEndpoints());
         sentMessages.awaitCount(1);
 
         // send message
@@ -218,7 +216,7 @@ class SuperPeerClientIT {
 
         // start client
         SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
-        client.open(server.getEntryPoints());
+        client.open(server.getEndpoints());
         receivedMessages.awaitCount(1);
 
         // send message
@@ -236,7 +234,7 @@ class SuperPeerClientIT {
 
         // start client
         SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
-        client.open(server.getEntryPoints());
+        client.open(server.getEndpoints());
 
         // verify emitted events
         emittedEvents.awaitCount(1);
@@ -250,12 +248,12 @@ class SuperPeerClientIT {
 
         // start client
         SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
-        client.open(server.getEntryPoints());
+        client.open(server.getEndpoints());
 
         emittedEvents.awaitCount(1);
         // TODO: initiate disconnect from Server?
         client.close();
-        client.open(server.getEntryPoints());
+        client.open(server.getEndpoints());
 
         // verify emitted events
         emittedEvents.awaitCount(3);

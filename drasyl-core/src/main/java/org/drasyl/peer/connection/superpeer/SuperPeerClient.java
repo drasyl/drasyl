@@ -118,15 +118,15 @@ public class SuperPeerClient implements AutoCloseable {
         this.nextEndpointPointer = new AtomicInteger(endpoints.isEmpty() ? 0 : Crypto.randomNumber(endpoints.size()));
         this.nextRetryDelayPointer = new AtomicInteger(0);
         this.eventConsumer = eventConsumer;
-        this.threadSupplier = myEntryPoints -> new Thread(() -> keepConnectionAlive(myEntryPoints));
+        this.threadSupplier = myEndpoints -> new Thread(() -> keepConnectionAlive(myEndpoints));
     }
 
-    void keepConnectionAlive(Set<URI> entryPoints) {
+    void keepConnectionAlive(Set<URI> endpoints) {
         do {
             URI endpoint = getEndpoint();
             LOG.debug("Connect to Super Peer Endpoint '{}'", endpoint);
             try {
-                SuperPeerClientChannelBootstrap clientBootstrap = new SuperPeerClientChannelBootstrap(config, workerGroup, endpoint, entryPoints, this);
+                SuperPeerClientChannelBootstrap clientBootstrap = new SuperPeerClientChannelBootstrap(config, workerGroup, endpoint, endpoints, this);
                 clientChannel = clientBootstrap.getChannel();
                 eventConsumer.accept(new Event(EVENT_NODE_ONLINE, Node.of(identityManager.getIdentity())));
                 clientChannel.closeFuture().syncUninterruptibly();
@@ -204,9 +204,9 @@ public class SuperPeerClient implements AutoCloseable {
         return config.getSuperPeerRetryDelays().get(nextRetryDelayPointer.get());
     }
 
-    public void open(Set<URI> entryPoints) {
+    public void open(Set<URI> endpoints) {
         if (opened.compareAndSet(false, true)) {
-            threadSupplier.apply(entryPoints).start();
+            threadSupplier.apply(endpoints).start();
         }
     }
 

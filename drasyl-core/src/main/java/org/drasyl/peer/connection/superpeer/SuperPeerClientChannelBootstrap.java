@@ -38,18 +38,18 @@ public class SuperPeerClientChannelBootstrap {
     private final EventLoopGroup workerGroup;
     private final URI endpoint;
     private final SuperPeerClientChannelInitializer superPeerClientChannelInitializer;
-    private final Set<URI> entryPoints;
+    private final Set<URI> endpoints;
     private final SuperPeerClient superPeerClient;
 
     public SuperPeerClientChannelBootstrap(DrasylNodeConfig config,
                                            EventLoopGroup workerGroup,
                                            URI endpoint,
-                                           Set<URI> entryPoints,
+                                           Set<URI> endpoints,
                                            SuperPeerClient superPeerClient) throws SuperPeerClientException {
         this.config = config;
         this.workerGroup = workerGroup;
         this.endpoint = endpoint;
-        this.entryPoints = entryPoints;
+        this.endpoints = endpoints;
         this.superPeerClient = superPeerClient;
         String channelInitializer = config.getSuperPeerChannelInitializer();
 
@@ -78,7 +78,7 @@ public class SuperPeerClientChannelBootstrap {
         Class<?> c = Class.forName(className);
         Constructor<?> cons = c.getConstructor(DrasylNodeConfig.class, URI.class, Set.class, SuperPeerClient.class);
 
-        return (SuperPeerClientChannelInitializer) cons.newInstance(config, endpoint, entryPoints, superPeerClient);
+        return (SuperPeerClientChannelInitializer) cons.newInstance(config, endpoint, endpoints, superPeerClient);
     }
 
     public Channel getChannel() throws SuperPeerClientException {

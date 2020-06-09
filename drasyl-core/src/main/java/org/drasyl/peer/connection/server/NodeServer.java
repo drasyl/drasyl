@@ -165,9 +165,9 @@ public class NodeServer implements AutoCloseable {
     }
 
     /**
-     * @return the entry points
+     * @return the endpoints
      */
-    public Set<URI> getEntryPoints() {
+    public Set<URI> getEndpoints() {
         return actualEndpoints;
     }
 

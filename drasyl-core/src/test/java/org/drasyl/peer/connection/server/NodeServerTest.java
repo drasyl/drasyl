@@ -152,7 +152,7 @@ class NodeServerTest {
         assertNotNull(server.getConfig());
         assertNotNull(server.getWorkerGroup());
         assertNotNull(server.getPeersManager());
-        assertNotNull(server.getEntryPoints());
+        assertNotNull(server.getEndpoints());
         assertFalse(server.isOpen());
     }
 }

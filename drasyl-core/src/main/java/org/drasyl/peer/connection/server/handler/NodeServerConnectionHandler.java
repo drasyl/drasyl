@@ -67,26 +67,26 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
     public static final String NODE_SERVER_CONNECTION_HANDLER = "nodeServerConnectionHandler";
     private static final Logger LOG = LoggerFactory.getLogger(NodeServerConnectionHandler.class);
     private final PeersManager peersManager;
-    private final Set<URI> entryPoints;
+    private final Set<URI> endpoints;
     private final Identity identity;
     private final NodeServerChannelGroup channelGroup;
 
     public NodeServerConnectionHandler(Identity identity,
                                        PeersManager peersManager,
-                                       Set<URI> entryPoints,
+                                       Set<URI> endpoints,
                                        Duration timeout,
                                        Messenger messenger,
                                        NodeServerChannelGroup channelGroup) {
         super(timeout, messenger);
         this.peersManager = peersManager;
-        this.entryPoints = entryPoints;
+        this.endpoints = endpoints;
         this.identity = identity;
         this.channelGroup = channelGroup;
     }
 
     NodeServerConnectionHandler(Identity identity,
                                 PeersManager peersManager,
-                                Set<URI> entryPoints,
+                                Set<URI> endpoints,
                                 Duration timeout,
                                 Messenger messenger,
                                 CompletableFuture<Void> handshakeFuture,
@@ -96,7 +96,7 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
                                 WelcomeMessage offerMessage) {
         super(timeout, messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         this.peersManager = peersManager;
-        this.entryPoints = entryPoints;
+        this.endpoints = endpoints;
         this.identity = identity;
         this.channelGroup = channelGroup;
     }
@@ -121,7 +121,7 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
     @Override
     protected WelcomeMessage offerSession(ChannelHandlerContext ctx,
                                           JoinMessage requestMessage) {
-        return new WelcomeMessage(identity.getPublicKey(), entryPoints, requestMessage.getId());
+        return new WelcomeMessage(identity.getPublicKey(), endpoints, requestMessage.getId());
     }
 
     @Override

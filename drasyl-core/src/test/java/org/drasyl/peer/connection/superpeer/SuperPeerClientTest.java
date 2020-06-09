@@ -62,7 +62,6 @@ class SuperPeerClientTest {
     private AtomicInteger nextEndpointPointer;
     private AtomicInteger nextRetryDelayPointer;
     private Consumer<Event> onEvent;
-    private Set<URI> entryPoints;
     private Function<Set<URI>, Thread> threadSupplier;
     private List<Duration> superPeerRetryDelays;
     private Channel channel;
@@ -80,7 +79,6 @@ class SuperPeerClientTest {
         nextEndpointPointer = mock(AtomicInteger.class);
         nextRetryDelayPointer = mock(AtomicInteger.class);
         onEvent = mock(Consumer.class);
-        entryPoints = mock(Set.class);
         threadSupplier = mock(Function.class);
         superPeerRetryDelays = mock(List.class);
         channel = mock(Channel.class);
@@ -97,16 +95,16 @@ class SuperPeerClientTest {
 
         SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, endpoints, new AtomicBoolean(false), nextEndpointPointer, nextRetryDelayPointer, onEvent, channel, threadSupplier);
 
-        client.open(entryPoints);
+        client.open(endpoints);
 
-        verify(threadSupplier).apply(entryPoints);
+        verify(threadSupplier).apply(endpoints);
     }
 
     @Test
     void openShouldNotCreateKeepConnectionAliveIfClientIsAlreadyOpen() {
         SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, endpoints, new AtomicBoolean(true), nextEndpointPointer, nextRetryDelayPointer, onEvent, channel, threadSupplier);
 
-        client.open(entryPoints);
+        client.open(endpoints);
 
         verify(threadSupplier, never()).apply(any());
     }
@@ -130,7 +128,7 @@ class SuperPeerClientTest {
     }
 
     @Test
-    void doRetryCycleShouldJumpToNextEntrypoint() {
+    void doRetryCycleShouldJumpToNextEndpoint() {
         when(endpoints.size()).thenReturn(3);
 
         nextEndpointPointer = new AtomicInteger(0);
