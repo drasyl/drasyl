@@ -21,7 +21,9 @@ package org.drasyl.peer.connection.superpeer;
 import com.typesafe.config.ConfigFactory;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
+import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylException;
@@ -76,6 +78,7 @@ class SuperPeerClientIT {
     private PeersManager peersManager;
     private PeersManager peersManagerServer;
     private Subject<Event> emittedEventsSubject;
+    private Observable<Boolean> superPeerConnected;
 
     @BeforeEach
     void setup(TestInfo info) throws DrasylException {
@@ -101,9 +104,10 @@ class SuperPeerClientIT {
         messenger = new Messenger();
         messengerServer = new Messenger();
 
-        server = new NodeServer(identityManagerServer, messengerServer, peersManagerServer, serverConfig, serverWorkerGroup, bossGroup);
+        server = new NodeServer(identityManagerServer, messenger, peersManager, superPeerConnected, serverConfig, serverWorkerGroup, bossGroup);
         server.open();
         emittedEventsSubject = ReplaySubject.create();
+        superPeerConnected = BehaviorSubject.createDefault(false);
     }
 
     @AfterEach

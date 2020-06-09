@@ -23,6 +23,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.netty.util.concurrent.Future;
+import io.reactivex.rxjava3.core.Observable;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.crypto.Crypto;
@@ -67,6 +68,7 @@ class NodeServerTest {
     private NodeServerChannelBootstrap nodeServerChannelBootstrap;
     private NodeServerChannelGroup channelGroup;
     private Map<Identity, Identity> grandchildren;
+    private Observable<Boolean> superPeerConnected;
 
     @BeforeEach
     void setUp() throws InterruptedException, NodeServerException {
@@ -83,6 +85,7 @@ class NodeServerTest {
         ChannelFuture channelFuture = mock(ChannelFuture.class);
         channelGroup = mock(NodeServerChannelGroup.class);
         grandchildren = Map.of();
+        superPeerConnected = mock(Observable.class);
 
         message = mock(ApplicationMessage.class);
         String msgID = Crypto.randomString(16);
@@ -116,7 +119,7 @@ class NodeServerTest {
 
         NodeServer server = new NodeServer(identityManager, messenger, peersManager,
                 config, serverChannel, serverBootstrap, workerGroup, bossGroup,
-                nodeServerChannelBootstrap, new AtomicBoolean(false), -1, new HashSet<>(), channelGroup);
+                nodeServerChannelBootstrap, new AtomicBoolean(false), -1, new HashSet<>(), channelGroup, superPeerConnected);
         server.open();
 
         assertTrue(server.isOpen());
@@ -126,7 +129,7 @@ class NodeServerTest {
     void openShouldDoNothingIfServerHasAlreadyBeenStarted() throws NodeServerException {
         NodeServer server = new NodeServer(identityManager, messenger, peersManager,
                 config, serverChannel, serverBootstrap, workerGroup, bossGroup,
-                nodeServerChannelBootstrap, new AtomicBoolean(true), -1, new HashSet<>(), channelGroup);
+                nodeServerChannelBootstrap, new AtomicBoolean(true), -1, new HashSet<>(), channelGroup, superPeerConnected);
 
         server.open();
 
@@ -137,7 +140,7 @@ class NodeServerTest {
     void closeShouldDoNothingIfServerHasAlreadyBeenShutDown() {
         NodeServer server = new NodeServer(identityManager, messenger, peersManager,
                 config, serverChannel, serverBootstrap, workerGroup, bossGroup,
-                nodeServerChannelBootstrap, new AtomicBoolean(false), -1, new HashSet<>(), channelGroup);
+                nodeServerChannelBootstrap, new AtomicBoolean(false), -1, new HashSet<>(), channelGroup, superPeerConnected);
 
         server.close();
 
@@ -146,7 +149,7 @@ class NodeServerTest {
 
     @Test
     void correctObjectCreation() throws DrasylException {
-        NodeServer server = new NodeServer(identityManager, messenger, peersManager, workerGroup, bossGroup);
+        NodeServer server = new NodeServer(identityManager, messenger, peersManager, workerGroup, bossGroup, superPeerConnected);
 
         assertNotNull(server.getBossGroup());
         assertNotNull(server.getConfig());

@@ -104,8 +104,8 @@ public abstract class DrasylNode {
     private final PeersManager peersManager;
     private final Messenger messenger;
     private final IntraVmDiscovery intraVmDiscovery;
-    private final NodeServer server;
     private final SuperPeerClient superPeerClient;
+    private final NodeServer server;
     private final AtomicBoolean started;
     private final MessageSink loopbackMessageSink;
     private CompletableFuture<Void> startSequence;
@@ -130,8 +130,8 @@ public abstract class DrasylNode {
             this.peersManager = new PeersManager(this::onEvent);
             this.messenger = new Messenger();
             this.intraVmDiscovery = new IntraVmDiscovery(identityManager::getIdentity, messenger, peersManager, this::onEvent);
-            this.server = new NodeServer(identityManager, messenger, peersManager, this.config, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP);
             this.superPeerClient = new SuperPeerClient(this.config, identityManager, peersManager, messenger, DrasylNode.WORKER_GROUP, this::onEvent);
+            this.server = new NodeServer(identityManager, messenger, peersManager, superPeerClient.connectionEstablished(), this.config, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP);
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = new CompletableFuture<>();
@@ -170,8 +170,8 @@ public abstract class DrasylNode {
                PeersManager peersManager,
                Messenger messenger,
                IntraVmDiscovery intraVmDiscovery,
-               NodeServer server,
                SuperPeerClient superPeerClient,
+               NodeServer server,
                AtomicBoolean started,
                CompletableFuture<Void> startSequence,
                CompletableFuture<Void> shutdownSequence,
@@ -181,8 +181,8 @@ public abstract class DrasylNode {
         this.peersManager = peersManager;
         this.messenger = messenger;
         this.intraVmDiscovery = intraVmDiscovery;
-        this.server = server;
         this.superPeerClient = superPeerClient;
+        this.server = server;
         this.started = started;
         this.startSequence = startSequence;
         this.shutdownSequence = shutdownSequence;

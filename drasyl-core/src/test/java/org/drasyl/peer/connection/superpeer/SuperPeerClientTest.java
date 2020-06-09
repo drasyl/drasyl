@@ -22,6 +22,7 @@ import com.google.common.base.Function;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
+import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.IdentityManager;
@@ -66,6 +67,7 @@ class SuperPeerClientTest {
     private List<Duration> superPeerRetryDelays;
     private Channel channel;
     private ChannelFuture channelFuture;
+    private Subject<Boolean> connected;
 
     @BeforeEach
     void setUp() {
@@ -83,6 +85,7 @@ class SuperPeerClientTest {
         superPeerRetryDelays = mock(List.class);
         channel = mock(Channel.class);
         channelFuture = mock(ChannelFuture.class);
+        connected = mock(Subject.class);
     }
 
     @AfterEach
@@ -93,7 +96,7 @@ class SuperPeerClientTest {
     void openShouldCreateKeepConnectionAliveIfClientIsNotAlreadyOpen() {
         when(threadSupplier.apply(any())).thenReturn(mock(Thread.class));
 
-        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, endpoints, new AtomicBoolean(false), nextEndpointPointer, nextRetryDelayPointer, onEvent, channel, threadSupplier);
+        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, endpoints, new AtomicBoolean(false), nextEndpointPointer, nextRetryDelayPointer, onEvent, channel, threadSupplier, connected);
 
         client.open(endpoints);
 
@@ -102,7 +105,7 @@ class SuperPeerClientTest {
 
     @Test
     void openShouldNotCreateKeepConnectionAliveIfClientIsAlreadyOpen() {
-        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, endpoints, new AtomicBoolean(true), nextEndpointPointer, nextRetryDelayPointer, onEvent, channel, threadSupplier);
+        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, endpoints, new AtomicBoolean(true), nextEndpointPointer, nextRetryDelayPointer, onEvent, channel, threadSupplier, connected);
 
         client.open(endpoints);
 
@@ -115,14 +118,14 @@ class SuperPeerClientTest {
         when(superPeerRetryDelays.isEmpty()).thenReturn(false);
         when(superPeerRetryDelays.get(0)).thenReturn(ofSeconds(3));
 
-        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, endpoints, new AtomicBoolean(true), nextEndpointPointer, new AtomicInteger(), onEvent, channel, threadSupplier);
+        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, endpoints, new AtomicBoolean(true), nextEndpointPointer, new AtomicInteger(), onEvent, channel, threadSupplier, connected);
 
         assertTrue(client.retryConnection());
     }
 
     @Test
     void retryConnectionShouldReturnFalseIfClientIsNotOpen() {
-        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, endpoints, new AtomicBoolean(false), nextEndpointPointer, nextRetryDelayPointer, onEvent, channel, threadSupplier);
+        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, endpoints, new AtomicBoolean(false), nextEndpointPointer, nextRetryDelayPointer, onEvent, channel, threadSupplier, connected);
 
         assertFalse(client.retryConnection());
     }
@@ -133,7 +136,7 @@ class SuperPeerClientTest {
 
         nextEndpointPointer = new AtomicInteger(0);
 
-        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, endpoints, opened, nextEndpointPointer, nextRetryDelayPointer, onEvent, channel, threadSupplier);
+        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, endpoints, opened, nextEndpointPointer, nextRetryDelayPointer, onEvent, channel, threadSupplier, connected);
 
         client.doRetryCycle();
         assertEquals(1, nextEndpointPointer.get());
@@ -153,7 +156,7 @@ class SuperPeerClientTest {
 
         nextRetryDelayPointer = new AtomicInteger(0);
 
-        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, endpoints, opened, nextEndpointPointer, nextRetryDelayPointer, onEvent, channel, threadSupplier);
+        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, endpoints, opened, nextEndpointPointer, nextRetryDelayPointer, onEvent, channel, threadSupplier, connected);
 
         client.doRetryCycle();
         assertEquals(1, nextRetryDelayPointer.get());
@@ -170,7 +173,7 @@ class SuperPeerClientTest {
         when(config.getSuperPeerRetryDelays()).thenReturn(superPeerRetryDelays);
         when(config.getSuperPeerRetryDelays().get(0)).thenReturn(ofSeconds(3));
 
-        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, endpoints, opened, nextEndpointPointer, new AtomicInteger(0), onEvent, channel, threadSupplier);
+        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, endpoints, opened, nextEndpointPointer, new AtomicInteger(0), onEvent, channel, threadSupplier, connected);
 
         assertEquals(ofSeconds(3), client.retryDelay());
     }
@@ -181,7 +184,7 @@ class SuperPeerClientTest {
         when(channel.closeFuture()).thenReturn(channelFuture);
         when(channel.writeAndFlush(any())).thenReturn(channelFuture);
 
-        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, endpoints, new AtomicBoolean(true), nextEndpointPointer, nextRetryDelayPointer, onEvent, channel, threadSupplier);
+        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, endpoints, new AtomicBoolean(true), nextEndpointPointer, nextRetryDelayPointer, onEvent, channel, threadSupplier, connected);
 
         client.close();
 
@@ -194,7 +197,7 @@ class SuperPeerClientTest {
         when(channel.isOpen()).thenReturn(true);
         when(channel.close()).thenReturn(mock(ChannelFuture.class));
 
-        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, endpoints, new AtomicBoolean(false), nextEndpointPointer, nextRetryDelayPointer, onEvent, channel, threadSupplier);
+        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, endpoints, new AtomicBoolean(false), nextEndpointPointer, nextRetryDelayPointer, onEvent, channel, threadSupplier, connected);
 
         client.close();
 
