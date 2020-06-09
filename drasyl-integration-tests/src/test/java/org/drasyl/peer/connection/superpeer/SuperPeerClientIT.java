@@ -72,7 +72,9 @@ class SuperPeerClientIT {
     private IdentityManager identityManagerServer;
     private NodeServer server;
     private Messenger messenger;
+    private Messenger messengerServer;
     private PeersManager peersManager;
+    private PeersManager peersManagerServer;
     private Subject<Event> emittedEventsSubject;
 
     @BeforeEach
@@ -94,9 +96,12 @@ class SuperPeerClientIT {
         identityManagerServer.loadOrCreateIdentity();
         peersManager = new PeersManager(event -> {
         });
+        peersManagerServer = new PeersManager(event -> {
+        });
         messenger = new Messenger();
+        messengerServer = new Messenger();
 
-        server = new NodeServer(identityManagerServer, messenger, peersManager, serverConfig, serverWorkerGroup, bossGroup);
+        server = new NodeServer(identityManagerServer, messengerServer, peersManagerServer, serverConfig, serverWorkerGroup, bossGroup);
         server.open();
         emittedEventsSubject = ReplaySubject.create();
     }
