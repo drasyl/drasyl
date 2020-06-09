@@ -16,63 +16,26 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.peer.connection.message;
 
 import org.drasyl.identity.CompressedPublicKey;
 
 import java.net.URI;
-import java.util.Objects;
 import java.util.Set;
 
-import static java.util.Objects.requireNonNull;
-
-public class UnregisterGrandchildMessage extends AbstractMessage implements RequestMessage {
-    private final CompressedPublicKey publicKey;
-    private final Set<URI> endpoints;
-
-    protected UnregisterGrandchildMessage() {
-        publicKey = null;
-        endpoints = null;
+public class UnregisterGrandchildMessage extends AbstractGrandchildMessage {
+    private UnregisterGrandchildMessage() {
+        this(null, null);
     }
 
     /**
      * Creates a new unregister grandchild message.
      *
-     * @param publicKey the public key of the new client
+     * @param publicKey the public key of the grandchild
+     * @param endpoints the endpoints of the grandchild
      */
     public UnregisterGrandchildMessage(CompressedPublicKey publicKey, Set<URI> endpoints) {
-        this.publicKey = requireNonNull(publicKey);
-        this.endpoints = requireNonNull(endpoints);
-    }
-
-    public CompressedPublicKey getPublicKey() {
-        return publicKey;
-    }
-
-    public Set<URI> getEndpoints() {
-        return this.endpoints;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), publicKey, endpoints);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        if (!super.equals(o)) {
-            return false;
-        }
-        UnregisterGrandchildMessage unregisterGrandchildMessage = (UnregisterGrandchildMessage) o;
-        return Objects.equals(publicKey, unregisterGrandchildMessage.publicKey) &&
-                Objects.equals(endpoints, unregisterGrandchildMessage.endpoints);
+        super(publicKey, endpoints);
     }
 
     @Override
