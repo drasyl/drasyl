@@ -26,17 +26,13 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
-import org.drasyl.peer.connection.server.handler.NodeServerConnectionHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static java.time.Duration.ofMillis;
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_SERVICE_UNAVAILABLE;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
@@ -69,7 +65,7 @@ class SuperPeerClientConnectionHandlerTest {
     }
 
     @Test
-    void shouldReplyWithStatusOkAndThenCloseChannelIfHandshakeIsDone() {
+    void shouldCloseChannelOnQuitMessage() {
         when(handshakeFuture.isDone()).thenReturn(true);
         when(quitMessage.getId()).thenReturn("123");
 
@@ -81,7 +77,6 @@ class SuperPeerClientConnectionHandlerTest {
         channel.writeInbound(quitMessage);
         channel.flush();
 
-        assertEquals(new StatusMessage(STATUS_OK, quitMessage.getId()), channel.readOutbound());
         assertFalse(channel.isOpen());
     }
 

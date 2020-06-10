@@ -39,8 +39,6 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_HANDSHAKE_TIMEOUT;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_INITIALIZATION;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_NOT_FOUND;
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 
 public abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandler<Message, Message> {
     protected final Duration timeout;
@@ -118,7 +116,7 @@ public abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDupl
             getLogger().trace("[{}]: received {}. Close channel for reason '{}'", ctx.channel().id().asShortText(), QuitMessage.class.getSimpleName(), quitMessage.getReason());
         }
 
-        ctx.writeAndFlush(new StatusMessage(STATUS_OK, quitMessage.getId())).addListener(ChannelFutureListener.CLOSE);
+        ctx.close();
     }
 
     protected void processMessageAfterHandshake(ChannelHandlerContext ctx, Message message) {
@@ -126,10 +124,9 @@ public abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDupl
             ApplicationMessage applicationMessage = (ApplicationMessage) message;
             try {
                 messenger.send(applicationMessage);
-                ctx.writeAndFlush(new StatusMessage(STATUS_OK, applicationMessage.getId()));
             }
             catch (MessengerException e) {
-                ctx.writeAndFlush(new StatusMessage(STATUS_NOT_FOUND, applicationMessage.getId()));
+                getLogger().trace("Unable to send Message {}: {}", applicationMessage, e.getMessage());
             }
         }
         else {

@@ -183,12 +183,8 @@ class NodeServerIT {
                 0x01,
                 0x02
         });
-        CompletableFuture<ResponseMessage<?>> send1 = session1.sendRequest(request);
+        session1.send(request);
 
-        // verify responses
-        ResponseMessage<?> response1 = send1.get();
-
-        assertEquals(new StatusMessage(STATUS_OK, request.getId()), response1);
         receivedMessages2.awaitCount(1);
         receivedMessages2.assertValue(request);
     }

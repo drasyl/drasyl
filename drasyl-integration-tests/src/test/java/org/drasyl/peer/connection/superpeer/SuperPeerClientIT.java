@@ -29,11 +29,8 @@ import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.DrasylNodeConfig;
-import org.drasyl.MessageSink;
-import org.drasyl.MessageSinkException;
 import org.drasyl.event.Event;
 import org.drasyl.event.Node;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.messenger.Messenger;
@@ -205,6 +202,7 @@ class SuperPeerClientIT {
     }
 
     @Test
+    @Disabled("disabled, because StatusMessage is currently not used and therefore has been removed.")
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldRespondToApplicationMessageWithStatusOk() throws SuperPeerClientException {
         TestObserver<Message> sentMessages = IntegrationTestHandler.sentMessages().test();

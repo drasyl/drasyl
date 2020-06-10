@@ -32,7 +32,6 @@ import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RegisterGrandchildMessage;
-import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.message.UnregisterGrandchildMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
 import org.drasyl.peer.connection.server.NodeServerChannelGroup;
@@ -47,7 +46,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_SAME_PUBLIC_KEY;
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE_IDENTITY;
 
 /**
@@ -194,14 +192,12 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
             Identity grandchildIdentity = Identity.of(registerGrandchildMessage.getPublicKey());
             PeerInformation grandchildInformation = PeerInformation.of(registerGrandchildMessage.getEndpoints());
             registerGrandchild(ctx, grandchildIdentity, grandchildInformation);
-            ctx.writeAndFlush(new StatusMessage(STATUS_OK, registerGrandchildMessage.getId()));
         }
         else if (message instanceof UnregisterGrandchildMessage) {
             UnregisterGrandchildMessage unregisterGrandchildMessage = (UnregisterGrandchildMessage) message;
             Identity grandchildIdentity = Identity.of(unregisterGrandchildMessage.getPublicKey());
             PeerInformation grandchildInformation = PeerInformation.of(unregisterGrandchildMessage.getEndpoints());
             unregisterGrandchild(ctx, grandchildIdentity, grandchildInformation);
-            ctx.writeAndFlush(new StatusMessage(STATUS_OK, unregisterGrandchildMessage.getId()));
         }
         else {
             super.processMessageAfterHandshake(ctx, message);

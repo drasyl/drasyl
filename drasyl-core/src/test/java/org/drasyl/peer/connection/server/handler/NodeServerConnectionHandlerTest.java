@@ -196,7 +196,7 @@ class NodeServerConnectionHandlerTest {
     }
 
     @Test
-    void shouldReplyWithStatusOkAndThenCloseChannelIfHandshakeIsDone() {
+    void shouldCloseChannelOnQuitMessage() {
         when(handshakeFuture.isDone()).thenReturn(true);
         when(quitMessage.getId()).thenReturn("123");
 
@@ -206,7 +206,6 @@ class NodeServerConnectionHandlerTest {
         channel.writeInbound(quitMessage);
         channel.flush();
 
-        assertEquals(new StatusMessage(STATUS_OK, quitMessage.getId()), channel.readOutbound());
         assertFalse(channel.isOpen());
     }
 
@@ -226,7 +225,6 @@ class NodeServerConnectionHandlerTest {
         channel.writeInbound(registerGrandchildMessage);
         channel.flush();
 
-        assertEquals(new StatusMessage(STATUS_OK, registerGrandchildMessage.getId()), channel.readOutbound());
         verify(peersManager).addPeerInformationAndAddGrandchildren(Identity.of(grandchildPublicKey), PeerInformation.of(grandchildEndpoints), identity);
         verify(superPeerPath).send(new RegisterGrandchildMessage(grandchildPublicKey, grandchildEndpoints));
 
@@ -252,7 +250,6 @@ class NodeServerConnectionHandlerTest {
         channel.writeInbound(unregisterGrandchildMessage);
         channel.flush();
 
-        assertEquals(new StatusMessage(STATUS_OK, unregisterGrandchildMessage.getId()), channel.readOutbound());
         verify(peersManager).removeGrandchildrenRouteAndRemovePeerInformation(Identity.of(grandchildPublicKey), PeerInformation.of(grandchildEndpoints));
         verify(superPeerPath).send(new UnregisterGrandchildMessage(grandchildPublicKey, grandchildEndpoints));
     }
