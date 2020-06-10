@@ -41,6 +41,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 
+import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -116,7 +117,7 @@ class SuperPeerClientTest {
     void retryConnectionShouldReturnTrueIfClientIsOpenAndSuperPeerRetryDelaysIsNotEmpty() {
         when(config.getSuperPeerRetryDelays()).thenReturn(superPeerRetryDelays);
         when(superPeerRetryDelays.isEmpty()).thenReturn(false);
-        when(superPeerRetryDelays.get(0)).thenReturn(ofSeconds(3));
+        when(superPeerRetryDelays.get(0)).thenReturn(ofMillis(1));
 
         SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, endpoints, new AtomicBoolean(true), nextEndpointPointer, new AtomicInteger(), onEvent, channel, threadSupplier, connected);
 
