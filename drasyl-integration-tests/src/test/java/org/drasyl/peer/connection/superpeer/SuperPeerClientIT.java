@@ -29,8 +29,11 @@ import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.DrasylNodeConfig;
+import org.drasyl.MessageSink;
+import org.drasyl.MessageSinkException;
 import org.drasyl.event.Event;
 import org.drasyl.event.Node;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.messenger.Messenger;
@@ -214,7 +217,7 @@ class SuperPeerClientIT {
         sentMessages.awaitCount(1);
 
         // send message
-        ApplicationMessage request = new ApplicationMessage(TestHelper.random(), identityManager.getAddress(), new byte[]{
+        ApplicationMessage request = new ApplicationMessage(identityManager.getAddress(), identityManagerServer.getAddress(), new byte[]{
                 0x00,
                 0x01
         });
