@@ -267,14 +267,12 @@ public class NodeServer implements AutoCloseable {
             messenger.unsetServerSink();
 
             // send quit message to all clients and close connections
-            channelGroup.writeAndFlush(new QuitMessage(REASON_SHUTTING_DOWN))
-                    .addListener((ChannelGroupFutureListener) future -> {
-                        future.group().close();
+            channelGroup.writeAndFlush(new QuitMessage(REASON_SHUTTING_DOWN)).syncUninterruptibly();
+            channelGroup.close().syncUninterruptibly();
 
-                        // shutdown server
-                        serverChannel.close();
-                        serverChannel = null;
-                    });
+            // shutdown server
+            serverChannel.close().syncUninterruptibly();
+            serverChannel = null;
         }
     }
 }
