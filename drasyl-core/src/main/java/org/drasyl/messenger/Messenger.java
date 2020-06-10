@@ -24,6 +24,8 @@ import org.drasyl.NoPathToIdentityException;
 import org.drasyl.identity.Address;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Objects;
@@ -34,6 +36,7 @@ import java.util.stream.Collectors;
  * recipient.
  */
 public class Messenger {
+    private static final Logger LOG = LoggerFactory.getLogger(Messenger.class);
     private MessageSink loopbackSink;
     private MessageSink intraVmSink;
     private MessageSink serverSink;
@@ -67,6 +70,8 @@ public class Messenger {
      *                            exists)
      */
     public void send(ApplicationMessage message) throws MessengerException {
+        LOG.trace("Send Message: {}", message);
+
         Address recipientAddress = message.getRecipient();
         Identity identity = Identity.of(recipientAddress);
 
@@ -75,6 +80,7 @@ public class Messenger {
         for (MessageSink messageSink : messageSinks) {
             try {
                 messageSink.send(identity, message);
+                LOG.trace("Message was sent with Message Sink '{}'", messageSink);
                 return;
             }
             catch (NoPathToIdentityException e) {
