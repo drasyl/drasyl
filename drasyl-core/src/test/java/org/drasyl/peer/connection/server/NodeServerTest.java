@@ -112,10 +112,9 @@ class NodeServerTest {
     void tearDown() {
     }
 
-    @Disabled("i'm unable to mock InetSocketAddress properly...")
     @Test
     void openShouldSetOpenToTrue() throws NodeServerException {
-        when(serverChannel.localAddress()).thenReturn(mock(InetSocketAddress.class));
+        when(serverChannel.localAddress()).thenReturn(new InetSocketAddress(22527));
 
         NodeServer server = new NodeServer(identityManager, messenger, peersManager,
                 config, serverChannel, serverBootstrap, workerGroup, bossGroup,
