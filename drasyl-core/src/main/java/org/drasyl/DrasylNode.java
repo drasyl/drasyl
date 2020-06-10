@@ -18,6 +18,7 @@
  */
 package org.drasyl;
 
+import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
@@ -147,10 +148,7 @@ public abstract class DrasylNode {
                 ApplicationMessage applicationMessage = (ApplicationMessage) message;
                 onEvent(new Event(EventType.EVENT_MESSAGE, Pair.of(applicationMessage.getSender(), applicationMessage.getPayload())));
             };
-
-            // set config level of all drasyl loggers
-            LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
-            context.getLoggerList().stream().filter(l -> l.getName().startsWith("org.drasyl")).forEach(l -> l.setLevel(this.config.getLoglevel()));
+            setLogLevel(this.config.getLoglevel());
         }
         catch (ConfigException e) {
             throw new DrasylException("Couldn't load config: \n" + e.getMessage());
@@ -387,6 +385,16 @@ public abstract class DrasylNode {
         catch (IOException e) {
             return null;
         }
+    }
+
+    /**
+     * Set log level of all drasyl loggers in org.drasyl package namespace.
+     * @param level
+     */
+    public static void setLogLevel(Level level) {
+        // set config level of all drasyl loggers
+        LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
+        context.getLoggerList().stream().filter(l -> l.getName().startsWith("org.drasyl")).forEach(l -> l.setLevel(level));
     }
 
     private void loadIdentity() {

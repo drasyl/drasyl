@@ -27,6 +27,7 @@ import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylException;
+import org.drasyl.DrasylNode;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.event.Event;
 import org.drasyl.event.Node;
@@ -92,6 +93,7 @@ class SuperPeerClientIT {
         bossGroup = new NioEventLoopGroup(1);
 
         config = new DrasylNodeConfig(ConfigFactory.load("configs/SuperPeerClientIT.conf"));
+        DrasylNode.setLogLevel(config.getLoglevel());
         identityManager = new IdentityManager(config);
         identityManager.loadOrCreateIdentity();
 

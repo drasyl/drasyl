@@ -25,6 +25,7 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylException;
+import org.drasyl.DrasylNode;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
@@ -108,6 +109,7 @@ class NodeServerIT {
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
 
         config = new DrasylNodeConfig(ConfigFactory.load("configs/NodeServerIT.conf"));
+        DrasylNode.setLogLevel(config.getLoglevel());
         identityManager = new IdentityManager(config);
         identityManager.loadOrCreateIdentity();
         peersManager = new PeersManager(event -> {
