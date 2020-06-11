@@ -23,10 +23,12 @@ import io.netty.util.AttributeKey;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.Signature;
+import org.drasyl.identity.Address;
 import org.drasyl.identity.CompressedKeyPair;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.PrivateIdentity;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.SignedMessage;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,7 +46,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class SignatureHandlerTest {
-    private Identity identity;
+    private PrivateIdentity identity;
     private AttributeKey<Identity> attributeKey;
 
     @BeforeEach
@@ -53,7 +55,8 @@ class SignatureHandlerTest {
 
         // generate valid key pair
         KeyPair keyPair = Crypto.generateKeys();
-        identity = Identity.of(CompressedKeyPair.of(keyPair));
+        CompressedKeyPair compressedKeyPair = CompressedKeyPair.of(keyPair);
+        identity = new PrivateIdentity(Address.of(compressedKeyPair.getPublicKey()), compressedKeyPair.getPublicKey(), compressedKeyPair.getPrivateKey());
     }
 
     @Test
@@ -73,7 +76,7 @@ class SignatureHandlerTest {
     @Test
     void shouldThrowExceptionIfKeyCantBeRead() throws CryptoException {
         CompressedPrivateKey mockedPrivateKey = mock(CompressedPrivateKey.class);
-        Identity mockedIdentity = mock(Identity.class);
+        PrivateIdentity mockedIdentity = mock(PrivateIdentity.class);
         when(mockedIdentity.getPublicKey()).thenReturn(identity.getPublicKey());
         when(mockedIdentity.getPrivateKey()).thenReturn(mockedPrivateKey);
         when(mockedPrivateKey.toUncompressedKey()).thenThrow(CryptoException.class);
@@ -91,12 +94,14 @@ class SignatureHandlerTest {
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         KeyPair keyPair = Crypto.generateKeys();
-        Identity identity2 = Identity.of(CompressedKeyPair.of(keyPair));
+        CompressedKeyPair compressedKeyPair = CompressedKeyPair.of(keyPair);
+        Identity identity2 = Identity.of(Address.of(compressedKeyPair.getPublicKey()), compressedKeyPair.getPublicKey());
         channel.attr(attributeKey).set(identity2);
 
         QuitMessage message = new QuitMessage();
         SignedMessage signedMessage = new SignedMessage(message, identity2.getPublicKey());
-        Crypto.sign(identity2.getPrivateKey().toUncompressedKey(), signedMessage);
+        PrivateIdentity privateIdentity2 = new PrivateIdentity(Address.of(compressedKeyPair.getPublicKey()), compressedKeyPair.getPublicKey(), compressedKeyPair.getPrivateKey());
+        Crypto.sign(privateIdentity2.getPrivateKey().toUncompressedKey(), signedMessage);
 
         assertNotNull(signedMessage.getKid());
         assertNotNull(signedMessage.getSignature());
@@ -113,7 +118,8 @@ class SignatureHandlerTest {
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         KeyPair keyPair = Crypto.generateKeys();
-        Identity identity2 = Identity.of(CompressedKeyPair.of(keyPair));
+        CompressedKeyPair compressedKeyPair = CompressedKeyPair.of(keyPair);
+        Identity identity2 = Identity.of(Address.of(compressedKeyPair.getPublicKey()), compressedKeyPair.getPublicKey());
         channel.attr(attributeKey).set(identity2);
 
         QuitMessage message = new QuitMessage();
@@ -154,14 +160,17 @@ class SignatureHandlerTest {
     void shouldNotPassthroughsMessageWhenKeysNotIdenticallyToChannelKey() throws CryptoException {
         SignatureHandler handler = new SignatureHandler(identity);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
-        channel.attr(attributeKey).set(identity);
+        Identity identity0 = Identity.of(Address.of(identity.getPublicKey()), identity.getPublicKey());
+        channel.attr(attributeKey).set(identity0);
 
         KeyPair keyPair = Crypto.generateKeys();
-        Identity identity2 = Identity.of(CompressedKeyPair.of(keyPair));
+        CompressedKeyPair compressedKeyPair = CompressedKeyPair.of(keyPair);
+        Identity identity2 = Identity.of(Address.of(compressedKeyPair.getPublicKey()), compressedKeyPair.getPublicKey());
 
         QuitMessage message = new QuitMessage();
         SignedMessage signedMessage = new SignedMessage(message, identity2.getPublicKey());
-        Crypto.sign(identity2.getPrivateKey().toUncompressedKey(), signedMessage);
+        PrivateIdentity privateIdentity2 = new PrivateIdentity(Address.of(compressedKeyPair.getPublicKey()), compressedKeyPair.getPublicKey(), compressedKeyPair.getPrivateKey());
+        Crypto.sign(privateIdentity2.getPrivateKey().toUncompressedKey(), signedMessage);
 
         assertNotNull(signedMessage.getKid());
         assertNotNull(signedMessage.getSignature());

@@ -55,7 +55,6 @@ import testutils.AnsiColor;
 import testutils.TestHelper;
 
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;

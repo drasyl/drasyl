@@ -25,7 +25,7 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import org.drasyl.DrasylNodeConfig;
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.PrivateIdentity;
 import org.drasyl.peer.connection.AbstractClientInitializer;
 import org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
@@ -52,7 +52,7 @@ public class SuperPeerClientChannelInitializer extends AbstractClientInitializer
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClientChannelInitializer.class);
     private final DrasylNodeConfig config;
     private final SuperPeerClientConnectionHandler clientHandler;
-    private final Identity identity;
+    private final PrivateIdentity identity;
 
     public SuperPeerClientChannelInitializer(DrasylNodeConfig config,
                                              URI endpoint,

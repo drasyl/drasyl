@@ -260,7 +260,7 @@ class PeersManagerTest {
         void setup() throws CryptoException {
             when(lock.readLock()).thenReturn(readLock);
 
-            identity = Identity.of("022910262d4b1b4681055d4d6ed047ed6c35d7a55e8bcbbbb5528a8a40414991ac");
+            identity = Identity.of("da23ff094f", "022910262d4b1b4681055d4d6ed047ed6c35d7a55e8bcbbbb5528a8a40414991ac");
             PeerInformation peerInformation = PeerInformation.of();
 
             underTest = new PeersManager(lock, Map.of(identity, peerInformation), Set.of(identity), Map.of(), null, eventConsumer);

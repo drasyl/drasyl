@@ -36,6 +36,7 @@ import org.drasyl.identity.Address;
 import org.drasyl.identity.CompressedKeyPair;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.PrivateIdentity;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
@@ -77,7 +78,7 @@ public class TestNodeServerConnection {
     protected final Subject<Message> receivedMessages;
     protected final ConcurrentHashMap<String, CompletableFuture<ResponseMessage<?>>> futures;
     protected final CompressedKeyPair keyPair;
-    protected Identity identity;
+    protected PrivateIdentity identity;
     protected AtomicBoolean isClosed;
     protected CompletableFuture<Boolean> closedCompletable;
 
@@ -87,13 +88,13 @@ public class TestNodeServerConnection {
      * @param channel  channel of the connection
      * @param identity the identity of this {@link TestNodeServerConnection}
      */
-    public TestNodeServerConnection(Channel channel, Identity identity) {
+    public TestNodeServerConnection(Channel channel, PrivateIdentity identity) {
         this(identity, channel, "JUnit-Test", new AtomicBoolean(false), new CompletableFuture<>());
 
         this.channel.closeFuture().addListener((ChannelFutureListener) this::onChannelClose);
     }
 
-    protected TestNodeServerConnection(Identity identity,
+    protected TestNodeServerConnection(PrivateIdentity identity,
                                        Channel channel,
                                        String userAgent,
                                        AtomicBoolean isClosed,
@@ -146,10 +147,12 @@ public class TestNodeServerConnection {
     }
 
     /**
-     * Returns the identity of the peer.
+     * Creates a new session to the given server with a random identity
      */
-    public Identity getIdentity() {
-        return identity;
+    public static TestNodeServerConnection clientSession(NodeServer server) throws ExecutionException, InterruptedException, CryptoException {
+        URI serverEndpoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
+        CompressedKeyPair compressedKeyPair = CompressedKeyPair.of(Crypto.generateKeys());
+        return TestNodeServerConnection.clientSession(serverEndpoint, new PrivateIdentity(Address.of(compressedKeyPair.getPublicKey()), compressedKeyPair.getPublicKey(), compressedKeyPair.getPrivateKey()), true, server.workerGroup);
     }
 
     public void send(Message message) {
@@ -227,18 +230,10 @@ public class TestNodeServerConnection {
     }
 
     /**
-     * Creates a new session to the given server with a random identity
-     */
-    public static TestNodeServerConnection clientSession(NodeServer server) throws ExecutionException, InterruptedException, CryptoException {
-        URI serverEndpoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
-        return TestNodeServerConnection.clientSession(serverEndpoint, Identity.of(CompressedKeyPair.of(Crypto.generateKeys())), true, server.workerGroup);
-    }
-
-    /**
      * Creates a new session.
      */
     public static TestNodeServerConnection clientSession(URI targetSystem,
-                                                         Identity identity,
+                                                         PrivateIdentity identity,
                                                          boolean pingPong,
                                                          EventLoopGroup eventLoopGroup) throws InterruptedException,
             ExecutionException {
@@ -278,6 +273,15 @@ public class TestNodeServerConnection {
     }
 
     /**
+     * Creates a new session to the given server.
+     */
+    public static TestNodeServerConnection clientSession(NodeServer server,
+                                                         PrivateIdentity identity) throws ExecutionException, InterruptedException {
+        URI serverEndpoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
+        return TestNodeServerConnection.clientSession(serverEndpoint, identity, true, server.workerGroup);
+    }
+
+    /**
      * Handles incoming messages and notifies listeners.
      *
      * @param message incoming message
@@ -308,15 +312,6 @@ public class TestNodeServerConnection {
     }
 
     /**
-     * Creates a new session to the given server.
-     */
-    public static TestNodeServerConnection clientSession(NodeServer server,
-                                                         Identity identity) throws ExecutionException, InterruptedException {
-        URI serverEndpoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
-        return TestNodeServerConnection.clientSession(serverEndpoint, identity, true, server.workerGroup);
-    }
-
-    /**
      * Creates a new session with the given sessionUID and joins the given server.
      */
     public static TestNodeServerConnection clientSessionAfterJoin(NodeServer server) throws ExecutionException,
@@ -324,7 +319,7 @@ public class TestNodeServerConnection {
         TestNodeServerConnection session = TestNodeServerConnection.clientSession(server, true);
         ResponseMessage<?> responseMessage = session.sendRequest(new JoinMessage(session.getPublicKey(), Set.of(), Map.of())).get();
         session.send(new StatusMessage(STATUS_OK, responseMessage.getId()));
-        await().until(() -> server.getChannelGroup().find(session.getIdentity()) != null);
+        await().until(() -> server.getChannelGroup().find(Identity.of(session.getIdentity().getPublicKey())) != null);
 
         return session;
     }
@@ -336,15 +331,23 @@ public class TestNodeServerConnection {
                                                          boolean pingPong) throws ExecutionException,
             InterruptedException, CryptoException {
         URI serverEndpoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
+        CompressedKeyPair compressedKeyPair = CompressedKeyPair.of(Crypto.generateKeys());
         return TestNodeServerConnection.clientSession(serverEndpoint,
-                Identity.of(CompressedKeyPair.of(Crypto.generateKeys())), pingPong, server.workerGroup);
+                new PrivateIdentity(Address.of(compressedKeyPair.getPublicKey()), compressedKeyPair.getPublicKey(), compressedKeyPair.getPrivateKey()), pingPong, server.workerGroup);
+    }
+
+    /**
+     * Returns the identity of the peer.
+     */
+    public PrivateIdentity getIdentity() {
+        return identity;
     }
 
     /**
      * Creates a new session.
      */
     public static TestNodeServerConnection clientSession(URI targetSystem,
-                                                         Identity identity,
+                                                         PrivateIdentity identity,
                                                          boolean pingPong) throws ExecutionException, InterruptedException {
         return TestNodeServerConnection.clientSession(targetSystem, identity, pingPong, null);
     }
