@@ -1,0 +1,67 @@
+/*
+ * Copyright (c) 2020.
+ *
+ * This file is part of drasyl.
+ *
+ *  drasyl is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  drasyl is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
+package org.drasyl.peer.connection.handler;
+
+import io.netty.channel.embedded.EmbeddedChannel;
+import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+class HopCountGuardTest {
+    private ApplicationMessage applicationMessage;
+
+    @BeforeEach
+    void setUp() {
+        applicationMessage = mock(ApplicationMessage.class);
+    }
+
+    @Test
+    void shouldPassMessagesThatHaveNotReachedTheirHopCountLimitAndIncrementHopCount() {
+        when(applicationMessage.getHopCount()).thenReturn((short) 1);
+
+        HopCountGuard handler = new HopCountGuard((short) 2);
+        EmbeddedChannel channel = new EmbeddedChannel(handler);
+
+        channel.writeOutbound(applicationMessage);
+        channel.flush();
+
+        verify(applicationMessage).incrementHopCount();
+        assertEquals(applicationMessage, channel.readOutbound());
+    }
+
+    @Test
+    void shouldDiscardMessagesThatHaveReachedTheirHopCountLimit() {
+        when(applicationMessage.getHopCount()).thenReturn((short) 1);
+
+        HopCountGuard handler = new HopCountGuard((short) 1);
+        EmbeddedChannel channel = new EmbeddedChannel(handler);
+
+        channel.writeOutbound(applicationMessage);
+        channel.flush();
+
+        assertNull(channel.readOutbound());
+    }
+}

@@ -42,7 +42,8 @@ import static org.drasyl.DrasylNodeConfig.IDENTITY_PATH;
 import static org.drasyl.DrasylNodeConfig.IDENTITY_PRIVATE_KEY;
 import static org.drasyl.DrasylNodeConfig.IDENTITY_PUBLIC_KEY;
 import static org.drasyl.DrasylNodeConfig.INTRA_VM_DISCOVERY_ENABLED;
-import static org.drasyl.DrasylNodeConfig.MAX_CONTENT_LENGTH;
+import static org.drasyl.DrasylNodeConfig.MESSAGE_HOP_LIMIT;
+import static org.drasyl.DrasylNodeConfig.MESSAGE_MAX_CONTENT_LENGTH;
 import static org.drasyl.DrasylNodeConfig.SERVER_BIND_HOST;
 import static org.drasyl.DrasylNodeConfig.SERVER_BIND_PORT;
 import static org.drasyl.DrasylNodeConfig.SERVER_CHANNEL_INITIALIZER;
@@ -85,7 +86,8 @@ class DrasylNodeConfigTest {
     private Duration serverHandshakeTimeout;
     private Set<URI> serverEndpoints;
     private String serverChannelInitializer;
-    private int maxContentLength;
+    private int messageMaxContentLength;
+    private short messageHopLimit;
     private boolean superPeerEnabled;
     private Set<URI> superPeerEndpoints;
     private CompressedPublicKey superPeerPublicKey;
@@ -117,7 +119,8 @@ class DrasylNodeConfigTest {
         serverHandshakeTimeout = ofSeconds(30);
         serverEndpoints = Set.of();
         serverChannelInitializer = "org.drasyl.core.server.handler.NodeServerInitializer";
-        maxContentLength = 1024;
+        messageMaxContentLength = 1024;
+        messageHopLimit = 64;
         superPeerEnabled = true;
         superPeerEndpoints = Set.of(URI.create("ws://foo.bar:123"), URI.create("wss://example.com"));
         superPeerPublicKey = mock(CompressedPublicKey.class);
@@ -151,7 +154,8 @@ class DrasylNodeConfigTest {
         when(typesafeConfig.getInt(FLUSH_BUFFER_SIZE)).thenReturn(flushBufferSize);
         when(typesafeConfig.getDuration(SERVER_HANDSHAKE_TIMEOUT)).thenReturn(serverHandshakeTimeout);
         when(typesafeConfig.getString(SERVER_CHANNEL_INITIALIZER)).thenReturn(serverChannelInitializer);
-        when(typesafeConfig.getMemorySize(MAX_CONTENT_LENGTH)).thenReturn(ConfigMemorySize.ofBytes(maxContentLength));
+        when(typesafeConfig.getMemorySize(MESSAGE_MAX_CONTENT_LENGTH)).thenReturn(ConfigMemorySize.ofBytes(messageMaxContentLength));
+        when(typesafeConfig.getInt(MESSAGE_HOP_LIMIT)).thenReturn((int) messageHopLimit);
         when(typesafeConfig.getBoolean(SERVER_SSL_ENABLED)).thenReturn(serverSSLEnabled);
         when(typesafeConfig.getStringList(SERVER_SSL_PROTOCOLS)).thenReturn(serverSSLProtocols);
         when(typesafeConfig.getStringList(SERVER_ENDPOINTS)).thenReturn(List.of());
@@ -182,7 +186,8 @@ class DrasylNodeConfigTest {
         assertEquals(serverHandshakeTimeout, config.getServerHandshakeTimeout());
         assertEquals(Set.of(URI.create("ws://192.168.188.112:22527")), config.getServerEndpoints());
         assertEquals(serverChannelInitializer, config.getServerChannelInitializer());
-        assertEquals(maxContentLength, config.getMaxContentLength());
+        assertEquals(messageMaxContentLength, config.getMessageMaxContentLength());
+        assertEquals(messageHopLimit, config.getMessageHopLimit());
         assertEquals(superPeerEnabled, config.isSuperPeerEnabled());
         assertEquals(superPeerEndpoints, config.getSuperPeerEndpoints());
         assertNull(config.getSuperPeerPublicKey());
@@ -196,7 +201,7 @@ class DrasylNodeConfigTest {
     void toStringShouldMaskSecrets() throws CryptoException {
         identityPrivateKey = CompressedPrivateKey.of("07e98a2f8162a4002825f810c0fbd69b0c42bd9cb4f74a21bc7807bc5acb4f5f");
 
-        DrasylNodeConfig config = new DrasylNodeConfig(loglevel, identityPublicKey, identityPrivateKey, identityPath, userAgent, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, maxContentLength, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled);
+        DrasylNodeConfig config = new DrasylNodeConfig(loglevel, identityPublicKey, identityPrivateKey, identityPath, userAgent, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled);
 
         assertThat(config.toString(), not(containsString(identityPrivateKey.getCompressedKey())));
     }

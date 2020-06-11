@@ -373,7 +373,7 @@ class NodeServerIT {
         TestObserver<Message> receivedMessages = session2.receivedMessages().test();
 
         // create message with max allowed payload size
-        byte[] bigPayload = new byte[config.getMaxContentLength()];
+        byte[] bigPayload = new byte[config.getMessageMaxContentLength()];
         new Random().nextBytes(bigPayload);
 
         // send message
@@ -394,7 +394,7 @@ class NodeServerIT {
         TestNodeServerConnection session2 = clientSessionAfterJoin(server);
 
         // create message with exceeded payload size
-        byte[] bigPayload = new byte[config.getMaxContentLength() + 1];
+        byte[] bigPayload = new byte[config.getMessageMaxContentLength() + 1];
         new Random().nextBytes(bigPayload);
 
         // send message

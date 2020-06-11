@@ -47,6 +47,7 @@ class ApplicationMessageTest {
     Address recipient;
     private String id;
     private ApplicationMessage message;
+    private short hopCount;
 
     @BeforeEach
     void setUp() throws CryptoException {
@@ -55,15 +56,16 @@ class ApplicationMessageTest {
         sender = Address.of(senderPubKey);
         recipient = AddressTestHelper.random();
         id = "id";
+        hopCount = 64;
     }
 
     @Test
     void toJson() throws JsonProcessingException {
-        message = new ApplicationMessage(sender, recipient, new byte[]{ 0x00, 0x01, 0x02 });
+        message = new ApplicationMessage(sender, recipient, new byte[]{ 0x00, 0x01, 0x02 }, (short) 64);
 
         assertThatJson(JSON_MAPPER.writeValueAsString(message))
                 .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo("{\"@type\":\"ApplicationMessage\",\"id\":\"" + message.getId() + "\",\"sender\":\"" + sender + "\",\"recipient\":\"" + recipient + "\",\"payload\":\"AAEC\"}");
+                .isEqualTo("{\"@type\":\"ApplicationMessage\",\"id\":\"" + message.getId() + "\",\"sender\":\"" + sender + "\",\"recipient\":\"" + recipient + "\",\"payload\":\"AAEC\",\"hopCount\":64}");
     }
 
     @Test
@@ -114,20 +116,29 @@ class ApplicationMessageTest {
                 0x00,
                 0x01,
                 0x02
-        });
+        }, hopCount);
         ApplicationMessage message2 = new ApplicationMessage(id, recipient, sender, new byte[]{
                 0x00,
                 0x01,
                 0x02
-        });
+        }, hopCount);
         ApplicationMessage message3 = new ApplicationMessage(id, recipient, sender, new byte[]{
                 0x03,
                 0x02,
                 0x01
-        });
+        }, hopCount);
 
         assertEquals(message1, message2);
         assertEquals(message1.hashCode(), message2.hashCode());
         assertNotEquals(message2.hashCode(), message3.hashCode());
+    }
+
+    @Test
+    void incrementHopCountShouldIncrementHopCountByOne() {
+        ApplicationMessage message = new ApplicationMessage(sender, recipient, new byte[]{});
+
+        message.incrementHopCount();
+
+        assertEquals(1, message.getHopCount());
     }
 }
