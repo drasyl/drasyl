@@ -58,6 +58,7 @@ import java.net.SocketAddress;
  * ReferenceCountUtil#retain(Object)} if you pass the object to the next handler in the {@link
  * ChannelPipeline}.
  */
+@SuppressWarnings("common-java:DuplicatedBlocks")
 public abstract class SimpleChannelDuplexHandler<I, O> extends SimpleChannelInboundHandler<I> implements ChannelOutboundHandler {
     private final TypeParameterMatcher outboundMatcher;
     private final boolean outboundAutoRelease;
@@ -206,7 +207,7 @@ public abstract class SimpleChannelDuplexHandler<I, O> extends SimpleChannelInbo
     }
 
     /**
-     * Is called for each message of type {@link O} on outbound channel.
+     * Is called for each message of type {@link O} on the outbound channel.
      *
      * @param ctx     the {@link ChannelHandlerContext} which this {@link SimpleChannelDuplexHandler}
      *                belongs to
