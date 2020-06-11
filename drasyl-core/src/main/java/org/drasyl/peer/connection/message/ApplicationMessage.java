@@ -32,21 +32,32 @@ public class ApplicationMessage extends AbstractMessage implements RequestMessag
     private final Address recipient;
     private final Address sender;
     private final byte[] payload;
+    private short hopCount = 0;
 
     protected ApplicationMessage() {
         this.recipient = null;
         this.sender = null;
         this.payload = null;
+        this.hopCount = 0;
     }
 
     ApplicationMessage(String id,
                        Address recipient,
                        Address sender,
-                       byte[] payload) {
+                       byte[] payload,
+                       short hopCount) {
         super(id);
         this.recipient = recipient;
         this.sender = sender;
         this.payload = payload;
+        this.hopCount = hopCount;
+    }
+
+    ApplicationMessage(Address sender, Address recipient, byte[] payload, short hopCount) {
+        this.sender = requireNonNull(sender);
+        this.recipient = requireNonNull(recipient);
+        this.payload = requireNonNull(payload);
+        this.hopCount = hopCount;
     }
 
     /**
@@ -57,9 +68,7 @@ public class ApplicationMessage extends AbstractMessage implements RequestMessag
      * @param payload   The data to be sent
      */
     public ApplicationMessage(Address sender, Address recipient, byte[] payload) {
-        this.sender = requireNonNull(sender);
-        this.recipient = requireNonNull(recipient);
-        this.payload = requireNonNull(payload);
+        this(sender, recipient, payload, (short) 0);
     }
 
     @Override
@@ -90,6 +99,7 @@ public class ApplicationMessage extends AbstractMessage implements RequestMessag
                 "recipient=" + recipient +
                 ", sender=" + sender +
                 ", payload=" + Arrays.toString(payload) +
+                ", hopCount=" + hopCount +
                 ", id='" + id +
                 '}';
     }
@@ -104,5 +114,18 @@ public class ApplicationMessage extends AbstractMessage implements RequestMessag
 
     public byte[] getPayload() {
         return payload;
+    }
+
+    public short getHopCount() {
+        return hopCount;
+    }
+
+    /**
+     * Increments the hop count value of this message.
+     *
+     * @return
+     */
+    public void incrementHopCount() {
+        hopCount++;
     }
 }

@@ -53,7 +53,8 @@ public class DrasylNodeConfig {
     static final String IDENTITY_PRIVATE_KEY = "drasyl.identity.private-key";
     static final String IDENTITY_PATH = "drasyl.identity.path";
     static final String USER_AGENT = "drasyl.user-agent";
-    static final String MAX_CONTENT_LENGTH = "drasyl.max-content-length";
+    static final String MESSAGE_MAX_CONTENT_LENGTH = "drasyl.message.max-content-length";
+    static final String MESSAGE_HOP_LIMIT = "drasyl.message.hop-limit";
     static final String FLUSH_BUFFER_SIZE = "drasyl.flush-buffer-size";
     static final String SERVER_ENABLED = "drasyl.server.enabled";
     static final String SERVER_BIND_HOST = "drasyl.server.bind-host";
@@ -91,7 +92,8 @@ public class DrasylNodeConfig {
     private final Duration serverHandshakeTimeout;
     private final Set<URI> serverEndpoints;
     private final String serverChannelInitializer;
-    private final int maxContentLength;
+    private final int messageMaxContentLength;
+    private final short messageHopLimit;
     private final boolean superPeerEnabled;
     private final Set<URI> superPeerEndpoints;
     private final CompressedPublicKey superPeerPublicKey;
@@ -143,7 +145,8 @@ public class DrasylNodeConfig {
         this.flushBufferSize = config.getInt(FLUSH_BUFFER_SIZE);
         this.serverHandshakeTimeout = config.getDuration(SERVER_HANDSHAKE_TIMEOUT);
         this.serverChannelInitializer = config.getString(SERVER_CHANNEL_INITIALIZER);
-        this.maxContentLength = (int) Math.min(config.getMemorySize(MAX_CONTENT_LENGTH).toBytes(), Integer.MAX_VALUE);
+        this.messageMaxContentLength = (int) Math.min(config.getMemorySize(MESSAGE_MAX_CONTENT_LENGTH).toBytes(), Integer.MAX_VALUE);
+        this.messageHopLimit = getShort(config, MESSAGE_HOP_LIMIT);
 
         this.serverSSLEnabled = config.getBoolean(SERVER_SSL_ENABLED);
         this.serverSSLProtocols = config.getStringList(SERVER_SSL_PROTOCOLS);
@@ -268,8 +271,10 @@ public class DrasylNodeConfig {
                      Duration serverHandshakeTimeout,
                      Set<URI> serverEndpoints,
                      String serverChannelInitializer,
-                     int maxContentLength,
-                     boolean superPeerEnabled, Set<URI> superPeerEndpoints,
+                     int messageMaxContentLength,
+                     short messageHopLimit,
+                     boolean superPeerEnabled,
+                     Set<URI> superPeerEndpoints,
                      CompressedPublicKey superPeerPublicKey,
                      List<Duration> superPeerRetryDelays,
                      Duration superPeerHandshakeTimeout,
@@ -293,7 +298,8 @@ public class DrasylNodeConfig {
         this.serverHandshakeTimeout = serverHandshakeTimeout;
         this.serverEndpoints = serverEndpoints;
         this.serverChannelInitializer = serverChannelInitializer;
-        this.maxContentLength = maxContentLength;
+        this.messageMaxContentLength = messageMaxContentLength;
+        this.messageHopLimit = messageHopLimit;
         this.superPeerEnabled = superPeerEnabled;
         this.superPeerEndpoints = superPeerEndpoints;
         this.superPeerPublicKey = superPeerPublicKey;
@@ -373,8 +379,12 @@ public class DrasylNodeConfig {
         return serverChannelInitializer;
     }
 
-    public int getMaxContentLength() {
-        return maxContentLength;
+    public int getMessageMaxContentLength() {
+        return messageMaxContentLength;
+    }
+
+    public short getMessageHopLimit() {
+        return messageHopLimit;
     }
 
     public boolean isSuperPeerEnabled() {
@@ -411,7 +421,7 @@ public class DrasylNodeConfig {
 
     @Override
     public int hashCode() {
-        return Objects.hash(identityPublicKey, identityPrivateKey, identityPath, userAgent, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, maxContentLength, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled);
+        return Objects.hash(identityPublicKey, identityPrivateKey, identityPath, userAgent, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled);
     }
 
     @Override
@@ -429,7 +439,8 @@ public class DrasylNodeConfig {
                 serverIdleRetries == that.serverIdleRetries &&
                 flushBufferSize == that.flushBufferSize &&
                 serverSSLEnabled == that.serverSSLEnabled &&
-                maxContentLength == that.maxContentLength &&
+                messageMaxContentLength == that.messageMaxContentLength &&
+                messageHopLimit == that.messageHopLimit &&
                 superPeerEnabled == that.superPeerEnabled &&
                 superPeerIdleRetries == that.superPeerIdleRetries &&
                 Objects.equals(identityPublicKey, that.identityPublicKey) &&
@@ -470,7 +481,8 @@ public class DrasylNodeConfig {
                 ", serverHandshakeTimeout=" + serverHandshakeTimeout +
                 ", serverEndpoints=" + serverEndpoints +
                 ", serverChannelInitializer='" + serverChannelInitializer + '\'' +
-                ", maxContentLength=" + maxContentLength +
+                ", messageHopLimit=" + messageHopLimit +
+                ", messageMaxContentLength=" + messageMaxContentLength +
                 ", superPeerEnabled=" + superPeerEnabled +
                 ", superPeerEndpoints=" + superPeerEndpoints +
                 ", superPeerPublicKey='" + superPeerPublicKey + '\'' +
