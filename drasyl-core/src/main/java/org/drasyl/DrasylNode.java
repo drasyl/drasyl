@@ -130,14 +130,14 @@ public abstract class DrasylNode {
             this.identityManager = new IdentityManager(this.config);
             this.peersManager = new PeersManager(this::onEvent);
             this.messenger = new Messenger();
-            this.intraVmDiscovery = new IntraVmDiscovery(identityManager::getIdentity, messenger, peersManager, this::onEvent);
+            this.intraVmDiscovery = new IntraVmDiscovery(identityManager::getNonPrivateIdentity, messenger, peersManager, this::onEvent);
             this.superPeerClient = new SuperPeerClient(this.config, identityManager, peersManager, messenger, DrasylNode.WORKER_GROUP, this::onEvent);
             this.server = new NodeServer(identityManager, messenger, peersManager, superPeerClient.connectionEstablished(), this.config, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP);
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = new CompletableFuture<>();
             this.loopbackMessageSink = (identity, message) -> {
-                if (!identityManager.getIdentity().equals(identity)) {
+                if (!identityManager.getNonPrivateIdentity().equals(identity)) {
                     throw new NoPathToIdentityException(identity);
                 }
 

@@ -23,7 +23,7 @@ import io.netty.channel.ChannelPromise;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.PrivateIdentity;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.SignedMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
@@ -43,9 +43,9 @@ import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE
 public class SignatureHandler extends SimpleChannelDuplexHandler<Message, Message> {
     public static final String SIGNATURE_HANDLER = "signatureHandler";
     private static final Logger LOG = LoggerFactory.getLogger(SignatureHandler.class);
-    private final Identity identity;
+    private final PrivateIdentity identity;
 
-    public SignatureHandler(Identity identity) {
+    public SignatureHandler(PrivateIdentity identity) {
         super(true, true, false);
         this.identity = identity;
     }

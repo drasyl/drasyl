@@ -267,7 +267,7 @@ class NodeServerIT {
         RequestMessage request1 = new JoinMessage(session1.getPublicKey(), Set.of(), Map.of());
         ResponseMessage<?> response1 = session1.sendRequest(request1).get();
         session1.send(new StatusMessage(STATUS_OK, response1.getId()));
-        await().until(() -> server.getChannelGroup().find(session1.getIdentity()) != null);
+        await().until(() -> server.getChannelGroup().find(session1.getIdentity().toNonPrivate()) != null);
 
         RequestMessage request2 = new JoinMessage(session1.getPublicKey(), Set.of(), Map.of());
         ResponseMessage<?> response2 = session2.sendRequest(request2).join();

@@ -22,8 +22,8 @@ import org.drasyl.event.Event;
 import org.drasyl.event.EventType;
 import org.drasyl.event.Node;
 import org.drasyl.identity.Address;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
+import org.drasyl.identity.PrivateIdentity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.intravm.IntraVmDiscovery;
@@ -56,7 +56,7 @@ class DrasylNodeTest {
     private Address recipient;
     private Address sender;
     private byte[] payload;
-    private Identity identity;
+    private PrivateIdentity identity;
     private AtomicBoolean started;
     private CompletableFuture<Void> startSequence;
     private CompletableFuture<Void> shutdownSequence;
@@ -78,7 +78,7 @@ class DrasylNodeTest {
         sender = mock(Address.class);
         payload = new byte[]{ 0x4f };
         message = Pair.of(sender, payload);
-        identity = mock(Identity.class);
+        identity = mock(PrivateIdentity.class);
         started = mock(AtomicBoolean.class);
         startSequence = mock(CompletableFuture.class);
         shutdownSequence = mock(CompletableFuture.class);

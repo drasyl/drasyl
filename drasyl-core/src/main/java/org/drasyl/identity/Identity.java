@@ -18,54 +18,21 @@
  */
 package org.drasyl.identity;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import org.drasyl.crypto.CryptoException;
 
-import java.security.PrivateKey;
-import java.security.PublicKey;
-import java.util.Objects;
+/**
+ * Represents the public identity of a peer (includes address and public key).
+ */
+public class Identity extends AbstractIdentity {
+    protected final CompressedPublicKey publicKey;
 
-import static java.util.Objects.requireNonNull;
-import static org.drasyl.util.SecretUtil.maskSecret;
-
-public class Identity {
-    private final Address address;
-    private final CompressedPublicKey publicKey;
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    private final CompressedPrivateKey privateKey;
-
-    Identity(Address address,
-             CompressedPublicKey publicKey,
-             CompressedPrivateKey privateKey) {
-        this.address = requireNonNull(address);
+    protected Identity(Address address, CompressedPublicKey publicKey) {
+        super(address);
         this.publicKey = publicKey;
-        this.privateKey = privateKey;
     }
 
     public CompressedPublicKey getPublicKey() {
         return publicKey;
-    }
-
-    public CompressedPrivateKey getPrivateKey() {
-        return privateKey;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(address);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        Identity identity = (Identity) o;
-        return Objects.equals(address, identity.address);
     }
 
     @Override
@@ -73,44 +40,40 @@ public class Identity {
         return "Identity{" +
                 "address=" + address +
                 ", publicKey=" + publicKey +
-                ", privateKey=" + maskSecret(privateKey) +
                 '}';
     }
 
-    @JsonIgnore
-    public CompressedKeyPair getKeyPair() {
-        return CompressedKeyPair.of(publicKey, privateKey);
+    @Override
+    public int hashCode() {
+        return super.hashCode();
     }
 
-    public Address getAddress() {
-        return address;
+    @Override
+    public boolean equals(Object o) {
+        return super.equals(o);
     }
 
     public static Identity of(Address address) {
-        return new Identity(address, null, null);
+        return new Identity(address, null);
     }
 
-    public static Identity of(CompressedPublicKey publicKey) {
-        return of(publicKey, null);
+    public static Identity of(String address, String publicKey) throws CryptoException {
+        return new Identity(Address.of(address), CompressedPublicKey.of(publicKey));
     }
 
-    public static Identity of(CompressedPublicKey publicKey, CompressedPrivateKey privateKey) {
-        return of(CompressedKeyPair.of(publicKey, privateKey));
-    }
-
-    public static Identity of(CompressedKeyPair keyPair) {
-        return new Identity(Address.of(keyPair.getPublicKey()), keyPair.getPublicKey(), keyPair.getPrivateKey());
-    }
-
-    public static Identity of(String publicKey, String privateKey) throws CryptoException {
-        return of(CompressedKeyPair.of(publicKey, privateKey));
+    public static Identity of(Address address, String publicKey) throws CryptoException {
+        return new Identity(address, CompressedPublicKey.of(publicKey));
     }
 
     public static Identity of(String publicKey) throws CryptoException {
-        return of(CompressedPublicKey.of(publicKey), null);
+        return of(CompressedPublicKey.of(publicKey));
     }
 
-    public static Identity of(PublicKey publicKey, PrivateKey privateKey) throws CryptoException {
-        return of(CompressedKeyPair.of(publicKey, privateKey));
+    public static Identity of(CompressedPublicKey publicKey) {
+        return of(Address.of(publicKey), publicKey);
+    }
+
+    public static Identity of(Address address, CompressedPublicKey publicKey) {
+        return new Identity(address, publicKey);
     }
 }
