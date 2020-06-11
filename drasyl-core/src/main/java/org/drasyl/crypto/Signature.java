@@ -18,6 +18,8 @@
  */
 package org.drasyl.crypto;
 
+import java.util.Arrays;
+
 /**
  * A signature. (Wrapper class for byte[])
  */
@@ -39,7 +41,7 @@ public class Signature {
 
     @Override
     public int hashCode() {
-        return bytes.length;
+        return Arrays.hashCode(bytes);
     }
 
     @Override

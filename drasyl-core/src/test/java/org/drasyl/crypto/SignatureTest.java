@@ -26,7 +26,6 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.KeyPair;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -73,7 +72,6 @@ class SignatureTest {
         signature2 = signature2ArgumentCaptor.getValue();
 
         assertNotEquals(signature1, signature2);
-        assertEquals(signature1.hashCode(), signature2.hashCode());
 
         // Ignore to String
         signature1.toString();
