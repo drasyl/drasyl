@@ -23,9 +23,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelId;
-import io.netty.channel.ChannelPromise;
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
@@ -69,13 +67,9 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 class NodeServerConnectionHandlerTest {
-    private EmbeddedChannel channel;
     private ChannelHandlerContext ctx;
     private ScheduledFuture<?> timeoutFuture;
-    private ChannelPromise promise;
-    private Message msg;
     private CompressedPublicKey publicKey;
-    private EventExecutor eventExecutor;
     private ChannelFuture channelFuture;
     private Throwable cause;
     private ApplicationMessage applicationMessage;
@@ -90,9 +84,7 @@ class NodeServerConnectionHandlerTest {
     private ChannelId channelId;
     private Channel nettyChannel;
     private NodeServerChannelGroup channelGroup;
-    private Map<Identity, Identity> grandchildren;
     private RegisterGrandchildMessage registerGrandchildMessage;
-    private Identity clientIdentity;
     private CompressedPublicKey grandchildPublicKey;
     private Set<URI> grandchildEndpoints;
     private UnregisterGrandchildMessage unregisterGrandchildMessage;
@@ -105,11 +97,8 @@ class NodeServerConnectionHandlerTest {
     @BeforeEach
     void setUp() {
         ctx = mock(ChannelHandlerContext.class);
-        promise = mock(ChannelPromise.class);
         timeoutFuture = mock(ScheduledFuture.class);
-        msg = new QuitMessage();
         publicKey = mock(CompressedPublicKey.class);
-        eventExecutor = mock(EventExecutor.class);
         channelFuture = mock(ChannelFuture.class);
         cause = mock(Throwable.class);
         server = mock(NodeServer.class);
@@ -123,7 +112,6 @@ class NodeServerConnectionHandlerTest {
         channelId = mock(ChannelId.class);
         channelGroup = mock(NodeServerChannelGroup.class);
         registerGrandchildMessage = mock(RegisterGrandchildMessage.class);
-        clientIdentity = mock(Identity.class);
         grandchildPublicKey = mock(CompressedPublicKey.class);
         grandchildEndpoints = Set.of(URI.create("ws://grandchild.com"));
         unregisterGrandchildMessage = mock(UnregisterGrandchildMessage.class);
@@ -175,7 +163,7 @@ class NodeServerConnectionHandlerTest {
         when(applicationMessage.getId()).thenReturn("123");
 
         NodeServerConnectionHandler handler = new NodeServerConnectionHandler(identity, peersManager, Set.of(), ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, channelGroup, offerMessage);
-        channel = new EmbeddedChannel(handler);
+        EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(applicationMessage);
 
@@ -201,7 +189,7 @@ class NodeServerConnectionHandlerTest {
         when(quitMessage.getId()).thenReturn("123");
 
         NodeServerConnectionHandler handler = new NodeServerConnectionHandler(identity, peersManager, Set.of(), ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, channelGroup, offerMessage);
-        channel = new EmbeddedChannel(handler);
+        EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(quitMessage);
         channel.flush();
@@ -219,7 +207,7 @@ class NodeServerConnectionHandlerTest {
         when(superPeerInformation.getPaths()).thenReturn(Set.of(superPeerPath));
 
         NodeServerConnectionHandler handler = new NodeServerConnectionHandler(identity, peersManager, Set.of(), ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, channelGroup, offerMessage);
-        channel = new EmbeddedChannel(handler);
+        EmbeddedChannel channel = new EmbeddedChannel(handler);
         channel.attr(ATTRIBUTE_IDENTITY).set(identity);
 
         channel.writeInbound(registerGrandchildMessage);
@@ -244,7 +232,7 @@ class NodeServerConnectionHandlerTest {
         when(superPeerInformation.getPaths()).thenReturn(Set.of(superPeerPath));
 
         NodeServerConnectionHandler handler = new NodeServerConnectionHandler(identity, peersManager, Set.of(), ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, channelGroup, offerMessage);
-        channel = new EmbeddedChannel(handler);
+        EmbeddedChannel channel = new EmbeddedChannel(handler);
         channel.attr(ATTRIBUTE_IDENTITY).set(identity);
 
         channel.writeInbound(unregisterGrandchildMessage);
@@ -266,7 +254,7 @@ class NodeServerConnectionHandlerTest {
         when(superPeerInformation.getPaths()).thenReturn(Set.of(superPeerPath));
 
         NodeServerConnectionHandler handler = new NodeServerConnectionHandler(identity, peersManager, Set.of(), ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, channelGroup, offerMessage);
-        channel = new EmbeddedChannel(handler);
+        EmbeddedChannel channel = new EmbeddedChannel(handler);
         channel.attr(ATTRIBUTE_IDENTITY).set(identity);
 
         channel.writeInbound(statusMessage);

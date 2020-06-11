@@ -30,7 +30,7 @@ public class DummyServerChannelInitializer extends NodeServerChannelInitializer 
 
     @Override
     protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
+        super.afterPojoMarshalStage(pipeline);
         pipeline.addLast(new IntegrationTestHandler());
-        pipeline.addLast(NodeServerNewConnectionsGuard.CONNECTION_GUARD, new NodeServerNewConnectionsGuard(server::isOpen));
     }
 }

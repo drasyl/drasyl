@@ -99,8 +99,7 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
                 "publicKey=" + publicKey +
                 ", endpoints=" + endpoints +
                 ", correspondingId='" + correspondingId + '\'' +
-                ", id='" + id + '\'' +
-                ", signature=" + signature +
+                ", id='" + id +
                 '}';
     }
 }

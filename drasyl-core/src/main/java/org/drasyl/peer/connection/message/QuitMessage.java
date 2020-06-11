@@ -34,11 +34,16 @@ public class QuitMessage extends AbstractMessage implements RequestMessage {
     private final CloseReason reason;
 
     public QuitMessage() {
-        this(null);
+        this(CloseReason.REASON_UNDEFINED);
     }
 
     public QuitMessage(CloseReason reason) {
         this.reason = reason;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), reason);
     }
 
     @Override
@@ -57,16 +62,10 @@ public class QuitMessage extends AbstractMessage implements RequestMessage {
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), reason);
-    }
-
-    @Override
     public String toString() {
         return "QuitMessage{" +
                 "reason='" + reason + '\'' +
-                ", id='" + id + '\'' +
-                ", signature=" + signature +
+                ", id='" + id +
                 '}';
     }
 
@@ -78,6 +77,7 @@ public class QuitMessage extends AbstractMessage implements RequestMessage {
      * Specifies the reason for closing the connection.
      */
     public enum CloseReason {
+        REASON_UNDEFINED("Unknown reason for closing this connection."),
         REASON_NEW_SESSION("New Connection with this Identity has been created."),
         REASON_SHUTTING_DOWN("Peer is shutting down.");
         private static final Map<String, CloseReason> reasons = new HashMap<>();

@@ -39,7 +39,7 @@ class QuitMessageTest {
 
         assertThatJson(JSON_MAPPER.writeValueAsString(message))
                 .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo("{\"@type\":\"QuitMessage\",\"id\":\"" + message.getId() + "\"}");
+                .isEqualTo("{\"@type\":\"QuitMessage\",\"id\":\"" + message.getId() + "\", \"reason\":\"Unknown reason for closing this connection.\"}");
 
         // Ignore toString()
         message.toString();

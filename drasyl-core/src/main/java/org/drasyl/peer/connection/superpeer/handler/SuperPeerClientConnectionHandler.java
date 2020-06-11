@@ -43,6 +43,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_WRONG_PUBLIC_KEY;
+import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE_IDENTITY;
 
 /**
  * This handler performs the handshake with the server and processes incoming messages during the
@@ -126,6 +127,9 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
         Channel channel = ctx.channel();
         Path path = ctx::writeAndFlush; // We start at this point to save resources
         PeerInformation peerInformation = PeerInformation.of(offerMessage.getEndpoints(), path);
+
+        // attach identity to channel (this information is required for validation signatures of incoming messages)
+        channel.attr(ATTRIBUTE_IDENTITY).set(identity);
 
         // remove peer information on disconnect
         channel.closeFuture().addListener(future -> peersManager.unsetSuperPeerAndRemovePeerInformation(peerInformation));

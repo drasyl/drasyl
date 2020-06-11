@@ -41,6 +41,7 @@ import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.ResponseMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
+import org.drasyl.peer.connection.message.WelcomeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -59,6 +60,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.awaitility.Awaitility.await;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
+import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE_IDENTITY;
 
 /**
  * A {@link TestNodeServerConnection} object represents a connection to another peer, e.g. local or
@@ -246,7 +248,7 @@ public class TestNodeServerConnection {
             eventLoopGroup = new NioEventLoopGroup();
         }
 
-        OutboundConnectionFactory factory = new OutboundConnectionFactory(targetSystem, eventLoopGroup)
+        OutboundConnectionFactory factory = new OutboundConnectionFactory(targetSystem, eventLoopGroup, identity)
                 .handler(new SimpleChannelInboundHandler<Message>() {
                     TestNodeServerConnection session;
 
@@ -259,6 +261,9 @@ public class TestNodeServerConnection {
                     @Override
                     protected void channelRead0(ChannelHandlerContext ctx,
                                                 Message msg) throws Exception {
+                        if (msg instanceof WelcomeMessage) {
+                            ctx.channel().attr(ATTRIBUTE_IDENTITY).set(Identity.of(((WelcomeMessage) msg).getPublicKey()));
+                        }
                         session.receiveMessage(msg);
                     }
                 })

@@ -18,9 +18,7 @@
  */
 package org.drasyl.peer.connection.message;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
 import org.drasyl.crypto.Crypto;
-import org.drasyl.crypto.Signature;
 
 import java.util.Objects;
 
@@ -29,8 +27,6 @@ import java.util.Objects;
  */
 public abstract class AbstractMessage implements Message {
     protected final String id;
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    protected Signature signature;
 
     public AbstractMessage() {
         this(Crypto.randomString(12));
@@ -42,15 +38,6 @@ public abstract class AbstractMessage implements Message {
         this.id = id;
     }
 
-    public Signature getSignature() {
-        return signature;
-    }
-
-    @Override
-    public void setSignature(Signature signature) {
-        this.signature = signature;
-    }
-
     @Override
     public String getId() {
         return id;
@@ -58,26 +45,18 @@ public abstract class AbstractMessage implements Message {
 
     @Override
     public int hashCode() {
-        return Objects.hash(signature);
+        return Objects.hash(42);
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        AbstractMessage that = (AbstractMessage) o;
-        return Objects.equals(signature, that.signature);
+        return o != null && getClass() == o.getClass();
     }
 
     @Override
     public String toString() {
         return "AbstractMessage{" +
-                "id='" + id + '\'' +
-                ", signature=" + signature +
+                "id='" + id +
                 '}';
     }
 }

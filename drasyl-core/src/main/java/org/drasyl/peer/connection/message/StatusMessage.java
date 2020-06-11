@@ -110,6 +110,11 @@ public class StatusMessage extends AbstractResponseMessage<RequestMessage> {
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), code);
+    }
+
+    @Override
     public boolean equals(Object o) {
         if (this == o) {
             return true;
@@ -125,17 +130,11 @@ public class StatusMessage extends AbstractResponseMessage<RequestMessage> {
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), code);
-    }
-
-    @Override
     public String toString() {
         return "StatusMessage{" +
                 "code=" + code +
                 ", correspondingId='" + correspondingId + '\'' +
-                ", id='" + id + '\'' +
-                ", signature=" + signature +
+                ", id='" + id +
                 '}';
     }
 
@@ -180,6 +179,7 @@ public class StatusMessage extends AbstractResponseMessage<RequestMessage> {
         STATUS_EXPECTATION_FAILED(417),
         STATUS_IM_A_TEAPOT(418),
         STATUS_UPGRADE_REQUIRED(426),
+        STATUS_INVALID_SIGNATURE(427),
         // -------- 5xx (Server Error) --------
         STATUS_INTERNAL_SERVER_ERROR(500),
         STATUS_NOT_IMPLEMENTED(501),

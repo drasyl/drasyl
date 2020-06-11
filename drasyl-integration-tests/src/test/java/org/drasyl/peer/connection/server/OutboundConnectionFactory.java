@@ -33,11 +33,13 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.AbstractClientInitializer;
 import org.drasyl.peer.connection.DefaultSessionInitializer;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.MessageDecoder;
 import org.drasyl.peer.connection.handler.MessageEncoder;
+import org.drasyl.peer.connection.handler.SignatureHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -74,15 +76,16 @@ public class OutboundConnectionFactory {
     private short idleRetries;
     private boolean ssl;
     private int maxContentLength;
+    private final Identity identity;
 
     /**
      * Produces an {@link OutboundConnectionFactory} with the given {@link URI} as target.
      *
      * @param target the IP address of the target system
      */
-    public OutboundConnectionFactory(URI target, EventLoopGroup eventGroup) {
+    public OutboundConnectionFactory(URI target, EventLoopGroup eventGroup, Identity identity) {
         this(target, null, () -> {
-        }, null, new ArrayList<>(), Collections.singletonList("TLSv1.3"), eventGroup, 1000000);
+        }, null, new ArrayList<>(), Collections.singletonList("TLSv1.3"), eventGroup, 1000000, identity);
     }
 
     private OutboundConnectionFactory(URI target,
@@ -92,7 +95,8 @@ public class OutboundConnectionFactory {
                                       List<ChannelHandler> handler,
                                       List<String> sslProtocols,
                                       EventLoopGroup eventGroup,
-                                      int maxContentLength) {
+                                      int maxContentLength,
+                                      Identity identity) {
         this.uri = target;
         this.initializer = initializer;
         this.shutdownProcedure = shutdownProcedure;
@@ -102,6 +106,7 @@ public class OutboundConnectionFactory {
         this.eventGroup = eventGroup;
         this.maxContentLength = maxContentLength;
         this.channelReadyFuture = new CompletableFuture<>();
+        this.identity = identity;
     }
 
     /**
@@ -288,6 +293,11 @@ public class OutboundConnectionFactory {
                 // From String to Message
                 pipeline.addLast(MESSAGE_DECODER, MessageDecoder.INSTANCE);
                 pipeline.addLast(MESSAGE_ENCODER, MessageEncoder.INSTANCE);
+            }
+
+            @Override
+            protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
+                pipeline.addLast(SignatureHandler.SIGNATURE_HANDLER, new SignatureHandler(identity));
             }
 
             @Override

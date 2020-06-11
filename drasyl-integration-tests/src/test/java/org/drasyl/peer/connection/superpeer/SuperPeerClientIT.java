@@ -55,6 +55,7 @@ import testutils.AnsiColor;
 import testutils.TestHelper;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -230,7 +231,7 @@ class SuperPeerClientIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldEmitNodeOfflineEventAfterReceivingQuitMessage() throws SuperPeerClientException {
         TestObserver<Message> receivedMessages = IntegrationTestHandler.receivedMessages().test();
-        TestObserver<Event> emittedEvents = emittedEventsSubject.filter(e -> e.getType() == EVENT_NODE_OFFLINE).test();
+        TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
         client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
@@ -238,11 +239,12 @@ class SuperPeerClientIT {
         receivedMessages.awaitCount(1);
 
         // send message
+        emittedEvents.awaitCount(1);
         IntegrationTestHandler.injectMessage(new QuitMessage());
 
         // verify emitted events
-        emittedEvents.awaitCount(1);
-        emittedEvents.assertValue(new Event(EVENT_NODE_OFFLINE, Node.of(identityManager.getIdentity())));
+        emittedEvents.awaitCount(2);
+        emittedEvents.assertValueAt(1, new Event(EVENT_NODE_OFFLINE, Node.of(identityManager.getIdentity())));
     }
 
     @Test

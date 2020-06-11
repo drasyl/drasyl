@@ -21,7 +21,6 @@ package org.drasyl.peer.connection.message;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import org.drasyl.crypto.Signable;
 import org.drasyl.peer.connection.server.NodeServer;
 
 /**
@@ -40,14 +39,12 @@ import org.drasyl.peer.connection.server.NodeServer;
         @JsonSubTypes.Type(value = StatusMessage.class),
         @JsonSubTypes.Type(value = UnregisterGrandchildMessage.class),
         @JsonSubTypes.Type(value = WelcomeMessage.class),
+        @JsonSubTypes.Type(value = SignedMessage.class),
 })
 @JsonIgnoreProperties(ignoreUnknown = true)
-public interface Message extends Signable {
+public interface Message {
     /**
-     * Returns the unique id of this message. Each message generates a random id when it is
-     * created.
-     *
-     * @return
+     * @return the unique id of this message. Each message generates a random id when it is created.
      */
     String getId();
 }
