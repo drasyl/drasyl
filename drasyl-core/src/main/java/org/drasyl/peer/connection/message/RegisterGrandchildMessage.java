@@ -43,7 +43,7 @@ public class RegisterGrandchildMessage extends AbstractGrandchildMessage {
         return "RegisterGrandchildMessage{" +
                 "publicKey=" + publicKey +
                 ", endpoints=" + endpoints +
-                ", id='" + id + '\'' +
+                ", id='" + id +
                 '}';
     }
 }

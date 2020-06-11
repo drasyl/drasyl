@@ -44,7 +44,7 @@ class MessageEncoderTest {
         channel.writeOutbound(message);
         channel.flush();
 
-        String json = "{\"@type\":\"" + message.getClass().getSimpleName() + "\",\"id\":\"" + message.getId() + "\"}";
+        String json = "{\"@type\":\"" + message.getClass().getSimpleName() + "\",\"id\":\"" + message.getId() + "\",\"reason\":\"Unknown reason for closing this connection.\"}";
         assertEquals(json, ((TextWebSocketFrame) channel.readOutbound()).text());
     }
 }

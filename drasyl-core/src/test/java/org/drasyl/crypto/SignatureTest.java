@@ -20,49 +20,74 @@ package org.drasyl.crypto;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
 import java.security.KeyPair;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 class SignatureTest {
     private KeyPair keyPair1;
     private KeyPair keyPair2;
-    private DummySignable signable1;
-    private DummySignable signable2;
+    private Signable signable1;
+    private Signable signable2;
     private Signature signature1;
     private Signature signature2;
 
     @BeforeEach
     public void init() {
-        signable1 = new DummySignable(new byte[]{ (byte) 0x3a, (byte) 0x22 });
-        signable2 = new DummySignable(new byte[]{ (byte) 0x11, (byte) 0x1b });
+        signable1 = mock(Signable.class);
+        signable2 = mock(Signable.class);
         keyPair1 = Crypto.generateKeys();
         keyPair2 = Crypto.generateKeys();
+
+        when(signable1.getSignableBytes()).thenReturn(new byte[]{ (byte) 0x3a, (byte) 0x22 });
+        when(signable2.getSignableBytes()).thenReturn(new byte[]{ (byte) 0x11, (byte) 0x1b });
     }
 
     @Test
     void testSignableNotNull() {
-        signable1 = new DummySignable();
         assertNotNull(signable1.getSignableBytes());
     }
 
     @Test
     void testDifferentSignablesHaveDifferentSignatures() throws CryptoException {
+        ArgumentCaptor<Signature> signature1ArgumentCaptor = ArgumentCaptor.forClass(Signature.class);
+        ArgumentCaptor<Signature> signature2ArgumentCaptor = ArgumentCaptor.forClass(Signature.class);
+
         Crypto.sign(keyPair1.getPrivate(), signable1);
-        signature1 = signable1.getSignature();
+        verify(signable1).setSignature(signature1ArgumentCaptor.capture());
+        signature1 = signature1ArgumentCaptor.getValue();
+
         Crypto.sign(keyPair1.getPrivate(), signable2);
-        signature2 = signable2.getSignature();
+        verify(signable2).setSignature(signature2ArgumentCaptor.capture());
+        signature2 = signature2ArgumentCaptor.getValue();
+
         assertNotEquals(signature1, signature2);
+        assertEquals(signature1.hashCode(), signature2.hashCode());
+
+        // Ignore to String
+        signature1.toString();
     }
 
     @Test
     void testVerifySignature() throws CryptoException {
+        ArgumentCaptor<Signature> signature1ArgumentCaptor = ArgumentCaptor.forClass(Signature.class);
+
         Crypto.sign(keyPair1.getPrivate(), signable1);
-        signature1 = signable1.getSignature();
+        verify(signable1).setSignature(signature1ArgumentCaptor.capture());
+        signature1 = signature1ArgumentCaptor.getValue();
+        when(signable1.getSignature()).thenReturn(signature1);
+
         assertNotNull(signature1);
         assertNotNull(signable1);
         boolean verified = Crypto.verifySignature(keyPair1.getPublic(), signable1);
@@ -74,10 +99,19 @@ class SignatureTest {
 
     @Test
     void testVerifyDifferentSignatures() throws CryptoException {
+        ArgumentCaptor<Signature> signature1ArgumentCaptor = ArgumentCaptor.forClass(Signature.class);
+        ArgumentCaptor<Signature> signature2ArgumentCaptor = ArgumentCaptor.forClass(Signature.class);
+
         Crypto.sign(keyPair1.getPrivate(), signable1);
-        signature1 = signable1.getSignature();
+        verify(signable1).setSignature(signature1ArgumentCaptor.capture());
+        signature1 = signature1ArgumentCaptor.getValue();
+        when(signable1.getSignature()).thenReturn(signature1);
+
         Crypto.sign(keyPair1.getPrivate(), signable2);
-        signature2 = signable2.getSignature();
+        verify(signable2).setSignature(signature2ArgumentCaptor.capture());
+        signature2 = signature2ArgumentCaptor.getValue();
+        when(signable2.getSignature()).thenReturn(signature2);
+
         assertNotEquals(signature1, signature2);
 
         boolean verified1 = Crypto.verifySignature(keyPair1.getPublic(), signable1);
@@ -95,5 +129,38 @@ class SignatureTest {
     void testDifferentKeychainsHaveDifferentKeys() {
         assertNotEquals(keyPair1.getPublic(), keyPair2.getPublic());
         assertNotEquals(keyPair1.getPrivate(), keyPair2.getPrivate());
+    }
+
+    @Test
+    void testConflict() throws CryptoException, IOException {
+        ByteArrayOutputStream os1 = new ByteArrayOutputStream();
+        os1.write(new byte[]{});
+        os1.write(new byte[]{
+                0x01,
+                0x02
+        });
+
+        ByteArrayOutputStream os2 = new ByteArrayOutputStream();
+        os2.write(new byte[]{
+                0x01,
+                0x02
+        });
+        os2.write(new byte[]{});
+
+        when(signable1.getSignableBytes()).thenReturn(os1.toByteArray());
+        when(signable2.getSignableBytes()).thenReturn(os2.toByteArray());
+
+        ArgumentCaptor<Signature> signature1ArgumentCaptor = ArgumentCaptor.forClass(Signature.class);
+        ArgumentCaptor<Signature> signature2ArgumentCaptor = ArgumentCaptor.forClass(Signature.class);
+
+        Crypto.sign(keyPair1.getPrivate(), signable1);
+        verify(signable1).setSignature(signature1ArgumentCaptor.capture());
+        signature1 = signature1ArgumentCaptor.getValue();
+
+        Crypto.sign(keyPair1.getPrivate(), signable2);
+        verify(signable2).setSignature(signature2ArgumentCaptor.capture());
+        signature2 = signature2ArgumentCaptor.getValue();
+
+        assertNotEquals(signature1, signature2);
     }
 }

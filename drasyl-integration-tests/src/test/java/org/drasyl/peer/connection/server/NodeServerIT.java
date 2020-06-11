@@ -18,6 +18,8 @@
  */
 package org.drasyl.peer.connection.server;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import io.netty.channel.EventLoopGroup;
@@ -27,9 +29,8 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.DrasylNodeConfig;
+import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.messenger.Messenger;
@@ -39,10 +40,10 @@ import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.PingMessage;
-import org.drasyl.peer.connection.message.PongMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.ResponseMessage;
+import org.drasyl.peer.connection.message.SignedMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
 import org.junit.jupiter.api.AfterAll;
@@ -58,7 +59,10 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import testutils.AnsiColor;
 import testutils.TestHelper;
 
+import java.security.KeyPair;
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -154,10 +158,10 @@ class NodeServerIT {
         TestNodeServerConnection session2 = clientSession(server);
 
         // send messages
-        RequestMessage request1 = new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of(), Map.of());
+        RequestMessage request1 = new JoinMessage(session1.getPublicKey(), Set.of(), Map.of());
         CompletableFuture<ResponseMessage<?>> send1 = session1.sendRequest(request1);
 
-        RequestMessage request2 = new JoinMessage(CompressedPublicKey.of("0340a4f2adbddeedc8f9ace30e3f18713a3405f43f4871b4bac9624fe80d2056a7"), Set.of(), Map.of());
+        RequestMessage request2 = new JoinMessage(session2.getPublicKey(), Set.of(), Map.of());
         CompletableFuture<ResponseMessage<?>> send2 = session2.sendRequest(request2);
 
         // verify responses
@@ -177,16 +181,24 @@ class NodeServerIT {
 
         TestObserver<Message> receivedMessages2 = session2.receivedMessages().test();
 
-        // send message
-        RequestMessage request = new ApplicationMessage(session1.getAddress(), session2.getAddress(), new byte[]{
+        byte[] payload = new byte[]{
                 0x00,
                 0x01,
                 0x02
-        });
-        session1.send(request);
+        };
 
+        // send message
+        RequestMessage request = new ApplicationMessage(session1.getAddress(), session2.getAddress(), payload);
+        session1.send(request);
         receivedMessages2.awaitCount(1);
-        receivedMessages2.assertValue(request);
+        receivedMessages2.assertValue(val -> {
+            if (!(val instanceof ApplicationMessage)) {
+                return false;
+            }
+            ApplicationMessage msg = (ApplicationMessage) val;
+
+            return Objects.equals(session1.getAddress(), msg.getSender()) && Objects.equals(session2.getAddress(), msg.getRecipient()) && Arrays.equals(payload, msg.getPayload());
+        });
     }
 
     @Test
@@ -203,7 +215,13 @@ class NodeServerIT {
 
         // verify response
         receivedMessages.awaitCount(1);
-        receivedMessages.assertValue(new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE_TIMEOUT));
+        receivedMessages.assertValue(val -> {
+            if (!(val instanceof ConnectionExceptionMessage)) {
+                return false;
+            }
+
+            return ((ConnectionExceptionMessage) val).getError() == CONNECTION_ERROR_HANDSHAKE_TIMEOUT;
+        });
     }
 
     @Test
@@ -232,7 +250,7 @@ class NodeServerIT {
 
         // verify response
         receivedMessages.awaitCount(1);
-        receivedMessages.assertValue(new ConnectionExceptionMessage(CONNECTION_ERROR_INITIALIZATION));
+        receivedMessages.assertValue(val -> ((ConnectionExceptionMessage) val).getError() == CONNECTION_ERROR_INITIALIZATION);
     }
 
     @Test
@@ -240,28 +258,41 @@ class NodeServerIT {
     void newSessionWithSameIdentityShouldReplaceAndCloseExistingSession() throws ExecutionException, InterruptedException, CryptoException {
         // create connections
         TestNodeServerConnection session1 = clientSession(server);
-        TestNodeServerConnection session2 = clientSession(server);
+        TestNodeServerConnection session2 = clientSession(server, session1.getIdentity());
 
         TestObserver<Message> receivedMessages1 = session1.receivedMessages().test();
         TestObserver<Message> receivedMessages2 = session2.receivedMessages().test();
 
         // send messages
-        CompressedPublicKey publicKey = CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3");
-        Identity identity = Identity.of(publicKey);
-        RequestMessage request1 = new JoinMessage(publicKey, Set.of(), Map.of());
+        RequestMessage request1 = new JoinMessage(session1.getPublicKey(), Set.of(), Map.of());
         ResponseMessage<?> response1 = session1.sendRequest(request1).get();
         session1.send(new StatusMessage(STATUS_OK, response1.getId()));
-        await().until(() -> server.getChannelGroup().find(identity) != null);
+        await().until(() -> server.getChannelGroup().find(session1.getIdentity()) != null);
 
-        RequestMessage request2 = new JoinMessage(publicKey, Set.of(), Map.of());
+        RequestMessage request2 = new JoinMessage(session1.getPublicKey(), Set.of(), Map.of());
         ResponseMessage<?> response2 = session2.sendRequest(request2).join();
         session2.send(new StatusMessage(STATUS_OK, response2.getId()));
 
         // verify responses
         receivedMessages1.awaitCount(2);
-        receivedMessages1.assertValues(new WelcomeMessage(server.getIdentityManager().getIdentity().getPublicKey(), server.getEndpoints(), request1.getId()), new QuitMessage(REASON_NEW_SESSION));
+        receivedMessages1.assertValueAt(0, val -> {
+            if (!(val instanceof WelcomeMessage)) {
+                return false;
+            }
+            WelcomeMessage msg = (WelcomeMessage) val;
+
+            return Objects.equals(server.getIdentityManager().getIdentity().getPublicKey(), msg.getPublicKey()) && Objects.equals(server.getEndpoints(), msg.getEndpoints()) && Objects.equals(msg.getCorrespondingId(), request1.getId());
+        });
+        receivedMessages1.assertValueAt(1, val -> ((QuitMessage) val).getReason() == REASON_NEW_SESSION);
         receivedMessages2.awaitCount(1);
-        receivedMessages2.assertValue(new WelcomeMessage(server.getIdentityManager().getIdentity().getPublicKey(), server.getEndpoints(), request2.getId()));
+        receivedMessages2.assertValue(val -> {
+            if (!(val instanceof WelcomeMessage)) {
+                return false;
+            }
+            WelcomeMessage msg = (WelcomeMessage) val;
+
+            return Objects.equals(server.getIdentityManager().getIdentity().getPublicKey(), msg.getPublicKey()) && Objects.equals(server.getEndpoints(), msg.getEndpoints()) && Objects.equals(msg.getCorrespondingId(), request2.getId());
+        });
     }
 
     @Test
@@ -277,7 +308,9 @@ class NodeServerIT {
 
         // verify responses
         receivedMessages.awaitCount(3);
-        receivedMessages.assertValues(new PingMessage(), new PingMessage(), new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG));
+        receivedMessages.assertValueAt(0, val -> val instanceof PingMessage);
+        receivedMessages.assertValueAt(1, val -> val instanceof PingMessage);
+        receivedMessages.assertValueAt(2, val -> ((ConnectionExceptionMessage) val).getError() == CONNECTION_ERROR_PING_PONG);
     }
 
     @Test
@@ -306,7 +339,7 @@ class NodeServerIT {
         // verify response
         ResponseMessage<?> response = send.get();
 
-        assertEquals(new PongMessage(request.getId()), response);
+        assertEquals(request.getId(), response.getCorrespondingId());
     }
 
     @Test
@@ -323,9 +356,10 @@ class NodeServerIT {
         CompletableFuture<ResponseMessage<?>> send = session.sendRequest(request);
 
         // verify response
-        ResponseMessage<?> response = send.get();
+        StatusMessage response = (StatusMessage) send.get();
 
-        assertEquals(new StatusMessage(STATUS_FORBIDDEN, request.getId()), response);
+        assertEquals(STATUS_FORBIDDEN, response.getCode());
+        assertEquals(request.getId(), response.getCorrespondingId());
     }
 
     @Disabled("Muss noch implementiert werden")
@@ -399,7 +433,7 @@ class NodeServerIT {
 
         // verify responses
         receivedMessages.awaitCount(1);
-        receivedMessages.assertValue(new QuitMessage(REASON_SHUTTING_DOWN));
+        receivedMessages.assertValue(val -> ((QuitMessage) val).getReason() == REASON_SHUTTING_DOWN);
     }
 
     @Test
@@ -410,13 +444,34 @@ class NodeServerIT {
         server.close();
 
         // send message
-        RequestMessage request = new JoinMessage(CompressedPublicKey.of("023e0a51f1830f5ec7decdb428a63992fadd682513e82dc9594e259edd9398edf3"), Set.of(), Map.of());
+        RequestMessage request = new JoinMessage(session.getPublicKey(), Set.of(), Map.of());
         CompletableFuture<ResponseMessage<?>> send = session.sendRequest(request);
 
         // verify response
-        ResponseMessage<?> received = send.get();
+        StatusMessage received = (StatusMessage) send.get();
 
-        assertEquals(new StatusMessage(STATUS_SERVICE_UNAVAILABLE, request.getId()), received);
+        assertEquals(STATUS_SERVICE_UNAVAILABLE, received.getCode());
+        assertEquals(request.getId(), received.getCorrespondingId());
+    }
+
+    @Test
+    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+    void MessageWithWrongSignatureShouldProduceExceptionMessage() throws ExecutionException, InterruptedException, CryptoException, JsonProcessingException {
+
+        // create connection
+        TestNodeServerConnection session = clientSession(server, false);
+        TestObserver<Message> receivedMessages = session.receivedMessages().filter(msg -> msg instanceof StatusMessage).test();
+
+        // send message
+        Message request = new PingMessage();
+        SignedMessage signedMessage = new SignedMessage(request, session.getPublicKey());
+        KeyPair keyPair = Crypto.generateKeys();
+        Crypto.sign(keyPair.getPrivate(), signedMessage);
+        session.sendRawString(new ObjectMapper().writeValueAsString(signedMessage));
+
+        // verify response
+        receivedMessages.awaitCount(1);
+        receivedMessages.assertValue(val -> ((StatusMessage) val).getCode() == StatusMessage.Code.STATUS_INVALID_SIGNATURE);
     }
 
     @BeforeAll

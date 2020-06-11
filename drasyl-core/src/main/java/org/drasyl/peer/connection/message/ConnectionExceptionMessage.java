@@ -81,8 +81,7 @@ public class ConnectionExceptionMessage extends AbstractMessage implements Reque
     public String toString() {
         return "ConnectionExceptionMessage{" +
                 "type='" + error + '\'' +
-                ", id='" + id + '\'' +
-                ", signature=" + signature +
+                ", id='" + id +
                 '}';
     }
 

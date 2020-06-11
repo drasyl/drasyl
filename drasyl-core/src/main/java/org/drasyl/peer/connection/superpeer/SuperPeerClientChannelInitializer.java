@@ -25,9 +25,11 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import org.drasyl.DrasylNodeConfig;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.AbstractClientInitializer;
 import org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
+import org.drasyl.peer.connection.handler.SignatureHandler;
 import org.drasyl.peer.connection.superpeer.handler.SuperPeerClientConnectionHandler;
 import org.drasyl.util.WebSocketUtil;
 import org.slf4j.Logger;
@@ -48,6 +50,7 @@ public class SuperPeerClientChannelInitializer extends AbstractClientInitializer
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClientChannelInitializer.class);
     private final DrasylNodeConfig config;
     private final SuperPeerClientConnectionHandler clientHandler;
+    private final Identity identity;
 
     public SuperPeerClientChannelInitializer(DrasylNodeConfig config,
                                              URI endpoint,
@@ -56,11 +59,17 @@ public class SuperPeerClientChannelInitializer extends AbstractClientInitializer
         super(config.getFlushBufferSize(), config.getSuperPeerIdleTimeout(),
                 config.getSuperPeerIdleRetries(), endpoint);
         this.config = config;
+        this.identity = superPeerClient.getIdentityManager().getIdentity();
         clientHandler = new SuperPeerClientConnectionHandler(this.config.getSuperPeerPublicKey(), superPeerClient.getIdentityManager().getIdentity().getPublicKey(), endpoints, this.config.getSuperPeerHandshakeTimeout(), superPeerClient.getPeersManager(), superPeerClient.getMessenger());
     }
 
     public CompletableFuture<Void> handshakeFuture() {
         return clientHandler.handshakeFuture();
+    }
+
+    @Override
+    protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
+        pipeline.addLast(SignatureHandler.SIGNATURE_HANDLER, new SignatureHandler(identity));
     }
 
     @Override

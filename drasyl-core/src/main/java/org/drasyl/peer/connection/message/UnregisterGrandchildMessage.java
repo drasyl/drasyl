@@ -43,7 +43,7 @@ public class UnregisterGrandchildMessage extends AbstractGrandchildMessage {
         return "UnregisterGrandchildMessage{" +
                 "publicKey=" + publicKey +
                 ", endpoints=" + endpoints +
-                ", id='" + id + '\'' +
+                ", id='" + id +
                 '}';
     }
 }

@@ -18,12 +18,8 @@
  */
 package org.drasyl.peer.connection.message;
 
-import org.drasyl.crypto.Signature;
 import org.drasyl.identity.Address;
 
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.Objects;
 
@@ -44,12 +40,10 @@ public class ApplicationMessage extends AbstractMessage implements RequestMessag
     }
 
     ApplicationMessage(String id,
-                       Signature signature,
                        Address recipient,
                        Address sender,
                        byte[] payload) {
         super(id);
-        setSignature(signature);
         this.recipient = recipient;
         this.sender = sender;
         this.payload = payload;
@@ -66,18 +60,6 @@ public class ApplicationMessage extends AbstractMessage implements RequestMessag
         this.sender = requireNonNull(sender);
         this.recipient = requireNonNull(recipient);
         this.payload = requireNonNull(payload);
-    }
-
-    @Override
-    public void writeFieldsTo(OutputStream outstream) throws IOException {
-        requireNonNull(recipient);
-        requireNonNull(sender);
-        requireNonNull(payload);
-
-        outstream.write(getId().getBytes(StandardCharsets.UTF_8));
-        outstream.write(recipient.toString().getBytes(StandardCharsets.UTF_8));
-        outstream.write(sender.toString().getBytes(StandardCharsets.UTF_8));
-        outstream.write(payload);
     }
 
     @Override
@@ -99,7 +81,6 @@ public class ApplicationMessage extends AbstractMessage implements RequestMessag
         return Objects.equals(getId(), message.getId()) &&
                 Objects.equals(recipient, message.recipient) &&
                 Objects.equals(sender, message.sender) &&
-                Objects.equals(getSignature(), message.getSignature()) &&
                 Arrays.equals(payload, message.payload);
     }
 
@@ -109,13 +90,8 @@ public class ApplicationMessage extends AbstractMessage implements RequestMessag
                 "recipient=" + recipient +
                 ", sender=" + sender +
                 ", payload=" + Arrays.toString(payload) +
-                ", id='" + id + '\'' +
-                ", signature=" + signature +
+                ", id='" + id +
                 '}';
-    }
-
-    protected static ApplicationMessage copyOf(ApplicationMessage message) {
-        return new ApplicationMessage(message.getId(), message.getSignature(), message.getRecipient(), message.getSender(), message.getPayload());
     }
 
     public Address getRecipient() {

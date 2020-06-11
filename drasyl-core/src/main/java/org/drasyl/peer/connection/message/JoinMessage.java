@@ -63,11 +63,8 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
         return this.endpoints;
     }
 
-    /**
-     * @return the public key of the joining node
-     */
     public CompressedPublicKey getPublicKey() {
-        return publicKey;
+        return this.publicKey;
     }
 
     @Override
@@ -95,11 +92,10 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
     @Override
     public String toString() {
         return "JoinMessage{" +
-                "publicKey=" + publicKey +
-                ", endpoints=" + endpoints +
+                "endpoints=" + endpoints +
                 ", childrenAndGrandchildren=" + childrenAndGrandchildren +
                 ", id='" + id + '\'' +
-                ", signature=" + signature +
+                ", publicKey=" + publicKey +
                 '}';
     }
 }

@@ -25,8 +25,7 @@ public class PingMessage extends AbstractMessage implements RequestMessage {
     @Override
     public String toString() {
         return "PingMessage{" +
-                "id='" + id + '\'' +
-                ", signature=" + signature +
+                "id='" + id +
                 '}';
     }
 }

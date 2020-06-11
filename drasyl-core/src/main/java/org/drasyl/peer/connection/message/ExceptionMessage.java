@@ -82,8 +82,7 @@ public class ExceptionMessage extends AbstractMessage {
     public String toString() {
         return "ExceptionMessage{" +
                 "error='" + error + '\'' +
-                ", id='" + id + '\'' +
-                ", signature=" + signature +
+                ", id='" + id +
                 '}';
     }
 

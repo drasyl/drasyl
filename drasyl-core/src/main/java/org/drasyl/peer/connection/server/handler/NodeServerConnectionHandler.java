@@ -105,6 +105,26 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
     }
 
     @Override
+    protected void processMessageAfterHandshake(ChannelHandlerContext ctx,
+                                                Message message) {
+        if (message instanceof RegisterGrandchildMessage) {
+            RegisterGrandchildMessage registerGrandchildMessage = (RegisterGrandchildMessage) message;
+            Identity grandchildIdentity = Identity.of(registerGrandchildMessage.getPublicKey());
+            PeerInformation grandchildInformation = PeerInformation.of(registerGrandchildMessage.getEndpoints());
+            registerGrandchild(ctx, grandchildIdentity, grandchildInformation);
+        }
+        else if (message instanceof UnregisterGrandchildMessage) {
+            UnregisterGrandchildMessage unregisterGrandchildMessage = (UnregisterGrandchildMessage) message;
+            Identity grandchildIdentity = Identity.of(unregisterGrandchildMessage.getPublicKey());
+            PeerInformation grandchildInformation = PeerInformation.of(unregisterGrandchildMessage.getEndpoints());
+            unregisterGrandchild(ctx, grandchildIdentity, grandchildInformation);
+        }
+        else {
+            super.processMessageAfterHandshake(ctx, message);
+        }
+    }
+
+    @Override
     protected ConnectionExceptionMessage.Error validateSessionRequest(JoinMessage requestMessage) {
         CompressedPublicKey clientPublicKey = requestMessage.getPublicKey();
 
@@ -181,26 +201,6 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
                 }
                 superPeerPath.send(new UnregisterGrandchildMessage(grandchildIdentity.getPublicKey(), grandchildInformation.getEndpoints()));
             }
-        }
-    }
-
-    @Override
-    protected void processMessageAfterHandshake(ChannelHandlerContext ctx,
-                                                Message message) {
-        if (message instanceof RegisterGrandchildMessage) {
-            RegisterGrandchildMessage registerGrandchildMessage = (RegisterGrandchildMessage) message;
-            Identity grandchildIdentity = Identity.of(registerGrandchildMessage.getPublicKey());
-            PeerInformation grandchildInformation = PeerInformation.of(registerGrandchildMessage.getEndpoints());
-            registerGrandchild(ctx, grandchildIdentity, grandchildInformation);
-        }
-        else if (message instanceof UnregisterGrandchildMessage) {
-            UnregisterGrandchildMessage unregisterGrandchildMessage = (UnregisterGrandchildMessage) message;
-            Identity grandchildIdentity = Identity.of(unregisterGrandchildMessage.getPublicKey());
-            PeerInformation grandchildInformation = PeerInformation.of(unregisterGrandchildMessage.getEndpoints());
-            unregisterGrandchild(ctx, grandchildIdentity, grandchildInformation);
-        }
-        else {
-            super.processMessageAfterHandshake(ctx, message);
         }
     }
 

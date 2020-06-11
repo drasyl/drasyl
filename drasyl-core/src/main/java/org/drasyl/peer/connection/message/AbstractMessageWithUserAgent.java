@@ -78,8 +78,7 @@ public abstract class AbstractMessageWithUserAgent extends AbstractMessage {
     public String toString() {
         return "AbstractMessageWithUserAgent{" +
                 "userAgent='" + userAgent + '\'' +
-                ", id='" + id + '\'' +
-                ", signature=" + signature +
+                ", id='" + id +
                 '}';
     }
 }

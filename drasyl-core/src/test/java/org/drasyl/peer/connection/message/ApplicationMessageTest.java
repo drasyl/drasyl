@@ -23,7 +23,6 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import net.javacrumbs.jsonunit.core.Option;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.crypto.Signature;
 import org.drasyl.identity.Address;
 import org.drasyl.identity.AddressTestHelper;
 import org.drasyl.identity.CompressedPublicKey;
@@ -39,7 +38,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
 
 class ApplicationMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
@@ -48,7 +46,6 @@ class ApplicationMessageTest {
     Address sender;
     Address recipient;
     private String id;
-    private Signature signature;
     private ApplicationMessage message;
 
     @BeforeEach
@@ -58,7 +55,6 @@ class ApplicationMessageTest {
         sender = Address.of(senderPubKey);
         recipient = AddressTestHelper.random();
         id = "id";
-        signature = mock(Signature.class);
     }
 
     @Test
@@ -114,22 +110,23 @@ class ApplicationMessageTest {
 
     @Test
     void hashCodeNotSameBecauseOfDifferentPayload() {
-        ApplicationMessage message1 = new ApplicationMessage(id, signature, recipient, sender, new byte[]{
+        ApplicationMessage message1 = new ApplicationMessage(id, recipient, sender, new byte[]{
                 0x00,
                 0x01,
                 0x02
         });
-        ApplicationMessage message2 = new ApplicationMessage(id, signature, recipient, sender, new byte[]{
+        ApplicationMessage message2 = new ApplicationMessage(id, recipient, sender, new byte[]{
                 0x00,
                 0x01,
                 0x02
         });
-        ApplicationMessage message3 = new ApplicationMessage(id, signature, recipient, sender, new byte[]{
+        ApplicationMessage message3 = new ApplicationMessage(id, recipient, sender, new byte[]{
                 0x03,
                 0x02,
                 0x01
         });
 
+        assertEquals(message1, message2);
         assertEquals(message1.hashCode(), message2.hashCode());
         assertNotEquals(message2.hashCode(), message3.hashCode());
     }

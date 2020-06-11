@@ -26,7 +26,7 @@ public class PongMessage extends AbstractResponseMessage<PingMessage> {
         super(correspondingId);
     }
 
-    protected PongMessage() {
+    private PongMessage() {
         super();
     }
 
@@ -34,8 +34,7 @@ public class PongMessage extends AbstractResponseMessage<PingMessage> {
     public String toString() {
         return "PongMessage{" +
                 "correspondingId='" + correspondingId + '\'' +
-                ", id='" + id + '\'' +
-                ", signature=" + signature +
+                ", id='" + id +
                 '}';
     }
 }
