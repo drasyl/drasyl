@@ -18,6 +18,7 @@
  */
 package org.drasyl.identity;
 
+import net.javacrumbs.jsonunit.core.Option;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.crypto.CryptoException;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +31,7 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
+import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -46,6 +48,7 @@ class IdentityManagerTest {
 
     @Test
     void loadOrCreateIdentityShouldLoadValidIdentityFromConfig() throws IdentityManagerException, CryptoException {
+        when(config.getIdentityAddress()).thenReturn(Address.of("37ca8159a8"));
         when(config.getIdentityPublicKey()).thenReturn(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"));
         when(config.getIdentityPrivateKey()).thenReturn(CompressedPrivateKey.of("0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d"));
 
@@ -62,6 +65,7 @@ class IdentityManagerTest {
 
         // create existing file with identity
         Files.writeString(path, "{\n" +
+                "  \"address\" : \"37ca8159a8\",\n" +
                 "  \"publicKey\" : \"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\n" +
                 "  \"privateKey\" : \"0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d\"\n" +
                 "}", StandardOpenOption.CREATE);
@@ -70,8 +74,8 @@ class IdentityManagerTest {
         identityManager.loadOrCreateIdentity();
 
         assertEquals(
-                new PrivateIdentity(
-                        Address.of(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9")),
+                PrivateIdentity.of(
+                        "37ca8159a8",
                         "0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9",
                         "0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d"
                 ),
@@ -90,7 +94,7 @@ class IdentityManagerTest {
     }
 
     @Test
-    void loadOrCreateIdentityShouldCreateNewIdentityIfConfigContainsNoKeysAndFileIsAbsent(@TempDir Path dir) throws IdentityManagerException {
+    void loadOrCreateIdentityShouldCreateNewIdentityIfConfigContainsNoKeysAndFileIsAbsent(@TempDir Path dir) throws IdentityManagerException, IOException {
         Path path = Paths.get(dir.toString(), "my-identity.json");
         when(config.getIdentityPath()).thenReturn(path);
 
@@ -98,5 +102,14 @@ class IdentityManagerTest {
         identityManager.loadOrCreateIdentity();
 
         assertNotNull(identityManager.getAddress());
+        assertNotNull(identityManager.getPublicKey());
+        assertNotNull(identityManager.getPrivateKey());
+        assertThatJson(Files.readString(path))
+                .when(Option.IGNORING_ARRAY_ORDER)
+                .isEqualTo("{\n" +
+                        "  \"address\" : \"" + identityManager.getAddress() + "\",\n" +
+                        "  \"publicKey\" : \"" + identityManager.getPublicKey() + "\",\n" +
+                        "  \"privateKey\" : \"" + identityManager.getPrivateKey() + "\"\n" +
+                        "}");
     }
 }

@@ -24,7 +24,7 @@ import com.google.common.collect.ImmutableMap;
 import org.drasyl.event.Event;
 import org.drasyl.event.Peer;
 import org.drasyl.identity.Identity;
-import org.drasyl.util.MapAsArrayOfPairsJsonSerializer;
+import org.drasyl.util.MapToPairArraySerializer;
 import org.drasyl.util.Pair;
 
 import java.util.HashMap;
@@ -56,10 +56,10 @@ import static org.drasyl.event.EventType.EVENT_PEER_UNREACHABLE;
  */
 public class PeersManager {
     private final ReadWriteLock lock;
-    @JsonSerialize(using = MapAsArrayOfPairsJsonSerializer.class)
+    @JsonSerialize(using = MapToPairArraySerializer.class)
     private final Map<Identity, PeerInformation> peers;
     private final Set<Identity> children;
-    @JsonSerialize(using = MapAsArrayOfPairsJsonSerializer.class)
+    @JsonSerialize(using = MapToPairArraySerializer.class)
     private final Map<Identity, Identity> grandchildrenRoutes;
     private final Consumer<Event> eventConsumer;
     private Identity superPeer;
@@ -464,7 +464,7 @@ public class PeersManager {
         }
     }
 
-    @JsonSerialize(using = MapAsArrayOfPairsJsonSerializer.class)
+    @JsonSerialize(using = MapToPairArraySerializer.class)
     public Map<Identity, PeerInformation> getChildren() {
         try {
             lock.readLock().lock();

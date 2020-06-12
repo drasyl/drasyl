@@ -19,7 +19,7 @@
 package org.drasyl.peer.connection.message;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
 
 import java.net.URI;
 import java.util.Objects;
@@ -32,13 +32,13 @@ import static java.util.Objects.requireNonNull;
  * the public key of the node server.
  */
 public class WelcomeMessage extends AbstractMessageWithUserAgent implements ResponseMessage<JoinMessage> {
-    private final CompressedPublicKey publicKey;
+    private final Identity identity;
     private final Set<URI> endpoints;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final String correspondingId;
 
     protected WelcomeMessage() {
-        publicKey = null;
+        identity = null;
         endpoints = null;
         correspondingId = null;
     }
@@ -46,20 +46,20 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
     /**
      * Creates new welcome message.
      *
-     * @param publicKey       the public key of the node server
+     * @param identity        the identity of the node server
      * @param endpoints       the endpoints of the node server
      * @param correspondingId
      */
-    public WelcomeMessage(CompressedPublicKey publicKey,
+    public WelcomeMessage(Identity identity,
                           Set<URI> endpoints,
                           String correspondingId) {
-        this.publicKey = requireNonNull(publicKey);
+        this.identity = requireNonNull(identity);
         this.endpoints = requireNonNull(endpoints);
         this.correspondingId = correspondingId;
     }
 
-    public CompressedPublicKey getPublicKey() {
-        return this.publicKey;
+    public Identity getIdentity() {
+        return this.identity;
     }
 
     public Set<URI> getEndpoints() {
@@ -73,7 +73,7 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), publicKey, endpoints, correspondingId);
+        return Objects.hash(super.hashCode(), identity, endpoints, correspondingId);
     }
 
     @Override
@@ -88,7 +88,7 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
             return false;
         }
         WelcomeMessage that = (WelcomeMessage) o;
-        return Objects.equals(publicKey, that.publicKey) &&
+        return Objects.equals(identity, that.identity) &&
                 Objects.equals(endpoints, that.endpoints) &&
                 Objects.equals(correspondingId, that.correspondingId);
     }
@@ -96,7 +96,7 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
     @Override
     public String toString() {
         return "WelcomeMessage{" +
-                "publicKey=" + publicKey +
+                "identity=" + identity +
                 ", endpoints=" + endpoints +
                 ", correspondingId='" + correspondingId + '\'' +
                 ", id='" + id +

@@ -23,6 +23,7 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.identity.Address;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.util.NetworkUtil;
@@ -49,6 +50,7 @@ import static org.drasyl.util.SecretUtil.maskSecret;
 public class DrasylNodeConfig {
     //======================================== Config Paths ========================================
     static final String LOGLEVEL = "drasyl.loglevel";
+    static final String IDENTITY_ADDRESS = "drasyl.identity.address";
     static final String IDENTITY_PUBLIC_KEY = "drasyl.identity.public-key";
     static final String IDENTITY_PRIVATE_KEY = "drasyl.identity.private-key";
     static final String IDENTITY_PATH = "drasyl.identity.path";
@@ -77,6 +79,7 @@ public class DrasylNodeConfig {
     static final String INTRA_VM_DISCOVERY_ENABLED = "drasyl.intra-vm-discovery.enabled";
     //======================================= Config Values ========================================
     private final Level loglevel; // NOSONAR
+    private final Address identityAddress;
     private final CompressedPublicKey identityPublicKey;
     private final CompressedPrivateKey identityPrivateKey;
     private final Path identityPath;
@@ -122,6 +125,12 @@ public class DrasylNodeConfig {
         this.userAgent = config.getString(USER_AGENT);
 
         // init identity config
+        if (!config.getString(IDENTITY_ADDRESS).isEmpty()) {
+            this.identityAddress = getAddress(config, IDENTITY_ADDRESS);
+        }
+        else {
+            this.identityAddress = null;
+        }
         if (!config.getString(IDENTITY_PUBLIC_KEY).isEmpty()) {
             this.identityPublicKey = getPublicKey(config, IDENTITY_PUBLIC_KEY);
         }
@@ -254,8 +263,28 @@ public class DrasylNodeConfig {
         return uriList;
     }
 
+    /**
+     * Gets the address at the given path. Similar to {@link Config}, an exception is
+     * thrown for an invalid value.
+     *
+     * @param config
+     * @param path
+     * @return
+     */
+    @SuppressWarnings({ "java:S1192" })
+    private Address getAddress(Config config, String path) {
+        try {
+            String stringValue = config.getString(path);
+            return Address.of(stringValue);
+        }
+        catch (IllegalArgumentException e) {
+            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "address", "invalid-value: " + e.getMessage());
+        }
+    }
+
     @SuppressWarnings({ "java:S107" })
     DrasylNodeConfig(Level loglevel,
+                     Address identityAddress,
                      CompressedPublicKey identityPublicKey,
                      CompressedPrivateKey identityPrivateKey,
                      Path identityPath,
@@ -283,6 +312,7 @@ public class DrasylNodeConfig {
                      Duration superPeerIdleTimeout,
                      boolean intraVmDiscoveryEnabled) {
         this.loglevel = loglevel;
+        this.identityAddress = identityAddress;
         this.identityPublicKey = identityPublicKey;
         this.identityPrivateKey = identityPrivateKey;
         this.identityPath = identityPath;
@@ -325,6 +355,10 @@ public class DrasylNodeConfig {
 
     public String getUserAgent() {
         return this.userAgent;
+    }
+
+    public Address getIdentityAddress() {
+        return identityAddress;
     }
 
     public CompressedPublicKey getIdentityPublicKey() {
@@ -421,7 +455,7 @@ public class DrasylNodeConfig {
 
     @Override
     public int hashCode() {
-        return Objects.hash(identityPublicKey, identityPrivateKey, identityPath, userAgent, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled);
+        return Objects.hash(identityPublicKey, identityAddress, identityPrivateKey, identityPath, userAgent, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled);
     }
 
     @Override
@@ -443,6 +477,7 @@ public class DrasylNodeConfig {
                 messageHopLimit == that.messageHopLimit &&
                 superPeerEnabled == that.superPeerEnabled &&
                 superPeerIdleRetries == that.superPeerIdleRetries &&
+                Objects.equals(identityAddress, that.identityAddress) &&
                 Objects.equals(identityPublicKey, that.identityPublicKey) &&
                 Objects.equals(identityPrivateKey, that.identityPrivateKey) &&
                 Objects.equals(identityPath, that.identityPath) &&
@@ -466,6 +501,7 @@ public class DrasylNodeConfig {
     public String toString() {
         return "DrasylNodeConfig{" +
                 "loglevel='" + loglevel + '\'' +
+                ", identityAddress='" + identityAddress + '\'' +
                 ", identityPublicKey='" + identityPublicKey + '\'' +
                 ", identityPrivateKey='" + maskSecret(identityPrivateKey) + '\'' +
                 ", identityPath=" + identityPath +

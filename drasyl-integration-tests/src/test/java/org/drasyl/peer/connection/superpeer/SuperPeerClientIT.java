@@ -54,7 +54,6 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import testutils.AnsiColor;
 import testutils.TestHelper;
 
-import java.util.Map;
 import java.util.Set;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -140,7 +139,7 @@ class SuperPeerClientIT {
 
         // verify received messages
         receivedMessages.awaitCount(1);
-        receivedMessages.assertValueAt(0, new JoinMessage(identityManager.getIdentity().getPublicKey(), server.getEndpoints(), Map.of()));
+        receivedMessages.assertValueAt(0, new JoinMessage(identityManager.getNonPrivateIdentity(), server.getEndpoints(), Set.of()));
     }
 
     @Disabled("Race Condition error")

@@ -18,23 +18,23 @@
  */
 package org.drasyl.peer.connection.message;
 
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
 
 import java.net.URI;
 import java.util.Objects;
 import java.util.Set;
 
 public abstract class AbstractGrandchildMessage extends AbstractMessage implements RequestMessage {
-    protected final CompressedPublicKey publicKey;
+    protected final Identity identity;
     protected final Set<URI> endpoints;
 
-    AbstractGrandchildMessage(CompressedPublicKey publicKey, Set<URI> endpoints) {
-        this.publicKey = publicKey;
+    AbstractGrandchildMessage(Identity identity, Set<URI> endpoints) {
+        this.identity = identity;
         this.endpoints = endpoints;
     }
 
-    public CompressedPublicKey getPublicKey() {
-        return publicKey;
+    public Identity getIdentity() {
+        return identity;
     }
 
     public Set<URI> getEndpoints() {
@@ -43,7 +43,7 @@ public abstract class AbstractGrandchildMessage extends AbstractMessage implemen
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), publicKey, endpoints);
+        return Objects.hash(super.hashCode(), identity, endpoints);
     }
 
     @Override
@@ -58,7 +58,7 @@ public abstract class AbstractGrandchildMessage extends AbstractMessage implemen
             return false;
         }
         AbstractGrandchildMessage that = (AbstractGrandchildMessage) o;
-        return Objects.equals(publicKey, that.publicKey) &&
+        return Objects.equals(identity, that.identity) &&
                 Objects.equals(endpoints, that.endpoints);
     }
 }

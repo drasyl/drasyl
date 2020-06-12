@@ -18,10 +18,10 @@
  */
 package org.drasyl.peer.connection.message;
 
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
+import org.drasyl.util.KeyValue;
 
 import java.net.URI;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -31,12 +31,12 @@ import static java.util.Objects.requireNonNull;
  * A message representing a join to the node server.
  */
 public class JoinMessage extends AbstractMessageWithUserAgent implements RequestMessage {
-    private final CompressedPublicKey publicKey;
+    private final Identity identity;
     private final Set<URI> endpoints;
-    private final Map<CompressedPublicKey, Set<URI>> childrenAndGrandchildren;
+    private final Set<KeyValue<Identity, Set<URI>>> childrenAndGrandchildren;
 
     protected JoinMessage() {
-        publicKey = null;
+        identity = null;
         endpoints = null;
         childrenAndGrandchildren = null;
     }
@@ -44,18 +44,18 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
     /**
      * Creates a new join message.
      *
-     * @param publicKey the public key of the joining node
+     * @param identity  the identity of the joining node
      * @param endpoints the endpoints of the joining node
      */
-    public JoinMessage(CompressedPublicKey publicKey,
+    public JoinMessage(Identity identity,
                        Set<URI> endpoints,
-                       Map<CompressedPublicKey, Set<URI>> childrenAndGrandchildren) {
-        this.publicKey = requireNonNull(publicKey);
+                       Set<KeyValue<Identity, Set<URI>>> childrenAndGrandchildren) {
+        this.identity = requireNonNull(identity);
         this.endpoints = requireNonNull(endpoints);
         this.childrenAndGrandchildren = requireNonNull(childrenAndGrandchildren);
     }
 
-    public Map<CompressedPublicKey, Set<URI>> getChildrenAndGrandchildren() {
+    public Set<KeyValue<Identity, Set<URI>>> getChildrenAndGrandchildren() {
         return this.childrenAndGrandchildren;
     }
 
@@ -63,13 +63,13 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
         return this.endpoints;
     }
 
-    public CompressedPublicKey getPublicKey() {
-        return this.publicKey;
+    public Identity getIdentity() {
+        return this.identity;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), publicKey, endpoints);
+        return Objects.hash(super.hashCode(), identity, endpoints);
     }
 
     @Override
@@ -84,7 +84,7 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
             return false;
         }
         JoinMessage join = (JoinMessage) o;
-        return Objects.equals(publicKey, join.publicKey) &&
+        return Objects.equals(identity, join.identity) &&
                 Objects.equals(endpoints, join.endpoints) &&
                 Objects.equals(childrenAndGrandchildren, join.childrenAndGrandchildren);
     }
@@ -95,7 +95,7 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
                 "endpoints=" + endpoints +
                 ", childrenAndGrandchildren=" + childrenAndGrandchildren +
                 ", id='" + id + '\'' +
-                ", publicKey=" + publicKey +
+                ", identity=" + identity +
                 '}';
     }
 }

@@ -35,13 +35,13 @@ import org.drasyl.peer.connection.message.RegisterGrandchildMessage;
 import org.drasyl.peer.connection.message.UnregisterGrandchildMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
 import org.drasyl.peer.connection.server.NodeServerChannelGroup;
+import org.drasyl.util.KeyValue;
 import org.drasyl.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.time.Duration;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
@@ -109,13 +109,13 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
                                                 Message message) {
         if (message instanceof RegisterGrandchildMessage) {
             RegisterGrandchildMessage registerGrandchildMessage = (RegisterGrandchildMessage) message;
-            Identity grandchildIdentity = Identity.of(registerGrandchildMessage.getPublicKey());
+            Identity grandchildIdentity = registerGrandchildMessage.getIdentity();
             PeerInformation grandchildInformation = PeerInformation.of(registerGrandchildMessage.getEndpoints());
             registerGrandchild(ctx, grandchildIdentity, grandchildInformation);
         }
         else if (message instanceof UnregisterGrandchildMessage) {
             UnregisterGrandchildMessage unregisterGrandchildMessage = (UnregisterGrandchildMessage) message;
-            Identity grandchildIdentity = Identity.of(unregisterGrandchildMessage.getPublicKey());
+            Identity grandchildIdentity = unregisterGrandchildMessage.getIdentity();
             PeerInformation grandchildInformation = PeerInformation.of(unregisterGrandchildMessage.getEndpoints());
             unregisterGrandchild(ctx, grandchildIdentity, grandchildInformation);
         }
@@ -126,7 +126,7 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
 
     @Override
     protected ConnectionExceptionMessage.Error validateSessionRequest(JoinMessage requestMessage) {
-        CompressedPublicKey clientPublicKey = requestMessage.getPublicKey();
+        CompressedPublicKey clientPublicKey = requestMessage.getIdentity().getPublicKey();
 
         if (identity.getPublicKey().equals(clientPublicKey)) {
             return CONNECTION_ERROR_SAME_PUBLIC_KEY;
@@ -139,13 +139,13 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
     @Override
     protected WelcomeMessage offerSession(ChannelHandlerContext ctx,
                                           JoinMessage requestMessage) {
-        return new WelcomeMessage(identity.getPublicKey(), endpoints, requestMessage.getId());
+        return new WelcomeMessage(identity, endpoints, requestMessage.getId());
     }
 
     @Override
     protected void createConnection(ChannelHandlerContext ctx,
                                     JoinMessage requestMessage) {
-        Identity clientIdentity = Identity.of(requestMessage.getPublicKey());
+        Identity clientIdentity = requestMessage.getIdentity();
         Channel channel = ctx.channel();
         Path path = ctx::writeAndFlush; // We start at this point to save resources
         PeerInformation clientInformation = PeerInformation.of(requestMessage.getEndpoints(), path);
@@ -162,9 +162,9 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
         registerGrandchildAtSuperPeer(ctx, clientIdentity, clientInformation);
 
         // store peer's children (my grandchildren) information
-        for (Map.Entry<CompressedPublicKey, Set<URI>> grandchild : requestMessage.getChildrenAndGrandchildren().entrySet()) {
-            Identity grandchildIdentity = Identity.of(grandchild.getKey());
-            PeerInformation grandchildInformation = PeerInformation.of(grandchild.getValue());
+        for (KeyValue<Identity, Set<URI>> grandchild : requestMessage.getChildrenAndGrandchildren()) {
+            Identity grandchildIdentity = grandchild.key();
+            PeerInformation grandchildInformation = PeerInformation.of(grandchild.value());
             registerGrandchild(ctx, grandchildIdentity, grandchildInformation);
         }
     }
@@ -182,7 +182,7 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
                 if (getLogger().isDebugEnabled()) {
                     getLogger().debug("[{}]: Register Grandchild {} at Super Peer", channel.id().asShortText(), grandchildIdentity);
                 }
-                superPeerPath.send(new RegisterGrandchildMessage(grandchildIdentity.getPublicKey(), grandchildInformation.getEndpoints()));
+                superPeerPath.send(new RegisterGrandchildMessage(grandchildIdentity, grandchildInformation.getEndpoints()));
             }
         }
     }
@@ -199,7 +199,7 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
                 if (getLogger().isDebugEnabled()) {
                     getLogger().debug("[{}]: Unregister Grandchild {} at Super Peer", channel.id().asShortText(), grandchildIdentity);
                 }
-                superPeerPath.send(new UnregisterGrandchildMessage(grandchildIdentity.getPublicKey(), grandchildInformation.getEndpoints()));
+                superPeerPath.send(new UnregisterGrandchildMessage(grandchildIdentity, grandchildInformation.getEndpoints()));
             }
         }
     }

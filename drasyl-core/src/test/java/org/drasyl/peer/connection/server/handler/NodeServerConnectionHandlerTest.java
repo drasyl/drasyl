@@ -42,12 +42,12 @@ import org.drasyl.peer.connection.message.UnregisterGrandchildMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
 import org.drasyl.peer.connection.server.NodeServer;
 import org.drasyl.peer.connection.server.NodeServerChannelGroup;
+import org.drasyl.util.KeyValue;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
@@ -85,7 +85,7 @@ class NodeServerConnectionHandlerTest {
     private Channel nettyChannel;
     private NodeServerChannelGroup channelGroup;
     private RegisterGrandchildMessage registerGrandchildMessage;
-    private CompressedPublicKey grandchildPublicKey;
+    private Identity grandchildIdentity;
     private Set<URI> grandchildEndpoints;
     private UnregisterGrandchildMessage unregisterGrandchildMessage;
     private Identity superPeerIdentity;
@@ -93,6 +93,7 @@ class NodeServerConnectionHandlerTest {
     private Path superPeerPath;
     private StatusMessage statusMessage;
     private WelcomeMessage offerMessage;
+    private CompressedPublicKey grandchildPublicKey;
 
     @BeforeEach
     void setUp() {
@@ -112,6 +113,7 @@ class NodeServerConnectionHandlerTest {
         channelId = mock(ChannelId.class);
         channelGroup = mock(NodeServerChannelGroup.class);
         registerGrandchildMessage = mock(RegisterGrandchildMessage.class);
+        grandchildIdentity = mock(Identity.class);
         grandchildPublicKey = mock(CompressedPublicKey.class);
         grandchildEndpoints = Set.of(URI.create("ws://grandchild.com"));
         unregisterGrandchildMessage = mock(UnregisterGrandchildMessage.class);
@@ -146,7 +148,7 @@ class NodeServerConnectionHandlerTest {
     @Test
     void shouldRejectIncomingJoinMessageWithSamePublicKey() {
         when(server.getMessenger()).thenReturn(messenger);
-        when(joinMessage.getPublicKey()).thenReturn(publicKey);
+        when(joinMessage.getIdentity()).thenReturn(identity);
         when(identity.getPublicKey()).thenReturn(publicKey);
 
         NodeServerConnectionHandler handler = new NodeServerConnectionHandler(identity, peersManager, Set.of(), ofMillis(1000), messenger, handshakeFuture, timeoutFuture, null, channelGroup, offerMessage);
@@ -201,7 +203,7 @@ class NodeServerConnectionHandlerTest {
     void shouldAddGrandchildRouteAndInformSuperPeerOnRegisterGrandchildMessageAndRemoveGrandchildRouteAndInformSuperPeerOnClose() {
         when(handshakeFuture.isDone()).thenReturn(true);
         when(registerGrandchildMessage.getId()).thenReturn("123");
-        when(registerGrandchildMessage.getPublicKey()).thenReturn(grandchildPublicKey);
+        when(registerGrandchildMessage.getIdentity()).thenReturn(grandchildIdentity);
         when(registerGrandchildMessage.getEndpoints()).thenReturn(grandchildEndpoints);
         when(peersManager.getSuperPeer()).thenReturn(Pair.of(superPeerIdentity, superPeerInformation));
         when(superPeerInformation.getPaths()).thenReturn(Set.of(superPeerPath));
@@ -213,20 +215,20 @@ class NodeServerConnectionHandlerTest {
         channel.writeInbound(registerGrandchildMessage);
         channel.flush();
 
-        verify(peersManager).addPeerInformationAndAddGrandchildren(Identity.of(grandchildPublicKey), PeerInformation.of(grandchildEndpoints), identity);
-        verify(superPeerPath).send(new RegisterGrandchildMessage(grandchildPublicKey, grandchildEndpoints));
+        verify(peersManager).addPeerInformationAndAddGrandchildren(grandchildIdentity, PeerInformation.of(grandchildEndpoints), identity);
+        verify(superPeerPath).send(new RegisterGrandchildMessage(grandchildIdentity, grandchildEndpoints));
 
         channel.close();
 
-        verify(peersManager).removeGrandchildrenRouteAndRemovePeerInformation(Identity.of(grandchildPublicKey), PeerInformation.of(grandchildEndpoints));
-        verify(superPeerPath).send(new UnregisterGrandchildMessage(grandchildPublicKey, grandchildEndpoints));
+        verify(peersManager).removeGrandchildrenRouteAndRemovePeerInformation(grandchildIdentity, PeerInformation.of(grandchildEndpoints));
+        verify(superPeerPath).send(new UnregisterGrandchildMessage(grandchildIdentity, grandchildEndpoints));
     }
 
     @Test
     void shouldRemoveGrandchildRouteAndInformSuperPeerOnUnregisterGrandchildMessage() {
         when(handshakeFuture.isDone()).thenReturn(true);
         when(unregisterGrandchildMessage.getId()).thenReturn("123");
-        when(unregisterGrandchildMessage.getPublicKey()).thenReturn(grandchildPublicKey);
+        when(unregisterGrandchildMessage.getIdentity()).thenReturn(grandchildIdentity);
         when(unregisterGrandchildMessage.getEndpoints()).thenReturn(grandchildEndpoints);
         when(peersManager.getSuperPeer()).thenReturn(Pair.of(superPeerIdentity, superPeerInformation));
         when(superPeerInformation.getPaths()).thenReturn(Set.of(superPeerPath));
@@ -238,16 +240,17 @@ class NodeServerConnectionHandlerTest {
         channel.writeInbound(unregisterGrandchildMessage);
         channel.flush();
 
-        verify(peersManager).removeGrandchildrenRouteAndRemovePeerInformation(Identity.of(grandchildPublicKey), PeerInformation.of(grandchildEndpoints));
-        verify(superPeerPath).send(new UnregisterGrandchildMessage(grandchildPublicKey, grandchildEndpoints));
+        verify(peersManager).removeGrandchildrenRouteAndRemovePeerInformation(grandchildIdentity, PeerInformation.of(grandchildEndpoints));
+        verify(superPeerPath).send(new UnregisterGrandchildMessage(grandchildIdentity, grandchildEndpoints));
     }
 
     @Test
     void shouldAddGrandchildRouteAndInformSuperPeerOnSessionCreationAndRemoveGrandchildRouteAndInformSuperPeerOnClose() {
-        when(identity.getPublicKey()).thenReturn(publicKey);
         when(offerMessage.getId()).thenReturn("123");
-        when(requestMessage.getPublicKey()).thenReturn(publicKey);
-        when(requestMessage.getChildrenAndGrandchildren()).thenReturn(Map.of(grandchildPublicKey, grandchildEndpoints));
+        when(requestMessage.getIdentity()).thenReturn(identity);
+        when(identity.getPublicKey()).thenReturn(publicKey);
+        when(grandchildIdentity.getPublicKey()).thenReturn(grandchildPublicKey);
+        when(requestMessage.getChildrenAndGrandchildren()).thenReturn(Set.of(KeyValue.of(grandchildIdentity, grandchildEndpoints)));
         when(statusMessage.getCorrespondingId()).thenReturn("123");
         when(statusMessage.getCode()).thenReturn(STATUS_OK);
         when(peersManager.getSuperPeer()).thenReturn(Pair.of(superPeerIdentity, superPeerInformation));
@@ -261,21 +264,21 @@ class NodeServerConnectionHandlerTest {
         channel.flush();
 
         // my new children
-        verify(peersManager).addPeerInformationAndAddChildren(eq(Identity.of(publicKey)), any());
-        verify(superPeerPath).send(new RegisterGrandchildMessage(publicKey, Set.of()));
+        verify(peersManager).addPeerInformationAndAddChildren(eq(identity), any());
+        verify(superPeerPath).send(new RegisterGrandchildMessage(identity, Set.of()));
 
         // my new grandchildren
-        verify(peersManager).addPeerInformationAndAddGrandchildren(Identity.of(grandchildPublicKey), PeerInformation.of(grandchildEndpoints), identity);
-        verify(superPeerPath).send(new RegisterGrandchildMessage(grandchildPublicKey, grandchildEndpoints));
+        verify(peersManager).addPeerInformationAndAddGrandchildren(grandchildIdentity, PeerInformation.of(grandchildEndpoints), identity);
+        verify(superPeerPath).send(new RegisterGrandchildMessage(grandchildIdentity, grandchildEndpoints));
 
         channel.close();
 
         // children
-        verify(peersManager).removeGrandchildrenRouteAndRemovePeerInformation(Identity.of(grandchildPublicKey), PeerInformation.of(grandchildEndpoints));
-        verify(superPeerPath).send(new UnregisterGrandchildMessage(grandchildPublicKey, grandchildEndpoints));
+        verify(peersManager).removeGrandchildrenRouteAndRemovePeerInformation(grandchildIdentity, PeerInformation.of(grandchildEndpoints));
+        verify(superPeerPath).send(new UnregisterGrandchildMessage(grandchildIdentity, grandchildEndpoints));
 
         // grandchildren
-        verify(peersManager).removeGrandchildrenRouteAndRemovePeerInformation(Identity.of(grandchildPublicKey), PeerInformation.of(grandchildEndpoints));
-        verify(superPeerPath).send(new UnregisterGrandchildMessage(grandchildPublicKey, grandchildEndpoints));
+        verify(peersManager).removeGrandchildrenRouteAndRemovePeerInformation(grandchildIdentity, PeerInformation.of(grandchildEndpoints));
+        verify(superPeerPath).send(new UnregisterGrandchildMessage(grandchildIdentity, grandchildEndpoints));
     }
 }
