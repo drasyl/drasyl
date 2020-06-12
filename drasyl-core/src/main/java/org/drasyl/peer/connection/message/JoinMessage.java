@@ -19,9 +19,9 @@
 package org.drasyl.peer.connection.message;
 
 import org.drasyl.identity.Identity;
+import org.drasyl.peer.PeerInformation;
 import org.drasyl.util.KeyValue;
 
-import java.net.URI;
 import java.util.Objects;
 import java.util.Set;
 
@@ -32,35 +32,35 @@ import static java.util.Objects.requireNonNull;
  */
 public class JoinMessage extends AbstractMessageWithUserAgent implements RequestMessage {
     private final Identity identity;
-    private final Set<URI> endpoints;
-    private final Set<KeyValue<Identity, Set<URI>>> childrenAndGrandchildren;
+    private final PeerInformation peerInformation;
+    private final Set<KeyValue<Identity, PeerInformation>> childrenAndGrandchildren;
 
     protected JoinMessage() {
         identity = null;
-        endpoints = null;
+        peerInformation = null;
         childrenAndGrandchildren = null;
     }
 
     /**
      * Creates a new join message.
      *
-     * @param identity  the identity of the joining node
-     * @param endpoints the endpoints of the joining node
+     * @param identity        the identity of the joining node
+     * @param peerInformation the endpoints of the joining node
      */
     public JoinMessage(Identity identity,
-                       Set<URI> endpoints,
-                       Set<KeyValue<Identity, Set<URI>>> childrenAndGrandchildren) {
+                       PeerInformation peerInformation,
+                       Set<KeyValue<Identity, PeerInformation>> childrenAndGrandchildren) {
         this.identity = requireNonNull(identity);
-        this.endpoints = requireNonNull(endpoints);
+        this.peerInformation = requireNonNull(peerInformation);
         this.childrenAndGrandchildren = requireNonNull(childrenAndGrandchildren);
     }
 
-    public Set<KeyValue<Identity, Set<URI>>> getChildrenAndGrandchildren() {
+    public Set<KeyValue<Identity, PeerInformation>> getChildrenAndGrandchildren() {
         return this.childrenAndGrandchildren;
     }
 
-    public Set<URI> getEndpoints() {
-        return this.endpoints;
+    public PeerInformation getPeerInformation() {
+        return this.peerInformation;
     }
 
     public Identity getIdentity() {
@@ -69,7 +69,7 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), identity, endpoints);
+        return Objects.hash(super.hashCode(), identity, peerInformation);
     }
 
     @Override
@@ -85,14 +85,14 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
         }
         JoinMessage join = (JoinMessage) o;
         return Objects.equals(identity, join.identity) &&
-                Objects.equals(endpoints, join.endpoints) &&
+                Objects.equals(peerInformation, join.peerInformation) &&
                 Objects.equals(childrenAndGrandchildren, join.childrenAndGrandchildren);
     }
 
     @Override
     public String toString() {
         return "JoinMessage{" +
-                "endpoints=" + endpoints +
+                "peerInformation=" + peerInformation +
                 ", childrenAndGrandchildren=" + childrenAndGrandchildren +
                 ", id='" + id + '\'' +
                 ", identity=" + identity +

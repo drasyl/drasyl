@@ -38,6 +38,11 @@ public class PeerInformation {
     @JsonIgnore
     private final Set<Path> paths;
 
+    private PeerInformation() {
+        endpoints = Set.of();
+        paths = Set.of();
+    }
+
     PeerInformation(Set<URI> endpoints, Set<Path> paths) {
         this.endpoints = endpoints;
         this.paths = paths;

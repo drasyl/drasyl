@@ -36,6 +36,7 @@ import org.drasyl.identity.Address;
 import org.drasyl.identity.CompressedKeyPair;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.PrivateIdentity;
+import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
@@ -322,7 +323,7 @@ public class TestNodeServerConnection {
     public static TestNodeServerConnection clientSessionAfterJoin(NodeServer server) throws ExecutionException,
             InterruptedException, CryptoException {
         TestNodeServerConnection session = TestNodeServerConnection.clientSession(server, true);
-        ResponseMessage<?> responseMessage = session.sendRequest(new JoinMessage(session.getIdentity().toNonPrivate(), Set.of(), Set.of())).get();
+        ResponseMessage<?> responseMessage = session.sendRequest(new JoinMessage(session.getIdentity().toNonPrivate(), PeerInformation.of(), Set.of())).get();
         session.send(new StatusMessage(STATUS_OK, responseMessage.getId()));
         await().until(() -> server.getChannelGroup().find(session.getIdentity().toNonPrivate()) != null);
 

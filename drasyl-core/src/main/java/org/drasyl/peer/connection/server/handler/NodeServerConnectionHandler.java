@@ -110,13 +110,13 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
         if (message instanceof RegisterGrandchildMessage) {
             RegisterGrandchildMessage registerGrandchildMessage = (RegisterGrandchildMessage) message;
             Identity grandchildIdentity = registerGrandchildMessage.getIdentity();
-            PeerInformation grandchildInformation = PeerInformation.of(registerGrandchildMessage.getEndpoints());
+            PeerInformation grandchildInformation = registerGrandchildMessage.getPeerInformation();
             registerGrandchild(ctx, grandchildIdentity, grandchildInformation);
         }
         else if (message instanceof UnregisterGrandchildMessage) {
             UnregisterGrandchildMessage unregisterGrandchildMessage = (UnregisterGrandchildMessage) message;
             Identity grandchildIdentity = unregisterGrandchildMessage.getIdentity();
-            PeerInformation grandchildInformation = PeerInformation.of(unregisterGrandchildMessage.getEndpoints());
+            PeerInformation grandchildInformation = unregisterGrandchildMessage.getPeerInformation();
             unregisterGrandchild(ctx, grandchildIdentity, grandchildInformation);
         }
         else {
@@ -139,7 +139,7 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
     @Override
     protected WelcomeMessage offerSession(ChannelHandlerContext ctx,
                                           JoinMessage requestMessage) {
-        return new WelcomeMessage(identity, endpoints, requestMessage.getId());
+        return new WelcomeMessage(identity, PeerInformation.of(endpoints), requestMessage.getId());
     }
 
     @Override
@@ -148,7 +148,7 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
         Identity clientIdentity = requestMessage.getIdentity();
         Channel channel = ctx.channel();
         Path path = ctx::writeAndFlush; // We start at this point to save resources
-        PeerInformation clientInformation = PeerInformation.of(requestMessage.getEndpoints(), path);
+        PeerInformation clientInformation = PeerInformation.of(requestMessage.getPeerInformation().getEndpoints(), path);
 
         channelGroup.add(clientIdentity, channel);
 
@@ -159,12 +159,12 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
         peersManager.addPeerInformationAndAddChildren(clientIdentity, clientInformation);
 
         // inform super peer about my new children
-        registerGrandchildAtSuperPeer(ctx, clientIdentity, clientInformation);
+        registerGrandchildAtSuperPeer(ctx, clientIdentity, requestMessage.getPeerInformation());
 
         // store peer's children (my grandchildren) information
-        for (KeyValue<Identity, Set<URI>> grandchild : requestMessage.getChildrenAndGrandchildren()) {
+        for (KeyValue<Identity, PeerInformation> grandchild : requestMessage.getChildrenAndGrandchildren()) {
             Identity grandchildIdentity = grandchild.key();
-            PeerInformation grandchildInformation = PeerInformation.of(grandchild.value());
+            PeerInformation grandchildInformation = grandchild.value();
             registerGrandchild(ctx, grandchildIdentity, grandchildInformation);
         }
     }
@@ -182,7 +182,7 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
                 if (getLogger().isDebugEnabled()) {
                     getLogger().debug("[{}]: Register Grandchild {} at Super Peer", channel.id().asShortText(), grandchildIdentity);
                 }
-                superPeerPath.send(new RegisterGrandchildMessage(grandchildIdentity, grandchildInformation.getEndpoints()));
+                superPeerPath.send(new RegisterGrandchildMessage(grandchildIdentity, grandchildInformation));
             }
         }
     }
@@ -199,7 +199,7 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
                 if (getLogger().isDebugEnabled()) {
                     getLogger().debug("[{}]: Unregister Grandchild {} at Super Peer", channel.id().asShortText(), grandchildIdentity);
                 }
-                superPeerPath.send(new UnregisterGrandchildMessage(grandchildIdentity, grandchildInformation.getEndpoints()));
+                superPeerPath.send(new UnregisterGrandchildMessage(grandchildIdentity, grandchildInformation));
             }
         }
     }
