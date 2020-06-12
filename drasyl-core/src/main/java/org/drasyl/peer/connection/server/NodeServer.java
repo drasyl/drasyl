@@ -27,10 +27,10 @@ import io.netty.channel.group.ChannelGroupFutureListener;
 import io.reactivex.rxjava3.core.Observable;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeConfig;
-import org.drasyl.NoPathToIdentityException;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
+import org.drasyl.messenger.NoPathToIdentityException;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.QuitMessage;
 

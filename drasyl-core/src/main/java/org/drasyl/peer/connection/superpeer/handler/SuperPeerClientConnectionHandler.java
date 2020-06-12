@@ -21,18 +21,20 @@ package org.drasyl.peer.connection.superpeer.handler;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.NoPathToIdentityException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
+import org.drasyl.messenger.NoPathToIdentityException;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.handler.AbstractThreeWayHandshakeClientHandler;
+import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
+import org.drasyl.peer.connection.message.WhoisMessage;
 import org.drasyl.util.KeyValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -140,6 +142,16 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
 
         messenger.setSuperPeerSink((recipient, message) -> {
             if (channel.isWritable()) {
+                if (message instanceof ApplicationMessage) {
+                    // if recipient's public key is not available, ask super peer for it
+                    Identity cachedRecipient = peersManager.getIdentity(recipient);
+                    if (!cachedRecipient.hasPublicKey()) {
+                        LOG.debug("Public Key of recipient '{}' is not present. Request it from Super Peer.", cachedRecipient);
+                        ctx.writeAndFlush(new WhoisMessage(ownIdentity.getAddress(), recipient.getAddress()));
+//                    throw new PublicKeyNotPresentException(recipient);
+                    }
+                }
+
                 ctx.writeAndFlush(message);
             }
             else {

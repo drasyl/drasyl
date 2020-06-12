@@ -290,6 +290,23 @@ public class PeersManager {
         }
     }
 
+    public Identity getIdentity(Identity identity) {
+        try {
+            lock.readLock().lock();
+
+            Optional<Identity> search = peers.keySet().stream().filter(i -> i.equals(identity)).findFirst();
+            if (search.isPresent()) {
+                return search.get();
+            }
+            else {
+                return identity;
+            }
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
     /**
      * Returns identity and information about Super Peer. If no Super Peer is defined, then
      * <code>null</code> is returned.

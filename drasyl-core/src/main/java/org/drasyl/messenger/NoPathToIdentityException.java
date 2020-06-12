@@ -16,19 +16,17 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl;
+package org.drasyl.messenger;
 
-import org.drasyl.messenger.MessengerException;
+import org.drasyl.identity.Identity;
 
 /**
- * A MessageSinkException is thrown by the {@link MessageSink} when errors occur.
+ * Is thrown by {@link MessageSink} if it can be excluded that no path to the specified identity
+ * exists.
  */
-public class MessageSinkException extends MessengerException {
-    public MessageSinkException(Throwable cause) {
-        super(cause);
-    }
-
-    public MessageSinkException(String cause) {
-        super(cause);
+@SuppressWarnings({ "java:S110" })
+public class NoPathToIdentityException extends MessageSinkException {
+    public NoPathToIdentityException(Identity identity) {
+        super("No Path to " + identity);
     }
 }

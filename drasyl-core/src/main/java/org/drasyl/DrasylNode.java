@@ -33,7 +33,10 @@ import org.drasyl.event.Node;
 import org.drasyl.identity.Address;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
+import org.drasyl.messenger.MessageSink;
 import org.drasyl.messenger.Messenger;
+import org.drasyl.messenger.MessengerException;
+import org.drasyl.messenger.NoPathToIdentityException;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.intravm.IntraVmDiscovery;
 import org.drasyl.peer.connection.message.ApplicationMessage;
@@ -193,7 +196,7 @@ public abstract class DrasylNode {
         this.loopbackMessageSink = loopbackMessageSink;
     }
 
-    public synchronized void send(String recipient, byte[] payload) throws DrasylException {
+    public synchronized void send(String recipient, byte[] payload) throws MessengerException {
         send(Address.of(recipient), payload);
     }
 
@@ -207,7 +210,7 @@ public abstract class DrasylNode {
      * @param payload   the payload of a message
      * @throws DrasylException if an error occurs during the processing
      */
-    public synchronized void send(Address recipient, byte[] payload) throws DrasylException {
+    public synchronized void send(Address recipient, byte[] payload) throws MessengerException {
         messenger.send(new ApplicationMessage(identityManager.getAddress(), recipient, payload));
     }
 
@@ -221,7 +224,7 @@ public abstract class DrasylNode {
      * @param payload   the payload of a message
      * @throws DrasylException if an error occurs during the processing
      */
-    public synchronized void send(String recipient, String payload) throws DrasylException {
+    public synchronized void send(String recipient, String payload) throws MessengerException {
         send(Address.of(recipient), payload);
     }
 
@@ -235,7 +238,7 @@ public abstract class DrasylNode {
      * @param payload   the payload of a message
      * @throws DrasylException if an error occurs during the processing
      */
-    public synchronized void send(Address recipient, String payload) throws DrasylException {
+    public synchronized void send(Address recipient, String payload) throws MessengerException {
         send(recipient, payload.getBytes());
     }
 

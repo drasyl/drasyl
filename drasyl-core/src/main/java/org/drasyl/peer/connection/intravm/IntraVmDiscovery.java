@@ -18,12 +18,12 @@
  */
 package org.drasyl.peer.connection.intravm;
 
-import org.drasyl.MessageSink;
-import org.drasyl.NoPathToIdentityException;
 import org.drasyl.event.Event;
 import org.drasyl.event.EventType;
 import org.drasyl.identity.Identity;
+import org.drasyl.messenger.MessageSink;
 import org.drasyl.messenger.Messenger;
+import org.drasyl.messenger.NoPathToIdentityException;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;

@@ -24,6 +24,7 @@ import org.drasyl.event.Node;
 import org.drasyl.identity.Address;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.PrivateIdentity;
+import org.drasyl.messenger.MessageSink;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.intravm.IntraVmDiscovery;

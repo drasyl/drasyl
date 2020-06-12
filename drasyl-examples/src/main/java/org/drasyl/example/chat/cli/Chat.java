@@ -25,6 +25,7 @@ import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Address;
+import org.drasyl.messenger.MessengerException;
 import org.drasyl.util.Pair;
 
 import java.io.File;
@@ -103,8 +104,13 @@ public class Chat {
                 System.out.print("Message? ");
                 String message = scanner.nextLine();
 
-                node.send(recipient, message);
-                System.out.println("To " + recipient + ": " + message);
+                try {
+                    node.send(recipient, message);
+                    System.out.println("To " + recipient + ": " + message);
+                }
+                catch (MessengerException e) {
+                    System.err.println("Unable to sent message: " + e.getMessage());
+                }
             }
             catch (IllegalArgumentException e) {
                 System.err.println(e.getMessage());

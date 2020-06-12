@@ -19,8 +19,6 @@
 package org.drasyl.messenger;
 
 import com.google.common.collect.Lists;
-import org.drasyl.MessageSink;
-import org.drasyl.NoPathToIdentityException;
 import org.drasyl.identity.Address;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.RelayableMessage;

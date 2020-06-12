@@ -16,17 +16,16 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl;
+package org.drasyl.messenger;
 
 import org.drasyl.identity.Identity;
 
 /**
- * Is thrown by {@link MessageSink} if it can be excluded that no path to the specified identity
- * exists.
+ * This exception is thrown by {@link Messenger} if the public key of the recipient is not
+ * available. However, this key is required for end-to-end encryption of the message.
  */
-@SuppressWarnings({ "java:S110" })
-public class NoPathToIdentityException extends MessageSinkException {
-    public NoPathToIdentityException(Identity identity) {
-        super("No Path to " + identity);
+public class PublicKeyNotPresentException extends MessageSinkException {
+    public PublicKeyNotPresentException(Identity identity) {
+        super("Public Key not present for " + identity);
     }
 }
