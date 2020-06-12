@@ -26,9 +26,18 @@ import org.drasyl.crypto.CryptoException;
 public class Identity extends AbstractIdentity {
     protected final CompressedPublicKey publicKey;
 
+    private Identity() {
+        super(null);
+        publicKey = null;
+    }
+
     protected Identity(Address address, CompressedPublicKey publicKey) {
         super(address);
         this.publicKey = publicKey;
+
+        if (this.publicKey != null && !Address.verify(address, publicKey)) {
+            throw new IllegalArgumentException("Address '" + address +"' does not correspond to Public Key '" + publicKey + "'");
+        }
     }
 
     public CompressedPublicKey getPublicKey() {
@@ -63,14 +72,6 @@ public class Identity extends AbstractIdentity {
 
     public static Identity of(Address address, String publicKey) throws CryptoException {
         return new Identity(address, CompressedPublicKey.of(publicKey));
-    }
-
-    public static Identity of(String publicKey) throws CryptoException {
-        return of(CompressedPublicKey.of(publicKey));
-    }
-
-    public static Identity of(CompressedPublicKey publicKey) {
-        return of(Address.of(publicKey), publicKey);
     }
 
     public static Identity of(Address address, CompressedPublicKey publicKey) {

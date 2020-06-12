@@ -18,12 +18,15 @@
  */
 package org.drasyl.identity;
 
+import org.drasyl.crypto.CryptoException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -33,14 +36,14 @@ class AddressTest {
 
     @BeforeEach
     void setUp() {
-        address = Address.of("41eaac1ee8");
+        address = Address.of("458e427578");
         compressedPublicKey = mock(CompressedPublicKey.class);
-        when(compressedPublicKey.toString()).thenReturn("ead3151c64AAAABBBBCCCCDDDDEEEEFFFF");
+        when(compressedPublicKey.toString()).thenReturn("4ae5cdcd8c21719f8e779f21ead3151c64aaaabbbbccccddddeeeeffff");
     }
 
     @Test
     void testToString() {
-        assertEquals("41eaac1ee8", address.toString());
+        assertEquals("458e427578", address.toString());
     }
 
     @Test
@@ -48,19 +51,19 @@ class AddressTest {
         assertThrows(IllegalArgumentException.class, () -> Address.of("1234567890a"));
         assertThrows(IllegalArgumentException.class, () -> Address.of("123456789"));
         assertThrows(NullPointerException.class, () -> Address.of((String) null));
-        assertThrows(NullPointerException.class, () -> Address.of((CompressedPublicKey) null));
-        assertThrows(NullPointerException.class, () -> Address.verify(null, address));
-        assertThrows(NullPointerException.class, () -> Address.verify(compressedPublicKey, null));
+        assertThrows(NullPointerException.class, () -> Address.derive((CompressedPublicKey) null));
+        assertThrows(NullPointerException.class, () -> Address.verify(address, null));
+        assertThrows(NullPointerException.class, () -> Address.verify(null, compressedPublicKey));
     }
 
     @Test
     void aValidIdentityShouldBeCreatedFromACompressedPublicKey() {
-        assertEquals(address, Address.of(compressedPublicKey));
+        assertEquals(address, Address.derive(compressedPublicKey));
     }
 
     @Test
     void sameIdShouldBeEquals() {
-        Address id2 = Address.of("41eaac1ee8");
+        Address id2 = Address.of("458e427578");
 
         assertEquals(address, id2);
         assertEquals(address, address);
@@ -68,5 +71,15 @@ class AddressTest {
         assertEquals(address.getId(), id2.getId());
         assertNotEquals(Address.of("0987654321"), address);
         assertNotEquals(null, address);
+    }
+
+    @Test
+    void verifyShouldReturnTrueIfAddressCorrespondsToTheKey() throws CryptoException {
+        assertTrue(Address.verify(Address.of("396dc9e224"), CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458")));
+    }
+
+    @Test
+    void verifyShouldReturnFalseIfAddressDoesNotCorrespondsToTheKey() throws CryptoException {
+        assertFalse(Address.verify(Address.of("d40bee9aab"), CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458")));
     }
 }

@@ -74,7 +74,16 @@ public class Address {
         return id;
     }
 
-    public static Address of(CompressedPublicKey compressedPublicKey) {
+    /**
+     * Derives an address from given <code>compressedPublicKey</code>.
+     * <p>
+     * Note: This method will be an really expensive in a future release and should only be used
+     * when generating a new identity (see https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/61).
+     *
+     * @param compressedPublicKey
+     * @return
+     */
+    public static Address derive(CompressedPublicKey compressedPublicKey) {
         requireNonNull(compressedPublicKey);
         String cpk = compressedPublicKey.toString();
         String hash = DigestUtils.sha256Hex(cpk);
@@ -87,13 +96,14 @@ public class Address {
     }
 
     /**
-     * Checks whether the identity corresponds to the compressed public key.
+     * Checks whether the address corresponds to the compressed public key.
      *
-     * @param compressedPublicKey the {@link CompressedPublicKey} to be checked
      * @param address             the {@link Address} to be checked
+     * @param compressedPublicKey the {@link CompressedPublicKey} to be checked
      * @return true, iff the compressedPublicKey corresponds to the given identity
      */
-    public static boolean verify(CompressedPublicKey compressedPublicKey, Address address) {
+    public static boolean verify(Address address,
+                                 CompressedPublicKey compressedPublicKey) {
         requireNonNull(compressedPublicKey);
         requireNonNull(address);
         String hash = DigestUtils.sha256Hex(compressedPublicKey.toString());

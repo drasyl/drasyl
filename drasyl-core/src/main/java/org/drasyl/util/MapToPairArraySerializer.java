@@ -25,7 +25,7 @@ import com.fasterxml.jackson.databind.SerializerProvider;
 import java.io.IOException;
 import java.util.Map;
 
-public class MapAsArrayOfPairsJsonSerializer extends JsonSerializer<Map<?, ?>> {
+public class MapToPairArraySerializer extends JsonSerializer<Map<?, ?>> {
     @Override
     public void serialize(Map<?, ?> peers,
                           JsonGenerator gen,

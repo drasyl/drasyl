@@ -68,10 +68,10 @@ public class IdentityManager {
      * @throws IdentityManagerException
      */
     public void loadOrCreateIdentity() throws IdentityManagerException {
-        if (config.getIdentityPublicKey() != null && config.getIdentityPrivateKey() != null) {
+        if (config.getIdentityAddress() != null && config.getIdentityPublicKey() != null && config.getIdentityPrivateKey() != null) {
             LOG.debug("Load identity specified in config");
             try {
-                this.identity = new PrivateIdentity(Address.of(config.getIdentityPublicKey()), config.getIdentityPublicKey(), config.getIdentityPrivateKey());
+                this.identity = PrivateIdentity.of(config.getIdentityAddress(), config.getIdentityPublicKey(), config.getIdentityPrivateKey());
             }
             catch (IllegalArgumentException e) {
                 throw new IdentityManagerException("Identity read from configuration seems invalid: " + e.getMessage());
@@ -114,8 +114,7 @@ public class IdentityManager {
      */
     private static PrivateIdentity readIdentityFile(Path path) throws IdentityManagerException {
         try {
-            CompressedKeyPair keyPair = OBJECT_MAPPER.readValue(path.toFile(), CompressedKeyPair.class);
-            return new PrivateIdentity(Address.of(keyPair.getPublicKey()), keyPair.getPublicKey(), keyPair.getPrivateKey());
+            return OBJECT_MAPPER.readValue(path.toFile(), PrivateIdentity.class);
         }
         catch (JsonProcessingException e) {
             throw new IdentityManagerException("Unable to load identity from file '" + path + "': " + e.getMessage());
@@ -136,7 +135,7 @@ public class IdentityManager {
             KeyPair newKeyPair = Crypto.generateKeys();
             CompressedPublicKey publicKey = CompressedPublicKey.of(newKeyPair.getPublic());
             CompressedPrivateKey privateKey = CompressedPrivateKey.of(newKeyPair.getPrivate());
-            return new PrivateIdentity(Address.of(publicKey), publicKey, privateKey);
+            return PrivateIdentity.of(Address.derive(publicKey), publicKey, privateKey);
         }
         catch (CryptoException e) {
             throw new IdentityManagerException("Unable to generate new identity: " + e.getMessage());
@@ -163,7 +162,7 @@ public class IdentityManager {
         }
         else {
             try {
-                IdentityManager.OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValue(file, identity.getKeyPair());
+                IdentityManager.OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValue(file, identity);
             }
             catch (IOException e) {
                 throw new IdentityManagerException("Unable to write identity to file '" + path + "': " + e.getMessage());
@@ -173,6 +172,14 @@ public class IdentityManager {
 
     public Address getAddress() {
         return identity.getAddress();
+    }
+
+    public CompressedPublicKey getPublicKey() {
+        return identity.getPublicKey();
+    }
+
+    public CompressedPrivateKey getPrivateKey() {
+        return identity.getPrivateKey();
     }
 
     /**

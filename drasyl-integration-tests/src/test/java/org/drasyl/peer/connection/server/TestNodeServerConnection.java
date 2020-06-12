@@ -35,7 +35,6 @@ import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.Address;
 import org.drasyl.identity.CompressedKeyPair;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.PrivateIdentity;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.Message;
@@ -49,7 +48,6 @@ import org.slf4j.LoggerFactory;
 import java.net.URI;
 import java.text.MessageFormat;
 import java.time.Duration;
-import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -147,12 +145,10 @@ public class TestNodeServerConnection {
     }
 
     /**
-     * Creates a new session to the given server with a random identity
+     * Returns the identity of the peer.
      */
-    public static TestNodeServerConnection clientSession(NodeServer server) throws ExecutionException, InterruptedException, CryptoException {
-        URI serverEndpoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
-        CompressedKeyPair compressedKeyPair = CompressedKeyPair.of(Crypto.generateKeys());
-        return TestNodeServerConnection.clientSession(serverEndpoint, new PrivateIdentity(Address.of(compressedKeyPair.getPublicKey()), compressedKeyPair.getPublicKey(), compressedKeyPair.getPrivateKey()), true, server.workerGroup);
+    public PrivateIdentity getIdentity() {
+        return identity;
     }
 
     public void send(Message message) {
@@ -230,6 +226,15 @@ public class TestNodeServerConnection {
     }
 
     /**
+     * Creates a new session to the given server with a random identity
+     */
+    public static TestNodeServerConnection clientSession(NodeServer server) throws ExecutionException, InterruptedException, CryptoException {
+        URI serverEndpoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
+        CompressedKeyPair keyPair = CompressedKeyPair.of(Crypto.generateKeys());
+        return TestNodeServerConnection.clientSession(serverEndpoint, PrivateIdentity.of(Address.derive(keyPair.getPublicKey()), keyPair), true, server.workerGroup);
+    }
+
+    /**
      * Creates a new session.
      */
     public static TestNodeServerConnection clientSession(URI targetSystem,
@@ -255,9 +260,9 @@ public class TestNodeServerConnection {
 
                     @Override
                     protected void channelRead0(ChannelHandlerContext ctx,
-                                                Message msg) throws Exception {
+                                                Message msg) {
                         if (msg instanceof WelcomeMessage) {
-                            ctx.channel().attr(ATTRIBUTE_IDENTITY).set(Identity.of(((WelcomeMessage) msg).getPublicKey()));
+                            ctx.channel().attr(ATTRIBUTE_IDENTITY).set(((WelcomeMessage) msg).getIdentity());
                         }
                         session.receiveMessage(msg);
                     }
@@ -270,15 +275,6 @@ public class TestNodeServerConnection {
         factory.build();
         factory.getChannelReadyFuture().get();
         return future.get();
-    }
-
-    /**
-     * Creates a new session to the given server.
-     */
-    public static TestNodeServerConnection clientSession(NodeServer server,
-                                                         PrivateIdentity identity) throws ExecutionException, InterruptedException {
-        URI serverEndpoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
-        return TestNodeServerConnection.clientSession(serverEndpoint, identity, true, server.workerGroup);
     }
 
     /**
@@ -312,14 +308,23 @@ public class TestNodeServerConnection {
     }
 
     /**
+     * Creates a new session to the given server.
+     */
+    public static TestNodeServerConnection clientSession(NodeServer server,
+                                                         PrivateIdentity identity) throws ExecutionException, InterruptedException {
+        URI serverEndpoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
+        return TestNodeServerConnection.clientSession(serverEndpoint, identity, true, server.workerGroup);
+    }
+
+    /**
      * Creates a new session with the given sessionUID and joins the given server.
      */
     public static TestNodeServerConnection clientSessionAfterJoin(NodeServer server) throws ExecutionException,
             InterruptedException, CryptoException {
         TestNodeServerConnection session = TestNodeServerConnection.clientSession(server, true);
-        ResponseMessage<?> responseMessage = session.sendRequest(new JoinMessage(session.getPublicKey(), Set.of(), Map.of())).get();
+        ResponseMessage<?> responseMessage = session.sendRequest(new JoinMessage(session.getIdentity().toNonPrivate(), Set.of(), Set.of())).get();
         session.send(new StatusMessage(STATUS_OK, responseMessage.getId()));
-        await().until(() -> server.getChannelGroup().find(Identity.of(session.getIdentity().getPublicKey())) != null);
+        await().until(() -> server.getChannelGroup().find(session.getIdentity().toNonPrivate()) != null);
 
         return session;
     }
@@ -331,16 +336,9 @@ public class TestNodeServerConnection {
                                                          boolean pingPong) throws ExecutionException,
             InterruptedException, CryptoException {
         URI serverEndpoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
-        CompressedKeyPair compressedKeyPair = CompressedKeyPair.of(Crypto.generateKeys());
+        CompressedKeyPair keyPair = CompressedKeyPair.of(Crypto.generateKeys());
         return TestNodeServerConnection.clientSession(serverEndpoint,
-                new PrivateIdentity(Address.of(compressedKeyPair.getPublicKey()), compressedKeyPair.getPublicKey(), compressedKeyPair.getPrivateKey()), pingPong, server.workerGroup);
-    }
-
-    /**
-     * Returns the identity of the peer.
-     */
-    public PrivateIdentity getIdentity() {
-        return identity;
+                PrivateIdentity.of(Address.derive(keyPair.getPublicKey()), keyPair), pingPong, server.workerGroup);
     }
 
     /**

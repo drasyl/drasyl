@@ -19,6 +19,7 @@
 package org.drasyl.identity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.drasyl.crypto.CryptoException;
 
 import java.util.Objects;
@@ -30,17 +31,20 @@ import java.util.Objects;
 public class PrivateIdentity extends AbstractIdentity {
     private final CompressedKeyPair keyPair;
 
-    public PrivateIdentity(Address address,
-                           String publicKey,
-                           String privateKey) throws CryptoException {
-        this(address, CompressedPublicKey.of(publicKey), CompressedPrivateKey.of(privateKey));
+    private PrivateIdentity(@JsonProperty("address") String address,
+                           @JsonProperty("publicKey") String publicKey,
+                           @JsonProperty("privateKey") String privateKey) throws CryptoException {
+        this(Address.of(address), CompressedKeyPair.of(publicKey, privateKey));
     }
 
-    public PrivateIdentity(Address address,
-                           CompressedPublicKey publicKey,
-                           CompressedPrivateKey privateKey) {
+    private PrivateIdentity(Address address,
+                           CompressedKeyPair keyPair) {
         super(address);
-        this.keyPair = CompressedKeyPair.of(publicKey, privateKey);
+        this.keyPair = keyPair;
+
+        if (this.keyPair != null && !Address.verify(address, keyPair.getPublicKey())) {
+            throw new IllegalArgumentException("Address '" + address +"' does not correspond to Public Key '" + keyPair.getPublicKey() + "'");
+        }
     }
 
     @Override
@@ -86,5 +90,25 @@ public class PrivateIdentity extends AbstractIdentity {
 
     public Identity toNonPrivate() {
         return Identity.of(address, keyPair.getPublicKey());
+    }
+
+    public static PrivateIdentity of(Address address,
+                                     CompressedPublicKey publicKey,
+                                     CompressedPrivateKey privateKey) {
+        return of(address, CompressedKeyPair.of(publicKey, privateKey));
+    }
+
+    public static PrivateIdentity of(String address,
+                                     CompressedPublicKey publicKey,
+                                     CompressedPrivateKey privateKey) {
+        return of(Address.of(address), publicKey, privateKey);
+    }
+
+    public static PrivateIdentity of(Address address, CompressedKeyPair keyPair) {
+        return new PrivateIdentity(address, keyPair);
+    }
+
+    public static PrivateIdentity of(String address, String publicKey, String privateKey) throws CryptoException {
+        return of(Address.of(address), CompressedKeyPair.of(publicKey, privateKey));
     }
 }

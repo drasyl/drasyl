@@ -23,15 +23,17 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import net.javacrumbs.jsonunit.core.Option;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.identity.Address;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
+import org.drasyl.identity.PrivateIdentity;
+import org.drasyl.util.KeyValue;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
 import java.net.URI;
-import java.security.KeyPair;
-import java.util.Map;
 import java.util.Set;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
@@ -41,17 +43,20 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class JoinMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
-    private CompressedPublicKey publicKey;
+    private Identity identity;
     private Set<URI> endpoints;
-    private Map<CompressedPublicKey, Set<URI>> childrenAndGrandchildren;
+    private Set<KeyValue<Identity, Set<URI>>> childrenAndGrandchildren;
+    private Identity grandchildIdentity;
+    private Identity identity2;
 
     @BeforeEach
     void setUp() throws CryptoException {
         AbstractMessageWithUserAgent.userAgentGenerator = () -> "";
-        KeyPair keyPair = Crypto.generateKeys();
-        publicKey = CompressedPublicKey.of(keyPair.getPublic());
+        identity = Identity.of("d40bee9aab", "034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d");
+        identity2 = Identity.of("c5461a6001", "030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3");
         endpoints = Set.of(URI.create("ws://test"));
-        childrenAndGrandchildren = Map.of();
+        grandchildIdentity = Identity.of("396dc9e224", "0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458");
+        childrenAndGrandchildren = Set.of(KeyValue.of(grandchildIdentity, Set.of()));
     }
 
     @AfterEach
@@ -61,11 +66,11 @@ class JoinMessageTest {
 
     @Test
     void toJson() throws JsonProcessingException {
-        JoinMessage message = new JoinMessage(publicKey, endpoints, childrenAndGrandchildren);
+        JoinMessage message = new JoinMessage(identity, endpoints, childrenAndGrandchildren);
 
         assertThatJson(JSON_MAPPER.writeValueAsString(message))
                 .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo("{\"@type\":\"JoinMessage\",\"id\":\"" + message.getId() + "\",\"userAgent\":\"\",\"publicKey\":\"" + publicKey.getCompressedKey() + "\",\"endpoints\":[\"ws://test\"],\"childrenAndGrandchildren\":{}}");
+                .isEqualTo("{\"@type\":\"JoinMessage\",\"id\":\"" + message.getId() + "\",\"userAgent\":\"\",\"identity\":{\"address\":\"d40bee9aab\",\"publicKey\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\"},\"endpoints\":[\"ws://test\"],\"childrenAndGrandchildren\":[[{\"address\":\"396dc9e224\",\"publicKey\":\"0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458\"},[]]]}");
 
         // Ignore toString()
         message.toString();
@@ -73,35 +78,35 @@ class JoinMessageTest {
 
     @Test
     void fromJson() throws IOException {
-        String json = "{\"@type\":\"JoinMessage\",\"id\":\"4AE5CDCD8C21719F8E779F21\",\"userAgent\":\"\",\"publicKey\":\"" + publicKey.getCompressedKey() + "\",\"endpoints\":[\"ws://test\"], \"childrenAndGrandchildren\":{}}";
+        String json = "{\"@type\":\"JoinMessage\",\"id\":\"4ae5cdcd8c21719f8e779f21\",\"userAgent\":\"\",\"identity\":{\"address\":\"d40bee9aab\",\"publicKey\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\"},\"endpoints\":[\"ws://test\"], \"childrenAndGrandchildren\":[[{\"address\":\"396dc9e224\",\"publicKey\":\"0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458\"},[]]]}";
 
-        assertEquals(JSON_MAPPER.readValue(json, Message.class), new JoinMessage(publicKey, Set.of(URI.create("ws://test")), Map.of()));
+        assertEquals(JSON_MAPPER.readValue(json, Message.class), new JoinMessage(identity, Set.of(URI.create("ws://test")), Set.of(KeyValue.of(grandchildIdentity, Set.of()))));
     }
 
     @Test
     void nullTest() {
         assertThrows(NullPointerException.class, () -> new JoinMessage(null, endpoints, childrenAndGrandchildren), "Join requires a public key");
 
-        assertThrows(NullPointerException.class, () -> new JoinMessage(publicKey, null, childrenAndGrandchildren), "Join requires endpoints");
+        assertThrows(NullPointerException.class, () -> new JoinMessage(identity, null, childrenAndGrandchildren), "Join requires endpoints");
 
         assertThrows(NullPointerException.class, () -> new JoinMessage(null, null, childrenAndGrandchildren), "Join requires a public key and endpoints");
     }
 
     @Test
-    void testEquals() throws CryptoException {
-        JoinMessage message1 = new JoinMessage(publicKey, endpoints, childrenAndGrandchildren);
-        JoinMessage message2 = new JoinMessage(publicKey, endpoints, childrenAndGrandchildren);
-        JoinMessage message3 = new JoinMessage(CompressedPublicKey.of(Crypto.generateKeys().getPublic()), Set.of(), Map.of());
+    void testEquals() {
+        JoinMessage message1 = new JoinMessage(identity, endpoints, childrenAndGrandchildren);
+        JoinMessage message2 = new JoinMessage(identity, endpoints, childrenAndGrandchildren);
+        JoinMessage message3 = new JoinMessage(identity2, Set.of(), Set.of());
 
         assertEquals(message1, message2);
         assertNotEquals(message2, message3);
     }
 
     @Test
-    void testHashCode() throws CryptoException {
-        JoinMessage message1 = new JoinMessage(publicKey, endpoints, childrenAndGrandchildren);
-        JoinMessage message2 = new JoinMessage(publicKey, endpoints, childrenAndGrandchildren);
-        JoinMessage message3 = new JoinMessage(CompressedPublicKey.of(Crypto.generateKeys().getPublic()), Set.of(), Map.of());
+    void testHashCode() {
+        JoinMessage message1 = new JoinMessage(identity, endpoints, childrenAndGrandchildren);
+        JoinMessage message2 = new JoinMessage(identity, endpoints, childrenAndGrandchildren);
+        JoinMessage message3 = new JoinMessage(identity2, Set.of(), Set.of());
 
         assertEquals(message1.hashCode(), message2.hashCode());
         assertNotEquals(message2.hashCode(), message3.hashCode());
