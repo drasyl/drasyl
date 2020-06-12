@@ -29,6 +29,7 @@ import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.QuitMessage;
+import org.drasyl.peer.connection.message.RelayableMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.slf4j.Logger;
 
@@ -120,13 +121,13 @@ public abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDupl
     }
 
     protected void processMessageAfterHandshake(ChannelHandlerContext ctx, Message message) {
-        if (message instanceof ApplicationMessage) {
-            ApplicationMessage applicationMessage = (ApplicationMessage) message;
+        if (message instanceof RelayableMessage) {
+            RelayableMessage relayableMessage = (RelayableMessage) message;
             try {
-                messenger.send(applicationMessage);
+                messenger.send(relayableMessage);
             }
             catch (MessengerException e) {
-                getLogger().trace("Unable to send Message {}: {}", applicationMessage, e.getMessage());
+                getLogger().trace("Unable to send Message {}: {}", relayableMessage, e.getMessage());
             }
         }
         else {

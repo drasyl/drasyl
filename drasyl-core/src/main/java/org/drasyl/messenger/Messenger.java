@@ -23,7 +23,7 @@ import org.drasyl.MessageSink;
 import org.drasyl.NoPathToIdentityException;
 import org.drasyl.identity.Address;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.peer.connection.message.RelayableMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -69,7 +69,7 @@ public class Messenger {
      * @throws MessengerException if sending is not possible (e.g. because no path to the peer
      *                            exists)
      */
-    public void send(ApplicationMessage message) throws MessengerException {
+    public void send(RelayableMessage message) throws MessengerException {
         LOG.trace("Send Message: {}", message);
 
         Address recipientAddress = message.getRecipient();
