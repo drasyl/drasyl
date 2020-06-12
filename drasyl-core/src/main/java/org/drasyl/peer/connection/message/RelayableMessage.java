@@ -18,22 +18,35 @@
  */
 package org.drasyl.peer.connection.message;
 
+import org.drasyl.identity.Address;
+
 import java.util.Objects;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Includes messages that can be relayed to their recipient via multiple hops.
  */
 public abstract class RelayableMessage extends AbstractMessage {
+    protected final Address recipient;
     protected short hopCount = 0;
 
-    public RelayableMessage(String id, short hopCount) {
+    protected RelayableMessage(String id, short hopCount, Address recipient) {
         super(id);
         this.hopCount = hopCount;
+        this.recipient = requireNonNull(recipient);
     }
 
-    public RelayableMessage(short hopCount) {
+    protected RelayableMessage(short hopCount, Address recipient) {
         super();
         this.hopCount = hopCount;
+        this.recipient = requireNonNull(recipient);
+    }
+
+    protected RelayableMessage() {
+        super();
+        hopCount = (short) 0;
+        recipient = null;
     }
 
     public short getHopCount() {
@@ -49,9 +62,13 @@ public abstract class RelayableMessage extends AbstractMessage {
         hopCount++;
     }
 
+    public Address getRecipient() {
+        return recipient;
+    }
+
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), hopCount);
+        return Objects.hash(super.hashCode(), recipient, hopCount);
     }
 
     @Override
@@ -66,6 +83,7 @@ public abstract class RelayableMessage extends AbstractMessage {
             return false;
         }
         RelayableMessage that = (RelayableMessage) o;
-        return hopCount == that.hopCount;
+        return hopCount == that.hopCount &&
+                Objects.equals(recipient, that.recipient);
     }
 }

@@ -102,7 +102,7 @@ class ApplicationMessageTest {
                 0x01
         });
 
-        assertNotEquals(message1, message2);
+        assertEquals(message1, message2);
         assertNotEquals(message2, message3);
     }
 

@@ -29,13 +29,11 @@ import static java.util.Objects.requireNonNull;
  * A message that is sent by an application running on drasyl.
  */
 public class ApplicationMessage extends RelayableMessage implements RequestMessage {
-    private final Address recipient;
     private final Address sender;
     private final byte[] payload;
 
     protected ApplicationMessage() {
-        super((short) 0);
-        this.recipient = null;
+        super();
         this.sender = null;
         this.payload = null;
     }
@@ -45,17 +43,9 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
                        Address sender,
                        byte[] payload,
                        short hopCount) {
-        super(id, hopCount);
-        this.recipient = recipient;
+        super(id, hopCount, recipient);
         this.sender = sender;
         this.payload = payload;
-    }
-
-    ApplicationMessage(Address sender, Address recipient, byte[] payload, short hopCount) {
-        super(hopCount);
-        this.sender = requireNonNull(sender);
-        this.recipient = requireNonNull(recipient);
-        this.payload = requireNonNull(payload);
     }
 
     /**
@@ -69,9 +59,23 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
         this(sender, recipient, payload, (short) 0);
     }
 
+    ApplicationMessage(Address sender, Address recipient, byte[] payload, short hopCount) {
+        super(hopCount, recipient);
+        this.sender = requireNonNull(sender);
+        this.payload = requireNonNull(payload);
+    }
+
+    public Address getSender() {
+        return sender;
+    }
+
+    public byte[] getPayload() {
+        return payload;
+    }
+
     @Override
     public int hashCode() {
-        int result = Objects.hash(super.hashCode(), recipient, sender);
+        int result = Objects.hash(super.hashCode(), sender);
         result = 31 * result + Arrays.hashCode(payload);
         return result;
     }
@@ -81,36 +85,25 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
         if (this == o) {
             return true;
         }
-        if (!(o instanceof ApplicationMessage)) {
+        if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        ApplicationMessage message = (ApplicationMessage) o;
-        return Objects.equals(getId(), message.getId()) &&
-                Objects.equals(recipient, message.recipient) &&
-                Objects.equals(sender, message.sender) &&
-                Arrays.equals(payload, message.payload);
+        if (!super.equals(o)) {
+            return false;
+        }
+        ApplicationMessage that = (ApplicationMessage) o;
+        return Objects.equals(sender, that.sender) &&
+                Arrays.equals(payload, that.payload);
     }
 
     @Override
     public String toString() {
         return "ApplicationMessage{" +
-                "recipient=" + recipient +
-                ", sender=" + sender +
+                "sender=" + sender +
                 ", payload=" + Arrays.toString(payload) +
+                ", recipient=" + recipient +
                 ", hopCount=" + hopCount +
-                ", id='" + id +
+                ", id='" + id + '\'' +
                 '}';
-    }
-
-    public Address getRecipient() {
-        return recipient;
-    }
-
-    public Address getSender() {
-        return sender;
-    }
-
-    public byte[] getPayload() {
-        return payload;
     }
 }
