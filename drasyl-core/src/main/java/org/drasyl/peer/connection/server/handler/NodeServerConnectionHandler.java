@@ -21,6 +21,7 @@ package org.drasyl.peer.connection.server.handler;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
+import org.drasyl.identity.Address;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
@@ -31,9 +32,11 @@ import org.drasyl.peer.connection.handler.AbstractThreeWayHandshakeServerHandler
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.Message;
+import org.drasyl.peer.connection.message.IdentityMessage;
 import org.drasyl.peer.connection.message.RegisterGrandchildMessage;
 import org.drasyl.peer.connection.message.UnregisterGrandchildMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
+import org.drasyl.peer.connection.message.WhoisMessage;
 import org.drasyl.peer.connection.server.NodeServerChannelGroup;
 import org.drasyl.util.KeyValue;
 import org.drasyl.util.Pair;
@@ -118,6 +121,10 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
             Identity grandchildIdentity = unregisterGrandchildMessage.getIdentity();
             PeerInformation grandchildInformation = unregisterGrandchildMessage.getPeerInformation();
             unregisterGrandchild(ctx, grandchildIdentity, grandchildInformation);
+        }
+        else if (message instanceof WhoisMessage) {
+            WhoisMessage whoisMessage = (WhoisMessage) message;
+            handleWhoisMessage(ctx, whoisMessage);
         }
         else {
             super.processMessageAfterHandshake(ctx, message);
@@ -241,5 +248,28 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
 
         // remove peer information
         peersManager.removeGrandchildrenRouteAndRemovePeerInformation(grandchildIdentity, grandchildInformation);
+    }
+
+    private void handleWhoisMessage(ChannelHandlerContext ctx, WhoisMessage whoisMessage) {
+        Address requester = whoisMessage.getRequester();
+        Address address = whoisMessage.getAddress();
+        Pair<Identity, PeerInformation> identityAndPeerInformation = peersManager.getIdentityAndPeerInformation(address);
+        Identity identity = identityAndPeerInformation.first();
+        PeerInformation peerInformation = identityAndPeerInformation.second();
+        if (identity.hasPublicKey()) {
+            // we have the requested information. Send it back to the requester.
+            ctx.writeAndFlush(new IdentityMessage(requester, identity, peerInformation, whoisMessage.getId()));
+        }
+        else {
+            // we cannot provide the requested information. Forward request to Super Peer.
+            Pair<Identity, PeerInformation> superPeer = peersManager.getSuperPeer();
+            if (superPeer != null) {
+                PeerInformation superPeerInformation = superPeer.second();
+                Path superPeerPath = superPeerInformation.getPaths().iterator().next();
+                if (superPeerPath != null) {
+                    superPeerPath.send(whoisMessage);
+                }
+            }
+        }
     }
 }

@@ -37,6 +37,7 @@ import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.intravm.IntraVmDiscovery;
 import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.peer.connection.message.IdentityMessage;
 import org.drasyl.peer.connection.server.NodeServer;
 import org.drasyl.peer.connection.server.NodeServerException;
 import org.drasyl.peer.connection.superpeer.SuperPeerClient;
@@ -144,6 +145,10 @@ public abstract class DrasylNode {
                 if (message instanceof ApplicationMessage) {
                     ApplicationMessage applicationMessage = (ApplicationMessage) message;
                     onEvent(new Event(EventType.EVENT_MESSAGE, Pair.of(applicationMessage.getSender(), applicationMessage.getPayload())));
+                }
+                else if (message instanceof IdentityMessage) {
+                    IdentityMessage identityMessage = (IdentityMessage) message;
+                    peersManager.addPeerInformation(identityMessage.getIdentity(), identityMessage.getPeerInformation());
                 }
                 else {
                     throw new IllegalArgumentException("DrasylNode.loopbackMessageSink is not able to handle messages of type " + message.getClass().getSimpleName());

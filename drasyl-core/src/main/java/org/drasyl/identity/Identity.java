@@ -62,6 +62,10 @@ public class Identity extends AbstractIdentity {
         return super.equals(o);
     }
 
+    public boolean hasPublicKey() {
+        return publicKey != null;
+    }
+
     public static Identity of(Address address) {
         return new Identity(address, null);
     }
