@@ -29,7 +29,7 @@ import org.drasyl.identity.PrivateIdentity;
 import org.drasyl.peer.connection.AbstractClientInitializer;
 import org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
-import org.drasyl.peer.connection.handler.HopCountGuard;
+import org.drasyl.peer.connection.handler.RelayableMessageGuard;
 import org.drasyl.peer.connection.handler.SignatureHandler;
 import org.drasyl.peer.connection.superpeer.handler.SuperPeerClientConnectionHandler;
 import org.drasyl.util.WebSocketUtil;
@@ -41,7 +41,7 @@ import java.net.URI;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
-import static org.drasyl.peer.connection.handler.HopCountGuard.HOP_COUNT_GUARD;
+import static org.drasyl.peer.connection.handler.RelayableMessageGuard.HOP_COUNT_GUARD;
 import static org.drasyl.peer.connection.superpeer.handler.SuperPeerClientConnectionHandler.SUPER_PEER_CLIENT_CONNECTION_HANDLER;
 
 /**
@@ -72,7 +72,7 @@ public class SuperPeerClientChannelInitializer extends AbstractClientInitializer
     @Override
     protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
         pipeline.addLast(SignatureHandler.SIGNATURE_HANDLER, new SignatureHandler(identity));
-        pipeline.addLast(HOP_COUNT_GUARD, new HopCountGuard(config.getMessageHopLimit()));
+        pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(config.getMessageHopLimit()));
     }
 
     @Override

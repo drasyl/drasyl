@@ -21,26 +21,27 @@ package org.drasyl.peer.connection.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
-import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.peer.connection.message.RelayableMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * This handler increments the hop counter of each outgoing {@link ApplicationMessage}. If the
- * limit of hops is reached, the message is discarded. Otherwise the message can pass.
+ * This handler ensures that {@link RelayableMessage}s do not infinitely circulate in the network.
+ * It increments the hop counter of each outgoing message. If the limit of hops is reached, the
+ * message is discarded. Otherwise the message can pass.
  */
-public class HopCountGuard extends SimpleChannelOutboundHandler<ApplicationMessage> {
-    public static final String HOP_COUNT_GUARD = "hopCountGuard";
-    private static final Logger LOG = LoggerFactory.getLogger(HopCountGuard.class);
+public class RelayableMessageGuard extends SimpleChannelOutboundHandler<RelayableMessage> {
+    public static final String HOP_COUNT_GUARD = "relayableMessageGuard";
+    private static final Logger LOG = LoggerFactory.getLogger(RelayableMessageGuard.class);
     private final short messageHopLimit;
 
-    public HopCountGuard(short messageHopLimit) {
+    public RelayableMessageGuard(short messageHopLimit) {
         this.messageHopLimit = messageHopLimit;
     }
 
     @Override
     protected void channelWrite0(ChannelHandlerContext ctx,
-                                 ApplicationMessage msg, ChannelPromise promise) {
+                                 RelayableMessage msg, ChannelPromise promise) {
         if (msg.getHopCount() < messageHopLimit) {
             // route message to next hop (node)
             msg.incrementHopCount();

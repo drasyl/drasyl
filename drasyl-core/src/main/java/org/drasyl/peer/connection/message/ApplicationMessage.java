@@ -28,17 +28,16 @@ import static java.util.Objects.requireNonNull;
 /**
  * A message that is sent by an application running on drasyl.
  */
-public class ApplicationMessage extends AbstractMessage implements RequestMessage {
+public class ApplicationMessage extends RelayableMessage implements RequestMessage {
     private final Address recipient;
     private final Address sender;
     private final byte[] payload;
-    private short hopCount = 0;
 
     protected ApplicationMessage() {
+        super((short) 0);
         this.recipient = null;
         this.sender = null;
         this.payload = null;
-        this.hopCount = 0;
     }
 
     ApplicationMessage(String id,
@@ -46,18 +45,17 @@ public class ApplicationMessage extends AbstractMessage implements RequestMessag
                        Address sender,
                        byte[] payload,
                        short hopCount) {
-        super(id);
+        super(id, hopCount);
         this.recipient = recipient;
         this.sender = sender;
         this.payload = payload;
-        this.hopCount = hopCount;
     }
 
     ApplicationMessage(Address sender, Address recipient, byte[] payload, short hopCount) {
+        super(hopCount);
         this.sender = requireNonNull(sender);
         this.recipient = requireNonNull(recipient);
         this.payload = requireNonNull(payload);
-        this.hopCount = hopCount;
     }
 
     /**
@@ -114,18 +112,5 @@ public class ApplicationMessage extends AbstractMessage implements RequestMessag
 
     public byte[] getPayload() {
         return payload;
-    }
-
-    public short getHopCount() {
-        return hopCount;
-    }
-
-    /**
-     * Increments the hop count value of this message.
-     *
-     * @return
-     */
-    public void incrementHopCount() {
-        hopCount++;
     }
 }

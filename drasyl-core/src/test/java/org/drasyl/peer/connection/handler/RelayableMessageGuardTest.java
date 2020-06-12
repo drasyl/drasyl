@@ -30,7 +30,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
-class HopCountGuardTest {
+class RelayableMessageGuardTest {
     private ApplicationMessage applicationMessage;
 
     @BeforeEach
@@ -42,7 +42,7 @@ class HopCountGuardTest {
     void shouldPassMessagesThatHaveNotReachedTheirHopCountLimitAndIncrementHopCount() {
         when(applicationMessage.getHopCount()).thenReturn((short) 1);
 
-        HopCountGuard handler = new HopCountGuard((short) 2);
+        RelayableMessageGuard handler = new RelayableMessageGuard((short) 2);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeOutbound(applicationMessage);
@@ -56,7 +56,7 @@ class HopCountGuardTest {
     void shouldDiscardMessagesThatHaveReachedTheirHopCountLimit() {
         when(applicationMessage.getHopCount()).thenReturn((short) 1);
 
-        HopCountGuard handler = new HopCountGuard((short) 1);
+        RelayableMessageGuard handler = new RelayableMessageGuard((short) 1);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeOutbound(applicationMessage);
