@@ -276,10 +276,8 @@ class SuperPeerClientIT {
 
         // verify emitted events
         emittedEvents.awaitCount(3);
-        emittedEvents.assertValues(
-                new Event(EVENT_NODE_ONLINE, Node.of(identityManager.getIdentity(), Set.of())),
-                new Event(EVENT_NODE_OFFLINE, Node.of(identityManager.getIdentity(), Set.of())),
-                new Event(EVENT_NODE_ONLINE, Node.of(identityManager.getIdentity(), Set.of()))
-        );
+        emittedEvents.assertValueAt(0, new Event(EVENT_NODE_ONLINE, Node.of(identityManager.getIdentity(), Set.of())));
+        emittedEvents.assertValueAt(1, new Event(EVENT_NODE_OFFLINE, Node.of(identityManager.getIdentity(), Set.of())));
+        emittedEvents.assertValueAt(2, new Event(EVENT_NODE_ONLINE, Node.of(identityManager.getIdentity(), Set.of())));
     }
 }
