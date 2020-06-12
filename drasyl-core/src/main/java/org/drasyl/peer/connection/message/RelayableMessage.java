@@ -43,6 +43,10 @@ public abstract class RelayableMessage extends AbstractMessage {
         this.recipient = requireNonNull(recipient);
     }
 
+    protected RelayableMessage(Address recipient) {
+        this((short) 0, recipient);
+    }
+
     protected RelayableMessage() {
         super();
         hopCount = (short) 0;
