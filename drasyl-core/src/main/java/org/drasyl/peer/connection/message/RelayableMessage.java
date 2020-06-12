@@ -33,24 +33,24 @@ public abstract class RelayableMessage extends AbstractMessage {
 
     protected RelayableMessage(String id, short hopCount, Address recipient) {
         super(id);
-        this.hopCount = hopCount;
         this.recipient = requireNonNull(recipient);
+        this.hopCount = hopCount;
     }
 
-    protected RelayableMessage(short hopCount, Address recipient) {
+    protected RelayableMessage(Address recipient, short hopCount) {
         super();
-        this.hopCount = hopCount;
         this.recipient = requireNonNull(recipient);
+        this.hopCount = hopCount;
     }
 
     protected RelayableMessage(Address recipient) {
-        this((short) 0, recipient);
+        this(recipient, (short) 0);
     }
 
     protected RelayableMessage() {
         super();
-        hopCount = (short) 0;
         recipient = null;
+        hopCount = (short) 0;
     }
 
     public short getHopCount() {

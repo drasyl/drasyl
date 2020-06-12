@@ -60,7 +60,7 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
     }
 
     ApplicationMessage(Address sender, Address recipient, byte[] payload, short hopCount) {
-        super(hopCount, recipient);
+        super(recipient, hopCount);
         this.sender = requireNonNull(sender);
         this.payload = requireNonNull(payload);
     }

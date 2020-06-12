@@ -25,6 +25,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelId;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.ScheduledFuture;
+import org.drasyl.identity.Address;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
@@ -35,11 +36,13 @@ import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.Message;
+import org.drasyl.peer.connection.message.IdentityMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.RegisterGrandchildMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.message.UnregisterGrandchildMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
+import org.drasyl.peer.connection.message.WhoisMessage;
 import org.drasyl.peer.connection.server.NodeServer;
 import org.drasyl.peer.connection.server.NodeServerChannelGroup;
 import org.drasyl.util.KeyValue;
@@ -95,6 +98,11 @@ class NodeServerConnectionHandlerTest {
     private StatusMessage statusMessage;
     private WelcomeMessage offerMessage;
     private CompressedPublicKey grandchildPublicKey;
+    private WhoisMessage whoisMessage;
+    private Address address;
+    private PeerInformation peerInformation;
+    private Address requester;
+    private Set<URI> endpoints;
 
     @BeforeEach
     void setUp() {
@@ -124,6 +132,11 @@ class NodeServerConnectionHandlerTest {
         superPeerPath = mock(Path.class);
         statusMessage = mock(StatusMessage.class);
         offerMessage = mock(WelcomeMessage.class);
+        whoisMessage = mock(WhoisMessage.class);
+        address = mock(Address.class);
+        peerInformation = mock(PeerInformation.class);
+        requester = mock(Address.class);
+        endpoints  = mock(Set.class);
 
         when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
         applicationMessage = mock(ApplicationMessage.class);
@@ -250,6 +263,7 @@ class NodeServerConnectionHandlerTest {
 
     @Test
     void shouldAddGrandchildRouteAndInformSuperPeerOnSessionCreationAndRemoveGrandchildRouteAndInformSuperPeerOnClose() {
+        when(identity.getPublicKey()).thenReturn(publicKey);
         when(offerMessage.getId()).thenReturn("123");
         when(requestMessage.getIdentity()).thenReturn(identity);
         when(identity.getPublicKey()).thenReturn(publicKey);
@@ -286,5 +300,45 @@ class NodeServerConnectionHandlerTest {
         // grandchildren
         verify(peersManager).removeGrandchildrenRouteAndRemovePeerInformation(grandchildIdentity, grandchildPeerInformation);
         verify(superPeerPath).send(new UnregisterGrandchildMessage(grandchildIdentity, grandchildPeerInformation));
+    }
+
+    @Test
+    void shouldReplyWithPeerInformationMessageOnWhoisMessageIfRequestedInformationAreAvailable() {
+        when(handshakeFuture.isDone()).thenReturn(true);
+        when(whoisMessage.getId()).thenReturn("123");
+        when(whoisMessage.getRequester()).thenReturn(requester);
+        when(whoisMessage.getAddress()).thenReturn(address);
+        when(peersManager.getIdentityAndPeerInformation(address)).thenReturn(Pair.of(identity, peerInformation));
+        when(identity.hasPublicKey()).thenReturn(true);
+
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(identity, peersManager, Set.of(), ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, channelGroup, offerMessage);
+        EmbeddedChannel channel = new EmbeddedChannel(handler);
+
+        channel.writeInbound(whoisMessage);
+        channel.flush();
+
+        Object outbound = channel.readOutbound();
+        assertEquals(new IdentityMessage(requester, identity, peerInformation, whoisMessage.getId()), outbound);
+    }
+
+    @Test
+    void shouldRelayWhoisMessageToSuperPeerIfRequestedInformationAreNotAvailable() {
+        when(handshakeFuture.isDone()).thenReturn(true);
+        when(whoisMessage.getId()).thenReturn("123");
+        when(whoisMessage.getRequester()).thenReturn(requester);
+        when(whoisMessage.getAddress()).thenReturn(address);
+        when(peersManager.getIdentityAndPeerInformation(address)).thenReturn(Pair.of(identity, peerInformation));
+        when(identity.hasPublicKey()).thenReturn(false);
+        when(peersManager.getSuperPeer()).thenReturn(Pair.of(superPeerIdentity, superPeerInformation));
+        when(superPeerInformation.getPaths()).thenReturn(Set.of(superPeerPath));
+
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(identity, peersManager, Set.of(), ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, channelGroup, offerMessage);
+        EmbeddedChannel channel = new EmbeddedChannel(handler);
+
+        channel.writeInbound(whoisMessage);
+        channel.flush();
+
+        assertNull(channel.readOutbound());
+        verify(superPeerPath).send(whoisMessage);
     }
 }

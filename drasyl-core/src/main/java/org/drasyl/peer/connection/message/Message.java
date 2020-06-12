@@ -33,12 +33,14 @@ import org.drasyl.peer.connection.server.NodeServer;
         @JsonSubTypes.Type(value = ExceptionMessage.class),
         @JsonSubTypes.Type(value = JoinMessage.class),
         @JsonSubTypes.Type(value = QuitMessage.class),
+        @JsonSubTypes.Type(value = IdentityMessage.class),
         @JsonSubTypes.Type(value = PingMessage.class),
         @JsonSubTypes.Type(value = PongMessage.class),
         @JsonSubTypes.Type(value = RegisterGrandchildMessage.class),
         @JsonSubTypes.Type(value = StatusMessage.class),
         @JsonSubTypes.Type(value = UnregisterGrandchildMessage.class),
         @JsonSubTypes.Type(value = WelcomeMessage.class),
+        @JsonSubTypes.Type(value = WhoisMessage.class),
         @JsonSubTypes.Type(value = SignedMessage.class),
 })
 @JsonIgnoreProperties(ignoreUnknown = true)
