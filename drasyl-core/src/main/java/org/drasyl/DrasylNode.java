@@ -141,12 +141,13 @@ public abstract class DrasylNode {
                     throw new NoPathToIdentityException(identity);
                 }
 
-                if (!(message instanceof ApplicationMessage)) {
-                    throw new IllegalArgumentException("DrasylNode.messageSink can only handle messages of type " + ApplicationMessage.class.getSimpleName());
+                if (message instanceof ApplicationMessage) {
+                    ApplicationMessage applicationMessage = (ApplicationMessage) message;
+                    onEvent(new Event(EventType.EVENT_MESSAGE, Pair.of(applicationMessage.getSender(), applicationMessage.getPayload())));
                 }
-
-                ApplicationMessage applicationMessage = (ApplicationMessage) message;
-                onEvent(new Event(EventType.EVENT_MESSAGE, Pair.of(applicationMessage.getSender(), applicationMessage.getPayload())));
+                else {
+                    throw new IllegalArgumentException("DrasylNode.loopbackMessageSink is not able to handle messages of type " + message.getClass().getSimpleName());
+                }
             };
             setLogLevel(this.config.getLoglevel());
         }
