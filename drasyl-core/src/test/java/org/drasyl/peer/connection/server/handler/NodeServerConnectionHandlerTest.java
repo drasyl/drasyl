@@ -87,6 +87,7 @@ class NodeServerConnectionHandlerTest {
     private RegisterGrandchildMessage registerGrandchildMessage;
     private Identity grandchildIdentity;
     private Set<URI> grandchildEndpoints;
+    private PeerInformation grandchildPeerInformation;
     private UnregisterGrandchildMessage unregisterGrandchildMessage;
     private Identity superPeerIdentity;
     private PeerInformation superPeerInformation;
@@ -116,6 +117,7 @@ class NodeServerConnectionHandlerTest {
         grandchildIdentity = mock(Identity.class);
         grandchildPublicKey = mock(CompressedPublicKey.class);
         grandchildEndpoints = Set.of(URI.create("ws://grandchild.com"));
+        grandchildPeerInformation = mock(PeerInformation.class);
         unregisterGrandchildMessage = mock(UnregisterGrandchildMessage.class);
         superPeerIdentity = mock(Identity.class);
         superPeerInformation = mock(PeerInformation.class);
@@ -204,7 +206,8 @@ class NodeServerConnectionHandlerTest {
         when(handshakeFuture.isDone()).thenReturn(true);
         when(registerGrandchildMessage.getId()).thenReturn("123");
         when(registerGrandchildMessage.getIdentity()).thenReturn(grandchildIdentity);
-        when(registerGrandchildMessage.getEndpoints()).thenReturn(grandchildEndpoints);
+        when(registerGrandchildMessage.getPeerInformation()).thenReturn(grandchildPeerInformation);
+        when(grandchildPeerInformation.getEndpoints()).thenReturn(grandchildEndpoints);
         when(peersManager.getSuperPeer()).thenReturn(Pair.of(superPeerIdentity, superPeerInformation));
         when(superPeerInformation.getPaths()).thenReturn(Set.of(superPeerPath));
 
@@ -215,13 +218,13 @@ class NodeServerConnectionHandlerTest {
         channel.writeInbound(registerGrandchildMessage);
         channel.flush();
 
-        verify(peersManager).addPeerInformationAndAddGrandchildren(grandchildIdentity, PeerInformation.of(grandchildEndpoints), identity);
-        verify(superPeerPath).send(new RegisterGrandchildMessage(grandchildIdentity, grandchildEndpoints));
+        verify(peersManager).addPeerInformationAndAddGrandchildren(grandchildIdentity, grandchildPeerInformation, identity);
+        verify(superPeerPath).send(new RegisterGrandchildMessage(grandchildIdentity, grandchildPeerInformation));
 
         channel.close();
 
-        verify(peersManager).removeGrandchildrenRouteAndRemovePeerInformation(grandchildIdentity, PeerInformation.of(grandchildEndpoints));
-        verify(superPeerPath).send(new UnregisterGrandchildMessage(grandchildIdentity, grandchildEndpoints));
+        verify(peersManager).removeGrandchildrenRouteAndRemovePeerInformation(grandchildIdentity, grandchildPeerInformation);
+        verify(superPeerPath).send(new UnregisterGrandchildMessage(grandchildIdentity, grandchildPeerInformation));
     }
 
     @Test
@@ -229,7 +232,8 @@ class NodeServerConnectionHandlerTest {
         when(handshakeFuture.isDone()).thenReturn(true);
         when(unregisterGrandchildMessage.getId()).thenReturn("123");
         when(unregisterGrandchildMessage.getIdentity()).thenReturn(grandchildIdentity);
-        when(unregisterGrandchildMessage.getEndpoints()).thenReturn(grandchildEndpoints);
+        when(unregisterGrandchildMessage.getPeerInformation()).thenReturn(grandchildPeerInformation);
+        when(grandchildPeerInformation.getEndpoints()).thenReturn(grandchildEndpoints);
         when(peersManager.getSuperPeer()).thenReturn(Pair.of(superPeerIdentity, superPeerInformation));
         when(superPeerInformation.getPaths()).thenReturn(Set.of(superPeerPath));
 
@@ -240,8 +244,8 @@ class NodeServerConnectionHandlerTest {
         channel.writeInbound(unregisterGrandchildMessage);
         channel.flush();
 
-        verify(peersManager).removeGrandchildrenRouteAndRemovePeerInformation(grandchildIdentity, PeerInformation.of(grandchildEndpoints));
-        verify(superPeerPath).send(new UnregisterGrandchildMessage(grandchildIdentity, grandchildEndpoints));
+        verify(peersManager).removeGrandchildrenRouteAndRemovePeerInformation(grandchildIdentity, grandchildPeerInformation);
+        verify(superPeerPath).send(new UnregisterGrandchildMessage(grandchildIdentity, grandchildPeerInformation));
     }
 
     @Test
@@ -250,7 +254,9 @@ class NodeServerConnectionHandlerTest {
         when(requestMessage.getIdentity()).thenReturn(identity);
         when(identity.getPublicKey()).thenReturn(publicKey);
         when(grandchildIdentity.getPublicKey()).thenReturn(grandchildPublicKey);
-        when(requestMessage.getChildrenAndGrandchildren()).thenReturn(Set.of(KeyValue.of(grandchildIdentity, grandchildEndpoints)));
+        when(requestMessage.getChildrenAndGrandchildren()).thenReturn(Set.of(KeyValue.of(grandchildIdentity, grandchildPeerInformation)));
+        when(grandchildPeerInformation.getEndpoints()).thenReturn(grandchildEndpoints);
+        when(requestMessage.getPeerInformation()).thenReturn(PeerInformation.of());
         when(statusMessage.getCorrespondingId()).thenReturn("123");
         when(statusMessage.getCode()).thenReturn(STATUS_OK);
         when(peersManager.getSuperPeer()).thenReturn(Pair.of(superPeerIdentity, superPeerInformation));
@@ -265,20 +271,20 @@ class NodeServerConnectionHandlerTest {
 
         // my new children
         verify(peersManager).addPeerInformationAndAddChildren(eq(identity), any());
-        verify(superPeerPath).send(new RegisterGrandchildMessage(identity, Set.of()));
+        verify(superPeerPath).send(new RegisterGrandchildMessage(identity, PeerInformation.of()));
 
         // my new grandchildren
-        verify(peersManager).addPeerInformationAndAddGrandchildren(grandchildIdentity, PeerInformation.of(grandchildEndpoints), identity);
-        verify(superPeerPath).send(new RegisterGrandchildMessage(grandchildIdentity, grandchildEndpoints));
+        verify(peersManager).addPeerInformationAndAddGrandchildren(grandchildIdentity, grandchildPeerInformation, identity);
+        verify(superPeerPath).send(new RegisterGrandchildMessage(grandchildIdentity, grandchildPeerInformation));
 
         channel.close();
 
         // children
-        verify(peersManager).removeGrandchildrenRouteAndRemovePeerInformation(grandchildIdentity, PeerInformation.of(grandchildEndpoints));
-        verify(superPeerPath).send(new UnregisterGrandchildMessage(grandchildIdentity, grandchildEndpoints));
+        verify(peersManager).removeGrandchildrenRouteAndRemovePeerInformation(grandchildIdentity, grandchildPeerInformation);
+        verify(superPeerPath).send(new UnregisterGrandchildMessage(grandchildIdentity, grandchildPeerInformation));
 
         // grandchildren
-        verify(peersManager).removeGrandchildrenRouteAndRemovePeerInformation(grandchildIdentity, PeerInformation.of(grandchildEndpoints));
-        verify(superPeerPath).send(new UnregisterGrandchildMessage(grandchildIdentity, grandchildEndpoints));
+        verify(peersManager).removeGrandchildrenRouteAndRemovePeerInformation(grandchildIdentity, grandchildPeerInformation);
+        verify(superPeerPath).send(new UnregisterGrandchildMessage(grandchildIdentity, grandchildPeerInformation));
     }
 }

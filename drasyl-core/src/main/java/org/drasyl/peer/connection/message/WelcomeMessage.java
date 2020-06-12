@@ -20,10 +20,9 @@ package org.drasyl.peer.connection.message;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.drasyl.identity.Identity;
+import org.drasyl.peer.PeerInformation;
 
-import java.net.URI;
 import java.util.Objects;
-import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 
@@ -33,13 +32,13 @@ import static java.util.Objects.requireNonNull;
  */
 public class WelcomeMessage extends AbstractMessageWithUserAgent implements ResponseMessage<JoinMessage> {
     private final Identity identity;
-    private final Set<URI> endpoints;
+    private final PeerInformation peerInformation;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final String correspondingId;
 
     protected WelcomeMessage() {
         identity = null;
-        endpoints = null;
+        peerInformation = null;
         correspondingId = null;
     }
 
@@ -47,14 +46,14 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
      * Creates new welcome message.
      *
      * @param identity        the identity of the node server
-     * @param endpoints       the endpoints of the node server
+     * @param peerInformation the peer information of the node server
      * @param correspondingId
      */
     public WelcomeMessage(Identity identity,
-                          Set<URI> endpoints,
+                          PeerInformation peerInformation,
                           String correspondingId) {
         this.identity = requireNonNull(identity);
-        this.endpoints = requireNonNull(endpoints);
+        this.peerInformation = requireNonNull(peerInformation);
         this.correspondingId = correspondingId;
     }
 
@@ -62,8 +61,8 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
         return this.identity;
     }
 
-    public Set<URI> getEndpoints() {
-        return this.endpoints;
+    public PeerInformation getPeerInformation() {
+        return this.peerInformation;
     }
 
     @Override
@@ -73,7 +72,7 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), identity, endpoints, correspondingId);
+        return Objects.hash(super.hashCode(), identity, peerInformation, correspondingId);
     }
 
     @Override
@@ -89,7 +88,7 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
         }
         WelcomeMessage that = (WelcomeMessage) o;
         return Objects.equals(identity, that.identity) &&
-                Objects.equals(endpoints, that.endpoints) &&
+                Objects.equals(peerInformation, that.peerInformation) &&
                 Objects.equals(correspondingId, that.correspondingId);
     }
 
@@ -97,7 +96,7 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
     public String toString() {
         return "WelcomeMessage{" +
                 "identity=" + identity +
-                ", endpoints=" + endpoints +
+                ", peerInformation=" + peerInformation +
                 ", correspondingId='" + correspondingId + '\'' +
                 ", id='" + id +
                 '}';

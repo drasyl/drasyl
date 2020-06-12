@@ -19,9 +19,7 @@
 package org.drasyl.peer.connection.message;
 
 import org.drasyl.identity.Identity;
-
-import java.net.URI;
-import java.util.Set;
+import org.drasyl.peer.PeerInformation;
 
 public class UnregisterGrandchildMessage extends AbstractGrandchildMessage {
     private UnregisterGrandchildMessage() {
@@ -31,18 +29,18 @@ public class UnregisterGrandchildMessage extends AbstractGrandchildMessage {
     /**
      * Creates a new unregister grandchild message.
      *
-     * @param identity  the identity of the grandchild
-     * @param endpoints the endpoints of the grandchild
+     * @param identity        the identity of the grandchild
+     * @param peerInformation the peer information of the grandchild
      */
-    public UnregisterGrandchildMessage(Identity identity, Set<URI> endpoints) {
-        super(identity, endpoints);
+    public UnregisterGrandchildMessage(Identity identity, PeerInformation peerInformation) {
+        super(identity, peerInformation);
     }
 
     @Override
     public String toString() {
         return "UnregisterGrandchildMessage{" +
                 "identity=" + identity +
-                ", endpoints=" + endpoints +
+                ", peerInformation=" + peerInformation +
                 ", id='" + id +
                 '}';
     }

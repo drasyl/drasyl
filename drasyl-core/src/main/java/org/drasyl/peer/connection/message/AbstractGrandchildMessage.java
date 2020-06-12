@@ -19,31 +19,30 @@
 package org.drasyl.peer.connection.message;
 
 import org.drasyl.identity.Identity;
+import org.drasyl.peer.PeerInformation;
 
-import java.net.URI;
 import java.util.Objects;
-import java.util.Set;
 
 public abstract class AbstractGrandchildMessage extends AbstractMessage implements RequestMessage {
     protected final Identity identity;
-    protected final Set<URI> endpoints;
+    protected final PeerInformation peerInformation;
 
-    AbstractGrandchildMessage(Identity identity, Set<URI> endpoints) {
+    AbstractGrandchildMessage(Identity identity, PeerInformation peerInformation) {
         this.identity = identity;
-        this.endpoints = endpoints;
+        this.peerInformation = peerInformation;
     }
 
     public Identity getIdentity() {
         return identity;
     }
 
-    public Set<URI> getEndpoints() {
-        return this.endpoints;
+    public PeerInformation getPeerInformation() {
+        return this.peerInformation;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), identity, endpoints);
+        return Objects.hash(super.hashCode(), identity, peerInformation);
     }
 
     @Override
@@ -59,6 +58,6 @@ public abstract class AbstractGrandchildMessage extends AbstractMessage implemen
         }
         AbstractGrandchildMessage that = (AbstractGrandchildMessage) o;
         return Objects.equals(identity, that.identity) &&
-                Objects.equals(endpoints, that.endpoints);
+                Objects.equals(peerInformation, that.peerInformation);
     }
 }

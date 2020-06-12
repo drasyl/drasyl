@@ -73,8 +73,8 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
                 messenger,
                 new JoinMessage(
                         ownIdentity,
-                        endpoints,
-                        peersManager.getChildrenAndGrandchildren().entrySet().stream().map(e -> KeyValue.of(e.getKey(), e.getValue().getEndpoints())).collect(Collectors.toSet())
+                        PeerInformation.of(endpoints),
+                        peersManager.getChildrenAndGrandchildren().entrySet().stream().map(KeyValue::of).collect(Collectors.toSet())
                 )
         );
         this.expectedPublicKey = expectedPublicKey;
@@ -127,7 +127,7 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
         Identity identity = offerMessage.getIdentity();
         Channel channel = ctx.channel();
         Path path = ctx::writeAndFlush; // We start at this point to save resources
-        PeerInformation peerInformation = PeerInformation.of(offerMessage.getEndpoints(), path);
+        PeerInformation peerInformation = PeerInformation.of(offerMessage.getPeerInformation().getEndpoints(), path);
 
         // attach identity to channel (this information is required for validation signatures of incoming messages)
         channel.attr(ATTRIBUTE_IDENTITY).set(identity);

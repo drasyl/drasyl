@@ -21,6 +21,7 @@ package org.drasyl.util;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
+import java.util.Map;
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
@@ -77,5 +78,9 @@ public class KeyValue<K, V> {
 
     public static <K, V> KeyValue<K, V> of(K key, V value) {
         return new KeyValue<>(key, value);
+    }
+
+    public static <K, V> KeyValue<K, V> of(Map.Entry<K, V> e) {
+        return of(e.getKey(), e.getValue());
     }
 }
