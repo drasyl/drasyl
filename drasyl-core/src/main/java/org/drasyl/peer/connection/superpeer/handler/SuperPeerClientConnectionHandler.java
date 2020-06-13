@@ -18,11 +18,14 @@
  */
 package org.drasyl.peer.connection.superpeer.handler;
 
+import com.google.common.cache.CacheBuilder;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
+import org.drasyl.identity.Address;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.messenger.MessageSink;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.messenger.NoPathToIdentityException;
 import org.drasyl.peer.Path;
@@ -41,10 +44,12 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.time.Duration;
+import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
+import static java.time.Duration.ofSeconds;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_WRONG_PUBLIC_KEY;
 import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE_IDENTITY;
 
@@ -63,6 +68,7 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
     private final CompressedPublicKey expectedPublicKey;
     private final Identity ownIdentity;
     private final PeersManager peersManager;
+    private final Set<Address> identityRequestsCache;
 
     public SuperPeerClientConnectionHandler(CompressedPublicKey expectedPublicKey,
                                             Identity ownIdentity,
@@ -82,6 +88,8 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
         this.expectedPublicKey = expectedPublicKey;
         this.ownIdentity = ownIdentity;
         this.peersManager = peersManager;
+        // This cache contains all identity requests of the last 5 seconds
+        this.identityRequestsCache = Collections.newSetFromMap(CacheBuilder.newBuilder().maximumSize(1000).expireAfterWrite(ofSeconds(5)).<Address, Boolean>build().asMap());
     }
 
     @SuppressWarnings({ "java:S107" })
@@ -92,11 +100,13 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
                                      Duration timeout,
                                      CompletableFuture<Void> handshakeFuture,
                                      ScheduledFuture<?> timeoutFuture,
-                                     JoinMessage requestMessage) {
+                                     JoinMessage requestMessage,
+                                     Set<Address> identityRequestsCache) {
         super(timeout, messenger, handshakeFuture, timeoutFuture, requestMessage);
         this.expectedPublicKey = expectedPublicKey;
         this.ownIdentity = ownIdentity;
         this.peersManager = peersManager;
+        this.identityRequestsCache = identityRequestsCache;
     }
 
     @Override
@@ -140,15 +150,15 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
         // store peer information
         peersManager.addPeerInformationAndSetSuperPeer(identity, peerInformation);
 
-        messenger.setSuperPeerSink((recipient, message) -> {
+        MessageSink messageSink = (recipient, message) -> {
             if (channel.isWritable()) {
                 if (message instanceof ApplicationMessage) {
                     // if recipient's public key is not available, ask super peer for it
                     Identity cachedRecipient = peersManager.getIdentity(recipient);
-                    if (!cachedRecipient.hasPublicKey()) {
+                    if (!cachedRecipient.hasPublicKey() && shouldRequestIdentity(recipient.getAddress())) {
                         LOG.debug("Public Key of recipient '{}' is not present. Request it from Super Peer.", cachedRecipient);
                         ctx.writeAndFlush(new WhoisMessage(ownIdentity.getAddress(), recipient.getAddress()));
-//                    throw new PublicKeyNotPresentException(recipient);
+//                        throw new PublicKeyNotPresentException(recipient);
                     }
                 }
 
@@ -157,6 +167,17 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
             else {
                 throw new NoPathToIdentityException(recipient);
             }
-        });
+        };
+        messenger.setSuperPeerSink(messageSink);
+    }
+
+    private synchronized boolean shouldRequestIdentity(Address address) {
+        if (identityRequestsCache.contains(address)) {
+            return false;
+        }
+        else {
+            identityRequestsCache.add(address);
+            return true;
+        }
     }
 }
