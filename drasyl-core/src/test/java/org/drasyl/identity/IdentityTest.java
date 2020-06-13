@@ -34,4 +34,32 @@ class IdentityTest {
     void ofShouldThrowExceptionIfAddressDoesNotCorrespondsToTheKey() {
         assertThrows(IllegalArgumentException.class, () -> Identity.of("d40bee9aab", "0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458"));
     }
+
+    @Test
+    void equalsShouldReturnTrueOnSameAddress() throws CryptoException {
+        Identity identity1 = Identity.of("396dc9e224");
+        Identity identity2 = Identity.of("396dc9e224", "0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458");
+        Identity identity3 = Identity.of("c5461a6001", "030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3");
+
+        assertEquals(identity1, identity2);
+        assertEquals(identity2, identity1);
+        assertNotEquals(identity1, identity3);
+        assertNotEquals(identity3, identity1);
+        assertNotEquals(identity2, identity3);
+        assertNotEquals(identity3, identity2);
+    }
+
+    @Test
+    void hashCodeShouldReturnTrueOnSameAddress() throws CryptoException {
+        Identity identity1 = Identity.of("396dc9e224");
+        Identity identity2 = Identity.of("396dc9e224", "0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458");
+        Identity identity3 = Identity.of("c5461a6001", "030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3");
+
+        assertEquals(identity1.hashCode(), identity2.hashCode());
+        assertEquals(identity2.hashCode(), identity1.hashCode());
+        assertNotEquals(identity1.hashCode(), identity3.hashCode());
+        assertNotEquals(identity3.hashCode(), identity1.hashCode());
+        assertNotEquals(identity2.hashCode(), identity3.hashCode());
+        assertNotEquals(identity3.hashCode(), identity2.hashCode());
+    }
 }

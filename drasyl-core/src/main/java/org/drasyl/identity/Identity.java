@@ -70,6 +70,10 @@ public class Identity extends AbstractIdentity {
         return new Identity(address, null);
     }
 
+    public static Identity of(String address) {
+        return of(Address.of(address));
+    }
+
     public static Identity of(String address, String publicKey) throws CryptoException {
         return new Identity(Address.of(address), CompressedPublicKey.of(publicKey));
     }
