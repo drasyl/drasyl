@@ -56,7 +56,7 @@ import java.util.concurrent.CompletableFuture;
 
 import static java.time.Duration.ofMillis;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_HANDSHAKE_TIMEOUT;
-import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_SAME_PUBLIC_KEY;
+import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_IDENTITY_COLLISION;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE_IDENTITY;
@@ -172,7 +172,7 @@ class NodeServerConnectionHandlerTest {
         channel.writeInbound(joinMessage);
         channel.flush();
 
-        assertEquals(new ConnectionExceptionMessage(CONNECTION_ERROR_SAME_PUBLIC_KEY), channel.readOutbound());
+        assertEquals(new ConnectionExceptionMessage(CONNECTION_ERROR_IDENTITY_COLLISION), channel.readOutbound());
     }
 
     @Test

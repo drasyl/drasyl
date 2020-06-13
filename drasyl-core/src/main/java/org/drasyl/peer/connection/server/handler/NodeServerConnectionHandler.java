@@ -22,7 +22,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.identity.Address;
-import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.Path;
@@ -46,11 +45,10 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.time.Duration;
-import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
-import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_SAME_PUBLIC_KEY;
+import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_IDENTITY_COLLISION;
 import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE_IDENTITY;
 
 /**
@@ -71,10 +69,10 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
     private static final Logger LOG = LoggerFactory.getLogger(NodeServerConnectionHandler.class);
     private final PeersManager peersManager;
     private final Set<URI> endpoints;
-    private final Identity identity;
+    private final Identity ownIdentity;
     private final NodeServerChannelGroup channelGroup;
 
-    public NodeServerConnectionHandler(Identity identity,
+    public NodeServerConnectionHandler(Identity ownIdentity,
                                        PeersManager peersManager,
                                        Set<URI> endpoints,
                                        Duration timeout,
@@ -83,11 +81,11 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
         super(timeout, messenger);
         this.peersManager = peersManager;
         this.endpoints = endpoints;
-        this.identity = identity;
+        this.ownIdentity = ownIdentity;
         this.channelGroup = channelGroup;
     }
 
-    NodeServerConnectionHandler(Identity identity,
+    NodeServerConnectionHandler(Identity ownIdentity,
                                 PeersManager peersManager,
                                 Set<URI> endpoints,
                                 Duration timeout,
@@ -100,7 +98,7 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
         super(timeout, messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         this.peersManager = peersManager;
         this.endpoints = endpoints;
-        this.identity = identity;
+        this.ownIdentity = ownIdentity;
         this.channelGroup = channelGroup;
     }
 
@@ -132,10 +130,10 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
 
     @Override
     protected ConnectionExceptionMessage.Error validateSessionRequest(JoinMessage requestMessage) {
-        CompressedPublicKey clientPublicKey = requestMessage.getIdentity().getPublicKey();
+        Identity clientIdentity = requestMessage.getIdentity();
 
-        if (identity.getPublicKey().equals(clientPublicKey)) {
-            return CONNECTION_ERROR_SAME_PUBLIC_KEY;
+        if (this.ownIdentity.equals(clientIdentity)) {
+            return CONNECTION_ERROR_IDENTITY_COLLISION;
         }
         else {
             return null;
@@ -145,7 +143,7 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
     @Override
     protected WelcomeMessage offerSession(ChannelHandlerContext ctx,
                                           JoinMessage requestMessage) {
-        return new WelcomeMessage(identity, PeerInformation.of(endpoints), requestMessage.getId());
+        return new WelcomeMessage(ownIdentity, PeerInformation.of(endpoints), requestMessage.getId());
     }
 
     @Override
