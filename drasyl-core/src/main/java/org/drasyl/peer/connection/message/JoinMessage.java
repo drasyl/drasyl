@@ -18,6 +18,7 @@
  */
 package org.drasyl.peer.connection.message;
 
+import com.google.common.collect.ImmutableSet;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.util.KeyValue;
@@ -56,7 +57,7 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
     }
 
     public Set<KeyValue<Identity, PeerInformation>> getChildrenAndGrandchildren() {
-        return this.childrenAndGrandchildren;
+        return ImmutableSet.copyOf(this.childrenAndGrandchildren);
     }
 
     public PeerInformation getPeerInformation() {

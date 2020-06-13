@@ -16,33 +16,30 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection.message;
+package org.drasyl.util;
 
-import org.drasyl.identity.Identity;
-import org.drasyl.peer.PeerInformation;
-import org.drasyl.util.KeyValue;
+import org.junit.jupiter.api.Test;
 
 import java.util.Set;
 
-public class RegisterGrandchildMessage extends AbstractGrandchildMessage {
-    private RegisterGrandchildMessage() {
-        super();
+import static org.junit.jupiter.api.Assertions.assertEquals;
+
+class SetUtilTest {
+    @Test
+    void mergeShouldReturnSetContainingAllElementsOfBothGivenSets() {
+        Set<String> a = Set.of("apple", "banana");
+        Set<String> b = Set.of("pear", "cherry", "banana");
+
+        assertEquals(Set.of("apple", "banana", "pear", "cherry"), SetUtil.merge(a, b));
     }
 
-    /**
-     * Creates a new register grandchild message.
-     *
-     * @param grandchildren        the grandchildren
-     */
-    public RegisterGrandchildMessage(Set<KeyValue<Identity, PeerInformation>> grandchildren) {
-        super(grandchildren);
-    }
+    @Test
+    void mergeShouldReturnSetContainingAllElementsOfGivenSetAndElement() {
+        Set<String> a = Set.of("apple", "banana");
+        String b1 = "pear";
+        String b2 = "apple";
 
-    @Override
-    public String toString() {
-        return "RegisterGrandchildMessage{" +
-                "grandchildren=" + grandchildren +
-                ", id='" + id +
-                '}';
+        assertEquals(Set.of("apple", "banana", "pear"), SetUtil.merge(a, b1));
+        assertEquals(Set.of("apple", "banana"), SetUtil.merge(a, b2));
     }
 }
