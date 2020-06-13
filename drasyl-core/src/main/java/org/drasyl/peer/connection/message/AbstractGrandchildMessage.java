@@ -18,31 +18,32 @@
  */
 package org.drasyl.peer.connection.message;
 
+import com.google.common.collect.ImmutableSet;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeerInformation;
+import org.drasyl.util.KeyValue;
 
 import java.util.Objects;
+import java.util.Set;
 
 public abstract class AbstractGrandchildMessage extends AbstractMessage implements RequestMessage {
-    protected final Identity identity;
-    protected final PeerInformation peerInformation;
+    protected Set<KeyValue<Identity, PeerInformation>> grandchildren;
 
-    AbstractGrandchildMessage(Identity identity, PeerInformation peerInformation) {
-        this.identity = identity;
-        this.peerInformation = peerInformation;
+    protected AbstractGrandchildMessage() {
+        grandchildren = null;
     }
 
-    public Identity getIdentity() {
-        return identity;
+    public AbstractGrandchildMessage(Set<KeyValue<Identity, PeerInformation>> grandchildren) {
+        this.grandchildren = grandchildren;
     }
 
-    public PeerInformation getPeerInformation() {
-        return this.peerInformation;
+    public Set<KeyValue<Identity, PeerInformation>> getGrandchildren() {
+        return ImmutableSet.copyOf(grandchildren);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), identity, peerInformation);
+        return Objects.hash(super.hashCode(), grandchildren);
     }
 
     @Override
@@ -57,7 +58,6 @@ public abstract class AbstractGrandchildMessage extends AbstractMessage implemen
             return false;
         }
         AbstractGrandchildMessage that = (AbstractGrandchildMessage) o;
-        return Objects.equals(identity, that.identity) &&
-                Objects.equals(peerInformation, that.peerInformation);
+        return Objects.equals(grandchildren, that.grandchildren);
     }
 }

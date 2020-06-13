@@ -20,27 +20,28 @@ package org.drasyl.peer.connection.message;
 
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeerInformation;
+import org.drasyl.util.KeyValue;
+
+import java.util.Set;
 
 public class UnregisterGrandchildMessage extends AbstractGrandchildMessage {
     private UnregisterGrandchildMessage() {
-        this(null, null);
+        super();
     }
 
     /**
      * Creates a new unregister grandchild message.
      *
-     * @param identity        the identity of the grandchild
-     * @param peerInformation the peer information of the grandchild
+     * @param grandchildren        the grandchildren
      */
-    public UnregisterGrandchildMessage(Identity identity, PeerInformation peerInformation) {
-        super(identity, peerInformation);
+    public UnregisterGrandchildMessage(Set<KeyValue<Identity, PeerInformation>> grandchildren) {
+        super(grandchildren);
     }
 
     @Override
     public String toString() {
         return "UnregisterGrandchildMessage{" +
-                "identity=" + identity +
-                ", peerInformation=" + peerInformation +
+                "grandchildren=" + grandchildren +
                 ", id='" + id +
                 '}';
     }
