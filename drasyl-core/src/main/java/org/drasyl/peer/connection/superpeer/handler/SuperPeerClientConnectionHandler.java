@@ -158,6 +158,7 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
                     if (!cachedRecipient.hasPublicKey() && shouldRequestIdentity(recipient.getAddress())) {
                         LOG.debug("Public Key of recipient '{}' is not present. Request it from Super Peer.", cachedRecipient);
                         ctx.writeAndFlush(new WhoisMessage(ownIdentity.getAddress(), recipient.getAddress()));
+                        // TODO: Do not throw an exception at this time, because the key is not yet needed due to the not yet implemented encryption
 //                        throw new PublicKeyNotPresentException(recipient);
                     }
                 }
