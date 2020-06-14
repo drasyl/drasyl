@@ -131,6 +131,10 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
     @Override
     protected ConnectionExceptionMessage.Error validateSessionRequest(JoinMessage requestMessage) {
         Identity clientIdentity = requestMessage.getIdentity();
+        PeerInformation clientInformation = requestMessage.getPeerInformation();
+
+        // add information at this stage to avoid identity collision at session creation stage
+        peersManager.addPeerInformation(clientIdentity, clientInformation);
 
         if (this.ownIdentity.equals(clientIdentity)) {
             return CONNECTION_ERROR_IDENTITY_COLLISION;
