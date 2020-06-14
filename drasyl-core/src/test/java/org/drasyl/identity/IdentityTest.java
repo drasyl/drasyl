@@ -19,12 +19,16 @@
 
 package org.drasyl.identity;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.drasyl.crypto.CryptoException;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class IdentityTest {
+    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+
     @Test
     void ofShouldNotThrowExceptionIfAddressCorrespondsToTheKey() throws CryptoException {
         assertNotNull(Identity.of("396dc9e224", "0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458"));
@@ -33,6 +37,17 @@ class IdentityTest {
     @Test
     void ofShouldThrowExceptionIfAddressDoesNotCorrespondsToTheKey() {
         assertThrows(IllegalArgumentException.class, () -> Identity.of("d40bee9aab", "0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458"));
+    }
+
+    @Test
+    @Disabled("Not implemented yet")
+    void fromJsonShouldThrowExceptionIfAddressDoesNotCorrespondsToTheKey() {
+        String json = "{\n" +
+                "  \"address\": \"d40bee9aab\",\n" +
+                "  \"publicKey\": \"0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458\"\n" +
+                "}";
+
+        assertThrows(IllegalArgumentException.class, () -> JSON_MAPPER.readValue(json, Identity.class));
     }
 
     @Test
