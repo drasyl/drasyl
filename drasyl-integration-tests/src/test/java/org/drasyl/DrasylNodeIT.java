@@ -34,12 +34,9 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Objects;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.event.EventType.EVENT_MESSAGE;
@@ -160,7 +157,7 @@ class DrasylNodeIT {
             TestObserver<EventType> client1Messages = client1.second().map(Event::getType).filter(c -> c == EVENT_MESSAGE).test();
             TestObserver<EventType> client2Messages = client2.second().map(Event::getType).filter(c -> c == EVENT_MESSAGE).test();
 
-//        superPeer.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("SSP: " + e));
+//        superSuperPeer.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("SSP: " + e));
 //        superPeer.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("SP: " + e));
 //        client1.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("C1: " + e));
 //        client2.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("C2: " + e));
@@ -188,10 +185,10 @@ class DrasylNodeIT {
             //
             // send messages
             //
-            TestObserver<EventType> superSuperPeerEvents = superSuperPeer.second().map(Event::getType).filter(EventType::isPeerEvent).test();
-            TestObserver<EventType> superPeerEvents = superPeer.second().map(Event::getType).filter(EventType::isPeerEvent).test();
-            TestObserver<EventType> client1Events = client1.second().map(Event::getType).filter(EventType::isPeerEvent).test();
-            TestObserver<EventType> client2Events = client2.second().map(Event::getType).filter(EventType::isPeerEvent).test();
+            TestObserver<EventType> superSuperPeerEvents = superSuperPeer.second().map(Event::getType).filter(t -> t == EVENT_PEER_DIRECT || t == EVENT_PEER_RELAY).test();
+            TestObserver<EventType> superPeerEvents = superPeer.second().map(Event::getType).filter(t -> t == EVENT_PEER_DIRECT).test();
+            TestObserver<EventType> client1Events = client1.second().map(Event::getType).filter(t -> t == EVENT_PEER_DIRECT).test();
+            TestObserver<EventType> client2Events = client2.second().map(Event::getType).filter(t -> t == EVENT_PEER_DIRECT).test();
 
 //            superSuperPeer.second().subscribe(e -> System.err.println("SSP: " + e));
 //            superPeer.second().subscribe(e -> System.err.println("SP: " + e));
@@ -199,13 +196,9 @@ class DrasylNodeIT {
 //            client2.second().subscribe(e -> System.err.println("C2: " + e));
 
             superSuperPeerEvents.awaitCount(3);
-            superSuperPeerEvents.assertValues(EVENT_PEER_DIRECT, EVENT_PEER_RELAY, EVENT_PEER_RELAY);
             superPeerEvents.awaitCount(3);
-            superPeerEvents.assertValues(EVENT_PEER_DIRECT, EVENT_PEER_DIRECT, EVENT_PEER_DIRECT);
             client1Events.awaitCount(1);
-            client1Events.assertValues(EVENT_PEER_DIRECT);
             client2Events.awaitCount(1);
-            client2Events.assertValues(EVENT_PEER_DIRECT);
         }
     }
 
@@ -308,13 +301,21 @@ class DrasylNodeIT {
             TestObserver<EventType> node4Events = node4.second().map(Event::getType).filter(EventType::isPeerEvent).test();
 
             node1Events.awaitCount(3);
-            node1Events.assertValues(EVENT_PEER_DIRECT, EVENT_PEER_DIRECT, EVENT_PEER_DIRECT);
+            node1Events.assertValueAt(0, EVENT_PEER_DIRECT);
+            node1Events.assertValueAt(1, EVENT_PEER_DIRECT);
+            node1Events.assertValueAt(2, EVENT_PEER_DIRECT);
             node2Events.awaitCount(3);
-            node2Events.assertValues(EVENT_PEER_DIRECT, EVENT_PEER_DIRECT, EVENT_PEER_DIRECT);
+            node2Events.assertValueAt(0, EVENT_PEER_DIRECT);
+            node2Events.assertValueAt(1, EVENT_PEER_DIRECT);
+            node2Events.assertValueAt(2, EVENT_PEER_DIRECT);
             node3Events.awaitCount(3);
-            node3Events.assertValues(EVENT_PEER_DIRECT, EVENT_PEER_DIRECT, EVENT_PEER_DIRECT);
+            node3Events.assertValueAt(0, EVENT_PEER_DIRECT);
+            node3Events.assertValueAt(1, EVENT_PEER_DIRECT);
+            node3Events.assertValueAt(2, EVENT_PEER_DIRECT);
             node4Events.awaitCount(3);
-            node4Events.assertValues(EVENT_PEER_DIRECT, EVENT_PEER_DIRECT, EVENT_PEER_DIRECT);
+            node4Events.assertValueAt(0, EVENT_PEER_DIRECT);
+            node4Events.assertValueAt(1, EVENT_PEER_DIRECT);
+            node4Events.assertValueAt(2, EVENT_PEER_DIRECT);
         }
     }
 
