@@ -130,7 +130,7 @@ public class IdentityManager {
      * @return
      * @throws IdentityManagerException
      */
-    private static PrivateIdentity generateIdentity() throws IdentityManagerException {
+    static PrivateIdentity generateIdentity() throws IdentityManagerException {
         try {
             KeyPair newKeyPair = Crypto.generateKeys();
             CompressedPublicKey publicKey = CompressedPublicKey.of(newKeyPair.getPublic());
