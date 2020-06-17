@@ -94,7 +94,6 @@ public class NodeServerHttpHandler extends SimpleChannelInboundHandler<FullHttpR
         else if ("/peers.json".equals(req.uri())) {
             DefaultFullHttpResponse res = new DefaultFullHttpResponse(req.protocolVersion(), FORBIDDEN,
                     getPeers(peersManager));
-            res.headers().set("x-address", identity.getAddress());
             res.headers().set("x-public-key", identity.getPublicKey());
             res.headers().set(CONTENT_TYPE, "application/json; charset=UTF-8");
             sendHttpResponse(ctx, res);
@@ -112,7 +111,6 @@ public class NodeServerHttpHandler extends SimpleChannelInboundHandler<FullHttpR
                                         HttpResponseStatus status) {
         ByteBuf content = getContent(identity);
         FullHttpResponse res = new DefaultFullHttpResponse(req.protocolVersion(), status, content);
-        res.headers().set("x-address", identity.getAddress());
         res.headers().set("x-public-key", identity.getPublicKey());
         res.headers().set(CONTENT_TYPE, "text/html; charset=UTF-8");
         HttpUtil.setContentLength(res, content.readableBytes());
@@ -155,7 +153,7 @@ public class NodeServerHttpHandler extends SimpleChannelInboundHandler<FullHttpR
                         "<h1>Bad Request</h1>\n" +
                         "<p>Not a WebSocket Handshake Request: Missing Upgrade.</p>\n" +
                         "<hr>\n" +
-                        "<address>drasyl/" + DrasylNode.getVersion() + " with Address " + identity.getAddress() + " and Public Key " + identity.getPublicKey() + "</address>\n" +
+                        "<address>drasyl/" + DrasylNode.getVersion() + " with Public Key " + identity.getPublicKey() + "</address>\n" +
                         "</body></html>\n", CharsetUtil.UTF_8);
     }
 }

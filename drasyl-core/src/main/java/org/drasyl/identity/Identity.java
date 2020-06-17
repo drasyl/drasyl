@@ -20,69 +20,68 @@ package org.drasyl.identity;
 
 import org.drasyl.crypto.CryptoException;
 
+import java.util.Objects;
+
 /**
- * Represents the public identity of a peer (includes address and public key).
+ * Represents the public identity of a peer.
  */
-public class Identity extends AbstractIdentity {
+public class Identity {
     protected final CompressedPublicKey publicKey;
 
     private Identity() {
-        super(null);
-        publicKey = null;
+        this.publicKey = null;
     }
 
-    protected Identity(Address address, CompressedPublicKey publicKey) {
-        super(address);
-        this.publicKey = publicKey;
+    protected Identity(String publicKey) throws CryptoException {
+        this.publicKey = CompressedPublicKey.of(publicKey);
+    }
 
-        if (this.publicKey != null && !Address.verify(address, publicKey)) {
-            throw new IllegalArgumentException("Address '" + address +"' does not correspond to Public Key '" + publicKey + "'");
-        }
+    protected Identity(CompressedPublicKey publicKey) {
+        this.publicKey = publicKey;
     }
 
     public CompressedPublicKey getPublicKey() {
         return publicKey;
     }
 
-    @Override
-    public String toString() {
-        return "Identity{" +
-                "address=" + address +
-                ", publicKey=" + publicKey +
-                '}';
-    }
-
-    @Override
-    public int hashCode() {
-        return super.hashCode();
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        return super.equals(o);
-    }
-
     public boolean hasPublicKey() {
         return publicKey != null;
     }
 
-    public static Identity of(Address address) {
-        return new Identity(address, null);
+    @Override
+    public int hashCode() {
+        return Objects.hash(publicKey);
     }
 
-    public static Identity of(String address) {
-        return of(Address.of(address));
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        Identity identity = (Identity) o;
+        return Objects.equals(publicKey, identity.publicKey);
     }
 
-    public static Identity of(String address, String publicKey) throws CryptoException {
-        return new Identity(Address.of(address), CompressedPublicKey.of(publicKey));
+    @Override
+    public String toString() {
+        return "Identity{" +
+                "publicKey=" + publicKey +
+                '}';
     }
 
-    public static Identity of(Address address, String publicKey) throws CryptoException {
-        return new Identity(address, CompressedPublicKey.of(publicKey));
+    public static Identity of(String publicKey) {
+        try {
+            return of(CompressedPublicKey.of(publicKey));
+        }
+        catch (CryptoException e) {
+            throw new IllegalArgumentException(e);
+        }
     }
 
-    public static Identity of(Address address, CompressedPublicKey publicKey) {
-        return new Identity(address, publicKey);
+    public static Identity of(CompressedPublicKey publicKey) {
+        return new Identity(publicKey);
     }
 }

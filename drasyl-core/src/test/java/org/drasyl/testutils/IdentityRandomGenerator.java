@@ -16,12 +16,23 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.identity;
+package org.drasyl.testutils;
 
 import org.drasyl.crypto.Crypto;
+import org.drasyl.crypto.CryptoException;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
 
-public class AddressTestHelper {
-    public static Address random() {
-        return Address.of(Crypto.randomString(5));
+public final class IdentityRandomGenerator {
+    private IdentityRandomGenerator() {
+    }
+
+    public static Identity random() {
+        try {
+            return Identity.of(CompressedPublicKey.of(Crypto.generateKeys().getPublic()));
+        }
+        catch (CryptoException e) {
+            return null;
+        }
     }
 }

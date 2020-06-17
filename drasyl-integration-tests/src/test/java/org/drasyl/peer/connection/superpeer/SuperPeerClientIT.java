@@ -114,7 +114,7 @@ class SuperPeerClientIT {
     }
 
     @AfterEach
-    void cleanUp(TestInfo info) throws IdentityManagerException, InterruptedException {
+    void cleanUp(TestInfo info) throws IdentityManagerException {
         if (client != null) {
             client.close();
         }
@@ -140,7 +140,7 @@ class SuperPeerClientIT {
 
         // verify received messages
         receivedMessages.awaitCount(1);
-        receivedMessages.assertValueAt(0, new JoinMessage(identityManager.getNonPrivateIdentity(), PeerInformation.of(server.getEndpoints()), Set.of()));
+        receivedMessages.assertValueAt(0, new JoinMessage(identityManager.getProofOfWork(), identityManager.getNonPrivateIdentity(), PeerInformation.of(server.getEndpoints()), Set.of()));
     }
 
     @Disabled("Race Condition error")
@@ -215,7 +215,7 @@ class SuperPeerClientIT {
         sentMessages.awaitCount(1);
 
         // send message
-        ApplicationMessage request = new ApplicationMessage(identityManager.getAddress(), identityManagerServer.getAddress(), new byte[]{
+        ApplicationMessage request = new ApplicationMessage(identityManager.getNonPrivateIdentity(), identityManagerServer.getNonPrivateIdentity(), new byte[]{
                 0x00,
                 0x01
         });

@@ -21,7 +21,6 @@ package org.drasyl.peer.connection.message;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.javacrumbs.jsonunit.core.Option;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeerInformation;
 import org.junit.jupiter.api.AfterEach;
@@ -44,9 +43,9 @@ class WelcomeMessageTest {
     private String correspondingId;
 
     @BeforeEach
-    void setUp() throws CryptoException {
+    void setUp() {
         AbstractMessageWithUserAgent.userAgentGenerator = () -> "";
-        identity = Identity.of("d40bee9aab", "034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d");
+        identity = Identity.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d");
         peerInformation = PeerInformation.of(Set.of(URI.create("ws://test")));
         correspondingId = "correspondingId";
     }
@@ -62,7 +61,7 @@ class WelcomeMessageTest {
 
         assertThatJson(JSON_MAPPER.writeValueAsString(message))
                 .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo("{\"@type\":\"WelcomeMessage\",\"id\":\"" + message.getId() + "\",\"userAgent\":\"\",\"identity\":{\"address\":\"d40bee9aab\",\"publicKey\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\"},\"peerInformation\":{\"endpoints\":[\"ws://test\"]},\"correspondingId\":\"correspondingId\"}");
+                .isEqualTo("{\"@type\":\"WelcomeMessage\",\"id\":\"" + message.getId() + "\",\"userAgent\":\"\",\"identity\":{\"publicKey\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\"},\"peerInformation\":{\"endpoints\":[\"ws://test\"]},\"correspondingId\":\"correspondingId\"}");
 
         // Ignore toString()
         message.toString();
@@ -70,7 +69,7 @@ class WelcomeMessageTest {
 
     @Test
     void fromJson() throws IOException {
-        String json = "{\"@type\":\"WelcomeMessage\",\"id\":\"4AE5CDCD8C21719F8E779F21\",\"userAgent\":\"\",\"identity\":{\"address\":\"d40bee9aab\",\"publicKey\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\"},\"peerInformation\":{\"endpoints\":[\"ws://test\"]}}";
+        String json = "{\"@type\":\"WelcomeMessage\",\"id\":\"4AE5CDCD8C21719F8E779F21\",\"userAgent\":\"\",\"identity\":{\"publicKey\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\"},\"peerInformation\":{\"endpoints\":[\"ws://test\"]}}";
 
         assertThat(JSON_MAPPER.readValue(json, Message.class), instanceOf(WelcomeMessage.class));
     }

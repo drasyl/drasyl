@@ -30,7 +30,7 @@ import io.sentry.event.User;
 import org.drasyl.event.Event;
 import org.drasyl.event.EventType;
 import org.drasyl.event.Node;
-import org.drasyl.identity.Address;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.messenger.MessageSink;
@@ -172,6 +172,17 @@ public abstract class DrasylNode {
      */
     public abstract void onEvent(Event event);
 
+    /**
+     * Set log level of all drasyl loggers in org.drasyl package namespace.
+     *
+     * @param level
+     */
+    public static void setLogLevel(Level level) {
+        // set config level of all drasyl loggers
+        LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
+        context.getLoggerList().stream().filter(l -> l.getName().startsWith("org.drasyl")).forEach(l -> l.setLevel(level));
+    }
+
     DrasylNode(DrasylNodeConfig config,
                IdentityManager identityManager,
                PeersManager peersManager,
@@ -197,7 +208,7 @@ public abstract class DrasylNode {
     }
 
     public synchronized void send(String recipient, byte[] payload) throws MessengerException {
-        send(Address.of(recipient), payload);
+        send(Identity.of(recipient), payload);
     }
 
     /**
@@ -210,8 +221,8 @@ public abstract class DrasylNode {
      * @param payload   the payload of a message
      * @throws DrasylException if an error occurs during the processing
      */
-    public synchronized void send(Address recipient, byte[] payload) throws MessengerException {
-        messenger.send(new ApplicationMessage(identityManager.getAddress(), recipient, payload));
+    public synchronized void send(Identity recipient, byte[] payload) throws MessengerException {
+        messenger.send(new ApplicationMessage(identityManager.getNonPrivateIdentity(), recipient, payload));
     }
 
     /**
@@ -225,7 +236,7 @@ public abstract class DrasylNode {
      * @throws DrasylException if an error occurs during the processing
      */
     public synchronized void send(String recipient, String payload) throws MessengerException {
-        send(Address.of(recipient), payload);
+        send(Identity.of(recipient), payload);
     }
 
     /**
@@ -238,7 +249,7 @@ public abstract class DrasylNode {
      * @param payload   the payload of a message
      * @throws DrasylException if an error occurs during the processing
      */
-    public synchronized void send(Address recipient, String payload) throws MessengerException {
+    public synchronized void send(Identity recipient, String payload) throws MessengerException {
         send(recipient, payload.getBytes());
     }
 
@@ -396,21 +407,11 @@ public abstract class DrasylNode {
         }
     }
 
-    /**
-     * Set log level of all drasyl loggers in org.drasyl package namespace.
-     * @param level
-     */
-    public static void setLogLevel(Level level) {
-        // set config level of all drasyl loggers
-        LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
-        context.getLoggerList().stream().filter(l -> l.getName().startsWith("org.drasyl")).forEach(l -> l.setLevel(level));
-    }
-
     private void loadIdentity() {
         try {
             identityManager.loadOrCreateIdentity();
             LOG.debug("Using Identity '{}'", identityManager.getIdentity());
-            Sentry.getContext().setUser(new User(identityManager.getAddress().toString(), null, null, null));
+            Sentry.getContext().setUser(new User(identityManager.getNonPrivateIdentity().toString(), null, null, null));
         }
         catch (IdentityManagerException e) {
             throw new CompletionException(e);

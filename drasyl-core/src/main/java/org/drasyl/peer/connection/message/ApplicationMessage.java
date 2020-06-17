@@ -18,7 +18,7 @@
  */
 package org.drasyl.peer.connection.message;
 
-import org.drasyl.identity.Address;
+import org.drasyl.identity.Identity;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -29,7 +29,7 @@ import static java.util.Objects.requireNonNull;
  * A message that is sent by an application running on drasyl.
  */
 public class ApplicationMessage extends RelayableMessage implements RequestMessage {
-    private final Address sender;
+    private final Identity sender;
     private final byte[] payload;
 
     protected ApplicationMessage() {
@@ -39,8 +39,8 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
     }
 
     ApplicationMessage(String id,
-                       Address recipient,
-                       Address sender,
+                       Identity recipient,
+                       Identity sender,
                        byte[] payload,
                        short hopCount) {
         super(id, hopCount, recipient);
@@ -50,22 +50,21 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
 
     /**
      * Creates a new message.
-     *
-     * @param sender    The sender
+     *  @param sender    The sender
      * @param recipient The recipient
      * @param payload   The data to be sent
      */
-    public ApplicationMessage(Address sender, Address recipient, byte[] payload) {
+    public ApplicationMessage(Identity sender, Identity recipient, byte[] payload) {
         this(sender, recipient, payload, (short) 0);
     }
 
-    ApplicationMessage(Address sender, Address recipient, byte[] payload, short hopCount) {
+    ApplicationMessage(Identity sender, Identity recipient, byte[] payload, short hopCount) {
         super(recipient, hopCount);
         this.sender = requireNonNull(sender);
         this.payload = requireNonNull(payload);
     }
 
-    public Address getSender() {
+    public Identity getSender() {
         return sender;
     }
 

@@ -162,7 +162,10 @@ class DrasylNodeIT {
 //        client1.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("C1: " + e));
 //        client2.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("C2: " + e));
 
-            Set<String> identities = Set.of("4c4fdd0957", "9df9214d78", "030f018704", "be0300f1a4");
+            Set<String> identities = Set.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a",
+                    "030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22",
+                    "025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4",
+                    "025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e");
             for (String recipient : identities) {
                 superSuperPeer.first().send(recipient, "Hallo Welt");
                 superPeer.first().send(recipient, "Hallo Welt");
@@ -272,7 +275,10 @@ class DrasylNodeIT {
 //        client1.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("C1: " + e));
 //        client2.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("C2: " + e));
 
-            Set<String> identities = Set.of("4c4fdd0957", "9df9214d78", "030f018704", "be0300f1a4");
+            Set<String> identities = Set.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a",
+                    "030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22",
+                    "025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4",
+                    "025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e");
             for (String recipient : identities) {
                 node1.first().send(recipient, "Hallo Welt");
                 node2.first().send(recipient, "Hallo Welt");
@@ -389,10 +395,10 @@ class DrasylNodeIT {
 //        client1.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("C1: " + e));
 //        client2.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("C2: " + e));
 
-            node1.first().send("4c4fdd0957", "Hallo Welt");
-            node2.first().send("9df9214d78", "Hallo Welt");
-            node3.first().send("030f018704", "Hallo Welt");
-            node4.first().send("be0300f1a4", "Hallo Welt");
+            node1.first().send("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a", "Hallo Welt");
+            node2.first().send("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22", "Hallo Welt");
+            node3.first().send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", "Hallo Welt");
+            node4.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", "Hallo Welt");
 
             //
             // verify

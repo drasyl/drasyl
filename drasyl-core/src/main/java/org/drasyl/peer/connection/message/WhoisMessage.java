@@ -18,7 +18,7 @@
  */
 package org.drasyl.peer.connection.message;
 
-import org.drasyl.identity.Address;
+import org.drasyl.identity.Identity;
 
 import java.util.Objects;
 
@@ -26,33 +26,33 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * This message is used to request information (like public key and endpoints) for a specific
- * address.
+ * identity.
  */
 public class WhoisMessage extends AbstractMessage implements RequestMessage {
-    private final Address requester;
-    private final Address address;
+    private final Identity requester;
+    private final Identity identity;
 
     WhoisMessage() {
         requester = null;
-        address = null;
+        identity = null;
     }
 
-    public WhoisMessage(Address requester, Address address) {
+    public WhoisMessage(Identity requester, Identity identity) {
         this.requester = requireNonNull(requester);
-        this.address = requireNonNull(address);
+        this.identity = requireNonNull(identity);
     }
 
-    public Address getRequester() {
+    public Identity getRequester() {
         return requester;
     }
 
-    public Address getAddress() {
-        return address;
+    public Identity getIdentity() {
+        return identity;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), requester, address);
+        return Objects.hash(super.hashCode(), requester, identity);
     }
 
     @Override
@@ -68,14 +68,14 @@ public class WhoisMessage extends AbstractMessage implements RequestMessage {
         }
         WhoisMessage that = (WhoisMessage) o;
         return Objects.equals(requester, that.requester) &&
-                Objects.equals(address, that.address);
+                Objects.equals(identity, that.identity);
     }
 
     @Override
     public String toString() {
         return "WhoisMessage{" +
                 "requester=" + requester +
-                ", address=" + address +
+                ", identity=" + identity +
                 ", id='" + id + '\'' +
                 '}';
     }

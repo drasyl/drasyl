@@ -23,7 +23,6 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableMap;
 import org.drasyl.event.Event;
 import org.drasyl.event.Peer;
-import org.drasyl.identity.Address;
 import org.drasyl.identity.Identity;
 import org.drasyl.util.MapToPairArraySerializer;
 import org.drasyl.util.Pair;
@@ -219,7 +218,7 @@ public class PeersManager {
         try {
             lock.readLock().lock();
 
-            return ImmutableMap.copyOf(grandchildrenRoutes);
+            return Map.copyOf(grandchildrenRoutes);
         }
         finally {
             lock.readLock().unlock();
@@ -261,29 +260,6 @@ public class PeersManager {
 
             peers.computeIfAbsent(identity, i -> PeerInformation.of());
             return peers.get(identity);
-        }
-        finally {
-            lock.readLock().unlock();
-        }
-    }
-
-    public Pair<Identity, PeerInformation> getIdentityAndPeerInformation(Address address) {
-        try {
-            lock.readLock().lock();
-
-            // get identity with public key
-            Identity searchIdentity = Identity.of(address);
-            Optional<Identity> search = peers.keySet().stream().filter(i -> i.equals(searchIdentity)).findFirst();
-            Identity identity;
-            if (search.isPresent()) {
-                identity = search.get();
-            }
-            else {
-                identity = searchIdentity;
-            }
-
-            peers.computeIfAbsent(identity, i -> PeerInformation.of());
-            return Pair.of(identity, peers.get(identity));
         }
         finally {
             lock.readLock().unlock();
@@ -412,8 +388,7 @@ public class PeersManager {
     }
 
     /**
-     * Shortcut for call {@link #unsetSuperPeer()} and {@link #removePeerInformation(Identity,
-     * PeerInformation)}.
+     * Shortcut for call {@link #unsetSuperPeer()} and {@link #removePeerInformation(Identity, PeerInformation)}.
      *
      * @return
      */

@@ -18,7 +18,6 @@
  */
 package org.drasyl.peer.connection.message;
 
-import org.drasyl.identity.Address;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeerInformation;
 
@@ -40,7 +39,7 @@ public class IdentityMessage extends RelayableMessage implements ResponseMessage
         correspondingId = null;
     }
 
-    public IdentityMessage(Address recipient,
+    public IdentityMessage(Identity recipient,
                            Identity identity,
                            PeerInformation peerInformation,
                            String correspondingId) {
@@ -50,7 +49,7 @@ public class IdentityMessage extends RelayableMessage implements ResponseMessage
         this.correspondingId = correspondingId;
     }
 
-    public IdentityMessage(Address recipient,
+    public IdentityMessage(Identity recipient,
                            Identity identity,
                            PeerInformation peerInformation,
                            String correspondingId,
