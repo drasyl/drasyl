@@ -16,34 +16,34 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.identity;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.drasyl.crypto.CryptoException;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class IdentityTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
     @Test
-    void ofShouldNotThrowExceptionIfAddressCorrespondsToTheKey() throws CryptoException {
-        assertNotNull(Identity.of("396dc9e224", "0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458"));
+    void ofShouldNotThrowExceptionIfAddressCorrespondsToTheKey() {
+        assertNotNull(Identity.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458"));
     }
 
     @Test
     void ofShouldThrowExceptionIfAddressDoesNotCorrespondsToTheKey() {
-        assertThrows(IllegalArgumentException.class, () -> Identity.of("d40bee9aab", "0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458"));
+        assertThrows(IllegalArgumentException.class, () -> Identity.of("e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458"));
     }
 
     @Test
     @Disabled("Not implemented yet")
     void fromJsonShouldThrowExceptionIfAddressDoesNotCorrespondsToTheKey() {
         String json = "{\n" +
-                "  \"address\": \"d40bee9aab\",\n" +
                 "  \"publicKey\": \"0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458\"\n" +
                 "}";
 
@@ -51,35 +51,35 @@ class IdentityTest {
     }
 
     @Test
-    void equalsShouldReturnTrueOnSameAddress() throws CryptoException {
-        Identity identity1 = Identity.of("4da5ec56c7");
-        Identity identity2 = Identity.of("4da5ec56c7", "026abb56739382769fc906849c34b24cd403dd250607f3133803f459eac04e608d");
-        Identity identity3 = Identity.of("c5461a6001", "030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3");
-        Identity identity4 = Identity.of("4da5ec56c7", "02264a4f8d81c0a271708ae5db3bf14d24262179d7b0595ba4ee90d435d4dc1170");
+    void equalsShouldReturnTrueOnSameAddress() {
+        Identity identity1 = Identity.of("026abb56739382769fc906849c34b24cd403dd250607f3133803f459eac04e608d");
+        Identity identity2 = Identity.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3");
+        Identity identity3 = Identity.of("02264a4f8d81c0a271708ae5db3bf14d24262179d7b0595ba4ee90d435d4dc1170");
+        Identity identity4 = Identity.of("026abb56739382769fc906849c34b24cd403dd250607f3133803f459eac04e608d");
 
-        assertEquals(identity1, identity2);
-        assertEquals(identity2, identity1);
         assertNotEquals(identity1, identity3);
         assertNotEquals(identity3, identity1);
         assertNotEquals(identity2, identity3);
         assertNotEquals(identity3, identity2);
+        assertNotEquals(identity1, identity2);
+        assertNotEquals(identity2, identity1);
         assertEquals(identity1, identity4);
         assertEquals(identity4, identity1);
     }
 
     @Test
-    void hashCodeShouldReturnTrueOnSameAddress() throws CryptoException {
-        Identity identity1 = Identity.of("4da5ec56c7");
-        Identity identity2 = Identity.of("4da5ec56c7", "026abb56739382769fc906849c34b24cd403dd250607f3133803f459eac04e608d");
-        Identity identity3 = Identity.of("c5461a6001", "030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3");
-        Identity identity4 = Identity.of("4da5ec56c7", "02264a4f8d81c0a271708ae5db3bf14d24262179d7b0595ba4ee90d435d4dc1170");
+    void hashCodeShouldReturnTrueOnSameAddress() {
+        Identity identity1 = Identity.of("026abb56739382769fc906849c34b24cd403dd250607f3133803f459eac04e608d");
+        Identity identity2 = Identity.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3");
+        Identity identity3 = Identity.of("02264a4f8d81c0a271708ae5db3bf14d24262179d7b0595ba4ee90d435d4dc1170");
+        Identity identity4 = Identity.of("026abb56739382769fc906849c34b24cd403dd250607f3133803f459eac04e608d");
 
-        assertEquals(identity1.hashCode(), identity2.hashCode());
-        assertEquals(identity2.hashCode(), identity1.hashCode());
         assertNotEquals(identity1.hashCode(), identity3.hashCode());
         assertNotEquals(identity3.hashCode(), identity1.hashCode());
         assertNotEquals(identity2.hashCode(), identity3.hashCode());
         assertNotEquals(identity3.hashCode(), identity2.hashCode());
+        assertNotEquals(identity1.hashCode(), identity2.hashCode());
+        assertNotEquals(identity2.hashCode(), identity1.hashCode());
         assertEquals(identity1.hashCode(), identity4.hashCode());
         assertEquals(identity4.hashCode(), identity1.hashCode());
     }

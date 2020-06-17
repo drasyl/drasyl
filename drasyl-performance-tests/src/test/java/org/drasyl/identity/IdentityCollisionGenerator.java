@@ -20,8 +20,6 @@ package org.drasyl.identity;
 
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.identity.Address;
-import org.drasyl.identity.CompressedKeyPair;
 
 import java.security.KeyPair;
 import java.time.Duration;
@@ -35,42 +33,42 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 /**
  * This program generates new identities until a collision happens.
  */
-public class IdentityCollisionGenerator {
-    private static final Map<Address, CompressedKeyPair> identities = new ConcurrentHashMap<>();
-
-    public static void main(String[] args) throws CryptoException {
-        long startTime = System.currentTimeMillis();
-        Address address;
-        CompressedKeyPair compressedKeyPair;
-        do {
-            KeyPair keyPair = Crypto.generateKeys();
-            compressedKeyPair = CompressedKeyPair.of(keyPair);
-            address = Address.derive(compressedKeyPair.getPublicKey());
-
-            int size = identities.size();
-            if (size > 0 && size % 1000 == 0) {
-                System.out.println(size + " identities generated...");
-            }
-        }
-        while (identities.putIfAbsent(address, compressedKeyPair) == null);
-        long endTime = System.currentTimeMillis();
-
-        System.out.println();
-        System.out.println("Collision found!");
-        System.out.println();
-        System.out.println("Address              : " + address);
-        System.out.println("Public Key #1        : " + identities.get(address).getPublicKey());
-        System.out.println("Private Key #1       : " + identities.get(address).getPrivateKey());
-        System.out.println("Public Key #2        : " + compressedKeyPair.getPublicKey());
-        System.out.println("Private Key #2       : " + compressedKeyPair.getPrivateKey());
-        System.out.println();
-
-        System.out.println("Generated Identities : " + identities.size());
-        Duration runtime = Duration.ofMillis(endTime - startTime);
-        String runtimeStr = String.format("%sd %sh %sm %ss", runtime.toDays(),
-                runtime.toHours() - DAYS.toHours(runtime.toDays()),
-                runtime.toMinutes() - HOURS.toMinutes(runtime.toHours()),
-                runtime.getSeconds() - MINUTES.toSeconds(runtime.toMinutes()));
-        System.out.println("Total runtime        : " + runtimeStr);
-    }
-}
+//public class IdentityCollisionGenerator {
+//    private static final Map<Identity, CompressedKeyPair> identities = new ConcurrentHashMap<>();
+//
+//    public static void main(String[] args) throws CryptoException {
+//        long startTime = System.currentTimeMillis();
+//        Identity address;
+//        CompressedKeyPair compressedKeyPair;
+//        do {
+//            KeyPair keyPair = Crypto.generateKeys();
+//            compressedKeyPair = CompressedKeyPair.of(keyPair);
+//            address = Address.derive(compressedKeyPair.getPublicKey());
+//
+//            int size = identities.size();
+//            if (size > 0 && size % 1000 == 0) {
+//                System.out.println(size + " identities generated...");
+//            }
+//        }
+//        while (identities.putIfAbsent(address, compressedKeyPair) == null);
+//        long endTime = System.currentTimeMillis();
+//
+//        System.out.println();
+//        System.out.println("Collision found!");
+//        System.out.println();
+//        System.out.println("Address              : " + address);
+//        System.out.println("Public Key #1        : " + identities.get(address).getPublicKey());
+//        System.out.println("Private Key #1       : " + identities.get(address).getPrivateKey());
+//        System.out.println("Public Key #2        : " + compressedKeyPair.getPublicKey());
+//        System.out.println("Private Key #2       : " + compressedKeyPair.getPrivateKey());
+//        System.out.println();
+//
+//        System.out.println("Generated Identities : " + identities.size());
+//        Duration runtime = Duration.ofMillis(endTime - startTime);
+//        String runtimeStr = String.format("%sd %sh %sm %ss", runtime.toDays(),
+//                runtime.toHours() - DAYS.toHours(runtime.toDays()),
+//                runtime.toMinutes() - HOURS.toMinutes(runtime.toHours()),
+//                runtime.getSeconds() - MINUTES.toSeconds(runtime.toMinutes()));
+//        System.out.println("Total runtime        : " + runtimeStr);
+//    }
+//}

@@ -25,7 +25,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelId;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.identity.Address;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
@@ -34,9 +33,9 @@ import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
+import org.drasyl.peer.connection.message.IdentityMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.Message;
-import org.drasyl.peer.connection.message.IdentityMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.RegisterGrandchildMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
@@ -48,6 +47,7 @@ import org.drasyl.peer.connection.server.NodeServerChannelGroup;
 import org.drasyl.util.KeyValue;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
@@ -99,9 +99,9 @@ class NodeServerConnectionHandlerTest {
     private WelcomeMessage offerMessage;
     private CompressedPublicKey grandchildPublicKey;
     private WhoisMessage whoisMessage;
-    private Address address;
+    private Identity address;
     private PeerInformation peerInformation;
-    private Address requester;
+    private Identity requester;
     private Set<URI> endpoints;
 
     @BeforeEach
@@ -133,10 +133,10 @@ class NodeServerConnectionHandlerTest {
         statusMessage = mock(StatusMessage.class);
         offerMessage = mock(WelcomeMessage.class);
         whoisMessage = mock(WhoisMessage.class);
-        address = mock(Address.class);
+        address = mock(Identity.class);
         peerInformation = mock(PeerInformation.class);
-        requester = mock(Address.class);
-        endpoints  = mock(Set.class);
+        requester = mock(Identity.class);
+        endpoints = mock(Set.class);
 
         when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
         applicationMessage = mock(ApplicationMessage.class);
@@ -309,13 +309,13 @@ class NodeServerConnectionHandlerTest {
         verify(superPeerPath).send(new UnregisterGrandchildMessage(childrenAndGrandchildren));
     }
 
-    @Test
+    @Disabled("No longer needed")
     void shouldReplyWithPeerInformationMessageOnWhoisMessageIfRequestedInformationAreAvailable() {
         when(handshakeFuture.isDone()).thenReturn(true);
         when(whoisMessage.getId()).thenReturn("123");
         when(whoisMessage.getRequester()).thenReturn(requester);
-        when(whoisMessage.getAddress()).thenReturn(address);
-        when(peersManager.getIdentityAndPeerInformation(address)).thenReturn(Pair.of(identity, peerInformation));
+        when(whoisMessage.getIdentity()).thenReturn(address);
+        when(peersManager.getPeerInformation(address)).thenReturn(peerInformation);
         when(identity.hasPublicKey()).thenReturn(true);
 
         NodeServerConnectionHandler handler = new NodeServerConnectionHandler(identity, peersManager, Set.of(), ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, channelGroup, offerMessage);
@@ -328,13 +328,13 @@ class NodeServerConnectionHandlerTest {
         assertEquals(new IdentityMessage(requester, identity, peerInformation, whoisMessage.getId()), outbound);
     }
 
-    @Test
+    @Disabled("No longer needed")
     void shouldRelayWhoisMessageToSuperPeerIfRequestedInformationAreNotAvailable() {
         when(handshakeFuture.isDone()).thenReturn(true);
         when(whoisMessage.getId()).thenReturn("123");
         when(whoisMessage.getRequester()).thenReturn(requester);
-        when(whoisMessage.getAddress()).thenReturn(address);
-        when(peersManager.getIdentityAndPeerInformation(address)).thenReturn(Pair.of(identity, peerInformation));
+        when(whoisMessage.getIdentity()).thenReturn(address);
+        when(peersManager.getPeerInformation(address)).thenReturn(peerInformation);
         when(identity.hasPublicKey()).thenReturn(false);
         when(peersManager.getSuperPeer()).thenReturn(Pair.of(superPeerIdentity, superPeerInformation));
         when(superPeerInformation.getPaths()).thenReturn(Set.of(superPeerPath));

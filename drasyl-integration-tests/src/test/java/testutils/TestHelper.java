@@ -18,18 +18,17 @@
  */
 package testutils;
 
-import org.drasyl.DrasylNodeConfig;
+import org.awaitility.Awaitility;
+import org.awaitility.Durations;
 import org.drasyl.crypto.Crypto;
-import org.drasyl.identity.Address;
-import org.drasyl.peer.connection.server.NodeServer;
-import org.drasyl.peer.connection.server.NodeServerException;
+import org.drasyl.crypto.CryptoException;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
 import org.drasyl.util.NetworkUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
-import static org.awaitility.Awaitility.with;
-import static org.awaitility.Durations.FIVE_MINUTES;
 import static testutils.AnsiColor.COLOR_RESET;
 
 public final class TestHelper {
@@ -58,55 +57,21 @@ public final class TestHelper {
     }
 
     /**
-     * Executes the given procedure in a relay server environment. The NodeServer is automatically
-     * shutdown after execution.
-     *
-     * @param procedure the procedure
-     * @param config    the relay server config
-     */
-    public static void giveRelayServerEnv(Runnable procedure,
-                                          DrasylNodeConfig config,
-                                          NodeServer relay) throws NodeServerException {
-        giveRelayServerEnv(procedure, config, relay, true);
-    }
-
-    /**
-     * Executes the given procedure in a server server environment.
-     *
-     * @param procedure           the procedure
-     * @param config              the server server config
-     * @param closeAfterProcedure if the NodeServer should automatically shutdown after execution
-     */
-    public static void giveRelayServerEnv(Runnable procedure,
-                                          DrasylNodeConfig config,
-                                          NodeServer server,
-                                          boolean closeAfterProcedure) throws NodeServerException {
-        TestHelper.waitUntilNetworkAvailable(config.getServerBindPort());
-        server.open();
-
-        with().pollInSameThread().await().pollDelay(0, NANOSECONDS).atMost(FIVE_MINUTES)
-                .until(() -> {
-                    return NetworkUtil.alive("127.0.0.1", server.getConfig().getServerBindPort());
-                });
-
-        procedure.run();
-
-        if (closeAfterProcedure) {
-            server.close();
-        }
-    }
-
-    /**
      * Waits until the given port is available or the timeout is reached.
      *
      * @param port the port
      */
     public static void waitUntilNetworkAvailable(int port) {
-        with().pollInSameThread().await().pollDelay(0, NANOSECONDS).atMost(FIVE_MINUTES)
+        Awaitility.with().pollInSameThread().await().pollDelay(0, NANOSECONDS).atMost(Durations.FIVE_MINUTES)
                 .until(() -> NetworkUtil.available(port));
     }
 
-    public static Address random() {
-        return Address.of(Crypto.randomString(5));
+    public static Identity random() {
+        try {
+            return Identity.of(CompressedPublicKey.of(Crypto.generateKeys().getPublic()));
+        }
+        catch (CryptoException e) {
+            return null;
+        }
     }
 }

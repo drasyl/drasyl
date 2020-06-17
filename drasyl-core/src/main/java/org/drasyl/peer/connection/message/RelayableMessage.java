@@ -18,7 +18,7 @@
  */
 package org.drasyl.peer.connection.message;
 
-import org.drasyl.identity.Address;
+import org.drasyl.identity.Identity;
 
 import java.util.Objects;
 
@@ -28,23 +28,23 @@ import static java.util.Objects.requireNonNull;
  * Includes messages that can be relayed to their recipient via multiple hops.
  */
 public abstract class RelayableMessage extends AbstractMessage {
-    protected final Address recipient;
+    protected final Identity recipient;
     protected short hopCount = 0;
 
-    protected RelayableMessage(String id, short hopCount, Address recipient) {
+    protected RelayableMessage(String id, short hopCount, Identity recipient) {
         super(id);
         this.recipient = requireNonNull(recipient);
         this.hopCount = hopCount;
     }
 
-    protected RelayableMessage(Address recipient, short hopCount) {
+    protected RelayableMessage(Identity recipient) {
+        this(recipient, (short) 0);
+    }
+
+    protected RelayableMessage(Identity recipient, short hopCount) {
         super();
         this.recipient = requireNonNull(recipient);
         this.hopCount = hopCount;
-    }
-
-    protected RelayableMessage(Address recipient) {
-        this(recipient, (short) 0);
     }
 
     protected RelayableMessage() {
@@ -66,7 +66,7 @@ public abstract class RelayableMessage extends AbstractMessage {
         hopCount++;
     }
 
-    public Address getRecipient() {
+    public Identity getRecipient() {
         return recipient;
     }
 

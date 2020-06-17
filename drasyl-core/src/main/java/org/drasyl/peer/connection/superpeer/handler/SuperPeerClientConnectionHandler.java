@@ -18,13 +18,12 @@
  */
 package org.drasyl.peer.connection.superpeer.handler;
 
-import com.google.common.cache.CacheBuilder;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.identity.Address;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.ProofOfWork;
 import org.drasyl.messenger.MessageSink;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.messenger.NoPathToIdentityException;
@@ -32,24 +31,20 @@ import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.handler.AbstractThreeWayHandshakeClientHandler;
-import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
-import org.drasyl.peer.connection.message.WhoisMessage;
 import org.drasyl.util.KeyValue;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.time.Duration;
-import java.util.Collections;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
-import static java.time.Duration.ofSeconds;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_WRONG_PUBLIC_KEY;
 import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE_IDENTITY;
 
@@ -68,9 +63,9 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
     private final CompressedPublicKey expectedPublicKey;
     private final Identity ownIdentity;
     private final PeersManager peersManager;
-    private final Set<Address> identityRequestsCache;
 
-    public SuperPeerClientConnectionHandler(CompressedPublicKey expectedPublicKey,
+    public SuperPeerClientConnectionHandler(ProofOfWork proofOfWork,
+                                            CompressedPublicKey expectedPublicKey,
                                             Identity ownIdentity,
                                             Set<URI> endpoints,
                                             Duration timeout,
@@ -79,7 +74,7 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
         super(
                 timeout,
                 messenger,
-                new JoinMessage(
+                new JoinMessage(proofOfWork,
                         ownIdentity,
                         PeerInformation.of(endpoints),
                         peersManager.getChildrenAndGrandchildren().entrySet().stream().map(KeyValue::of).collect(Collectors.toSet())
@@ -88,8 +83,6 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
         this.expectedPublicKey = expectedPublicKey;
         this.ownIdentity = ownIdentity;
         this.peersManager = peersManager;
-        // This cache contains all identity requests of the last 5 seconds
-        this.identityRequestsCache = Collections.newSetFromMap(CacheBuilder.newBuilder().maximumSize(1000).expireAfterWrite(ofSeconds(5)).<Address, Boolean>build().asMap());
     }
 
     @SuppressWarnings({ "java:S107" })
@@ -100,13 +93,11 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
                                      Duration timeout,
                                      CompletableFuture<Void> handshakeFuture,
                                      ScheduledFuture<?> timeoutFuture,
-                                     JoinMessage requestMessage,
-                                     Set<Address> identityRequestsCache) {
+                                     JoinMessage requestMessage) {
         super(timeout, messenger, handshakeFuture, timeoutFuture, requestMessage);
         this.expectedPublicKey = expectedPublicKey;
         this.ownIdentity = ownIdentity;
         this.peersManager = peersManager;
-        this.identityRequestsCache = identityRequestsCache;
     }
 
     @Override
@@ -152,17 +143,6 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
 
         MessageSink messageSink = (recipient, message) -> {
             if (channel.isWritable()) {
-                if (message instanceof ApplicationMessage) {
-                    // if recipient's public key is not available, ask super peer for it
-                    Identity cachedRecipient = peersManager.getIdentity(recipient);
-                    if (!cachedRecipient.hasPublicKey() && shouldRequestIdentity(recipient.getAddress())) {
-                        LOG.debug("Public Key of recipient '{}' is not present. Request it from Super Peer.", cachedRecipient);
-                        ctx.writeAndFlush(new WhoisMessage(ownIdentity.getAddress(), recipient.getAddress()));
-                        // TODO: Do not throw an exception at this time, because the key is not yet needed due to the not yet implemented encryption
-//                        throw new PublicKeyNotPresentException(recipient);
-                    }
-                }
-
                 ctx.writeAndFlush(message);
             }
             else {
@@ -170,15 +150,5 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
             }
         };
         messenger.setSuperPeerSink(messageSink);
-    }
-
-    private synchronized boolean shouldRequestIdentity(Address address) {
-        if (identityRequestsCache.contains(address)) {
-            return false;
-        }
-        else {
-            identityRequestsCache.add(address);
-            return true;
-        }
     }
 }

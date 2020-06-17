@@ -40,6 +40,7 @@ import static java.util.Objects.requireNonNull;
  * contained in the identity.
  */
 public class IdentityManager {
+    public static final short POW_DIFFICULTY = 6;
     private static final Logger LOG = LoggerFactory.getLogger(IdentityManager.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private final DrasylNodeConfig config;
@@ -68,10 +69,10 @@ public class IdentityManager {
      * @throws IdentityManagerException
      */
     public void loadOrCreateIdentity() throws IdentityManagerException {
-        if (config.getIdentityAddress() != null && config.getIdentityPublicKey() != null && config.getIdentityPrivateKey() != null) {
+        if (config.getProofOfWork() != null && config.getIdentityPublicKey() != null && config.getIdentityPrivateKey() != null) {
             LOG.debug("Load identity specified in config");
             try {
-                this.identity = PrivateIdentity.of(config.getIdentityAddress(), config.getIdentityPublicKey(), config.getIdentityPrivateKey());
+                this.identity = PrivateIdentity.of(config.getProofOfWork(), config.getIdentityPublicKey(), config.getIdentityPrivateKey());
             }
             catch (IllegalArgumentException e) {
                 throw new IdentityManagerException("Identity read from configuration seems invalid: " + e.getMessage());
@@ -85,7 +86,7 @@ public class IdentityManager {
                 this.identity = readIdentityFile(path);
             }
             else {
-                LOG.debug("No Identity present. Generate a new one and write to file '{}'", path);
+                LOG.debug("No Identity present. Generate a new one and write to file '{}'.", path);
                 PrivateIdentity myIdentity = generateIdentity();
                 writeIdentityFile(path, myIdentity);
                 this.identity = myIdentity;
@@ -135,7 +136,8 @@ public class IdentityManager {
             KeyPair newKeyPair = Crypto.generateKeys();
             CompressedPublicKey publicKey = CompressedPublicKey.of(newKeyPair.getPublic());
             CompressedPrivateKey privateKey = CompressedPrivateKey.of(newKeyPair.getPrivate());
-            return PrivateIdentity.of(Address.derive(publicKey), publicKey, privateKey);
+            ProofOfWork proofOfWork = ProofOfWork.generateProofOfWork(publicKey, POW_DIFFICULTY);
+            return PrivateIdentity.of(proofOfWork, publicKey, privateKey);
         }
         catch (CryptoException e) {
             throw new IdentityManagerException("Unable to generate new identity: " + e.getMessage());
@@ -170,16 +172,16 @@ public class IdentityManager {
         }
     }
 
-    public Address getAddress() {
-        return identity.getAddress();
-    }
-
     public CompressedPublicKey getPublicKey() {
         return identity.getPublicKey();
     }
 
     public CompressedPrivateKey getPrivateKey() {
         return identity.getPrivateKey();
+    }
+
+    public ProofOfWork getProofOfWork() {
+        return identity.getPoW();
     }
 
     /**

@@ -31,10 +31,9 @@ import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.crypto.Crypto;
-import org.drasyl.crypto.CryptoException;
-import org.drasyl.identity.Address;
 import org.drasyl.identity.CompressedKeyPair;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.PrivateIdentity;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.connection.message.JoinMessage;
@@ -169,8 +168,8 @@ public class TestNodeServerConnection {
     /**
      * Returns the address of the peer.
      */
-    public Address getAddress() {
-        return identity.getAddress();
+    public Identity getAddress() {
+        return identity.toNonPrivate();
     }
 
     public CompletableFuture<Boolean> isClosed() {
@@ -196,7 +195,7 @@ public class TestNodeServerConnection {
 
     @Override
     public String toString() {
-        return MessageFormat.format("{0} [{1}/Channel:{2}]", getClass().getSimpleName(), identity.getAddress(), channelId);
+        return MessageFormat.format("{0} [{1}/Channel:{2}]", getClass().getSimpleName(), identity, channelId);
     }
 
     /**
@@ -227,12 +226,12 @@ public class TestNodeServerConnection {
     }
 
     /**
-     * Creates a new session to the given server with a random identity
+     * Creates a new session to the given server.
      */
-    public static TestNodeServerConnection clientSession(NodeServer server) throws ExecutionException, InterruptedException, CryptoException {
+    public static TestNodeServerConnection clientSession(NodeServer server,
+                                                         PrivateIdentity identity) throws ExecutionException, InterruptedException {
         URI serverEndpoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
-        CompressedKeyPair keyPair = CompressedKeyPair.of(Crypto.generateKeys());
-        return TestNodeServerConnection.clientSession(serverEndpoint, PrivateIdentity.of(Address.derive(keyPair.getPublicKey()), keyPair), true, server.workerGroup);
+        return TestNodeServerConnection.clientSession(serverEndpoint, identity, true, server.workerGroup);
     }
 
     /**
@@ -309,21 +308,13 @@ public class TestNodeServerConnection {
     }
 
     /**
-     * Creates a new session to the given server.
-     */
-    public static TestNodeServerConnection clientSession(NodeServer server,
-                                                         PrivateIdentity identity) throws ExecutionException, InterruptedException {
-        URI serverEndpoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
-        return TestNodeServerConnection.clientSession(serverEndpoint, identity, true, server.workerGroup);
-    }
-
-    /**
      * Creates a new session with the given sessionUID and joins the given server.
      */
-    public static TestNodeServerConnection clientSessionAfterJoin(NodeServer server) throws ExecutionException,
-            InterruptedException, CryptoException {
-        TestNodeServerConnection session = TestNodeServerConnection.clientSession(server, true);
-        ResponseMessage<?> responseMessage = session.sendRequest(new JoinMessage(session.getIdentity().toNonPrivate(), PeerInformation.of(), Set.of())).get();
+    public static TestNodeServerConnection clientSessionAfterJoin(NodeServer server,
+                                                                  PrivateIdentity identity) throws ExecutionException,
+            InterruptedException {
+        TestNodeServerConnection session = TestNodeServerConnection.clientSession(server, identity, true);
+        ResponseMessage<?> responseMessage = session.sendRequest(new JoinMessage(session.getIdentity().getPoW(), session.getIdentity().toNonPrivate(), PeerInformation.of(), Set.of())).get();
         session.send(new StatusMessage(STATUS_OK, responseMessage.getId()));
         await().until(() -> server.getChannelGroup().find(session.getIdentity().toNonPrivate()) != null);
 
@@ -334,12 +325,13 @@ public class TestNodeServerConnection {
      * Creates a new session to the given server.
      */
     public static TestNodeServerConnection clientSession(NodeServer server,
+                                                         PrivateIdentity identity,
                                                          boolean pingPong) throws ExecutionException,
-            InterruptedException, CryptoException {
+            InterruptedException {
         URI serverEndpoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
-        CompressedKeyPair keyPair = CompressedKeyPair.of(Crypto.generateKeys());
+
         return TestNodeServerConnection.clientSession(serverEndpoint,
-                PrivateIdentity.of(Address.derive(keyPair.getPublicKey()), keyPair), pingPong, server.workerGroup);
+                identity, pingPong, server.workerGroup);
     }
 
     /**

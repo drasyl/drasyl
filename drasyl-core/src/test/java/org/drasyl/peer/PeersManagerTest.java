@@ -21,7 +21,6 @@ package org.drasyl.peer;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.javacrumbs.jsonunit.core.Option;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.junit.jupiter.api.AfterEach;
@@ -257,10 +256,10 @@ class PeersManagerTest {
         private final ObjectMapper jsonMapper = new ObjectMapper();
 
         @BeforeEach
-        void setup() throws CryptoException {
+        void setup() {
             when(lock.readLock()).thenReturn(readLock);
 
-            identity = Identity.of("da23ff094f", "022910262d4b1b4681055d4d6ed047ed6c35d7a55e8bcbbbb5528a8a40414991ac");
+            identity = Identity.of("022910262d4b1b4681055d4d6ed047ed6c35d7a55e8bcbbbb5528a8a40414991ac");
             PeerInformation peerInformation = PeerInformation.of();
 
             underTest = new PeersManager(lock, Map.of(identity, peerInformation), Set.of(identity), Map.of(), null, eventConsumer);
@@ -270,7 +269,7 @@ class PeersManagerTest {
         void shouldProduceCorrectJsonObject() throws JsonProcessingException {
             assertThatJson(jsonMapper.writeValueAsString(underTest))
                     .when(Option.IGNORING_ARRAY_ORDER)
-                    .isEqualTo("{\"peers\":[[{\"address\":\"da23ff094f\",\"publicKey\":\"022910262d4b1b4681055d4d6ed047ed6c35d7a55e8bcbbbb5528a8a40414991ac\"},{\"endpoints\":[]}]],\"children\":[[{\"address\":\"da23ff094f\",\"publicKey\":\"022910262d4b1b4681055d4d6ed047ed6c35d7a55e8bcbbbb5528a8a40414991ac\"},{\"endpoints\":[]}]],\"grandchildrenRoutes\":[],\"superPeer\":null}");
+                    .isEqualTo("{\"peers\":[[{\"publicKey\":\"022910262d4b1b4681055d4d6ed047ed6c35d7a55e8bcbbbb5528a8a40414991ac\"},{\"endpoints\":[]}]],\"children\":[[{\"publicKey\":\"022910262d4b1b4681055d4d6ed047ed6c35d7a55e8bcbbbb5528a8a40414991ac\"},{\"endpoints\":[]}]],\"grandchildrenRoutes\":[],\"superPeer\":null}");
         }
     }
 }

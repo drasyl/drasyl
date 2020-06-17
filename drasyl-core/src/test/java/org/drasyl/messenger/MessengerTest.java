@@ -19,7 +19,6 @@
 package org.drasyl.messenger;
 
 import org.drasyl.DrasylException;
-import org.drasyl.identity.Address;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.junit.jupiter.api.BeforeEach;
@@ -39,7 +38,7 @@ class MessengerTest {
     private MessageSink serverSink;
     private MessageSink superPeerSink;
     private ApplicationMessage applicationMessage;
-    private Address address;
+    private Identity address;
     private NoPathToIdentityException noPathToIdentityException;
 
     @BeforeEach
@@ -49,7 +48,7 @@ class MessengerTest {
         serverSink = mock(MessageSink.class);
         superPeerSink = mock(MessageSink.class);
         applicationMessage = mock(ApplicationMessage.class);
-        address = mock(Address.class);
+        address = mock(Identity.class);
         noPathToIdentityException = mock(NoPathToIdentityException.class);
     }
 
@@ -60,7 +59,7 @@ class MessengerTest {
         Messenger messenger = new Messenger(loopbackSink, intraVmSink, serverSink, superPeerSink);
         messenger.send(applicationMessage);
 
-        verify(loopbackSink).send(Identity.of(address), applicationMessage);
+        verify(loopbackSink).send(address, applicationMessage);
         verify(intraVmSink, never()).send(any(), any());
         verify(serverSink, never()).send(any(), any());
         verify(superPeerSink, never()).send(any(), any());
@@ -74,7 +73,7 @@ class MessengerTest {
         Messenger messenger = new Messenger(loopbackSink, intraVmSink, serverSink, superPeerSink);
         messenger.send(applicationMessage);
 
-        verify(intraVmSink).send(Identity.of(address), applicationMessage);
+        verify(intraVmSink).send(address, applicationMessage);
         verify(serverSink, never()).send(any(), any());
         verify(superPeerSink, never()).send(any(), any());
     }
@@ -86,7 +85,7 @@ class MessengerTest {
         Messenger messenger = new Messenger(null, intraVmSink, serverSink, superPeerSink);
         messenger.send(applicationMessage);
 
-        verify(intraVmSink).send(Identity.of(address), applicationMessage);
+        verify(intraVmSink).send(address, applicationMessage);
         verify(serverSink, never()).send(any(), any());
         verify(superPeerSink, never()).send(any(), any());
     }

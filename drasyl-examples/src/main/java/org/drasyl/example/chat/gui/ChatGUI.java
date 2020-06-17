@@ -39,7 +39,7 @@ import javafx.stage.Stage;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.event.Event;
-import org.drasyl.identity.Address;
+import org.drasyl.identity.Identity;
 import org.drasyl.util.Pair;
 
 import java.io.IOException;
@@ -57,15 +57,11 @@ public class ChatGUI extends Application {
     private TextField recipientIDInput;
     private TextField chatField;
     private TextArea txtArea;
-    private Address recipient;
-    private Address myID;
+    private Identity recipient;
+    private Identity myID;
     private String username;
     private Stage stage;
     private DrasylNode node;
-
-    public static void main(String[] args) {
-        launch(args);
-    }
 
     @Override
     public void start(Stage stage) {
@@ -89,8 +85,8 @@ public class ChatGUI extends Application {
                             if (!online.isDone()) {
                                 online.complete(null);
                             }
-                            myID = event.getNode().getIdentity().getAddress();
-                            txtArea.appendText("[~System~]: The node is online. Your address is: " + myID + "\n");
+                            myID = Identity.of(event.getNode().getIdentity().getPublicKey());
+                            txtArea.appendText("[~System~]: The node is online. Your address is: " + myID.getPublicKey().getCompressedKey() + "\n");
                             break;
                         case EVENT_NODE_OFFLINE:
                             txtArea.appendText("[~System~]: The node is offline. No messages can be sent at the moment. Wait until node comes back online.\n");
@@ -125,58 +121,6 @@ public class ChatGUI extends Application {
         }
     }
 
-    private void parseMessage(Pair<Address, byte[]> payload) {
-        try {
-            Message msg = jackson.readValue(new String(payload.second()), Message.class);
-
-            txtArea.appendText("[" + msg.getUsername() + "]: " + msg.getMsg() + "\n");
-        }
-        catch (IOException e) {
-            e.printStackTrace(); //NOSONAR
-        }
-    }
-
-    private Scene buildInitScene() {
-        GridPane grid = new GridPane();
-        grid.setPadding(new Insets(10, 10, 10, 10));
-        grid.setVgap(8);
-        grid.setHgap(10);
-        grid.setAlignment(Pos.CENTER);
-
-        Label myIDLabel = new Label("Your ID is: ");
-        GridPane.setConstraints(myIDLabel, 0, 0);
-        TextField myIDTextField = new TextField(myID.getId());
-        myIDTextField.setEditable(false);
-        GridPane.setConstraints(myIDTextField, 1, 0);
-
-        Label usernameLabel = new Label("Your username: ");
-        GridPane.setConstraints(usernameLabel, 0, 1);
-        usernameInput = new TextField("");
-        GridPane.setConstraints(usernameInput, 1, 1);
-
-        Label recipientIDLabel = new Label("Recipient ID: ");
-        GridPane.setConstraints(recipientIDLabel, 0, 2);
-        recipientIDInput = new TextField("");
-        GridPane.setConstraints(recipientIDInput, 1, 2);
-
-        Button startButton = new Button("Start chatting");
-        startButton.setOnAction(this::initAction);
-        GridPane.setConstraints(startButton, 1, 3);
-        grid.getChildren().addAll(myIDLabel, myIDTextField, usernameLabel, usernameInput, recipientIDLabel, recipientIDInput, startButton);
-
-        return new Scene(grid, 325, 225);
-    }
-
-    private void initAction(ActionEvent actionEvent) {
-        if (validateInput(usernameInput, s -> !s.isEmpty()) && validateInput(recipientIDInput, Address::isValid)) {
-            username = usernameInput.getText();
-            stage.setTitle("[" + username + "] Drasyl Chat");
-            recipient = Address.of(recipientIDInput.getText());
-
-            stage.setScene(chatScene);
-        }
-    }
-
     private Scene buildChatScene() {
         VBox vBox = new VBox();
         HBox hBox = new HBox();
@@ -201,6 +145,48 @@ public class ChatGUI extends Application {
         return new Scene(vBox, 800, 600);
     }
 
+    private void parseMessage(Pair<Identity, byte[]> payload) {
+        try {
+            Message msg = jackson.readValue(new String(payload.second()), Message.class);
+
+            txtArea.appendText("[" + msg.getUsername() + "]: " + msg.getMsg() + "\n");
+        }
+        catch (IOException e) {
+            e.printStackTrace(); //NOSONAR
+        }
+    }
+
+    private Scene buildInitScene() {
+        GridPane grid = new GridPane();
+        grid.setPadding(new Insets(10, 10, 10, 10));
+        grid.setVgap(8);
+        grid.setHgap(10);
+        grid.setAlignment(Pos.CENTER);
+
+        Label myIDLabel = new Label("Your ID is: ");
+        GridPane.setConstraints(myIDLabel, 0, 0);
+        TextField myIDTextField = new TextField(myID.getPublicKey().getCompressedKey());
+        myIDTextField.setEditable(false);
+        GridPane.setConstraints(myIDTextField, 1, 0);
+
+        Label usernameLabel = new Label("Your username: ");
+        GridPane.setConstraints(usernameLabel, 0, 1);
+        usernameInput = new TextField("");
+        GridPane.setConstraints(usernameInput, 1, 1);
+
+        Label recipientIDLabel = new Label("Recipient ID: ");
+        GridPane.setConstraints(recipientIDLabel, 0, 2);
+        recipientIDInput = new TextField("");
+        GridPane.setConstraints(recipientIDInput, 1, 2);
+
+        Button startButton = new Button("Start chatting");
+        startButton.setOnAction(this::initAction);
+        GridPane.setConstraints(startButton, 1, 3);
+        grid.getChildren().addAll(myIDLabel, myIDTextField, usernameLabel, usernameInput, recipientIDLabel, recipientIDInput, startButton);
+
+        return new Scene(grid, 325, 225);
+    }
+
     private void newInputAction(ActionEvent actionEvent) {
         if (validateInput(chatField, s -> !s.isEmpty())) {
             try {
@@ -216,6 +202,18 @@ public class ChatGUI extends Application {
         }
     }
 
+    private void initAction(ActionEvent actionEvent) {
+        if (validateInput(usernameInput, s -> !s.isEmpty())
+//                && validateInput(recipientIDInput, Address::isValid)
+        ) {
+            username = usernameInput.getText();
+            stage.setTitle("[" + username + "] Drasyl Chat");
+            recipient = Identity.of(recipientIDInput.getText());
+
+            stage.setScene(chatScene);
+        }
+    }
+
     private boolean validateInput(TextField textField,
                                   Function<String, Boolean> validation) { //NOSONAR
         if (validation.apply(textField.getText())) { //NOSONAR
@@ -228,5 +226,9 @@ public class ChatGUI extends Application {
 
             return false;
         }
+    }
+
+    public static void main(String[] args) {
+        launch(args);
     }
 }

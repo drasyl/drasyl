@@ -19,7 +19,6 @@
 package org.drasyl.messenger;
 
 import com.google.common.collect.Lists;
-import org.drasyl.identity.Address;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.RelayableMessage;
 import org.slf4j.Logger;
@@ -70,14 +69,13 @@ public class Messenger {
     public void send(RelayableMessage message) throws MessengerException {
         LOG.trace("Send Message: {}", message);
 
-        Address recipientAddress = message.getRecipient();
-        Identity identity = Identity.of(recipientAddress);
+        Identity recipientIdentity = message.getRecipient();
 
         List<MessageSink> messageSinks = Lists.newArrayList(loopbackSink, intraVmSink, serverSink, superPeerSink)
                 .stream().filter(Objects::nonNull).collect(Collectors.toList());
         for (MessageSink messageSink : messageSinks) {
             try {
-                messageSink.send(identity, message);
+                messageSink.send(recipientIdentity, message);
                 LOG.trace("Message was sent with Message Sink '{}'", messageSink);
                 return;
             }
@@ -86,7 +84,7 @@ public class Messenger {
             }
         }
 
-        throw new NoPathToIdentityException(identity);
+        throw new NoPathToIdentityException(recipientIdentity);
     }
 
     public void setLoopbackSink(MessageSink loopbackSink) {

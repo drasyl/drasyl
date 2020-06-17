@@ -25,34 +25,22 @@ import org.drasyl.crypto.CryptoException;
 import java.util.Objects;
 
 /**
- * Represents the private identity of a peer (includes the address and the public and private key).
- * Should be kept secret!.
+ * Represents the private identity of a peer (includes the proof of work, the public and private
+ * key). Should be kept secret!.
  */
-public class PrivateIdentity extends AbstractIdentity {
+public class PrivateIdentity {
+    private final ProofOfWork proofOfWork;
     private final CompressedKeyPair keyPair;
 
-    private PrivateIdentity(@JsonProperty("address") String address,
-                           @JsonProperty("publicKey") String publicKey,
-                           @JsonProperty("privateKey") String privateKey) throws CryptoException {
-        this(Address.of(address), CompressedKeyPair.of(publicKey, privateKey));
+    protected PrivateIdentity(@JsonProperty("proofOfWork") int proofOfWork,
+                            @JsonProperty("publicKey") String publicKey,
+                            @JsonProperty("privateKey") String privateKey) throws CryptoException {
+        this(ProofOfWork.of(proofOfWork), CompressedKeyPair.of(publicKey, privateKey));
     }
 
-    private PrivateIdentity(Address address,
-                           CompressedKeyPair keyPair) {
-        super(address);
+    private PrivateIdentity(ProofOfWork proofOfWork, CompressedKeyPair keyPair) {
+        this.proofOfWork = proofOfWork;
         this.keyPair = keyPair;
-
-        if (this.keyPair != null && !Address.verify(address, keyPair.getPublicKey())) {
-            throw new IllegalArgumentException("Address '" + address +"' does not correspond to Public Key '" + keyPair.getPublicKey() + "'");
-        }
-    }
-
-    @Override
-    public String toString() {
-        return "PrivateIdentity{" +
-                "address=" + address +
-                ", keyPair=" + keyPair +
-                '}';
     }
 
     @JsonIgnore
@@ -68,9 +56,13 @@ public class PrivateIdentity extends AbstractIdentity {
         return keyPair.getPrivateKey();
     }
 
+    public Identity toNonPrivate() {
+        return Identity.of(keyPair.getPublicKey());
+    }
+
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), keyPair);
+        return Objects.hash(keyPair);
     }
 
     @Override
@@ -81,34 +73,48 @@ public class PrivateIdentity extends AbstractIdentity {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        if (!super.equals(o)) {
-            return false;
-        }
-        PrivateIdentity identity = (PrivateIdentity) o;
-        return Objects.equals(keyPair, identity.keyPair);
+        PrivateIdentity that = (PrivateIdentity) o;
+        return Objects.equals(keyPair, that.keyPair);
     }
 
-    public Identity toNonPrivate() {
-        return Identity.of(address, keyPair.getPublicKey());
+    @Override
+    public String toString() {
+        return "PrivateIdentity{" +
+                "keyPair=" + keyPair + ", " +
+                " proofOfWork=" + proofOfWork +
+                '}';
     }
 
-    public static PrivateIdentity of(Address address,
+    @JsonIgnore
+    public ProofOfWork getPoW() {
+        return proofOfWork;
+    }
+
+    @JsonProperty
+    private int getProofOfWork() {
+        return proofOfWork.getNonce();
+    }
+
+    public static PrivateIdentity of(ProofOfWork proofOfWork,
                                      CompressedPublicKey publicKey,
                                      CompressedPrivateKey privateKey) {
-        return of(address, CompressedKeyPair.of(publicKey, privateKey));
+        return of(proofOfWork, CompressedKeyPair.of(publicKey, privateKey));
     }
 
-    public static PrivateIdentity of(String address,
-                                     CompressedPublicKey publicKey,
-                                     CompressedPrivateKey privateKey) {
-        return of(Address.of(address), publicKey, privateKey);
+    public static PrivateIdentity of(ProofOfWork proofOfWork,
+                                     CompressedKeyPair keyPair) {
+        return new PrivateIdentity(proofOfWork, keyPair);
     }
 
-    public static PrivateIdentity of(Address address, CompressedKeyPair keyPair) {
-        return new PrivateIdentity(address, keyPair);
+    public static PrivateIdentity of(ProofOfWork proofOfWork,
+                                     String publicKey,
+                                     String privateKey) throws CryptoException {
+        return of(proofOfWork, CompressedKeyPair.of(publicKey, privateKey));
     }
 
-    public static PrivateIdentity of(String address, String publicKey, String privateKey) throws CryptoException {
-        return of(Address.of(address), CompressedKeyPair.of(publicKey, privateKey));
+    public static PrivateIdentity of(int proofOfWork,
+                                     String publicKey,
+                                     String privateKey) throws CryptoException {
+        return of(ProofOfWork.of(proofOfWork), CompressedKeyPair.of(publicKey, privateKey));
     }
 }

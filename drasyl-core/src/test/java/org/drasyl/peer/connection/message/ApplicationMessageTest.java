@@ -21,8 +21,9 @@ package org.drasyl.peer.connection.message;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.javacrumbs.jsonunit.core.Option;
-import org.drasyl.identity.Address;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
+import org.drasyl.testutils.IdentityRandomGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -35,13 +36,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 class ApplicationMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
     CompressedPublicKey senderPubKey;
-    Address sender;
-    Address recipient;
+    Identity sender;
+    Identity recipient;
     private String id;
     private ApplicationMessage message;
     private short hopCount;
@@ -49,24 +49,30 @@ class ApplicationMessageTest {
     @BeforeEach
     void setUp() {
         senderPubKey = mock(CompressedPublicKey.class);
-        sender = mock(Address.class);
-        recipient = mock(Address.class);
+        sender = IdentityRandomGenerator.random();
+        recipient = IdentityRandomGenerator.random();
         id = "id";
         hopCount = 64;
     }
 
     @Test
     void toJson() throws JsonProcessingException {
-        message = new ApplicationMessage(sender, recipient, new byte[]{ 0x00, 0x01, 0x02 }, (short) 64);
+        message = new ApplicationMessage(sender, recipient, new byte[]{
+                0x00,
+                0x01,
+                0x02
+        }, (short) 64);
+
+        System.out.println(JSON_MAPPER.writeValueAsString(message));
 
         assertThatJson(JSON_MAPPER.writeValueAsString(message))
                 .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo("{\"@type\":\"ApplicationMessage\",\"id\":\"" + message.getId() + "\",\"sender\":null,\"recipient\":null,\"payload\":\"AAEC\",\"hopCount\":64}");
+                .isEqualTo("{\"@type\":\"ApplicationMessage\",\"id\":\"" + message.getId() + "\",\"recipient\":{\"publicKey\":\"" + recipient.getPublicKey().getCompressedKey() + "\"},\"hopCount\":64,\"sender\":{\"publicKey\":\"" + sender.getPublicKey().getCompressedKey() + "\"},\"payload\":\"AAEC\"}\n");
     }
 
     @Test
     void fromJson() throws IOException {
-        String json = "{\"@type\":\"ApplicationMessage\",\"id\":\"123\",\"sender\":\"45d3c7a15f\",\"recipient\":\"d08d54b5fc\",\"payload\":\"AAEC\"}";
+        String json = "{\"@type\":\"ApplicationMessage\",\"id\":\"123\",\"sender\":\"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\"recipient\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"payload\":\"AAEC\"}";
 
         ApplicationMessage message = JSON_MAPPER.readValue(json, ApplicationMessage.class);
 

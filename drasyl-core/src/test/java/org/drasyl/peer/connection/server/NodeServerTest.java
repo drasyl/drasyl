@@ -27,16 +27,14 @@ import io.reactivex.rxjava3.core.Observable;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.crypto.Crypto;
-import org.drasyl.identity.Address;
-import org.drasyl.identity.AddressTestHelper;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.testutils.IdentityRandomGenerator;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 
 import java.net.InetSocketAddress;
@@ -89,8 +87,8 @@ class NodeServerTest {
 
         message = mock(ApplicationMessage.class);
         String msgID = Crypto.randomString(16);
-        Address address1 = AddressTestHelper.random();
-        Address address2 = AddressTestHelper.random();
+        Identity address1 = IdentityRandomGenerator.random();
+        Identity address2 = IdentityRandomGenerator.random();
 
         when(serverBootstrap.group(any(), any())).thenReturn(serverBootstrap);
         when(serverBootstrap.channel(any())).thenReturn(serverBootstrap);

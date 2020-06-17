@@ -24,7 +24,7 @@ import com.typesafe.config.ConfigFactory;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.event.Event;
-import org.drasyl.identity.Address;
+import org.drasyl.identity.Identity;
 import org.drasyl.messenger.MessengerException;
 import org.drasyl.util.Pair;
 
@@ -54,12 +54,12 @@ public class Chat {
             public void onEvent(Event event) {
                 switch (event.getType()) {
                     case EVENT_MESSAGE:
-                        Pair<Address, byte[]> message = event.getMessage();
+                        Pair<Identity, byte[]> message = event.getMessage();
                         System.out.println("From " + message.first() + ": " + new String(message.second()));
                         break;
                     case EVENT_NODE_ONLINE:
                         online.complete(null);
-                        System.out.println("Online! Your Address is: " + event.getNode().getIdentity().getAddress());
+                        System.out.println("Online! Your Public Key (address) is: " + event.getNode().getIdentity().getPublicKey());
                         break;
                     case EVENT_NODE_OFFLINE:
                         System.out.println("Offline! No messages can be sent at the moment. Wait until node comes back online.");

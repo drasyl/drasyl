@@ -21,8 +21,8 @@ package org.drasyl.peer.connection.server.handler;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.identity.Address;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
@@ -49,6 +49,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_IDENTITY_COLLISION;
+import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_PROOF_OF_WORK_INVALID;
 import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE_IDENTITY;
 
 /**
@@ -103,37 +104,15 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
     }
 
     @Override
-    protected Logger getLogger() {
-        return LOG;
-    }
-
-    @Override
-    protected void processMessageAfterHandshake(ChannelHandlerContext ctx,
-                                                Message message) {
-        if (message instanceof RegisterGrandchildMessage) {
-            RegisterGrandchildMessage registerGrandchildMessage = (RegisterGrandchildMessage) message;
-            registerGrandchildrenAtSuperPeer(ctx, registerGrandchildMessage.getGrandchildren());
-            registerGrandchildrenLocally(ctx, registerGrandchildMessage.getGrandchildren());
-        }
-        else if (message instanceof UnregisterGrandchildMessage) {
-            UnregisterGrandchildMessage unregisterGrandchildMessage = (UnregisterGrandchildMessage) message;
-            unregisterGrandchildLocally(ctx, unregisterGrandchildMessage.getGrandchildren());
-        }
-        else if (message instanceof WhoisMessage) {
-            WhoisMessage whoisMessage = (WhoisMessage) message;
-            handleWhoisMessage(ctx, whoisMessage);
-        }
-        else {
-            super.processMessageAfterHandshake(ctx, message);
-        }
-    }
-
-    @Override
     protected ConnectionExceptionMessage.Error validateSessionRequest(JoinMessage requestMessage) {
         Identity clientIdentity = requestMessage.getIdentity();
 
         if (this.ownIdentity.equals(clientIdentity)) {
             return CONNECTION_ERROR_IDENTITY_COLLISION;
+        }
+        else if (!requestMessage.getProofOfWork().isValid(requestMessage.getIdentity().getPublicKey(),
+                IdentityManager.POW_DIFFICULTY)) {
+            return CONNECTION_ERROR_PROOF_OF_WORK_INVALID;
         }
         else {
             return null;
@@ -187,22 +166,6 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
         }
     }
 
-    private void unregisterGrandchildrenAtSuperPeer(ChannelHandlerContext ctx,
-                                                    Set<KeyValue<Identity, PeerInformation>> grandchildren) {
-        Pair<Identity, PeerInformation> superPeer = peersManager.getSuperPeer();
-        if (superPeer != null) {
-            PeerInformation superPeerInformation = superPeer.second();
-            Path superPeerPath = superPeerInformation.getPaths().iterator().next();
-            if (superPeerPath != null) {
-                Channel channel = ctx.channel();
-                if (getLogger().isDebugEnabled()) {
-                    getLogger().debug("[{}]: Unregister Grandchildren {} at Super Peer", channel.id().asShortText(), grandchildren);
-                }
-                superPeerPath.send(new UnregisterGrandchildMessage(grandchildren));
-            }
-        }
-    }
-
     private void registerGrandchildrenLocally(ChannelHandlerContext ctx,
                                               Set<KeyValue<Identity, PeerInformation>> grandchildren) {
         Channel channel = ctx.channel();
@@ -223,6 +186,48 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
                 getLogger().debug("[{}]: Client {} can Route to {}", channel.id().asShortText(), clientIdentity, grandchildIdentity);
             }
             peersManager.addPeerInformationAndAddGrandchildren(grandchildIdentity, grandchildInformation, clientIdentity);
+        }
+    }
+
+    @Override
+    protected Logger getLogger() {
+        return LOG;
+    }
+
+    @Override
+    protected void processMessageAfterHandshake(ChannelHandlerContext ctx,
+                                                Message message) {
+        if (message instanceof RegisterGrandchildMessage) {
+            RegisterGrandchildMessage registerGrandchildMessage = (RegisterGrandchildMessage) message;
+            registerGrandchildrenAtSuperPeer(ctx, registerGrandchildMessage.getGrandchildren());
+            registerGrandchildrenLocally(ctx, registerGrandchildMessage.getGrandchildren());
+        }
+        else if (message instanceof UnregisterGrandchildMessage) {
+            UnregisterGrandchildMessage unregisterGrandchildMessage = (UnregisterGrandchildMessage) message;
+            unregisterGrandchildLocally(ctx, unregisterGrandchildMessage.getGrandchildren());
+        }
+        else if (message instanceof WhoisMessage) {
+            WhoisMessage whoisMessage = (WhoisMessage) message;
+            handleWhoisMessage(ctx, whoisMessage);
+        }
+        else {
+            super.processMessageAfterHandshake(ctx, message);
+        }
+    }
+
+    private void unregisterGrandchildrenAtSuperPeer(ChannelHandlerContext ctx,
+                                                    Set<KeyValue<Identity, PeerInformation>> grandchildren) {
+        Pair<Identity, PeerInformation> superPeer = peersManager.getSuperPeer();
+        if (superPeer != null) {
+            PeerInformation superPeerInformation = superPeer.second();
+            Path superPeerPath = superPeerInformation.getPaths().iterator().next();
+            if (superPeerPath != null) {
+                Channel channel = ctx.channel();
+                if (getLogger().isDebugEnabled()) {
+                    getLogger().debug("[{}]: Unregister Grandchildren {} at Super Peer", channel.id().asShortText(), grandchildren);
+                }
+                superPeerPath.send(new UnregisterGrandchildMessage(grandchildren));
+            }
         }
     }
 
@@ -247,14 +252,12 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
     }
 
     private void handleWhoisMessage(ChannelHandlerContext ctx, WhoisMessage whoisMessage) {
-        Address requester = whoisMessage.getRequester();
-        Address address = whoisMessage.getAddress();
-        Pair<Identity, PeerInformation> identityAndPeerInformation = peersManager.getIdentityAndPeerInformation(address);
-        Identity identity = identityAndPeerInformation.first();
-        PeerInformation peerInformation = identityAndPeerInformation.second();
-        if (identity.hasPublicKey()) {
+        Identity requester = whoisMessage.getRequester();
+        Identity address = whoisMessage.getIdentity();
+        PeerInformation peerInformation = peersManager.getPeerInformation(address);
+        if (peerInformation != null) {
             // we have the requested information. Send it back to the requester.
-            ctx.writeAndFlush(new IdentityMessage(requester, identity, peerInformation, whoisMessage.getId()));
+            ctx.writeAndFlush(new IdentityMessage(requester, address, peerInformation, whoisMessage.getId()));
         }
         else {
             // we cannot provide the requested information. Forward request to Super Peer.
