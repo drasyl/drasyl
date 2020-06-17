@@ -16,7 +16,7 @@ variables:
   before_script:
     - git clone -n $CI_REPOSITORY_URL $CI_PROJECT_NAME
     - cd $CI_PROJECT_NAME
-    - git checkout $CI_COMMIT_SHA
+    - git checkout $CI_COMMIT_SHA || git checkout master
   script:
     - sh ./prepare-environment-docker-compose.sh > docker-compose.yml
     - docker-compose --project-name ${CI_PROJECT_NAME}-${CI_PROJECT_ID}-${CI_ENVIRONMENT_SLUG} down
