@@ -393,13 +393,13 @@ class NodeServerIT {
         receivedMessages.assertValue(request);
     }
 
-    @Disabled
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void messageExceedingMaxSizeShouldNotBeSend() throws InterruptedException, ExecutionException {
         // create connection
         TestNodeServerConnection session1 = clientSessionAfterJoin(server, identitySession1);
-        TestNodeServerConnection session2 = clientSessionAfterJoin(server, identitySession1);
+        TestNodeServerConnection session2 = clientSessionAfterJoin(server, identitySession2);
+        TestObserver<Message> receivedMessages = session2.receivedMessages().filter(msg -> msg instanceof ApplicationMessage).test();
 
         // create message with exceeded payload size
         byte[] bigPayload = new byte[config.getMessageMaxContentLength() + 1];
@@ -407,8 +407,11 @@ class NodeServerIT {
 
         // send message
         RequestMessage request = new ApplicationMessage(session1.getAddress(), session2.getAddress(), bigPayload);
+        session2.send(request);
 
-        assertThrows(DrasylException.class, () -> session2.send(request));
+        // wait until timeout
+        Thread.sleep(server.getConfig().getServerHandshakeTimeout().plusSeconds(2).toMillis());// NOSONAR
+        receivedMessages.assertNoValues();
     }
 
     @Test
@@ -421,7 +424,7 @@ class NodeServerIT {
         TestObserver<Message> receivedMessages2 = session2.receivedMessages().test();
 
         // create message with exceeded chunk size
-        byte[] bigPayload = new byte[Math.min(ChunkedMessageHandler.CHUNK_SIZE * 3, config.getMessageMaxContentLength())];
+        byte[] bigPayload = new byte[Math.min(ChunkedMessageHandler.CHUNK_SIZE * 2 + ChunkedMessageHandler.CHUNK_SIZE / 2, config.getMessageMaxContentLength())];
         new Random().nextBytes(bigPayload);
 
         // send message

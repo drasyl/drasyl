@@ -122,7 +122,6 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
         else {
             // Skipp
             ctx.write(msg, promise);
-            LOG.debug("Pass message `{}`", msg);
         }
     }
 
