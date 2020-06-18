@@ -29,8 +29,8 @@ import static java.util.Objects.requireNonNull;
  * A message that is sent by an application running on drasyl.
  */
 public class ApplicationMessage extends RelayableMessage implements RequestMessage {
-    private final Identity sender;
-    private final byte[] payload;
+    protected final Identity sender;
+    protected final byte[] payload;
 
     protected ApplicationMessage() {
         super();
@@ -38,7 +38,7 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
         this.payload = null;
     }
 
-    ApplicationMessage(String id,
+    public ApplicationMessage(String id,
                        Identity recipient,
                        Identity sender,
                        byte[] payload,

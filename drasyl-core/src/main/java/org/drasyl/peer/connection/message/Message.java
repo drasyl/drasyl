@@ -42,6 +42,7 @@ import org.drasyl.peer.connection.server.NodeServer;
         @JsonSubTypes.Type(value = WelcomeMessage.class),
         @JsonSubTypes.Type(value = WhoisMessage.class),
         @JsonSubTypes.Type(value = SignedMessage.class),
+        @JsonSubTypes.Type(value = ChunkedMessage.class),
 })
 @JsonIgnoreProperties(ignoreUnknown = true)
 public interface Message {

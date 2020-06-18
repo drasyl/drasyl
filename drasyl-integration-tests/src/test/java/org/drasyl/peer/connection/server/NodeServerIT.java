@@ -37,6 +37,7 @@ import org.drasyl.identity.PrivateIdentity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.handler.ChunkedMessageHandler;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
@@ -392,10 +393,10 @@ class NodeServerIT {
         receivedMessages.assertValue(request);
     }
 
-    @Disabled("Muss noch implementiert werden")
+    @Disabled
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void messageExceedingMaxSizeShouldThrowExceptionOnSend() throws InterruptedException, ExecutionException {
+    void messageExceedingMaxSizeShouldNotBeSend() throws InterruptedException, ExecutionException {
         // create connection
         TestNodeServerConnection session1 = clientSessionAfterJoin(server, identitySession1);
         TestNodeServerConnection session2 = clientSessionAfterJoin(server, identitySession1);
@@ -408,6 +409,33 @@ class NodeServerIT {
         RequestMessage request = new ApplicationMessage(session1.getAddress(), session2.getAddress(), bigPayload);
 
         assertThrows(DrasylException.class, () -> session2.send(request));
+    }
+
+    @Test
+    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+    void messageExceedingChunkSizeShouldBeSend() throws InterruptedException, ExecutionException {
+        // create connections
+        TestNodeServerConnection session1 = clientSessionAfterJoin(server, identitySession1);
+        TestNodeServerConnection session2 = clientSessionAfterJoin(server, identitySession2);
+
+        TestObserver<Message> receivedMessages2 = session2.receivedMessages().test();
+
+        // create message with exceeded chunk size
+        byte[] bigPayload = new byte[Math.min(ChunkedMessageHandler.CHUNK_SIZE * 3, config.getMessageMaxContentLength())];
+        new Random().nextBytes(bigPayload);
+
+        // send message
+        RequestMessage request = new ApplicationMessage(session1.getAddress(), session2.getAddress(), bigPayload);
+        session1.send(request);
+        receivedMessages2.awaitCount(1);
+        receivedMessages2.assertValue(val -> {
+            if (!(val instanceof ApplicationMessage)) {
+                return false;
+            }
+            ApplicationMessage msg = (ApplicationMessage) val;
+
+            return Objects.equals(session1.getAddress(), msg.getSender()) && Objects.equals(session2.getAddress(), msg.getRecipient()) && Arrays.equals(bigPayload, msg.getPayload());
+        });
     }
 
     @Test

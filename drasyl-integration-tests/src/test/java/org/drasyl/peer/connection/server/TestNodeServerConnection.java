@@ -231,7 +231,7 @@ public class TestNodeServerConnection {
     public static TestNodeServerConnection clientSession(NodeServer server,
                                                          PrivateIdentity identity) throws ExecutionException, InterruptedException {
         URI serverEndpoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
-        return TestNodeServerConnection.clientSession(serverEndpoint, identity, true, server.workerGroup);
+        return TestNodeServerConnection.clientSession(serverEndpoint, identity, true, server.workerGroup, server.getConfig().getMessageMaxContentLength());
     }
 
     /**
@@ -240,7 +240,8 @@ public class TestNodeServerConnection {
     public static TestNodeServerConnection clientSession(URI targetSystem,
                                                          PrivateIdentity identity,
                                                          boolean pingPong,
-                                                         EventLoopGroup eventLoopGroup) throws InterruptedException,
+                                                         EventLoopGroup eventLoopGroup,
+                                                         int maxContentLength) throws InterruptedException,
             ExecutionException {
         CompletableFuture<TestNodeServerConnection> future = new CompletableFuture<>();
 
@@ -270,7 +271,8 @@ public class TestNodeServerConnection {
                 .ssl(true)
                 .idleTimeout(Duration.ZERO)
                 .idleRetries(Short.MAX_VALUE)
-                .pingPong(pingPong);
+                .pingPong(pingPong)
+                .maxContentLength(maxContentLength);
 
         factory.build();
         factory.getChannelReadyFuture().get();
@@ -331,7 +333,7 @@ public class TestNodeServerConnection {
         URI serverEndpoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
 
         return TestNodeServerConnection.clientSession(serverEndpoint,
-                identity, pingPong, server.workerGroup);
+                identity, pingPong, server.workerGroup, server.getConfig().getMessageMaxContentLength());
     }
 
     /**
@@ -339,7 +341,8 @@ public class TestNodeServerConnection {
      */
     public static TestNodeServerConnection clientSession(URI targetSystem,
                                                          PrivateIdentity identity,
-                                                         boolean pingPong) throws ExecutionException, InterruptedException {
-        return TestNodeServerConnection.clientSession(targetSystem, identity, pingPong, null);
+                                                         boolean pingPong,
+                                                         int maxContentLength) throws ExecutionException, InterruptedException {
+        return TestNodeServerConnection.clientSession(targetSystem, identity, pingPong, null, maxContentLength);
     }
 }
