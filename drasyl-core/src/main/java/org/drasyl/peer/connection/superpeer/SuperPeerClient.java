@@ -230,15 +230,15 @@ public class SuperPeerClient implements AutoCloseable {
         }
     }
 
-    public IdentityManager getIdentityManager() {
+    IdentityManager getIdentityManager() {
         return identityManager;
     }
 
-    public Messenger getMessenger() {
+    Messenger getMessenger() {
         return messenger;
     }
 
-    public PeersManager getPeersManager() {
+    PeersManager getPeersManager() {
         return peersManager;
     }
 
