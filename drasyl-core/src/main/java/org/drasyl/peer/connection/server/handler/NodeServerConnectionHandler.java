@@ -29,15 +29,12 @@ import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.handler.AbstractThreeWayHandshakeServerHandler;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
-import org.drasyl.peer.connection.message.IdentityMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RegisterGrandchildMessage;
 import org.drasyl.peer.connection.message.UnregisterGrandchildMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
-import org.drasyl.peer.connection.message.WhoisMessage;
 import org.drasyl.peer.connection.server.NodeServerChannelGroup;
-import org.drasyl.util.KeyValue;
 import org.drasyl.util.Pair;
 import org.drasyl.util.SetUtil;
 import org.slf4j.Logger;
@@ -142,7 +139,7 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
         peersManager.addPeerInformationAndAddChildren(clientIdentity, clientInformation);
 
         // inform super peer about my new children and grandchildren
-        Set<KeyValue<Identity, PeerInformation>> childrenAndGrandchildren = SetUtil.merge(requestMessage.getChildrenAndGrandchildren(), KeyValue.of(clientIdentity, requestMessage.getPeerInformation()));
+        Set<Identity> childrenAndGrandchildren = SetUtil.merge(requestMessage.getChildrenAndGrandchildren(), clientIdentity);
         registerGrandchildrenAtSuperPeer(ctx, childrenAndGrandchildren);
 
         // store peer's children (my grandchildren) information
@@ -150,7 +147,7 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
     }
 
     private void registerGrandchildrenAtSuperPeer(ChannelHandlerContext ctx,
-                                                  Set<KeyValue<Identity, PeerInformation>> grandchildren) {
+                                                  Set<Identity> grandchildren) {
         Pair<Identity, PeerInformation> superPeer = peersManager.getSuperPeer();
         if (superPeer != null) {
             PeerInformation superPeerInformation = superPeer.second();
@@ -167,25 +164,23 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
     }
 
     private void registerGrandchildrenLocally(ChannelHandlerContext ctx,
-                                              Set<KeyValue<Identity, PeerInformation>> grandchildren) {
+                                              Set<Identity> grandchildren) {
         Channel channel = ctx.channel();
         if (getLogger().isDebugEnabled()) {
             getLogger().debug("[{}]: Client want to register Grandchildren {}", channel.id().asShortText(), grandchildren);
         }
 
-        for (KeyValue<Identity, PeerInformation> entry : grandchildren) {
-            Identity grandchildIdentity = entry.key();
-            PeerInformation grandchildInformation = entry.value();
+        for (Identity grandchildIdentity : grandchildren) {
 
             // remove peer information on disconnect
-            channel.closeFuture().addListener(future -> peersManager.removeGrandchildrenRouteAndRemovePeerInformation(grandchildIdentity, grandchildInformation));
+            channel.closeFuture().addListener(future -> peersManager.removeGrandchildrenRoute(grandchildIdentity));
 
             // store peer information
             Identity clientIdentity = channel.attr(ATTRIBUTE_IDENTITY).get();
             if (getLogger().isDebugEnabled()) {
                 getLogger().debug("[{}]: Client {} can Route to {}", channel.id().asShortText(), clientIdentity, grandchildIdentity);
             }
-            peersManager.addPeerInformationAndAddGrandchildren(grandchildIdentity, grandchildInformation, clientIdentity);
+            peersManager.addGrandchildrenRoute(grandchildIdentity, clientIdentity);
         }
     }
 
@@ -206,17 +201,13 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
             UnregisterGrandchildMessage unregisterGrandchildMessage = (UnregisterGrandchildMessage) message;
             unregisterGrandchildLocally(ctx, unregisterGrandchildMessage.getGrandchildren());
         }
-        else if (message instanceof WhoisMessage) {
-            WhoisMessage whoisMessage = (WhoisMessage) message;
-            handleWhoisMessage(ctx, whoisMessage);
-        }
         else {
             super.processMessageAfterHandshake(ctx, message);
         }
     }
 
     private void unregisterGrandchildrenAtSuperPeer(ChannelHandlerContext ctx,
-                                                    Set<KeyValue<Identity, PeerInformation>> grandchildren) {
+                                                    Set<Identity> grandchildren) {
         Pair<Identity, PeerInformation> superPeer = peersManager.getSuperPeer();
         if (superPeer != null) {
             PeerInformation superPeerInformation = superPeer.second();
@@ -232,11 +223,8 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
     }
 
     private void unregisterGrandchildLocally(ChannelHandlerContext ctx,
-                                             Set<KeyValue<Identity, PeerInformation>> grandchildren) {
-        for (KeyValue<Identity, PeerInformation> entry : grandchildren) {
-            Identity grandchildIdentity = entry.key();
-            PeerInformation grandchildInformation = entry.value();
-
+                                             Set<Identity> grandchildren) {
+        for (Identity grandchildIdentity : grandchildren) {
             Channel channel = ctx.channel();
 
             if (getLogger().isDebugEnabled()) {
@@ -244,31 +232,10 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
             }
 
             // unregister grandchild at super peer
-            unregisterGrandchildrenAtSuperPeer(ctx, Set.of(KeyValue.of(grandchildIdentity, grandchildInformation)));
+            unregisterGrandchildrenAtSuperPeer(ctx, Set.of(grandchildIdentity));
 
             // remove peer information
-            peersManager.removeGrandchildrenRouteAndRemovePeerInformation(grandchildIdentity, grandchildInformation);
-        }
-    }
-
-    private void handleWhoisMessage(ChannelHandlerContext ctx, WhoisMessage whoisMessage) {
-        Identity requester = whoisMessage.getRequester();
-        Identity address = whoisMessage.getIdentity();
-        PeerInformation peerInformation = peersManager.getPeerInformation(address);
-        if (peerInformation != null) {
-            // we have the requested information. Send it back to the requester.
-            ctx.writeAndFlush(new IdentityMessage(requester, address, peerInformation, whoisMessage.getId()));
-        }
-        else {
-            // we cannot provide the requested information. Forward request to Super Peer.
-            Pair<Identity, PeerInformation> superPeer = peersManager.getSuperPeer();
-            if (superPeer != null) {
-                PeerInformation superPeerInformation = superPeer.second();
-                Path superPeerPath = superPeerInformation.getPaths().iterator().next();
-                if (superPeerPath != null) {
-                    superPeerPath.send(whoisMessage);
-                }
-            }
+            peersManager.removeGrandchildrenRoute(grandchildIdentity);
         }
     }
 }

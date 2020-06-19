@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableSet;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeerInformation;
-import org.drasyl.util.KeyValue;
 
 import java.util.Objects;
 import java.util.Set;
@@ -36,7 +35,7 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
     private final ProofOfWork proofOfWork;
     private final Identity identity;
     private final PeerInformation peerInformation;
-    private final Set<KeyValue<Identity, PeerInformation>> childrenAndGrandchildren;
+    private final Set<Identity> childrenAndGrandchildren;
 
     protected JoinMessage() {
         proofOfWork = null;
@@ -56,14 +55,14 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
     public JoinMessage(ProofOfWork proofOfWork,
                        Identity identity,
                        PeerInformation peerInformation,
-                       Set<KeyValue<Identity, PeerInformation>> childrenAndGrandchildren) {
+                       Set<Identity> childrenAndGrandchildren) {
         this.proofOfWork = requireNonNull(proofOfWork);
         this.identity = requireNonNull(identity);
         this.peerInformation = requireNonNull(peerInformation);
         this.childrenAndGrandchildren = requireNonNull(childrenAndGrandchildren);
     }
 
-    public Set<KeyValue<Identity, PeerInformation>> getChildrenAndGrandchildren() {
+    public Set<Identity> getChildrenAndGrandchildren() {
         return ImmutableSet.copyOf(this.childrenAndGrandchildren);
     }
 
