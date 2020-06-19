@@ -23,7 +23,7 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableMap;
 import org.drasyl.event.Event;
 import org.drasyl.event.Peer;
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.util.MapToPairArraySerializer;
 import org.drasyl.util.Pair;
 
@@ -58,22 +58,22 @@ import static org.drasyl.event.EventType.EVENT_PEER_UNREACHABLE;
 public class PeersManager {
     private final ReadWriteLock lock;
     @JsonSerialize(using = MapToPairArraySerializer.class)
-    private final Map<Identity, PeerInformation> peers;
-    private final Set<Identity> children;
+    private final Map<CompressedPublicKey, PeerInformation> peers;
+    private final Set<CompressedPublicKey> children;
     @JsonSerialize(using = MapToPairArraySerializer.class)
-    private final Map<Identity, Identity> grandchildrenRoutes;
+    private final Map<CompressedPublicKey, CompressedPublicKey> grandchildrenRoutes;
     private final Consumer<Event> eventConsumer;
-    private Identity superPeer;
+    private CompressedPublicKey superPeer;
 
     public PeersManager(Consumer<Event> eventConsumer) {
         this(new ReentrantReadWriteLock(true), new HashMap<>(), new HashSet<>(), new HashMap<>(), null, eventConsumer);
     }
 
     PeersManager(ReadWriteLock lock,
-                 Map<Identity, PeerInformation> peers,
-                 Set<Identity> children,
-                 Map<Identity, Identity> grandchildrenRoutes,
-                 Identity superPeer,
+                 Map<CompressedPublicKey, PeerInformation> peers,
+                 Set<CompressedPublicKey> children,
+                 Map<CompressedPublicKey, CompressedPublicKey> grandchildrenRoutes,
+                 CompressedPublicKey superPeer,
                  Consumer<Event> eventConsumer) {
         this.lock = lock;
         this.peers = peers;
@@ -83,7 +83,7 @@ public class PeersManager {
         this.eventConsumer = eventConsumer;
     }
 
-    public Map<Identity, PeerInformation> getPeers() {
+    public Map<CompressedPublicKey, PeerInformation> getPeers() {
         try {
             lock.readLock().lock();
 
@@ -94,7 +94,7 @@ public class PeersManager {
         }
     }
 
-    public void addPeerInformation(Identity identity,
+    public void addPeerInformation(CompressedPublicKey identity,
                                    PeerInformation peerInformation) {
         requireNonNull(identity);
         requireNonNull(peerInformation);
@@ -111,7 +111,7 @@ public class PeersManager {
         }
     }
 
-    private void addInformationAndConditionalEventTrigger(Identity identity,
+    private void addInformationAndConditionalEventTrigger(CompressedPublicKey identity,
                                                           PeerInformation existingInformation,
                                                           PeerInformation peerInformation,
                                                           boolean created) {
@@ -127,7 +127,7 @@ public class PeersManager {
         }
     }
 
-    public void removePeerInformation(Identity identity,
+    public void removePeerInformation(CompressedPublicKey identity,
                                       PeerInformation peerInformation) {
         requireNonNull(identity);
         requireNonNull(peerInformation);
@@ -143,7 +143,7 @@ public class PeersManager {
         }
     }
 
-    private void removeInformationAndConditionalEventTrigger(Identity identity,
+    private void removeInformationAndConditionalEventTrigger(CompressedPublicKey identity,
                                                              PeerInformation existingInformation,
                                                              PeerInformation peerInformation) {
         int existingPathCount = existingInformation.getPaths().size();
@@ -161,7 +161,7 @@ public class PeersManager {
     }
 
     @JsonIgnore
-    public Map<Identity, PeerInformation> getChildrenAndGrandchildren() {
+    public Map<CompressedPublicKey, PeerInformation> getChildrenAndGrandchildren() {
         try {
             lock.readLock().lock();
 
@@ -175,7 +175,7 @@ public class PeersManager {
         }
     }
 
-    public boolean isChildren(Identity identity) {
+    public boolean isChildren(CompressedPublicKey identity) {
         requireNonNull(identity);
 
         try {
@@ -188,7 +188,7 @@ public class PeersManager {
         }
     }
 
-    public void addChildren(Identity... identities) {
+    public void addChildren(CompressedPublicKey... identities) {
         requireNonNull(identities);
 
         try {
@@ -201,7 +201,7 @@ public class PeersManager {
         }
     }
 
-    public void removeChildren(Identity... identities) {
+    public void removeChildren(CompressedPublicKey... identities) {
         requireNonNull(identities);
 
         try {
@@ -214,7 +214,7 @@ public class PeersManager {
         }
     }
 
-    public Map<Identity, Identity> getGrandchildrenRoutes() {
+    public Map<CompressedPublicKey, CompressedPublicKey> getGrandchildrenRoutes() {
         try {
             lock.readLock().lock();
 
@@ -225,7 +225,8 @@ public class PeersManager {
         }
     }
 
-    public void addGrandchildrenRoute(Identity grandchildren, Identity children) {
+    public void addGrandchildrenRoute(CompressedPublicKey grandchildren,
+                                      CompressedPublicKey children) {
         requireNonNull(grandchildren);
         requireNonNull(children);
 
@@ -239,7 +240,7 @@ public class PeersManager {
         }
     }
 
-    public void removeGrandchildrenRoute(Identity grandchildren) {
+    public void removeGrandchildrenRoute(CompressedPublicKey grandchildren) {
         requireNonNull(grandchildren);
 
         try {
@@ -252,7 +253,7 @@ public class PeersManager {
         }
     }
 
-    public PeerInformation getPeerInformation(Identity identity) {
+    public PeerInformation getPeerInformation(CompressedPublicKey identity) {
         requireNonNull(identity);
 
         try {
@@ -266,11 +267,11 @@ public class PeersManager {
         }
     }
 
-    public Identity getIdentity(Identity identity) {
+    public CompressedPublicKey getIdentity(CompressedPublicKey identity) {
         try {
             lock.readLock().lock();
 
-            Optional<Identity> search = peers.keySet().stream().filter(i -> i.equals(identity)).findFirst();
+            Optional<CompressedPublicKey> search = peers.keySet().stream().filter(i -> i.equals(identity)).findFirst();
             if (search.isPresent()) {
                 return search.get();
             }
@@ -289,7 +290,7 @@ public class PeersManager {
      *
      * @return
      */
-    public Pair<Identity, PeerInformation> getSuperPeer() {
+    public Pair<CompressedPublicKey, PeerInformation> getSuperPeer() {
         try {
             lock.readLock().lock();
 
@@ -306,7 +307,7 @@ public class PeersManager {
         }
     }
 
-    public void setSuperPeer(Identity identity) {
+    public void setSuperPeer(CompressedPublicKey identity) {
         requireNonNull(identity);
 
         try {
@@ -319,7 +320,7 @@ public class PeersManager {
         }
     }
 
-    public boolean isSuperPeer(Identity identity) {
+    public boolean isSuperPeer(CompressedPublicKey identity) {
         requireNonNull(identity);
 
         try {
@@ -344,10 +345,10 @@ public class PeersManager {
     }
 
     /**
-     * Shortcut for call {@link #addPeerInformation(Identity, PeerInformation)} and {@link
-     * #setSuperPeer(Identity)}.
+     * Shortcut for call {@link #addPeerInformation(CompressedPublicKey, PeerInformation)} and
+     * {@link #setSuperPeer(CompressedPublicKey)}.
      */
-    public void addPeerInformationAndSetSuperPeer(Identity identity,
+    public void addPeerInformationAndSetSuperPeer(CompressedPublicKey identity,
                                                   PeerInformation peerInformation) {
         requireNonNull(identity);
         requireNonNull(peerInformation);
@@ -366,10 +367,10 @@ public class PeersManager {
     }
 
     /**
-     * Shortcut for call {@link #addPeerInformation(Identity, PeerInformation)} and {@link
-     * #addChildren(Identity...)}.
+     * Shortcut for call {@link #addPeerInformation(CompressedPublicKey, PeerInformation)} and
+     * {@link #addChildren(CompressedPublicKey...)}.
      */
-    public void addPeerInformationAndAddChildren(Identity identity,
+    public void addPeerInformationAndAddChildren(CompressedPublicKey identity,
                                                  PeerInformation peerInformation) {
         requireNonNull(identity);
         requireNonNull(peerInformation);
@@ -388,7 +389,8 @@ public class PeersManager {
     }
 
     /**
-     * Shortcut for call {@link #unsetSuperPeer()} and {@link #removePeerInformation(Identity, PeerInformation)}.
+     * Shortcut for call {@link #unsetSuperPeer()} and {@link #removePeerInformation(CompressedPublicKey,
+     * PeerInformation)}.
      *
      * @return
      */
@@ -410,12 +412,12 @@ public class PeersManager {
     }
 
     /**
-     * Shortcut for call {@link #removeChildren(Identity...)} and {@link
-     * #removePeerInformation(Identity, PeerInformation)}.
+     * Shortcut for call {@link #removeChildren(CompressedPublicKey...)} and {@link
+     * #removePeerInformation(CompressedPublicKey, PeerInformation)}.
      *
      * @return
      */
-    public void removeChildrenAndRemovePeerInformation(Identity identity,
+    public void removeChildrenAndRemovePeerInformation(CompressedPublicKey identity,
                                                        PeerInformation peerInformation) {
         requireNonNull(identity);
         requireNonNull(peerInformation);
@@ -433,7 +435,7 @@ public class PeersManager {
     }
 
     @JsonSerialize(using = MapToPairArraySerializer.class)
-    public Map<Identity, PeerInformation> getChildren() {
+    public Map<CompressedPublicKey, PeerInformation> getChildren() {
         try {
             lock.readLock().lock();
 

@@ -23,7 +23,6 @@ import org.awaitility.Durations;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.identity.Identity;
 import org.drasyl.util.NetworkUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -66,9 +65,9 @@ public final class TestHelper {
                 .until(() -> NetworkUtil.available(port));
     }
 
-    public static Identity random() {
+    public static CompressedPublicKey random() {
         try {
-            return Identity.of(CompressedPublicKey.of(Crypto.generateKeys().getPublic()));
+            return CompressedPublicKey.of(Crypto.generateKeys().getPublic());
         }
         catch (CryptoException e) {
             return null;

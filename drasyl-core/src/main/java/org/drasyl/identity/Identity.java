@@ -18,39 +18,47 @@
  */
 package org.drasyl.identity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.drasyl.crypto.CryptoException;
 
 import java.util.Objects;
 
 /**
- * Represents the public identity of a peer.
+ * Represents the private identity of a peer (includes the proof of work, the public and private
+ * key). Should be kept secret!.
  */
 public class Identity {
-    protected final CompressedPublicKey publicKey;
+    private final ProofOfWork proofOfWork;
+    private final CompressedKeyPair keyPair;
 
-    private Identity() {
-        this.publicKey = null;
+    protected Identity(@JsonProperty("proofOfWork") int proofOfWork,
+                       @JsonProperty("publicKey") String publicKey,
+                       @JsonProperty("privateKey") String privateKey) throws CryptoException {
+        this(ProofOfWork.of(proofOfWork), CompressedKeyPair.of(publicKey, privateKey));
     }
 
-    protected Identity(String publicKey) throws CryptoException {
-        this.publicKey = CompressedPublicKey.of(publicKey);
+    private Identity(ProofOfWork proofOfWork, CompressedKeyPair keyPair) {
+        this.proofOfWork = proofOfWork;
+        this.keyPair = keyPair;
     }
 
-    protected Identity(CompressedPublicKey publicKey) {
-        this.publicKey = publicKey;
+    @JsonIgnore
+    public CompressedKeyPair getKeyPair() {
+        return keyPair;
     }
 
     public CompressedPublicKey getPublicKey() {
-        return publicKey;
+        return keyPair.getPublicKey();
     }
 
-    public boolean hasPublicKey() {
-        return publicKey != null;
+    public CompressedPrivateKey getPrivateKey() {
+        return keyPair.getPrivateKey();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(publicKey);
+        return Objects.hash(keyPair);
     }
 
     @Override
@@ -61,27 +69,48 @@ public class Identity {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        Identity identity = (Identity) o;
-        return Objects.equals(publicKey, identity.publicKey);
+        Identity that = (Identity) o;
+        return Objects.equals(keyPair, that.keyPair);
     }
 
     @Override
     public String toString() {
-        return "Identity{" +
-                "publicKey=" + publicKey +
+        return "PrivateIdentity{" +
+                "keyPair=" + keyPair + ", " +
+                " proofOfWork=" + proofOfWork +
                 '}';
     }
 
-    public static Identity of(String publicKey) {
-        try {
-            return of(CompressedPublicKey.of(publicKey));
-        }
-        catch (CryptoException e) {
-            throw new IllegalArgumentException(e);
-        }
+    @JsonIgnore
+    public ProofOfWork getPoW() {
+        return proofOfWork;
     }
 
-    public static Identity of(CompressedPublicKey publicKey) {
-        return new Identity(publicKey);
+    @JsonProperty
+    private int getProofOfWork() {
+        return proofOfWork.getNonce();
+    }
+
+    public static Identity of(ProofOfWork proofOfWork,
+                              CompressedPublicKey publicKey,
+                              CompressedPrivateKey privateKey) {
+        return of(proofOfWork, CompressedKeyPair.of(publicKey, privateKey));
+    }
+
+    public static Identity of(ProofOfWork proofOfWork,
+                              CompressedKeyPair keyPair) {
+        return new Identity(proofOfWork, keyPair);
+    }
+
+    public static Identity of(ProofOfWork proofOfWork,
+                              String publicKey,
+                              String privateKey) throws CryptoException {
+        return of(proofOfWork, CompressedKeyPair.of(publicKey, privateKey));
+    }
+
+    public static Identity of(int proofOfWork,
+                              String publicKey,
+                              String privateKey) throws CryptoException {
+        return of(ProofOfWork.of(proofOfWork), CompressedKeyPair.of(publicKey, privateKey));
     }
 }

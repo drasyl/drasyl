@@ -36,7 +36,7 @@ import io.netty.handler.codec.http.HttpResponseStatus;
 import io.netty.handler.codec.http.HttpUtil;
 import io.netty.util.CharsetUtil;
 import org.drasyl.DrasylNode;
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -56,12 +56,12 @@ import static io.netty.handler.codec.http.HttpResponseStatus.OK;
  */
 public class NodeServerHttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     private static final Logger LOG = LoggerFactory.getLogger(NodeServerHttpHandler.class);
-    private final Identity identity;
+    private final CompressedPublicKey publicKey;
     private final PeersManager peersManager;
 
-    public NodeServerHttpHandler(Identity identity,
+    public NodeServerHttpHandler(CompressedPublicKey publicKey,
                                  PeersManager peersManager) {
-        this.identity = identity;
+        this.publicKey = publicKey;
         this.peersManager = peersManager;
     }
 
@@ -76,7 +76,7 @@ public class NodeServerHttpHandler extends SimpleChannelInboundHandler<FullHttpR
 
         // response with node information on HEAD request
         if (HEAD.equals(req.method())) {
-            generateHeaders(ctx, req, identity, OK);
+            generateHeaders(ctx, req, publicKey, OK);
             return;
         }
 
@@ -89,12 +89,12 @@ public class NodeServerHttpHandler extends SimpleChannelInboundHandler<FullHttpR
 
         if ("/".equals(req.uri()) || "/index.html".equals(req.uri()) || "/index.htm".equals(req.uri())) {
             // display custom bad request error page for root path
-            generateHeaders(ctx, req, identity, BAD_REQUEST);
+            generateHeaders(ctx, req, publicKey, BAD_REQUEST);
         }
         else if ("/peers.json".equals(req.uri())) {
             DefaultFullHttpResponse res = new DefaultFullHttpResponse(req.protocolVersion(), FORBIDDEN,
                     getPeers(peersManager));
-            res.headers().set("x-public-key", identity.getPublicKey());
+            res.headers().set("x-public-key", publicKey);
             res.headers().set(CONTENT_TYPE, "application/json; charset=UTF-8");
             sendHttpResponse(ctx, res);
         }
@@ -107,11 +107,11 @@ public class NodeServerHttpHandler extends SimpleChannelInboundHandler<FullHttpR
 
     private static void generateHeaders(ChannelHandlerContext ctx,
                                         FullHttpRequest req,
-                                        Identity identity,
+                                        CompressedPublicKey identity,
                                         HttpResponseStatus status) {
         ByteBuf content = getContent(identity);
         FullHttpResponse res = new DefaultFullHttpResponse(req.protocolVersion(), status, content);
-        res.headers().set("x-public-key", identity.getPublicKey());
+        res.headers().set("x-public-key", identity);
         res.headers().set(CONTENT_TYPE, "text/html; charset=UTF-8");
         HttpUtil.setContentLength(res, content.readableBytes());
         sendHttpResponse(ctx, res);
@@ -143,7 +143,7 @@ public class NodeServerHttpHandler extends SimpleChannelInboundHandler<FullHttpR
         }
     }
 
-    public static ByteBuf getContent(Identity identity) {
+    public static ByteBuf getContent(CompressedPublicKey identity) {
         return Unpooled.copiedBuffer(
                 "\n" +
                         "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n" +
@@ -153,7 +153,7 @@ public class NodeServerHttpHandler extends SimpleChannelInboundHandler<FullHttpR
                         "<h1>Bad Request</h1>\n" +
                         "<p>Not a WebSocket Handshake Request: Missing Upgrade.</p>\n" +
                         "<hr>\n" +
-                        "<address>drasyl/" + DrasylNode.getVersion() + " with Public Key " + identity.getPublicKey() + "</address>\n" +
+                        "<address>drasyl/" + DrasylNode.getVersion() + " with Public Key " + identity + "</address>\n" +
                         "</body></html>\n", CharsetUtil.UTF_8);
     }
 }

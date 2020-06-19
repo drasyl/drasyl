@@ -18,7 +18,7 @@
  */
 package org.drasyl.peer.connection.message;
 
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.CompressedPublicKey;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -29,7 +29,7 @@ import static java.util.Objects.requireNonNull;
  * A message that is sent by an application running on drasyl.
  */
 public class ApplicationMessage extends RelayableMessage implements RequestMessage {
-    private final Identity sender;
+    private final CompressedPublicKey sender;
     private final byte[] payload;
 
     protected ApplicationMessage() {
@@ -39,8 +39,8 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
     }
 
     ApplicationMessage(String id,
-                       Identity recipient,
-                       Identity sender,
+                       CompressedPublicKey recipient,
+                       CompressedPublicKey sender,
                        byte[] payload,
                        short hopCount) {
         super(id, hopCount, recipient);
@@ -50,21 +50,27 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
 
     /**
      * Creates a new message.
-     *  @param sender    The sender
+     *
+     * @param sender    The sender
      * @param recipient The recipient
      * @param payload   The data to be sent
      */
-    public ApplicationMessage(Identity sender, Identity recipient, byte[] payload) {
+    public ApplicationMessage(CompressedPublicKey sender,
+                              CompressedPublicKey recipient,
+                              byte[] payload) {
         this(sender, recipient, payload, (short) 0);
     }
 
-    ApplicationMessage(Identity sender, Identity recipient, byte[] payload, short hopCount) {
+    ApplicationMessage(CompressedPublicKey sender,
+                       CompressedPublicKey recipient,
+                       byte[] payload,
+                       short hopCount) {
         super(recipient, hopCount);
         this.sender = requireNonNull(sender);
         this.payload = requireNonNull(payload);
     }
 
-    public Identity getSender() {
+    public CompressedPublicKey getSender() {
         return sender;
     }
 

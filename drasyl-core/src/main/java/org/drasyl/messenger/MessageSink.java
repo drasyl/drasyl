@@ -18,7 +18,7 @@
  */
 package org.drasyl.messenger;
 
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.Message;
 
 /**
@@ -34,5 +34,5 @@ public interface MessageSink {
      * @throws MessageSinkException if sending is not possible (e.g. because no path to the peer
      *                              exists)
      */
-    void send(Identity recipient, Message message) throws MessageSinkException;
+    void send(CompressedPublicKey recipient, Message message) throws MessageSinkException;
 }

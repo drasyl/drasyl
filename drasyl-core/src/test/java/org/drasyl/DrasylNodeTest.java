@@ -21,9 +21,9 @@ package org.drasyl;
 import org.drasyl.event.Event;
 import org.drasyl.event.EventType;
 import org.drasyl.event.Node;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
-import org.drasyl.identity.PrivateIdentity;
 import org.drasyl.messenger.MessageSink;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
@@ -53,17 +53,17 @@ class DrasylNodeTest {
     private PeersManager peersManager;
     private Node node;
     private Event event;
-    private Pair<Identity, byte[]> message;
-    private Identity recipient;
-    private Identity sender;
+    private Pair<CompressedPublicKey, byte[]> message;
+    private CompressedPublicKey recipient;
+    private CompressedPublicKey sender;
     private byte[] payload;
-    private PrivateIdentity identity;
+    private Identity identity;
     private AtomicBoolean started;
     private CompletableFuture<Void> startSequence;
     private CompletableFuture<Void> shutdownSequence;
     private SuperPeerClient superPeerClient;
     private MessageSink messageSink;
-    private Identity identity1;
+    private CompressedPublicKey identity1;
     private IntraVmDiscovery intraVmDiscovery;
 
     @BeforeEach
@@ -75,17 +75,17 @@ class DrasylNodeTest {
         peersManager = mock(PeersManager.class);
         event = mock(Event.class);
         node = mock(Node.class);
-        recipient = mock(Identity.class);
-        sender = mock(Identity.class);
+        recipient = mock(CompressedPublicKey.class);
+        sender = mock(CompressedPublicKey.class);
         payload = new byte[]{ 0x4f };
         message = Pair.of(sender, payload);
-        identity = mock(PrivateIdentity.class);
+        identity = mock(Identity.class);
         started = mock(AtomicBoolean.class);
         startSequence = mock(CompletableFuture.class);
         shutdownSequence = mock(CompletableFuture.class);
         superPeerClient = mock(SuperPeerClient.class);
         messageSink = mock(MessageSink.class);
-        identity1 = mock(Identity.class);
+        identity1 = mock(CompressedPublicKey.class);
         intraVmDiscovery = mock(IntraVmDiscovery.class);
     }
 
@@ -105,7 +105,7 @@ class DrasylNodeTest {
 
     @Test
     void startShouldEmitUpEventOnSuccessfulStart() {
-        when(identityManager.getNonPrivateIdentity()).thenReturn(identity1);
+        when(identityManager.getPublicKey()).thenReturn(identity1);
         when(identityManager.getIdentity()).thenReturn(identity);
 
         DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, intraVmDiscovery, superPeerClient, server, new AtomicBoolean(false), startSequence, shutdownSequence, messageSink) {
@@ -145,7 +145,7 @@ class DrasylNodeTest {
 
     @Test
     void sendShouldCallMessenger() throws DrasylException {
-        when(identityManager.getNonPrivateIdentity()).thenReturn(identity1);
+        when(identityManager.getPublicKey()).thenReturn(identity1);
 
         DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, intraVmDiscovery, superPeerClient, server, started, startSequence, shutdownSequence, messageSink) {
             @Override

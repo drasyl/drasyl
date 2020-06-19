@@ -20,7 +20,7 @@ package org.drasyl.peer.connection.intravm;
 
 import org.drasyl.event.Event;
 import org.drasyl.event.EventType;
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.messenger.MessageSink;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.messenger.NoPathToIdentityException;
@@ -43,7 +43,7 @@ import java.util.function.Supplier;
  */
 public class IntraVmDiscovery implements AutoCloseable {
     private static final ReadWriteLock lock = new ReentrantReadWriteLock(true);
-    private static final Map<Identity, IntraVmDiscovery> discoveries = new HashMap<>();
+    private static final Map<CompressedPublicKey, IntraVmDiscovery> discoveries = new HashMap<>();
     private static final MessageSink MESSAGE_SINK = (recipient, message) -> {
         IntraVmDiscovery discoveree = discoveries.get(recipient);
 
@@ -54,14 +54,14 @@ public class IntraVmDiscovery implements AutoCloseable {
         discoveree.path.send(message);
     };
     private final Path path;
-    private final Supplier<Identity> identitySupplier;
+    private final Supplier<CompressedPublicKey> identitySupplier;
     private final PeersManager peersManager;
     private final PeerInformation peerInformation;
     private final Messenger messenger;
     private final AtomicBoolean opened;
 
     @SuppressWarnings({ "java:S1905" })
-    public IntraVmDiscovery(Supplier<Identity> identitySupplier,
+    public IntraVmDiscovery(Supplier<CompressedPublicKey> identitySupplier,
                             Messenger messenger,
                             PeersManager peersManager,
                             Consumer<Event> eventConsumer) {
@@ -80,14 +80,14 @@ public class IntraVmDiscovery implements AutoCloseable {
         );
     }
 
-    public IntraVmDiscovery(Supplier<Identity> identitySupplier,
+    public IntraVmDiscovery(Supplier<CompressedPublicKey> identitySupplier,
                             Messenger messenger,
                             PeersManager peersManager,
                             Path path) {
         this(identitySupplier, messenger, peersManager, path, PeerInformation.of(path), new AtomicBoolean(false));
     }
 
-    IntraVmDiscovery(Supplier<Identity> identitySupplier,
+    IntraVmDiscovery(Supplier<CompressedPublicKey> identitySupplier,
                      Messenger messenger,
                      PeersManager peersManager,
                      Path path,

@@ -38,7 +38,6 @@ public class SuperPeerClientChannelBootstrap {
     private final EventLoopGroup workerGroup;
     private final URI endpoint;
     private final SuperPeerClientChannelInitializer superPeerClientChannelInitializer;
-    private final Set<URI> endpoints;
     private final SuperPeerClient superPeerClient;
 
     public SuperPeerClientChannelBootstrap(DrasylNodeConfig config,
@@ -49,7 +48,6 @@ public class SuperPeerClientChannelBootstrap {
         this.config = config;
         this.workerGroup = workerGroup;
         this.endpoint = endpoint;
-        this.endpoints = endpoints;
         this.superPeerClient = superPeerClient;
         String channelInitializer = config.getSuperPeerChannelInitializer();
 
@@ -76,9 +74,9 @@ public class SuperPeerClientChannelBootstrap {
     private SuperPeerClientChannelInitializer getChannelInitializer(String className) throws ClassNotFoundException,
             NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         Class<?> c = Class.forName(className);
-        Constructor<?> cons = c.getConstructor(DrasylNodeConfig.class, URI.class, Set.class, SuperPeerClient.class);
+        Constructor<?> cons = c.getConstructor(DrasylNodeConfig.class, URI.class, SuperPeerClient.class);
 
-        return (SuperPeerClientChannelInitializer) cons.newInstance(config, endpoint, endpoints, superPeerClient);
+        return (SuperPeerClientChannelInitializer) cons.newInstance(config, endpoint, superPeerClient);
     }
 
     public Channel getChannel() throws SuperPeerClientException {
