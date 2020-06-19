@@ -19,7 +19,7 @@
 package org.drasyl.peer.connection.message;
 
 import com.fasterxml.jackson.annotation.JsonInclude;
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.CompressedPublicKey;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -78,8 +78,8 @@ public class ChunkedMessage extends ApplicationMessage {
      * @param checksum       the final checksum
      * @param sequenceNumber the sequence number of this message
      */
-    protected ChunkedMessage(Identity sender,
-                             Identity recipient,
+    protected ChunkedMessage(CompressedPublicKey sender,
+                             CompressedPublicKey recipient,
                              String msgID,
                              byte[] payload,
                              int contentLength,
@@ -100,8 +100,8 @@ public class ChunkedMessage extends ApplicationMessage {
      * @param contentLength the final content length
      * @param checksum      the final checksum
      */
-    public ChunkedMessage(Identity sender,
-                          Identity recipient,
+    public ChunkedMessage(CompressedPublicKey sender,
+                          CompressedPublicKey recipient,
                           byte[] payload,
                           int contentLength,
                           String checksum) {
@@ -120,8 +120,8 @@ public class ChunkedMessage extends ApplicationMessage {
      * @param payload        the chunk
      * @param sequenceNumber the sequence number of this message
      */
-    public static ChunkedMessage createFollowChunk(Identity sender,
-                                                   Identity recipient,
+    public static ChunkedMessage createFollowChunk(CompressedPublicKey sender,
+                                                   CompressedPublicKey recipient,
                                                    String msgID,
                                                    byte[] payload,
                                                    int sequenceNumber) {
@@ -136,8 +136,8 @@ public class ChunkedMessage extends ApplicationMessage {
      * @param msgID          the id of this message (must be the same as the initial chunk)
      * @param sequenceNumber the sequence number of this message
      */
-    public static ChunkedMessage createLastChunk(Identity sender,
-                                                 Identity recipient,
+    public static ChunkedMessage createLastChunk(CompressedPublicKey sender,
+                                                 CompressedPublicKey recipient,
                                                  String msgID,
                                                  int sequenceNumber) {
         return new ChunkedMessage(sender, recipient, msgID, new byte[]{}, 0, null, sequenceNumber);

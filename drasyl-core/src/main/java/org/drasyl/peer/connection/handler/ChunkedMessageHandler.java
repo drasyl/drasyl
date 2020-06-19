@@ -38,7 +38,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * Allows sending bigger messages as chunks.
+ * Allows sending bigger messages in chunks.
  */
 public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMessage, ApplicationMessage> {
     public static final String CHUNK_HANDLER = "chunkHandler";
