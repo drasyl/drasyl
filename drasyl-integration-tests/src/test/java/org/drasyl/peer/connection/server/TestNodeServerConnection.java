@@ -35,7 +35,6 @@ import org.drasyl.identity.CompressedKeyPair;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.PrivateIdentity;
-import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
@@ -316,7 +315,7 @@ public class TestNodeServerConnection {
                                                                   PrivateIdentity identity) throws ExecutionException,
             InterruptedException {
         TestNodeServerConnection session = TestNodeServerConnection.clientSession(server, identity, true);
-        ResponseMessage<?> responseMessage = session.sendRequest(new JoinMessage(session.getIdentity().getPoW(), session.getIdentity().toNonPrivate(), PeerInformation.of(), Set.of())).get();
+        ResponseMessage<?> responseMessage = session.sendRequest(new JoinMessage(session.getIdentity().getPoW(), session.getIdentity().toNonPrivate(), Set.of())).get();
         session.send(new StatusMessage(STATUS_OK, responseMessage.getId()));
         await().until(() -> server.getChannelGroup().find(session.getIdentity().toNonPrivate()) != null);
 

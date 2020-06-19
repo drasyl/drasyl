@@ -276,7 +276,6 @@ class NodeServerConnectionHandlerTest {
         when(grandchildIdentity.getPublicKey()).thenReturn(grandchildPublicKey);
         when(requestMessage.getChildrenAndGrandchildren()).thenReturn(Set.of(grandchildIdentity));
         when(grandchildPeerInformation.getEndpoints()).thenReturn(grandchildEndpoints);
-        when(requestMessage.getPeerInformation()).thenReturn(PeerInformation.of());
         when(statusMessage.getCorrespondingId()).thenReturn("123");
         when(statusMessage.getCode()).thenReturn(STATUS_OK);
         when(peersManager.getSuperPeer()).thenReturn(Pair.of(superPeerIdentity, superPeerInformation));
