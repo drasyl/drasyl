@@ -20,9 +20,8 @@ package org.drasyl.peer.connection.superpeer;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.DrasylNodeConfig;
 import org.drasyl.messenger.Messenger;
-import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
@@ -44,12 +43,6 @@ import static org.mockito.Mockito.when;
 class SuperPeerClientConnectionHandlerTest {
     private EmbeddedChannel channel;
     @Mock
-    private CompressedPublicKey expectedPublicKey;
-    @Mock
-    private CompressedPublicKey ownPublicKey;
-    @Mock
-    private PeersManager peersManager;
-    @Mock
     private Messenger messenger;
     @Mock
     private QuitMessage quitMessage;
@@ -61,12 +54,16 @@ class SuperPeerClientConnectionHandlerTest {
     private JoinMessage requestMessage;
     @Mock
     private StatusMessage statusMessage;
+    @Mock
+    private DrasylNodeConfig config;
+    @Mock
+    private SuperPeerClient client;
 
     @Test
     void shouldCloseChannelOnQuitMessage() {
         when(handshakeFuture.isDone()).thenReturn(true);
 
-        SuperPeerClientConnectionHandler handler = new SuperPeerClientConnectionHandler(expectedPublicKey, ownPublicKey, peersManager, messenger, ofMillis(1000), handshakeFuture, timeoutFuture, requestMessage);
+        SuperPeerClientConnectionHandler handler = new SuperPeerClientConnectionHandler(config, client, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage);
         channel = new EmbeddedChannel(handler);
         channel.readOutbound(); // join message
         channel.flush();
@@ -84,7 +81,7 @@ class SuperPeerClientConnectionHandlerTest {
         when(statusMessage.getCorrespondingId()).thenReturn("123");
         when(statusMessage.getCode()).thenReturn(STATUS_SERVICE_UNAVAILABLE);
 
-        SuperPeerClientConnectionHandler handler = new SuperPeerClientConnectionHandler(expectedPublicKey, ownPublicKey, peersManager, messenger, ofMillis(1000), handshakeFuture, timeoutFuture, requestMessage);
+        SuperPeerClientConnectionHandler handler = new SuperPeerClientConnectionHandler(config, client, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage);
         channel = new EmbeddedChannel(handler);
         channel.readOutbound(); // join message
         channel.flush();
