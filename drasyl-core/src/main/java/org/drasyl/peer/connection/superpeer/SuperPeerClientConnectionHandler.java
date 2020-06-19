@@ -16,13 +16,13 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection.superpeer.handler;
+package org.drasyl.peer.connection.superpeer;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
+import org.drasyl.DrasylNodeConfig;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.identity.ProofOfWork;
 import org.drasyl.messenger.MessageSink;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.messenger.NoPathToIdentityException;
@@ -59,23 +59,19 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
     private final CompressedPublicKey ownIdentity;
     private final PeersManager peersManager;
 
-    public SuperPeerClientConnectionHandler(ProofOfWork proofOfWork,
-                                            CompressedPublicKey expectedPublicKey,
-                                            CompressedPublicKey ownPublicKey,
-                                            Duration timeout,
-                                            PeersManager peersManager,
-                                            Messenger messenger) {
+    public SuperPeerClientConnectionHandler(DrasylNodeConfig config,
+                                            SuperPeerClient superPeerClient) {
         super(
-                timeout,
-                messenger,
-                new JoinMessage(proofOfWork,
-                        ownPublicKey,
-                        peersManager.getChildrenAndGrandchildren().keySet()
+                config.getSuperPeerHandshakeTimeout(),
+                superPeerClient.getMessenger(),
+                new JoinMessage(superPeerClient.getIdentityManager().getProofOfWork(),
+                        superPeerClient.getIdentityManager().getPublicKey(),
+                        superPeerClient.getPeersManager().getChildrenAndGrandchildren().keySet()
                 )
         );
-        this.expectedPublicKey = expectedPublicKey;
-        this.ownIdentity = ownPublicKey;
-        this.peersManager = peersManager;
+        this.expectedPublicKey = config.getSuperPeerPublicKey();
+        this.ownIdentity = superPeerClient.getIdentityManager().getPublicKey();
+        this.peersManager = superPeerClient.getPeersManager();
     }
 
     @SuppressWarnings({ "java:S107" })

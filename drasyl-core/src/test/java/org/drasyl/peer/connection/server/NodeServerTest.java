@@ -121,7 +121,6 @@ class NodeServerTest {
             NodeServer server = new NodeServer(identityManager, messenger, peersManager, workerGroup, bossGroup, superPeerConnected);
 
             assertNotNull(server.getBossGroup());
-            assertNotNull(server.getConfig());
             assertNotNull(server.getWorkerGroup());
             assertNotNull(server.getPeersManager());
             assertNotNull(server.getEndpoints());

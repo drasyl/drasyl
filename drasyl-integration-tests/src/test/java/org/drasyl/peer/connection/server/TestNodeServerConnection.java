@@ -30,6 +30,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
+import org.drasyl.DrasylNodeConfig;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.identity.CompressedKeyPair;
 import org.drasyl.identity.CompressedPublicKey;
@@ -145,9 +146,10 @@ public class TestNodeServerConnection {
     /**
      * Creates a new session to the given server.
      */
-    public static TestNodeServerConnection clientSession(NodeServer server,
+    public static TestNodeServerConnection clientSession(DrasylNodeConfig config,
+                                                         NodeServer server,
                                                          Identity identity) throws ExecutionException, InterruptedException {
-        URI serverEndpoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
+        URI serverEndpoint = URI.create("ws://" + config.getServerBindHost() + ":" + server.getPort());
         return TestNodeServerConnection.clientSession(serverEndpoint, identity, true, server.workerGroup);
     }
 
@@ -264,10 +266,11 @@ public class TestNodeServerConnection {
     /**
      * Creates a new session with the given sessionUID and joins the given server.
      */
-    public static TestNodeServerConnection clientSessionAfterJoin(NodeServer server,
+    public static TestNodeServerConnection clientSessionAfterJoin(DrasylNodeConfig config,
+                                                                  NodeServer server,
                                                                   Identity identity) throws ExecutionException,
             InterruptedException {
-        TestNodeServerConnection session = TestNodeServerConnection.clientSession(server, identity, true);
+        TestNodeServerConnection session = TestNodeServerConnection.clientSession(config, server, identity, true);
         ResponseMessage<?> responseMessage = session.sendRequest(new JoinMessage(session.getIdentity().getPoW(), session.getIdentity().getPublicKey(), Set.of())).get();
         session.send(new StatusMessage(STATUS_OK, responseMessage.getId()));
         await().until(() -> server.getChannelGroup().find(session.getIdentity().getPublicKey()) != null);
@@ -308,11 +311,12 @@ public class TestNodeServerConnection {
     /**
      * Creates a new session to the given server.
      */
-    public static TestNodeServerConnection clientSession(NodeServer server,
+    public static TestNodeServerConnection clientSession(DrasylNodeConfig config,
+                                                         NodeServer server,
                                                          Identity identity,
                                                          boolean pingPong) throws ExecutionException,
             InterruptedException {
-        URI serverEndpoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
+        URI serverEndpoint = URI.create("ws://" + config.getServerBindHost() + ":" + server.getPort());
 
         return TestNodeServerConnection.clientSession(serverEndpoint,
                 identity, pingPong, server.workerGroup);

@@ -33,21 +33,21 @@ import java.net.BindException;
 
 public class NodeServerChannelBootstrap {
     private static final Logger LOG = LoggerFactory.getLogger(NodeServerChannelBootstrap.class);
-    private final NodeServer nodeServer;
-    private final ServerBootstrap serverBootstrap;
     private final DrasylNodeConfig config;
+    private final NodeServer server;
+    private final ServerBootstrap serverBootstrap;
     private final ChannelInitializer<SocketChannel> relayServerInitializer;
 
-    public NodeServerChannelBootstrap(NodeServer nodeServer,
-                                      ServerBootstrap serverBootstrap,
-                                      DrasylNodeConfig config) throws NodeServerException {
-        this.nodeServer = nodeServer;
-        this.serverBootstrap = serverBootstrap;
+    public NodeServerChannelBootstrap(DrasylNodeConfig config,
+                                      NodeServer server,
+                                      ServerBootstrap serverBootstrap) throws NodeServerException {
         this.config = config;
+        this.server = server;
+        this.serverBootstrap = serverBootstrap;
         String channelInitializer = config.getServerChannelInitializer();
 
         try {
-            this.relayServerInitializer = getChannelInitializer(nodeServer, channelInitializer);
+            this.relayServerInitializer = getChannelInitializer(config, server, channelInitializer);
         }
         catch (ClassNotFoundException e) {
             throw new NodeServerException("The given channel initializer can't be found: '" + channelInitializer + "'");
@@ -66,19 +66,20 @@ public class NodeServerChannelBootstrap {
         }
     }
 
-    private ChannelInitializer<SocketChannel> getChannelInitializer(NodeServer relay,
+    private ChannelInitializer<SocketChannel> getChannelInitializer(DrasylNodeConfig config,
+                                                                    NodeServer server,
                                                                     String className) throws ClassNotFoundException,
             NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         Class<?> c = Class.forName(className);
-        Constructor<?> cons = c.getConstructor(NodeServer.class);
+        Constructor<?> cons = c.getConstructor(DrasylNodeConfig.class, NodeServer.class);
 
-        return (ChannelInitializer<SocketChannel>) cons.newInstance(relay);
+        return (ChannelInitializer<SocketChannel>) cons.newInstance(config, server);
     }
 
     public Channel getChannel() throws NodeServerException {
         try {
             return serverBootstrap
-                    .group(nodeServer.bossGroup, nodeServer.workerGroup)
+                    .group(server.bossGroup, server.workerGroup)
                     .channel(NioServerSocketChannel.class)
 //                .handler(new LoggingHandler(LogLevel.INFO))
                     .childHandler(relayServerInitializer)

@@ -122,7 +122,7 @@ public class SuperPeerClient implements AutoCloseable {
         this.nextEndpointPointer = new AtomicInteger(endpoints.isEmpty() ? 0 : Crypto.randomNumber(endpoints.size()));
         this.nextRetryDelayPointer = new AtomicInteger(0);
         this.eventConsumer = eventConsumer;
-        this.threadSupplier = myEndpoints -> new Thread(() -> keepConnectionAlive());
+        this.threadSupplier = myEndpoints -> new Thread(this::keepConnectionAlive);
         this.connected = BehaviorSubject.createDefault(false);
     }
 
@@ -131,7 +131,7 @@ public class SuperPeerClient implements AutoCloseable {
             URI endpoint = getEndpoint();
             LOG.debug("Connect to Super Peer Endpoint '{}'", endpoint);
             try {
-                SuperPeerClientChannelBootstrap clientBootstrap = new SuperPeerClientChannelBootstrap(config, workerGroup, endpoint, this);
+                SuperPeerClientChannelBootstrap clientBootstrap = new SuperPeerClientChannelBootstrap(config, this, workerGroup, endpoint);
                 clientChannel = clientBootstrap.getChannel();
                 connected.onNext(true);
                 eventConsumer.accept(new Event(EVENT_NODE_ONLINE, Node.of(identityManager.getIdentity())));

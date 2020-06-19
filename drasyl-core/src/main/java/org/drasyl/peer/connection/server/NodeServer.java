@@ -135,7 +135,7 @@ public class NodeServer implements AutoCloseable {
                 new NodeServerChannelGroup(),
                 superPeerConnected);
 
-        nodeServerChannelBootstrap = new NodeServerChannelBootstrap(this, serverBootstrap, config);
+        nodeServerChannelBootstrap = new NodeServerChannelBootstrap(config, this, serverBootstrap);
     }
 
     NodeServer(IdentityManager identityManager,
@@ -188,13 +188,6 @@ public class NodeServer implements AutoCloseable {
      */
     public Set<URI> getEndpoints() {
         return actualEndpoints;
-    }
-
-    /**
-     * @return the config
-     */
-    DrasylNodeConfig getConfig() {
-        return config;
     }
 
     EventLoopGroup getBossGroup() {

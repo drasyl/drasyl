@@ -16,11 +16,12 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection.server.handler;
+package org.drasyl.peer.connection.server;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
+import org.drasyl.DrasylNodeConfig;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
@@ -34,7 +35,6 @@ import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RegisterGrandchildMessage;
 import org.drasyl.peer.connection.message.UnregisterGrandchildMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
-import org.drasyl.peer.connection.server.NodeServerChannelGroup;
 import org.drasyl.util.Pair;
 import org.drasyl.util.SetUtil;
 import org.slf4j.Logger;
@@ -70,17 +70,13 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
     private final CompressedPublicKey ownPublicKey;
     private final NodeServerChannelGroup channelGroup;
 
-    public NodeServerConnectionHandler(CompressedPublicKey ownPublicKey,
-                                       PeersManager peersManager,
-                                       Set<URI> endpoints,
-                                       Duration timeout,
-                                       Messenger messenger,
-                                       NodeServerChannelGroup channelGroup) {
-        super(timeout, messenger);
-        this.peersManager = peersManager;
-        this.endpoints = endpoints;
-        this.ownPublicKey = ownPublicKey;
-        this.channelGroup = channelGroup;
+    public NodeServerConnectionHandler(DrasylNodeConfig config,
+                                       NodeServer server) {
+        super(config.getServerHandshakeTimeout(), server.getMessenger());
+        this.peersManager = server.getPeersManager();
+        this.endpoints = server.getEndpoints();
+        this.ownPublicKey = server.getIdentityManager().getPublicKey();
+        this.channelGroup = server.getChannelGroup();
     }
 
     NodeServerConnectionHandler(CompressedPublicKey ownPublicKey,

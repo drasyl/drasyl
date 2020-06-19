@@ -19,12 +19,13 @@
 package org.drasyl.peer.connection.superpeer;
 
 import io.netty.channel.ChannelPipeline;
+import org.drasyl.DrasylNodeConfig;
 import org.drasyl.peer.connection.server.NodeServer;
 import org.drasyl.peer.connection.server.NodeServerChannelInitializer;
 
 public class DummyServerChannelInitializer extends NodeServerChannelInitializer {
-    public DummyServerChannelInitializer(NodeServer server) {
-        super(server);
+    public DummyServerChannelInitializer(DrasylNodeConfig config, NodeServer server) {
+        super(config, server);
     }
 
     @Override
