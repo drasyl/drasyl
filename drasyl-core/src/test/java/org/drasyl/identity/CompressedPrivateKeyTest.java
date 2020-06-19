@@ -36,18 +36,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class CompressedPrivateKeyTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
-    private KeyPair keyPair;
+    private CompressedPrivateKey privateKey;
 
     @BeforeEach
-    void setUp() {
-        keyPair = Crypto.generateKeys();
+    void setUp() throws CryptoException {
+        privateKey = CompressedPrivateKey.of("03a3c01d41b6a7c31b081c9f1ee0f8cd5d11e7ceb784359b57388c752d38f581");
     }
 
     @Nested
     class Of {
         @Test
         void shouldReturnCorrectKeys() throws CryptoException {
-            CompressedPrivateKey compressedPrivateKey1 = CompressedPrivateKey.of(keyPair.getPrivate());
+            CompressedPrivateKey compressedPrivateKey1 = privateKey;
             CompressedPrivateKey compressedPrivateKey2 = CompressedPrivateKey.of(compressedPrivateKey1.getCompressedKey());
             CompressedPrivateKey compressedPrivateKey3 = CompressedPrivateKey.of(compressedPrivateKey2.toUncompressedKey());
 
@@ -74,13 +74,11 @@ class CompressedPrivateKeyTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException, CryptoException {
-            CompressedPrivateKey compressedPrivateKey = CompressedPrivateKey.of(keyPair.getPrivate());
-
-            assertThatJson(JSON_MAPPER.writeValueAsString(compressedPrivateKey))
+            assertThatJson(JSON_MAPPER.writeValueAsString(privateKey))
                     .when(Option.IGNORING_ARRAY_ORDER)
-                    .isEqualTo(compressedPrivateKey.toString());
+                    .isEqualTo(privateKey.toString());
 
-            assertEquals(compressedPrivateKey, JSON_MAPPER.readValue(JSON_MAPPER.writeValueAsString(compressedPrivateKey), CompressedPrivateKey.class));
+            assertEquals(privateKey, JSON_MAPPER.readValue(JSON_MAPPER.writeValueAsString(privateKey), CompressedPrivateKey.class));
         }
     }
 }

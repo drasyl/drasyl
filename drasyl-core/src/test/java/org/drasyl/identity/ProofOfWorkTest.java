@@ -51,12 +51,12 @@ class ProofOfWorkTest {
         @Test
         void shouldGenerateCorrectProof() throws CryptoException {
             short difficulty = 1;
-            CompressedKeyPair keyPair = CompressedKeyPair.of(Crypto.generateKeys());
-            ProofOfWork proof1 = ProofOfWork.of(keyPair.getPublicKey(), difficulty);
-            ProofOfWork proof2 = ProofOfWork.of(keyPair.getPublicKey(), difficulty);
+            CompressedPublicKey publicKey = CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9");
+            ProofOfWork proof1 = ProofOfWork.of(publicKey, difficulty);
+            ProofOfWork proof2 = ProofOfWork.of(publicKey, difficulty);
 
-            assertTrue(proof1.isValid(keyPair.getPublicKey(), difficulty));
-            assertTrue(proof2.isValid(keyPair.getPublicKey(), difficulty));
+            assertTrue(proof1.isValid(publicKey, difficulty));
+            assertTrue(proof2.isValid(publicKey, difficulty));
             assertEquals(proof1, proof2);
         }
     }

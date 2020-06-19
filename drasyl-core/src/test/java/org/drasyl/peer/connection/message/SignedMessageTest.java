@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.Signature;
+import org.drasyl.identity.CompressedKeyPair;
 import org.drasyl.identity.CompressedPublicKey;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
@@ -44,8 +45,8 @@ class SignedMessageTest {
     private CompressedPublicKey publicKey;
 
     @BeforeAll
-    static void setUp() {
-        keyPair = Crypto.generateKeys();
+    static void setUp() throws CryptoException {
+        keyPair = CompressedKeyPair.of("0300f9df12eed957a17b2b373978ea32177b3e1ce00c92003b5dd2c68de253b35c", "00b96ac2757f5f427a210c7a68f357bfa03f986b547a3b68e0bf79daa45f9edd").toUncompressedKeyPair();
     }
 
     @Nested

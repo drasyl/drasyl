@@ -18,6 +18,7 @@
  */
 package org.drasyl.crypto;
 
+import org.drasyl.identity.CompressedKeyPair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -49,9 +50,9 @@ class SignatureTest {
     private Signature signature2;
 
     @BeforeEach
-    void setUp() {
-        keyPair1 = Crypto.generateKeys();
-        keyPair2 = Crypto.generateKeys();
+    void setUp() throws CryptoException {
+        keyPair1 = CompressedKeyPair.of("0300f9df12eed957a17b2b373978ea32177b3e1ce00c92003b5dd2c68de253b35c", "00b96ac2757f5f427a210c7a68f357bfa03f986b547a3b68e0bf79daa45f9edd").toUncompressedKeyPair();
+        keyPair2 = CompressedKeyPair.of("0223784f9068273f004d61fa8ae92639a6b7c92cd7c5cb8ed45a36ca492f98d603", "07d7ed69896296e3622504317881b25ff77de4f5b7f1cad15ac73ee1e8ab7115").toUncompressedKeyPair();
     }
 
     @Nested

@@ -31,6 +31,8 @@ import org.drasyl.DrasylNode;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.identity.CompressedKeyPair;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
@@ -351,12 +353,14 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void nonAuthorizedClientSendingNonJoinMessageShouldBeRespondedWithStatusForbiddenMessage() throws ExecutionException, InterruptedException {
+    void nonAuthorizedClientSendingNonJoinMessageShouldBeRespondedWithStatusForbiddenMessage() throws ExecutionException, InterruptedException, CryptoException {
         // create connection
         TestNodeServerConnection session = clientSession(server, identitySession1);
 
         // send message
-        RequestMessage request = new ApplicationMessage(TestHelper.random(), TestHelper.random(), new byte[]{
+        CompressedPublicKey sender = CompressedPublicKey.of("023ce7bb9756b5aa68fb82914ecafb71c3bb86701d4f200ae68420d13eddda7ebf");
+        CompressedPublicKey recipient = CompressedPublicKey.of("037e43ee5c82742f00355f13b9714c63e53a74a694b7de8d4715f06d9e7880bdbf");
+        RequestMessage request = new ApplicationMessage(sender, recipient, new byte[]{
                 0x00,
                 0x01
         });
@@ -471,7 +475,7 @@ class NodeServerIT {
         // send message
         Message request = new PingMessage();
         SignedMessage signedMessage = new SignedMessage(request, session.getPublicKey());
-        KeyPair keyPair = Crypto.generateKeys();
+        KeyPair keyPair = CompressedKeyPair.of("0300f9df12eed957a17b2b373978ea32177b3e1ce00c92003b5dd2c68de253b35c", "00b96ac2757f5f427a210c7a68f357bfa03f986b547a3b68e0bf79daa45f9edd").toUncompressedKeyPair();
         Crypto.sign(keyPair.getPrivate(), signedMessage);
         session.sendRawString(new ObjectMapper().writeValueAsString(signedMessage));
 

@@ -36,18 +36,18 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class CompressedPublicKeyTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
-    private KeyPair keyPair;
+    private CompressedPublicKey publicKey;
 
     @BeforeEach
-    void setUp() {
-        keyPair = Crypto.generateKeys();
+    void setUp() throws CryptoException {
+        publicKey = CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9");
     }
 
     @Nested
     class Of {
         @Test
         void shouldReturnCorrectKeys() throws CryptoException {
-            CompressedPublicKey compressedPublicKey1 = CompressedPublicKey.of(keyPair.getPublic());
+            CompressedPublicKey compressedPublicKey1 = publicKey;
             CompressedPublicKey compressedPublicKey2 = CompressedPublicKey.of(compressedPublicKey1.getCompressedKey());
             CompressedPublicKey compressedPublicKey3 = CompressedPublicKey.of(compressedPublicKey2.toUncompressedKey());
 
@@ -73,14 +73,12 @@ class CompressedPublicKeyTest {
     @Nested
     class JsonSerialization {
         @Test
-        void shouldSerializeToCorrectJson() throws IOException, CryptoException {
-            CompressedPublicKey compressedPublicKey = CompressedPublicKey.of(keyPair.getPublic());
-
-            assertThatJson(JSON_MAPPER.writeValueAsString(compressedPublicKey))
+        void shouldSerializeToCorrectJson() throws IOException {
+            assertThatJson(JSON_MAPPER.writeValueAsString(publicKey))
                     .when(Option.IGNORING_ARRAY_ORDER)
-                    .isEqualTo(compressedPublicKey.toString());
+                    .isEqualTo(publicKey.toString());
 
-            assertEquals(compressedPublicKey, JSON_MAPPER.readValue(JSON_MAPPER.writeValueAsString(compressedPublicKey), CompressedPublicKey.class));
+            assertEquals(publicKey, JSON_MAPPER.readValue(JSON_MAPPER.writeValueAsString(publicKey), CompressedPublicKey.class));
         }
     }
 }
