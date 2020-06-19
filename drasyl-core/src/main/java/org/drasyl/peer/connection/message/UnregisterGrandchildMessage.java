@@ -34,7 +34,7 @@ public class UnregisterGrandchildMessage extends AbstractGrandchildMessage {
      *
      * @param grandchildren        the grandchildren
      */
-    public UnregisterGrandchildMessage(Set<KeyValue<Identity, PeerInformation>> grandchildren) {
+    public UnregisterGrandchildMessage(Set<Identity> grandchildren) {
         super(grandchildren);
     }
 

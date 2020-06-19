@@ -42,7 +42,7 @@ class JoinMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
     private Identity identity;
     private PeerInformation peerInformation;
-    private Set<KeyValue<Identity, PeerInformation>> childrenAndGrandchildren;
+    private Set<Identity> childrenAndGrandchildren;
     private Identity grandchildIdentity;
     private Identity identity2;
     private ProofOfWork proofOfWork1;
@@ -57,7 +57,7 @@ class JoinMessageTest {
         proofOfWork2 = ProofOfWork.of(16425882);
         peerInformation = PeerInformation.of(Set.of(URI.create("ws://test")));
         grandchildIdentity = Identity.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458");
-        childrenAndGrandchildren = Set.of(KeyValue.of(grandchildIdentity, PeerInformation.of()));
+        childrenAndGrandchildren = Set.of(grandchildIdentity);
     }
 
     @AfterEach
@@ -71,7 +71,7 @@ class JoinMessageTest {
 
         assertThatJson(JSON_MAPPER.writeValueAsString(message))
                 .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo("{\"@type\":\"JoinMessage\",\"id\":\"" + message.getId() + "\",\"userAgent\":\"\",\"proofOfWork\":{\"nonce\":3556154},\"identity\":{\"publicKey\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\"},\"peerInformation\":{\"endpoints\":[\"ws://test\"]},\"childrenAndGrandchildren\":[[{\"publicKey\":\"0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458\"},{\"endpoints\":[]}]]}");
+                .isEqualTo("{\"@type\":\"JoinMessage\",\"id\":\"" + message.getId() + "\",\"userAgent\":\"\",\"proofOfWork\":{\"nonce\":3556154},\"identity\":{\"publicKey\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\"},\"peerInformation\":{\"endpoints\":[\"ws://test\"]},\"childrenAndGrandchildren\":[{\"publicKey\":\"0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458\"}]}");
 
         // Ignore toString()
         message.toString();
@@ -79,9 +79,9 @@ class JoinMessageTest {
 
     @Test
     void fromJson() throws IOException {
-        String json = "{\"@type\":\"JoinMessage\",\"id\":\"4ae5cdcd8c21719f8e779f21\",\"userAgent\":\"\",\"proofOfWork\":{\"nonce\":3556154},\"identity\":{\"publicKey\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\"},\"peerInformation\":{\"endpoints\":[\"ws://test\"]}, \"childrenAndGrandchildren\":[[{\"publicKey\":\"0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458\"},{\"endpoints\":[]}]]}";
+        String json = "{\"@type\":\"JoinMessage\",\"id\":\"4ae5cdcd8c21719f8e779f21\",\"userAgent\":\"\",\"proofOfWork\":{\"nonce\":3556154},\"identity\":{\"publicKey\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\"},\"peerInformation\":{\"endpoints\":[\"ws://test\"]}, \"childrenAndGrandchildren\":[{\"publicKey\":\"0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458\"}]}";
 
-        assertEquals(new JoinMessage(proofOfWork1, identity, PeerInformation.of(Set.of(URI.create("ws://test"))), Set.of(KeyValue.of(grandchildIdentity, PeerInformation.of()))), JSON_MAPPER.readValue(json, Message.class));
+        assertEquals(new JoinMessage(proofOfWork1, identity, PeerInformation.of(Set.of(URI.create("ws://test"))), Set.of(grandchildIdentity)), JSON_MAPPER.readValue(json, Message.class));
     }
 
     @Test
