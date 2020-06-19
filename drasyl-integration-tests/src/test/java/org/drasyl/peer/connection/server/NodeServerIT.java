@@ -148,7 +148,7 @@ class NodeServerIT {
         TestNodeServerConnection session = clientSession(server, identitySession1);
 
         // send message
-        RequestMessage request = new JoinMessage(session.getIdentity().getPoW(), session.getIdentity().toNonPrivate(), PeerInformation.of(), Set.of());
+        RequestMessage request = new JoinMessage(session.getIdentity().getPoW(), session.getIdentity().toNonPrivate(), Set.of());
         CompletableFuture<ResponseMessage<?>> send = session.sendRequest(request);
 
         // verify response
@@ -165,10 +165,10 @@ class NodeServerIT {
         TestNodeServerConnection session2 = clientSession(server, identitySession2);
 
         // send messages
-        RequestMessage request1 = new JoinMessage(session1.getIdentity().getPoW(), session1.getIdentity().toNonPrivate(), PeerInformation.of(), Set.of());
+        RequestMessage request1 = new JoinMessage(session1.getIdentity().getPoW(), session1.getIdentity().toNonPrivate(), Set.of());
         CompletableFuture<ResponseMessage<?>> send1 = session1.sendRequest(request1);
 
-        RequestMessage request2 = new JoinMessage(session2.getIdentity().getPoW(), session2.getIdentity().toNonPrivate(), PeerInformation.of(), Set.of());
+        RequestMessage request2 = new JoinMessage(session2.getIdentity().getPoW(), session2.getIdentity().toNonPrivate(), Set.of());
         CompletableFuture<ResponseMessage<?>> send2 = session2.sendRequest(request2);
 
         // verify responses
@@ -271,12 +271,12 @@ class NodeServerIT {
         TestObserver<Message> receivedMessages2 = session2.receivedMessages().test();
 
         // send messages
-        RequestMessage request1 = new JoinMessage(session1.getIdentity().getPoW(), session1.getIdentity().toNonPrivate(), PeerInformation.of(), Set.of());
+        RequestMessage request1 = new JoinMessage(session1.getIdentity().getPoW(), session1.getIdentity().toNonPrivate(), Set.of());
         ResponseMessage<?> response1 = session1.sendRequest(request1).get();
         session1.send(new StatusMessage(STATUS_OK, response1.getId()));
         await().until(() -> server.getChannelGroup().find(session1.getIdentity().toNonPrivate()) != null);
 
-        RequestMessage request2 = new JoinMessage(session1.getIdentity().getPoW(), session1.getIdentity().toNonPrivate(), PeerInformation.of(), Set.of());
+        RequestMessage request2 = new JoinMessage(session1.getIdentity().getPoW(), session1.getIdentity().toNonPrivate(), Set.of());
         ResponseMessage<?> response2 = session2.sendRequest(request2).join();
         session2.send(new StatusMessage(STATUS_OK, response2.getId()));
 
@@ -451,7 +451,7 @@ class NodeServerIT {
         server.close();
 
         // send message
-        RequestMessage request = new JoinMessage(session.getIdentity().getPoW(), session.getIdentity().toNonPrivate(), PeerInformation.of(), Set.of());
+        RequestMessage request = new JoinMessage(session.getIdentity().getPoW(), session.getIdentity().toNonPrivate(), Set.of());
         CompletableFuture<ResponseMessage<?>> send = session.sendRequest(request);
 
         // verify response
@@ -488,7 +488,7 @@ class NodeServerIT {
         TestObserver<Message> receivedMessages = session.receivedMessages().filter(msg -> msg instanceof ConnectionExceptionMessage).test();
 
         // send messages
-        RequestMessage request1 = new JoinMessage(identitySession2.getPoW(), session.getIdentity().toNonPrivate(), PeerInformation.of(), Set.of());
+        RequestMessage request1 = new JoinMessage(identitySession2.getPoW(), session.getIdentity().toNonPrivate(), Set.of());
         session.sendRequest(request1);
 
         // verify response

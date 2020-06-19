@@ -74,7 +74,6 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
                 messenger,
                 new JoinMessage(proofOfWork,
                         ownIdentity,
-                        PeerInformation.of(endpoints),
                         peersManager.getChildrenAndGrandchildren().keySet()
                 )
         );

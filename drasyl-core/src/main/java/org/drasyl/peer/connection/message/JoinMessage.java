@@ -21,7 +21,6 @@ package org.drasyl.peer.connection.message;
 import com.google.common.collect.ImmutableSet;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
-import org.drasyl.peer.PeerInformation;
 
 import java.util.Objects;
 import java.util.Set;
@@ -34,13 +33,11 @@ import static java.util.Objects.requireNonNull;
 public class JoinMessage extends AbstractMessageWithUserAgent implements RequestMessage {
     private final ProofOfWork proofOfWork;
     private final Identity identity;
-    private final PeerInformation peerInformation;
     private final Set<Identity> childrenAndGrandchildren;
 
     protected JoinMessage() {
         proofOfWork = null;
         identity = null;
-        peerInformation = null;
         childrenAndGrandchildren = null;
     }
 
@@ -49,25 +46,18 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
      *
      * @param proofOfWork              the proof of work
      * @param identity                 the identity of the joining node
-     * @param peerInformation          the endpoints of the joining node
      * @param childrenAndGrandchildren the (grand-)children of this node
      */
     public JoinMessage(ProofOfWork proofOfWork,
                        Identity identity,
-                       PeerInformation peerInformation,
                        Set<Identity> childrenAndGrandchildren) {
         this.proofOfWork = requireNonNull(proofOfWork);
         this.identity = requireNonNull(identity);
-        this.peerInformation = requireNonNull(peerInformation);
         this.childrenAndGrandchildren = requireNonNull(childrenAndGrandchildren);
     }
 
     public Set<Identity> getChildrenAndGrandchildren() {
         return ImmutableSet.copyOf(this.childrenAndGrandchildren);
-    }
-
-    public PeerInformation getPeerInformation() {
-        return this.peerInformation;
     }
 
     public Identity getIdentity() {
@@ -80,7 +70,7 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), identity, peerInformation, proofOfWork);
+        return Objects.hash(super.hashCode(), identity, proofOfWork);
     }
 
     @Override
@@ -96,7 +86,6 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
         }
         JoinMessage join = (JoinMessage) o;
         return Objects.equals(identity, join.identity) &&
-                Objects.equals(peerInformation, join.peerInformation) &&
                 Objects.equals(childrenAndGrandchildren, join.childrenAndGrandchildren) &&
                 Objects.equals(proofOfWork, join.proofOfWork);
     }
@@ -104,8 +93,7 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
     @Override
     public String toString() {
         return "JoinMessage{" +
-                "peerInformation=" + peerInformation +
-                ", childrenAndGrandchildren=" + childrenAndGrandchildren +
+                "childrenAndGrandchildren=" + childrenAndGrandchildren +
                 ", id='" + id + '\'' +
                 ", identity=" + identity +
                 ", proofOfWork=" + proofOfWork +

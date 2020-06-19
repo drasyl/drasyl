@@ -128,7 +128,7 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
         Identity clientIdentity = requestMessage.getIdentity();
         Channel channel = ctx.channel();
         Path path = ctx::writeAndFlush; // We start at this point to save resources
-        PeerInformation clientInformation = PeerInformation.of(requestMessage.getPeerInformation().getEndpoints(), path);
+        PeerInformation clientInformation = PeerInformation.of(path);
 
         channelGroup.add(clientIdentity, channel);
 

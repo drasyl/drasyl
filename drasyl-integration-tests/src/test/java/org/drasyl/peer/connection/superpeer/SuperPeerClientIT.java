@@ -34,7 +34,6 @@ import org.drasyl.event.Node;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.messenger.Messenger;
-import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
@@ -140,7 +139,7 @@ class SuperPeerClientIT {
 
         // verify received messages
         receivedMessages.awaitCount(1);
-        receivedMessages.assertValueAt(0, new JoinMessage(identityManager.getProofOfWork(), identityManager.getNonPrivateIdentity(), PeerInformation.of(server.getEndpoints()), Set.of()));
+        receivedMessages.assertValueAt(0, new JoinMessage(identityManager.getProofOfWork(), identityManager.getNonPrivateIdentity(), Set.of()));
     }
 
     @Disabled("Race Condition error")
