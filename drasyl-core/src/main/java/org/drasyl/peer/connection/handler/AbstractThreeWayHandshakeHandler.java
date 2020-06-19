@@ -119,6 +119,7 @@ public abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDupl
         ctx.close();
     }
 
+    @SuppressWarnings({ "java:S1172" })
     protected void processMessageAfterHandshake(ChannelHandlerContext ctx, Message message) {
         if (message instanceof RelayableMessage) {
             RelayableMessage relayableMessage = (RelayableMessage) message;

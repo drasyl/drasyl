@@ -20,8 +20,6 @@ package org.drasyl.peer.connection.message;
 
 import com.google.common.collect.ImmutableSet;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.PeerInformation;
-import org.drasyl.util.KeyValue;
 
 import java.util.Objects;
 import java.util.Set;

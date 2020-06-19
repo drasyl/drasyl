@@ -19,8 +19,6 @@
 package org.drasyl.peer.connection.message;
 
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.PeerInformation;
-import org.drasyl.util.KeyValue;
 
 import java.util.Set;
 
@@ -32,7 +30,7 @@ public class RegisterGrandchildMessage extends AbstractGrandchildMessage {
     /**
      * Creates a new register grandchild message.
      *
-     * @param grandchildren        the grandchildren
+     * @param grandchildren the grandchildren
      */
     public RegisterGrandchildMessage(Set<Identity> grandchildren) {
         super(grandchildren);

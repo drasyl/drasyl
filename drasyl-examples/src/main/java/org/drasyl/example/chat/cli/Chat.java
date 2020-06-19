@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.example.chat.cli;
 
 import com.typesafe.config.Config;
@@ -37,7 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * This is an Example of a Chat Application running on the drasyl Overlay Network. It allows you to
  * send Text Messages to other drasyl Nodes running this Chat Application.
  */
-@SuppressWarnings("squid:S106")
+@SuppressWarnings({ "squid:S106", "java:S1141" })
 public class Chat {
     public static void main(String[] args) throws DrasylException {
         Config config;

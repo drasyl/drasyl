@@ -22,7 +22,6 @@ import com.google.common.collect.ImmutableSet;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeerInformation;
-import org.drasyl.util.KeyValue;
 
 import java.util.Objects;
 import java.util.Set;
