@@ -370,13 +370,12 @@ class NodeServerIT {
         assertEquals(request.getId(), response.getCorrespondingId());
     }
 
-    @Disabled("Muss noch implementiert werden")
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void messageWithMaxSizeShouldArrive() throws InterruptedException, ExecutionException {
         // create connection
         TestNodeServerConnection session1 = clientSessionAfterJoin(server, identitySession1);
-        TestNodeServerConnection session2 = clientSessionAfterJoin(server, identitySession1);
+        TestNodeServerConnection session2 = clientSessionAfterJoin(server, identitySession2);
 
         TestObserver<Message> receivedMessages = session2.receivedMessages().test();
 

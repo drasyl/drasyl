@@ -20,13 +20,10 @@ package org.drasyl.peer.connection.handler;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
-import io.netty.buffer.ByteBuf;
-import io.netty.buffer.CompositeByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
 import org.apache.commons.codec.digest.DigestUtils;
-import org.drasyl.DrasylException;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ChunkedMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
@@ -87,7 +84,8 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
     protected void channelWrite0(ChannelHandlerContext ctx,
                                  ApplicationMessage msg, ChannelPromise promise) throws Exception {
         if (msg.getPayload().length > maxContentLength) {
-            throw new DrasylException("Payload is bigger than max content length.");
+            LOG.warn("Payload is bigger than max content length. Message with id `{}` was not sent.", msg.getId());
+            return;
         }
 
         if (msg.getPayload().length > CHUNK_SIZE) {
@@ -102,11 +100,11 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
             chunkedArray.forEach(byteBuf -> {
                 ChunkedMessage chunkedMessage;
                 if (id.get() == null) {
-                    chunkedMessage = new ChunkedMessage(msg.getRecipient(), msg.getSender(), byteBuf.array(), msg.getPayload().length, checksum);
+                    chunkedMessage = new ChunkedMessage(msg.getSender(), msg.getRecipient(), byteBuf.array(), msg.getPayload().length, checksum);
                     id.set(chunkedMessage.getId());
                 }
                 else {
-                    chunkedMessage = new ChunkedMessage(msg.getRecipient(), msg.getSender(), id.get(), byteBuf.array(), sequenceNumber.get());
+                    chunkedMessage = ChunkedMessage.createFollowChunk(msg.getSender(), msg.getRecipient(), id.get(), byteBuf.array(), sequenceNumber.get());
                 }
 
                 sequenceNumber.getAndIncrement();
@@ -114,7 +112,7 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
             });
 
             // Send last chunk
-            ctx.writeAndFlush(new ChunkedMessage(msg.getRecipient(), msg.getSender(), id.get(), sequenceNumber.get()), promise);
+            ctx.writeAndFlush(ChunkedMessage.createLastChunk(msg.getSender(), msg.getRecipient(), id.get(), sequenceNumber.get()), promise);
 
             // Release not chunked message
             ReferenceCountUtil.release(msg);
@@ -158,7 +156,7 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
             }
         }
         else {
-            ApplicationMessage applicationMessage = new ApplicationMessage(msg.getId(), msg.getSender(), msg.getRecipient(), payload, (short) 0);
+            ApplicationMessage applicationMessage = new ApplicationMessage(msg.getId(), msg.getRecipient(), msg.getSender(), payload, (short) 0);
 
             ctx.fireChannelRead(applicationMessage);
         }

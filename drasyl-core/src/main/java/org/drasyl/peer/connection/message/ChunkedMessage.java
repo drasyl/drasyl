@@ -58,10 +58,37 @@ public class ChunkedMessage extends ApplicationMessage {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final String checksum;
 
+    /**
+     * For jackson.
+     */
     private ChunkedMessage() {
         this.contentLength = 0;
         this.sequenceNumber = 0;
         this.checksum = null;
+    }
+
+    /**
+     * Creates a new chunked message.
+     *
+     * @param sender         the sender of the message
+     * @param recipient      the recipient of the message
+     * @param msgID          the id of this message (must be the same as the initial chunk)
+     * @param payload        the chunk
+     * @param contentLength  the final content length
+     * @param checksum       the final checksum
+     * @param sequenceNumber the sequence number of this message
+     */
+    protected ChunkedMessage(Identity sender,
+                             Identity recipient,
+                             String msgID,
+                             byte[] payload,
+                             int contentLength,
+                             String checksum,
+                             int sequenceNumber) {
+        super(msgID, recipient, sender, payload, (short) 0);
+        this.contentLength = contentLength;
+        this.checksum = checksum;
+        this.sequenceNumber = sequenceNumber;
     }
 
     /**
@@ -73,8 +100,8 @@ public class ChunkedMessage extends ApplicationMessage {
      * @param contentLength the final content length
      * @param checksum      the final checksum
      */
-    public ChunkedMessage(Identity recipient,
-                          Identity sender,
+    public ChunkedMessage(Identity sender,
+                          Identity recipient,
                           byte[] payload,
                           int contentLength,
                           String checksum) {
@@ -93,29 +120,27 @@ public class ChunkedMessage extends ApplicationMessage {
      * @param payload        the chunk
      * @param sequenceNumber the sequence number of this message
      */
-    public ChunkedMessage(Identity sender,
-                          Identity recipient,
-                          String msgID,
-                          byte[] payload,
-                          int sequenceNumber) {
-        super(msgID, recipient, sender, payload, (short) 0);
-        this.sequenceNumber = sequenceNumber;
-        this.checksum = null;
-        this.contentLength = 0;
+    public static ChunkedMessage createFollowChunk(Identity sender,
+                                                   Identity recipient,
+                                                   String msgID,
+                                                   byte[] payload,
+                                                   int sequenceNumber) {
+        return new ChunkedMessage(sender, recipient, msgID, payload, 0, null, sequenceNumber);
     }
 
     /**
      * Creates the last chunked message.
      *
-     * @param sender    the sender of the message
-     * @param recipient the recipient of the message
-     * @param msgID     the id of this message (must be the same as the initial chunk)
+     * @param sender         the sender of the message
+     * @param recipient      the recipient of the message
+     * @param msgID          the id of this message (must be the same as the initial chunk)
+     * @param sequenceNumber the sequence number of this message
      */
-    public ChunkedMessage(Identity sender, Identity recipient, String msgID, int sequenceNumber) {
-        super(msgID, recipient, sender, new byte[]{}, (short) 0);
-        this.sequenceNumber = sequenceNumber;
-        this.checksum = null;
-        this.contentLength = 0;
+    public static ChunkedMessage createLastChunk(Identity sender,
+                                                 Identity recipient,
+                                                 String msgID,
+                                                 int sequenceNumber) {
+        return new ChunkedMessage(sender, recipient, msgID, new byte[]{}, 0, null, sequenceNumber);
     }
 
     public int getContentLength() {
@@ -161,7 +186,7 @@ public class ChunkedMessage extends ApplicationMessage {
         return "ChunkedMessage{" +
                 "contentLength=" + contentLength +
                 ", sequenceNumber=" + sequenceNumber +
-                ", payload=" + Arrays.toString(payload) +
+                ", payload= ..." +
                 ", sender=" + sender +
                 ", checksum='" + checksum + '\'' +
                 ", recipient=" + recipient +
