@@ -19,55 +19,71 @@
 package org.drasyl.util;
 
 import org.junit.jupiter.api.Assertions;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 class PairTest {
-    @Test
-    void firstShouldReturnFirstElement() {
-        Pair<Integer, String> pair = Pair.of(10, "beers");
+    @Nested
+    class First {
+        @Test
+        void shouldReturnFirstElement() {
+            Pair<Integer, String> pair = Pair.of(10, "beers");
 
-        assertEquals(10, pair.first());
+            assertEquals(10, pair.first());
+        }
     }
 
-    @Test
-    void secondShouldReturnSecondElement() {
-        Pair<Integer, String> pair = Pair.of(10, "beers");
+    @Nested
+    class Second {
+        @Test
+        void shouldReturnSecondElement() {
+            Pair<Integer, String> pair = Pair.of(10, "beers");
 
-        assertEquals("beers", pair.second());
+            assertEquals("beers", pair.second());
+        }
     }
 
-    @Test
-    void equalsShouldRecognizeEqualPairs() {
-        Pair<Integer, String> pairA = Pair.of(5, "beers");
-        Pair<Integer, String> pairB = Pair.of(5, "beers");
-        Pair<Integer, String> pairC = Pair.of(null, "shots");
+    @Nested
+    class Equals {
+        @Test
+        void shouldRecognizeEqualPairs() {
+            Pair<Integer, String> pairA = Pair.of(5, "beers");
+            Pair<Integer, String> pairB = Pair.of(5, "beers");
+            Pair<Integer, String> pairC = Pair.of(null, "shots");
 
-        assertEquals(pairA, pairA);
-        assertEquals(pairA, pairB);
-        assertEquals(pairB, pairA);
-        Assertions.assertNotEquals(null, pairA);
-        Assertions.assertNotEquals(pairA, pairC);
-        Assertions.assertNotEquals(pairC, pairA);
+            assertEquals(pairA, pairA);
+            assertEquals(pairA, pairB);
+            assertEquals(pairB, pairA);
+            Assertions.assertNotEquals(null, pairA);
+            Assertions.assertNotEquals(pairA, pairC);
+            Assertions.assertNotEquals(pairC, pairA);
+        }
     }
 
-    @Test
-    void hashCodeShouldRecognizeEqualPairs() {
-        Pair pairA = Pair.of(5, "beers");
-        Pair pairB = Pair.of(5, "beers");
-        Pair pairC = Pair.of(10, "shots");
+    @Nested
+    class HashCode {
+        @Test
+        void shouldRecognizeEqualPairs() {
+            Pair pairA = Pair.of(5, "beers");
+            Pair pairB = Pair.of(5, "beers");
+            Pair pairC = Pair.of(10, "shots");
 
-        assertEquals(pairA.hashCode(), pairB.hashCode());
-        assertNotEquals(pairA.hashCode(), pairC.hashCode());
-        assertNotEquals(pairB.hashCode(), pairC.hashCode());
+            assertEquals(pairA.hashCode(), pairB.hashCode());
+            assertNotEquals(pairA.hashCode(), pairC.hashCode());
+            assertNotEquals(pairB.hashCode(), pairC.hashCode());
+        }
     }
 
-    @Test
-    void toStringShouldReturnCorrectString() {
-        String string = Pair.of(5, "beers").toString();
+    @Nested
+    class ToString {
+        @Test
+        void shouldReturnCorrectString() {
+            String string = Pair.of(5, "beers").toString();
 
-        assertEquals("Pair{first=5, second=beers}", string);
+            assertEquals("Pair{first=5, second=beers}", string);
+        }
     }
 }

@@ -22,28 +22,35 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.invocation.InvocationOnMock;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.net.SocketAddress;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.fail;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
+@ExtendWith(MockitoExtension.class)
 class SimpleChannelDuplexHandlerTest {
+    @Mock
     private SocketAddress socketAddress;
+    @Mock
     private ChannelHandlerContext ctx;
+    @Mock
     private ChannelPromise promise;
     private String o;
     private Integer i;
+    @Mock(answer = Answers.CALLS_REAL_METHODS)
+    private SimpleChannelDuplexHandler handler;
 
     @BeforeEach
     void setUp() {
-        socketAddress = mock(SocketAddress.class);
-        ctx = mock(ChannelHandlerContext.class);
-        promise = mock(ChannelPromise.class);
         o = "Test";
         i = 1;
     }
@@ -95,7 +102,6 @@ class SimpleChannelDuplexHandlerTest {
 
     @Test
     void testBindFires() throws Exception {
-        SimpleChannelDuplexHandler handler = mock(SimpleChannelDuplexHandler.class, InvocationOnMock::callRealMethod);
         handler.bind(ctx, socketAddress, promise);
 
         verify(ctx).bind(socketAddress, promise);
@@ -103,7 +109,6 @@ class SimpleChannelDuplexHandlerTest {
 
     @Test
     void testConnectFires() throws Exception {
-        SimpleChannelDuplexHandler handler = mock(SimpleChannelDuplexHandler.class, InvocationOnMock::callRealMethod);
         handler.connect(ctx, socketAddress, socketAddress, promise);
 
         verify(ctx).connect(socketAddress, socketAddress, promise);
@@ -111,7 +116,6 @@ class SimpleChannelDuplexHandlerTest {
 
     @Test
     void testDisconnectFires() throws Exception {
-        SimpleChannelDuplexHandler handler = mock(SimpleChannelDuplexHandler.class, InvocationOnMock::callRealMethod);
         handler.disconnect(ctx, promise);
 
         verify(ctx).disconnect(promise);
@@ -119,7 +123,6 @@ class SimpleChannelDuplexHandlerTest {
 
     @Test
     void testCloseFires() throws Exception {
-        SimpleChannelDuplexHandler handler = mock(SimpleChannelDuplexHandler.class, InvocationOnMock::callRealMethod);
         handler.close(ctx, promise);
 
         verify(ctx).close(promise);
@@ -127,7 +130,6 @@ class SimpleChannelDuplexHandlerTest {
 
     @Test
     void testDeregisterFires() throws Exception {
-        SimpleChannelDuplexHandler handler = mock(SimpleChannelDuplexHandler.class, InvocationOnMock::callRealMethod);
         handler.deregister(ctx, promise);
 
         verify(ctx).deregister(promise);
@@ -135,7 +137,6 @@ class SimpleChannelDuplexHandlerTest {
 
     @Test
     void testReadFires() throws Exception {
-        SimpleChannelDuplexHandler handler = mock(SimpleChannelDuplexHandler.class, InvocationOnMock::callRealMethod);
         handler.read(ctx);
 
         verify(ctx).read();
@@ -143,7 +144,6 @@ class SimpleChannelDuplexHandlerTest {
 
     @Test
     void testFlushFires() throws Exception {
-        SimpleChannelDuplexHandler handler = mock(SimpleChannelDuplexHandler.class, InvocationOnMock::callRealMethod);
         handler.flush(ctx);
 
         verify(ctx).flush();

@@ -23,7 +23,6 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelId;
 import io.netty.util.Attribute;
-import io.netty.util.concurrent.EventExecutor;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.junit.jupiter.api.BeforeEach;
@@ -48,8 +47,6 @@ import static org.mockito.Mockito.when;
 class NodeServerChannelGroupTest {
     @Mock
     private Map<CompressedPublicKey, ChannelId> identity2channelId;
-    @Mock
-    private EventExecutor executor;
     @InjectMocks
     private NodeServerChannelGroup underTest;
 

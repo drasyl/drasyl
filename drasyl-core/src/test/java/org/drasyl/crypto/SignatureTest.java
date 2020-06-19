@@ -19,8 +19,12 @@
 package org.drasyl.crypto;
 
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -30,36 +34,41 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class SignatureTest {
     private KeyPair keyPair1;
     private KeyPair keyPair2;
+    @Mock
     private Signable signable1;
+    @Mock
     private Signable signable2;
     private Signature signature1;
     private Signature signature2;
 
     @BeforeEach
-    public void init() {
-        signable1 = mock(Signable.class);
-        signable2 = mock(Signable.class);
+    void setUp() {
         keyPair1 = Crypto.generateKeys();
         keyPair2 = Crypto.generateKeys();
-
-        when(signable1.getSignableBytes()).thenReturn(new byte[]{ (byte) 0x3a, (byte) 0x22 });
-        when(signable2.getSignableBytes()).thenReturn(new byte[]{ (byte) 0x11, (byte) 0x1b });
     }
 
-    @Test
-    void testSignableNotNull() {
-        assertNotNull(signable1.getSignableBytes());
+    @Nested
+    class GetSignableBytes {
+        @Test
+        void shouldNotReturnNull() {
+            when(signable1.getSignableBytes()).thenReturn(new byte[]{ (byte) 0x3a, (byte) 0x22 });
+
+            assertNotNull(signable1.getSignableBytes());
+        }
     }
 
     @Test
     void testDifferentSignablesHaveDifferentSignatures() throws CryptoException {
+        when(signable1.getSignableBytes()).thenReturn(new byte[]{ (byte) 0x3a, (byte) 0x22 });
+        when(signable2.getSignableBytes()).thenReturn(new byte[]{ (byte) 0x11, (byte) 0x1b });
+
         ArgumentCaptor<Signature> signature1ArgumentCaptor = ArgumentCaptor.forClass(Signature.class);
         ArgumentCaptor<Signature> signature2ArgumentCaptor = ArgumentCaptor.forClass(Signature.class);
 
@@ -79,6 +88,8 @@ class SignatureTest {
 
     @Test
     void testVerifySignature() throws CryptoException {
+        when(signable1.getSignableBytes()).thenReturn(new byte[]{ (byte) 0x3a, (byte) 0x22 });
+
         ArgumentCaptor<Signature> signature1ArgumentCaptor = ArgumentCaptor.forClass(Signature.class);
 
         Crypto.sign(keyPair1.getPrivate(), signable1);
@@ -97,6 +108,9 @@ class SignatureTest {
 
     @Test
     void testVerifyDifferentSignatures() throws CryptoException {
+        when(signable1.getSignableBytes()).thenReturn(new byte[]{ (byte) 0x3a, (byte) 0x22 });
+        when(signable2.getSignableBytes()).thenReturn(new byte[]{ (byte) 0x11, (byte) 0x1b });
+
         ArgumentCaptor<Signature> signature1ArgumentCaptor = ArgumentCaptor.forClass(Signature.class);
         ArgumentCaptor<Signature> signature2ArgumentCaptor = ArgumentCaptor.forClass(Signature.class);
 
@@ -123,14 +137,20 @@ class SignatureTest {
         assertFalse(notVerified2);
     }
 
-    @Test
-    void testDifferentKeychainsHaveDifferentKeys() {
-        assertNotEquals(keyPair1.getPublic(), keyPair2.getPublic());
-        assertNotEquals(keyPair1.getPrivate(), keyPair2.getPrivate());
+    @Nested
+    class Equals {
+        @Test
+        void differentKeychainsHaveDifferentKeys() {
+            assertNotEquals(keyPair1.getPublic(), keyPair2.getPublic());
+            assertNotEquals(keyPair1.getPrivate(), keyPair2.getPrivate());
+        }
     }
 
     @Test
     void testConflict() throws CryptoException, IOException {
+        when(signable1.getSignableBytes()).thenReturn(new byte[]{ (byte) 0x3a, (byte) 0x22 });
+        when(signable2.getSignableBytes()).thenReturn(new byte[]{ (byte) 0x11, (byte) 0x1b });
+
         ByteArrayOutputStream os1 = new ByteArrayOutputStream();
         os1.write(new byte[]{});
         os1.write(new byte[]{

@@ -20,59 +20,56 @@ package org.drasyl.identity;
 
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ProofOfWorkTest {
-    @Test
-    void equalsShouldReturnTrueOnSameProof() {
-        ProofOfWork proof1 = ProofOfWork.of(1);
-        ProofOfWork proof2 = ProofOfWork.of(1);
+    @Nested
+    class Equals {
+        @Test
+        void shouldReturnTrueOnSameProof() {
+            ProofOfWork proof1 = ProofOfWork.of(1);
+            ProofOfWork proof2 = ProofOfWork.of(1);
 
-        assertEquals(proof1, proof2);
-        assertEquals(proof1.hashCode(), proof2.hashCode());
-        assertEquals(proof1.getNonce(), proof2.getNonce());
-
-        // Ignore to string
-        proof1.toString();
+            assertEquals(proof1, proof2);
+            assertEquals(proof1.hashCode(), proof2.hashCode());
+            assertEquals(proof1.getNonce(), proof2.getNonce());
+        }
     }
 
-    @Test
-    void equalsShouldReturnFalseOnDifferentProof() {
-        ProofOfWork proof1 = new ProofOfWork(1);
-        ProofOfWork proof2 = new ProofOfWork(2);
+    @Nested
+    class Of {
+        @Test
+        void shouldThrowExceptionOnNegativeNonce() {
+            assertThrows(IllegalArgumentException.class, () -> ProofOfWork.of(-1));
+        }
 
-        assertNotEquals(proof1, proof2);
-        assertNotEquals(proof1.getNonce(), proof2.getNonce());
+        @Test
+        void shouldGenerateCorrectProof() throws CryptoException {
+            short difficulty = 1;
+            CompressedKeyPair keyPair = CompressedKeyPair.of(Crypto.generateKeys());
+            ProofOfWork proof1 = ProofOfWork.of(keyPair.getPublicKey(), difficulty);
+            ProofOfWork proof2 = ProofOfWork.of(keyPair.getPublicKey(), difficulty);
+
+            assertTrue(proof1.isValid(keyPair.getPublicKey(), difficulty));
+            assertTrue(proof2.isValid(keyPair.getPublicKey(), difficulty));
+            assertEquals(proof1, proof2);
+        }
     }
 
-    @Test
-    void shouldThrowExceptionOnNegativeNonce() {
-        assertThrows(IllegalArgumentException.class, () -> ProofOfWork.of(-1));
-    }
+    @Nested
+    class IncNonce {
+        @Test
+        void shouldIncNonce() {
+            ProofOfWork proof = ProofOfWork.of(1);
+            assertEquals(1, proof.getNonce());
 
-    @Test
-    void shouldGenerateCorrectProof() throws CryptoException {
-        short difficulty = 1;
-        CompressedKeyPair keyPair = CompressedKeyPair.of(Crypto.generateKeys());
-        ProofOfWork proof1 = ProofOfWork.of(keyPair.getPublicKey(), difficulty);
-        ProofOfWork proof2 = ProofOfWork.of(keyPair.getPublicKey(), difficulty);
-
-        assertTrue(proof1.isValid(keyPair.getPublicKey(), difficulty));
-        assertTrue(proof2.isValid(keyPair.getPublicKey(), difficulty));
-        assertEquals(proof1, proof2);
-    }
-
-    @Test
-    void incNonceShouldIncNonce() {
-        ProofOfWork proof = ProofOfWork.of(1);
-        assertEquals(1, proof.getNonce());
-
-        proof.incNonce();
-        assertEquals(2, proof.getNonce());
+            proof.incNonce();
+            assertEquals(2, proof.getNonce());
+        }
     }
 }

@@ -18,9 +18,9 @@
  */
 package org.drasyl.peer.connection.message;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import net.javacrumbs.jsonunit.core.Option;
+import org.drasyl.crypto.CryptoException;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -28,8 +28,6 @@ import java.io.IOException;
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_HANDSHAKE_TIMEOUT;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_PING_PONG;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -37,48 +35,61 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class ConnectionExceptionMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
-    @Test
-    void toJson() throws JsonProcessingException {
-        ConnectionExceptionMessage message = new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG);
+    @Nested
+    class JsonDeserialization {
+        @Test
+        void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
+            String json = "{\"@type\":\"" + ConnectionExceptionMessage.class.getSimpleName() + "\",\"id\":\"77175D7235920F3BA17341D7\"," +
+                    "\"error\":\"" + CONNECTION_ERROR_PING_PONG.getDescription() + "\"}";
 
-        assertThatJson(JSON_MAPPER.writeValueAsString(message))
-                .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo("{\"@type\":\"" + message.getClass().getSimpleName() + "\",\"id\":\"" + message.getId() + "\",\"error\":\"Too many Ping Messages were not answered with a Pong Message.\"}");
-
-        // Ignore toString()
-        message.toString();
+            assertEquals(new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG), JSON_MAPPER.readValue(json, Message.class));
+        }
     }
 
-    @Test
-    void fromJson() throws IOException {
-        String json = "{\"@type\":\"" + ConnectionExceptionMessage.class.getSimpleName() + "\",\"id\":\"77175D7235920F3BA17341D7\"," +
-                "\"error\":\"Too many PingMessages were not answered with a PongMessage.\"}";
+    @Nested
+    class JsonSerialization {
+        @Test
+        void shouldSerializeToCorrectJson() throws IOException {
+            ConnectionExceptionMessage message = new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG);
 
-        assertThat(JSON_MAPPER.readValue(json, Message.class), instanceOf(ConnectionExceptionMessage.class));
+            assertThatJson(JSON_MAPPER.writeValueAsString(message))
+                    .isObject()
+                    .containsEntry("@type", ConnectionExceptionMessage.class.getSimpleName())
+                    .containsKeys("id", "error");
+        }
     }
 
-    @Test
-    void nullTest() {
-        assertThrows(NullPointerException.class, () -> new ConnectionExceptionMessage(null), "ConnectionExceptionMessage requires an error type");
+    @Nested
+    class Constructor {
+        @Test
+        void shouldRejectNullValues() {
+            assertThrows(NullPointerException.class, () -> new ConnectionExceptionMessage(null), "ConnectionExceptionMessage requires an error type");
+        }
     }
 
-    @Test
-    void testEquals() {
-        ConnectionExceptionMessage message1 = new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG);
-        ConnectionExceptionMessage message2 = new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG);
-        ConnectionExceptionMessage message3 = new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE_TIMEOUT);
+    @Nested
+    class Equals {
+        @Test
+        void notSameBecauseOfDifferentError() {
+            ConnectionExceptionMessage message1 = new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG);
+            ConnectionExceptionMessage message2 = new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG);
+            ConnectionExceptionMessage message3 = new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE_TIMEOUT);
 
-        assertEquals(message1, message2);
-        assertNotEquals(message2, message3);
+            assertEquals(message1, message2);
+            assertNotEquals(message2, message3);
+        }
     }
 
-    @Test
-    void testHashCode() {
-        ConnectionExceptionMessage message1 = new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG);
-        ConnectionExceptionMessage message2 = new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG);
-        ConnectionExceptionMessage message3 = new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE_TIMEOUT);
+    @Nested
+    class HashCode {
+        @Test
+        void notSameBecauseOfDifferentError() {
+            ConnectionExceptionMessage message1 = new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG);
+            ConnectionExceptionMessage message2 = new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG);
+            ConnectionExceptionMessage message3 = new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE_TIMEOUT);
 
-        assertEquals(message1.hashCode(), message2.hashCode());
-        assertNotEquals(message2.hashCode(), message3.hashCode());
+            assertEquals(message1.hashCode(), message2.hashCode());
+            assertNotEquals(message2.hashCode(), message3.hashCode());
+        }
     }
 }

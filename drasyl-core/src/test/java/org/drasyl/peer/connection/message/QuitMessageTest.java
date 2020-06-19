@@ -18,53 +18,63 @@
  */
 package org.drasyl.peer.connection.message;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import net.javacrumbs.jsonunit.core.Option;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@ExtendWith(MockitoExtension.class)
 class QuitMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
-    @Test
-    void toJson() throws JsonProcessingException {
-        QuitMessage message = new QuitMessage();
+    @Nested
+    class JsonDeserialization {
+        @Test
+        void shouldDeserializeToCorrectObject() throws IOException {
+            String json = "{\"@type\":\"" + QuitMessage.class.getSimpleName() + "\",\"id\":\"77175D7235920F3BA17341D7\"}";
 
-        assertThatJson(JSON_MAPPER.writeValueAsString(message))
-                .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo("{\"@type\":\"QuitMessage\",\"id\":\"" + message.getId() + "\", \"reason\":\"Unknown reason for closing this connection.\"}");
-
-        // Ignore toString()
-        message.toString();
+            assertEquals(new QuitMessage(), JSON_MAPPER.readValue(json, Message.class));
+        }
     }
 
-    @Test
-    void fromJson() throws IOException {
-        String json = "{\"@type\":\"QuitMessage\",\"id\":\"77175D7235920F3BA17341D7\"}";
+    @Nested
+    class JsonSerialization {
+        @Test
+        void shouldSerializeToCorrectJson() throws IOException {
+            QuitMessage message = new QuitMessage();
 
-        assertThat(JSON_MAPPER.readValue(json, Message.class), instanceOf(QuitMessage.class));
+            assertThatJson(JSON_MAPPER.writeValueAsString(message))
+                    .isObject()
+                    .containsEntry("@type", QuitMessage.class.getSimpleName())
+                    .containsKeys("id", "reason");
+        }
     }
 
-    @Test
-    void testEquals() {
-        QuitMessage message1 = new QuitMessage();
-        QuitMessage message2 = new QuitMessage();
+    @Nested
+    class Equals {
+        @Test
+        void shouldReturnTrue() {
+            QuitMessage message1 = new QuitMessage();
+            QuitMessage message2 = new QuitMessage();
 
-        assertEquals(message1, message2);
+            assertEquals(message1, message2);
+        }
     }
 
-    @Test
-    void testHashCode() {
-        QuitMessage message1 = new QuitMessage();
-        QuitMessage message2 = new QuitMessage();
+    @Nested
+    class HashCode {
+        @Test
+        void shouldReturnTrue() {
+            QuitMessage message1 = new QuitMessage();
+            QuitMessage message2 = new QuitMessage();
 
-        assertEquals(message1.hashCode(), message2.hashCode());
+            assertEquals(message1.hashCode(), message2.hashCode());
+        }
     }
 }

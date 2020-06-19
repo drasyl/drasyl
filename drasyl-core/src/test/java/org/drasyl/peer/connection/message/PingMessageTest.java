@@ -18,53 +18,63 @@
  */
 package org.drasyl.peer.connection.message;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import net.javacrumbs.jsonunit.core.Option;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@ExtendWith(MockitoExtension.class)
 class PingMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
-    @Test
-    void toJson() throws JsonProcessingException {
-        PingMessage message = new PingMessage();
+    @Nested
+    class JsonDeserialization {
+        @Test
+        void shouldDeserializeToCorrectObject() throws IOException {
+            String json = "{\"@type\":\"" + PingMessage.class.getSimpleName() + "\",\"id\":\"77175D7235920F3BA17341D7\"}";
 
-        assertThatJson(JSON_MAPPER.writeValueAsString(message))
-                .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo("{\"@type\":\"PingMessage\",\"id\":\"" + message.getId() + "\"}");
-
-        // Ignore toString()
-        message.toString();
+            assertEquals(new PingMessage(), JSON_MAPPER.readValue(json, Message.class));
+        }
     }
 
-    @Test
-    void fromJson() throws IOException {
-        String json = "{\"@type\":\"PingMessage\",\"id\":\"77175D7235920F3BA17341D7\"}";
+    @Nested
+    class JsonSerialization {
+        @Test
+        void shouldSerializeToCorrectJson() throws IOException {
+            PingMessage message = new PingMessage();
 
-        assertThat(JSON_MAPPER.readValue(json, Message.class), instanceOf(PingMessage.class));
+            assertThatJson(JSON_MAPPER.writeValueAsString(message))
+                    .isObject()
+                    .containsEntry("@type", PingMessage.class.getSimpleName())
+                    .containsKeys("id");
+        }
     }
 
-    @Test
-    void testEquals() {
-        PingMessage message1 = new PingMessage();
-        PingMessage message2 = new PingMessage();
+    @Nested
+    class Equals {
+        @Test
+        void shouldReturnTrue() {
+            PingMessage message1 = new PingMessage();
+            PingMessage message2 = new PingMessage();
 
-        assertEquals(message1, message2);
+            assertEquals(message1, message2);
+        }
     }
 
-    @Test
-    void testHashCode() {
-        PingMessage message1 = new PingMessage();
-        PingMessage message2 = new PingMessage();
+    @Nested
+    class HashCode {
+        @Test
+        void shouldReturnTrue() {
+            PingMessage message1 = new PingMessage();
+            PingMessage message2 = new PingMessage();
 
-        assertEquals(message1.hashCode(), message2.hashCode());
+            assertEquals(message1.hashCode(), message2.hashCode());
+        }
     }
 }

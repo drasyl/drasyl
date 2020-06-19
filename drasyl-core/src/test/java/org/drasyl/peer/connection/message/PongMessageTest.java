@@ -18,19 +18,19 @@
  */
 package org.drasyl.peer.connection.message;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import net.javacrumbs.jsonunit.core.Option;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@ExtendWith(MockitoExtension.class)
 class PongMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
     private String correspondingId;
@@ -40,38 +40,48 @@ class PongMessageTest {
         correspondingId = "correspondingId";
     }
 
-    @Test
-    void toJson() throws JsonProcessingException {
-        PongMessage message = new PongMessage(correspondingId);
+    @Nested
+    class JsonDeserialization {
+        @Test
+        void shouldDeserializeToCorrectObject() throws IOException {
+            String json = "{\"@type\":\"" + PongMessage.class.getSimpleName() + "\",\"id\":\"77175D7235920F3BA17341D7\",\"correspondingId\":\"123\"}";
 
-        assertThatJson(JSON_MAPPER.writeValueAsString(message))
-                .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo("{\"@type\":\"PongMessage\",\"id\":\"" + message.getId() + "\",\"correspondingId\":\"correspondingId\"}");
-
-        // Ignore toString()
-        message.toString();
+            assertEquals(new PongMessage("123"), JSON_MAPPER.readValue(json, Message.class));
+        }
     }
 
-    @Test
-    void fromJson() throws IOException {
-        String json = "{\"@type\":\"PongMessage\",\"id\":\"77175D7235920F3BA17341D7\",\"correspondingId\":\"correspondingId\"}";
+    @Nested
+    class JsonSerialization {
+        @Test
+        void shouldSerializeToCorrectJson() throws IOException {
+            PongMessage message = new PongMessage(correspondingId);
 
-        assertThat(JSON_MAPPER.readValue(json, Message.class), instanceOf(PongMessage.class));
+            assertThatJson(JSON_MAPPER.writeValueAsString(message))
+                    .isObject()
+                    .containsEntry("@type", PongMessage.class.getSimpleName())
+                    .containsKeys("id", "correspondingId");
+        }
     }
 
-    @Test
-    void testEquals() {
-        PongMessage message1 = new PongMessage(correspondingId);
-        PongMessage message2 = new PongMessage(correspondingId);
+    @Nested
+    class Equals {
+        @Test
+        void shouldReturnTrue() {
+            PongMessage message1 = new PongMessage(correspondingId);
+            PongMessage message2 = new PongMessage(correspondingId);
 
-        assertEquals(message1, message2);
+            assertEquals(message1, message2);
+        }
     }
 
-    @Test
-    void testHashCode() {
-        PongMessage message1 = new PongMessage(correspondingId);
-        PongMessage message2 = new PongMessage(correspondingId);
+    @Nested
+    class HashCode {
+        @Test
+        void shouldReturnTrue() {
+            PongMessage message1 = new PongMessage(correspondingId);
+            PongMessage message2 = new PongMessage(correspondingId);
 
-        assertEquals(message1.hashCode(), message2.hashCode());
+            assertEquals(message1.hashCode(), message2.hashCode());
+        }
     }
 }

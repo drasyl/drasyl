@@ -30,6 +30,11 @@ import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.SignedMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,11 +43,19 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class SignatureHandlerTest {
     private Identity identity;
+    @Mock
+    private CompressedPrivateKey mockedPrivateKey;
+    @Mock
+    private Identity mockedIdentity;
+    @Mock
+    private CompressedPublicKey mockedPublicKey;
+    @Mock
+    private Signature signature;
 
     @BeforeEach
     void setUp() throws CryptoException {
@@ -65,8 +78,6 @@ class SignatureHandlerTest {
 
     @Test
     void shouldThrowExceptionIfKeyCantBeRead() throws CryptoException {
-        CompressedPrivateKey mockedPrivateKey = mock(CompressedPrivateKey.class);
-        Identity mockedIdentity = mock(Identity.class);
         when(mockedIdentity.getPublicKey()).thenReturn(identity.getPublicKey());
         when(mockedIdentity.getPrivateKey()).thenReturn(mockedPrivateKey);
         when(mockedPrivateKey.toUncompressedKey()).thenThrow(CryptoException.class);
@@ -122,9 +133,6 @@ class SignatureHandlerTest {
 
     @Test
     void shouldNotPassthroughsMessageWhenPublicKeyCantBeExtracted() throws CryptoException {
-        CompressedPublicKey mockedPublicKey = mock(CompressedPublicKey.class);
-        when(mockedPublicKey.toUncompressedKey()).thenThrow(CryptoException.class);
-
         SignatureHandler handler = new SignatureHandler(identity);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
         QuitMessage message = new QuitMessage();
@@ -166,14 +174,13 @@ class SignatureHandlerTest {
 
     @Test
     void shouldNotPassthroughsMessageWhenPublicKeyCantBeExtracted2() throws CryptoException {
-        CompressedPublicKey mockedPublicKey = mock(CompressedPublicKey.class);
         when(mockedPublicKey.toUncompressedKey()).thenThrow(CryptoException.class);
 
         SignatureHandler handler = new SignatureHandler(identity);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
         QuitMessage message = new QuitMessage();
         SignedMessage signedMessage = new SignedMessage(message, mockedPublicKey);
-        signedMessage.setSignature(mock(Signature.class));
+        signedMessage.setSignature(signature);
 
         assertFalse(channel.writeInbound(signedMessage));
         assertNull(channel.readInbound());

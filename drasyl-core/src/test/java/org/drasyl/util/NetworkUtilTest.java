@@ -18,6 +18,7 @@
  */
 package org.drasyl.util;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -30,42 +31,52 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class NetworkUtilTest {
-    @Test
-    void getIPTest() throws IOException {
-        assertNotNull(NetworkUtil.getExternalIPAddress());
-        assertNotEquals("", NetworkUtil.getExternalIPAddress());
+    @Nested
+    class GetExternalIPAddress {
+        @Test
+        void shouldReturnCorrectValue() throws IOException {
+            assertNotNull(NetworkUtil.getExternalIPAddress());
+            assertNotEquals("", NetworkUtil.getExternalIPAddress());
+        }
     }
 
-    @Test
-    void availablePortTest() {
-        try (ServerSocket socket = new ServerSocket(5555)) {
-            assertFalse(NetworkUtil.available(5555));
-        }
-        catch (IOException e) {
+    @Nested
+    class Available {
+        @Test
+        void shouldReturnCorrectValue() {
+            try (ServerSocket socket = new ServerSocket(5555)) {
+                assertFalse(NetworkUtil.available(5555));
+            }
+            catch (IOException e) {
+            }
+
+            assertTrue(NetworkUtil.available(4444));
         }
 
-        assertTrue(NetworkUtil.available(4444));
+        @Test
+        void shouldRejectInvalidPort() {
+            assertThrows(IllegalArgumentException.class, () -> NetworkUtil.available(NetworkUtil.MIN_PORT_NUMBER - 1));
+            assertThrows(IllegalArgumentException.class, () -> NetworkUtil.available(NetworkUtil.MAX_PORT_NUMBER + 1));
+        }
     }
 
-    @Test
-    void invalidPortTest() {
-        assertThrows(IllegalArgumentException.class, () -> NetworkUtil.available(NetworkUtil.MIN_PORT_NUMBER - 1));
+    @Nested
+    class Alive {
+        @Test
+        void shouldReturnCorrectValue() {
+            try (ServerSocket socket = new ServerSocket(2222)) {
+                assertTrue(NetworkUtil.alive("127.0.0.1", 2222));
+            }
+            catch (IOException e) {
+            }
 
-        assertThrows(IllegalArgumentException.class, () -> NetworkUtil.available(NetworkUtil.MAX_PORT_NUMBER + 1));
-
-        assertThrows(IllegalArgumentException.class, () -> NetworkUtil.alive("127.0.0.1", NetworkUtil.MIN_PORT_NUMBER - 1));
-
-        assertThrows(IllegalArgumentException.class, () -> NetworkUtil.alive("127.0.0.1", NetworkUtil.MAX_PORT_NUMBER + 1));
-    }
-
-    @Test
-    void aliveTest() {
-        try (ServerSocket socket = new ServerSocket(2222)) {
-            assertTrue(NetworkUtil.alive("127.0.0.1", 2222));
-        }
-        catch (IOException e) {
+            assertFalse(NetworkUtil.alive("127.0.0.1", 3333));
         }
 
-        assertFalse(NetworkUtil.alive("127.0.0.1", 3333));
+        @Test
+        void shouldRejectInvalidPort() {
+            assertThrows(IllegalArgumentException.class, () -> NetworkUtil.alive("127.0.0.1", NetworkUtil.MIN_PORT_NUMBER - 1));
+            assertThrows(IllegalArgumentException.class, () -> NetworkUtil.alive("127.0.0.1", NetworkUtil.MAX_PORT_NUMBER + 1));
+        }
     }
 }

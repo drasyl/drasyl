@@ -18,27 +18,43 @@
  */
 package org.drasyl.event;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import static org.drasyl.event.EventType.EVENT_MESSAGE;
+import static org.drasyl.event.EventType.EVENT_NODE_DOWN;
+import static org.drasyl.event.EventType.EVENT_NODE_OFFLINE;
+import static org.drasyl.event.EventType.EVENT_NODE_UP;
+import static org.drasyl.event.EventType.EVENT_PEER_DIRECT;
+import static org.drasyl.event.EventType.EVENT_PEER_RELAY;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EventTypeTest {
-    @Test
-    void isNodeEvent() {
-        assertTrue(EventType.EVENT_NODE_UP.isNodeEvent());
-        assertFalse(EventType.EVENT_PEER_DIRECT.isNodeEvent());
+    @Nested
+    class IsNodeEvent {
+        @Test
+        void shouldReturnCorrectValue() {
+            assertTrue(EVENT_NODE_UP.isNodeEvent());
+            assertFalse(EVENT_PEER_DIRECT.isNodeEvent());
+        }
     }
 
-    @Test
-    void isPeerEvent() {
-        assertTrue(EventType.EVENT_PEER_RELAY.isPeerEvent());
-        assertFalse(EventType.EVENT_NODE_DOWN.isPeerEvent());
+    @Nested
+    class IsPeerEvent {
+        @Test
+        void shouldReturnCorrectValue() {
+            assertTrue(EVENT_PEER_RELAY.isPeerEvent());
+            assertFalse(EVENT_NODE_DOWN.isPeerEvent());
+        }
     }
 
-    @Test
-    void isMessageEvent() {
-        assertTrue(EventType.EVENT_MESSAGE.isMessageEvent());
-        assertFalse(EventType.EVENT_NODE_OFFLINE.isMessageEvent());
+    @Nested
+    class IsMessageEvent {
+        @Test
+        void shouldReturnCorrectValue() {
+            assertTrue(EVENT_MESSAGE.isMessageEvent());
+            assertFalse(EVENT_NODE_OFFLINE.isMessageEvent());
+        }
     }
 }

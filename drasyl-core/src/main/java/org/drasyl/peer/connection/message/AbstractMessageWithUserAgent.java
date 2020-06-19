@@ -21,7 +21,6 @@ package org.drasyl.peer.connection.message;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 
-import java.util.Objects;
 import java.util.function.Supplier;
 
 /**
@@ -56,29 +55,11 @@ public abstract class AbstractMessageWithUserAgent extends AbstractMessage {
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), userAgent);
+        return super.hashCode();
     }
 
     @Override
     public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        if (!super.equals(o)) {
-            return false;
-        }
-        AbstractMessageWithUserAgent that = (AbstractMessageWithUserAgent) o;
-        return Objects.equals(userAgent, that.userAgent);
-    }
-
-    @Override
-    public String toString() {
-        return "AbstractMessageWithUserAgent{" +
-                "userAgent='" + userAgent + '\'' +
-                ", id='" + id +
-                '}';
+        return super.equals(o);
     }
 }

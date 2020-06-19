@@ -18,64 +18,78 @@
  */
 package org.drasyl.peer.connection.message;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import net.javacrumbs.jsonunit.core.Option;
+import org.drasyl.crypto.CryptoException;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
+@ExtendWith(MockitoExtension.class)
 class StatusMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
     private String correspondingId;
 
     @BeforeEach
     void setUp() {
-        correspondingId = "correspondingId";
+        correspondingId = "123";
     }
 
-    @Test
-    void toJson() throws JsonProcessingException {
-        StatusMessage message = new StatusMessage(STATUS_OK, correspondingId);
+    @Nested
+    class JsonDeserialization {
+        @Test
+        void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
+            String json = "{\"@type\":\"" + StatusMessage.class.getSimpleName() + "\",\"id\":\"205E5ECE2F3F1E744D951658\",\"code\":" + STATUS_OK.getNumber() + ",\"correspondingId\":123}";
 
-        assertThatJson(JSON_MAPPER.writeValueAsString(message))
-                .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo("{\"@type\":\"StatusMessage\",\"id\":\"" + message.getId() + "\",\"correspondingId\":\"correspondingId\",\"code\":200}");
+            assertEquals(new StatusMessage(STATUS_OK, "123"), JSON_MAPPER.readValue(json, Message.class));
+        }
     }
 
-    @Test
-    void fromJson() throws IOException {
-        String json = "{\"@type\":\"StatusMessage\",\"id\":\"205E5ECE2F3F1E744D951658\",\"code\":200}";
+    @Nested
+    class JsonSerialization {
+        @Test
+        void shouldSerializeToCorrectJson() throws IOException {
+            StatusMessage message = new StatusMessage(STATUS_OK, correspondingId);
 
-        assertThat(JSON_MAPPER.readValue(json, Message.class), instanceOf(StatusMessage.class));
+            assertThatJson(JSON_MAPPER.writeValueAsString(message))
+                    .isObject()
+                    .containsEntry("@type", StatusMessage.class.getSimpleName())
+                    .containsKeys("id", "correspondingId", "code");
+        }
     }
 
-    @Test
-    void testEquals() {
-        StatusMessage message1 = new StatusMessage(STATUS_OK, correspondingId);
-        StatusMessage message2 = new StatusMessage(STATUS_OK.getNumber(), correspondingId);
-        StatusMessage message3 = new StatusMessage(STATUS_FORBIDDEN, correspondingId);
+    @Nested
+    class Equals {
+        @Test
+        void shouldReturnTrue() {
+            StatusMessage message1 = new StatusMessage(STATUS_OK, correspondingId);
+            StatusMessage message2 = new StatusMessage(STATUS_OK.getNumber(), correspondingId);
+            StatusMessage message3 = new StatusMessage(STATUS_FORBIDDEN, correspondingId);
 
-        assertEquals(message1, message2);
-        assertNotEquals(message2, message3);
+            assertEquals(message1, message2);
+            assertNotEquals(message2, message3);
+        }
     }
 
-    @Test
-    void testHashCode() {
-        StatusMessage message1 = new StatusMessage(STATUS_OK, correspondingId);
-        StatusMessage message2 = new StatusMessage(STATUS_OK.getNumber(), correspondingId);
-        StatusMessage message3 = new StatusMessage(STATUS_FORBIDDEN, correspondingId);
+    @Nested
+    class HashCode {
+        @Test
+        void shouldReturnTrue() {
+            StatusMessage message1 = new StatusMessage(STATUS_OK, correspondingId);
+            StatusMessage message2 = new StatusMessage(STATUS_OK.getNumber(), correspondingId);
+            StatusMessage message3 = new StatusMessage(STATUS_FORBIDDEN, correspondingId);
 
-        assertEquals(message1.hashCode(), message2.hashCode());
-        assertNotEquals(message2.hashCode(), message3.hashCode());
+            assertEquals(message1.hashCode(), message2.hashCode());
+            assertNotEquals(message2.hashCode(), message3.hashCode());
+        }
     }
 }

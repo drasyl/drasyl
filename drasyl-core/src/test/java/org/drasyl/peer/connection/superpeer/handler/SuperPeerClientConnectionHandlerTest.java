@@ -28,6 +28,11 @@ import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -35,39 +40,34 @@ import static java.time.Duration.ofMillis;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_SERVICE_UNAVAILABLE;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class SuperPeerClientConnectionHandlerTest {
     private EmbeddedChannel channel;
+    @Mock
     private CompressedPublicKey expectedPublicKey;
+    @Mock
     private CompressedPublicKey ownPublicKey;
+    @Mock
     private PeersManager peersManager;
+    @Mock
     private Messenger messenger;
+    @Mock
     private QuitMessage quitMessage;
+    @Mock
     private CompletableFuture<Void> handshakeFuture;
+    @Mock
     private ScheduledFuture<?> timeoutFuture;
+    @Mock
     private JoinMessage requestMessage;
+    @Mock
     private StatusMessage statusMessage;
-
-    @BeforeEach
-    void setUp() {
-        messenger = mock(Messenger.class);
-        handshakeFuture = mock(CompletableFuture.class);
-        peersManager = mock(PeersManager.class);
-        quitMessage = mock(QuitMessage.class);
-        timeoutFuture = mock(ScheduledFuture.class);
-        requestMessage = mock(JoinMessage.class);
-        expectedPublicKey = mock(CompressedPublicKey.class);
-        ownPublicKey = mock(CompressedPublicKey.class);
-        statusMessage = mock(StatusMessage.class);
-    }
 
     @Test
     void shouldCloseChannelOnQuitMessage() {
         when(handshakeFuture.isDone()).thenReturn(true);
-        when(quitMessage.getId()).thenReturn("123");
 
         SuperPeerClientConnectionHandler handler = new SuperPeerClientConnectionHandler(expectedPublicKey, ownPublicKey, peersManager, messenger, ofMillis(1000), handshakeFuture, timeoutFuture, requestMessage);
         channel = new EmbeddedChannel(handler);
