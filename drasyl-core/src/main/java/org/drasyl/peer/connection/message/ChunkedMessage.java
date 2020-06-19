@@ -23,6 +23,7 @@ import org.drasyl.identity.CompressedPublicKey;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 
 /**
  * Models a chunked application message that can be composed by the recipient to one final message.
@@ -96,7 +97,7 @@ public class ChunkedMessage extends ApplicationMessage {
      *
      * @param sender        the sender of the message
      * @param recipient     the recipient of the message
-     * @param payload       the first chunk
+     * @param payload       the chunk
      * @param contentLength the final content length
      * @param checksum      the final checksum
      */
@@ -186,7 +187,7 @@ public class ChunkedMessage extends ApplicationMessage {
         return "ChunkedMessage{" +
                 "contentLength=" + contentLength +
                 ", sequenceNumber=" + sequenceNumber +
-                ", payload= ..." +
+                ", payload=byte[" + Optional.ofNullable(payload).orElse(new byte[]{}).length + "] { ... }" +
                 ", sender=" + sender +
                 ", checksum='" + checksum + '\'' +
                 ", recipient=" + recipient +

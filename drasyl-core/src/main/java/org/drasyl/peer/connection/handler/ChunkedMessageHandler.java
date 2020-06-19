@@ -20,6 +20,7 @@ package org.drasyl.peer.connection.handler;
 
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.Multimap;
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
@@ -30,7 +31,6 @@ import org.drasyl.peer.connection.message.StatusMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Comparator;
 import java.util.List;
@@ -47,6 +47,7 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
     private final int maxContentLength;
     // TODO: Delete chunks if after n seconds not all chunks have arrived
     private final Multimap<String, ChunkedMessage> chunks;
+//    private final Map<String, >
 
     public ChunkedMessageHandler(int maxContentLength) {
         super(true, false, false);
@@ -89,37 +90,68 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
         }
 
         if (msg.getPayload().length > CHUNK_SIZE) {
-            // Generate checksum
-            String checksum = DigestUtils.sha256Hex(msg.getPayload());
+            sendChunkedMessage(ctx, msg, promise);
+        }
+        else {
+            // Skip
+            ReferenceCountUtil.retain(msg);
+            ctx.write(msg, promise);
+        }
+    }
 
-            List<ByteBuffer> chunkedArray = chunkedArray(msg.getPayload(), CHUNK_SIZE);
+    /**
+     * Initializes a stream for chunked messages and writes all necessary information into this
+     * handler, so that the execution can be paused if the I/O buffer is full.
+     */
+    private void initChunkedStream(ChannelHandlerContext ctx,
+                                   ApplicationMessage msg,
+                                   ChannelPromise promise) {
+        // Generate checksum
+        String checksum = DigestUtils.sha256Hex(msg.getPayload());
+        AtomicReference<String> id = new AtomicReference<>();
+        AtomicInteger sequenceNumber = new AtomicInteger();
+        ByteBuf sourcePayload = msg.payloadAsByteBuf();
+    }
 
-            AtomicReference<String> id = new AtomicReference<>();
+    private void sendChunkedMessage(ChannelHandlerContext ctx,
+                                    ApplicationMessage msg,
+                                    ChannelPromise promise) {
+        // Generate checksum
+        String checksum = DigestUtils.sha256Hex(msg.getPayload());
+        AtomicReference<String> id = new AtomicReference<>();
+        AtomicInteger sequenceNumber = new AtomicInteger();
+        ByteBuf sourcePayload = msg.payloadAsByteBuf();
+        promise.setSuccess();
 
-            AtomicInteger sequenceNumber = new AtomicInteger();
+        try {
+            List<ByteBuf> chunkedArray = chunkedArray(sourcePayload, CHUNK_SIZE);
+
             chunkedArray.forEach(byteBuf -> {
                 ChunkedMessage chunkedMessage;
                 if (id.get() == null) {
-                    chunkedMessage = new ChunkedMessage(msg.getSender(), msg.getRecipient(), byteBuf.array(), msg.getPayload().length, checksum);
+                    chunkedMessage = new ChunkedMessage(msg.getSender(), msg.getRecipient(), new byte[byteBuf.readableBytes()], msg.getPayload().length, checksum);
                     id.set(chunkedMessage.getId());
                 }
                 else {
-                    chunkedMessage = ChunkedMessage.createFollowChunk(msg.getSender(), msg.getRecipient(), id.get(), byteBuf.array(), sequenceNumber.get());
+                    chunkedMessage = ChunkedMessage.createFollowChunk(msg.getSender(), msg.getRecipient(), id.get(), new byte[byteBuf.readableBytes()], sequenceNumber.get());
                 }
 
+                byteBuf.readBytes(chunkedMessage.getPayload());
                 sequenceNumber.getAndIncrement();
-                ctx.writeAndFlush(chunkedMessage);
+                if (ctx.channel().isWritable()) {
+                    ctx.writeAndFlush(chunkedMessage);
+                }
+                else {
+                    System.err.println("Channel is currently not writable!");
+                }
             });
 
             // Send last chunk
-            ctx.writeAndFlush(ChunkedMessage.createLastChunk(msg.getSender(), msg.getRecipient(), id.get(), sequenceNumber.get()), promise);
-
-            // Release not chunked message
-            ReferenceCountUtil.release(msg);
+            ctx.writeAndFlush(ChunkedMessage.createLastChunk(msg.getSender(), msg.getRecipient(), id.get(), sequenceNumber.get()));
         }
-        else {
-            // Skipp
-            ctx.write(msg, promise);
+        finally {
+            // Release no longer needed ByteBufs
+            ReferenceCountUtil.release(sourcePayload);
         }
     }
 
@@ -162,24 +194,40 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
         }
     }
 
-    private List<ByteBuffer> chunkedArray(byte[] source, int chunksize) {
-        ArrayList<ByteBuffer> buffer = new ArrayList<>();
+    /**
+     * Creates a list of {@link ByteBuf}s from the given <code>source</code>. The source {@link
+     * ByteBuf} is not modified during this process.
+     *
+     * @param source    the source {@link ByteBuf}
+     * @param chunksize the chunk size
+     * @return a list of {@link ByteBuf} chunks/slices of the source
+     */
+    private List<ByteBuf> chunkedArray(ByteBuf source, int chunksize) {
+        ArrayList<ByteBuf> buffer = new ArrayList<>();
 
         int offset = 0;
-        while (offset < source.length) {
-            ByteBuffer byteBuffer;
-            if (offset + chunksize > source.length) {
-                byteBuffer = ByteBuffer.allocate(source.length - offset);
-                byteBuffer.put(source, offset, source.length - offset);
-                offset += source.length - offset;
-            }
-            else {
-                byteBuffer = ByteBuffer.allocate(chunksize);
-                byteBuffer.put(source, offset, chunksize);
-                offset += chunksize;
-            }
+        while (offset < source.readableBytes()) {
+            boolean release = true;
+            ByteBuf byteBuffer = null;
 
-            buffer.add(byteBuffer);
+            try {
+                if (offset + chunksize > source.readableBytes()) {
+                    byteBuffer = source.slice(offset, source.readableBytes() - offset);
+                    offset += source.readableBytes() - offset;
+                }
+                else {
+                    byteBuffer = source.slice(offset, chunksize);
+                    offset += chunksize;
+                }
+
+                release = false;
+                buffer.add(byteBuffer);
+            }
+            finally {
+                if (release && byteBuffer != null) {
+                    byteBuffer.release();
+                }
+            }
         }
 
         return buffer;

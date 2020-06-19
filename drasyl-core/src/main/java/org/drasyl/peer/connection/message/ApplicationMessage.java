@@ -18,10 +18,13 @@
  */
 package org.drasyl.peer.connection.message;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.drasyl.identity.CompressedPublicKey;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 
@@ -39,10 +42,10 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
     }
 
     public ApplicationMessage(String id,
-                       CompressedPublicKey recipient,
-                       CompressedPublicKey sender,
-                       byte[] payload,
-                       short hopCount) {
+                              CompressedPublicKey recipient,
+                              CompressedPublicKey sender,
+                              byte[] payload,
+                              short hopCount) {
         super(id, hopCount, recipient);
         this.sender = sender;
         this.payload = payload;
@@ -78,6 +81,13 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
         return payload;
     }
 
+    /**
+     * @return a ByteBuf that wraps the underling payload byte array
+     */
+    public ByteBuf payloadAsByteBuf() {
+        return Unpooled.wrappedBuffer(payload);
+    }
+
     @Override
     public int hashCode() {
         int result = Objects.hash(super.hashCode(), sender);
@@ -105,7 +115,7 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
     public String toString() {
         return "ApplicationMessage{" +
                 "sender=" + sender +
-                ", payload=" + Arrays.toString(payload) +
+                ", payload=byte[" + Optional.ofNullable(payload).orElse(new byte[]{}).length + "] { ... }" +
                 ", recipient=" + recipient +
                 ", hopCount=" + hopCount +
                 ", id='" + id + '\'' +

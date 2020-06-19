@@ -107,4 +107,13 @@ public class SignedMessage implements Message, Signable {
                 Objects.equals(kid, that.kid) &&
                 Objects.equals(signature, that.signature);
     }
+
+    @Override
+    public String toString() {
+        return "SignedMessage{" +
+                "payload=" + payload +
+                ", kid=" + kid +
+                ", signature=" + signature +
+                '}';
+    }
 }

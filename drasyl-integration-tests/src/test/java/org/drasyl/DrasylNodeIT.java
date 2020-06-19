@@ -20,6 +20,7 @@ package org.drasyl;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
+import io.netty.util.ResourceLeakDetector;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
@@ -52,6 +53,10 @@ import static testutils.TestHelper.colorizedPrintln;
 class DrasylNodeIT {
     public static final long TIMEOUT = 15000L;
     private List<DrasylNode> nodes;
+
+    static {
+        ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.PARANOID);
+    }
 
     @BeforeEach
     void setup(TestInfo info) {

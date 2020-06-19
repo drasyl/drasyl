@@ -24,6 +24,7 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.ResourceLeakDetector;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylException;
@@ -109,6 +110,10 @@ class NodeServerIT {
     private Observable<Boolean> superPeerConnected;
     private Identity identitySession1;
     private Identity identitySession2;
+
+    static {
+        ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.PARANOID);
+    }
 
     @BeforeEach
     void setup(TestInfo info) throws DrasylException, CryptoException {

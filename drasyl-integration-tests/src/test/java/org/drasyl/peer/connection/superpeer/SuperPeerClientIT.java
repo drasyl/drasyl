@@ -21,6 +21,7 @@ package org.drasyl.peer.connection.superpeer;
 import com.typesafe.config.ConfigFactory;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.ResourceLeakDetector;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
@@ -80,6 +81,10 @@ class SuperPeerClientIT {
     private Subject<Event> emittedEventsSubject;
     private Observable<Boolean> superPeerConnected;
     private SuperPeerClient client;
+
+    static {
+        ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.PARANOID);
+    }
 
     @BeforeEach
     void setup(TestInfo info) throws DrasylException {
