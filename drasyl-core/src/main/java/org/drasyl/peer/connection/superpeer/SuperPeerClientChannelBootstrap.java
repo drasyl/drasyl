@@ -43,7 +43,6 @@ public class SuperPeerClientChannelBootstrap {
     public SuperPeerClientChannelBootstrap(DrasylNodeConfig config,
                                            EventLoopGroup workerGroup,
                                            URI endpoint,
-                                           Set<URI> endpoints,
                                            SuperPeerClient superPeerClient) throws SuperPeerClientException {
         this.config = config;
         this.workerGroup = workerGroup;
