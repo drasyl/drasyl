@@ -18,7 +18,7 @@
  */
 package org.drasyl.peer.connection.message;
 
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.CompressedPublicKey;
 
 import java.util.Set;
 
@@ -32,7 +32,7 @@ public class RegisterGrandchildMessage extends AbstractGrandchildMessage {
      *
      * @param grandchildren the grandchildren
      */
-    public RegisterGrandchildMessage(Set<Identity> grandchildren) {
+    public RegisterGrandchildMessage(Set<CompressedPublicKey> grandchildren) {
         super(grandchildren);
     }
 

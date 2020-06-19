@@ -21,15 +21,14 @@ package org.drasyl.testutils;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.identity.Identity;
 
 public final class IdentityRandomGenerator {
     private IdentityRandomGenerator() {
     }
 
-    public static Identity random() {
+    public static CompressedPublicKey random() {
         try {
-            return Identity.of(CompressedPublicKey.of(Crypto.generateKeys().getPublic()));
+            return CompressedPublicKey.of(Crypto.generateKeys().getPublic());
         }
         catch (CryptoException e) {
             return null;

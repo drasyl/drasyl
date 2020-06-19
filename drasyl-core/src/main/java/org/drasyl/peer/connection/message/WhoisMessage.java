@@ -18,7 +18,7 @@
  */
 package org.drasyl.peer.connection.message;
 
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.CompressedPublicKey;
 
 import java.util.Objects;
 
@@ -29,19 +29,19 @@ import static java.util.Objects.requireNonNull;
  * identity.
  */
 public class WhoisMessage extends RelayableMessage implements RequestMessage {
-    private final Identity requester;
+    private final CompressedPublicKey requester;
 
     WhoisMessage() {
         super();
         requester = null;
     }
 
-    public WhoisMessage(Identity recipient, Identity requester) {
+    public WhoisMessage(CompressedPublicKey recipient, CompressedPublicKey requester) {
         super(recipient);
         this.requester = requireNonNull(requester);
     }
 
-    public Identity getRequester() {
+    public CompressedPublicKey getRequester() {
         return requester;
     }
 

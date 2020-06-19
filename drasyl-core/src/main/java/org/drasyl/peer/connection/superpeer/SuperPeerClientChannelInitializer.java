@@ -25,7 +25,7 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import org.drasyl.DrasylNodeConfig;
-import org.drasyl.identity.PrivateIdentity;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.AbstractClientInitializer;
 import org.drasyl.peer.connection.handler.ChunkedMessageHandler;
 import org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler;
@@ -39,7 +39,6 @@ import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLException;
 import java.net.URI;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.peer.connection.handler.ChunkedMessageHandler.CHUNK_HANDLER;
@@ -54,17 +53,16 @@ public class SuperPeerClientChannelInitializer extends AbstractClientInitializer
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClientChannelInitializer.class);
     private final DrasylNodeConfig config;
     private final SuperPeerClientConnectionHandler clientHandler;
-    private final PrivateIdentity identity;
+    private final Identity identity;
 
     public SuperPeerClientChannelInitializer(DrasylNodeConfig config,
                                              URI endpoint,
-                                             Set<URI> endpoints,
                                              SuperPeerClient superPeerClient) {
         super(config.getFlushBufferSize(), config.getSuperPeerIdleTimeout(),
                 config.getSuperPeerIdleRetries(), endpoint);
         this.config = config;
         this.identity = superPeerClient.getIdentityManager().getIdentity();
-        clientHandler = new SuperPeerClientConnectionHandler(superPeerClient.getIdentityManager().getProofOfWork(), this.config.getSuperPeerPublicKey(), superPeerClient.getIdentityManager().getNonPrivateIdentity(), endpoints, this.config.getSuperPeerHandshakeTimeout(), superPeerClient.getPeersManager(), superPeerClient.getMessenger());
+        clientHandler = new SuperPeerClientConnectionHandler(superPeerClient.getIdentityManager().getProofOfWork(), this.config.getSuperPeerPublicKey(), superPeerClient.getIdentityManager().getPublicKey(), this.config.getSuperPeerHandshakeTimeout(), superPeerClient.getPeersManager(), superPeerClient.getMessenger());
     }
 
     public CompletableFuture<Void> handshakeFuture() {

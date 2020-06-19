@@ -33,7 +33,7 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
-import org.drasyl.identity.PrivateIdentity;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.AbstractClientInitializer;
 import org.drasyl.peer.connection.DefaultSessionInitializer;
 import org.drasyl.peer.connection.handler.ChunkedMessageHandler;
@@ -80,7 +80,7 @@ public class OutboundConnectionFactory {
     private short idleRetries;
     private boolean ssl;
     private int maxContentLength;
-    private final PrivateIdentity identity;
+    private final Identity identity;
 
     /**
      * Produces an {@link OutboundConnectionFactory} with the given {@link URI} as target.
@@ -89,7 +89,7 @@ public class OutboundConnectionFactory {
      */
     public OutboundConnectionFactory(URI target,
                                      EventLoopGroup eventGroup,
-                                     PrivateIdentity identity) {
+                                     Identity identity) {
         this(target, null, () -> {
         }, null, new ArrayList<>(), Collections.singletonList("TLSv1.3"), eventGroup, 1000000, identity);
     }
@@ -102,7 +102,7 @@ public class OutboundConnectionFactory {
                                       List<String> sslProtocols,
                                       EventLoopGroup eventGroup,
                                       int maxContentLength,
-                                      PrivateIdentity identity) {
+                                      Identity identity) {
         this.uri = target;
         this.initializer = initializer;
         this.shutdownProcedure = shutdownProcedure;

@@ -18,7 +18,7 @@
  */
 package org.drasyl.peer.connection.message;
 
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.PeerInformation;
 
 import java.util.Objects;
@@ -28,40 +28,40 @@ import java.util.Objects;
  * peer (like public key and endpoints).
  */
 public class IdentityMessage extends RelayableMessage implements ResponseMessage<WhoisMessage> {
-    private final Identity identity;
+    private final CompressedPublicKey publicKey;
     private final PeerInformation peerInformation;
     private final String correspondingId;
 
     private IdentityMessage() {
         super();
-        identity = null;
+        publicKey = null;
         peerInformation = null;
         correspondingId = null;
     }
 
-    public IdentityMessage(Identity recipient,
-                           Identity identity,
+    public IdentityMessage(CompressedPublicKey recipient,
+                           CompressedPublicKey publicKey,
                            PeerInformation peerInformation,
                            String correspondingId) {
         super(recipient);
-        this.identity = identity;
+        this.publicKey = publicKey;
         this.peerInformation = peerInformation;
         this.correspondingId = correspondingId;
     }
 
-    public IdentityMessage(Identity recipient,
-                           Identity identity,
+    public IdentityMessage(CompressedPublicKey recipient,
+                           CompressedPublicKey publicKey,
                            PeerInformation peerInformation,
                            String correspondingId,
                            short hopCount) {
         super(recipient, hopCount);
-        this.identity = identity;
+        this.publicKey = publicKey;
         this.peerInformation = peerInformation;
         this.correspondingId = correspondingId;
     }
 
-    public Identity getIdentity() {
-        return identity;
+    public CompressedPublicKey getPublicKey() {
+        return publicKey;
     }
 
     public PeerInformation getPeerInformation() {
@@ -75,7 +75,7 @@ public class IdentityMessage extends RelayableMessage implements ResponseMessage
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), identity, peerInformation, correspondingId);
+        return Objects.hash(super.hashCode(), publicKey, peerInformation, correspondingId);
     }
 
     @Override
@@ -90,7 +90,7 @@ public class IdentityMessage extends RelayableMessage implements ResponseMessage
             return false;
         }
         IdentityMessage that = (IdentityMessage) o;
-        return Objects.equals(identity, that.identity) &&
+        return Objects.equals(publicKey, that.publicKey) &&
                 Objects.equals(peerInformation, that.peerInformation) &&
                 Objects.equals(correspondingId, that.correspondingId);
     }
@@ -98,7 +98,7 @@ public class IdentityMessage extends RelayableMessage implements ResponseMessage
     @Override
     public String toString() {
         return "IdentityMessage{" +
-                "identity=" + identity +
+                "identity=" + publicKey +
                 ", peerInformation=" + peerInformation +
                 ", correspondingId='" + correspondingId + '\'' +
                 ", recipient=" + recipient +

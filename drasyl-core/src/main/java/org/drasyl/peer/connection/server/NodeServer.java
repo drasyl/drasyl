@@ -27,7 +27,7 @@ import io.netty.channel.group.ChannelGroupFutureListener;
 import io.reactivex.rxjava3.core.Observable;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeConfig;
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.messenger.NoPathToIdentityException;
@@ -235,7 +235,7 @@ public class NodeServer implements AutoCloseable {
                     }).collect(Collectors.toSet());
             messenger.setServerSink((recipient, message) -> {
                 // if recipient is a grandchild, we must send message to appropriate child
-                Identity grandchildrenPath = peersManager.getGrandchildrenRoutes().get(recipient);
+                CompressedPublicKey grandchildrenPath = peersManager.getGrandchildrenRoutes().get(recipient);
                 if (grandchildrenPath != null) {
                     recipient = grandchildrenPath;
                 }

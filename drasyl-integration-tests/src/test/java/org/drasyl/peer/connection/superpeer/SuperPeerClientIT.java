@@ -139,7 +139,7 @@ class SuperPeerClientIT {
 
         // verify received messages
         receivedMessages.awaitCount(1);
-        receivedMessages.assertValueAt(0, new JoinMessage(identityManager.getProofOfWork(), identityManager.getNonPrivateIdentity(), Set.of()));
+        receivedMessages.assertValueAt(0, new JoinMessage(identityManager.getProofOfWork(), identityManager.getPublicKey(), Set.of()));
     }
 
     @Disabled("Race Condition error")
@@ -214,7 +214,7 @@ class SuperPeerClientIT {
         sentMessages.awaitCount(1);
 
         // send message
-        ApplicationMessage request = new ApplicationMessage(identityManager.getNonPrivateIdentity(), identityManagerServer.getNonPrivateIdentity(), new byte[]{
+        ApplicationMessage request = new ApplicationMessage(identityManager.getPublicKey(), identityManagerServer.getPublicKey(), new byte[]{
                 0x00,
                 0x01
         });

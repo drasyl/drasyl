@@ -22,7 +22,6 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.javacrumbs.jsonunit.core.Option;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.identity.Identity;
 import org.drasyl.testutils.IdentityRandomGenerator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -40,8 +39,8 @@ import static org.mockito.Mockito.mock;
 class ApplicationMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
     CompressedPublicKey senderPubKey;
-    Identity sender;
-    Identity recipient;
+    CompressedPublicKey sender;
+    CompressedPublicKey recipient;
     private String id;
     private ApplicationMessage message;
     private short hopCount;
@@ -67,7 +66,7 @@ class ApplicationMessageTest {
 
         assertThatJson(JSON_MAPPER.writeValueAsString(message))
                 .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo("{\"@type\":\"ApplicationMessage\",\"id\":\"" + message.getId() + "\",\"recipient\":{\"publicKey\":\"" + recipient.getPublicKey().getCompressedKey() + "\"},\"hopCount\":64,\"sender\":{\"publicKey\":\"" + sender.getPublicKey().getCompressedKey() + "\"},\"payload\":\"AAEC\"}\n");
+                .isEqualTo("{\"@type\":\"ApplicationMessage\",\"id\":\"" + message.getId() + "\",\"recipient\":\"" + recipient.getCompressedKey() + "\",\"hopCount\":64,\"sender\":\"" + sender.getCompressedKey() + "\",\"payload\":\"AAEC\"}\n");
     }
 
     @Test
