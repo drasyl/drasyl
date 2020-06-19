@@ -48,6 +48,10 @@ public class CompressedKeyPair {
         return privateKey;
     }
 
+    public KeyPair toUncompressedKeyPair() throws CryptoException {
+        return new KeyPair(publicKey.toUncompressedKey(), privateKey.toUncompressedKey());
+    }
+
     @Override
     public int hashCode() {
         return Objects.hash(publicKey, privateKey);
