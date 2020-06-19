@@ -34,7 +34,7 @@ public class RegisterGrandchildMessage extends AbstractGrandchildMessage {
      *
      * @param grandchildren        the grandchildren
      */
-    public RegisterGrandchildMessage(Set<KeyValue<Identity, PeerInformation>> grandchildren) {
+    public RegisterGrandchildMessage(Set<Identity> grandchildren) {
         super(grandchildren);
     }
 

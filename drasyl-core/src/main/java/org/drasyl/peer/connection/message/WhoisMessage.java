@@ -28,31 +28,21 @@ import static java.util.Objects.requireNonNull;
  * This message is used to request information (like public key and endpoints) for a specific
  * identity.
  */
-public class WhoisMessage extends AbstractMessage implements RequestMessage {
+public class WhoisMessage extends RelayableMessage implements RequestMessage {
     private final Identity requester;
-    private final Identity identity;
 
     WhoisMessage() {
+        super();
         requester = null;
-        identity = null;
     }
 
-    public WhoisMessage(Identity requester, Identity identity) {
+    public WhoisMessage(Identity recipient, Identity requester) {
+        super(recipient);
         this.requester = requireNonNull(requester);
-        this.identity = requireNonNull(identity);
     }
 
     public Identity getRequester() {
         return requester;
-    }
-
-    public Identity getIdentity() {
-        return identity;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), requester, identity);
     }
 
     @Override
@@ -67,15 +57,20 @@ public class WhoisMessage extends AbstractMessage implements RequestMessage {
             return false;
         }
         WhoisMessage that = (WhoisMessage) o;
-        return Objects.equals(requester, that.requester) &&
-                Objects.equals(identity, that.identity);
+        return Objects.equals(requester, that.requester);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), requester);
     }
 
     @Override
     public String toString() {
         return "WhoisMessage{" +
                 "requester=" + requester +
-                ", identity=" + identity +
+                ", recipient=" + recipient +
+                ", hopCount=" + hopCount +
                 ", id='" + id + '\'' +
                 '}';
     }

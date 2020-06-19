@@ -53,7 +53,7 @@ import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_
 /**
  * This class represents the link between <code>DrasylNode</code> and the super peer. It is
  * responsible for maintaining the connection to the super peer and updates the data of the super
- * peer in <code>PeersManager</code>.
+ * peer in {@link PeersManager}.
  */
 @SuppressWarnings({ "java:S107", "java:S4818" })
 public class SuperPeerClient implements AutoCloseable {

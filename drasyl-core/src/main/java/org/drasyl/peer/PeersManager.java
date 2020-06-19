@@ -432,55 +432,6 @@ public class PeersManager {
         }
     }
 
-    /**
-     * Shortcut for call {@link #addPeerInformation(Identity, PeerInformation)} (Identity...)} and
-     * {@link #addGrandchildrenRoute(Identity, Identity)}.
-     *
-     * @return
-     */
-    public void addPeerInformationAndAddGrandchildren(Identity grandchildren,
-                                                      PeerInformation grandchildrenInformation,
-                                                      Identity children) {
-        requireNonNull(grandchildren);
-        requireNonNull(grandchildrenInformation);
-        requireNonNull(children);
-
-        try {
-            lock.writeLock().lock();
-
-            boolean created = !peers.containsKey(grandchildren);
-            PeerInformation existingInformation = peers.computeIfAbsent(grandchildren, i -> PeerInformation.of());
-            addInformationAndConditionalEventTrigger(grandchildren, existingInformation, grandchildrenInformation, created);
-            grandchildrenRoutes.put(grandchildren, children);
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    /**
-     * Shortcut for call {@link #removeGrandchildrenRoute(Identity)} and {@link
-     * #removePeerInformation(Identity, PeerInformation)}.
-     *
-     * @return
-     */
-    public void removeGrandchildrenRouteAndRemovePeerInformation(Identity grandchildren,
-                                                                 PeerInformation grandchildrenInformation) {
-        requireNonNull(grandchildren);
-        requireNonNull(grandchildrenInformation);
-
-        try {
-            lock.writeLock().lock();
-
-            PeerInformation existingInformation = peers.computeIfAbsent(grandchildren, i -> PeerInformation.of());
-            removeInformationAndConditionalEventTrigger(grandchildren, existingInformation, grandchildrenInformation);
-            grandchildrenRoutes.remove(grandchildren);
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-    }
-
     @JsonSerialize(using = MapToPairArraySerializer.class)
     public Map<Identity, PeerInformation> getChildren() {
         try {

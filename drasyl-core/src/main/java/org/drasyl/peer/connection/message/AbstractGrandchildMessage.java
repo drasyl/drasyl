@@ -27,17 +27,17 @@ import java.util.Objects;
 import java.util.Set;
 
 public abstract class AbstractGrandchildMessage extends AbstractMessage implements RequestMessage {
-    protected Set<KeyValue<Identity, PeerInformation>> grandchildren;
+    protected Set<Identity> grandchildren;
 
     protected AbstractGrandchildMessage() {
         grandchildren = null;
     }
 
-    public AbstractGrandchildMessage(Set<KeyValue<Identity, PeerInformation>> grandchildren) {
+    public AbstractGrandchildMessage(Set<Identity> grandchildren) {
         this.grandchildren = grandchildren;
     }
 
-    public Set<KeyValue<Identity, PeerInformation>> getGrandchildren() {
+    public Set<Identity> getGrandchildren() {
         return ImmutableSet.copyOf(grandchildren);
     }
 

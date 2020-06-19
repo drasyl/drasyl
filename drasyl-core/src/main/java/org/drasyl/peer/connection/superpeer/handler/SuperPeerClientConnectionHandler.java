@@ -77,7 +77,7 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
                 new JoinMessage(proofOfWork,
                         ownIdentity,
                         PeerInformation.of(endpoints),
-                        peersManager.getChildrenAndGrandchildren().entrySet().stream().map(KeyValue::of).collect(Collectors.toSet())
+                        peersManager.getChildrenAndGrandchildren().keySet()
                 )
         );
         this.expectedPublicKey = expectedPublicKey;
