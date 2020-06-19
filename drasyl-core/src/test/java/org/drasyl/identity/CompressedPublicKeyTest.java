@@ -23,6 +23,7 @@ import net.javacrumbs.jsonunit.core.Option;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -42,37 +43,44 @@ class CompressedPublicKeyTest {
         keyPair = Crypto.generateKeys();
     }
 
-    @Test
-    void ofTest() throws CryptoException {
-        CompressedPublicKey compressedPublicKey1 = CompressedPublicKey.of(keyPair.getPublic());
-        CompressedPublicKey compressedPublicKey2 = CompressedPublicKey.of(compressedPublicKey1.getCompressedKey());
-        CompressedPublicKey compressedPublicKey3 = CompressedPublicKey.of(compressedPublicKey2.toUncompressedKey());
+    @Nested
+    class Of {
+        @Test
+        void shouldReturnCorrectKeys() throws CryptoException {
+            CompressedPublicKey compressedPublicKey1 = CompressedPublicKey.of(keyPair.getPublic());
+            CompressedPublicKey compressedPublicKey2 = CompressedPublicKey.of(compressedPublicKey1.getCompressedKey());
+            CompressedPublicKey compressedPublicKey3 = CompressedPublicKey.of(compressedPublicKey2.toUncompressedKey());
 
-        assertEquals(compressedPublicKey1, compressedPublicKey2);
-        assertEquals(compressedPublicKey1, compressedPublicKey3);
-        assertEquals(compressedPublicKey2, compressedPublicKey3);
-        assertEquals(compressedPublicKey1.hashCode(), compressedPublicKey2.hashCode());
-        assertEquals(compressedPublicKey1.hashCode(), compressedPublicKey3.hashCode());
-        assertEquals(compressedPublicKey2.hashCode(), compressedPublicKey3.hashCode());
+            assertEquals(compressedPublicKey1, compressedPublicKey2);
+            assertEquals(compressedPublicKey1, compressedPublicKey3);
+            assertEquals(compressedPublicKey2, compressedPublicKey3);
+            assertEquals(compressedPublicKey1.hashCode(), compressedPublicKey2.hashCode());
+            assertEquals(compressedPublicKey1.hashCode(), compressedPublicKey3.hashCode());
+            assertEquals(compressedPublicKey2.hashCode(), compressedPublicKey3.hashCode());
+        }
     }
 
-    @Test
-    void toJson() throws IOException, CryptoException {
-        CompressedPublicKey compressedPublicKey = CompressedPublicKey.of(keyPair.getPublic());
+    @Nested
+    class JsonDeserialization {
+        @Test
+        void shouldDeserializeToCorrectObject() throws IOException {
+            String json = "\"0340A4F2ADBDDEEDC8F9ACE30E3F18713A3405F43F4871B4BAC9624FE80D2056A7\"";
 
-        assertThatJson(JSON_MAPPER.writeValueAsString(compressedPublicKey))
-                .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo(compressedPublicKey.toString());
-
-        // Ignore toString()
-        compressedPublicKey.toString();
-        assertEquals(compressedPublicKey, JSON_MAPPER.readValue(JSON_MAPPER.writeValueAsString(compressedPublicKey), CompressedPublicKey.class));
+            assertThat(JSON_MAPPER.readValue(json, CompressedPublicKey.class), instanceOf(CompressedPublicKey.class));
+        }
     }
 
-    @Test
-    void fromJson() throws IOException {
-        String json = "\"0340A4F2ADBDDEEDC8F9ACE30E3F18713A3405F43F4871B4BAC9624FE80D2056A7\"";
+    @Nested
+    class JsonSerialization {
+        @Test
+        void shouldSerializeToCorrectJson() throws IOException, CryptoException {
+            CompressedPublicKey compressedPublicKey = CompressedPublicKey.of(keyPair.getPublic());
 
-        assertThat(JSON_MAPPER.readValue(json, CompressedPublicKey.class), instanceOf(CompressedPublicKey.class));
+            assertThatJson(JSON_MAPPER.writeValueAsString(compressedPublicKey))
+                    .when(Option.IGNORING_ARRAY_ORDER)
+                    .isEqualTo(compressedPublicKey.toString());
+
+            assertEquals(compressedPublicKey, JSON_MAPPER.readValue(JSON_MAPPER.writeValueAsString(compressedPublicKey), CompressedPublicKey.class));
+        }
     }
 }

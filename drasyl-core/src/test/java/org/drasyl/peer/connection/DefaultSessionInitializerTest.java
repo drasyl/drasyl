@@ -28,42 +28,46 @@ import org.drasyl.peer.connection.handler.MessageEncoder;
 import org.drasyl.peer.connection.handler.PingPongHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.lang.reflect.Field;
 import java.time.Duration;
 
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class DefaultSessionInitializerTest {
+    @Mock(answer = Answers.CALLS_REAL_METHODS)
     private DefaultSessionInitializer classUnderTest;
+    @Mock
     private ChannelPipeline pipeline;
+    @Mock
     private SslHandler sslHandler;
+    @Mock
     private SocketChannel ch;
 
     @BeforeEach
     void setUp() throws IllegalAccessException, NoSuchFieldException {
-        classUnderTest = mock(DefaultSessionInitializer.class, Mockito.CALLS_REAL_METHODS);
-        pipeline = mock(ChannelPipeline.class);
-        sslHandler = mock(SslHandler.class);
-        ch = mock(SocketChannel.class);
-
         Field field = DefaultSessionInitializer.class.getDeclaredField("readIdleTimeout");
         field.setAccessible(true);
         field.set(classUnderTest, Duration.ZERO);
-
-        when(ch.pipeline()).thenReturn(pipeline);
-        when(classUnderTest.generateSslContext(ch)).thenReturn(sslHandler);
     }
 
     // should call all stages of the pipeline
     @Test
     void initChannel() {
+        when(ch.pipeline()).thenReturn(pipeline);
+        when(classUnderTest.generateSslContext(ch)).thenReturn(sslHandler);
+
         classUnderTest.initChannel(ch);
 
         verify(classUnderTest).beforeSslStage(ch);
@@ -99,6 +103,9 @@ class DefaultSessionInitializerTest {
 
     @Test
     void testSslStage() {
+        when(ch.pipeline()).thenReturn(pipeline);
+        when(classUnderTest.generateSslContext(ch)).thenReturn(sslHandler);
+
         classUnderTest.sslStage(ch);
 
         verify(pipeline).addLast("sslHandler", sslHandler);
@@ -106,6 +113,8 @@ class DefaultSessionInitializerTest {
 
     @Test
     void testSslStageNull() {
+        when(classUnderTest.generateSslContext(ch)).thenReturn(sslHandler);
+
         when(classUnderTest.generateSslContext(ch)).thenReturn(null);
         classUnderTest.sslStage(ch);
 

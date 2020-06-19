@@ -52,10 +52,14 @@ public class SignedMessage implements Message, Signable {
         this.kid = null;
     }
 
-    public SignedMessage(Message payload, CompressedPublicKey publicKey) {
-        requireNonNull(payload);
-        this.payload = payload;
-        this.kid = publicKey;
+    public SignedMessage(Message payload, CompressedPublicKey kid) {
+        this(payload, kid, null);
+    }
+
+    public SignedMessage(Message payload, CompressedPublicKey kid, Signature signature) {
+        this.payload = requireNonNull(payload);
+        this.kid = kid;
+        this.signature = signature;
     }
 
     public Message getPayload() {
@@ -106,5 +110,14 @@ public class SignedMessage implements Message, Signable {
         return Objects.equals(payload, that.payload) &&
                 Objects.equals(kid, that.kid) &&
                 Objects.equals(signature, that.signature);
+    }
+
+    @Override
+    public String toString() {
+        return "SignedMessage{" +
+                "payload=" + payload +
+                ", kid=" + kid +
+                ", signature=" + signature +
+                '}';
     }
 }

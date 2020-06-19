@@ -22,7 +22,6 @@ package org.drasyl.peer.connection.handler;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelId;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoop;
@@ -33,52 +32,53 @@ import io.netty.handler.codec.http.websocketx.CloseWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketFrame;
 import org.drasyl.peer.connection.message.Message;
-import org.drasyl.peer.connection.message.QuitMessage;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class WebSocketHandshakeClientHandlerTest {
+    @Mock
     private WebSocketClientHandshaker handshaker;
+    @Mock
     private CompletableFuture<Void> handshakeFuture;
+    @Mock
     private ChannelHandlerContext ctx;
+    @Mock
     private Message quitMessage;
+    @Mock
     private Throwable cause;
+    @Mock
     private FullHttpResponse fullHttpResponse;
+    @Mock
     private CloseWebSocketFrame closeWebSocketFrame;
+    @Mock
     private Channel channel;
+    @Mock
     private ByteBuf byteBuf;
-    private ChannelId channelId;
+    @Mock
     private WebSocketFrame webSocketFrame;
+    @Mock
     private ChannelPipeline channelPipeline;
+    @Mock
     private ChannelPromise promise;
-
-    @BeforeEach
-    void setUp() {
-        handshaker = mock(WebSocketClientHandshaker.class);
-        handshakeFuture = mock(CompletableFuture.class);
-        ctx = mock(ChannelHandlerContext.class);
-        quitMessage = mock(QuitMessage.class);
-        fullHttpResponse = mock(FullHttpResponse.class);
-        closeWebSocketFrame = mock(CloseWebSocketFrame.class);
-        cause = mock(Throwable.class);
-        channel = mock(Channel.class);
-        byteBuf = mock(ByteBuf.class);
-        channelId = mock(ChannelId.class);
-        webSocketFrame = mock(WebSocketFrame.class);
-        channelPipeline = mock(ChannelPipeline.class);
-        promise = mock(ChannelPromise.class);
-    }
+    @Mock
+    private ChannelHandlerContext channelHandlerContext;
+    @Mock
+    private EventLoop eventLoop;
+    @Mock
+    private HttpHeaders httpHeaders;
 
     @Test
-    void channelWrite0ShouldBlockUntilHandshakeIsDone() throws Exception {
+    void channelWrite0ShouldBlockUntilHandshakeIsDone() {
         WebSocketHandshakeClientHandler handler = new WebSocketHandshakeClientHandler(handshaker, handshakeFuture);
 
         handler.channelWrite0(ctx, quitMessage, promise);
@@ -90,11 +90,10 @@ class WebSocketHandshakeClientHandlerTest {
     void channelRead0ShouldCompleteHandshakeIfHandshakeIsNotCompleteAndHttpMessageReceived() {
         when(ctx.channel()).thenReturn(channel);
         when(handshaker.isHandshakeComplete()).thenReturn(false);
-        when(fullHttpResponse.headers()).thenReturn(mock(HttpHeaders.class));
+        when(fullHttpResponse.headers()).thenReturn(httpHeaders);
         when(channel.pipeline()).thenReturn(channelPipeline);
-        when(channel.eventLoop()).thenReturn(mock(EventLoop.class));
-        when(channel.id()).thenReturn(channelId);
-        when(channelPipeline.context(HttpResponseDecoder.class)).thenReturn(mock(ChannelHandlerContext.class));
+        when(channel.eventLoop()).thenReturn(eventLoop);
+        when(channelPipeline.context(HttpResponseDecoder.class)).thenReturn(channelHandlerContext);
 
         WebSocketHandshakeClientHandler handler = new WebSocketHandshakeClientHandler(handshaker, handshakeFuture);
         handler.channelRead0(ctx, fullHttpResponse);
@@ -116,7 +115,6 @@ class WebSocketHandshakeClientHandlerTest {
     @Test
     void channelRead0ShouldCloseWebsocketIfHandshakeIsCompleteAndCloseWebSocketFrameMessageReceived() {
         when(ctx.channel()).thenReturn(channel);
-        when(channel.id()).thenReturn(channelId);
         when(handshaker.isHandshakeComplete()).thenReturn(true);
 
         WebSocketHandshakeClientHandler handler = new WebSocketHandshakeClientHandler(handshaker, handshakeFuture);

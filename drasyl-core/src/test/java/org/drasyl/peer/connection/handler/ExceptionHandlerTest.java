@@ -24,6 +24,11 @@ import io.netty.channel.ChannelPromise;
 import org.drasyl.peer.connection.message.ExceptionMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
@@ -31,34 +36,26 @@ import java.nio.channels.ClosedChannelException;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class ExceptionHandlerTest {
+    @Mock
     private ExceptionHandler.ChannelExceptionListener listener;
+    @Mock
     private ChannelHandlerContext ctx;
+    @Mock
     private ChannelPromise promise;
+    @Mock
     private Throwable cause;
+    @Mock
     private SocketAddress address;
+    @Mock
     private Object msg;
-
-    @BeforeEach
-    void setUp() {
-        listener = mock(ExceptionHandler.ChannelExceptionListener.class);
-        ctx = mock(ChannelHandlerContext.class);
-        promise = mock(ChannelPromise.class);
-        address = mock(SocketAddress.class);
-        cause = mock(Throwable.class);
-        msg = mock(Object.class);
-
-        Channel channel = mock(Channel.class);
-
-        when(ctx.channel()).thenReturn(channel);
-        when(channel.isWritable()).thenReturn(true);
-        when(cause.getMessage()).thenReturn("Exception");
-    }
+    @Mock
+    private Channel channel;
 
     // invoke listener
     @Test
@@ -83,6 +80,10 @@ class ExceptionHandlerTest {
     // sendMSG the exception as exception message
     @Test
     void exceptionCaughtWithoutRethrow() {
+        when(ctx.channel()).thenReturn(channel);
+        when(channel.isWritable()).thenReturn(true);
+        when(cause.getMessage()).thenReturn("Exception");
+
         ExceptionHandler handler = new ExceptionHandler(listener, null, false);
         handler.exceptionCaught(ctx, cause);
 
@@ -103,6 +104,10 @@ class ExceptionHandlerTest {
     // sendMSG the exception as exception message and pass to the next handler in the pipeline
     @Test
     void exceptionCaughtWithRethrow() {
+        when(ctx.channel()).thenReturn(channel);
+        when(channel.isWritable()).thenReturn(true);
+        when(cause.getMessage()).thenReturn("Exception");
+
         ExceptionHandler handler = new ExceptionHandler(listener, null, true);
         handler.exceptionCaught(ctx, cause);
 
@@ -114,6 +119,8 @@ class ExceptionHandlerTest {
     // only rethrow to next pipeline
     @Test
     void exceptionCaughtAlreadyHandled() {
+        when(cause.getMessage()).thenReturn("Exception");
+
         ExceptionHandler handler = new ExceptionHandler(listener, cause, true);
         handler.exceptionCaught(ctx, cause);
 

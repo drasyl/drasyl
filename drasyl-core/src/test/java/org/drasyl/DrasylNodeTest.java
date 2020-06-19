@@ -30,130 +30,123 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.intravm.IntraVmDiscovery;
 import org.drasyl.peer.connection.server.NodeServer;
 import org.drasyl.peer.connection.superpeer.SuperPeerClient;
-import org.drasyl.util.Pair;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class DrasylNodeTest {
+    @Mock
     private DrasylNodeConfig config;
+    @Mock
     private IdentityManager identityManager;
+    @Mock
     private Messenger messenger;
+    @Mock
     private NodeServer server;
+    @Mock
     private PeersManager peersManager;
-    private Node node;
-    private Event event;
-    private Pair<CompressedPublicKey, byte[]> message;
+    @Mock
     private CompressedPublicKey recipient;
-    private CompressedPublicKey sender;
-    private byte[] payload;
+    private final byte[] payload = new byte[]{ 0x4f };
+    @Mock
     private Identity identity;
+    @Mock
     private AtomicBoolean started;
+    @Mock
     private CompletableFuture<Void> startSequence;
+    @Mock
     private CompletableFuture<Void> shutdownSequence;
+    @Mock
     private SuperPeerClient superPeerClient;
+    @Mock
     private MessageSink messageSink;
+    @Mock
     private CompressedPublicKey identity1;
+    @Mock
     private IntraVmDiscovery intraVmDiscovery;
 
-    @BeforeEach
-    void setUp() {
-        config = mock(DrasylNodeConfig.class);
-        identityManager = mock(IdentityManager.class);
-        messenger = mock(Messenger.class);
-        server = mock(NodeServer.class);
-        peersManager = mock(PeersManager.class);
-        event = mock(Event.class);
-        node = mock(Node.class);
-        recipient = mock(CompressedPublicKey.class);
-        sender = mock(CompressedPublicKey.class);
-        payload = new byte[]{ 0x4f };
-        message = Pair.of(sender, payload);
-        identity = mock(Identity.class);
-        started = mock(AtomicBoolean.class);
-        startSequence = mock(CompletableFuture.class);
-        shutdownSequence = mock(CompletableFuture.class);
-        superPeerClient = mock(SuperPeerClient.class);
-        messageSink = mock(MessageSink.class);
-        identity1 = mock(CompressedPublicKey.class);
-        intraVmDiscovery = mock(IntraVmDiscovery.class);
+    @Nested
+    class Start {
+        @Test
+        void shouldReturnSameFutureIfStartHasAlreadyBeenTriggered() {
+            DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, intraVmDiscovery, superPeerClient, server, new AtomicBoolean(true), startSequence, shutdownSequence, messageSink) {
+                @Override
+                public void onEvent(Event event) {
+                }
+            });
+            assertEquals(startSequence, drasylNode.start());
+        }
+
+        @Test
+        void shouldEmitUpEventOnSuccessfulStart() {
+            when(identityManager.getPublicKey()).thenReturn(identity1);
+            when(identityManager.getIdentity()).thenReturn(identity);
+
+            DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, intraVmDiscovery, superPeerClient, server, new AtomicBoolean(false), startSequence, shutdownSequence, messageSink) {
+                @Override
+                public void onEvent(Event event) {
+                }
+            });
+            drasylNode.start().join();
+
+            verify(drasylNode).onEvent(new Event(EventType.EVENT_NODE_UP, Node.of(identity, server.getEndpoints())));
+        }
     }
 
-    @AfterEach
-    void tearDown() {
+    @Nested
+    class Shutdown {
+        @Test
+        void shouldEmitDownAndNormalTerminationEventOnSuccessfulShutdown() {
+            when(identityManager.getIdentity()).thenReturn(identity);
+
+            DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, intraVmDiscovery, superPeerClient, server, new AtomicBoolean(true), startSequence, shutdownSequence, messageSink) {
+                @Override
+                public void onEvent(Event event) {
+                }
+            });
+            drasylNode.shutdown().join();
+
+            verify(drasylNode).onEvent(new Event(EventType.EVENT_NODE_DOWN, Node.of(identity, server.getEndpoints())));
+            verify(drasylNode).onEvent(new Event(EventType.EVENT_NODE_NORMAL_TERMINATION, Node.of(identity, server.getEndpoints())));
+        }
+
+        @Test
+        void shouldReturnSameFutureIfShutdownHasAlreadyBeenTriggered() {
+            DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, intraVmDiscovery, superPeerClient, server, new AtomicBoolean(false), startSequence, shutdownSequence, messageSink) {
+                @Override
+                public void onEvent(Event event) {
+                }
+            });
+            assertEquals(shutdownSequence, drasylNode.shutdown());
+        }
     }
 
-    @Test
-    void startShouldReturnSameFutureIfStartHasAlreadyBeenTriggered() {
-        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, intraVmDiscovery, superPeerClient, server, new AtomicBoolean(true), startSequence, shutdownSequence, messageSink) {
-            @Override
-            public void onEvent(Event event) {
-            }
-        });
-        assertEquals(startSequence, drasylNode.start());
-    }
+    @Nested
+    class Send {
+        @Test
+        void shouldCallMessenger() throws DrasylException {
+            when(identityManager.getPublicKey()).thenReturn(identity1);
 
-    @Test
-    void startShouldEmitUpEventOnSuccessfulStart() {
-        when(identityManager.getPublicKey()).thenReturn(identity1);
-        when(identityManager.getIdentity()).thenReturn(identity);
+            DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, intraVmDiscovery, superPeerClient, server, started, startSequence, shutdownSequence, messageSink) {
+                @Override
+                public void onEvent(Event event) {
+                }
+            });
+            drasylNode.send(recipient, payload);
 
-        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, intraVmDiscovery, superPeerClient, server, new AtomicBoolean(false), startSequence, shutdownSequence, messageSink) {
-            @Override
-            public void onEvent(Event event) {
-            }
-        });
-        drasylNode.start().join();
-
-        verify(drasylNode).onEvent(new Event(EventType.EVENT_NODE_UP, Node.of(identity, server.getEndpoints())));
-    }
-
-    @Test
-    void shutdownShouldEmitDownAndNormalTerminationEventOnSuccessfulShutdown() {
-        when(identityManager.getIdentity()).thenReturn(identity);
-
-        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, intraVmDiscovery, superPeerClient, server, new AtomicBoolean(true), startSequence, shutdownSequence, messageSink) {
-            @Override
-            public void onEvent(Event event) {
-            }
-        });
-        drasylNode.shutdown().join();
-
-        verify(drasylNode).onEvent(new Event(EventType.EVENT_NODE_DOWN, Node.of(identity, server.getEndpoints())));
-        verify(drasylNode).onEvent(new Event(EventType.EVENT_NODE_NORMAL_TERMINATION, Node.of(identity, server.getEndpoints())));
-    }
-
-    @Test
-    void shutdownShouldReturnSameFutureIfShutdownHasAlreadyBeenTriggered() {
-        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, intraVmDiscovery, superPeerClient, server, new AtomicBoolean(false), startSequence, shutdownSequence, messageSink) {
-            @Override
-            public void onEvent(Event event) {
-            }
-        });
-        assertEquals(shutdownSequence, drasylNode.shutdown());
-    }
-
-    @Test
-    void sendShouldCallMessenger() throws DrasylException {
-        when(identityManager.getPublicKey()).thenReturn(identity1);
-
-        DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, intraVmDiscovery, superPeerClient, server, started, startSequence, shutdownSequence, messageSink) {
-            @Override
-            public void onEvent(Event event) {
-            }
-        });
-        drasylNode.send(recipient, payload);
-
-        verify(messenger).send(any());
+            verify(messenger).send(any());
+        }
     }
 }

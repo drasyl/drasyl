@@ -19,7 +19,7 @@
 package org.drasyl.crypto;
 
 import org.bouncycastle.util.encoders.Hex;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertArrayEquals;
@@ -28,26 +28,29 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @SuppressWarnings({ "java:S1607" })
 class HexUtilTest {
-    private byte[] byteArray;
+    private final byte[] byteArray = new byte[]{ 0x4f, 0x00, 0x10, 0x0d };
+    private final String byteString = "4f00100d";
 
-    @BeforeEach
-    void setUp() {
-        byteArray = new byte[]{ 0x4f, 0x00, 0x10, 0x0d };
+    @Nested
+    class ToString {
+        @Test
+        void shouldReturnCorrectString() {
+            assertEquals(Hex.toHexString(byteArray), byteString);
+        }
     }
 
-    @Test
-    void toStringAndFromStringShouldBeInverse() {
-        String byteAsString = HexUtil.toString(byteArray);
+    @Nested
+    class FromString {
+        @Test
+        void shouldReturnCorrectByteArray() {
+            assertArrayEquals(byteArray, HexUtil.fromString(byteString));
+            assertArrayEquals(byteArray, HexUtil.fromString(byteString.toLowerCase()));
+        }
 
-        assertEquals(Hex.toHexString(byteArray), byteAsString);
-        assertArrayEquals(byteArray, HexUtil.fromString(byteAsString));
-        assertArrayEquals(byteArray, HexUtil.fromString(byteAsString.toLowerCase()));
-        assertEquals("4f00100d", byteAsString);
-    }
-
-    @Test
-    void shouldThrowExceptionOnNotConformStringRepresentations() {
-        assertThrows(IllegalArgumentException.class, () -> HexUtil.fromString("A"));
-        assertThrows(IllegalArgumentException.class, () -> HexUtil.fromString("0Z"));
+        @Test
+        void shouldThrowExceptionOnNotConformStringRepresentations() {
+            assertThrows(IllegalArgumentException.class, () -> HexUtil.fromString("A"));
+            assertThrows(IllegalArgumentException.class, () -> HexUtil.fromString("0Z"));
+        }
     }
 }

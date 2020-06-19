@@ -31,36 +31,35 @@ import org.drasyl.peer.connection.message.PongMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class PingPongHandlerTest {
+    @Mock
     private ChannelHandlerContext ctx;
+    @Mock
     private IdleStateEvent evt;
-    private String correspondingId;
+    @Mock
     private ChannelFuture channelFuture;
-
-    @BeforeEach
-    void setUp() {
-        ctx = mock(ChannelHandlerContext.class);
-        evt = mock(IdleStateEvent.class);
-        channelFuture = mock(ChannelFuture.class);
-        correspondingId = "correspondingId";
-
-        when(evt.state()).thenReturn(IdleState.READER_IDLE);
-        when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
-    }
 
     @Test
     void userEventTriggeredShouldSendPingMessageIfThresholdNotReached() throws Exception {
+        when(evt.state()).thenReturn(IdleState.READER_IDLE);
+        when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
+
         PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
         handler.userEventTriggered(ctx, evt);
 
@@ -69,6 +68,9 @@ class PingPongHandlerTest {
 
     @Test
     void userEventTriggeredShouldSendExceptionMessageIfThresholdIsReached() throws Exception {
+        when(evt.state()).thenReturn(IdleState.READER_IDLE);
+        when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
+
         PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(2));
         handler.userEventTriggered(ctx, evt);
 
@@ -78,6 +80,9 @@ class PingPongHandlerTest {
 
     @Test
     void userEventTriggeredShouldSendCorrectNumberOfPingMessages() throws Exception {
+        when(evt.state()).thenReturn(IdleState.READER_IDLE);
+        when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
+
         PingPongHandler handler = new PingPongHandler((short) 2, new AtomicInteger(0));
 
         for (int i = 0; i < 3; i++) {
@@ -90,7 +95,9 @@ class PingPongHandlerTest {
 
     @Test
     void userEventTriggeredShouldIgnoreUnrelatedEvents() throws Exception {
+        when(evt.state()).thenReturn(IdleState.READER_IDLE);
         when(evt.state()).thenReturn(IdleState.WRITER_IDLE);
+
         PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
         handler.userEventTriggered(ctx, evt);
 
@@ -114,7 +121,7 @@ class PingPongHandlerTest {
         PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        channel.writeInbound(new PongMessage(correspondingId));
+        channel.writeInbound(new PongMessage("123"));
         channel.flush();
 
         assertEquals(0, handler.retries.get());

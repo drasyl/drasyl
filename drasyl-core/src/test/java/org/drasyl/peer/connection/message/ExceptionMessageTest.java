@@ -18,9 +18,9 @@
  */
 package org.drasyl.peer.connection.message;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import net.javacrumbs.jsonunit.core.Option;
+import org.drasyl.crypto.CryptoException;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
@@ -28,8 +28,6 @@ import java.io.IOException;
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_FORMAT;
 import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_INTERNAL;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -37,48 +35,61 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class ExceptionMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
-    @Test
-    void toJson() throws JsonProcessingException {
-        ExceptionMessage message = new ExceptionMessage(ERROR_INTERNAL);
+    @Nested
+    class JsonDeserialization {
+        @Test
+        void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
+            String json = "{\"@type\":\"" + ExceptionMessage.class.getSimpleName() + "\",\"id\":\"77175D7235920F3BA17341D7\"," +
+                    "\"error\":\"" + ERROR_INTERNAL.getDescription() + "\"}";
 
-        assertThatJson(JSON_MAPPER.writeValueAsString(message))
-                .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo("{\"@type\":\"" + message.getClass().getSimpleName() + "\",\"id\":\"" + message.getId() + "\",\"error\":\"Internal Error occurred.\"}");
-
-        // Ignore toString()
-        message.toString();
+            assertEquals(new ExceptionMessage(ERROR_INTERNAL), JSON_MAPPER.readValue(json, Message.class));
+        }
     }
 
-    @Test
-    void fromJson() throws IOException {
-        String json = "{\"@type\":\"" + ExceptionMessage.class.getSimpleName() + "\",\"id\":\"77175D7235920F3BA17341D7\"," +
-                "\"error\":\"Internal Error occurred.\"}";
+    @Nested
+    class JsonSerialization {
+        @Test
+        void shouldSerializeToCorrectJson() throws IOException {
+            ExceptionMessage message = new ExceptionMessage(ERROR_INTERNAL);
 
-        assertThat(JSON_MAPPER.readValue(json, Message.class), instanceOf(ExceptionMessage.class));
+            assertThatJson(JSON_MAPPER.writeValueAsString(message))
+                    .isObject()
+                    .containsEntry("@type", ExceptionMessage.class.getSimpleName())
+                    .containsKeys("id", "error");
+        }
     }
 
-    @Test
-    void nullTest() {
-        assertThrows(NullPointerException.class, () -> new ExceptionMessage(null), "ExceptionMessage requires an error");
+    @Nested
+    class Constructor {
+        @Test
+        void shouldRejectNullValues() {
+            assertThrows(NullPointerException.class, () -> new ExceptionMessage(null), "ExceptionMessage requires an error");
+        }
     }
 
-    @Test
-    void testEquals() {
-        ExceptionMessage message1 = new ExceptionMessage(ERROR_INTERNAL);
-        ExceptionMessage message2 = new ExceptionMessage(ERROR_INTERNAL);
-        ExceptionMessage message3 = new ExceptionMessage(ERROR_FORMAT);
+    @Nested
+    class Equals {
+        @Test
+        void notSameBecauseOfDifferentError() {
+            ExceptionMessage message1 = new ExceptionMessage(ERROR_INTERNAL);
+            ExceptionMessage message2 = new ExceptionMessage(ERROR_INTERNAL);
+            ExceptionMessage message3 = new ExceptionMessage(ERROR_FORMAT);
 
-        assertEquals(message1, message2);
-        assertNotEquals(message2, message3);
+            assertEquals(message1, message2);
+            assertNotEquals(message2, message3);
+        }
     }
 
-    @Test
-    void testHashCode() {
-        ExceptionMessage message1 = new ExceptionMessage(ERROR_INTERNAL);
-        ExceptionMessage message2 = new ExceptionMessage(ERROR_INTERNAL);
-        ExceptionMessage message3 = new ExceptionMessage(ERROR_FORMAT);
+    @Nested
+    class HashCode {
+        @Test
+        void notSameBecauseOfDifferentError() {
+            ExceptionMessage message1 = new ExceptionMessage(ERROR_INTERNAL);
+            ExceptionMessage message2 = new ExceptionMessage(ERROR_INTERNAL);
+            ExceptionMessage message3 = new ExceptionMessage(ERROR_FORMAT);
 
-        assertEquals(message1.hashCode(), message2.hashCode());
-        assertNotEquals(message2.hashCode(), message3.hashCode());
+            assertEquals(message1.hashCode(), message2.hashCode());
+            assertNotEquals(message2.hashCode(), message3.hashCode());
+        }
     }
 }
