@@ -18,7 +18,7 @@
  */
 package org.drasyl.event;
 
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.CompressedPublicKey;
 
 import java.util.Objects;
 
@@ -27,19 +27,19 @@ import java.util.Objects;
  * EventType#EVENT_PEER_DIRECT}, {@link EventType#EVENT_PEER_DIRECT}).
  */
 public class Peer {
-    private final Identity identity;
+    private final CompressedPublicKey publicKey;
 
-    public Peer(Identity identity) {
-        this.identity = identity;
+    public Peer(CompressedPublicKey publicKey) {
+        this.publicKey = publicKey;
     }
 
-    public Identity getIdentity() {
-        return identity;
+    public CompressedPublicKey getPublicKey() {
+        return publicKey;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(identity);
+        return Objects.hash(publicKey);
     }
 
     @Override
@@ -51,13 +51,13 @@ public class Peer {
             return false;
         }
         Peer peer = (Peer) o;
-        return Objects.equals(identity, peer.identity);
+        return Objects.equals(publicKey, peer.publicKey);
     }
 
     @Override
     public String toString() {
         return "Peer{" +
-                "identity=" + identity +
+                "identity=" + publicKey +
                 '}';
     }
 }

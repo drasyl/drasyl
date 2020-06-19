@@ -22,7 +22,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.messenger.MessageSink;
 import org.drasyl.messenger.Messenger;
@@ -38,13 +37,11 @@ import org.drasyl.peer.connection.message.WelcomeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URI;
 import java.time.Duration;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_WRONG_PUBLIC_KEY;
-import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE_IDENTITY;
+import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
 
 /**
  * This handler performs the handshake with the server and processes incoming messages during the
@@ -59,13 +56,12 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
     public static final String SUPER_PEER_CLIENT_CONNECTION_HANDLER = "superPeerClientConnectionHandler";
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClientConnectionHandler.class);
     private final CompressedPublicKey expectedPublicKey;
-    private final Identity ownIdentity;
+    private final CompressedPublicKey ownIdentity;
     private final PeersManager peersManager;
 
     public SuperPeerClientConnectionHandler(ProofOfWork proofOfWork,
                                             CompressedPublicKey expectedPublicKey,
-                                            Identity ownIdentity,
-                                            Set<URI> endpoints,
+                                            CompressedPublicKey ownPublicKey,
                                             Duration timeout,
                                             PeersManager peersManager,
                                             Messenger messenger) {
@@ -73,18 +69,18 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
                 timeout,
                 messenger,
                 new JoinMessage(proofOfWork,
-                        ownIdentity,
+                        ownPublicKey,
                         peersManager.getChildrenAndGrandchildren().keySet()
                 )
         );
         this.expectedPublicKey = expectedPublicKey;
-        this.ownIdentity = ownIdentity;
+        this.ownIdentity = ownPublicKey;
         this.peersManager = peersManager;
     }
 
     @SuppressWarnings({ "java:S107" })
     SuperPeerClientConnectionHandler(CompressedPublicKey expectedPublicKey,
-                                     Identity ownIdentity,
+                                     CompressedPublicKey ownIdentity,
                                      PeersManager peersManager,
                                      Messenger messenger,
                                      Duration timeout,
@@ -109,11 +105,11 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
 
     @Override
     protected ConnectionExceptionMessage.Error validateSessionOffer(WelcomeMessage offerMessage) {
-        CompressedPublicKey superPeerPublicKey = offerMessage.getIdentity().getPublicKey();
+        CompressedPublicKey superPeerPublicKey = offerMessage.getPublicKey();
         if (expectedPublicKey != null && !superPeerPublicKey.equals(expectedPublicKey)) {
             return CONNECTION_ERROR_WRONG_PUBLIC_KEY;
         }
-        else if (superPeerPublicKey.equals(ownIdentity.getPublicKey())) {
+        else if (superPeerPublicKey.equals(ownIdentity)) {
             return CONNECTION_ERROR_WRONG_PUBLIC_KEY;
         }
         else {
@@ -124,13 +120,13 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
     @Override
     protected void createConnection(ChannelHandlerContext ctx,
                                     WelcomeMessage offerMessage) {
-        Identity identity = offerMessage.getIdentity();
+        CompressedPublicKey identity = offerMessage.getPublicKey();
         Channel channel = ctx.channel();
         Path path = ctx::writeAndFlush; // We start at this point to save resources
         PeerInformation peerInformation = PeerInformation.of(offerMessage.getPeerInformation().getEndpoints(), path);
 
         // attach identity to channel (this information is required for validation signatures of incoming messages)
-        channel.attr(ATTRIBUTE_IDENTITY).set(identity);
+        channel.attr(ATTRIBUTE_PUBLIC_KEY).set(identity);
 
         // remove peer information on disconnect
         channel.closeFuture().addListener(future -> peersManager.unsetSuperPeerAndRemovePeerInformation(peerInformation));

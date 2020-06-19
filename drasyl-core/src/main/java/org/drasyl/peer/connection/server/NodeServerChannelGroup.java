@@ -27,7 +27,7 @@ import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.GlobalEventExecutor;
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.QuitMessage;
 
 import java.util.HashMap;
@@ -38,18 +38,19 @@ import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_
 
 /**
  * Special type of {@link ChannelGroup}, which has a lookup complexity of O(1) instead of O(n) for
- * lookups by {@link Identity}.
+ * lookups by {@link CompressedPublicKey}.
  */
 public class NodeServerChannelGroup extends DefaultChannelGroup {
-    public static final AttributeKey<Identity> ATTRIBUTE_IDENTITY = AttributeKey.valueOf("identity");
-    private final Map<Identity, ChannelId> identity2channelId;
+    public static final AttributeKey<CompressedPublicKey> ATTRIBUTE_PUBLIC_KEY = AttributeKey.valueOf("publicKey");
+    private final Map<CompressedPublicKey, ChannelId> identity2channelId;
     private final ChannelFutureListener remover = future -> remove(future.channel());
 
     public NodeServerChannelGroup() {
         this(new HashMap<>(), GlobalEventExecutor.INSTANCE);
     }
 
-    NodeServerChannelGroup(Map<Identity, ChannelId> identity2channelId, EventExecutor executor) {
+    NodeServerChannelGroup(Map<CompressedPublicKey, ChannelId> identity2channelId,
+                           EventExecutor executor) {
         super(executor);
         this.identity2channelId = identity2channelId;
     }
@@ -58,7 +59,7 @@ public class NodeServerChannelGroup extends DefaultChannelGroup {
         this(new HashMap<>(), executor);
     }
 
-    public ChannelFuture writeAndFlush(Identity identity, Object message) {
+    public ChannelFuture writeAndFlush(CompressedPublicKey identity, Object message) {
         Channel existingChannel = find(identity);
         if (existingChannel != null) {
             return existingChannel.writeAndFlush(message);
@@ -68,7 +69,7 @@ public class NodeServerChannelGroup extends DefaultChannelGroup {
         }
     }
 
-    public Channel find(Identity identity) {
+    public Channel find(CompressedPublicKey identity) {
         ChannelId existingChannelId = identity2channelId.get(identity);
         if (existingChannelId != null) {
             return find(existingChannelId);
@@ -80,16 +81,16 @@ public class NodeServerChannelGroup extends DefaultChannelGroup {
 
     @Override
     public boolean add(Channel channel) {
-        Identity identity = channel.attr(ATTRIBUTE_IDENTITY).get();
-        return add(identity, channel);
+        CompressedPublicKey publicKey = channel.attr(ATTRIBUTE_PUBLIC_KEY).get();
+        return add(publicKey, channel);
     }
 
     @Override
     public boolean remove(Object o) {
         if (o instanceof Channel) {
             Channel channel = (Channel) o;
-            Identity identity = channel.attr(ATTRIBUTE_IDENTITY).get();
-            identity2channelId.remove(identity);
+            CompressedPublicKey publicKey = channel.attr(ATTRIBUTE_PUBLIC_KEY).get();
+            identity2channelId.remove(publicKey);
         }
         else if (o instanceof ChannelId) {
             identity2channelId.values().remove(o);
@@ -108,7 +109,7 @@ public class NodeServerChannelGroup extends DefaultChannelGroup {
         return this == o;
     }
 
-    public boolean add(Identity identity, Channel channel) {
+    public boolean add(CompressedPublicKey identity, Channel channel) {
         requireNonNull(identity);
 
         // close any existing connections with the same peer...
@@ -118,7 +119,7 @@ public class NodeServerChannelGroup extends DefaultChannelGroup {
         }
 
         // ...before adding the new one
-        channel.attr(ATTRIBUTE_IDENTITY).set(identity);
+        channel.attr(ATTRIBUTE_PUBLIC_KEY).set(identity);
         boolean added = super.add(channel);
         identity2channelId.put(identity, channel.id());
 

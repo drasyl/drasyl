@@ -19,20 +19,19 @@
 package org.drasyl.peer.connection.handler;
 
 import io.netty.channel.embedded.EmbeddedChannel;
-import io.netty.util.AttributeKey;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.Signature;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.PrivateIdentity;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.SignedMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -43,13 +42,11 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 class SignatureHandlerTest {
-    private PrivateIdentity identity;
-    private AttributeKey<Identity> attributeKey;
+    private Identity identity;
 
     @BeforeEach
     void setUp() throws CryptoException {
-        attributeKey = AttributeKey.valueOf("identity");
-        identity = PrivateIdentity.of(ProofOfWork.of(16425882), "030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3", "05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34");
+        identity = Identity.of(ProofOfWork.of(16425882), "030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3", "05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34");
     }
 
     @Test
@@ -69,7 +66,7 @@ class SignatureHandlerTest {
     @Test
     void shouldThrowExceptionIfKeyCantBeRead() throws CryptoException {
         CompressedPrivateKey mockedPrivateKey = mock(CompressedPrivateKey.class);
-        PrivateIdentity mockedIdentity = mock(PrivateIdentity.class);
+        Identity mockedIdentity = mock(Identity.class);
         when(mockedIdentity.getPublicKey()).thenReturn(identity.getPublicKey());
         when(mockedIdentity.getPrivateKey()).thenReturn(mockedPrivateKey);
         when(mockedPrivateKey.toUncompressedKey()).thenThrow(CryptoException.class);
@@ -86,13 +83,13 @@ class SignatureHandlerTest {
         SignatureHandler handler = new SignatureHandler(identity);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        Identity identity2 = Identity.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458");
-        channel.attr(attributeKey).set(identity2);
+        CompressedPublicKey identity2 = CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458");
+        channel.attr(ATTRIBUTE_PUBLIC_KEY).set(identity2);
 
         QuitMessage message = new QuitMessage();
-        SignedMessage signedMessage = new SignedMessage(message, identity2.getPublicKey());
+        SignedMessage signedMessage = new SignedMessage(message, identity2);
 
-        PrivateIdentity privateIdentity2 = PrivateIdentity.of(ProofOfWork.of(36558946), "0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458", "00ea42e42240e0f6e0f9bee7058118aa149ce72de25cde574523ff9199ec2660");
+        Identity privateIdentity2 = Identity.of(ProofOfWork.of(36558946), "0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458", "00ea42e42240e0f6e0f9bee7058118aa149ce72de25cde574523ff9199ec2660");
         Crypto.sign(privateIdentity2.getPrivateKey().toUncompressedKey(), signedMessage);
 
         assertNotNull(signedMessage.getKid());
@@ -109,11 +106,11 @@ class SignatureHandlerTest {
         SignatureHandler handler = new SignatureHandler(identity);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        Identity identity2 = Identity.of("0248b7221b49775dcae85b02fdc9df41fbed6236c72c5c0356b59961190d3f8a13");
-        channel.attr(attributeKey).set(identity2);
+        CompressedPublicKey identity2 = CompressedPublicKey.of("0248b7221b49775dcae85b02fdc9df41fbed6236c72c5c0356b59961190d3f8a13");
+        channel.attr(ATTRIBUTE_PUBLIC_KEY).set(identity2);
 
         QuitMessage message = new QuitMessage();
-        SignedMessage signedMessage = new SignedMessage(message, identity2.getPublicKey());
+        SignedMessage signedMessage = new SignedMessage(message, identity2);
         Crypto.sign(identity.getPrivateKey().toUncompressedKey(), signedMessage);
 
         assertNotNull(signedMessage.getKid());
@@ -150,14 +147,14 @@ class SignatureHandlerTest {
     void shouldNotPassthroughsMessageWhenKeysNotIdenticallyToChannelKey() throws CryptoException {
         SignatureHandler handler = new SignatureHandler(identity);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
-        channel.attr(attributeKey).set(identity.toNonPrivate());
+        channel.attr(ATTRIBUTE_PUBLIC_KEY).set(identity.getPublicKey());
 
-        Identity identity2 = Identity.of("026786e52addf59f0e40d5f6a4c1d2873afc04a6460a85b0becd04eb86f1e7116d");
+        CompressedPublicKey identity2 = CompressedPublicKey.of("026786e52addf59f0e40d5f6a4c1d2873afc04a6460a85b0becd04eb86f1e7116d");
 
         QuitMessage message = new QuitMessage();
-        SignedMessage signedMessage = new SignedMessage(message, identity2.getPublicKey());
+        SignedMessage signedMessage = new SignedMessage(message, identity2);
 
-        PrivateIdentity privateIdentity2 = PrivateIdentity.of(ProofOfWork.of(2096201), "026786e52addf59f0e40d5f6a4c1d2873afc04a6460a85b0becd04eb86f1e7116d", "02c43ebf22f27add698de3d5a534d4df88616b5acf164850aa56b7f4e8dbfbe2");
+        Identity privateIdentity2 = Identity.of(ProofOfWork.of(2096201), "026786e52addf59f0e40d5f6a4c1d2873afc04a6460a85b0becd04eb86f1e7116d", "02c43ebf22f27add698de3d5a534d4df88616b5acf164850aa56b7f4e8dbfbe2");
         Crypto.sign(privateIdentity2.getPrivateKey().toUncompressedKey(), signedMessage);
 
         assertNotNull(signedMessage.getKid());

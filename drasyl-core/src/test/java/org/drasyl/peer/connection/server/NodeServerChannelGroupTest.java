@@ -24,7 +24,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelId;
 import io.netty.util.Attribute;
 import io.netty.util.concurrent.EventExecutor;
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -47,7 +47,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class NodeServerChannelGroupTest {
     @Mock
-    private Map<Identity, ChannelId> identity2channelId;
+    private Map<CompressedPublicKey, ChannelId> identity2channelId;
     @Mock
     private EventExecutor executor;
     @InjectMocks
@@ -56,7 +56,7 @@ class NodeServerChannelGroupTest {
     @Nested
     class WriteAndFlush {
         @Mock
-        private Identity identity;
+        private CompressedPublicKey identity;
         @Mock
         private Object message;
         @Mock
@@ -90,7 +90,7 @@ class NodeServerChannelGroupTest {
     @Nested
     class Find {
         @Mock
-        private Identity identity;
+        private CompressedPublicKey identity;
         @Mock
         private Channel channel;
         @Mock
@@ -117,7 +117,7 @@ class NodeServerChannelGroupTest {
         @Mock
         private Channel channel;
         @Mock
-        private Identity identity;
+        private CompressedPublicKey identity;
         @Mock
         private ChannelId channelId;
         @Mock
@@ -143,7 +143,7 @@ class NodeServerChannelGroupTest {
         @Mock
         private Channel channel;
         @Mock
-        private Identity identity;
+        private CompressedPublicKey identity;
         @Mock
         private ChannelId channelId;
         @Mock
@@ -199,7 +199,7 @@ class NodeServerChannelGroupTest {
         @Mock
         private Channel channel;
         @Mock
-        private Identity identity;
+        private CompressedPublicKey identity;
         @Mock
         private ChannelId channelId;
         @Mock

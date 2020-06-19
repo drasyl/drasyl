@@ -27,10 +27,11 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.sentry.Sentry;
 import io.sentry.event.User;
+import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.EventType;
 import org.drasyl.event.Node;
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.messenger.MessageSink;
@@ -136,14 +137,14 @@ public abstract class DrasylNode {
             this.identityManager = new IdentityManager(this.config);
             this.peersManager = new PeersManager(this::onEvent);
             this.messenger = new Messenger();
-            this.intraVmDiscovery = new IntraVmDiscovery(identityManager::getNonPrivateIdentity, messenger, peersManager, this::onEvent);
+            this.intraVmDiscovery = new IntraVmDiscovery(identityManager::getPublicKey, messenger, peersManager, this::onEvent);
             this.superPeerClient = new SuperPeerClient(this.config, identityManager, peersManager, messenger, DrasylNode.WORKER_GROUP, this::onEvent);
             this.server = new NodeServer(identityManager, messenger, peersManager, superPeerClient.connectionEstablished(), this.config, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP);
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = new CompletableFuture<>();
             this.loopbackMessageSink = (identity, message) -> {
-                if (!identityManager.getNonPrivateIdentity().equals(identity)) {
+                if (!identityManager.getPublicKey().equals(identity)) {
                     throw new NoPathToIdentityException(identity);
                 }
 
@@ -155,9 +156,9 @@ public abstract class DrasylNode {
                     WhoisMessage whoisMessage = (WhoisMessage) message;
 
                     if (!server.getEndpoints().isEmpty()) {
-                        Identity myIdentity = identityManager.getNonPrivateIdentity();
+                        CompressedPublicKey myPublicKey = identityManager.getPublicKey();
                         PeerInformation myPeerInformation = PeerInformation.of(server.getEndpoints());
-                        IdentityMessage identityMessage = new IdentityMessage(whoisMessage.getRequester(), myIdentity, myPeerInformation, whoisMessage.getId());
+                        IdentityMessage identityMessage = new IdentityMessage(whoisMessage.getRequester(), myPublicKey, myPeerInformation, whoisMessage.getId());
 
                         try {
                             messenger.send(identityMessage);
@@ -169,7 +170,7 @@ public abstract class DrasylNode {
                 }
                 else if (message instanceof IdentityMessage) {
                     IdentityMessage identityMessage = (IdentityMessage) message;
-                    peersManager.addPeerInformation(identityMessage.getIdentity(), identityMessage.getPeerInformation());
+                    peersManager.addPeerInformation(identityMessage.getPublicKey(), identityMessage.getPeerInformation());
                 }
                 else {
                     throw new IllegalArgumentException("DrasylNode.loopbackMessageSink is not able to handle messages of type " + message.getClass().getSimpleName());
@@ -225,8 +226,13 @@ public abstract class DrasylNode {
         this.loopbackMessageSink = loopbackMessageSink;
     }
 
-    public synchronized void send(String recipient, byte[] payload) throws MessengerException {
-        send(Identity.of(recipient), payload);
+    public synchronized void send(String recipient, byte[] payload) throws DrasylException {
+        try {
+            send(CompressedPublicKey.of(recipient), payload);
+        }
+        catch (CryptoException e) {
+            throw new DrasylException("Unable to read public key: " + e.getMessage());
+        }
     }
 
     /**
@@ -239,8 +245,9 @@ public abstract class DrasylNode {
      * @param payload   the payload of a message
      * @throws DrasylException if an error occurs during the processing
      */
-    public synchronized void send(Identity recipient, byte[] payload) throws MessengerException {
-        messenger.send(new ApplicationMessage(identityManager.getNonPrivateIdentity(), recipient, payload));
+    public synchronized void send(CompressedPublicKey recipient,
+                                  byte[] payload) throws MessengerException {
+        messenger.send(new ApplicationMessage(identityManager.getPublicKey(), recipient, payload));
     }
 
     /**
@@ -253,8 +260,8 @@ public abstract class DrasylNode {
      * @param payload   the payload of a message
      * @throws DrasylException if an error occurs during the processing
      */
-    public synchronized void send(String recipient, String payload) throws MessengerException {
-        send(Identity.of(recipient), payload);
+    public synchronized void send(String recipient, String payload) throws DrasylException {
+        send(recipient, payload.getBytes());
     }
 
     /**
@@ -267,7 +274,8 @@ public abstract class DrasylNode {
      * @param payload   the payload of a message
      * @throws DrasylException if an error occurs during the processing
      */
-    public synchronized void send(Identity recipient, String payload) throws MessengerException {
+    public synchronized void send(CompressedPublicKey recipient,
+                                  String payload) throws MessengerException {
         send(recipient, payload.getBytes());
     }
 
@@ -429,7 +437,7 @@ public abstract class DrasylNode {
         try {
             identityManager.loadOrCreateIdentity();
             LOG.debug("Using Identity '{}'", identityManager.getIdentity());
-            Sentry.getContext().setUser(new User(identityManager.getNonPrivateIdentity().toString(), null, null, null));
+            Sentry.getContext().setUser(new User(identityManager.getPublicKey().toString(), null, null, null));
         }
         catch (IdentityManagerException e) {
             throw new CompletionException(e);

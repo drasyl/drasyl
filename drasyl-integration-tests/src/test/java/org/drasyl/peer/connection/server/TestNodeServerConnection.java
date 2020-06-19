@@ -34,7 +34,6 @@ import org.drasyl.crypto.Crypto;
 import org.drasyl.identity.CompressedKeyPair;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.PrivateIdentity;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
@@ -58,7 +57,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.awaitility.Awaitility.await;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
-import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE_IDENTITY;
+import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
 
 /**
  * A {@link TestNodeServerConnection} object represents a connection to another peer, e.g. local or
@@ -75,7 +74,7 @@ public class TestNodeServerConnection {
     protected final Subject<Message> receivedMessages;
     protected final ConcurrentHashMap<String, CompletableFuture<ResponseMessage<?>>> futures;
     protected final CompressedKeyPair keyPair;
-    protected PrivateIdentity identity;
+    protected Identity identity;
     protected AtomicBoolean isClosed;
     protected CompletableFuture<Boolean> closedCompletable;
 
@@ -85,13 +84,13 @@ public class TestNodeServerConnection {
      * @param channel  channel of the connection
      * @param identity the identity of this {@link TestNodeServerConnection}
      */
-    public TestNodeServerConnection(Channel channel, PrivateIdentity identity) {
+    public TestNodeServerConnection(Channel channel, Identity identity) {
         this(identity, channel, "JUnit-Test", new AtomicBoolean(false), new CompletableFuture<>());
 
         this.channel.closeFuture().addListener((ChannelFutureListener) this::onChannelClose);
     }
 
-    protected TestNodeServerConnection(PrivateIdentity identity,
+    protected TestNodeServerConnection(Identity identity,
                                        Channel channel,
                                        String userAgent,
                                        AtomicBoolean isClosed,
@@ -144,10 +143,12 @@ public class TestNodeServerConnection {
     }
 
     /**
-     * Returns the identity of the peer.
+     * Creates a new session to the given server.
      */
-    public PrivateIdentity getIdentity() {
-        return identity;
+    public static TestNodeServerConnection clientSession(NodeServer server,
+                                                         Identity identity) throws ExecutionException, InterruptedException {
+        URI serverEndpoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
+        return TestNodeServerConnection.clientSession(serverEndpoint, identity, true, server.workerGroup);
     }
 
     public void send(Message message) {
@@ -162,13 +163,6 @@ public class TestNodeServerConnection {
 
     public String getUserAgent() {
         return this.userAgent;
-    }
-
-    /**
-     * Returns the address of the peer.
-     */
-    public Identity getAddress() {
-        return identity.toNonPrivate();
     }
 
     public CompletableFuture<Boolean> isClosed() {
@@ -225,19 +219,10 @@ public class TestNodeServerConnection {
     }
 
     /**
-     * Creates a new session to the given server.
-     */
-    public static TestNodeServerConnection clientSession(NodeServer server,
-                                                         PrivateIdentity identity) throws ExecutionException, InterruptedException {
-        URI serverEndpoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
-        return TestNodeServerConnection.clientSession(serverEndpoint, identity, true, server.workerGroup);
-    }
-
-    /**
      * Creates a new session.
      */
     public static TestNodeServerConnection clientSession(URI targetSystem,
-                                                         PrivateIdentity identity,
+                                                         Identity identity,
                                                          boolean pingPong,
                                                          EventLoopGroup eventLoopGroup) throws InterruptedException,
             ExecutionException {
@@ -261,7 +246,7 @@ public class TestNodeServerConnection {
                     protected void channelRead0(ChannelHandlerContext ctx,
                                                 Message msg) {
                         if (msg instanceof WelcomeMessage) {
-                            ctx.channel().attr(ATTRIBUTE_IDENTITY).set(((WelcomeMessage) msg).getIdentity());
+                            ctx.channel().attr(ATTRIBUTE_PUBLIC_KEY).set(((WelcomeMessage) msg).getPublicKey());
                         }
                         session.receiveMessage(msg);
                     }
@@ -274,6 +259,20 @@ public class TestNodeServerConnection {
         factory.build();
         factory.getChannelReadyFuture().get();
         return future.get();
+    }
+
+    /**
+     * Creates a new session with the given sessionUID and joins the given server.
+     */
+    public static TestNodeServerConnection clientSessionAfterJoin(NodeServer server,
+                                                                  Identity identity) throws ExecutionException,
+            InterruptedException {
+        TestNodeServerConnection session = TestNodeServerConnection.clientSession(server, identity, true);
+        ResponseMessage<?> responseMessage = session.sendRequest(new JoinMessage(session.getIdentity().getPoW(), session.getIdentity().getPublicKey(), Set.of())).get();
+        session.send(new StatusMessage(STATUS_OK, responseMessage.getId()));
+        await().until(() -> server.getChannelGroup().find(session.getIdentity().getPublicKey()) != null);
+
+        return session;
     }
 
     /**
@@ -307,24 +306,10 @@ public class TestNodeServerConnection {
     }
 
     /**
-     * Creates a new session with the given sessionUID and joins the given server.
-     */
-    public static TestNodeServerConnection clientSessionAfterJoin(NodeServer server,
-                                                                  PrivateIdentity identity) throws ExecutionException,
-            InterruptedException {
-        TestNodeServerConnection session = TestNodeServerConnection.clientSession(server, identity, true);
-        ResponseMessage<?> responseMessage = session.sendRequest(new JoinMessage(session.getIdentity().getPoW(), session.getIdentity().toNonPrivate(), Set.of())).get();
-        session.send(new StatusMessage(STATUS_OK, responseMessage.getId()));
-        await().until(() -> server.getChannelGroup().find(session.getIdentity().toNonPrivate()) != null);
-
-        return session;
-    }
-
-    /**
      * Creates a new session to the given server.
      */
     public static TestNodeServerConnection clientSession(NodeServer server,
-                                                         PrivateIdentity identity,
+                                                         Identity identity,
                                                          boolean pingPong) throws ExecutionException,
             InterruptedException {
         URI serverEndpoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
@@ -334,10 +319,17 @@ public class TestNodeServerConnection {
     }
 
     /**
+     * Returns the identity of the peer.
+     */
+    public Identity getIdentity() {
+        return identity;
+    }
+
+    /**
      * Creates a new session.
      */
     public static TestNodeServerConnection clientSession(URI targetSystem,
-                                                         PrivateIdentity identity,
+                                                         Identity identity,
                                                          boolean pingPong) throws ExecutionException, InterruptedException {
         return TestNodeServerConnection.clientSession(targetSystem, identity, pingPong, null);
     }

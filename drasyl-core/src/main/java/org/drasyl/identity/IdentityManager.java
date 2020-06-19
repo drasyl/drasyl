@@ -44,7 +44,7 @@ public class IdentityManager {
     private static final Logger LOG = LoggerFactory.getLogger(IdentityManager.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private final DrasylNodeConfig config;
-    private PrivateIdentity identity;
+    private Identity identity;
 
     /**
      * Manages the identity at the specified file path. If there is no identity at this file path
@@ -54,7 +54,7 @@ public class IdentityManager {
         this(config, null);
     }
 
-    IdentityManager(DrasylNodeConfig config, PrivateIdentity identity) {
+    IdentityManager(DrasylNodeConfig config, Identity identity) {
         this.config = config;
         this.identity = identity;
     }
@@ -72,7 +72,7 @@ public class IdentityManager {
         if (config.getProofOfWork() != null && config.getIdentityPublicKey() != null && config.getIdentityPrivateKey() != null) {
             LOG.debug("Load identity specified in config");
             try {
-                this.identity = PrivateIdentity.of(config.getProofOfWork(), config.getIdentityPublicKey(), config.getIdentityPrivateKey());
+                this.identity = Identity.of(config.getProofOfWork(), config.getIdentityPublicKey(), config.getIdentityPrivateKey());
             }
             catch (IllegalArgumentException e) {
                 throw new IdentityManagerException("Identity read from configuration seems invalid: " + e.getMessage());
@@ -87,7 +87,7 @@ public class IdentityManager {
             }
             else {
                 LOG.debug("No Identity present. Generate a new one and write to file '{}'.", path);
-                PrivateIdentity myIdentity = generateIdentity();
+                Identity myIdentity = generateIdentity();
                 writeIdentityFile(path, myIdentity);
                 this.identity = myIdentity;
             }
@@ -113,9 +113,9 @@ public class IdentityManager {
      * @return
      * @throws IdentityManagerException
      */
-    private static PrivateIdentity readIdentityFile(Path path) throws IdentityManagerException {
+    private static Identity readIdentityFile(Path path) throws IdentityManagerException {
         try {
-            return OBJECT_MAPPER.readValue(path.toFile(), PrivateIdentity.class);
+            return OBJECT_MAPPER.readValue(path.toFile(), Identity.class);
         }
         catch (JsonProcessingException e) {
             throw new IdentityManagerException("Unable to load identity from file '" + path + "': " + e.getMessage());
@@ -131,13 +131,13 @@ public class IdentityManager {
      * @return
      * @throws IdentityManagerException
      */
-    static PrivateIdentity generateIdentity() throws IdentityManagerException {
+    static Identity generateIdentity() throws IdentityManagerException {
         try {
             KeyPair newKeyPair = Crypto.generateKeys();
             CompressedPublicKey publicKey = CompressedPublicKey.of(newKeyPair.getPublic());
             CompressedPrivateKey privateKey = CompressedPrivateKey.of(newKeyPair.getPrivate());
             ProofOfWork proofOfWork = ProofOfWork.generateProofOfWork(publicKey, POW_DIFFICULTY);
-            return PrivateIdentity.of(proofOfWork, publicKey, privateKey);
+            return Identity.of(proofOfWork, publicKey, privateKey);
         }
         catch (CryptoException e) {
             throw new IdentityManagerException("Unable to generate new identity: " + e.getMessage());
@@ -153,7 +153,7 @@ public class IdentityManager {
      * @throws IdentityManagerException
      */
     private static void writeIdentityFile(Path path,
-                                          PrivateIdentity identity) throws IdentityManagerException {
+                                          Identity identity) throws IdentityManagerException {
         File file = path.toFile();
 
         if (Files.isDirectory(path) || (file.getParentFile() != null && !file.getParentFile().exists())) {
@@ -187,12 +187,8 @@ public class IdentityManager {
     /**
      * @return returns the node identity.
      */
-    public PrivateIdentity getIdentity() {
+    public Identity getIdentity() {
         return requireNonNull(identity);
-    }
-
-    public Identity getNonPrivateIdentity() {
-        return identity.toNonPrivate();
     }
 
     /**

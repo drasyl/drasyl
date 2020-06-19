@@ -55,7 +55,7 @@ class IdentityManagerTest {
         IdentityManager identityManager = new IdentityManager(config);
         identityManager.loadOrCreateIdentity();
 
-        assertEquals(Identity.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), identityManager.getIdentity().toNonPrivate());
+        assertEquals(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), identityManager.getPublicKey());
     }
 
     @Test
@@ -74,7 +74,7 @@ class IdentityManagerTest {
         identityManager.loadOrCreateIdentity();
 
         assertEquals(
-                PrivateIdentity.of(ProofOfWork.of(15405649),
+                Identity.of(ProofOfWork.of(15405649),
                         "0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9",
                         "0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d"
                 ),

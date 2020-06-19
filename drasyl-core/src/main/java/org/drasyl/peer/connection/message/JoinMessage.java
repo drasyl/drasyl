@@ -19,7 +19,7 @@
 package org.drasyl.peer.connection.message;
 
 import com.google.common.collect.ImmutableSet;
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 
 import java.util.Objects;
@@ -32,12 +32,12 @@ import static java.util.Objects.requireNonNull;
  */
 public class JoinMessage extends AbstractMessageWithUserAgent implements RequestMessage {
     private final ProofOfWork proofOfWork;
-    private final Identity identity;
-    private final Set<Identity> childrenAndGrandchildren;
+    private final CompressedPublicKey publicKey;
+    private final Set<CompressedPublicKey> childrenAndGrandchildren;
 
     protected JoinMessage() {
         proofOfWork = null;
-        identity = null;
+        publicKey = null;
         childrenAndGrandchildren = null;
     }
 
@@ -45,23 +45,23 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
      * Creates a new join message.
      *
      * @param proofOfWork              the proof of work
-     * @param identity                 the identity of the joining node
+     * @param publicKey                the identity of the joining node
      * @param childrenAndGrandchildren the (grand-)children of this node
      */
     public JoinMessage(ProofOfWork proofOfWork,
-                       Identity identity,
-                       Set<Identity> childrenAndGrandchildren) {
+                       CompressedPublicKey publicKey,
+                       Set<CompressedPublicKey> childrenAndGrandchildren) {
         this.proofOfWork = requireNonNull(proofOfWork);
-        this.identity = requireNonNull(identity);
+        this.publicKey = requireNonNull(publicKey);
         this.childrenAndGrandchildren = requireNonNull(childrenAndGrandchildren);
     }
 
-    public Set<Identity> getChildrenAndGrandchildren() {
+    public Set<CompressedPublicKey> getChildrenAndGrandchildren() {
         return ImmutableSet.copyOf(this.childrenAndGrandchildren);
     }
 
-    public Identity getIdentity() {
-        return this.identity;
+    public CompressedPublicKey getPublicKey() {
+        return this.publicKey;
     }
 
     public ProofOfWork getProofOfWork() {
@@ -70,7 +70,7 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), identity, proofOfWork);
+        return Objects.hash(super.hashCode(), publicKey, proofOfWork);
     }
 
     @Override
@@ -85,7 +85,7 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
             return false;
         }
         JoinMessage join = (JoinMessage) o;
-        return Objects.equals(identity, join.identity) &&
+        return Objects.equals(publicKey, join.publicKey) &&
                 Objects.equals(childrenAndGrandchildren, join.childrenAndGrandchildren) &&
                 Objects.equals(proofOfWork, join.proofOfWork);
     }
@@ -95,7 +95,7 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
         return "JoinMessage{" +
                 "childrenAndGrandchildren=" + childrenAndGrandchildren +
                 ", id='" + id + '\'' +
-                ", identity=" + identity +
+                ", identity=" + publicKey +
                 ", proofOfWork=" + proofOfWork +
                 '}';
     }

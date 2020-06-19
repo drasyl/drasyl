@@ -38,8 +38,9 @@ import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
+import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.util.Pair;
 
 import java.io.IOException;
@@ -57,8 +58,8 @@ public class ChatGUI extends Application {
     private TextField recipientIDInput;
     private TextField chatField;
     private TextArea txtArea;
-    private Identity recipient;
-    private Identity myID;
+    private CompressedPublicKey recipient;
+    private CompressedPublicKey myID;
     private String username;
     private Stage stage;
     private DrasylNode node;
@@ -85,8 +86,8 @@ public class ChatGUI extends Application {
                             if (!online.isDone()) {
                                 online.complete(null);
                             }
-                            myID = Identity.of(event.getNode().getIdentity().getPublicKey());
-                            txtArea.appendText("[~System~]: The node is online. Your address is: " + myID.getPublicKey().getCompressedKey() + "\n");
+                            myID = event.getNode().getIdentity().getPublicKey();
+                            txtArea.appendText("[~System~]: The node is online. Your address is: " + myID + "\n");
                             break;
                         case EVENT_NODE_OFFLINE:
                             txtArea.appendText("[~System~]: The node is offline. No messages can be sent at the moment. Wait until node comes back online.\n");
@@ -145,7 +146,7 @@ public class ChatGUI extends Application {
         return new Scene(vBox, 800, 600);
     }
 
-    private void parseMessage(Pair<Identity, byte[]> payload) {
+    private void parseMessage(Pair<CompressedPublicKey, byte[]> payload) {
         try {
             Message msg = jackson.readValue(new String(payload.second()), Message.class);
 
@@ -165,7 +166,7 @@ public class ChatGUI extends Application {
 
         Label myIDLabel = new Label("Your ID is: ");
         GridPane.setConstraints(myIDLabel, 0, 0);
-        TextField myIDTextField = new TextField(myID.getPublicKey().getCompressedKey());
+        TextField myIDTextField = new TextField(myID.toString());
         myIDTextField.setEditable(false);
         GridPane.setConstraints(myIDTextField, 1, 0);
 
@@ -202,13 +203,19 @@ public class ChatGUI extends Application {
         }
     }
 
+    @SuppressWarnings({ "java:S112" })
     private void initAction(ActionEvent actionEvent) {
         if (validateInput(usernameInput, s -> !s.isEmpty())
 //                && validateInput(recipientIDInput, Address::isValid)
         ) {
             username = usernameInput.getText();
             stage.setTitle("[" + username + "] Drasyl Chat");
-            recipient = Identity.of(recipientIDInput.getText());
+            try {
+                recipient = CompressedPublicKey.of(recipientIDInput.getText());
+            }
+            catch (CryptoException e) {
+                throw new RuntimeException(e);
+            }
 
             stage.setScene(chatScene);
         }

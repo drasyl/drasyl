@@ -19,23 +19,23 @@
 package org.drasyl.peer.connection.message;
 
 import com.google.common.collect.ImmutableSet;
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.CompressedPublicKey;
 
 import java.util.Objects;
 import java.util.Set;
 
 public abstract class AbstractGrandchildMessage extends AbstractMessage implements RequestMessage {
-    protected Set<Identity> grandchildren;
+    protected Set<CompressedPublicKey> grandchildren;
 
     protected AbstractGrandchildMessage() {
         grandchildren = null;
     }
 
-    public AbstractGrandchildMessage(Set<Identity> grandchildren) {
+    public AbstractGrandchildMessage(Set<CompressedPublicKey> grandchildren) {
         this.grandchildren = grandchildren;
     }
 
-    public Set<Identity> getGrandchildren() {
+    public Set<CompressedPublicKey> getGrandchildren() {
         return ImmutableSet.copyOf(grandchildren);
     }
 

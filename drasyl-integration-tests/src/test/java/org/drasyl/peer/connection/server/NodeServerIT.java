@@ -31,9 +31,9 @@ import org.drasyl.DrasylNode;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
-import org.drasyl.identity.PrivateIdentity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
@@ -107,8 +107,8 @@ class NodeServerIT {
     private Messenger messenger;
     private PeersManager peersManager;
     private Observable<Boolean> superPeerConnected;
-    private PrivateIdentity identitySession1;
-    private PrivateIdentity identitySession2;
+    private Identity identitySession1;
+    private Identity identitySession2;
 
     @BeforeEach
     void setup(TestInfo info) throws DrasylException, CryptoException {
@@ -116,8 +116,8 @@ class NodeServerIT {
 
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
 
-        identitySession1 = PrivateIdentity.of(169092, "030a59784f88c74dcd64258387f9126739c3aeb7965f36bb501ff01f5036b3d72b", "0f1e188d5e3b98daf2266d7916d2e1179ae6209faa7477a2a66d4bb61dab4399");
-        identitySession2 = PrivateIdentity.of(26778671, "0236fde6a49564a0eaa2a7d6c8f73b97062d5feb36160398c08a5b73f646aa5fe5", "093d1ee70518508cac18eaf90d312f768c14d43de9bfd2618a2794d8df392da0");
+        identitySession1 = Identity.of(169092, "030a59784f88c74dcd64258387f9126739c3aeb7965f36bb501ff01f5036b3d72b", "0f1e188d5e3b98daf2266d7916d2e1179ae6209faa7477a2a66d4bb61dab4399");
+        identitySession2 = Identity.of(26778671, "0236fde6a49564a0eaa2a7d6c8f73b97062d5feb36160398c08a5b73f646aa5fe5", "093d1ee70518508cac18eaf90d312f768c14d43de9bfd2618a2794d8df392da0");
 
         config = new DrasylNodeConfig(ConfigFactory.load("configs/NodeServerIT.conf"));
         DrasylNode.setLogLevel(config.getLoglevel());
@@ -148,7 +148,7 @@ class NodeServerIT {
         TestNodeServerConnection session = clientSession(server, identitySession1);
 
         // send message
-        RequestMessage request = new JoinMessage(session.getIdentity().getPoW(), session.getIdentity().toNonPrivate(), Set.of());
+        RequestMessage request = new JoinMessage(session.getIdentity().getPoW(), session.getIdentity().getPublicKey(), Set.of());
         CompletableFuture<ResponseMessage<?>> send = session.sendRequest(request);
 
         // verify response
@@ -165,10 +165,10 @@ class NodeServerIT {
         TestNodeServerConnection session2 = clientSession(server, identitySession2);
 
         // send messages
-        RequestMessage request1 = new JoinMessage(session1.getIdentity().getPoW(), session1.getIdentity().toNonPrivate(), Set.of());
+        RequestMessage request1 = new JoinMessage(session1.getIdentity().getPoW(), session1.getIdentity().getPublicKey(), Set.of());
         CompletableFuture<ResponseMessage<?>> send1 = session1.sendRequest(request1);
 
-        RequestMessage request2 = new JoinMessage(session2.getIdentity().getPoW(), session2.getIdentity().toNonPrivate(), Set.of());
+        RequestMessage request2 = new JoinMessage(session2.getIdentity().getPoW(), session2.getIdentity().getPublicKey(), Set.of());
         CompletableFuture<ResponseMessage<?>> send2 = session2.sendRequest(request2);
 
         // verify responses
@@ -195,7 +195,7 @@ class NodeServerIT {
         };
 
         // send message
-        RequestMessage request = new ApplicationMessage(session1.getAddress(), session2.getAddress(), payload);
+        RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session2.getPublicKey(), payload);
         session1.send(request);
         receivedMessages2.awaitCount(1);
         receivedMessages2.assertValue(val -> {
@@ -204,7 +204,7 @@ class NodeServerIT {
             }
             ApplicationMessage msg = (ApplicationMessage) val;
 
-            return Objects.equals(session1.getAddress(), msg.getSender()) && Objects.equals(session2.getAddress(), msg.getRecipient()) && Arrays.equals(payload, msg.getPayload());
+            return Objects.equals(session1.getPublicKey(), msg.getSender()) && Objects.equals(session2.getPublicKey(), msg.getRecipient()) && Arrays.equals(payload, msg.getPayload());
         });
     }
 
@@ -271,12 +271,12 @@ class NodeServerIT {
         TestObserver<Message> receivedMessages2 = session2.receivedMessages().test();
 
         // send messages
-        RequestMessage request1 = new JoinMessage(session1.getIdentity().getPoW(), session1.getIdentity().toNonPrivate(), Set.of());
+        RequestMessage request1 = new JoinMessage(session1.getIdentity().getPoW(), session1.getIdentity().getPublicKey(), Set.of());
         ResponseMessage<?> response1 = session1.sendRequest(request1).get();
         session1.send(new StatusMessage(STATUS_OK, response1.getId()));
-        await().until(() -> server.getChannelGroup().find(session1.getIdentity().toNonPrivate()) != null);
+        await().until(() -> server.getChannelGroup().find(session1.getIdentity().getPublicKey()) != null);
 
-        RequestMessage request2 = new JoinMessage(session1.getIdentity().getPoW(), session1.getIdentity().toNonPrivate(), Set.of());
+        RequestMessage request2 = new JoinMessage(session1.getIdentity().getPoW(), session1.getIdentity().getPublicKey(), Set.of());
         ResponseMessage<?> response2 = session2.sendRequest(request2).join();
         session2.send(new StatusMessage(STATUS_OK, response2.getId()));
 
@@ -288,7 +288,7 @@ class NodeServerIT {
             }
             WelcomeMessage msg = (WelcomeMessage) val;
 
-            return Objects.equals(server.getIdentityManager().getNonPrivateIdentity(), msg.getIdentity()) && Objects.equals(PeerInformation.of(server.getEndpoints()), msg.getPeerInformation()) && Objects.equals(msg.getCorrespondingId(), request1.getId());
+            return Objects.equals(server.getIdentityManager().getPublicKey(), msg.getPublicKey()) && Objects.equals(PeerInformation.of(server.getEndpoints()), msg.getPeerInformation()) && Objects.equals(msg.getCorrespondingId(), request1.getId());
         });
         receivedMessages1.assertValueAt(1, val -> ((QuitMessage) val).getReason() == REASON_NEW_SESSION);
         receivedMessages2.awaitCount(1);
@@ -298,7 +298,7 @@ class NodeServerIT {
             }
             WelcomeMessage msg = (WelcomeMessage) val;
 
-            return Objects.equals(server.getIdentityManager().getNonPrivateIdentity(), msg.getIdentity()) && Objects.equals(PeerInformation.of(server.getEndpoints()), msg.getPeerInformation()) && Objects.equals(msg.getCorrespondingId(), request2.getId());
+            return Objects.equals(server.getIdentityManager().getPublicKey(), msg.getPublicKey()) && Objects.equals(PeerInformation.of(server.getEndpoints()), msg.getPeerInformation()) && Objects.equals(msg.getCorrespondingId(), request2.getId());
         });
     }
 
@@ -384,7 +384,7 @@ class NodeServerIT {
         new Random().nextBytes(bigPayload);
 
         // send message
-        RequestMessage request = new ApplicationMessage(session1.getAddress(), session2.getAddress(), bigPayload);
+        RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session2.getPublicKey(), bigPayload);
         session2.send(request);
 
         // verify response
@@ -405,7 +405,7 @@ class NodeServerIT {
         new Random().nextBytes(bigPayload);
 
         // send message
-        RequestMessage request = new ApplicationMessage(session1.getAddress(), session2.getAddress(), bigPayload);
+        RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session2.getPublicKey(), bigPayload);
 
         assertThrows(DrasylException.class, () -> session2.send(request));
     }
@@ -451,7 +451,7 @@ class NodeServerIT {
         server.close();
 
         // send message
-        RequestMessage request = new JoinMessage(session.getIdentity().getPoW(), session.getIdentity().toNonPrivate(), Set.of());
+        RequestMessage request = new JoinMessage(session.getIdentity().getPoW(), session.getIdentity().getPublicKey(), Set.of());
         CompletableFuture<ResponseMessage<?>> send = session.sendRequest(request);
 
         // verify response
@@ -488,7 +488,7 @@ class NodeServerIT {
         TestObserver<Message> receivedMessages = session.receivedMessages().filter(msg -> msg instanceof ConnectionExceptionMessage).test();
 
         // send messages
-        RequestMessage request1 = new JoinMessage(identitySession2.getPoW(), session.getIdentity().toNonPrivate(), Set.of());
+        RequestMessage request1 = new JoinMessage(identitySession2.getPoW(), session.getIdentity().getPublicKey(), Set.of());
         session.sendRequest(request1);
 
         // verify response

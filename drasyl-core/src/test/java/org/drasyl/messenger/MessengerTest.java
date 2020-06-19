@@ -19,7 +19,7 @@
 package org.drasyl.messenger;
 
 import org.drasyl.DrasylException;
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -38,7 +38,7 @@ class MessengerTest {
     private MessageSink serverSink;
     private MessageSink superPeerSink;
     private ApplicationMessage applicationMessage;
-    private Identity address;
+    private CompressedPublicKey address;
     private NoPathToIdentityException noPathToIdentityException;
 
     @BeforeEach
@@ -48,7 +48,7 @@ class MessengerTest {
         serverSink = mock(MessageSink.class);
         superPeerSink = mock(MessageSink.class);
         applicationMessage = mock(ApplicationMessage.class);
-        address = mock(Identity.class);
+        address = mock(CompressedPublicKey.class);
         noPathToIdentityException = mock(NoPathToIdentityException.class);
     }
 

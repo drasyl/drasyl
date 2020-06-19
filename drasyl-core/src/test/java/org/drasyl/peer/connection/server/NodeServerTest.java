@@ -27,7 +27,7 @@ import io.reactivex.rxjava3.core.Observable;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.crypto.Crypto;
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
@@ -65,7 +65,7 @@ class NodeServerTest {
     private ApplicationMessage message;
     private NodeServerChannelBootstrap nodeServerChannelBootstrap;
     private NodeServerChannelGroup channelGroup;
-    private Map<Identity, Identity> grandchildren;
+    private Map<CompressedPublicKey, CompressedPublicKey> grandchildren;
     private Observable<Boolean> superPeerConnected;
 
     @BeforeEach
@@ -87,8 +87,8 @@ class NodeServerTest {
 
         message = mock(ApplicationMessage.class);
         String msgID = Crypto.randomString(16);
-        Identity address1 = IdentityRandomGenerator.random();
-        Identity address2 = IdentityRandomGenerator.random();
+        CompressedPublicKey address1 = IdentityRandomGenerator.random();
+        CompressedPublicKey address2 = IdentityRandomGenerator.random();
 
         when(serverBootstrap.group(any(), any())).thenReturn(serverBootstrap);
         when(serverBootstrap.channel(any())).thenReturn(serverBootstrap);

@@ -21,7 +21,8 @@ package org.drasyl.peer.connection.message;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import net.javacrumbs.jsonunit.core.Option;
-import org.drasyl.identity.Identity;
+import org.drasyl.crypto.CryptoException;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.PeerInformation;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -38,14 +39,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class WelcomeMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
-    private Identity identity;
+    private CompressedPublicKey publicKey;
     private PeerInformation peerInformation;
     private String correspondingId;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws CryptoException {
         AbstractMessageWithUserAgent.userAgentGenerator = () -> "";
-        identity = Identity.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d");
+        publicKey = CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d");
         peerInformation = PeerInformation.of(Set.of(URI.create("ws://test")));
         correspondingId = "correspondingId";
     }
@@ -57,11 +58,11 @@ class WelcomeMessageTest {
 
     @Test
     void toJson() throws JsonProcessingException {
-        WelcomeMessage message = new WelcomeMessage(identity, peerInformation, correspondingId);
+        WelcomeMessage message = new WelcomeMessage(publicKey, peerInformation, correspondingId);
 
         assertThatJson(JSON_MAPPER.writeValueAsString(message))
                 .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo("{\"@type\":\"WelcomeMessage\",\"id\":\"" + message.getId() + "\",\"userAgent\":\"\",\"identity\":{\"publicKey\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\"},\"peerInformation\":{\"endpoints\":[\"ws://test\"]},\"correspondingId\":\"correspondingId\"}");
+                .isEqualTo("{\"@type\":\"WelcomeMessage\",\"id\":\"" + message.getId() + "\",\"userAgent\":\"\",\"publicKey\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\",\"peerInformation\":{\"endpoints\":[\"ws://test\"]},\"correspondingId\":\"correspondingId\"}");
 
         // Ignore toString()
         message.toString();
@@ -69,23 +70,23 @@ class WelcomeMessageTest {
 
     @Test
     void fromJson() throws IOException {
-        String json = "{\"@type\":\"WelcomeMessage\",\"id\":\"4AE5CDCD8C21719F8E779F21\",\"userAgent\":\"\",\"identity\":{\"publicKey\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\"},\"peerInformation\":{\"endpoints\":[\"ws://test\"]}}";
+        String json = "{\"@type\":\"WelcomeMessage\",\"id\":\"4AE5CDCD8C21719F8E779F21\",\"userAgent\":\"\",\"publicKey\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\",\"peerInformation\":{\"endpoints\":[\"ws://test\"]}}";
 
         assertThat(JSON_MAPPER.readValue(json, Message.class), instanceOf(WelcomeMessage.class));
     }
 
     @Test
     void testEquals() {
-        WelcomeMessage message1 = new WelcomeMessage(identity, peerInformation, correspondingId);
-        WelcomeMessage message2 = new WelcomeMessage(identity, peerInformation, correspondingId);
+        WelcomeMessage message1 = new WelcomeMessage(publicKey, peerInformation, correspondingId);
+        WelcomeMessage message2 = new WelcomeMessage(publicKey, peerInformation, correspondingId);
 
         assertEquals(message1, message2);
     }
 
     @Test
     void testHashCode() {
-        WelcomeMessage message1 = new WelcomeMessage(identity, peerInformation, correspondingId);
-        WelcomeMessage message2 = new WelcomeMessage(identity, peerInformation, correspondingId);
+        WelcomeMessage message1 = new WelcomeMessage(publicKey, peerInformation, correspondingId);
+        WelcomeMessage message2 = new WelcomeMessage(publicKey, peerInformation, correspondingId);
 
         assertEquals(message1.hashCode(), message2.hashCode());
     }

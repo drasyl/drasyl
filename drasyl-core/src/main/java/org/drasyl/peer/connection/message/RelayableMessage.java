@@ -18,7 +18,7 @@
  */
 package org.drasyl.peer.connection.message;
 
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.CompressedPublicKey;
 
 import java.util.Objects;
 
@@ -28,20 +28,20 @@ import static java.util.Objects.requireNonNull;
  * Includes messages that can be relayed to their recipient via multiple hops.
  */
 public abstract class RelayableMessage extends AbstractMessage {
-    protected final Identity recipient;
+    protected final CompressedPublicKey recipient;
     protected short hopCount = 0;
 
-    protected RelayableMessage(String id, short hopCount, Identity recipient) {
+    protected RelayableMessage(String id, short hopCount, CompressedPublicKey recipient) {
         super(id);
         this.recipient = requireNonNull(recipient);
         this.hopCount = hopCount;
     }
 
-    protected RelayableMessage(Identity recipient) {
+    protected RelayableMessage(CompressedPublicKey recipient) {
         this(recipient, (short) 0);
     }
 
-    protected RelayableMessage(Identity recipient, short hopCount) {
+    protected RelayableMessage(CompressedPublicKey recipient, short hopCount) {
         super();
         this.recipient = requireNonNull(recipient);
         this.hopCount = hopCount;
@@ -66,7 +66,7 @@ public abstract class RelayableMessage extends AbstractMessage {
         hopCount++;
     }
 
-    public Identity getRecipient() {
+    public CompressedPublicKey getRecipient() {
         return recipient;
     }
 

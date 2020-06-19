@@ -23,7 +23,7 @@ import com.typesafe.config.ConfigFactory;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.event.Event;
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.messenger.MessengerException;
 import org.drasyl.util.Pair;
 
@@ -53,7 +53,7 @@ public class Chat {
             public void onEvent(Event event) {
                 switch (event.getType()) {
                     case EVENT_MESSAGE:
-                        Pair<Identity, byte[]> message = event.getMessage();
+                        Pair<CompressedPublicKey, byte[]> message = event.getMessage();
                         System.out.println("From " + message.first() + ": " + new String(message.second()));
                         break;
                     case EVENT_NODE_ONLINE:

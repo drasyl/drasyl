@@ -18,7 +18,7 @@
  */
 package org.drasyl.event;
 
-import org.drasyl.identity.PrivateIdentity;
+import org.drasyl.identity.Identity;
 
 import java.net.URI;
 import java.util.Objects;
@@ -30,10 +30,10 @@ import java.util.Set;
  * EventType#EVENT_NODE_IDENTITY_COLLISION}).
  */
 public class Node {
-    private final PrivateIdentity identity;
+    private final Identity identity;
     private final Set<URI> endpoints;
 
-    Node(PrivateIdentity identity, Set<URI> endpoints) {
+    Node(Identity identity, Set<URI> endpoints) {
         this.identity = identity;
         this.endpoints = endpoints;
     }
@@ -64,7 +64,7 @@ public class Node {
                 '}';
     }
 
-    public PrivateIdentity getIdentity() {
+    public Identity getIdentity() {
         return identity;
     }
 
@@ -72,11 +72,11 @@ public class Node {
         return endpoints;
     }
 
-    public static Node of(PrivateIdentity identity) {
+    public static Node of(Identity identity) {
         return of(identity, Set.of());
     }
 
-    public static Node of(PrivateIdentity identity, Set<URI> endpoints) {
+    public static Node of(Identity identity, Set<URI> endpoints) {
         return new Node(identity, endpoints);
     }
 }

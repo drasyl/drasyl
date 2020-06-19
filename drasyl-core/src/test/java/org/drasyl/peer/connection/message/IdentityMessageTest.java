@@ -18,7 +18,7 @@
  */
 package org.drasyl.peer.connection.message;
 
-import org.drasyl.identity.Identity;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.PeerInformation;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -27,16 +27,16 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 
 class IdentityMessageTest {
-    private Identity recipient;
-    private Identity identity;
+    private CompressedPublicKey recipient;
+    private CompressedPublicKey publicKey;
     private PeerInformation peerInformation;
     private String correspondingId;
     private short hopCount;
 
     @BeforeEach
     void setUp() {
-        recipient = mock(Identity.class);
-        identity = mock(Identity.class);
+        recipient = mock(CompressedPublicKey.class);
+        publicKey = mock(CompressedPublicKey.class);
         peerInformation = PeerInformation.of();
         correspondingId = "123";
         hopCount = 64;
@@ -44,7 +44,7 @@ class IdentityMessageTest {
 
     @Test
     void incrementHopCountShouldIncrementHopCountByOne() {
-        IdentityMessage message = new IdentityMessage(recipient, identity, peerInformation, correspondingId);
+        IdentityMessage message = new IdentityMessage(recipient, publicKey, peerInformation, correspondingId);
 
         message.incrementHopCount();
 

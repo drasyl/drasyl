@@ -23,7 +23,7 @@ import io.netty.channel.ChannelPromise;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.identity.PrivateIdentity;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.SignedMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import java.security.PublicKey;
 
-import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE_IDENTITY;
+import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
 
 /**
  * Acts as a guard for in- and outbound messages. <br> Signs automatically outbound messages. <br>
@@ -43,9 +43,9 @@ import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE
 public class SignatureHandler extends SimpleChannelDuplexHandler<Message, Message> {
     public static final String SIGNATURE_HANDLER = "signatureHandler";
     private static final Logger LOG = LoggerFactory.getLogger(SignatureHandler.class);
-    private final PrivateIdentity identity;
+    private final Identity identity;
 
-    public SignatureHandler(PrivateIdentity identity) {
+    public SignatureHandler(Identity identity) {
         super(true, true, false);
         this.identity = identity;
     }
@@ -73,8 +73,8 @@ public class SignatureHandler extends SimpleChannelDuplexHandler<Message, Messag
         PublicKey publicKey = extractPublicKey(signedMessage);
 
         // Prevent MITM after JoinMessage
-        if (ctx.channel().hasAttr(ATTRIBUTE_IDENTITY)) {
-            CompressedPublicKey channelKey = ctx.channel().attr(ATTRIBUTE_IDENTITY).get().getPublicKey();
+        if (ctx.channel().hasAttr(ATTRIBUTE_PUBLIC_KEY)) {
+            CompressedPublicKey channelKey = ctx.channel().attr(ATTRIBUTE_PUBLIC_KEY).get();
 
             if (!channelKey.equals(signedMessage.getKid())) {
                 if (LOG.isInfoEnabled()) {
