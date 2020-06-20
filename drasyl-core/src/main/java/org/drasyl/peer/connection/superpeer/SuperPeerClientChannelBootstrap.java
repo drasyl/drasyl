@@ -89,7 +89,6 @@ public class SuperPeerClientChannelBootstrap {
             Channel channel = channelFuture.channel();
 
             try {
-                superPeerClientChannelInitializer.connectedFuture().get();
                 superPeerClientChannelInitializer.handshakeFuture().get();
 
                 return channel;

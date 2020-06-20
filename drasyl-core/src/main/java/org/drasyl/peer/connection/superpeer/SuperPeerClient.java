@@ -27,7 +27,6 @@ import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.event.Event;
-import org.drasyl.event.Node;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
@@ -44,10 +43,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static java.lang.Thread.sleep;
-import static org.drasyl.event.EventType.EVENT_NODE_OFFLINE;
-import static org.drasyl.event.EventType.EVENT_NODE_ONLINE;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 
 /**
@@ -68,7 +66,7 @@ public class SuperPeerClient implements AutoCloseable {
     private final AtomicInteger nextEndpointPointer;
     private final AtomicInteger nextRetryDelayPointer;
     private final Consumer<Event> eventConsumer;
-    private final Function<Set<URI>, Thread> threadSupplier;
+    private final Function<Supplier<Set<URI>>, Thread> threadSupplier;
     private final Subject<Boolean> connected;
     private Channel clientChannel;
 
@@ -83,7 +81,7 @@ public class SuperPeerClient implements AutoCloseable {
                     AtomicInteger nextRetryDelayPointer,
                     Consumer<Event> eventConsumer,
                     Channel clientChannel,
-                    Function<Set<URI>, Thread> threadSupplier,
+                    Function<Supplier<Set<URI>>, Thread> threadSupplier,
                     Subject<Boolean> connected) {
         this.identityManager = identityManager;
         this.messenger = messenger;
@@ -133,11 +131,7 @@ public class SuperPeerClient implements AutoCloseable {
             try {
                 SuperPeerClientChannelBootstrap clientBootstrap = new SuperPeerClientChannelBootstrap(config, this, workerGroup, endpoint);
                 clientChannel = clientBootstrap.getChannel();
-                connected.onNext(true);
-                eventConsumer.accept(new Event(EVENT_NODE_ONLINE, Node.of(identityManager.getIdentity())));
                 clientChannel.closeFuture().syncUninterruptibly();
-                connected.onNext(false);
-                eventConsumer.accept(new Event(EVENT_NODE_OFFLINE, Node.of(identityManager.getIdentity())));
             }
             catch (SuperPeerClientException e) {
                 LOG.warn("Error while trying to connect to Super Peer: {}", e.getMessage());
@@ -224,9 +218,9 @@ public class SuperPeerClient implements AutoCloseable {
         return connected.subscribeOn(DrasylScheduler.getInstance());
     }
 
-    public void open(Set<URI> endpoints) {
+    public void open(Supplier<Set<URI>> ownEndpointsSupplier) {
         if (opened.compareAndSet(false, true)) {
-            threadSupplier.apply(endpoints).start();
+            threadSupplier.apply(ownEndpointsSupplier).start();
         }
     }
 
@@ -240,6 +234,14 @@ public class SuperPeerClient implements AutoCloseable {
 
     PeersManager getPeersManager() {
         return peersManager;
+    }
+
+    Consumer<Event> getEventConsumer() {
+        return eventConsumer;
+    }
+
+    Subject<Boolean> getConnected() {
+        return connected;
     }
 
     @Override

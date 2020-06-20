@@ -481,7 +481,7 @@ public abstract class DrasylNode {
         if (config.isSuperPeerEnabled()) {
             try {
                 LOG.debug("Start Super Peer Client...");
-                superPeerClient.open(server.getEndpoints());
+                superPeerClient.open(server::getEndpoints);
                 LOG.debug("Super Peer started");
             }
             catch (Exception e) {

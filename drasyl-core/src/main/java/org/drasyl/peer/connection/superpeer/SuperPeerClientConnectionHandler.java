@@ -22,6 +22,8 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.DrasylNodeConfig;
+import org.drasyl.event.Event;
+import org.drasyl.event.Node;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.messenger.MessageSink;
 import org.drasyl.messenger.Messenger;
@@ -39,6 +41,8 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
+import static org.drasyl.event.EventType.EVENT_NODE_OFFLINE;
+import static org.drasyl.event.EventType.EVENT_NODE_ONLINE;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_WRONG_PUBLIC_KEY;
 import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
 
@@ -120,7 +124,12 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
         channel.attr(ATTRIBUTE_PUBLIC_KEY).set(identity);
 
         // remove peer information on disconnect
-        channel.closeFuture().addListener(future -> client.getPeersManager().unsetSuperPeerAndRemovePeerInformation(peerInformation));
+        channel.closeFuture().addListener(future -> {
+            client.getConnected().onNext(false);
+            client.getEventConsumer().accept(new Event(EVENT_NODE_OFFLINE, Node.of(client.getIdentityManager().getIdentity())));
+
+            client.getPeersManager().unsetSuperPeerAndRemovePeerInformation(peerInformation);
+        });
 
         // store peer information
         client.getPeersManager().addPeerInformationAndSetSuperPeer(identity, peerInformation);
@@ -134,5 +143,8 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
             }
         };
         messenger.setSuperPeerSink(messageSink);
+
+        client.getConnected().onNext(true);
+        client.getEventConsumer().accept(new Event(EVENT_NODE_ONLINE, Node.of(client.getIdentityManager().getIdentity())));
     }
 }

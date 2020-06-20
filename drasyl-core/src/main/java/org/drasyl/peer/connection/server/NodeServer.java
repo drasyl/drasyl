@@ -22,6 +22,7 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.group.ChannelGroupFutureListener;
 import io.reactivex.rxjava3.core.Observable;
@@ -33,6 +34,8 @@ import org.drasyl.messenger.Messenger;
 import org.drasyl.messenger.NoPathToIdentityException;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.QuitMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -56,8 +59,8 @@ public class NodeServer implements AutoCloseable {
     private final AtomicBoolean opened;
     private final NodeServerChannelGroup channelGroup;
     private final Observable<Boolean> superPeerConnected;
-    private Channel serverChannel;
-    private NodeServerChannelBootstrap nodeServerChannelBootstrap;
+    private Channel channel;
+    private NodeServerChannelBootstrap channelBootstrap;
     private int actualPort;
     private Set<URI> actualEndpoints;
 
@@ -135,18 +138,18 @@ public class NodeServer implements AutoCloseable {
                 new NodeServerChannelGroup(),
                 superPeerConnected);
 
-        nodeServerChannelBootstrap = new NodeServerChannelBootstrap(config, this, serverBootstrap);
+        channelBootstrap = new NodeServerChannelBootstrap(config, this, serverBootstrap);
     }
 
     NodeServer(IdentityManager identityManager,
                Messenger messenger,
                PeersManager peersManager,
                DrasylNodeConfig config,
-               Channel serverChannel,
+               Channel channel,
                ServerBootstrap serverBootstrap,
                EventLoopGroup workerGroup,
                EventLoopGroup bossGroup,
-               NodeServerChannelBootstrap nodeServerChannelBootstrap,
+               NodeServerChannelBootstrap channelBootstrap,
                AtomicBoolean opened,
                int actualPort,
                Set<URI> actualEndpoints,
@@ -155,11 +158,11 @@ public class NodeServer implements AutoCloseable {
         this.identityManager = identityManager;
         this.peersManager = peersManager;
         this.config = config;
-        this.serverChannel = serverChannel;
+        this.channel = channel;
         this.serverBootstrap = serverBootstrap;
         this.workerGroup = workerGroup;
         this.bossGroup = bossGroup;
-        this.nodeServerChannelBootstrap = nodeServerChannelBootstrap;
+        this.channelBootstrap = channelBootstrap;
         this.opened = opened;
         this.messenger = messenger;
         this.actualPort = actualPort;
@@ -215,31 +218,45 @@ public class NodeServer implements AutoCloseable {
      */
     public void open() throws NodeServerException {
         if (opened.compareAndSet(false, true)) {
-            serverChannel = nodeServerChannelBootstrap.getChannel();
+            ChannelFuture channelFuture = channelBootstrap.getChannel();
+            channelFuture.awaitUninterruptibly();
 
-            InetSocketAddress socketAddress = (InetSocketAddress) serverChannel.localAddress();
-            actualPort = socketAddress.getPort();
-            actualEndpoints = config.getServerEndpoints().stream()
-                    .map(uri -> {
-                        if (uri.getPort() == 0) {
-                            return overridePort(uri, getPort());
-                        }
-                        return uri;
-                    }).collect(Collectors.toSet());
-            messenger.setServerSink((recipient, message) -> {
-                // if recipient is a grandchild, we must send message to appropriate child
-                CompressedPublicKey grandchildrenPath = peersManager.getGrandchildrenRoutes().get(recipient);
-                if (grandchildrenPath != null) {
-                    recipient = grandchildrenPath;
-                }
+            if (channelFuture.isSuccess()) {
+                channel = channelFuture.channel();
 
-                try {
-                    channelGroup.writeAndFlush(recipient, message);
-                }
-                catch (IllegalArgumentException e) {
-                    throw new NoPathToIdentityException(recipient);
-                }
-            });
+                channel.closeFuture().addListener(future -> {
+                    actualPort = -1;
+                    actualEndpoints = Set.of();
+                    messenger.unsetServerSink();
+                });
+
+                InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
+                actualPort = socketAddress.getPort();
+                actualEndpoints = config.getServerEndpoints().stream()
+                        .map(uri -> {
+                            if (uri.getPort() == 0) {
+                                return overridePort(uri, actualPort);
+                            }
+                            return uri;
+                        }).collect(Collectors.toSet());
+                messenger.setServerSink((recipient, message) -> {
+                    // if recipient is a grandchild, we must send message to appropriate child
+                    CompressedPublicKey grandchildrenPath = peersManager.getGrandchildrenRoutes().get(recipient);
+                    if (grandchildrenPath != null) {
+                        recipient = grandchildrenPath;
+                    }
+
+                    try {
+                        channelGroup.writeAndFlush(recipient, message);
+                    }
+                    catch (IllegalArgumentException e) {
+                        throw new NoPathToIdentityException(recipient);
+                    }
+                });
+            }
+            else {
+                throw new NodeServerException("Unable to start server: " + channelFuture.cause().getMessage());
+            }
         }
     }
 
@@ -256,17 +273,15 @@ public class NodeServer implements AutoCloseable {
     @Override
     @SuppressWarnings({ "java:S1905" })
     public void close() {
-        if (opened.compareAndSet(true, false) && serverChannel != null && serverChannel.isOpen()) {
-            messenger.unsetServerSink();
-
+        if (opened.compareAndSet(true, false) && channel != null && channel.isOpen()) {
             // send quit message to all clients and close connections
             channelGroup.writeAndFlush(new QuitMessage(REASON_SHUTTING_DOWN))
                     .addListener((ChannelGroupFutureListener) future -> {
                         future.group().close();
 
                         // shutdown server
-                        serverChannel.close();
-                        serverChannel = null;
+                        channel.close();
+                        channel = null;
                     });
         }
     }

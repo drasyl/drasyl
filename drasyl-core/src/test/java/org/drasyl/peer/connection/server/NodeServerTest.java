@@ -30,6 +30,7 @@ import org.drasyl.peer.PeersManager;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -64,8 +65,8 @@ class NodeServerTest {
     private EventLoopGroup workerGroup;
     @Mock
     private EventLoopGroup bossGroup;
-    @Mock
-    private NodeServerChannelBootstrap nodeServerChannelBootstrap;
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    private NodeServerChannelBootstrap channelBootstrap;
     @Mock
     private NodeServerChannelGroup channelGroup;
     @Mock
@@ -76,13 +77,12 @@ class NodeServerTest {
         @Test
         void shouldSetOpenToTrue() throws NodeServerException {
             when(config.getServerEndpoints()).thenReturn(Set.of(URI.create("ws://localhost:22527/")));
-            when(nodeServerChannelBootstrap.getChannel()).thenReturn(serverChannel);
-
-            when(serverChannel.localAddress()).thenReturn(new InetSocketAddress(22527));
+            when(channelBootstrap.getChannel().isSuccess()).thenReturn(true);
+            when(channelBootstrap.getChannel().channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
             NodeServer server = new NodeServer(identityManager, messenger, peersManager,
                     config, serverChannel, serverBootstrap, workerGroup, bossGroup,
-                    nodeServerChannelBootstrap, new AtomicBoolean(false), -1, new HashSet<>(), channelGroup, superPeerConnected);
+                    channelBootstrap, new AtomicBoolean(false), -1, new HashSet<>(), channelGroup, superPeerConnected);
             server.open();
 
             assertTrue(server.isOpen());
@@ -92,11 +92,11 @@ class NodeServerTest {
         void shouldDoNothingIfServerHasAlreadyBeenStarted() throws NodeServerException {
             NodeServer server = new NodeServer(identityManager, messenger, peersManager,
                     config, serverChannel, serverBootstrap, workerGroup, bossGroup,
-                    nodeServerChannelBootstrap, new AtomicBoolean(true), -1, new HashSet<>(), channelGroup, superPeerConnected);
+                    channelBootstrap, new AtomicBoolean(true), -1, new HashSet<>(), channelGroup, superPeerConnected);
 
             server.open();
 
-            verify(nodeServerChannelBootstrap, times(0)).getChannel();
+            verify(channelBootstrap, times(0)).getChannel();
         }
     }
 
@@ -106,7 +106,7 @@ class NodeServerTest {
         void shouldDoNothingIfServerHasAlreadyBeenShutDown() {
             NodeServer server = new NodeServer(identityManager, messenger, peersManager,
                     config, serverChannel, serverBootstrap, workerGroup, bossGroup,
-                    nodeServerChannelBootstrap, new AtomicBoolean(false), -1, new HashSet<>(), channelGroup, superPeerConnected);
+                    channelBootstrap, new AtomicBoolean(false), -1, new HashSet<>(), channelGroup, superPeerConnected);
 
             server.close();
 
