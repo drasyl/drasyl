@@ -28,7 +28,6 @@ import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
-import org.drasyl.util.NetworkUtil;
 
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -40,8 +39,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
-import java.util.function.Supplier;
-import java.util.stream.Collectors;
 
 import static org.drasyl.util.SecretUtil.maskSecret;
 
@@ -82,7 +79,7 @@ public class DrasylNodeConfig {
     static final String INTRA_VM_DISCOVERY_ENABLED = "drasyl.intra-vm-discovery.enabled";
     //======================================= Config Values ========================================
     private final Level loglevel; // NOSONAR
-    private final ProofOfWork proofOfWork;
+    private final ProofOfWork identityProofOfWork;
     private final CompressedPublicKey identityPublicKey;
     private final CompressedPrivateKey identityPrivateKey;
     private final Path identityPath;
@@ -117,22 +114,17 @@ public class DrasylNodeConfig {
      * @throws ConfigException if the given config is invalid
      */
     public DrasylNodeConfig(Config config) {
-        this(config, NetworkUtil::getAddresses);
-    }
-
-    DrasylNodeConfig(Config config, Supplier<Set<String>> networkAddressesProvider) {
         config.checkValid(ConfigFactory.defaultReference(), "drasyl");
 
-        // init
         this.loglevel = getLoglevel(config, LOGLEVEL);
         this.userAgent = config.getString(USER_AGENT);
 
         // init identity config
         if (config.getInt(IDENTITY_PROOF_OF_WORK) >= 0) {
-            this.proofOfWork = getProofOfWork(config, IDENTITY_PROOF_OF_WORK);
+            this.identityProofOfWork = getProofOfWork(config, IDENTITY_PROOF_OF_WORK);
         }
         else {
-            this.proofOfWork = null;
+            this.identityProofOfWork = null;
         }
         if (!config.getString(IDENTITY_PUBLIC_KEY).isEmpty()) {
             this.identityPublicKey = getPublicKey(config, IDENTITY_PUBLIC_KEY);
@@ -159,17 +151,9 @@ public class DrasylNodeConfig {
         this.serverChannelInitializer = getChannelInitializer(config, SERVER_CHANNEL_INITIALIZER);
         this.messageMaxContentLength = (int) Math.min(config.getMemorySize(MESSAGE_MAX_CONTENT_LENGTH).toBytes(), Integer.MAX_VALUE);
         this.messageHopLimit = getShort(config, MESSAGE_HOP_LIMIT);
-
         this.serverSSLEnabled = config.getBoolean(SERVER_SSL_ENABLED);
         this.serverSSLProtocols = config.getStringList(SERVER_SSL_PROTOCOLS);
-
-        if (!config.getStringList(SERVER_ENDPOINTS).isEmpty()) {
-            this.serverEndpoints = new HashSet<>(getUriList(config, SERVER_ENDPOINTS));
-        }
-        else {
-            String scheme = serverSSLEnabled ? "wss" : "ws";
-            this.serverEndpoints = networkAddressesProvider.get().stream().map(a -> URI.create(scheme + "://" + a + ":" + serverBindPort)).collect(Collectors.toSet());
-        }
+        this.serverEndpoints = new HashSet<>(getUriList(config, SERVER_ENDPOINTS));
 
         // Init super peer config
         this.superPeerEnabled = config.getBoolean(SUPER_PEER_ENABLED);
@@ -302,7 +286,7 @@ public class DrasylNodeConfig {
 
     @SuppressWarnings({ "java:S107" })
     DrasylNodeConfig(Level loglevel,
-                     ProofOfWork proofOfWork,
+                     ProofOfWork identityProofOfWork,
                      CompressedPublicKey identityPublicKey,
                      CompressedPrivateKey identityPrivateKey,
                      Path identityPath,
@@ -330,7 +314,7 @@ public class DrasylNodeConfig {
                      Duration superPeerIdleTimeout,
                      boolean intraVmDiscoveryEnabled) {
         this.loglevel = loglevel;
-        this.proofOfWork = proofOfWork;
+        this.identityProofOfWork = identityProofOfWork;
         this.identityPublicKey = identityPublicKey;
         this.identityPrivateKey = identityPrivateKey;
         this.identityPath = identityPath;
@@ -375,8 +359,8 @@ public class DrasylNodeConfig {
         return this.userAgent;
     }
 
-    public ProofOfWork getProofOfWork() {
-        return proofOfWork;
+    public ProofOfWork getIdentityProofOfWork() {
+        return identityProofOfWork;
     }
 
     public CompressedPublicKey getIdentityPublicKey() {
@@ -473,7 +457,7 @@ public class DrasylNodeConfig {
 
     @Override
     public int hashCode() {
-        return Objects.hash(identityPublicKey, proofOfWork, identityPrivateKey, identityPath, userAgent, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled);
+        return Objects.hash(identityPublicKey, identityProofOfWork, identityPrivateKey, identityPath, userAgent, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled);
     }
 
     @Override
@@ -495,7 +479,7 @@ public class DrasylNodeConfig {
                 messageHopLimit == that.messageHopLimit &&
                 superPeerEnabled == that.superPeerEnabled &&
                 superPeerIdleRetries == that.superPeerIdleRetries &&
-                Objects.equals(proofOfWork, that.proofOfWork) &&
+                Objects.equals(identityProofOfWork, that.identityProofOfWork) &&
                 Objects.equals(identityPublicKey, that.identityPublicKey) &&
                 Objects.equals(identityPrivateKey, that.identityPrivateKey) &&
                 Objects.equals(identityPath, that.identityPath) &&
@@ -519,7 +503,7 @@ public class DrasylNodeConfig {
     public String toString() {
         return "DrasylNodeConfig{" +
                 "loglevel='" + loglevel + '\'' +
-                ", proofOfWork='" + proofOfWork + '\'' +
+                ", identityProofOfWork='" + identityProofOfWork + '\'' +
                 ", identityPublicKey='" + identityPublicKey + '\'' +
                 ", identityPrivateKey='" + maskSecret(identityPrivateKey) + '\'' +
                 ", identityPath=" + identityPath +
@@ -552,7 +536,7 @@ public class DrasylNodeConfig {
     public static Builder newBuilder() {
         return new Builder(
                 DEFAULT.loglevel,
-                DEFAULT.proofOfWork,
+                DEFAULT.identityProofOfWork,
                 DEFAULT.identityPublicKey,
                 DEFAULT.identityPrivateKey,
                 DEFAULT.identityPath,
@@ -585,7 +569,7 @@ public class DrasylNodeConfig {
     public static final class Builder {
         //======================================= Config Values ========================================
         private Level loglevel; // NOSONAR
-        private ProofOfWork proofOfWork;
+        private ProofOfWork identityProofOfWork;
         private CompressedPublicKey identityPublicKey;
         private CompressedPrivateKey identityPrivateKey;
         private Path identityPath;
@@ -615,7 +599,7 @@ public class DrasylNodeConfig {
 
         @SuppressWarnings({ "java:S107" })
         private Builder(Level loglevel,
-                        ProofOfWork proofOfWork,
+                        ProofOfWork identityProofOfWork,
                         CompressedPublicKey identityPublicKey,
                         CompressedPrivateKey identityPrivateKey,
                         Path identityPath,
@@ -643,7 +627,7 @@ public class DrasylNodeConfig {
                         Duration superPeerIdleTimeout,
                         boolean intraVmDiscoveryEnabled) {
             this.loglevel = loglevel;
-            this.proofOfWork = proofOfWork;
+            this.identityProofOfWork = identityProofOfWork;
             this.identityPublicKey = identityPublicKey;
             this.identityPrivateKey = identityPrivateKey;
             this.identityPath = identityPath;
@@ -677,8 +661,8 @@ public class DrasylNodeConfig {
             return this;
         }
 
-        public Builder proofOfWork(ProofOfWork proofOfWork) {
-            this.proofOfWork = proofOfWork;
+        public Builder identityProofOfWork(ProofOfWork identityProofOfWork) {
+            this.identityProofOfWork = identityProofOfWork;
             return this;
         }
 
@@ -813,7 +797,7 @@ public class DrasylNodeConfig {
         }
 
         public DrasylNodeConfig build() {
-            return new DrasylNodeConfig(loglevel, proofOfWork, identityPublicKey, identityPrivateKey, identityPath, userAgent, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled);
+            return new DrasylNodeConfig(loglevel, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath, userAgent, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled);
         }
     }
 }

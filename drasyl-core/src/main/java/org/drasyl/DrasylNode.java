@@ -20,7 +20,6 @@ package org.drasyl;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
-import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -180,10 +179,6 @@ public abstract class DrasylNode {
         catch (ConfigException e) {
             throw new DrasylException("Couldn't load config: \n" + e.getMessage());
         }
-    }
-
-    public DrasylNode(Config config) throws DrasylException {
-        this(new DrasylNodeConfig(config));
     }
 
     /**

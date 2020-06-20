@@ -18,14 +18,16 @@
  */
 package org.drasyl;
 
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
+import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.EventType;
+import org.drasyl.identity.CompressedPrivateKey;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,6 +36,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
 
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -65,7 +68,7 @@ class DrasylNodeIT {
         colorizedPrintln("FINISHED " + info.getDisplayName(), COLOR_CYAN, STYLE_REVERSED);
     }
 
-    private Pair<DrasylNode, Observable<Event>> createNode(Config config) throws DrasylException {
+    private Pair<DrasylNode, Observable<Event>> createNode(DrasylNodeConfig config) throws DrasylException {
         Subject<Event> subject = ReplaySubject.<Event>create().toSerialized();
         DrasylNode node = new DrasylNode(config) {
             @Override
@@ -94,44 +97,66 @@ class DrasylNodeIT {
         private Pair<DrasylNode, Observable<Event>> client2;
 
         @BeforeEach
-        void setUp() throws DrasylException {
+        void setUp() throws DrasylException, CryptoException {
             //
             // create nodes
             //
-            Config config;
+            DrasylNodeConfig config;
 
             // super super peer
-            config = ConfigFactory.parseString("drasyl.super-peer.enabled = false\n" +
-                    "drasyl.intra-vm-discovery.enabled = false")
-                    .withFallback(ConfigFactory.load("configs/DrasylNodeIT-4c4fdd0957.conf"));
+            config = DrasylNodeConfig.newBuilder()
+                    .identityProofOfWork(ProofOfWork.of(13290399))
+                    .identityPublicKey(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"))
+                    .identityPrivateKey(CompressedPrivateKey.of("0c2945e523e1ab27c3b38ba62f0a67a21567dcfcbad4ff3fe7f8f7b202a18c93"))
+                    .serverBindHost("127.0.0.1")
+                    .serverBindPort(0)
+                    .superPeerEnabled(false)
+                    .intraVmDiscoveryEnabled(false)
+                    .build();
             superSuperPeer = createNode(config);
             Event superSuperPeerNodeUp = superSuperPeer.second().filter(e -> e.getType() == EVENT_NODE_UP).firstElement().blockingGet();
             int superSuperPeerPort = superSuperPeerNodeUp.getNode().getEndpoints().iterator().next().getPort();
             colorizedPrintln("CREATED superSuperPeer", COLOR_CYAN, STYLE_REVERSED);
 
             // super peer
-            config = ConfigFactory.parseString("drasyl.super-peer.public-key = \"03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a\"\n" +
-                    "drasyl.super-peer.endpoints = [\"ws://127.0.0.1:" + superSuperPeerPort + "\"]\n" +
-                    "drasyl.intra-vm-discovery.enabled = false")
-                    .withFallback(ConfigFactory.load("configs/DrasylNodeIT-9df9214d78.conf"));
+            config = DrasylNodeConfig.newBuilder()
+                    .identityProofOfWork(ProofOfWork.of(6518542))
+                    .identityPublicKey(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
+                    .identityPrivateKey(CompressedPrivateKey.of("6b4df6d8b8b509cb984508a681076efce774936c17cf450819e2262a9862f8"))
+                    .serverBindHost("127.0.0.1")
+                    .serverBindPort(0)
+                    .superPeerPublicKey(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"))
+                    .superPeerEndpoints(Set.of(URI.create("ws://127.0.0.1:" + superSuperPeerPort)))
+                    .intraVmDiscoveryEnabled(false)
+                    .build();
             superPeer = createNode(config);
             Event superPeerNodeUp = superPeer.second().filter(e -> e.getType() == EVENT_NODE_UP).firstElement().blockingGet();
             int superPeerPort = superPeerNodeUp.getNode().getEndpoints().iterator().next().getPort();
             colorizedPrintln("CREATED superPeer", COLOR_CYAN, STYLE_REVERSED);
 
             // client1
-            config = ConfigFactory.parseString("drasyl.server.enabled = false\n" +
-                    "drasyl.super-peer.public-key = \"030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22\"\n" +
-                    "drasyl.super-peer.endpoints = [\"ws://127.0.0.1:" + superPeerPort + "\"]\n" +
-                    "drasyl.intra-vm-discovery.enabled = false").withFallback(ConfigFactory.load("configs/DrasylNodeIT-030f018704.conf"));
+            config = DrasylNodeConfig.newBuilder()
+                    .identityProofOfWork(ProofOfWork.of(12304070))
+                    .identityPublicKey(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))
+                    .identityPrivateKey(CompressedPrivateKey.of("073a34ecaff06fdf3fbe44ddf3abeace43e3547033493b1ac4c0ae3c6ecd6173"))
+                    .serverEnabled(false)
+                    .superPeerPublicKey(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
+                    .superPeerEndpoints(Set.of(URI.create("ws://127.0.0.1:" + superPeerPort)))
+                    .intraVmDiscoveryEnabled(false)
+                    .build();
             client1 = createNode(config);
             colorizedPrintln("CREATED client1", COLOR_CYAN, STYLE_REVERSED);
 
             // client2
-            config = ConfigFactory.parseString("drasyl.server.enabled = false\n" +
-                    "drasyl.super-peer.public-key = \"030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22\"\n" +
-                    "drasyl.super-peer.endpoints = [\"ws://127.0.0.1:" + superPeerPort + "\"]\n" +
-                    "drasyl.intra-vm-discovery.enabled = false").withFallback(ConfigFactory.load("configs/DrasylNodeIT-be0300f1a4.conf"));
+            config = DrasylNodeConfig.newBuilder()
+                    .identityProofOfWork(ProofOfWork.of(33957767))
+                    .identityPublicKey(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))
+                    .identityPrivateKey(CompressedPrivateKey.of("0310991def7b530fced318876ac71025ebc0449a95967a0efc2e423086198f54"))
+                    .serverEnabled(false)
+                    .superPeerPublicKey(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
+                    .superPeerEndpoints(Set.of(URI.create("ws://127.0.0.1:" + superPeerPort)))
+                    .intraVmDiscoveryEnabled(false)
+                    .build();
             client2 = createNode(config);
             colorizedPrintln("CREATED client2", COLOR_CYAN, STYLE_REVERSED);
 
@@ -216,35 +241,53 @@ class DrasylNodeIT {
         private Pair<DrasylNode, Observable<Event>> node4;
 
         @BeforeEach
-        void setUp() throws DrasylException {
+        void setUp() throws DrasylException, CryptoException {
             //
             // create nodes
             //
-            Config config;
+            DrasylNodeConfig config;
 
             // super super peer
-            config = ConfigFactory.parseString("drasyl.server.enabled = false\n" +
-                    "drasyl.super-peer.enabled = false")
-                    .withFallback(ConfigFactory.load("configs/DrasylNodeIT-4c4fdd0957.conf"));
+            config = DrasylNodeConfig.newBuilder()
+                    .identityProofOfWork(ProofOfWork.of(13290399))
+                    .identityPublicKey(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"))
+                    .identityPrivateKey(CompressedPrivateKey.of("0c2945e523e1ab27c3b38ba62f0a67a21567dcfcbad4ff3fe7f8f7b202a18c93"))
+                    .serverEnabled(false)
+                    .superPeerEnabled(false)
+                    .build();
             node1 = createNode(config);
             colorizedPrintln("CREATED node1", COLOR_CYAN, STYLE_REVERSED);
 
             // super peer
-            config = ConfigFactory.parseString("drasyl.server.enabled = false\n" +
-                    "drasyl.super-peer.enabled = false")
-                    .withFallback(ConfigFactory.load("configs/DrasylNodeIT-9df9214d78.conf"));
+            config = DrasylNodeConfig.newBuilder()
+                    .identityProofOfWork(ProofOfWork.of(6518542))
+                    .identityPublicKey(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
+                    .identityPrivateKey(CompressedPrivateKey.of("6b4df6d8b8b509cb984508a681076efce774936c17cf450819e2262a9862f8"))
+                    .serverEnabled(false)
+                    .superPeerEnabled(false)
+                    .build();
             node2 = createNode(config);
             colorizedPrintln("CREATED node2", COLOR_CYAN, STYLE_REVERSED);
 
             // client1
-            config = ConfigFactory.parseString("drasyl.server.enabled = false\n" +
-                    "drasyl.super-peer.enabled = false").withFallback(ConfigFactory.load("configs/DrasylNodeIT-030f018704.conf"));
+            config = DrasylNodeConfig.newBuilder()
+                    .identityProofOfWork(ProofOfWork.of(12304070))
+                    .identityPublicKey(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))
+                    .identityPrivateKey(CompressedPrivateKey.of("073a34ecaff06fdf3fbe44ddf3abeace43e3547033493b1ac4c0ae3c6ecd6173"))
+                    .serverEnabled(false)
+                    .superPeerEnabled(false)
+                    .build();
             node3 = createNode(config);
             colorizedPrintln("CREATED node3", COLOR_CYAN, STYLE_REVERSED);
 
             // client2
-            config = ConfigFactory.parseString("drasyl.server.enabled = false\n" +
-                    "drasyl.super-peer.enabled = false").withFallback(ConfigFactory.load("configs/DrasylNodeIT-be0300f1a4.conf"));
+            config = DrasylNodeConfig.newBuilder()
+                    .identityProofOfWork(ProofOfWork.of(33957767))
+                    .identityPublicKey(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))
+                    .identityPrivateKey(CompressedPrivateKey.of("0310991def7b530fced318876ac71025ebc0449a95967a0efc2e423086198f54"))
+                    .serverEnabled(false)
+                    .superPeerEnabled(false)
+                    .build();
             node4 = createNode(config);
             colorizedPrintln("CREATED node4", COLOR_CYAN, STYLE_REVERSED);
 
@@ -337,38 +380,59 @@ class DrasylNodeIT {
         private Pair<DrasylNode, Observable<Event>> node4;
 
         @BeforeEach
-        void setUp() throws DrasylException {
+        void setUp() throws DrasylException, CryptoException {
             //
             // create nodes
             //
-            Config config;
+            DrasylNodeConfig config;
 
             // super super peer
-            config = ConfigFactory.parseString("drasyl.server.enabled = false\n" +
-                    "drasyl.super-peer.enabled = false")
-                    .withFallback(ConfigFactory.load("configs/DrasylNodeIT-4c4fdd0957.conf"));
+            config = DrasylNodeConfig.newBuilder()
+                    .identityProofOfWork(ProofOfWork.of(13290399))
+                    .identityPublicKey(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"))
+                    .identityPrivateKey(CompressedPrivateKey.of("0c2945e523e1ab27c3b38ba62f0a67a21567dcfcbad4ff3fe7f8f7b202a18c93"))
+                    .serverEnabled(false)
+                    .superPeerEnabled(false)
+                    .intraVmDiscoveryEnabled(false)
+                    .build();
             node1 = createNode(config);
             node1.second().filter(e -> e.getType() == EVENT_NODE_UP).test().awaitCount(1);
             colorizedPrintln("CREATED node1", COLOR_CYAN, STYLE_REVERSED);
 
             // super peer
-            config = ConfigFactory.parseString("drasyl.server.enabled = false\n" +
-                    "drasyl.super-peer.enabled = false")
-                    .withFallback(ConfigFactory.load("configs/DrasylNodeIT-9df9214d78.conf"));
+            config = DrasylNodeConfig.newBuilder()
+                    .identityProofOfWork(ProofOfWork.of(6518542))
+                    .identityPublicKey(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
+                    .identityPrivateKey(CompressedPrivateKey.of("6b4df6d8b8b509cb984508a681076efce774936c17cf450819e2262a9862f8"))
+                    .serverEnabled(false)
+                    .superPeerEnabled(false)
+                    .intraVmDiscoveryEnabled(false)
+                    .build();
             node2 = createNode(config);
             node2.second().filter(e -> e.getType() == EVENT_NODE_UP).test().awaitCount(1);
             colorizedPrintln("CREATED node2", COLOR_CYAN, STYLE_REVERSED);
 
             // client1
-            config = ConfigFactory.parseString("drasyl.server.enabled = false\n" +
-                    "drasyl.super-peer.enabled = false").withFallback(ConfigFactory.load("configs/DrasylNodeIT-030f018704.conf"));
+            config = DrasylNodeConfig.newBuilder()
+                    .identityProofOfWork(ProofOfWork.of(12304070))
+                    .identityPublicKey(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))
+                    .identityPrivateKey(CompressedPrivateKey.of("073a34ecaff06fdf3fbe44ddf3abeace43e3547033493b1ac4c0ae3c6ecd6173"))
+                    .serverEnabled(false)
+                    .superPeerEnabled(false)
+                    .intraVmDiscoveryEnabled(false)
+                    .build();
             node3 = createNode(config);
             node3.second().filter(e -> e.getType() == EVENT_NODE_UP).test().awaitCount(1);
             colorizedPrintln("CREATED node3", COLOR_CYAN, STYLE_REVERSED);
 
             // client2
-            config = ConfigFactory.parseString("drasyl.server.enabled = false\n" +
-                    "drasyl.super-peer.enabled = false").withFallback(ConfigFactory.load("configs/DrasylNodeIT-be0300f1a4.conf"));
+            config = DrasylNodeConfig.newBuilder()
+                    .identityProofOfWork(ProofOfWork.of(33957767))
+                    .identityPublicKey(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))
+                    .identityPrivateKey(CompressedPrivateKey.of("0310991def7b530fced318876ac71025ebc0449a95967a0efc2e423086198f54"))
+                    .serverEnabled(false)
+                    .superPeerEnabled(false)
+                    .build();
             node4 = createNode(config);
             node4.second().filter(e -> e.getType() == EVENT_NODE_UP).test().awaitCount(1);
             colorizedPrintln("CREATED node4", COLOR_CYAN, STYLE_REVERSED);

@@ -47,6 +47,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import static java.time.Duration.ofSeconds;
+import static org.drasyl.DrasylNodeConfig.DEFAULT;
 import static org.drasyl.DrasylNodeConfig.FLUSH_BUFFER_SIZE;
 import static org.drasyl.DrasylNodeConfig.IDENTITY_PATH;
 import static org.drasyl.DrasylNodeConfig.IDENTITY_PRIVATE_KEY;
@@ -182,12 +183,12 @@ class DrasylNodeConfigTest {
             when(networkAddressesProvider.get()).thenReturn(Set.of("192.168.188.112"));
             when(typesafeConfig.getBoolean(INTRA_VM_DISCOVERY_ENABLED)).thenReturn(intraVmDiscoveryEnabled);
 
-            DrasylNodeConfig config = new DrasylNodeConfig(typesafeConfig, networkAddressesProvider);
+            DrasylNodeConfig config = new DrasylNodeConfig(typesafeConfig);
 
             assertEquals(serverBindHost, config.getServerBindHost());
             assertEquals(serverBindPort, config.getServerBindPort());
             assertEquals(userAgent, config.getUserAgent());
-            assertNull(config.getProofOfWork());
+            assertNull(config.getIdentityProofOfWork());
             assertNull(config.getIdentityPublicKey());
             assertNull(config.getIdentityPrivateKey());
             assertEquals(Paths.get("drasyl.identity.json"), config.getIdentityPath());
@@ -198,7 +199,7 @@ class DrasylNodeConfigTest {
             assertEquals(flushBufferSize, config.getFlushBufferSize());
             assertEquals(serverSSLProtocols, config.getServerSSLProtocols());
             assertEquals(serverHandshakeTimeout, config.getServerHandshakeTimeout());
-            assertEquals(Set.of(URI.create("ws://192.168.188.112:22527")), config.getServerEndpoints());
+            assertEquals(Set.of(), config.getServerEndpoints());
             assertEquals(serverChannelInitializer, config.getServerChannelInitializer());
             assertEquals(messageMaxContentLength, config.getMessageMaxContentLength());
             assertEquals(messageHopLimit, config.getMessageHopLimit());
@@ -221,6 +222,45 @@ class DrasylNodeConfigTest {
             DrasylNodeConfig config = new DrasylNodeConfig(loglevel, proofOfWork, identityPublicKey, identityPrivateKey, identityPath, userAgent, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled);
 
             assertThat(config.toString(), not(containsString(identityPrivateKey.getCompressedKey())));
+        }
+    }
+
+    @Nested
+    class Builder {
+        @Test
+        void shouldCreateCorrectConfig() {
+            DrasylNodeConfig config = DrasylNodeConfig.newBuilder()
+                    .loglevel(DEFAULT.getLoglevel())
+                    .identityProofOfWork(DEFAULT.getIdentityProofOfWork())
+                    .identityPublicKey(DEFAULT.getIdentityPublicKey())
+                    .identityPrivateKey(DEFAULT.getIdentityPrivateKey())
+                    .identityPath(DEFAULT.getIdentityPath())
+                    .userAgent(DEFAULT.getUserAgent())
+                    .serverBindHost(DEFAULT.getServerBindHost())
+                    .serverEnabled(DEFAULT.isServerEnabled())
+                    .serverBindPort(DEFAULT.getServerBindPort())
+                    .serverIdleRetries(DEFAULT.getServerIdleRetries())
+                    .serverIdleTimeout(DEFAULT.getServerIdleTimeout())
+                    .flushBufferSize(DEFAULT.getFlushBufferSize())
+                    .serverSSLEnabled(DEFAULT.getServerSSLEnabled())
+                    .serverSSLProtocols(DEFAULT.getServerSSLProtocols())
+                    .serverHandshakeTimeout(DEFAULT.getServerHandshakeTimeout())
+                    .serverEndpoints(DEFAULT.getServerEndpoints())
+                    .serverChannelInitializer(DEFAULT.getServerChannelInitializer())
+                    .messageMaxContentLength(DEFAULT.getMessageMaxContentLength())
+                    .messageHopLimit(DEFAULT.getMessageHopLimit())
+                    .superPeerEnabled(DEFAULT.isSuperPeerEnabled())
+                    .superPeerEndpoints(DEFAULT.getSuperPeerEndpoints())
+                    .superPeerPublicKey(DEFAULT.getSuperPeerPublicKey())
+                    .superPeerRetryDelays(DEFAULT.getSuperPeerRetryDelays())
+                    .superPeerHandshakeTimeout(DEFAULT.getSuperPeerHandshakeTimeout())
+                    .superPeerChannelInitializer(DEFAULT.getSuperPeerChannelInitializer())
+                    .superPeerIdleRetries(DEFAULT.getSuperPeerIdleRetries())
+                    .superPeerIdleTimeout(DEFAULT.getSuperPeerIdleTimeout())
+                    .intraVmDiscoveryEnabled(DEFAULT.isIntraVmDiscoveryEnabled())
+                    .build();
+
+            assertEquals(DEFAULT, config);
         }
     }
 }
