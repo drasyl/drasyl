@@ -20,9 +20,7 @@ package org.drasyl;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
-import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
-import com.typesafe.config.ConfigFactory;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.sentry.Sentry;
@@ -123,7 +121,7 @@ public abstract class DrasylNode {
      * Creates a new drasyl Node.
      */
     public DrasylNode() throws DrasylException {
-        this(ConfigFactory.load());
+        this(new DrasylNodeConfig());
     }
 
     /**
@@ -131,9 +129,9 @@ public abstract class DrasylNode {
      *
      * @param config
      */
-    public DrasylNode(Config config) throws DrasylException {
+    public DrasylNode(DrasylNodeConfig config) throws DrasylException {
         try {
-            this.config = new DrasylNodeConfig(config);
+            this.config = config;
             this.identityManager = new IdentityManager(this.config);
             this.peersManager = new PeersManager(this::onEvent);
             this.messenger = new Messenger();

@@ -29,6 +29,7 @@ import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
+import org.drasyl.DrasylNodeConfig;
 import org.drasyl.event.Event;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -182,7 +183,7 @@ class Cli {
                 config = ConfigFactory.parseString("drasyl.loglevel = \"" + level + "\"").withFallback(config);
             }
 
-            node = new DrasylNode(config) {
+            node = new DrasylNode(new DrasylNodeConfig(config)) {
                 @Override
                 public void onEvent(Event event) {
                     log.info("Event received: {}", event);

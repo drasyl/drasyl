@@ -18,7 +18,6 @@
  */
 package org.drasyl.peer.connection.superpeer;
 
-import com.typesafe.config.ConfigFactory;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.reactivex.rxjava3.core.Observable;
@@ -29,10 +28,14 @@ import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.DrasylNodeConfig;
+import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.Node;
+import org.drasyl.identity.CompressedPrivateKey;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
+import org.drasyl.identity.ProofOfWork;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.ApplicationMessage;
@@ -54,8 +57,11 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 import testutils.AnsiColor;
 import testutils.TestHelper;
 
+import java.net.URI;
+import java.util.List;
 import java.util.Set;
 
+import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.event.EventType.EVENT_NODE_OFFLINE;
 import static org.drasyl.event.EventType.EVENT_NODE_ONLINE;
@@ -82,7 +88,7 @@ class SuperPeerClientIT {
     private SuperPeerClient client;
 
     @BeforeEach
-    void setup(TestInfo info) throws DrasylException {
+    void setup(TestInfo info) throws DrasylException, CryptoException {
         TestHelper.colorizedPrintln("STARTING " + info.getDisplayName(), AnsiColor.COLOR_CYAN, AnsiColor.STYLE_REVERSED);
 
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
@@ -91,12 +97,38 @@ class SuperPeerClientIT {
         serverWorkerGroup = new NioEventLoopGroup();
         bossGroup = new NioEventLoopGroup(1);
 
-        config = new DrasylNodeConfig(ConfigFactory.load("configs/SuperPeerClientIT.conf"));
+        config = DrasylNodeConfig.newBuilder()
+                .identityProofOfWork(ProofOfWork.of(6657650))
+                .identityPublicKey(CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"))
+                .identityPrivateKey(CompressedPrivateKey.of("0c27af38c77f2cd5cc2a0ff5c461003a9c24beb955f316135d251ecaf4dda03f"))
+                .serverBindHost("127.0.0.1")
+                .serverBindPort(8888)
+                .serverHandshakeTimeout(ofSeconds(5))
+                .serverSSLEnabled(true)
+                .serverIdleTimeout(ofSeconds(1))
+                .serverIdleRetries((short) 1)
+                .superPeerEndpoints(Set.of(URI.create("wss://127.0.0.1:22527")))
+                .superPeerRetryDelays(List.of(ofSeconds(0), ofSeconds(1), ofSeconds(2), ofSeconds(4), ofSeconds(8), ofSeconds(16), ofSeconds(32), ofSeconds(60)))
+                .superPeerIdleTimeout(ofSeconds(1))
+                .superPeerIdleRetries((short) 1)
+                .superPeerPublicKey(CompressedPublicKey.of("0234789936c7941f850c382ea9d14ecb0aad03b99a9e29a9c15b42f5f1b0c4cf3d"))
+                .build();
         DrasylNode.setLogLevel(config.getLoglevel());
         identityManager = new IdentityManager(config);
         identityManager.loadOrCreateIdentity();
 
-        serverConfig = new DrasylNodeConfig(ConfigFactory.load("configs/SuperPeerClientIT-NodeServer.conf"));
+        serverConfig = DrasylNodeConfig.newBuilder()
+                .identityProofOfWork(ProofOfWork.of(5344366))
+                .identityPublicKey(CompressedPublicKey.of("0234789936c7941f850c382ea9d14ecb0aad03b99a9e29a9c15b42f5f1b0c4cf3d"))
+                .identityPrivateKey(CompressedPrivateKey.of("064f10d37111303ee20443661c8ea758045bbf809e4950dd84b8a1348863d0f8"))
+                .serverBindHost("127.0.0.1")
+                .serverHandshakeTimeout(ofSeconds(5))
+                .serverSSLEnabled(true)
+                .serverIdleTimeout(ofSeconds(1))
+                .serverIdleRetries((short) 1)
+                .serverChannelInitializer(DummyServerChannelInitializer.class)
+                .superPeerEnabled(false)
+                .build();
         identityManagerServer = new IdentityManager(serverConfig);
         identityManagerServer.loadOrCreateIdentity();
         peersManager = new PeersManager(event -> {

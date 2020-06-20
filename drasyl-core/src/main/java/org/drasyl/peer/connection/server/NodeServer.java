@@ -37,6 +37,7 @@ import org.drasyl.messenger.Messenger;
 import org.drasyl.messenger.NoPathToIdentityException;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.QuitMessage;
+import org.drasyl.util.NetworkUtil;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -240,6 +241,7 @@ public class NodeServer implements AutoCloseable {
 
                     InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
                     actualPort = socketAddress.getPort();
+
                     actualEndpoints = config.getServerEndpoints().stream()
                             .map(uri -> {
                                 if (uri.getPort() == 0) {
@@ -247,6 +249,11 @@ public class NodeServer implements AutoCloseable {
                                 }
                                 return uri;
                             }).collect(Collectors.toSet());
+                    if (actualEndpoints.isEmpty()) {
+                        String scheme = config.getServerSSLEnabled() ? "wss" : "ws";
+                        actualEndpoints = NetworkUtil.getAddresses().stream().map(a -> URI.create(scheme + "://" + a + ":" + actualPort)).collect(Collectors.toSet());
+                    }
+
                     messenger.setServerSink((recipient, message) -> {
                         // if recipient is a grandchild, we must send message to appropriate child
                         CompressedPublicKey grandchildrenPath = peersManager.getGrandchildrenRoutes().get(recipient);

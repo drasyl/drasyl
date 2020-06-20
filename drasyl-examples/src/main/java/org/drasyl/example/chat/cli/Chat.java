@@ -22,6 +22,7 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
+import org.drasyl.DrasylNodeConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.messenger.MessengerException;
@@ -48,7 +49,7 @@ public class Chat {
         }
 
         CompletableFuture<Void> online = new CompletableFuture<>();
-        DrasylNode node = new DrasylNode(config) {
+        DrasylNode node = new DrasylNode(new DrasylNodeConfig(config)) {
             @Override
             public void onEvent(Event event) {
                 switch (event.getType()) {
