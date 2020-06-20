@@ -33,14 +33,14 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+import io.netty.handler.stream.ChunkedWriteHandler;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.AbstractClientInitializer;
 import org.drasyl.peer.connection.DefaultSessionInitializer;
-import org.drasyl.peer.connection.handler.ChunkedMessageHandler;
+import org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.MessageDecoder;
 import org.drasyl.peer.connection.handler.MessageEncoder;
-import org.drasyl.peer.connection.handler.RelayableMessageGuard;
 import org.drasyl.peer.connection.handler.SignatureHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,11 +54,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import static org.drasyl.peer.connection.handler.ChunkedMessageHandler.CHUNK_HANDLER;
+import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_HANDLER;
 import static org.drasyl.peer.connection.handler.ExceptionHandler.EXCEPTION_HANDLER;
 import static org.drasyl.peer.connection.handler.MessageDecoder.MESSAGE_DECODER;
 import static org.drasyl.peer.connection.handler.MessageEncoder.MESSAGE_ENCODER;
-import static org.drasyl.peer.connection.handler.RelayableMessageGuard.HOP_COUNT_GUARD;
 import static org.drasyl.util.WebSocketUtil.webSocketPort;
 
 /**
@@ -304,7 +303,8 @@ public class OutboundConnectionFactory {
             @Override
             protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
                 pipeline.addLast(SignatureHandler.SIGNATURE_HANDLER, new SignatureHandler(identity));
-                pipeline.addLast(CHUNK_HANDLER, new ChunkedMessageHandler(maxContentLength));
+                pipeline.addLast("streamer", new ChunkedWriteHandler());
+                pipeline.addLast(CHUNK_HANDLER, new ChunkedMessageHandler(maxContentLength, identity.getPublicKey()));
             }
 
             @Override

@@ -27,8 +27,9 @@ import io.netty.handler.codec.http.websocketx.extensions.compression.WebSocketSe
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
+import io.netty.handler.stream.ChunkedWriteHandler;
 import org.drasyl.peer.connection.DefaultSessionInitializer;
-import org.drasyl.peer.connection.handler.ChunkedMessageHandler;
+import org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler;
 import org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.RelayableMessageGuard;
@@ -42,7 +43,7 @@ import org.slf4j.LoggerFactory;
 import javax.net.ssl.SSLException;
 import java.security.cert.CertificateException;
 
-import static org.drasyl.peer.connection.handler.ChunkedMessageHandler.CHUNK_HANDLER;
+import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_HANDLER;
 import static org.drasyl.peer.connection.handler.RelayableMessageGuard.HOP_COUNT_GUARD;
 import static org.drasyl.peer.connection.server.handler.NodeServerConnectionHandler.NODE_SERVER_CONNECTION_HANDLER;
 
@@ -74,7 +75,8 @@ public class NodeServerChannelInitializer extends DefaultSessionInitializer {
         pipeline.addLast(SignatureHandler.SIGNATURE_HANDLER, new SignatureHandler(server.getIdentityManager().getIdentity()));
         pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(server.getConfig().getMessageHopLimit()));
         pipeline.addLast(NodeServerNewConnectionsGuard.CONNECTION_GUARD, new NodeServerNewConnectionsGuard(() -> server.isOpen() && (!server.getConfig().isSuperPeerEnabled() || server.getSuperPeerConnected().blockingFirst())));
-        pipeline.addLast(CHUNK_HANDLER, new ChunkedMessageHandler(server.getConfig().getMessageMaxContentLength()));
+        pipeline.addLast("streamer", new ChunkedWriteHandler());
+        pipeline.addLast(CHUNK_HANDLER, new ChunkedMessageHandler(server.getConfig().getMessageMaxContentLength(), server.getIdentityManager().getPublicKey()));
     }
 
     @Override

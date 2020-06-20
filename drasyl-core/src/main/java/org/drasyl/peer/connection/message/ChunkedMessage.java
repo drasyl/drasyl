@@ -97,19 +97,18 @@ public class ChunkedMessage extends ApplicationMessage {
      *
      * @param sender        the sender of the message
      * @param recipient     the recipient of the message
+     * @param msgID         the id of this message (must be the same as composed message)
      * @param payload       the chunk
      * @param contentLength the final content length
      * @param checksum      the final checksum
      */
-    public ChunkedMessage(CompressedPublicKey sender,
-                          CompressedPublicKey recipient,
-                          byte[] payload,
-                          int contentLength,
-                          String checksum) {
-        super(sender, recipient, payload);
-        this.contentLength = contentLength;
-        this.sequenceNumber = 0;
-        this.checksum = checksum;
+    public static ChunkedMessage createFirstChunk(CompressedPublicKey sender,
+                                                  CompressedPublicKey recipient,
+                                                  String msgID,
+                                                  byte[] payload,
+                                                  int contentLength,
+                                                  String checksum) {
+        return new ChunkedMessage(sender, recipient, msgID, payload, contentLength, checksum, 0);
     }
 
     /**

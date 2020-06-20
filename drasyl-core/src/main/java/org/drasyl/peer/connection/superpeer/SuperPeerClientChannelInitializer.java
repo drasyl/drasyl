@@ -24,10 +24,11 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+import io.netty.handler.stream.ChunkedWriteHandler;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.AbstractClientInitializer;
-import org.drasyl.peer.connection.handler.ChunkedMessageHandler;
+import org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler;
 import org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.RelayableMessageGuard;
@@ -41,7 +42,7 @@ import javax.net.ssl.SSLException;
 import java.net.URI;
 import java.util.concurrent.CompletableFuture;
 
-import static org.drasyl.peer.connection.handler.ChunkedMessageHandler.CHUNK_HANDLER;
+import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_HANDLER;
 import static org.drasyl.peer.connection.handler.RelayableMessageGuard.HOP_COUNT_GUARD;
 import static org.drasyl.peer.connection.superpeer.handler.SuperPeerClientConnectionHandler.SUPER_PEER_CLIENT_CONNECTION_HANDLER;
 
@@ -73,7 +74,8 @@ public class SuperPeerClientChannelInitializer extends AbstractClientInitializer
     protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
         pipeline.addLast(SignatureHandler.SIGNATURE_HANDLER, new SignatureHandler(identity));
         pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(config.getMessageHopLimit()));
-        pipeline.addLast(CHUNK_HANDLER, new ChunkedMessageHandler(config.getMessageMaxContentLength()));
+        pipeline.addLast("streamer", new ChunkedWriteHandler());
+        pipeline.addLast(CHUNK_HANDLER, new ChunkedMessageHandler(config.getMessageMaxContentLength(), identity.getPublicKey()));
     }
 
     @Override

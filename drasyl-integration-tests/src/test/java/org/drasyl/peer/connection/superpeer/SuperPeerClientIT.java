@@ -82,15 +82,12 @@ class SuperPeerClientIT {
     private Observable<Boolean> superPeerConnected;
     private SuperPeerClient client;
 
-    static {
-        ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.PARANOID);
-    }
-
     @BeforeEach
     void setup(TestInfo info) throws DrasylException {
         TestHelper.colorizedPrintln("STARTING " + info.getDisplayName(), AnsiColor.COLOR_CYAN, AnsiColor.STYLE_REVERSED);
 
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
+        System.setProperty("io.netty.leakDetection.level", "PARANOID");
 
         workerGroup = new NioEventLoopGroup();
         serverWorkerGroup = new NioEventLoopGroup();

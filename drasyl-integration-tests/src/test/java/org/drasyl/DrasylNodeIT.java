@@ -54,12 +54,10 @@ class DrasylNodeIT {
     public static final long TIMEOUT = 15000L;
     private List<DrasylNode> nodes;
 
-    static {
-        ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.PARANOID);
-    }
-
     @BeforeEach
     void setup(TestInfo info) {
+        System.setProperty("io.netty.leakDetection.level", "PARANOID");
+
         colorizedPrintln("STARTING " + info.getDisplayName(), COLOR_CYAN, STYLE_REVERSED);
         nodes = new ArrayList<>();
     }
