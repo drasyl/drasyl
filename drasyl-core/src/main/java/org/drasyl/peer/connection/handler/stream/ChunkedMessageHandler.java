@@ -134,7 +134,7 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
         chunks.asMap().remove(msg.getId());
 
         // Check if checksum is correct
-        String checksum = Hashing.murmur3_128Hex(payload);
+        String checksum = Hashing.murmur3x64Hex(payload);
 
         if (!checksum.equals(chunkedMessageChecksum)) {
             ctx.writeAndFlush(new StatusMessage(StatusMessage.Code.STATUS_PRECONDITION_FAILED, msg.getId()));

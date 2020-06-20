@@ -42,11 +42,11 @@ public final class Hashing {
         return HexUtil.bytesToHex(code.asBytes());
     }
 
-    public static String murmur3_128Hex(String input) {
-        return murmur3_128Hex(input.getBytes(StandardCharsets.UTF_8));
+    public static String murmur3x64Hex(String input) {
+        return murmur3x64Hex(input.getBytes(StandardCharsets.UTF_8));
     }
 
-    public static String murmur3_128Hex(byte[] input) {
+    public static String murmur3x64Hex(byte[] input) {
         return hashCode2Hex(MURMUR3_128.hashBytes(input));
     }
 }

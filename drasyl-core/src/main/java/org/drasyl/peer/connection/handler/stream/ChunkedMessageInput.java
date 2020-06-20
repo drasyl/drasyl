@@ -54,7 +54,7 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
     public ChunkedMessageInput(ApplicationMessage msg, int chunkSize) {
         this.sender = msg.getSender();
         this.recipient = msg.getRecipient();
-        this.checksum = Hashing.murmur3_128Hex(msg.getPayload());
+        this.checksum = Hashing.murmur3x64Hex(msg.getPayload());
         this.contentLength = msg.payloadAsByteBuf().readableBytes();
         this.msgID = msg.getId();
         this.sequenceNumber = 0;

@@ -21,9 +21,7 @@ package org.drasyl.peer.connection.streaming;
 import com.typesafe.config.ConfigFactory;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.util.ResourceLeakDetector;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.DrasylNodeConfig;
@@ -48,16 +46,14 @@ import testutils.AnsiColor;
 
 import java.util.Random;
 import java.util.concurrent.ExecutionException;
-import java.util.concurrent.TimeUnit;
 
 import static org.drasyl.peer.connection.server.TestNodeServerConnection.clientSessionAfterJoin;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static testutils.TestHelper.colorizedPrintln;
 
-public class ChunkedMessageIT {
+class ChunkedMessageIT {
     private static EventLoopGroup workerGroup;
     private static EventLoopGroup bossGroup;
-
     DrasylNodeConfig config;
     private NodeServer server;
     private Identity identitySession1;
