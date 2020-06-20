@@ -50,6 +50,7 @@ import static org.drasyl.util.SecretUtil.maskSecret;
  * identity and the Super Peer.
  */
 public class DrasylNodeConfig {
+    static final DrasylNodeConfig DEFAULT = new DrasylNodeConfig(ConfigFactory.defaultReference());
     //======================================== Config Paths ========================================
     static final String LOGLEVEL = "drasyl.loglevel";
     static final String IDENTITY_PROOF_OF_WORK = "drasyl.identity.proof-of-work";
@@ -186,6 +187,10 @@ public class DrasylNodeConfig {
         this.superPeerIdleTimeout = config.getDuration(SUPER_PEER_IDLE_TIMEOUT);
 
         this.intraVmDiscoveryEnabled = config.getBoolean(INTRA_VM_DISCOVERY_ENABLED);
+    }
+
+    public DrasylNodeConfig() {
+        this(ConfigFactory.load());
     }
 
     private Level getLoglevel(Config config, String path) {
@@ -542,5 +547,273 @@ public class DrasylNodeConfig {
                 ", superPeerIdleTimeout=" + superPeerIdleTimeout +
                 ", intraVmDiscoveryEnabled=" + intraVmDiscoveryEnabled +
                 '}';
+    }
+
+    public static Builder newBuilder() {
+        return new Builder(
+                DEFAULT.loglevel,
+                DEFAULT.proofOfWork,
+                DEFAULT.identityPublicKey,
+                DEFAULT.identityPrivateKey,
+                DEFAULT.identityPath,
+                DEFAULT.userAgent,
+                DEFAULT.serverBindHost,
+                DEFAULT.serverEnabled,
+                DEFAULT.serverBindPort,
+                DEFAULT.serverIdleRetries,
+                DEFAULT.serverIdleTimeout,
+                DEFAULT.flushBufferSize,
+                DEFAULT.serverSSLEnabled,
+                DEFAULT.serverSSLProtocols,
+                DEFAULT.serverHandshakeTimeout,
+                DEFAULT.serverEndpoints,
+                DEFAULT.serverChannelInitializer,
+                DEFAULT.messageMaxContentLength,
+                DEFAULT.messageHopLimit,
+                DEFAULT.superPeerEnabled,
+                DEFAULT.superPeerEndpoints,
+                DEFAULT.superPeerPublicKey,
+                DEFAULT.superPeerRetryDelays,
+                DEFAULT.superPeerHandshakeTimeout,
+                DEFAULT.superPeerChannelInitializer,
+                DEFAULT.superPeerIdleRetries,
+                DEFAULT.superPeerIdleTimeout,
+                DEFAULT.intraVmDiscoveryEnabled
+        );
+    }
+
+    public static final class Builder {
+        //======================================= Config Values ========================================
+        private Level loglevel; // NOSONAR
+        private ProofOfWork proofOfWork;
+        private CompressedPublicKey identityPublicKey;
+        private CompressedPrivateKey identityPrivateKey;
+        private Path identityPath;
+        private String userAgent;
+        private String serverBindHost;
+        private boolean serverEnabled;
+        private int serverBindPort;
+        private short serverIdleRetries;
+        private Duration serverIdleTimeout;
+        private int flushBufferSize;
+        private boolean serverSSLEnabled;
+        private List<String> serverSSLProtocols;
+        private Duration serverHandshakeTimeout;
+        private Set<URI> serverEndpoints;
+        private Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer;
+        private int messageMaxContentLength;
+        private short messageHopLimit;
+        private boolean superPeerEnabled;
+        private Set<URI> superPeerEndpoints;
+        private CompressedPublicKey superPeerPublicKey;
+        private List<Duration> superPeerRetryDelays;
+        private Duration superPeerHandshakeTimeout;
+        private Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer;
+        private short superPeerIdleRetries;
+        private Duration superPeerIdleTimeout;
+        private boolean intraVmDiscoveryEnabled;
+
+        @SuppressWarnings({ "java:S107" })
+        private Builder(Level loglevel,
+                        ProofOfWork proofOfWork,
+                        CompressedPublicKey identityPublicKey,
+                        CompressedPrivateKey identityPrivateKey,
+                        Path identityPath,
+                        String userAgent,
+                        String serverBindHost,
+                        boolean serverEnabled,
+                        int serverBindPort,
+                        short serverIdleRetries,
+                        Duration serverIdleTimeout,
+                        int flushBufferSize,
+                        boolean serverSSLEnabled,
+                        List<String> serverSSLProtocols,
+                        Duration serverHandshakeTimeout,
+                        Set<URI> serverEndpoints,
+                        Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer,
+                        int messageMaxContentLength,
+                        short messageHopLimit,
+                        boolean superPeerEnabled,
+                        Set<URI> superPeerEndpoints,
+                        CompressedPublicKey superPeerPublicKey,
+                        List<Duration> superPeerRetryDelays,
+                        Duration superPeerHandshakeTimeout,
+                        Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer,
+                        short superPeerIdleRetries,
+                        Duration superPeerIdleTimeout,
+                        boolean intraVmDiscoveryEnabled) {
+            this.loglevel = loglevel;
+            this.proofOfWork = proofOfWork;
+            this.identityPublicKey = identityPublicKey;
+            this.identityPrivateKey = identityPrivateKey;
+            this.identityPath = identityPath;
+            this.userAgent = userAgent;
+            this.serverBindHost = serverBindHost;
+            this.serverEnabled = serverEnabled;
+            this.serverBindPort = serverBindPort;
+            this.serverIdleRetries = serverIdleRetries;
+            this.serverIdleTimeout = serverIdleTimeout;
+            this.flushBufferSize = flushBufferSize;
+            this.serverSSLEnabled = serverSSLEnabled;
+            this.serverSSLProtocols = serverSSLProtocols;
+            this.serverHandshakeTimeout = serverHandshakeTimeout;
+            this.serverEndpoints = serverEndpoints;
+            this.serverChannelInitializer = serverChannelInitializer;
+            this.messageMaxContentLength = messageMaxContentLength;
+            this.messageHopLimit = messageHopLimit;
+            this.superPeerEnabled = superPeerEnabled;
+            this.superPeerEndpoints = superPeerEndpoints;
+            this.superPeerPublicKey = superPeerPublicKey;
+            this.superPeerRetryDelays = superPeerRetryDelays;
+            this.superPeerHandshakeTimeout = superPeerHandshakeTimeout;
+            this.superPeerChannelInitializer = superPeerChannelInitializer;
+            this.superPeerIdleRetries = superPeerIdleRetries;
+            this.superPeerIdleTimeout = superPeerIdleTimeout;
+            this.intraVmDiscoveryEnabled = intraVmDiscoveryEnabled;
+        }
+
+        public Builder loglevel(Level loglevel) {
+            this.loglevel = loglevel;
+            return this;
+        }
+
+        public Builder proofOfWork(ProofOfWork proofOfWork) {
+            this.proofOfWork = proofOfWork;
+            return this;
+        }
+
+        public Builder identityPublicKey(CompressedPublicKey identityPublicKey) {
+            this.identityPublicKey = identityPublicKey;
+            return this;
+        }
+
+        public Builder identityPrivateKey(CompressedPrivateKey identityPrivateKey) {
+            this.identityPrivateKey = identityPrivateKey;
+            return this;
+        }
+
+        public Builder identityPath(Path identityPath) {
+            this.identityPath = identityPath;
+            return this;
+        }
+
+        public Builder userAgent(String userAgent) {
+            this.userAgent = userAgent;
+            return this;
+        }
+
+        public Builder serverBindHost(String serverBindHost) {
+            this.serverBindHost = serverBindHost;
+            return this;
+        }
+
+        public Builder serverEnabled(boolean serverEnabled) {
+            this.serverEnabled = serverEnabled;
+            return this;
+        }
+
+        public Builder serverBindPort(int serverBindPort) {
+            this.serverBindPort = serverBindPort;
+            return this;
+        }
+
+        public Builder serverIdleRetries(short serverIdleRetries) {
+            this.serverIdleRetries = serverIdleRetries;
+            return this;
+        }
+
+        public Builder serverIdleTimeout(Duration serverIdleTimeout) {
+            this.serverIdleTimeout = serverIdleTimeout;
+            return this;
+        }
+
+        public Builder flushBufferSize(int flushBufferSize) {
+            this.flushBufferSize = flushBufferSize;
+            return this;
+        }
+
+        public Builder serverSSLEnabled(boolean serverSSLEnabled) {
+            this.serverSSLEnabled = serverSSLEnabled;
+            return this;
+        }
+
+        public Builder serverSSLProtocols(List<String> serverSSLProtocols) {
+            this.serverSSLProtocols = serverSSLProtocols;
+            return this;
+        }
+
+        public Builder serverHandshakeTimeout(Duration serverHandshakeTimeout) {
+            this.serverHandshakeTimeout = serverHandshakeTimeout;
+            return this;
+        }
+
+        public Builder serverEndpoints(Set<URI> serverEndpoints) {
+            this.serverEndpoints = serverEndpoints;
+            return this;
+        }
+
+        public Builder serverChannelInitializer(Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer) {
+            this.serverChannelInitializer = serverChannelInitializer;
+            return this;
+        }
+
+        public Builder messageMaxContentLength(int messageMaxContentLength) {
+            this.messageMaxContentLength = messageMaxContentLength;
+            return this;
+        }
+
+        public Builder messageHopLimit(short messageHopLimit) {
+            this.messageHopLimit = messageHopLimit;
+            return this;
+        }
+
+        public Builder superPeerEnabled(boolean superPeerEnabled) {
+            this.superPeerEnabled = superPeerEnabled;
+            return this;
+        }
+
+        public Builder superPeerEndpoints(Set<URI> superPeerEndpoints) {
+            this.superPeerEndpoints = superPeerEndpoints;
+            return this;
+        }
+
+        public Builder superPeerPublicKey(CompressedPublicKey superPeerPublicKey) {
+            this.superPeerPublicKey = superPeerPublicKey;
+            return this;
+        }
+
+        public Builder superPeerRetryDelays(List<Duration> superPeerRetryDelays) {
+            this.superPeerRetryDelays = superPeerRetryDelays;
+            return this;
+        }
+
+        public Builder superPeerHandshakeTimeout(Duration superPeerHandshakeTimeout) {
+            this.superPeerHandshakeTimeout = superPeerHandshakeTimeout;
+            return this;
+        }
+
+        public Builder superPeerChannelInitializer(Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer) {
+            this.superPeerChannelInitializer = superPeerChannelInitializer;
+            return this;
+        }
+
+        public Builder superPeerIdleRetries(short superPeerIdleRetries) {
+            this.superPeerIdleRetries = superPeerIdleRetries;
+            return this;
+        }
+
+        public Builder superPeerIdleTimeout(Duration superPeerIdleTimeout) {
+            this.superPeerIdleTimeout = superPeerIdleTimeout;
+            return this;
+        }
+
+        public Builder intraVmDiscoveryEnabled(boolean intraVmDiscoveryEnabled) {
+            this.intraVmDiscoveryEnabled = intraVmDiscoveryEnabled;
+            return this;
+        }
+
+        public DrasylNodeConfig build() {
+            return new DrasylNodeConfig(loglevel, proofOfWork, identityPublicKey, identityPrivateKey, identityPath, userAgent, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled);
+        }
     }
 }
