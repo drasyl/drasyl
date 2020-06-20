@@ -53,7 +53,8 @@ public final class NetworkUtil {
             "http://ipv4.icanhazip.com",
             "http://bot.whatismyipaddress.com",
             "http://myexternalip.com/raw",
-            "http://ipecho.net/plain"
+            "http://ipecho.net/plain",
+            "http://ifconfig.me/ip"
     };
 
     private NetworkUtil() {

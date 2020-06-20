@@ -26,14 +26,12 @@ import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import org.drasyl.DrasylNodeConfig;
-import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.AbstractClientInitializer;
 import org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler;
 import org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.RelayableMessageGuard;
 import org.drasyl.peer.connection.handler.SignatureHandler;
-import org.drasyl.peer.connection.superpeer.handler.SuperPeerClientConnectionHandler;
 import org.drasyl.util.WebSocketUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +42,7 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_HANDLER;
 import static org.drasyl.peer.connection.handler.RelayableMessageGuard.HOP_COUNT_GUARD;
-import static org.drasyl.peer.connection.superpeer.handler.SuperPeerClientConnectionHandler.SUPER_PEER_CLIENT_CONNECTION_HANDLER;
+import static org.drasyl.peer.connection.superpeer.SuperPeerClientConnectionHandler.SUPER_PEER_CLIENT_CONNECTION_HANDLER;
 
 /**
  * Creates a newly configured {@link ChannelPipeline} for a ClientConnection to a node server.
@@ -54,16 +52,16 @@ public class SuperPeerClientChannelInitializer extends AbstractClientInitializer
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClientChannelInitializer.class);
     private final DrasylNodeConfig config;
     private final SuperPeerClientConnectionHandler clientHandler;
-    private final Identity identity;
+    private final SuperPeerClient client;
 
     public SuperPeerClientChannelInitializer(DrasylNodeConfig config,
-                                             URI endpoint,
-                                             SuperPeerClient superPeerClient) {
+                                             SuperPeerClient client,
+                                             URI endpoint) {
         super(config.getFlushBufferSize(), config.getSuperPeerIdleTimeout(),
                 config.getSuperPeerIdleRetries(), endpoint);
         this.config = config;
-        this.identity = superPeerClient.getIdentityManager().getIdentity();
-        clientHandler = new SuperPeerClientConnectionHandler(superPeerClient.getIdentityManager().getProofOfWork(), this.config.getSuperPeerPublicKey(), superPeerClient.getIdentityManager().getPublicKey(), this.config.getSuperPeerHandshakeTimeout(), superPeerClient.getPeersManager(), superPeerClient.getMessenger());
+        this.client = client;
+        clientHandler = new SuperPeerClientConnectionHandler(config, client);
     }
 
     public CompletableFuture<Void> handshakeFuture() {
@@ -72,7 +70,7 @@ public class SuperPeerClientChannelInitializer extends AbstractClientInitializer
 
     @Override
     protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
-        pipeline.addLast(SignatureHandler.SIGNATURE_HANDLER, new SignatureHandler(identity));
+        pipeline.addLast(SignatureHandler.SIGNATURE_HANDLER, new SignatureHandler(client.getIdentityManager().getIdentity()));
         pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(config.getMessageHopLimit()));
         pipeline.addLast("streamer", new ChunkedWriteHandler());
         pipeline.addLast(CHUNK_HANDLER, new ChunkedMessageHandler(config.getMessageMaxContentLength(), identity.getPublicKey()));

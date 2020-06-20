@@ -24,7 +24,6 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigFactory;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.util.ResourceLeakDetector;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylException;
@@ -32,6 +31,8 @@ import org.drasyl.DrasylNode;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.identity.CompressedKeyPair;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
@@ -60,7 +61,6 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 import testutils.AnsiColor;
-import testutils.TestHelper;
 
 import java.security.KeyPair;
 import java.util.Arrays;
@@ -147,7 +147,7 @@ class NodeServerIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void joinMessageShouldBeRespondedWithWelcomeMessage() throws ExecutionException, InterruptedException {
         // create connection
-        TestNodeServerConnection session = clientSession(server, identitySession1);
+        TestNodeServerConnection session = clientSession(config, server, identitySession1);
 
         // send message
         RequestMessage request = new JoinMessage(session.getIdentity().getPoW(), session.getIdentity().getPublicKey(), Set.of());
@@ -163,8 +163,8 @@ class NodeServerIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void multipleJoinMessagesShouldBeRespondedWithWelcomeMessage() throws ExecutionException, InterruptedException {
         // create connections
-        TestNodeServerConnection session1 = clientSession(server, identitySession1);
-        TestNodeServerConnection session2 = clientSession(server, identitySession2);
+        TestNodeServerConnection session1 = clientSession(config, server, identitySession1);
+        TestNodeServerConnection session2 = clientSession(config, server, identitySession2);
 
         // send messages
         RequestMessage request1 = new JoinMessage(session1.getIdentity().getPoW(), session1.getIdentity().getPublicKey(), Set.of());
@@ -185,8 +185,8 @@ class NodeServerIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void applicationMessageShouldBeForwardedToRecipient() throws ExecutionException, InterruptedException {
         // create connections
-        TestNodeServerConnection session1 = clientSessionAfterJoin(server, identitySession1);
-        TestNodeServerConnection session2 = clientSessionAfterJoin(server, identitySession2);
+        TestNodeServerConnection session1 = clientSessionAfterJoin(config, server, identitySession1);
+        TestNodeServerConnection session2 = clientSessionAfterJoin(config, server, identitySession2);
 
         TestObserver<Message> receivedMessages2 = session2.receivedMessages().test();
 
@@ -214,7 +214,7 @@ class NodeServerIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void notJoiningClientsShouldBeDroppedAfterTimeout() throws ExecutionException, InterruptedException {
         // create connection
-        TestNodeServerConnection session = clientSession(server, identitySession1);
+        TestNodeServerConnection session = clientSession(config, server, identitySession1);
 
         TestObserver<Message> receivedMessages = session.receivedMessages().test();
 
@@ -237,10 +237,10 @@ class NodeServerIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void joinedClientsShouldNoBeDroppedAfterTimeout() throws InterruptedException, ExecutionException {
         // create connection
-        TestNodeServerConnection session = clientSessionAfterJoin(server, identitySession1);
+        TestNodeServerConnection session = clientSessionAfterJoin(config, server, identitySession1);
 
         // wait until timeout
-        Thread.sleep(server.getConfig().getServerHandshakeTimeout().plusSeconds(2).toMillis());// NOSONAR
+        Thread.sleep(config.getServerHandshakeTimeout().plusSeconds(2).toMillis());// NOSONAR
 
         // verify session status
         assertFalse(session.isClosed().isDone());
@@ -250,7 +250,7 @@ class NodeServerIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void invalidMessageShouldBeRespondedWithExceptionMessage() throws ExecutionException, InterruptedException {
         // create connection
-        TestNodeServerConnection session = clientSession(server, identitySession1);
+        TestNodeServerConnection session = clientSession(config, server, identitySession1);
 
         TestObserver<Message> receivedMessages = session.receivedMessages().test();
 
@@ -266,8 +266,8 @@ class NodeServerIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void newSessionWithSameIdentityShouldReplaceAndCloseExistingSession() throws ExecutionException, InterruptedException {
         // create connections
-        TestNodeServerConnection session1 = clientSession(server, identitySession1);
-        TestNodeServerConnection session2 = clientSession(server, session1.getIdentity());
+        TestNodeServerConnection session1 = clientSession(config, server, identitySession1);
+        TestNodeServerConnection session2 = clientSession(config, server, session1.getIdentity());
 
         TestObserver<Message> receivedMessages1 = session1.receivedMessages().test();
         TestObserver<Message> receivedMessages2 = session2.receivedMessages().test();
@@ -308,12 +308,12 @@ class NodeServerIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientsNotSendingPongMessageShouldBeDroppedAfterTimeout() throws ExecutionException, InterruptedException {
         // create connection
-        TestNodeServerConnection session = clientSession(server, identitySession1, false);
+        TestNodeServerConnection session = clientSession(config, server, identitySession1, false);
 
         TestObserver<Message> receivedMessages = session.receivedMessages().test();
 
         // wait until timeout
-        Thread.sleep(server.getConfig().getServerIdleTimeout().toMillis() * (server.getConfig().getServerIdleRetries() + 1) + 1000);// NOSONAR
+        Thread.sleep(config.getServerIdleTimeout().toMillis() * (config.getServerIdleRetries() + 1) + 1000);// NOSONAR
 
         // verify responses
         receivedMessages.awaitCount(3);
@@ -326,10 +326,10 @@ class NodeServerIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientsSendingPongMessageShouldNotBeDroppedAfterTimeout() throws ExecutionException, InterruptedException {
         // create connection
-        TestNodeServerConnection session = clientSessionAfterJoin(server, identitySession1);
+        TestNodeServerConnection session = clientSessionAfterJoin(config, server, identitySession1);
 
         // wait until timeout
-        Thread.sleep(server.getConfig().getServerIdleTimeout().toMillis() * (server.getConfig().getServerIdleRetries() + 1) + 1000);// NOSONAR
+        Thread.sleep(config.getServerIdleTimeout().toMillis() * (config.getServerIdleRetries() + 1) + 1000);// NOSONAR
 
         // verify session status
         assertFalse(session.isClosed().isDone());
@@ -339,7 +339,7 @@ class NodeServerIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void pingMessageShouldBeRespondedWithPongMessage() throws ExecutionException, InterruptedException {
         // create connection
-        TestNodeServerConnection session = clientSession(server, identitySession1, false);
+        TestNodeServerConnection session = clientSession(config, server, identitySession1, false);
 
         // send message
         RequestMessage request = new PingMessage();
@@ -353,12 +353,14 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void nonAuthorizedClientSendingNonJoinMessageShouldBeRespondedWithStatusForbiddenMessage() throws ExecutionException, InterruptedException {
+    void nonAuthorizedClientSendingNonJoinMessageShouldBeRespondedWithStatusForbiddenMessage() throws ExecutionException, InterruptedException, CryptoException {
         // create connection
-        TestNodeServerConnection session = clientSession(server, identitySession1);
+        TestNodeServerConnection session = clientSession(config, server, identitySession1);
 
         // send message
-        RequestMessage request = new ApplicationMessage(TestHelper.random(), TestHelper.random(), new byte[]{
+        CompressedPublicKey sender = CompressedPublicKey.of("023ce7bb9756b5aa68fb82914ecafb71c3bb86701d4f200ae68420d13eddda7ebf");
+        CompressedPublicKey recipient = CompressedPublicKey.of("037e43ee5c82742f00355f13b9714c63e53a74a694b7de8d4715f06d9e7880bdbf");
+        RequestMessage request = new ApplicationMessage(sender, recipient, new byte[]{
                 0x00,
                 0x01
         });
@@ -375,8 +377,8 @@ class NodeServerIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void messageWithMaxSizeShouldArrive() throws InterruptedException, ExecutionException {
         // create connection
-        TestNodeServerConnection session1 = clientSessionAfterJoin(server, identitySession1);
-        TestNodeServerConnection session2 = clientSessionAfterJoin(server, identitySession2);
+        TestNodeServerConnection session1 = clientSessionAfterJoin(config, server, identitySession1);
+        TestNodeServerConnection session2 = clientSessionAfterJoin(config, server, identitySession2);
 
         TestObserver<Message> receivedMessages = session2.receivedMessages().test();
 
@@ -397,8 +399,8 @@ class NodeServerIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void messageExceedingMaxSizeShouldNotBeSend() throws InterruptedException, ExecutionException {
         // create connection
-        TestNodeServerConnection session1 = clientSessionAfterJoin(server, identitySession1);
-        TestNodeServerConnection session2 = clientSessionAfterJoin(server, identitySession2);
+        TestNodeServerConnection session1 = clientSessionAfterJoin(config, server, identitySession1);
+        TestNodeServerConnection session2 = clientSessionAfterJoin(config, server, identitySession2);
         TestObserver<Message> receivedMessages = session2.receivedMessages().filter(msg -> msg instanceof ApplicationMessage).test();
 
         // create message with exceeded payload size
@@ -410,7 +412,7 @@ class NodeServerIT {
         session2.send(request);
 
         // wait until timeout
-        Thread.sleep(server.getConfig().getServerHandshakeTimeout().plusSeconds(2).toMillis());// NOSONAR
+        Thread.sleep(config.getServerHandshakeTimeout().plusSeconds(2).toMillis());// NOSONAR
         receivedMessages.assertNoValues();
     }
 
@@ -418,8 +420,8 @@ class NodeServerIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void messageExceedingChunkSizeShouldBeSend() throws InterruptedException, ExecutionException {
         // create connections
-        TestNodeServerConnection session1 = clientSessionAfterJoin(server, identitySession1);
-        TestNodeServerConnection session2 = clientSessionAfterJoin(server, identitySession2);
+        TestNodeServerConnection session1 = clientSessionAfterJoin(config, server, identitySession1);
+        TestNodeServerConnection session2 = clientSessionAfterJoin(config, server, identitySession2);
 
         TestObserver<Message> receivedMessages2 = session2.receivedMessages().test();
 
@@ -463,7 +465,7 @@ class NodeServerIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void shuttingDownServerShouldSendLeaveMessage() throws ExecutionException, InterruptedException {
-        TestNodeServerConnection session = clientSessionAfterJoin(server, identitySession1);
+        TestNodeServerConnection session = clientSessionAfterJoin(config, server, identitySession1);
 
         TestObserver<Message> receivedMessages = session.receivedMessages().test();
 
@@ -477,7 +479,7 @@ class NodeServerIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void shuttingDownServerShouldRejectNewConnections() throws ExecutionException, InterruptedException {
-        TestNodeServerConnection session = clientSession(server, identitySession1);
+        TestNodeServerConnection session = clientSession(config, server, identitySession1);
 
         server.close();
 
@@ -494,15 +496,15 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void MessageWithWrongSignatureShouldProduceExceptionMessage() throws ExecutionException, InterruptedException, CryptoException, JsonProcessingException {
+    void MessageWithWrongSignatureShouldProduceExceptionMessage() throws CryptoException, JsonProcessingException, ExecutionException, InterruptedException {
         // create connection
-        TestNodeServerConnection session = clientSession(server, identitySession1, false);
+        TestNodeServerConnection session = clientSession(config, server, identitySession1, false);
         TestObserver<Message> receivedMessages = session.receivedMessages().filter(msg -> msg instanceof StatusMessage).test();
 
         // send message
         Message request = new PingMessage();
         SignedMessage signedMessage = new SignedMessage(request, session.getPublicKey());
-        KeyPair keyPair = Crypto.generateKeys();
+        KeyPair keyPair = CompressedKeyPair.of("0300f9df12eed957a17b2b373978ea32177b3e1ce00c92003b5dd2c68de253b35c", "00b96ac2757f5f427a210c7a68f357bfa03f986b547a3b68e0bf79daa45f9edd").toUncompressedKeyPair();
         Crypto.sign(keyPair.getPrivate(), signedMessage);
         session.sendRawString(new ObjectMapper().writeValueAsString(signedMessage));
 
@@ -515,7 +517,7 @@ class NodeServerIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void wrongPoWShouldResultInError() throws ExecutionException, InterruptedException {
         // create connections
-        TestNodeServerConnection session = clientSession(server, identitySession1);
+        TestNodeServerConnection session = clientSession(config, server, identitySession1);
         TestObserver<Message> receivedMessages = session.receivedMessages().filter(msg -> msg instanceof ConnectionExceptionMessage).test();
 
         // send messages

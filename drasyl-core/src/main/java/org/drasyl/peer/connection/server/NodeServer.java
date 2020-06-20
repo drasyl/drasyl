@@ -135,7 +135,7 @@ public class NodeServer implements AutoCloseable {
                 new NodeServerChannelGroup(),
                 superPeerConnected);
 
-        nodeServerChannelBootstrap = new NodeServerChannelBootstrap(this, serverBootstrap, config);
+        nodeServerChannelBootstrap = new NodeServerChannelBootstrap(config, this, serverBootstrap);
     }
 
     NodeServer(IdentityManager identityManager,
@@ -168,18 +168,18 @@ public class NodeServer implements AutoCloseable {
         this.superPeerConnected = superPeerConnected;
     }
 
-    public NodeServerChannelGroup getChannelGroup() {
+    NodeServerChannelGroup getChannelGroup() {
         return channelGroup;
     }
 
-    public Messenger getMessenger() {
+    Messenger getMessenger() {
         return messenger;
     }
 
     /**
      * @return the peers manager
      */
-    public PeersManager getPeersManager() {
+    PeersManager getPeersManager() {
         return peersManager;
     }
 
@@ -188,13 +188,6 @@ public class NodeServer implements AutoCloseable {
      */
     public Set<URI> getEndpoints() {
         return actualEndpoints;
-    }
-
-    /**
-     * @return the config
-     */
-    public DrasylNodeConfig getConfig() {
-        return config;
     }
 
     EventLoopGroup getBossGroup() {
@@ -209,11 +202,11 @@ public class NodeServer implements AutoCloseable {
         return opened.get();
     }
 
-    public IdentityManager getIdentityManager() {
+    IdentityManager getIdentityManager() {
         return identityManager;
     }
 
-    public Observable<Boolean> getSuperPeerConnected() {
+    Observable<Boolean> getSuperPeerConnected() {
         return superPeerConnected;
     }
 

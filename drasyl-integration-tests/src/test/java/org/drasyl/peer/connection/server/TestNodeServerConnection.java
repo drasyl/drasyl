@@ -18,28 +18,19 @@
  */
 package org.drasyl.peer.connection.server;
 
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.*;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
+import org.drasyl.DrasylNodeConfig;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.identity.CompressedKeyPair;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.message.JoinMessage;
-import org.drasyl.peer.connection.message.Message;
-import org.drasyl.peer.connection.message.RequestMessage;
-import org.drasyl.peer.connection.message.ResponseMessage;
-import org.drasyl.peer.connection.message.StatusMessage;
-import org.drasyl.peer.connection.message.WelcomeMessage;
+import org.drasyl.peer.connection.message.*;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -145,10 +136,11 @@ public class TestNodeServerConnection {
     /**
      * Creates a new session to the given server.
      */
-    public static TestNodeServerConnection clientSession(NodeServer server,
+    public static TestNodeServerConnection clientSession(DrasylNodeConfig config,
+                                                         NodeServer server,
                                                          Identity identity) throws ExecutionException, InterruptedException {
-        URI serverEndpoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
-        return TestNodeServerConnection.clientSession(serverEndpoint, identity, true, server.workerGroup, server.getConfig().getMessageMaxContentLength(), server.getConfig().getServerSSLEnabled());
+        URI serverEndpoint = URI.create("ws://" + config.getServerBindHost() + ":" + server.getPort());
+        return TestNodeServerConnection.clientSession(serverEndpoint, identity, true, server.workerGroup, config.getMessageMaxContentLength(), config.getServerSSLEnabled());
     }
 
     public void send(Message message) {
@@ -267,10 +259,11 @@ public class TestNodeServerConnection {
     /**
      * Creates a new session with the given sessionUID and joins the given server.
      */
-    public static TestNodeServerConnection clientSessionAfterJoin(NodeServer server,
+    public static TestNodeServerConnection clientSessionAfterJoin(DrasylNodeConfig config,
+                                                                  NodeServer server,
                                                                   Identity identity) throws ExecutionException,
             InterruptedException {
-        TestNodeServerConnection session = TestNodeServerConnection.clientSession(server, identity, true);
+        TestNodeServerConnection session = TestNodeServerConnection.clientSession(config, server, identity, true);
         ResponseMessage<?> responseMessage = session.sendRequest(new JoinMessage(session.getIdentity().getPoW(), session.getIdentity().getPublicKey(), Set.of())).get();
         session.send(new StatusMessage(STATUS_OK, responseMessage.getId()));
         await().until(() -> server.getChannelGroup().find(session.getIdentity().getPublicKey()) != null);
@@ -311,14 +304,15 @@ public class TestNodeServerConnection {
     /**
      * Creates a new session to the given server.
      */
-    public static TestNodeServerConnection clientSession(NodeServer server,
+    public static TestNodeServerConnection clientSession(DrasylNodeConfig config,
+                                                         NodeServer server,
                                                          Identity identity,
                                                          boolean pingPong) throws ExecutionException,
             InterruptedException {
-        URI serverEndpoint = URI.create("ws://" + server.getConfig().getServerBindHost() + ":" + server.getPort());
+        URI serverEndpoint = URI.create("ws://" + config.getServerBindHost() + ":" + server.getPort());
 
         return TestNodeServerConnection.clientSession(serverEndpoint,
-                identity, pingPong, server.workerGroup, server.getConfig().getMessageMaxContentLength(), server.getConfig().getServerSSLEnabled());
+                identity, pingPong, server.workerGroup, config.getMessageMaxContentLength(), config.getServerSSLEnabled());
     }
 
     /**

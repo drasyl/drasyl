@@ -28,13 +28,13 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import io.netty.handler.stream.ChunkedWriteHandler;
+import org.drasyl.DrasylNodeConfig;
 import org.drasyl.peer.connection.DefaultSessionInitializer;
-import org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler;
 import org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.RelayableMessageGuard;
 import org.drasyl.peer.connection.handler.SignatureHandler;
-import org.drasyl.peer.connection.server.handler.NodeServerConnectionHandler;
+import org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler;
 import org.drasyl.peer.connection.server.handler.NodeServerHttpHandler;
 import org.drasyl.peer.connection.server.handler.NodeServerNewConnectionsGuard;
 import org.slf4j.Logger;
@@ -43,9 +43,9 @@ import org.slf4j.LoggerFactory;
 import javax.net.ssl.SSLException;
 import java.security.cert.CertificateException;
 
-import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_HANDLER;
 import static org.drasyl.peer.connection.handler.RelayableMessageGuard.HOP_COUNT_GUARD;
-import static org.drasyl.peer.connection.server.handler.NodeServerConnectionHandler.NODE_SERVER_CONNECTION_HANDLER;
+import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_HANDLER;
+import static org.drasyl.peer.connection.server.NodeServerConnectionHandler.NODE_SERVER_CONNECTION_HANDLER;
 
 /**
  * Creates a newly configured {@link ChannelPipeline} for the node server.
@@ -53,11 +53,12 @@ import static org.drasyl.peer.connection.server.handler.NodeServerConnectionHand
 @SuppressWarnings({ "java:S4818" })
 public class NodeServerChannelInitializer extends DefaultSessionInitializer {
     private static final Logger LOG = LoggerFactory.getLogger(NodeServerChannelInitializer.class);
+    private final DrasylNodeConfig config;
     protected final NodeServer server;
 
-    public NodeServerChannelInitializer(NodeServer server) {
-        super(server.getConfig().getFlushBufferSize(), server.getConfig().getServerIdleTimeout(),
-                server.getConfig().getServerIdleRetries());
+    public NodeServerChannelInitializer(DrasylNodeConfig config, NodeServer server) {
+        super(config.getFlushBufferSize(), config.getServerIdleTimeout(), config.getServerIdleRetries());
+        this.config = config;
         this.server = server;
     }
 
@@ -73,10 +74,10 @@ public class NodeServerChannelInitializer extends DefaultSessionInitializer {
     @Override
     protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
         pipeline.addLast(SignatureHandler.SIGNATURE_HANDLER, new SignatureHandler(server.getIdentityManager().getIdentity()));
-        pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(server.getConfig().getMessageHopLimit()));
-        pipeline.addLast(NodeServerNewConnectionsGuard.CONNECTION_GUARD, new NodeServerNewConnectionsGuard(() -> server.isOpen() && (!server.getConfig().isSuperPeerEnabled() || server.getSuperPeerConnected().blockingFirst())));
+        pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(config.getMessageHopLimit()));
+        pipeline.addLast(NodeServerNewConnectionsGuard.CONNECTION_GUARD, new NodeServerNewConnectionsGuard(() -> server.isOpen() && (!config.isSuperPeerEnabled() || server.getSuperPeerConnected().blockingFirst())));
         pipeline.addLast("streamer", new ChunkedWriteHandler());
-        pipeline.addLast(CHUNK_HANDLER, new ChunkedMessageHandler(server.getConfig().getMessageMaxContentLength(), server.getIdentityManager().getPublicKey()));
+        pipeline.addLast(CHUNK_HANDLER, new ChunkedMessageHandler(config.getMessageMaxContentLength(), server.getIdentityManager().getPublicKey()));
     }
 
     @Override
@@ -85,7 +86,7 @@ public class NodeServerChannelInitializer extends DefaultSessionInitializer {
         pipeline.addLast(ConnectionExceptionMessageHandler.EXCEPTION_MESSAGE_HANDLER, ConnectionExceptionMessageHandler.INSTANCE);
 
         // Server handler
-        pipeline.addLast(NODE_SERVER_CONNECTION_HANDLER, new NodeServerConnectionHandler(server.getIdentityManager().getPublicKey(), server.getPeersManager(), server.getEndpoints(), server.getConfig().getServerHandshakeTimeout(), server.getMessenger(), server.getChannelGroup()));
+        pipeline.addLast(NODE_SERVER_CONNECTION_HANDLER, new NodeServerConnectionHandler(config, server));
     }
 
     @Override
@@ -96,12 +97,12 @@ public class NodeServerChannelInitializer extends DefaultSessionInitializer {
 
     @Override
     protected SslHandler generateSslContext(SocketChannel ch) {
-        if (server.getConfig().getServerSSLEnabled()) {
+        if (config.getServerSSLEnabled()) {
             try {
                 SelfSignedCertificate ssc = new SelfSignedCertificate();
 
                 return SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey())
-                        .protocols(server.getConfig().getServerSSLProtocols()).build().newHandler(ch.alloc());
+                        .protocols(config.getServerSSLProtocols()).build().newHandler(ch.alloc());
             }
             catch (SSLException | CertificateException e) {
                 LOG.error("SSLException: ", e);

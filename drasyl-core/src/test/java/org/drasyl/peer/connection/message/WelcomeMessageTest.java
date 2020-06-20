@@ -18,76 +18,74 @@
  */
 package org.drasyl.peer.connection.message;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import net.javacrumbs.jsonunit.core.Option;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.PeerInformation;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 import java.net.URI;
 import java.util.Set;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
+@ExtendWith(MockitoExtension.class)
 class WelcomeMessageTest {
     private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+    private final String correspondingId = "123";
+    @Mock
     private CompressedPublicKey publicKey;
+    @Mock
     private PeerInformation peerInformation;
-    private String correspondingId;
 
-    @BeforeEach
-    void setUp() throws CryptoException {
-        AbstractMessageWithUserAgent.userAgentGenerator = () -> "";
-        publicKey = CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d");
-        peerInformation = PeerInformation.of(Set.of(URI.create("ws://test")));
-        correspondingId = "correspondingId";
+    @Nested
+    class JsonDeserialization {
+        @Test
+        void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
+            String json = "{\"@type\":\"WelcomeMessage\",\"id\":\"4AE5CDCD8C21719F8E779F21\",\"userAgent\":\"\",\"publicKey\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\",\"peerInformation\":{\"endpoints\":[\"ws://test\"]},\"correspondingId\":\"123\"}";
+
+            assertEquals(new WelcomeMessage(CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"), PeerInformation.of(Set.of(URI.create("ws://test"))), "123"), JSON_MAPPER.readValue(json, Message.class));
+        }
     }
 
-    @AfterEach
-    public void tearDown() {
-        AbstractMessageWithUserAgent.userAgentGenerator = AbstractMessageWithUserAgent.defaultUserAgentGenerator;
+    @Nested
+    class JsonSerialization {
+        @Test
+        void shouldSerializeToCorrectJson() throws IOException {
+            WelcomeMessage message = new WelcomeMessage(publicKey, PeerInformation.of(), correspondingId);
+
+            assertThatJson(JSON_MAPPER.writeValueAsString(message))
+                    .isObject()
+                    .containsEntry("@type", WelcomeMessage.class.getSimpleName())
+                    .containsKeys("id", "userAgent", "publicKey", "peerInformation", "correspondingId");
+        }
     }
 
-    @Test
-    void toJson() throws JsonProcessingException {
-        WelcomeMessage message = new WelcomeMessage(publicKey, peerInformation, correspondingId);
+    @Nested
+    class Equals {
+        @Test
+        void shouldReturnTrue() {
+            WelcomeMessage message1 = new WelcomeMessage(publicKey, peerInformation, correspondingId);
+            WelcomeMessage message2 = new WelcomeMessage(publicKey, peerInformation, correspondingId);
 
-        assertThatJson(JSON_MAPPER.writeValueAsString(message))
-                .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo("{\"@type\":\"WelcomeMessage\",\"id\":\"" + message.getId() + "\",\"userAgent\":\"\",\"publicKey\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\",\"peerInformation\":{\"endpoints\":[\"ws://test\"]},\"correspondingId\":\"correspondingId\"}");
-
-        // Ignore toString()
-        message.toString();
+            assertEquals(message1, message2);
+        }
     }
 
-    @Test
-    void fromJson() throws IOException {
-        String json = "{\"@type\":\"WelcomeMessage\",\"id\":\"4AE5CDCD8C21719F8E779F21\",\"userAgent\":\"\",\"publicKey\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\",\"peerInformation\":{\"endpoints\":[\"ws://test\"]}}";
+    @Nested
+    class HashCode {
+        @Test
+        void shouldReturnTrue() {
+            WelcomeMessage message1 = new WelcomeMessage(publicKey, peerInformation, correspondingId);
+            WelcomeMessage message2 = new WelcomeMessage(publicKey, peerInformation, correspondingId);
 
-        assertThat(JSON_MAPPER.readValue(json, Message.class), instanceOf(WelcomeMessage.class));
-    }
-
-    @Test
-    void testEquals() {
-        WelcomeMessage message1 = new WelcomeMessage(publicKey, peerInformation, correspondingId);
-        WelcomeMessage message2 = new WelcomeMessage(publicKey, peerInformation, correspondingId);
-
-        assertEquals(message1, message2);
-    }
-
-    @Test
-    void testHashCode() {
-        WelcomeMessage message1 = new WelcomeMessage(publicKey, peerInformation, correspondingId);
-        WelcomeMessage message2 = new WelcomeMessage(publicKey, peerInformation, correspondingId);
-
-        assertEquals(message1.hashCode(), message2.hashCode());
+            assertEquals(message1.hashCode(), message2.hashCode());
+        }
     }
 }

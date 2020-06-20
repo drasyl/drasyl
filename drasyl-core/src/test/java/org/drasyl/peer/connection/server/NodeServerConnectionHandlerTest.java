@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection.server.handler;
+package org.drasyl.peer.connection.server;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -26,6 +26,7 @@ import io.netty.channel.ChannelId;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
@@ -39,14 +40,12 @@ import org.drasyl.peer.connection.message.RegisterGrandchildMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.message.UnregisterGrandchildMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
-import org.drasyl.peer.connection.message.WhoisMessage;
-import org.drasyl.peer.connection.server.NodeServer;
-import org.drasyl.peer.connection.server.NodeServerChannelGroup;
 import org.drasyl.util.Pair;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.net.URI;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
@@ -61,87 +60,65 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class NodeServerConnectionHandlerTest {
+    @Mock
     private ChannelHandlerContext ctx;
+    @Mock
     private ScheduledFuture<?> timeoutFuture;
-    private CompressedPublicKey publicKey;
+    @Mock
     private ChannelFuture channelFuture;
+    @Mock
     private Throwable cause;
+    @Mock
     private ApplicationMessage applicationMessage;
+    @Mock
     private JoinMessage joinMessage;
-    private NodeServer server;
+    @Mock
     private Messenger messenger;
+    @Mock
     private CompletableFuture<Void> handshakeFuture;
+    @Mock
     private JoinMessage requestMessage;
+    @Mock
     private CompressedPublicKey publicKey0;
+    @Mock
     private PeersManager peersManager;
+    @Mock
     private QuitMessage quitMessage;
+    @Mock
     private ChannelId channelId;
+    @Mock
     private Channel nettyChannel;
+    @Mock
     private NodeServerChannelGroup channelGroup;
+    @Mock
     private RegisterGrandchildMessage registerGrandchildMessage;
+    @Mock
     private CompressedPublicKey grandchildrenPublicKey0;
-    private Set<URI> grandchildrenEndpoints;
-    private PeerInformation grandchildrenPeerInformation;
+    @Mock
     private UnregisterGrandchildMessage unregisterGrandchildrenMessage;
+    @Mock
     private CompressedPublicKey superPeerPublicKey;
+    @Mock
     private PeerInformation superPeerInformation;
+    @Mock
     private Path superPeerPath;
+    @Mock
     private StatusMessage statusMessage;
+    @Mock
     private WelcomeMessage offerMessage;
-    private CompressedPublicKey grandchildrenPublicKey;
-    private WhoisMessage whoisMessage;
-    private CompressedPublicKey recipient;
-    private PeerInformation peerInformation;
-    private CompressedPublicKey requester;
-    private Set<URI> endpoints;
-
-    @BeforeEach
-    void setUp() {
-        ctx = mock(ChannelHandlerContext.class);
-        timeoutFuture = mock(ScheduledFuture.class);
-        publicKey = mock(CompressedPublicKey.class);
-        channelFuture = mock(ChannelFuture.class);
-        cause = mock(Throwable.class);
-        server = mock(NodeServer.class);
-        messenger = mock(Messenger.class);
-        handshakeFuture = mock(CompletableFuture.class);
-        requestMessage = mock(JoinMessage.class);
-        publicKey0 = mock(CompressedPublicKey.class);
-        peersManager = mock(PeersManager.class);
-        quitMessage = mock(QuitMessage.class);
-        nettyChannel = mock(Channel.class);
-        channelId = mock(ChannelId.class);
-        channelGroup = mock(NodeServerChannelGroup.class);
-        registerGrandchildMessage = mock(RegisterGrandchildMessage.class);
-        grandchildrenPublicKey0 = mock(CompressedPublicKey.class);
-        grandchildrenPublicKey = mock(CompressedPublicKey.class);
-        grandchildrenEndpoints = Set.of(URI.create("ws://grandchild.com"));
-        grandchildrenPeerInformation = mock(PeerInformation.class);
-        unregisterGrandchildrenMessage = mock(UnregisterGrandchildMessage.class);
-        superPeerPublicKey = mock(CompressedPublicKey.class);
-        superPeerInformation = mock(PeerInformation.class);
-        superPeerPath = mock(Path.class);
-        statusMessage = mock(StatusMessage.class);
-        offerMessage = mock(WelcomeMessage.class);
-        whoisMessage = mock(WhoisMessage.class);
-        recipient = mock(CompressedPublicKey.class);
-        peerInformation = mock(PeerInformation.class);
-        requester = mock(CompressedPublicKey.class);
-        endpoints = mock(Set.class);
-
-        when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
-        applicationMessage = mock(ApplicationMessage.class);
-        joinMessage = mock(JoinMessage.class);
-    }
+    @Mock
+    private NodeServer server;
+    @Mock
+    private IdentityManager identityManager;
 
     @Test
     void shouldSendExceptionMessageIfHandshakeIsNotDoneInTime() {
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(publicKey0, peersManager, Set.of(), ofMillis(0), messenger, handshakeFuture, timeoutFuture, requestMessage, channelGroup, offerMessage);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(server, ofMillis(0), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         assertEquals(new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE_TIMEOUT), channel.readOutbound());
@@ -149,7 +126,7 @@ class NodeServerConnectionHandlerTest {
 
     @Test
     void closeBeforeTimeoutShouldNotSendHandshakeTimeoutExceptionMessage() {
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(publicKey0, peersManager, Set.of(), ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, channelGroup, offerMessage);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(server, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
         channel.close();
 
@@ -158,10 +135,11 @@ class NodeServerConnectionHandlerTest {
 
     @Test
     void shouldRejectIncomingJoinMessageWithSamePublicKey() {
-        when(server.getMessenger()).thenReturn(messenger);
+        when(server.getIdentityManager()).thenReturn(identityManager);
+        when(identityManager.getPublicKey()).thenReturn(publicKey0);
         when(joinMessage.getPublicKey()).thenReturn(publicKey0);
 
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(publicKey0, peersManager, Set.of(), ofMillis(1000), messenger, handshakeFuture, timeoutFuture, null, channelGroup, offerMessage);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(server, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, null, offerMessage);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(joinMessage);
@@ -174,7 +152,7 @@ class NodeServerConnectionHandlerTest {
     void shouldRejectUnexpectedMessagesDuringHandshake() {
         when(applicationMessage.getId()).thenReturn("123");
 
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(publicKey0, peersManager, Set.of(), ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, channelGroup, offerMessage);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(server, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(applicationMessage);
@@ -185,10 +163,11 @@ class NodeServerConnectionHandlerTest {
 
     @Test
     void exceptionCaughtShouldWriteExceptionToChannelAndThenCloseIt() {
+        when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
         when(ctx.channel()).thenReturn(nettyChannel);
         when(nettyChannel.id()).thenReturn(channelId);
 
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(publicKey0, peersManager, Set.of(), ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, channelGroup, offerMessage);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(server, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         handler.exceptionCaught(ctx, cause);
 
         verify(ctx).writeAndFlush(any(ConnectionExceptionMessage.class));
@@ -198,9 +177,8 @@ class NodeServerConnectionHandlerTest {
     @Test
     void shouldCloseChannelOnQuitMessage() {
         when(handshakeFuture.isDone()).thenReturn(true);
-        when(quitMessage.getId()).thenReturn("123");
 
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(publicKey0, peersManager, Set.of(), ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, channelGroup, offerMessage);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(server, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(quitMessage);
@@ -211,14 +189,13 @@ class NodeServerConnectionHandlerTest {
 
     @Test
     void shouldAddGrandchildRouteAndInformSuperPeerOnRegisterGrandchildMessageAndRemoveGrandchildRouteAndInformSuperPeerOnClose() {
+        when(server.getPeersManager()).thenReturn(peersManager);
         when(handshakeFuture.isDone()).thenReturn(true);
-        when(registerGrandchildMessage.getId()).thenReturn("123");
         when(registerGrandchildMessage.getGrandchildren()).thenReturn(Set.of(grandchildrenPublicKey0));
-        when(grandchildrenPeerInformation.getEndpoints()).thenReturn(grandchildrenEndpoints);
         when(peersManager.getSuperPeer()).thenReturn(Pair.of(superPeerPublicKey, superPeerInformation));
         when(superPeerInformation.getPaths()).thenReturn(Set.of(superPeerPath));
 
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(publicKey0, peersManager, Set.of(), ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, channelGroup, offerMessage);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(server, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
         channel.attr(ATTRIBUTE_PUBLIC_KEY).set(publicKey0);
 
@@ -242,14 +219,13 @@ class NodeServerConnectionHandlerTest {
 
     @Test
     void shouldRemoveGrandchildRouteAndInformSuperPeerOnUnregisterGrandchildMessage() {
+        when(server.getPeersManager()).thenReturn(peersManager);
         when(handshakeFuture.isDone()).thenReturn(true);
-        when(unregisterGrandchildrenMessage.getId()).thenReturn("123");
         when(unregisterGrandchildrenMessage.getGrandchildren()).thenReturn(Set.of(grandchildrenPublicKey0));
-        when(grandchildrenPeerInformation.getEndpoints()).thenReturn(grandchildrenEndpoints);
         when(peersManager.getSuperPeer()).thenReturn(Pair.of(superPeerPublicKey, superPeerInformation));
         when(superPeerInformation.getPaths()).thenReturn(Set.of(superPeerPath));
 
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(publicKey0, peersManager, Set.of(), ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, channelGroup, offerMessage);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(server, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
         channel.attr(ATTRIBUTE_PUBLIC_KEY).set(publicKey0);
 
@@ -265,16 +241,17 @@ class NodeServerConnectionHandlerTest {
 
     @Test
     void shouldAddGrandchildRouteAndInformSuperPeerOnSessionCreationAndRemoveGrandchildRouteAndInformSuperPeerOnClose() {
+        when(server.getPeersManager()).thenReturn(peersManager);
+        when(server.getChannelGroup()).thenReturn(channelGroup);
         when(offerMessage.getId()).thenReturn("123");
         when(requestMessage.getPublicKey()).thenReturn(publicKey0);
         when(requestMessage.getChildrenAndGrandchildren()).thenReturn(Set.of(grandchildrenPublicKey0));
-        when(grandchildrenPeerInformation.getEndpoints()).thenReturn(grandchildrenEndpoints);
         when(statusMessage.getCorrespondingId()).thenReturn("123");
         when(statusMessage.getCode()).thenReturn(STATUS_OK);
         when(peersManager.getSuperPeer()).thenReturn(Pair.of(superPeerPublicKey, superPeerInformation));
         when(superPeerInformation.getPaths()).thenReturn(Set.of(superPeerPath));
 
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(publicKey0, peersManager, Set.of(), ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, channelGroup, offerMessage);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(server, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
         channel.attr(ATTRIBUTE_PUBLIC_KEY).set(publicKey0);
 

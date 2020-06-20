@@ -23,25 +23,30 @@ import org.apache.commons.cli.HelpFormatter;
 import org.drasyl.DrasylNode;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 
 import java.util.function.Supplier;
 
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
+@ExtendWith(MockitoExtension.class)
 class CliTest {
+    @Mock
     private HelpFormatter formatter;
+    @Mock
     private Supplier<String> versionSupplier;
+    @Mock
     private DrasylNode node;
 
     @BeforeEach
     void setUp() {
-        formatter = mock(HelpFormatter.class);
-        versionSupplier = mock(Supplier.class);
-        node = mock(DrasylNode.class);
     }
 
     @AfterEach

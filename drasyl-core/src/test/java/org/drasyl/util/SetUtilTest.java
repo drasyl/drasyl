@@ -18,6 +18,7 @@
  */
 package org.drasyl.util;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;
@@ -25,21 +26,24 @@ import java.util.Set;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class SetUtilTest {
-    @Test
-    void mergeShouldReturnSetContainingAllElementsOfBothGivenSets() {
-        Set<String> a = Set.of("apple", "banana");
-        Set<String> b = Set.of("pear", "cherry", "banana");
+    @Nested
+    class Merge {
+        @Test
+        void shouldReturnSetContainingAllElementsOfBothGivenSets() {
+            Set<String> a = Set.of("apple", "banana");
+            Set<String> b = Set.of("pear", "cherry", "banana");
 
-        assertEquals(Set.of("apple", "banana", "pear", "cherry"), SetUtil.merge(a, b));
-    }
+            assertEquals(Set.of("apple", "banana", "pear", "cherry"), SetUtil.merge(a, b));
+        }
 
-    @Test
-    void mergeShouldReturnSetContainingAllElementsOfGivenSetAndElement() {
-        Set<String> a = Set.of("apple", "banana");
-        String b1 = "pear";
-        String b2 = "apple";
+        @Test
+        void shouldReturnSetContainingAllElementsOfGivenSetAndElement() {
+            Set<String> a = Set.of("apple", "banana");
+            String b1 = "pear";
+            String b2 = "apple";
 
-        assertEquals(Set.of("apple", "banana", "pear"), SetUtil.merge(a, b1));
-        assertEquals(Set.of("apple", "banana"), SetUtil.merge(a, b2));
+            assertEquals(Set.of("apple", "banana", "pear"), SetUtil.merge(a, b1));
+            assertEquals(Set.of("apple", "banana"), SetUtil.merge(a, b2));
+        }
     }
 }

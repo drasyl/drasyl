@@ -16,18 +16,19 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection.superpeer.handler;
+package org.drasyl.peer.connection.superpeer;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.DrasylNodeConfig;
 import org.drasyl.messenger.Messenger;
-import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -35,41 +36,34 @@ import static java.time.Duration.ofMillis;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_SERVICE_UNAVAILABLE;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
+@ExtendWith(MockitoExtension.class)
 class SuperPeerClientConnectionHandlerTest {
     private EmbeddedChannel channel;
-    private CompressedPublicKey expectedPublicKey;
-    private CompressedPublicKey ownPublicKey;
-    private PeersManager peersManager;
+    @Mock
     private Messenger messenger;
+    @Mock
     private QuitMessage quitMessage;
+    @Mock
     private CompletableFuture<Void> handshakeFuture;
+    @Mock
     private ScheduledFuture<?> timeoutFuture;
+    @Mock
     private JoinMessage requestMessage;
+    @Mock
     private StatusMessage statusMessage;
-
-    @BeforeEach
-    void setUp() {
-        messenger = mock(Messenger.class);
-        handshakeFuture = mock(CompletableFuture.class);
-        peersManager = mock(PeersManager.class);
-        quitMessage = mock(QuitMessage.class);
-        timeoutFuture = mock(ScheduledFuture.class);
-        requestMessage = mock(JoinMessage.class);
-        expectedPublicKey = mock(CompressedPublicKey.class);
-        ownPublicKey = mock(CompressedPublicKey.class);
-        statusMessage = mock(StatusMessage.class);
-    }
+    @Mock
+    private DrasylNodeConfig config;
+    @Mock
+    private SuperPeerClient client;
 
     @Test
     void shouldCloseChannelOnQuitMessage() {
         when(handshakeFuture.isDone()).thenReturn(true);
-        when(quitMessage.getId()).thenReturn("123");
 
-        SuperPeerClientConnectionHandler handler = new SuperPeerClientConnectionHandler(expectedPublicKey, ownPublicKey, peersManager, messenger, ofMillis(1000), handshakeFuture, timeoutFuture, requestMessage);
+        SuperPeerClientConnectionHandler handler = new SuperPeerClientConnectionHandler(config, client, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage);
         channel = new EmbeddedChannel(handler);
         channel.readOutbound(); // join message
         channel.flush();
@@ -87,7 +81,7 @@ class SuperPeerClientConnectionHandlerTest {
         when(statusMessage.getCorrespondingId()).thenReturn("123");
         when(statusMessage.getCode()).thenReturn(STATUS_SERVICE_UNAVAILABLE);
 
-        SuperPeerClientConnectionHandler handler = new SuperPeerClientConnectionHandler(expectedPublicKey, ownPublicKey, peersManager, messenger, ofMillis(1000), handshakeFuture, timeoutFuture, requestMessage);
+        SuperPeerClientConnectionHandler handler = new SuperPeerClientConnectionHandler(config, client, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage);
         channel = new EmbeddedChannel(handler);
         channel.readOutbound(); // join message
         channel.flush();

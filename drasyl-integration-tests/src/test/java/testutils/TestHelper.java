@@ -18,16 +18,9 @@
  */
 package testutils;
 
-import org.awaitility.Awaitility;
-import org.awaitility.Durations;
-import org.drasyl.crypto.Crypto;
-import org.drasyl.crypto.CryptoException;
-import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.util.NetworkUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static testutils.AnsiColor.COLOR_RESET;
 
 public final class TestHelper {
@@ -53,24 +46,5 @@ public final class TestHelper {
      */
     public static void colorizedPrintln(String msg, AnsiColor color, AnsiColor style) {
         LOG.debug(color.getColor() + style.getColor() + DIVIDER + " " + msg + " " + DIVIDER + COLOR_RESET.getColor());
-    }
-
-    /**
-     * Waits until the given port is available or the timeout is reached.
-     *
-     * @param port the port
-     */
-    public static void waitUntilNetworkAvailable(int port) {
-        Awaitility.with().pollInSameThread().await().pollDelay(0, NANOSECONDS).atMost(Durations.FIVE_MINUTES)
-                .until(() -> NetworkUtil.available(port));
-    }
-
-    public static CompressedPublicKey random() {
-        try {
-            return CompressedPublicKey.of(Crypto.generateKeys().getPublic());
-        }
-        catch (CryptoException e) {
-            return null;
-        }
     }
 }

@@ -30,7 +30,6 @@ import org.drasyl.util.WebSocketUtil;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
-import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
 public class SuperPeerClientChannelBootstrap {
@@ -38,17 +37,16 @@ public class SuperPeerClientChannelBootstrap {
     private final EventLoopGroup workerGroup;
     private final URI endpoint;
     private final SuperPeerClientChannelInitializer superPeerClientChannelInitializer;
-    private final SuperPeerClient superPeerClient;
+    private final SuperPeerClient client;
 
     public SuperPeerClientChannelBootstrap(DrasylNodeConfig config,
+                                           SuperPeerClient client,
                                            EventLoopGroup workerGroup,
-                                           URI endpoint,
-                                           Set<URI> endpoints,
-                                           SuperPeerClient superPeerClient) throws SuperPeerClientException {
+                                           URI endpoint) throws SuperPeerClientException {
         this.config = config;
         this.workerGroup = workerGroup;
         this.endpoint = endpoint;
-        this.superPeerClient = superPeerClient;
+        this.client = client;
         String channelInitializer = config.getSuperPeerChannelInitializer();
 
         try {
@@ -74,9 +72,9 @@ public class SuperPeerClientChannelBootstrap {
     private SuperPeerClientChannelInitializer getChannelInitializer(String className) throws ClassNotFoundException,
             NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
         Class<?> c = Class.forName(className);
-        Constructor<?> cons = c.getConstructor(DrasylNodeConfig.class, URI.class, SuperPeerClient.class);
+        Constructor<?> cons = c.getConstructor(DrasylNodeConfig.class, SuperPeerClient.class, URI.class);
 
-        return (SuperPeerClientChannelInitializer) cons.newInstance(config, endpoint, superPeerClient);
+        return (SuperPeerClientChannelInitializer) cons.newInstance(config, client, endpoint);
     }
 
     public Channel getChannel() throws SuperPeerClientException {

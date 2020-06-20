@@ -18,6 +18,7 @@
  */
 package org.drasyl.util;
 
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
@@ -25,9 +26,12 @@ import java.net.URI;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class UriUtilTest {
-    @Test
-    void overridePort() {
-        assertEquals(URI.create("ws://example.com:22527"), UriUtil.overridePort(URI.create("ws://example.com"), 22527));
-        assertEquals(URI.create("ws://example.com:22527/foo?bar=baz#hello-world"), UriUtil.overridePort(URI.create("ws://example.com:1337/foo?bar=baz#hello-world"), 22527));
+    @Nested
+    class OverridePort {
+        @Test
+        void shouldReturnCorrectValue() {
+            assertEquals(URI.create("ws://example.com:22527"), UriUtil.overridePort(URI.create("ws://example.com"), 22527));
+            assertEquals(URI.create("ws://example.com:22527/foo?bar=baz#hello-world"), UriUtil.overridePort(URI.create("ws://example.com:1337/foo?bar=baz#hello-world"), 22527));
+        }
     }
 }

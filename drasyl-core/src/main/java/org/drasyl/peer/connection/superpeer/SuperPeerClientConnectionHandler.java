@@ -16,19 +16,18 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection.superpeer.handler;
+package org.drasyl.peer.connection.superpeer;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
+import org.drasyl.DrasylNodeConfig;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.identity.ProofOfWork;
 import org.drasyl.messenger.MessageSink;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.messenger.NoPathToIdentityException;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
-import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.handler.AbstractThreeWayHandshakeClientHandler;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
@@ -55,42 +54,34 @@ import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE
 public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeClientHandler<JoinMessage, WelcomeMessage> {
     public static final String SUPER_PEER_CLIENT_CONNECTION_HANDLER = "superPeerClientConnectionHandler";
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClientConnectionHandler.class);
-    private final CompressedPublicKey expectedPublicKey;
-    private final CompressedPublicKey ownIdentity;
-    private final PeersManager peersManager;
+    private final DrasylNodeConfig config;
+    private final SuperPeerClient client;
 
-    public SuperPeerClientConnectionHandler(ProofOfWork proofOfWork,
-                                            CompressedPublicKey expectedPublicKey,
-                                            CompressedPublicKey ownPublicKey,
-                                            Duration timeout,
-                                            PeersManager peersManager,
-                                            Messenger messenger) {
+    public SuperPeerClientConnectionHandler(DrasylNodeConfig config,
+                                            SuperPeerClient client) {
         super(
-                timeout,
-                messenger,
-                new JoinMessage(proofOfWork,
-                        ownPublicKey,
-                        peersManager.getChildrenAndGrandchildren().keySet()
+                config.getSuperPeerHandshakeTimeout(),
+                client.getMessenger(),
+                new JoinMessage(client.getIdentityManager().getProofOfWork(),
+                        client.getIdentityManager().getPublicKey(),
+                        client.getPeersManager().getChildrenAndGrandchildren().keySet()
                 )
         );
-        this.expectedPublicKey = expectedPublicKey;
-        this.ownIdentity = ownPublicKey;
-        this.peersManager = peersManager;
+        this.config = config;
+        this.client = client;
     }
 
     @SuppressWarnings({ "java:S107" })
-    SuperPeerClientConnectionHandler(CompressedPublicKey expectedPublicKey,
-                                     CompressedPublicKey ownIdentity,
-                                     PeersManager peersManager,
-                                     Messenger messenger,
+    SuperPeerClientConnectionHandler(DrasylNodeConfig config,
+                                     SuperPeerClient client,
                                      Duration timeout,
+                                     Messenger messenger,
                                      CompletableFuture<Void> handshakeFuture,
                                      ScheduledFuture<?> timeoutFuture,
                                      JoinMessage requestMessage) {
         super(timeout, messenger, handshakeFuture, timeoutFuture, requestMessage);
-        this.expectedPublicKey = expectedPublicKey;
-        this.ownIdentity = ownIdentity;
-        this.peersManager = peersManager;
+        this.config = config;
+        this.client = client;
     }
 
     @Override
@@ -106,10 +97,10 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
     @Override
     protected ConnectionExceptionMessage.Error validateSessionOffer(WelcomeMessage offerMessage) {
         CompressedPublicKey superPeerPublicKey = offerMessage.getPublicKey();
-        if (expectedPublicKey != null && !superPeerPublicKey.equals(expectedPublicKey)) {
+        if (config.getSuperPeerPublicKey() != null && !superPeerPublicKey.equals(config.getSuperPeerPublicKey())) {
             return CONNECTION_ERROR_WRONG_PUBLIC_KEY;
         }
-        else if (superPeerPublicKey.equals(ownIdentity)) {
+        else if (superPeerPublicKey.equals(client.getIdentityManager().getPublicKey())) {
             return CONNECTION_ERROR_WRONG_PUBLIC_KEY;
         }
         else {
@@ -129,10 +120,10 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
         channel.attr(ATTRIBUTE_PUBLIC_KEY).set(identity);
 
         // remove peer information on disconnect
-        channel.closeFuture().addListener(future -> peersManager.unsetSuperPeerAndRemovePeerInformation(peerInformation));
+        channel.closeFuture().addListener(future -> client.getPeersManager().unsetSuperPeerAndRemovePeerInformation(peerInformation));
 
         // store peer information
-        peersManager.addPeerInformationAndSetSuperPeer(identity, peerInformation);
+        client.getPeersManager().addPeerInformationAndSetSuperPeer(identity, peerInformation);
 
         MessageSink messageSink = (recipient, message) -> {
             if (channel.isWritable()) {

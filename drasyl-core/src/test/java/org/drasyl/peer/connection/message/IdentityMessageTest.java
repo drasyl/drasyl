@@ -18,36 +18,64 @@
  */
 package org.drasyl.peer.connection.message;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.PeerInformation;
-import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
+
+import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.mock;
 
+@ExtendWith(MockitoExtension.class)
 class IdentityMessageTest {
+    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
+    @Mock
     private CompressedPublicKey recipient;
+    @Mock
     private CompressedPublicKey publicKey;
+    private final String correspondingId = "123";
+    @Mock
     private PeerInformation peerInformation;
-    private String correspondingId;
-    private short hopCount;
 
-    @BeforeEach
-    void setUp() {
-        recipient = mock(CompressedPublicKey.class);
-        publicKey = mock(CompressedPublicKey.class);
-        peerInformation = PeerInformation.of();
-        correspondingId = "123";
-        hopCount = 64;
+    @Nested
+    class JsonDeserialization {
+        @Test
+        void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
+            String json = "{\"@type\":\"" + IdentityMessage.class.getSimpleName() + "\",\"id\":\"123\",\"recipient\":\"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\"publicKey\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"peerInformation\":{\"endpoints\":[], \"paths\":[]},\"correspondingId\":\"123\"}";
+
+            assertEquals(new IdentityMessage(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), PeerInformation.of(), "123"), JSON_MAPPER.readValue(json, Message.class));
+        }
     }
 
-    @Test
-    void incrementHopCountShouldIncrementHopCountByOne() {
-        IdentityMessage message = new IdentityMessage(recipient, publicKey, peerInformation, correspondingId);
+    @Nested
+    class JsonSerialization {
+        @Test
+        void shouldSerializeToCorrectJson() throws IOException {
+            IdentityMessage message = new IdentityMessage(recipient, publicKey, PeerInformation.of(), correspondingId);
 
-        message.incrementHopCount();
+            assertThatJson(JSON_MAPPER.writeValueAsString(message))
+                    .isObject()
+                    .containsEntry("@type", IdentityMessage.class.getSimpleName())
+                    .containsKeys("id", "recipient", "publicKey", "peerInformation");
+        }
+    }
 
-        assertEquals(1, message.getHopCount());
+    @Nested
+    class IncrementHopCount {
+        @Test
+        void shouldIncrementHopCountByOne() {
+            IdentityMessage message = new IdentityMessage(recipient, publicKey, peerInformation, correspondingId);
+
+            message.incrementHopCount();
+
+            assertEquals(1, message.getHopCount());
+        }
     }
 }
