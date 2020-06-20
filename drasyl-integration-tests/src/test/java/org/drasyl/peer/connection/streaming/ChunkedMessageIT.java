@@ -68,7 +68,7 @@ public class ChunkedMessageIT {
         colorizedPrintln("STARTING " + info.getDisplayName(), AnsiColor.COLOR_CYAN, AnsiColor.STYLE_REVERSED);
 
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
-        System.setProperty("io.netty.leakDetection.level", "PARANOID");
+        System.setProperty("io.netty.leakDetection.level", "DISABLED"); //DISABLED
 
         identitySession1 = Identity.of(169092, "030a59784f88c74dcd64258387f9126739c3aeb7965f36bb501ff01f5036b3d72b", "0f1e188d5e3b98daf2266d7916d2e1179ae6209faa7477a2a66d4bb61dab4399");
         identitySession2 = Identity.of(26778671, "0236fde6a49564a0eaa2a7d6c8f73b97062d5feb36160398c08a5b73f646aa5fe5", "093d1ee70518508cac18eaf90d312f768c14d43de9bfd2618a2794d8df392da0");

@@ -44,7 +44,6 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
     private int sequenceNumber;
     private long progress;
     private boolean sentLastChuck;
-    private final long startTime;
 
     /**
      * Generates a {@link ChunkedInput} for the {@link ChunkedWriteHandler} from the given {@link
@@ -63,7 +62,6 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
         this.sourcePayload = msg.payloadAsByteBuf();
         this.chunks = chunkedArray(sourcePayload, this.chunkSize);
         this.sentLastChuck = false;
-        this.startTime = System.currentTimeMillis();
     }
 
     @Override
@@ -91,7 +89,6 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
             else {
                 // Send last chunk for this input
                 sentLastChuck = true;
-                System.err.println("Last chunk given to netty in " + (System.currentTimeMillis() - startTime) + "ms for msg with ID: " + msgID);
                 return ChunkedMessage.createLastChunk(sender, recipient, msgID, sequenceNumber);
             }
         }
