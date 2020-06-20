@@ -135,7 +135,7 @@ class SuperPeerClientIT {
         // start client
         SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, event -> {
         });
-        client.open(server.getEndpoints());
+        client.open(server::getEndpoints);
 
         // verify received messages
         receivedMessages.awaitCount(1);
@@ -150,7 +150,7 @@ class SuperPeerClientIT {
 
         // start client
         client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
-        client.open(server.getEndpoints());
+        client.open(server::getEndpoints);
 
         // wait for node to become online, before closing it
         emittedEvents.awaitCount(1);
@@ -168,7 +168,7 @@ class SuperPeerClientIT {
 
         // start client
         client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
-        client.open(server.getEndpoints());
+        client.open(server::getEndpoints);
 
         // wait for node to become online, before closing it
         emittedEvents.awaitCount(1);
@@ -188,7 +188,7 @@ class SuperPeerClientIT {
         // start client
         client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, event -> {
         });
-        client.open(server.getEndpoints());
+        client.open(server::getEndpoints);
         sentMessages.awaitCount(1);
 
         // send message
@@ -210,7 +210,7 @@ class SuperPeerClientIT {
         // start client
         client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, event -> {
         });
-        client.open(server.getEndpoints());
+        client.open(server::getEndpoints);
         sentMessages.awaitCount(1);
 
         // send message
@@ -233,7 +233,7 @@ class SuperPeerClientIT {
 
         // start client
         client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
-        client.open(server.getEndpoints());
+        client.open(server::getEndpoints);
         receivedMessages.awaitCount(1);
 
         // send message
@@ -252,7 +252,7 @@ class SuperPeerClientIT {
 
         // start client
         client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
-        client.open(server.getEndpoints());
+        client.open(server::getEndpoints);
 
         // verify emitted events
         emittedEvents.awaitCount(1);
@@ -266,12 +266,12 @@ class SuperPeerClientIT {
 
         // start client
         client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
-        client.open(server.getEndpoints());
+        client.open(server::getEndpoints);
 
         emittedEvents.awaitCount(1);
         // TODO: initiate disconnect from Server?
         client.close();
-        client.open(server.getEndpoints());
+        client.open(server::getEndpoints);
 
         // verify emitted events
         emittedEvents.awaitCount(3);

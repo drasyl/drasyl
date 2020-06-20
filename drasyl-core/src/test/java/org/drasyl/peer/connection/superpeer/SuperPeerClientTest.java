@@ -18,7 +18,6 @@
  */
 package org.drasyl.peer.connection.superpeer;
 
-import com.google.common.base.Function;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
@@ -42,6 +41,8 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
+import java.util.function.Function;
+import java.util.function.Supplier;
 
 import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
@@ -77,7 +78,7 @@ class SuperPeerClientTest {
     @Mock
     private Consumer<Event> onEvent;
     @Mock
-    private Function<Set<URI>, Thread> threadSupplier;
+    private Function<Supplier<Set<URI>>, Thread> threadSupplier;
     @Mock
     private List<Duration> superPeerRetryDelays;
     @Mock
@@ -88,6 +89,8 @@ class SuperPeerClientTest {
     private Subject<Boolean> connected;
     @Mock
     private Thread thread;
+    @Mock
+    private Supplier<Set<URI>> ownEndpoints;
 
     @Nested
     class Open {
@@ -97,16 +100,16 @@ class SuperPeerClientTest {
 
             SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, endpoints, new AtomicBoolean(false), nextEndpointPointer, nextRetryDelayPointer, onEvent, channel, threadSupplier, connected);
 
-            client.open(endpoints);
+            client.open(ownEndpoints);
 
-            verify(threadSupplier).apply(endpoints);
+            verify(threadSupplier).apply(ownEndpoints);
         }
 
         @Test
         void shouldNotCreateKeepConnectionAliveIfClientIsAlreadyOpen() {
             SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, endpoints, new AtomicBoolean(true), nextEndpointPointer, nextRetryDelayPointer, onEvent, channel, threadSupplier, connected);
 
-            client.open(endpoints);
+            client.open(ownEndpoints);
 
             verify(threadSupplier, never()).apply(any());
         }

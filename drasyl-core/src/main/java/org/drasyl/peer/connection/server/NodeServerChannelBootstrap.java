@@ -19,20 +19,16 @@
 package org.drasyl.peer.connection.server;
 
 import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.drasyl.DrasylNodeConfig;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.net.BindException;
 
 public class NodeServerChannelBootstrap {
-    private static final Logger LOG = LoggerFactory.getLogger(NodeServerChannelBootstrap.class);
     private final DrasylNodeConfig config;
     private final NodeServer server;
     private final ServerBootstrap serverBootstrap;
@@ -76,21 +72,14 @@ public class NodeServerChannelBootstrap {
         return (ChannelInitializer<SocketChannel>) cons.newInstance(config, server);
     }
 
-    public Channel getChannel() throws NodeServerException {
+    public ChannelFuture getChannel() throws NodeServerException {
         try {
             return serverBootstrap
                     .group(server.bossGroup, server.workerGroup)
                     .channel(NioServerSocketChannel.class)
 //                .handler(new LoggingHandler(LogLevel.INFO))
                     .childHandler(relayServerInitializer)
-                    .bind(config.getServerBindHost(), config.getServerBindPort())
-                    .addListener(event -> {
-                        if (event.cause() instanceof BindException) {
-                            LOG.error("An error occurred during binding the address `{}:{}`", config.getServerBindHost(), config.getServerBindPort(), event.cause());
-                        }
-                    })
-                    .syncUninterruptibly()
-                    .channel();
+                    .bind(config.getServerBindHost(), config.getServerBindPort());
         }
         catch (IllegalArgumentException e) {
             throw new NodeServerException("Unable to get channel: " + e.getMessage());
