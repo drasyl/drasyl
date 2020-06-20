@@ -40,6 +40,7 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import testutils.AnsiColor;
@@ -51,6 +52,7 @@ import static org.drasyl.peer.connection.server.TestNodeServerConnection.clientS
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static testutils.TestHelper.colorizedPrintln;
 
+@Disabled("Only for benchmark purposes")
 class ChunkedMessageIT {
     private static EventLoopGroup workerGroup;
     private static EventLoopGroup bossGroup;
@@ -94,8 +96,8 @@ class ChunkedMessageIT {
     @Test
     void messageWithMaxSizeShouldArrive() throws InterruptedException, ExecutionException {
         // create connection
-        TestNodeServerConnection session1 = clientSessionAfterJoin(server, identitySession1);
-        TestNodeServerConnection session2 = clientSessionAfterJoin(server, identitySession2);
+        TestNodeServerConnection session1 = clientSessionAfterJoin(config, server, identitySession1);
+        TestNodeServerConnection session2 = clientSessionAfterJoin(config, server, identitySession2);
 
         Observable<Message> receivedMessages = session2.receivedMessages().filter(msg -> msg instanceof ApplicationMessage);
 
@@ -113,7 +115,7 @@ class ChunkedMessageIT {
 
     @BeforeAll
     static void beforeAll() {
-        workerGroup = new NioEventLoopGroup(16);
+        workerGroup = new NioEventLoopGroup();
         bossGroup = new NioEventLoopGroup(1);
     }
 
