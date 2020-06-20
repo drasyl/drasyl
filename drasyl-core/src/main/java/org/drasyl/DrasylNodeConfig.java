@@ -22,6 +22,8 @@ import ch.qos.logback.classic.Level;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.socket.SocketChannel;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
@@ -94,7 +96,7 @@ public class DrasylNodeConfig {
     private final List<String> serverSSLProtocols;
     private final Duration serverHandshakeTimeout;
     private final Set<URI> serverEndpoints;
-    private final String serverChannelInitializer;
+    private final Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer;
     private final int messageMaxContentLength;
     private final short messageHopLimit;
     private final boolean superPeerEnabled;
@@ -102,7 +104,7 @@ public class DrasylNodeConfig {
     private final CompressedPublicKey superPeerPublicKey;
     private final List<Duration> superPeerRetryDelays;
     private final Duration superPeerHandshakeTimeout;
-    private final String superPeerChannelInitializer;
+    private final Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer;
     private final short superPeerIdleRetries;
     private final Duration superPeerIdleTimeout;
     private final boolean intraVmDiscoveryEnabled;
@@ -153,7 +155,7 @@ public class DrasylNodeConfig {
         this.serverIdleTimeout = config.getDuration(SERVER_IDLE_TIMEOUT);
         this.flushBufferSize = config.getInt(FLUSH_BUFFER_SIZE);
         this.serverHandshakeTimeout = config.getDuration(SERVER_HANDSHAKE_TIMEOUT);
-        this.serverChannelInitializer = config.getString(SERVER_CHANNEL_INITIALIZER);
+        this.serverChannelInitializer = getChannelInitializer(config, SERVER_CHANNEL_INITIALIZER);
         this.messageMaxContentLength = (int) Math.min(config.getMemorySize(MESSAGE_MAX_CONTENT_LENGTH).toBytes(), Integer.MAX_VALUE);
         this.messageHopLimit = getShort(config, MESSAGE_HOP_LIMIT);
 
@@ -179,7 +181,7 @@ public class DrasylNodeConfig {
         }
         this.superPeerRetryDelays = config.getDurationList(SUPER_PEER_RETRY_DELAYS);
         this.superPeerHandshakeTimeout = config.getDuration(SUPER_PEER_HANDSHAKE_TIMEOUT);
-        this.superPeerChannelInitializer = config.getString(SUPER_PEER_CHANNEL_INITIALIZER);
+        this.superPeerChannelInitializer = getChannelInitializer(config, SUPER_PEER_CHANNEL_INITIALIZER);
         this.superPeerIdleRetries = getShort(config, SUPER_PEER_IDLE_RETRIES);
         this.superPeerIdleTimeout = config.getDuration(SUPER_PEER_IDLE_TIMEOUT);
 
@@ -282,6 +284,17 @@ public class DrasylNodeConfig {
         return uriList;
     }
 
+    private Class<ChannelInitializer<SocketChannel>> getChannelInitializer(Config config,
+                                                                           String path) {
+        String className = config.getString(path);
+        try {
+            return (Class<ChannelInitializer<SocketChannel>>) Class.forName(className);
+        }
+        catch (ClassNotFoundException e) {
+            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "socket channel", "class-not-found: " + e.getMessage());
+        }
+    }
+
     @SuppressWarnings({ "java:S107" })
     DrasylNodeConfig(Level loglevel,
                      ProofOfWork proofOfWork,
@@ -299,7 +312,7 @@ public class DrasylNodeConfig {
                      List<String> serverSSLProtocols,
                      Duration serverHandshakeTimeout,
                      Set<URI> serverEndpoints,
-                     String serverChannelInitializer,
+                     Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer,
                      int messageMaxContentLength,
                      short messageHopLimit,
                      boolean superPeerEnabled,
@@ -307,7 +320,7 @@ public class DrasylNodeConfig {
                      CompressedPublicKey superPeerPublicKey,
                      List<Duration> superPeerRetryDelays,
                      Duration superPeerHandshakeTimeout,
-                     String superPeerChannelInitializer,
+                     Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer,
                      short superPeerIdleRetries,
                      Duration superPeerIdleTimeout,
                      boolean intraVmDiscoveryEnabled) {
@@ -409,7 +422,7 @@ public class DrasylNodeConfig {
         return serverEndpoints;
     }
 
-    public String getServerChannelInitializer() {
+    public Class<? extends ChannelInitializer<SocketChannel>> getServerChannelInitializer() {
         return serverChannelInitializer;
     }
 
@@ -437,7 +450,7 @@ public class DrasylNodeConfig {
         return superPeerRetryDelays;
     }
 
-    public String getSuperPeerChannelInitializer() {
+    public Class<? extends ChannelInitializer<SocketChannel>> getSuperPeerChannelInitializer() {
         return superPeerChannelInitializer;
     }
 

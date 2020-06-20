@@ -23,8 +23,11 @@ import com.typesafe.config.ConfigFactory;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.group.ChannelGroupFutureListener;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.reactivex.rxjava3.core.Observable;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeConfig;
@@ -34,8 +37,6 @@ import org.drasyl.messenger.Messenger;
 import org.drasyl.messenger.NoPathToIdentityException;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.QuitMessage;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -60,7 +61,7 @@ public class NodeServer implements AutoCloseable {
     private final NodeServerChannelGroup channelGroup;
     private final Observable<Boolean> superPeerConnected;
     private Channel channel;
-    private NodeServerChannelBootstrap channelBootstrap;
+    private ChannelInitializer<SocketChannel> channelInitializer;
     private int actualPort;
     private Set<URI> actualEndpoints;
 
@@ -108,13 +109,14 @@ public class NodeServer implements AutoCloseable {
 
     /**
      * Node server for forwarding messages to child peers.
-     *  @param identityManager the identity manager
-     * @param messenger       the messenger object
-     * @param peersManager    the peers manager
+     *
+     * @param identityManager    the identity manager
+     * @param messenger          the messenger object
+     * @param peersManager       the peers manager
      * @param superPeerConnected
-     * @param config          config that should be used
-     * @param workerGroup     netty shared worker group
-     * @param bossGroup       netty shared boss group
+     * @param config             config that should be used
+     * @param workerGroup        netty shared worker group
+     * @param bossGroup          netty shared boss group
      */
     public NodeServer(IdentityManager identityManager,
                       Messenger messenger,
@@ -137,8 +139,7 @@ public class NodeServer implements AutoCloseable {
                 new HashSet<>(),
                 new NodeServerChannelGroup(),
                 superPeerConnected);
-
-        channelBootstrap = new NodeServerChannelBootstrap(config, this, serverBootstrap);
+        channelInitializer = new NodeServerChannelBootstrap(config, this).getChannelInitializer();
     }
 
     NodeServer(IdentityManager identityManager,
@@ -149,7 +150,7 @@ public class NodeServer implements AutoCloseable {
                ServerBootstrap serverBootstrap,
                EventLoopGroup workerGroup,
                EventLoopGroup bossGroup,
-               NodeServerChannelBootstrap channelBootstrap,
+               ChannelInitializer<SocketChannel> channelInitializer,
                AtomicBoolean opened,
                int actualPort,
                Set<URI> actualEndpoints,
@@ -162,7 +163,7 @@ public class NodeServer implements AutoCloseable {
         this.serverBootstrap = serverBootstrap;
         this.workerGroup = workerGroup;
         this.bossGroup = bossGroup;
-        this.channelBootstrap = channelBootstrap;
+        this.channelInitializer = channelInitializer;
         this.opened = opened;
         this.messenger = messenger;
         this.actualPort = actualPort;
@@ -216,46 +217,57 @@ public class NodeServer implements AutoCloseable {
     /**
      * Starts the relay server.
      */
+    @SuppressWarnings({ "java:S3776" })
     public void open() throws NodeServerException {
         if (opened.compareAndSet(false, true)) {
-            ChannelFuture channelFuture = channelBootstrap.getChannel();
-            channelFuture.awaitUninterruptibly();
+            try {
+                ChannelFuture channelFuture = serverBootstrap
+                        .group(bossGroup, workerGroup)
+                        .channel(NioServerSocketChannel.class)
+//                    .handler(new LoggingHandler(LogLevel.INFO))
+                        .childHandler(channelInitializer)
+                        .bind(config.getServerBindHost(), config.getServerBindPort());
+                channelFuture.awaitUninterruptibly();
 
-            if (channelFuture.isSuccess()) {
-                channel = channelFuture.channel();
+                if (channelFuture.isSuccess()) {
+                    channel = channelFuture.channel();
 
-                channel.closeFuture().addListener(future -> {
-                    actualPort = -1;
-                    actualEndpoints = Set.of();
-                    messenger.unsetServerSink();
-                });
+                    channel.closeFuture().addListener(future -> {
+                        actualPort = -1;
+                        actualEndpoints = Set.of();
+                        messenger.unsetServerSink();
+                    });
 
-                InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
-                actualPort = socketAddress.getPort();
-                actualEndpoints = config.getServerEndpoints().stream()
-                        .map(uri -> {
-                            if (uri.getPort() == 0) {
-                                return overridePort(uri, actualPort);
-                            }
-                            return uri;
-                        }).collect(Collectors.toSet());
-                messenger.setServerSink((recipient, message) -> {
-                    // if recipient is a grandchild, we must send message to appropriate child
-                    CompressedPublicKey grandchildrenPath = peersManager.getGrandchildrenRoutes().get(recipient);
-                    if (grandchildrenPath != null) {
-                        recipient = grandchildrenPath;
-                    }
+                    InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
+                    actualPort = socketAddress.getPort();
+                    actualEndpoints = config.getServerEndpoints().stream()
+                            .map(uri -> {
+                                if (uri.getPort() == 0) {
+                                    return overridePort(uri, actualPort);
+                                }
+                                return uri;
+                            }).collect(Collectors.toSet());
+                    messenger.setServerSink((recipient, message) -> {
+                        // if recipient is a grandchild, we must send message to appropriate child
+                        CompressedPublicKey grandchildrenPath = peersManager.getGrandchildrenRoutes().get(recipient);
+                        if (grandchildrenPath != null) {
+                            recipient = grandchildrenPath;
+                        }
 
-                    try {
-                        channelGroup.writeAndFlush(recipient, message);
-                    }
-                    catch (IllegalArgumentException e) {
-                        throw new NoPathToIdentityException(recipient);
-                    }
-                });
+                        try {
+                            channelGroup.writeAndFlush(recipient, message);
+                        }
+                        catch (IllegalArgumentException e) {
+                            throw new NoPathToIdentityException(recipient);
+                        }
+                    });
+                }
+                else {
+                    throw new NodeServerException("Unable to start server: " + channelFuture.cause().getMessage());
+                }
             }
-            else {
-                throw new NodeServerException("Unable to start server: " + channelFuture.cause().getMessage());
+            catch (IllegalArgumentException e) {
+                throw new NodeServerException("Unable to get channel: " + e.getMessage());
             }
         }
     }

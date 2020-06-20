@@ -22,7 +22,9 @@ package org.drasyl.peer.connection.superpeer;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.util.WebSocketUtil;
@@ -47,32 +49,28 @@ public class SuperPeerClientChannelBootstrap {
         this.workerGroup = workerGroup;
         this.endpoint = endpoint;
         this.client = client;
-        String channelInitializer = config.getSuperPeerChannelInitializer();
+        Class<? extends ChannelInitializer<SocketChannel>> channelInitializerClazz = config.getSuperPeerChannelInitializer();
 
         try {
-            this.superPeerClientChannelInitializer = getChannelInitializer(channelInitializer);
-        }
-        catch (ClassNotFoundException e) {
-            throw new SuperPeerClientException("The given channel initializer can't be found: '" + channelInitializer + "'");
+            this.superPeerClientChannelInitializer = getChannelInitializer(channelInitializerClazz);
         }
         catch (NoSuchMethodException e) {
-            throw new SuperPeerClientException("The given channel initializer has not the correct signature: '" + channelInitializer + "'");
+            throw new SuperPeerClientException("The given channel initializer has not the correct signature: '" + channelInitializerClazz + "'");
         }
         catch (IllegalAccessException e) {
-            throw new SuperPeerClientException("Can't access the given channel initializer: '" + channelInitializer + "'");
+            throw new SuperPeerClientException("Can't access the given channel initializer: '" + channelInitializerClazz + "'");
         }
         catch (InvocationTargetException e) {
-            throw new SuperPeerClientException("Can't invoke the given channel initializer: '" + channelInitializer + "'");
+            throw new SuperPeerClientException("Can't invoke the given channel initializer: '" + channelInitializerClazz + "'");
         }
         catch (InstantiationException e) {
-            throw new SuperPeerClientException("Can't instantiate the given channel initializer: '" + channelInitializer + "'");
+            throw new SuperPeerClientException("Can't instantiate the given channel initializer: '" + channelInitializerClazz + "'");
         }
     }
 
-    private SuperPeerClientChannelInitializer getChannelInitializer(String className) throws ClassNotFoundException,
+    private SuperPeerClientChannelInitializer getChannelInitializer(Class<? extends ChannelInitializer<SocketChannel>> clazz) throws
             NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
-        Class<?> c = Class.forName(className);
-        Constructor<?> cons = c.getConstructor(DrasylNodeConfig.class, SuperPeerClient.class, URI.class);
+        Constructor<?> cons = clazz.getConstructor(DrasylNodeConfig.class, SuperPeerClient.class, URI.class);
 
         return (SuperPeerClientChannelInitializer) cons.newInstance(config, client, endpoint);
     }

@@ -18,71 +18,47 @@
  */
 package org.drasyl.peer.connection.server;
 
-import io.netty.bootstrap.ServerBootstrap;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.drasyl.DrasylNodeConfig;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 
 public class NodeServerChannelBootstrap {
-    private final DrasylNodeConfig config;
-    private final NodeServer server;
-    private final ServerBootstrap serverBootstrap;
-    private final ChannelInitializer<SocketChannel> relayServerInitializer;
+    private final ChannelInitializer<SocketChannel> channelInitializer;
 
     public NodeServerChannelBootstrap(DrasylNodeConfig config,
-                                      NodeServer server,
-                                      ServerBootstrap serverBootstrap) throws NodeServerException {
-        this.config = config;
-        this.server = server;
-        this.serverBootstrap = serverBootstrap;
-        String channelInitializer = config.getServerChannelInitializer();
+                                      NodeServer server) throws NodeServerException {
+        Class<? extends ChannelInitializer<SocketChannel>> channelInitializerClazz = config.getServerChannelInitializer();
 
         try {
-            this.relayServerInitializer = getChannelInitializer(config, server, channelInitializer);
-        }
-        catch (ClassNotFoundException e) {
-            throw new NodeServerException("The given channel initializer can't be found: '" + channelInitializer + "'");
+            this.channelInitializer = initiateChannelInitializer(config, server, channelInitializerClazz);
         }
         catch (NoSuchMethodException e) {
-            throw new NodeServerException("The given channel initializer has not the correct signature: '" + channelInitializer + "'");
+            throw new NodeServerException("The given channel initializer has not the correct signature: '" + channelInitializerClazz + "'");
         }
         catch (IllegalAccessException e) {
-            throw new NodeServerException("Can't access the given channel initializer: '" + channelInitializer + "'");
+            throw new NodeServerException("Can't access the given channel initializer: '" + channelInitializerClazz + "'");
         }
         catch (InvocationTargetException e) {
-            throw new NodeServerException("Can't invoke the given channel initializer: '" + channelInitializer + "'");
+            throw new NodeServerException("Can't invoke the given channel initializer: '" + channelInitializerClazz + "'");
         }
         catch (InstantiationException e) {
-            throw new NodeServerException("Can't instantiate the given channel initializer: '" + channelInitializer + "'");
+            throw new NodeServerException("Can't instantiate the given channel initializer: '" + channelInitializerClazz + "'");
         }
     }
 
-    private ChannelInitializer<SocketChannel> getChannelInitializer(DrasylNodeConfig config,
-                                                                    NodeServer server,
-                                                                    String className) throws ClassNotFoundException,
+    private ChannelInitializer<SocketChannel> initiateChannelInitializer(DrasylNodeConfig config,
+                                                                         NodeServer server,
+                                                                         Class<? extends ChannelInitializer<SocketChannel>> clazz) throws
             NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
-        Class<?> c = Class.forName(className);
-        Constructor<?> cons = c.getConstructor(DrasylNodeConfig.class, NodeServer.class);
+        Constructor<?> cons = clazz.getConstructor(DrasylNodeConfig.class, NodeServer.class);
 
         return (ChannelInitializer<SocketChannel>) cons.newInstance(config, server);
     }
 
-    public ChannelFuture getChannel() throws NodeServerException {
-        try {
-            return serverBootstrap
-                    .group(server.bossGroup, server.workerGroup)
-                    .channel(NioServerSocketChannel.class)
-//                .handler(new LoggingHandler(LogLevel.INFO))
-                    .childHandler(relayServerInitializer)
-                    .bind(config.getServerBindHost(), config.getServerBindPort());
-        }
-        catch (IllegalArgumentException e) {
-            throw new NodeServerException("Unable to get channel: " + e.getMessage());
-        }
+    public ChannelInitializer<SocketChannel> getChannelInitializer() {
+        return channelInitializer;
     }
 }
