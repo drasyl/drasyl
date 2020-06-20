@@ -20,7 +20,9 @@ package org.drasyl.peer.connection.server;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
 import io.reactivex.rxjava3.core.Observable;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeConfig;
@@ -43,6 +45,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -59,14 +63,14 @@ class NodeServerTest {
     private DrasylNodeConfig config;
     @Mock
     private Channel serverChannel;
-    @Mock
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private ServerBootstrap serverBootstrap;
     @Mock
     private EventLoopGroup workerGroup;
     @Mock
     private EventLoopGroup bossGroup;
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-    private NodeServerChannelBootstrap channelBootstrap;
+    @Mock
+    private ChannelInitializer<SocketChannel> channelInitializer;
     @Mock
     private NodeServerChannelGroup channelGroup;
     @Mock
@@ -77,12 +81,12 @@ class NodeServerTest {
         @Test
         void shouldSetOpenToTrue() throws NodeServerException {
             when(config.getServerEndpoints()).thenReturn(Set.of(URI.create("ws://localhost:22527/")));
-            when(channelBootstrap.getChannel().isSuccess()).thenReturn(true);
-            when(channelBootstrap.getChannel().channel().localAddress()).thenReturn(new InetSocketAddress(22527));
+            when(serverBootstrap.group(any(), any()).channel(any()).childHandler(any()).bind((String) null, 0).isSuccess()).thenReturn(true);
+            when(serverBootstrap.group(any(), any()).channel(any()).childHandler(any()).bind((String) null, 0).channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
             NodeServer server = new NodeServer(identityManager, messenger, peersManager,
                     config, serverChannel, serverBootstrap, workerGroup, bossGroup,
-                    channelBootstrap, new AtomicBoolean(false), -1, new HashSet<>(), channelGroup, superPeerConnected);
+                    channelInitializer, new AtomicBoolean(false), -1, new HashSet<>(), channelGroup, superPeerConnected);
             server.open();
 
             assertTrue(server.isOpen());
@@ -92,11 +96,11 @@ class NodeServerTest {
         void shouldDoNothingIfServerHasAlreadyBeenStarted() throws NodeServerException {
             NodeServer server = new NodeServer(identityManager, messenger, peersManager,
                     config, serverChannel, serverBootstrap, workerGroup, bossGroup,
-                    channelBootstrap, new AtomicBoolean(true), -1, new HashSet<>(), channelGroup, superPeerConnected);
+                    channelInitializer, new AtomicBoolean(true), -1, new HashSet<>(), channelGroup, superPeerConnected);
 
             server.open();
 
-            verify(channelBootstrap, times(0)).getChannel();
+            verify(serverBootstrap, never()).group(any(), any());
         }
     }
 
@@ -106,7 +110,7 @@ class NodeServerTest {
         void shouldDoNothingIfServerHasAlreadyBeenShutDown() {
             NodeServer server = new NodeServer(identityManager, messenger, peersManager,
                     config, serverChannel, serverBootstrap, workerGroup, bossGroup,
-                    channelBootstrap, new AtomicBoolean(false), -1, new HashSet<>(), channelGroup, superPeerConnected);
+                    channelInitializer, new AtomicBoolean(false), -1, new HashSet<>(), channelGroup, superPeerConnected);
 
             server.close();
 

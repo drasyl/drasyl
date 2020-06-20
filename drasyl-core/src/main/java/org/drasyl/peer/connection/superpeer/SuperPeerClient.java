@@ -18,9 +18,14 @@
  */
 package org.drasyl.peer.connection.superpeer;
 
+import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
+import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
+import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.socket.SocketChannel;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
@@ -32,6 +37,7 @@ import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.util.DrasylScheduler;
+import org.drasyl.util.WebSocketUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -129,12 +135,25 @@ public class SuperPeerClient implements AutoCloseable {
             URI endpoint = getEndpoint();
             LOG.debug("Connect to Super Peer Endpoint '{}'", endpoint);
             try {
-                SuperPeerClientChannelBootstrap clientBootstrap = new SuperPeerClientChannelBootstrap(config, this, workerGroup, endpoint);
-                clientChannel = clientBootstrap.getChannel();
-                clientChannel.closeFuture().syncUninterruptibly();
+                ChannelInitializer<SocketChannel> channelInitializer = new SuperPeerClientChannelBootstrap(config, this, endpoint).getChannelInitializer();
+
+                ChannelFuture channelFuture = new Bootstrap()
+                        .group(workerGroup)
+                        .channel(NioSocketChannel.class)
+                        .handler(channelInitializer)
+                        .connect(endpoint.getHost(), WebSocketUtil.webSocketPort(endpoint));
+                channelFuture.awaitUninterruptibly();
+
+                if (channelFuture.isSuccess()) {
+                    clientChannel = channelFuture.channel();
+                    clientChannel.closeFuture().syncUninterruptibly();
+                }
+                else {
+                    throw new SuperPeerClientException(channelFuture.cause());
+                }
             }
             catch (SuperPeerClientException e) {
-                LOG.warn("Error while trying to connect to Super Peer: {}", e.getMessage());
+                LOG.warn("Error while trying to connect to Super Peer:", e);
             }
             catch (IllegalStateException e) {
                 LOG.debug("Working Group has rejected the new bootstrap. Maybe the node is shutting down.");

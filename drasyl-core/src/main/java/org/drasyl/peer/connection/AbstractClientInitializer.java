@@ -88,9 +88,9 @@ public abstract class AbstractClientInitializer extends DefaultSessionInitialize
             }
         });
 
-        pipeline.addLast(new HttpClientCodec(),
-                new HttpObjectAggregator(65536),
-                webSocketHandshakeClientHandler);
+        pipeline.addLast(new HttpClientCodec());
+        pipeline.addLast(new HttpObjectAggregator(65536));
+        pipeline.addLast(webSocketHandshakeClientHandler);
     }
 
     /**

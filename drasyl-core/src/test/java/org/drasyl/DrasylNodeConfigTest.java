@@ -21,10 +21,14 @@ package org.drasyl;
 import ch.qos.logback.classic.Level;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigMemorySize;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.socket.SocketChannel;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.peer.connection.server.NodeServerChannelInitializer;
+import org.drasyl.peer.connection.superpeer.SuperPeerClientChannelInitializer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -99,7 +103,7 @@ class DrasylNodeConfigTest {
     private List<String> serverSSLProtocols;
     private Duration serverHandshakeTimeout;
     private Set<URI> serverEndpoints;
-    private String serverChannelInitializer;
+    private Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer;
     private int messageMaxContentLength;
     private short messageHopLimit;
     private boolean superPeerEnabled;
@@ -108,7 +112,7 @@ class DrasylNodeConfigTest {
     private CompressedPublicKey superPeerPublicKey;
     @Mock
     private List<Duration> superPeerRetryDelays;
-    private String superPeerChannelInitializer;
+    private Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer;
     private short superPeerIdleRetries;
     private Duration superPeerIdleTimeout;
     @Mock
@@ -132,12 +136,12 @@ class DrasylNodeConfigTest {
         serverSSLEnabled = false;
         serverHandshakeTimeout = ofSeconds(30);
         serverEndpoints = Set.of();
-        serverChannelInitializer = "org.drasyl.core.server.handler.NodeServerInitializer";
+        serverChannelInitializer = NodeServerChannelInitializer.class;
         messageMaxContentLength = 1024;
         messageHopLimit = 64;
         superPeerEnabled = true;
         superPeerEndpoints = Set.of(URI.create("ws://foo.bar:123"), URI.create("wss://example.com"));
-        superPeerChannelInitializer = "org.drasyl.core.client.handler.SuperPeerClientInitializer";
+        superPeerChannelInitializer = SuperPeerClientChannelInitializer.class;
         superPeerIdleRetries = 3;
         superPeerHandshakeTimeout = ofSeconds(30);
         superPeerIdleTimeout = ofSeconds(60);
@@ -162,7 +166,7 @@ class DrasylNodeConfigTest {
             when(typesafeConfig.getDuration(SERVER_IDLE_TIMEOUT)).thenReturn(serverIdleTimeout);
             when(typesafeConfig.getInt(FLUSH_BUFFER_SIZE)).thenReturn(flushBufferSize);
             when(typesafeConfig.getDuration(SERVER_HANDSHAKE_TIMEOUT)).thenReturn(serverHandshakeTimeout);
-            when(typesafeConfig.getString(SERVER_CHANNEL_INITIALIZER)).thenReturn(serverChannelInitializer);
+            when(typesafeConfig.getString(SERVER_CHANNEL_INITIALIZER)).thenReturn(serverChannelInitializer.getCanonicalName());
             when(typesafeConfig.getMemorySize(MESSAGE_MAX_CONTENT_LENGTH)).thenReturn(ConfigMemorySize.ofBytes(messageMaxContentLength));
             when(typesafeConfig.getInt(MESSAGE_HOP_LIMIT)).thenReturn((int) messageHopLimit);
             when(typesafeConfig.getBoolean(SERVER_SSL_ENABLED)).thenReturn(serverSSLEnabled);
@@ -173,7 +177,7 @@ class DrasylNodeConfigTest {
             when(typesafeConfig.getString(SUPER_PEER_PUBLIC_KEY)).thenReturn("");
             when(typesafeConfig.getDurationList(SUPER_PEER_RETRY_DELAYS)).thenReturn(superPeerRetryDelays);
             when(typesafeConfig.getDuration(SUPER_PEER_HANDSHAKE_TIMEOUT)).thenReturn(superPeerHandshakeTimeout);
-            when(typesafeConfig.getString(SUPER_PEER_CHANNEL_INITIALIZER)).thenReturn(superPeerChannelInitializer);
+            when(typesafeConfig.getString(SUPER_PEER_CHANNEL_INITIALIZER)).thenReturn(superPeerChannelInitializer.getCanonicalName());
             when(typesafeConfig.getString(USER_AGENT)).thenReturn(userAgent);
             when(networkAddressesProvider.get()).thenReturn(Set.of("192.168.188.112"));
             when(typesafeConfig.getBoolean(INTRA_VM_DISCOVERY_ENABLED)).thenReturn(intraVmDiscoveryEnabled);
