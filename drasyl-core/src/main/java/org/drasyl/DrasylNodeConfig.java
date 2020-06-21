@@ -54,7 +54,6 @@ public class DrasylNodeConfig {
     static final String IDENTITY_PUBLIC_KEY = "drasyl.identity.public-key";
     static final String IDENTITY_PRIVATE_KEY = "drasyl.identity.private-key";
     static final String IDENTITY_PATH = "drasyl.identity.path";
-    static final String USER_AGENT = "drasyl.user-agent";
     static final String MESSAGE_MAX_CONTENT_LENGTH = "drasyl.message.max-content-length";
     static final String MESSAGE_HOP_LIMIT = "drasyl.message.hop-limit";
     static final String FLUSH_BUFFER_SIZE = "drasyl.flush-buffer-size";
@@ -83,7 +82,6 @@ public class DrasylNodeConfig {
     private final CompressedPublicKey identityPublicKey;
     private final CompressedPrivateKey identityPrivateKey;
     private final Path identityPath;
-    private final String userAgent;
     private final String serverBindHost;
     private final boolean serverEnabled;
     private final int serverBindPort;
@@ -117,7 +115,6 @@ public class DrasylNodeConfig {
         config.checkValid(ConfigFactory.defaultReference(), "drasyl");
 
         this.loglevel = getLoglevel(config, LOGLEVEL);
-        this.userAgent = config.getString(USER_AGENT);
 
         // init identity config
         if (config.getInt(IDENTITY_PROOF_OF_WORK) >= 0) {
@@ -290,7 +287,6 @@ public class DrasylNodeConfig {
                      CompressedPublicKey identityPublicKey,
                      CompressedPrivateKey identityPrivateKey,
                      Path identityPath,
-                     String userAgent,
                      String serverBindHost,
                      boolean serverEnabled,
                      int serverBindPort,
@@ -318,7 +314,6 @@ public class DrasylNodeConfig {
         this.identityPublicKey = identityPublicKey;
         this.identityPrivateKey = identityPrivateKey;
         this.identityPath = identityPath;
-        this.userAgent = userAgent;
         this.serverBindHost = serverBindHost;
         this.serverEnabled = serverEnabled;
         this.serverBindPort = serverBindPort;
@@ -353,10 +348,6 @@ public class DrasylNodeConfig {
 
     public int getServerBindPort() {
         return serverBindPort;
-    }
-
-    public String getUserAgent() {
-        return this.userAgent;
     }
 
     public ProofOfWork getIdentityProofOfWork() {
@@ -457,7 +448,7 @@ public class DrasylNodeConfig {
 
     @Override
     public int hashCode() {
-        return Objects.hash(identityPublicKey, identityProofOfWork, identityPrivateKey, identityPath, userAgent, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled);
+        return Objects.hash(identityPublicKey, identityProofOfWork, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled);
     }
 
     @Override
@@ -483,7 +474,6 @@ public class DrasylNodeConfig {
                 Objects.equals(identityPublicKey, that.identityPublicKey) &&
                 Objects.equals(identityPrivateKey, that.identityPrivateKey) &&
                 Objects.equals(identityPath, that.identityPath) &&
-                Objects.equals(userAgent, that.userAgent) &&
                 Objects.equals(serverBindHost, that.serverBindHost) &&
                 Objects.equals(serverIdleTimeout, that.serverIdleTimeout) &&
                 Objects.equals(serverSSLProtocols, that.serverSSLProtocols) &&
@@ -507,7 +497,6 @@ public class DrasylNodeConfig {
                 ", identityPublicKey='" + identityPublicKey + '\'' +
                 ", identityPrivateKey='" + maskSecret(identityPrivateKey) + '\'' +
                 ", identityPath=" + identityPath +
-                ", userAgent='" + userAgent + '\'' +
                 ", serverBindHost='" + serverBindHost + '\'' +
                 ", serverEnabled=" + serverEnabled +
                 ", serverBindPort=" + serverBindPort +
@@ -540,7 +529,6 @@ public class DrasylNodeConfig {
                 DEFAULT.identityPublicKey,
                 DEFAULT.identityPrivateKey,
                 DEFAULT.identityPath,
-                DEFAULT.userAgent,
                 DEFAULT.serverBindHost,
                 DEFAULT.serverEnabled,
                 DEFAULT.serverBindPort,
@@ -573,7 +561,6 @@ public class DrasylNodeConfig {
         private CompressedPublicKey identityPublicKey;
         private CompressedPrivateKey identityPrivateKey;
         private Path identityPath;
-        private String userAgent;
         private String serverBindHost;
         private boolean serverEnabled;
         private int serverBindPort;
@@ -603,7 +590,6 @@ public class DrasylNodeConfig {
                         CompressedPublicKey identityPublicKey,
                         CompressedPrivateKey identityPrivateKey,
                         Path identityPath,
-                        String userAgent,
                         String serverBindHost,
                         boolean serverEnabled,
                         int serverBindPort,
@@ -631,7 +617,6 @@ public class DrasylNodeConfig {
             this.identityPublicKey = identityPublicKey;
             this.identityPrivateKey = identityPrivateKey;
             this.identityPath = identityPath;
-            this.userAgent = userAgent;
             this.serverBindHost = serverBindHost;
             this.serverEnabled = serverEnabled;
             this.serverBindPort = serverBindPort;
@@ -678,11 +663,6 @@ public class DrasylNodeConfig {
 
         public Builder identityPath(Path identityPath) {
             this.identityPath = identityPath;
-            return this;
-        }
-
-        public Builder userAgent(String userAgent) {
-            this.userAgent = userAgent;
             return this;
         }
 
@@ -797,7 +777,7 @@ public class DrasylNodeConfig {
         }
 
         public DrasylNodeConfig build() {
-            return new DrasylNodeConfig(loglevel, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath, userAgent, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled);
+            return new DrasylNodeConfig(loglevel, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled);
         }
     }
 }
