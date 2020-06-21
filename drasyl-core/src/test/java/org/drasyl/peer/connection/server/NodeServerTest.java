@@ -24,7 +24,6 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.reactivex.rxjava3.core.Observable;
-import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
@@ -43,8 +42,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -116,20 +113,6 @@ class NodeServerTest {
             server.close();
 
             verify(bossGroup, times(0)).shutdownGracefully();
-        }
-    }
-
-    @Nested
-    class Constructor {
-        @Test
-        void shouldRejectNullValues() throws DrasylException {
-            NodeServer server = new NodeServer(identitySupplier, messenger, peersManager, config, workerGroup, bossGroup, superPeerConnected);
-
-            assertNotNull(server.getBossGroup());
-            assertNotNull(server.getWorkerGroup());
-            assertNotNull(server.getPeersManager());
-            assertNotNull(server.getEndpoints());
-            assertFalse(server.isOpen());
         }
     }
 }
