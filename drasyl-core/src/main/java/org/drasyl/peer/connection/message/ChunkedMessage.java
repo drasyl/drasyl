@@ -86,7 +86,7 @@ public class ChunkedMessage extends ApplicationMessage {
                              int contentLength,
                              String checksum,
                              int sequenceNumber) {
-        super(msgID, recipient, sender, payload, (short) 0);
+        super(msgID, sender, recipient, payload, (short) 0);
         this.contentLength = contentLength;
         this.checksum = checksum;
         this.sequenceNumber = sequenceNumber;

@@ -144,7 +144,7 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
             }
         }
         else {
-            RelayableMessage applicationMessage = new ApplicationMessage(msg.getId(), msg.getRecipient(), msg.getSender(), payload, (short) 0);
+            RelayableMessage applicationMessage = new ApplicationMessage(msg.getId(), msg.getSender(), msg.getRecipient(), payload, (short) 0);
 
             ctx.fireChannelRead(applicationMessage);
         }
