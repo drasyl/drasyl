@@ -81,14 +81,8 @@ public class Identity {
                 '}';
     }
 
-    @JsonIgnore
-    public ProofOfWork getPoW() {
+    public ProofOfWork getProofOfWork() {
         return proofOfWork;
-    }
-
-    @JsonProperty
-    private int getProofOfWork() {
-        return proofOfWork.getNonce();
     }
 
     public static Identity of(ProofOfWork proofOfWork,

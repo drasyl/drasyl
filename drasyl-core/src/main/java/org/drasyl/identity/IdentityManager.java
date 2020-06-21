@@ -181,7 +181,7 @@ public class IdentityManager {
     }
 
     public ProofOfWork getProofOfWork() {
-        return identity.getPoW();
+        return identity.getProofOfWork();
     }
 
     /**

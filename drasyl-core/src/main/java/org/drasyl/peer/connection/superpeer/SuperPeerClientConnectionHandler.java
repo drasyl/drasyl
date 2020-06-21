@@ -66,7 +66,7 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
         super(
                 config.getSuperPeerHandshakeTimeout(),
                 client.getMessenger(),
-                new JoinMessage(client.getIdentity().getPoW(),
+                new JoinMessage(client.getIdentity().getProofOfWork(),
                         client.getIdentity().getPublicKey(),
                         client.getPeersManager().getChildrenAndGrandchildren().keySet()
                 )
