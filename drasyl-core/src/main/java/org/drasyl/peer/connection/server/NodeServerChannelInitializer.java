@@ -43,6 +43,7 @@ import java.security.cert.CertificateException;
 import static org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler.EXCEPTION_MESSAGE_HANDLER;
 import static org.drasyl.peer.connection.handler.ExceptionHandler.EXCEPTION_HANDLER;
 import static org.drasyl.peer.connection.handler.RelayableMessageGuard.HOP_COUNT_GUARD;
+import static org.drasyl.peer.connection.handler.SignatureHandler.SIGNATURE_HANDLER;
 import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_HANDLER;
 import static org.drasyl.peer.connection.server.NodeServerConnectionHandler.NODE_SERVER_CONNECTION_HANDLER;
 import static org.drasyl.peer.connection.server.handler.NodeServerNewConnectionsGuard.CONNECTION_GUARD;
@@ -70,7 +71,7 @@ public class NodeServerChannelInitializer extends DefaultSessionInitializer {
 
     @Override
     protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
-        pipeline.addLast(SignatureHandler.SIGNATURE_HANDLER, new SignatureHandler(environment.getIdentity()));
+        pipeline.addLast(SIGNATURE_HANDLER, new SignatureHandler(environment.getIdentity()));
         pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(environment.getConfig().getMessageHopLimit()));
         pipeline.addLast(CONNECTION_GUARD, new NodeServerNewConnectionsGuard(environment.getAcceptNewConnectionsSupplier()));
         pipeline.addLast("streamer", new ChunkedWriteHandler());

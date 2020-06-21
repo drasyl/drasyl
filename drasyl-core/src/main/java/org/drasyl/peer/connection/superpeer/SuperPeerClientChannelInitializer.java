@@ -38,6 +38,7 @@ import javax.net.ssl.SSLException;
 import static org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler.EXCEPTION_MESSAGE_HANDLER;
 import static org.drasyl.peer.connection.handler.ExceptionHandler.EXCEPTION_HANDLER;
 import static org.drasyl.peer.connection.handler.RelayableMessageGuard.HOP_COUNT_GUARD;
+import static org.drasyl.peer.connection.handler.SignatureHandler.SIGNATURE_HANDLER;
 import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_HANDLER;
 import static org.drasyl.peer.connection.superpeer.SuperPeerClientConnectionHandler.SUPER_PEER_CLIENT_CONNECTION_HANDLER;
 
@@ -56,7 +57,7 @@ public class SuperPeerClientChannelInitializer extends AbstractClientInitializer
 
     @Override
     protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
-        pipeline.addLast(SignatureHandler.SIGNATURE_HANDLER, new SignatureHandler(environment.getIdentity()));
+        pipeline.addLast(SIGNATURE_HANDLER, new SignatureHandler(environment.getIdentity()));
         pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(environment.getConfig().getMessageHopLimit()));
         pipeline.addLast("streamer", new ChunkedWriteHandler());
         pipeline.addLast(CHUNK_HANDLER, new ChunkedMessageHandler(environment.getConfig().getMessageMaxContentLength(), environment.getIdentity().getPublicKey()));
