@@ -39,8 +39,8 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
     }
 
     ApplicationMessage(String id,
-                       CompressedPublicKey recipient,
                        CompressedPublicKey sender,
+                       CompressedPublicKey recipient,
                        byte[] payload,
                        short hopCount) {
         super(id, hopCount, recipient);
