@@ -62,15 +62,15 @@ import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_
 public class SuperPeerClient implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClient.class);
     private final DrasylNodeConfig config;
-    private final EventLoopGroup workerGroup;
     private final Supplier<Identity> identitySupplier;
-    private final Messenger messenger;
     private final PeersManager peersManager;
+    private final Messenger messenger;
+    private final EventLoopGroup workerGroup;
+    private final Consumer<Event> eventConsumer;
     private final Set<URI> endpoints;
     private final AtomicBoolean opened;
     private final AtomicInteger nextEndpointPointer;
     private final AtomicInteger nextRetryDelayPointer;
-    private final Consumer<Event> eventConsumer;
     private final Supplier<Thread> threadSupplier;
     private final Subject<Boolean> connected;
     private Channel clientChannel;
@@ -80,27 +80,27 @@ public class SuperPeerClient implements AutoCloseable {
                     PeersManager peersManager,
                     Messenger messenger,
                     EventLoopGroup workerGroup,
+                    Consumer<Event> eventConsumer,
                     Set<URI> endpoints,
                     AtomicBoolean opened,
                     AtomicInteger nextEndpointPointer,
                     AtomicInteger nextRetryDelayPointer,
-                    Consumer<Event> eventConsumer,
-                    Channel clientChannel,
                     Supplier<Thread> threadSupplier,
-                    Subject<Boolean> connected) {
-        this.identitySupplier = identitySupplier;
-        this.messenger = messenger;
-        this.peersManager = peersManager;
+                    Subject<Boolean> connected,
+                    Channel clientChannel) {
         this.config = config;
+        this.identitySupplier = identitySupplier;
+        this.peersManager = peersManager;
+        this.messenger = messenger;
         this.workerGroup = workerGroup;
+        this.eventConsumer = eventConsumer;
         this.endpoints = endpoints;
         this.opened = opened;
         this.nextEndpointPointer = nextEndpointPointer;
         this.nextRetryDelayPointer = nextRetryDelayPointer;
-        this.eventConsumer = eventConsumer;
-        this.clientChannel = clientChannel;
         this.threadSupplier = threadSupplier;
         this.connected = connected;
+        this.clientChannel = clientChannel;
     }
 
     public SuperPeerClient(DrasylNodeConfig config,
@@ -109,22 +109,20 @@ public class SuperPeerClient implements AutoCloseable {
                            Messenger messenger,
                            EventLoopGroup workerGroup,
                            Consumer<Event> eventConsumer) throws SuperPeerClientException {
+        this.config = config;
+        this.identitySupplier = identitySupplier;
+        this.peersManager = peersManager;
+        this.messenger = messenger;
+        this.workerGroup = workerGroup;
+        this.eventConsumer = eventConsumer;
         endpoints = config.getSuperPeerEndpoints();
-
         if (endpoints.isEmpty()) {
             throw new SuperPeerClientException("At least one Super Peer Endpoint must be specified.");
         }
-
-        this.identitySupplier = identitySupplier;
-        this.messenger = messenger;
-        this.peersManager = peersManager;
-        this.config = config;
-        this.workerGroup = workerGroup;
         this.opened = new AtomicBoolean(false);
         // The pointer should point to a random endpoint. This creates a distribution on different super peer's endpoints
         this.nextEndpointPointer = new AtomicInteger(endpoints.isEmpty() ? 0 : Crypto.randomNumber(endpoints.size()));
         this.nextRetryDelayPointer = new AtomicInteger(0);
-        this.eventConsumer = eventConsumer;
         this.threadSupplier = () -> new Thread(this::keepConnectionAlive);
         this.connected = BehaviorSubject.createDefault(false);
     }
