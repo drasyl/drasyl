@@ -41,7 +41,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static java.time.Duration.ofMillis;
@@ -78,7 +77,7 @@ class SuperPeerClientTest {
     @Mock
     private Consumer<Event> onEvent;
     @Mock
-    private Function<Supplier<Set<URI>>, Thread> threadSupplier;
+    private Supplier<Thread> threadSupplier;
     @Mock
     private List<Duration> superPeerRetryDelays;
     @Mock
@@ -96,22 +95,22 @@ class SuperPeerClientTest {
     class Open {
         @Test
         void shouldCreateKeepConnectionAliveIfClientIsNotAlreadyOpen() {
-            when(threadSupplier.apply(any())).thenReturn(thread);
+            when(threadSupplier.get()).thenReturn(thread);
 
             SuperPeerClient client = new SuperPeerClient(config, identitySupplier, peersManager, messenger, workerGroup, endpoints, new AtomicBoolean(false), nextEndpointPointer, nextRetryDelayPointer, onEvent, channel, threadSupplier, connected);
 
-            client.open(ownEndpoints);
+            client.open();
 
-            verify(threadSupplier).apply(ownEndpoints);
+            verify(threadSupplier).get();
         }
 
         @Test
         void shouldNotCreateKeepConnectionAliveIfClientIsAlreadyOpen() {
             SuperPeerClient client = new SuperPeerClient(config, identitySupplier, peersManager, messenger, workerGroup, endpoints, new AtomicBoolean(true), nextEndpointPointer, nextRetryDelayPointer, onEvent, channel, threadSupplier, connected);
 
-            client.open(ownEndpoints);
+            client.open();
 
-            verify(threadSupplier, never()).apply(any());
+            verify(threadSupplier, never()).get();
         }
     }
 

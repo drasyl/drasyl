@@ -48,7 +48,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
-import java.util.function.Function;
 import java.util.function.Supplier;
 
 import static java.lang.Thread.sleep;
@@ -72,7 +71,7 @@ public class SuperPeerClient implements AutoCloseable {
     private final AtomicInteger nextEndpointPointer;
     private final AtomicInteger nextRetryDelayPointer;
     private final Consumer<Event> eventConsumer;
-    private final Function<Supplier<Set<URI>>, Thread> threadSupplier;
+    private final Supplier<Thread> threadSupplier;
     private final Subject<Boolean> connected;
     private Channel clientChannel;
 
@@ -87,7 +86,7 @@ public class SuperPeerClient implements AutoCloseable {
                     AtomicInteger nextRetryDelayPointer,
                     Consumer<Event> eventConsumer,
                     Channel clientChannel,
-                    Function<Supplier<Set<URI>>, Thread> threadSupplier,
+                    Supplier<Thread> threadSupplier,
                     Subject<Boolean> connected) {
         this.identitySupplier = identitySupplier;
         this.messenger = messenger;
@@ -126,7 +125,7 @@ public class SuperPeerClient implements AutoCloseable {
         this.nextEndpointPointer = new AtomicInteger(endpoints.isEmpty() ? 0 : Crypto.randomNumber(endpoints.size()));
         this.nextRetryDelayPointer = new AtomicInteger(0);
         this.eventConsumer = eventConsumer;
-        this.threadSupplier = myEndpoints -> new Thread(this::keepConnectionAlive);
+        this.threadSupplier = () -> new Thread(this::keepConnectionAlive);
         this.connected = BehaviorSubject.createDefault(false);
     }
 
@@ -237,9 +236,9 @@ public class SuperPeerClient implements AutoCloseable {
         return connected.subscribeOn(DrasylScheduler.getInstance());
     }
 
-    public void open(Supplier<Set<URI>> ownEndpointsSupplier) {
+    public void open() {
         if (opened.compareAndSet(false, true)) {
-            threadSupplier.apply(ownEndpointsSupplier).start();
+            threadSupplier.get().start();
         }
     }
 
