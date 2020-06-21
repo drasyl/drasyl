@@ -34,9 +34,11 @@ import org.drasyl.util.WebSocketUtil;
 
 import javax.net.ssl.SSLException;
 import java.net.URI;
-import java.util.concurrent.CompletableFuture;
 
+import static org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler.EXCEPTION_MESSAGE_HANDLER;
+import static org.drasyl.peer.connection.handler.ExceptionHandler.EXCEPTION_HANDLER;
 import static org.drasyl.peer.connection.handler.RelayableMessageGuard.HOP_COUNT_GUARD;
+import static org.drasyl.peer.connection.handler.SignatureHandler.SIGNATURE_HANDLER;
 import static org.drasyl.peer.connection.superpeer.SuperPeerClientConnectionHandler.SUPER_PEER_CLIENT_CONNECTION_HANDLER;
 
 /**
@@ -45,7 +47,6 @@ import static org.drasyl.peer.connection.superpeer.SuperPeerClientConnectionHand
 @SuppressWarnings({ "java:S110", "java:S4818" })
 public class SuperPeerClientChannelInitializer extends AbstractClientInitializer {
     private final DrasylNodeConfig config;
-    private final SuperPeerClientConnectionHandler clientHandler;
     private final SuperPeerClient client;
 
     public SuperPeerClientChannelInitializer(DrasylNodeConfig config,
@@ -55,32 +56,23 @@ public class SuperPeerClientChannelInitializer extends AbstractClientInitializer
                 config.getSuperPeerIdleRetries(), endpoint);
         this.config = config;
         this.client = client;
-        clientHandler = new SuperPeerClientConnectionHandler(config, client);
-    }
-
-    public CompletableFuture<Void> handshakeFuture() {
-        return clientHandler.handshakeFuture();
     }
 
     @Override
     protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
-        pipeline.addLast(SignatureHandler.SIGNATURE_HANDLER, new SignatureHandler(client.getIdentity()));
+        pipeline.addLast(SIGNATURE_HANDLER, new SignatureHandler(client.getIdentity()));
         pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(config.getMessageHopLimit()));
     }
 
     @Override
     protected void customStage(ChannelPipeline pipeline) {
-        // Exception handler
-        pipeline.addLast(ConnectionExceptionMessageHandler.EXCEPTION_MESSAGE_HANDLER, ConnectionExceptionMessageHandler.INSTANCE);
-
-        // Client handler
-        pipeline.addLast(SUPER_PEER_CLIENT_CONNECTION_HANDLER, clientHandler);
+        pipeline.addLast(EXCEPTION_MESSAGE_HANDLER, ConnectionExceptionMessageHandler.INSTANCE);
+        pipeline.addLast(SUPER_PEER_CLIENT_CONNECTION_HANDLER, new SuperPeerClientConnectionHandler(config, client));
     }
 
     @Override
     protected void exceptionStage(ChannelPipeline pipeline) {
-        // Catch Errors
-        pipeline.addLast(ExceptionHandler.EXCEPTION_HANDLER, new ExceptionHandler());
+        pipeline.addLast(EXCEPTION_HANDLER, new ExceptionHandler());
     }
 
     @Override

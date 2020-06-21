@@ -39,8 +39,12 @@ import org.drasyl.peer.connection.server.handler.NodeServerNewConnectionsGuard;
 import javax.net.ssl.SSLException;
 import java.security.cert.CertificateException;
 
+import static org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler.EXCEPTION_MESSAGE_HANDLER;
+import static org.drasyl.peer.connection.handler.ExceptionHandler.EXCEPTION_HANDLER;
 import static org.drasyl.peer.connection.handler.RelayableMessageGuard.HOP_COUNT_GUARD;
+import static org.drasyl.peer.connection.handler.SignatureHandler.SIGNATURE_HANDLER;
 import static org.drasyl.peer.connection.server.NodeServerConnectionHandler.NODE_SERVER_CONNECTION_HANDLER;
+import static org.drasyl.peer.connection.server.handler.NodeServerNewConnectionsGuard.CONNECTION_GUARD;
 
 /**
  * Creates a newly configured {@link ChannelPipeline} for the node server.
@@ -67,24 +71,20 @@ public class NodeServerChannelInitializer extends DefaultSessionInitializer {
 
     @Override
     protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
-        pipeline.addLast(SignatureHandler.SIGNATURE_HANDLER, new SignatureHandler(server.getIdentity()));
+        pipeline.addLast(SIGNATURE_HANDLER, new SignatureHandler(server.getIdentity()));
         pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(config.getMessageHopLimit()));
-        pipeline.addLast(NodeServerNewConnectionsGuard.CONNECTION_GUARD, new NodeServerNewConnectionsGuard(() -> server.isOpen() && (!config.isSuperPeerEnabled() || server.getSuperPeerConnected().blockingFirst())));
+        pipeline.addLast(CONNECTION_GUARD, new NodeServerNewConnectionsGuard(() -> server.isOpen() && (!config.isSuperPeerEnabled() || server.getSuperPeerConnected().blockingFirst())));
     }
 
     @Override
     protected void customStage(ChannelPipeline pipeline) {
-        // Exception handler
-        pipeline.addLast(ConnectionExceptionMessageHandler.EXCEPTION_MESSAGE_HANDLER, ConnectionExceptionMessageHandler.INSTANCE);
-
-        // Server handler
+        pipeline.addLast(EXCEPTION_MESSAGE_HANDLER, ConnectionExceptionMessageHandler.INSTANCE);
         pipeline.addLast(NODE_SERVER_CONNECTION_HANDLER, new NodeServerConnectionHandler(config, server));
     }
 
     @Override
     protected void exceptionStage(ChannelPipeline pipeline) {
-        // Catch Errors
-        pipeline.addLast(ExceptionHandler.EXCEPTION_HANDLER, new ExceptionHandler());
+        pipeline.addLast(EXCEPTION_HANDLER, new ExceptionHandler());
     }
 
     @Override
