@@ -141,9 +141,9 @@ public abstract class DrasylNode {
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = new CompletableFuture<>();
-            this.loopbackMessageSink = (identity, message) -> {
-                if (!identityManager.getPublicKey().equals(identity)) {
-                    throw new NoPathToIdentityException(identity);
+            this.loopbackMessageSink = (recipient, message) -> {
+                if (!identityManager.getPublicKey().equals(recipient)) {
+                    throw new NoPathToIdentityException(recipient);
                 }
 
                 if (message instanceof ApplicationMessage) {
