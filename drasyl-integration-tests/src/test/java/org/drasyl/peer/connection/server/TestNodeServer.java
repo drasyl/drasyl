@@ -18,6 +18,7 @@
  */
 package org.drasyl.peer.connection.server;
 
+import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.reactivex.rxjava3.core.Observable;
@@ -30,6 +31,8 @@ import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.superpeer.TestNodeServerChannelInitializer;
 
 import java.util.function.Supplier;
+
+import static org.awaitility.Awaitility.await;
 
 /**
  * This is a special implementation of the NodeServer which is used for testing. It offers
@@ -59,5 +62,22 @@ public class TestNodeServer extends NodeServer {
         if (!future.isSuccess()) {
             throw new RuntimeException(future.cause());
         }
+    }
+
+    public void closeClient(CompressedPublicKey client) {
+        Channel channel = channelGroup.find(client);
+        if (channel != null) {
+            ChannelFuture future = channel.close().awaitUninterruptibly();
+            if (!future.isSuccess()) {
+                throw new RuntimeException(future.cause());
+            }
+        }
+        else {
+            throw new RuntimeException("No client with Public Key found: " + client);
+        }
+    }
+
+    public void awaitClient(CompressedPublicKey client) {
+        await().until(() -> channelGroup.find(client) != null);
     }
 }
