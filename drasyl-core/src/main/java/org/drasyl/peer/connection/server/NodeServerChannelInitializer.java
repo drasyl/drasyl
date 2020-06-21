@@ -28,7 +28,6 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import io.netty.handler.stream.ChunkedWriteHandler;
-import org.drasyl.DrasylNodeConfig;
 import org.drasyl.peer.connection.DefaultSessionInitializer;
 import org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
@@ -37,29 +36,27 @@ import org.drasyl.peer.connection.handler.SignatureHandler;
 import org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler;
 import org.drasyl.peer.connection.server.handler.NodeServerHttpHandler;
 import org.drasyl.peer.connection.server.handler.NodeServerNewConnectionsGuard;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLException;
 import java.security.cert.CertificateException;
 
+import static org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler.EXCEPTION_MESSAGE_HANDLER;
+import static org.drasyl.peer.connection.handler.ExceptionHandler.EXCEPTION_HANDLER;
 import static org.drasyl.peer.connection.handler.RelayableMessageGuard.HOP_COUNT_GUARD;
 import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_HANDLER;
 import static org.drasyl.peer.connection.server.NodeServerConnectionHandler.NODE_SERVER_CONNECTION_HANDLER;
+import static org.drasyl.peer.connection.server.handler.NodeServerNewConnectionsGuard.CONNECTION_GUARD;
 
 /**
  * Creates a newly configured {@link ChannelPipeline} for the node server.
  */
 @SuppressWarnings({ "java:S4818" })
 public class NodeServerChannelInitializer extends DefaultSessionInitializer {
-    private static final Logger LOG = LoggerFactory.getLogger(NodeServerChannelInitializer.class);
-    private final DrasylNodeConfig config;
-    protected final NodeServer server;
+    protected final NodeServerEnvironment environment;
 
-    public NodeServerChannelInitializer(DrasylNodeConfig config, NodeServer server) {
-        super(config.getFlushBufferSize(), config.getServerIdleTimeout(), config.getServerIdleRetries());
-        this.config = config;
-        this.server = server;
+    public NodeServerChannelInitializer(NodeServerEnvironment environment) {
+        super(environment.getConfig().getFlushBufferSize(), environment.getConfig().getServerIdleTimeout(), environment.getConfig().getServerIdleRetries());
+        this.environment = environment;
     }
 
     @Override
@@ -67,45 +64,41 @@ public class NodeServerChannelInitializer extends DefaultSessionInitializer {
         pipeline.addLast(new HttpServerCodec());
         pipeline.addLast(new HttpObjectAggregator(65536));
         pipeline.addLast(new WebSocketServerCompressionHandler());
-        pipeline.addLast(new NodeServerHttpHandler(server.getIdentityManager().getPublicKey(), server.getPeersManager()));
+        pipeline.addLast(new NodeServerHttpHandler(environment.getIdentity().getPublicKey(), environment.getPeersManager()));
         pipeline.addLast(new WebSocketServerProtocolHandler("/", null, true));
     }
 
     @Override
     protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
-        pipeline.addLast(SignatureHandler.SIGNATURE_HANDLER, new SignatureHandler(server.getIdentityManager().getIdentity()));
-        pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(config.getMessageHopLimit()));
-        pipeline.addLast(NodeServerNewConnectionsGuard.CONNECTION_GUARD, new NodeServerNewConnectionsGuard(() -> server.isOpen() && (!config.isSuperPeerEnabled() || server.getSuperPeerConnected().blockingFirst())));
+        pipeline.addLast(SignatureHandler.SIGNATURE_HANDLER, new SignatureHandler(environment.getIdentity()));
+        pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(environment.getConfig().getMessageHopLimit()));
+        pipeline.addLast(CONNECTION_GUARD, new NodeServerNewConnectionsGuard(environment.getAcceptNewConnectionsSupplier()));
         pipeline.addLast("streamer", new ChunkedWriteHandler());
-        pipeline.addLast(CHUNK_HANDLER, new ChunkedMessageHandler(config.getMessageMaxContentLength(), server.getIdentityManager().getPublicKey()));
+        pipeline.addLast(CHUNK_HANDLER, new ChunkedMessageHandler(environment.getConfig().getMessageMaxContentLength(), environment.getIdentity().getPublicKey()));
     }
 
     @Override
     protected void customStage(ChannelPipeline pipeline) {
-        // Exception handler
-        pipeline.addLast(ConnectionExceptionMessageHandler.EXCEPTION_MESSAGE_HANDLER, ConnectionExceptionMessageHandler.INSTANCE);
-
-        // Server handler
-        pipeline.addLast(NODE_SERVER_CONNECTION_HANDLER, new NodeServerConnectionHandler(config, server));
+        pipeline.addLast(EXCEPTION_MESSAGE_HANDLER, ConnectionExceptionMessageHandler.INSTANCE);
+        pipeline.addLast(NODE_SERVER_CONNECTION_HANDLER, new NodeServerConnectionHandler(environment));
     }
 
     @Override
     protected void exceptionStage(ChannelPipeline pipeline) {
-        // Catch Errors
-        pipeline.addLast(ExceptionHandler.EXCEPTION_HANDLER, new ExceptionHandler());
+        pipeline.addLast(EXCEPTION_HANDLER, new ExceptionHandler());
     }
 
     @Override
-    protected SslHandler generateSslContext(SocketChannel ch) {
-        if (config.getServerSSLEnabled()) {
+    protected SslHandler generateSslContext(SocketChannel ch) throws NodeServerException {
+        if (environment.getConfig().getServerSSLEnabled()) {
             try {
                 SelfSignedCertificate ssc = new SelfSignedCertificate();
 
                 return SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey())
-                        .protocols(config.getServerSSLProtocols()).build().newHandler(ch.alloc());
+                        .protocols(environment.getConfig().getServerSSLProtocols()).build().newHandler(ch.alloc());
             }
             catch (SSLException | CertificateException e) {
-                LOG.error("SSLException: ", e);
+                throw new NodeServerException(e);
             }
         }
         return null;

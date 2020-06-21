@@ -20,8 +20,6 @@ package org.drasyl.peer.connection.server;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.reactivex.rxjava3.core.Observable;
@@ -32,10 +30,12 @@ import org.drasyl.DrasylNodeConfig;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedKeyPair;
+import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
+import org.drasyl.identity.ProofOfWork;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
@@ -60,7 +60,6 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import testutils.AnsiColor;
 
 import java.security.KeyPair;
 import java.util.Arrays;
@@ -70,6 +69,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 
+import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.awaitility.Awaitility.await;
@@ -92,6 +92,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static testutils.AnsiColor.COLOR_CYAN;
+import static testutils.AnsiColor.STYLE_REVERSED;
 import static testutils.TestHelper.colorizedPrintln;
 
 //import net.jcip.annotations.NotThreadSafe;
@@ -113,7 +115,7 @@ class NodeServerIT {
 
     @BeforeEach
     void setup(TestInfo info) throws DrasylException, CryptoException {
-        colorizedPrintln("STARTING " + info.getDisplayName(), AnsiColor.COLOR_CYAN, AnsiColor.STYLE_REVERSED);
+        colorizedPrintln("STARTING " + info.getDisplayName(), COLOR_CYAN, STYLE_REVERSED);
 
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
         System.setProperty("io.netty.leakDetection.level", "PARANOID");
@@ -121,7 +123,18 @@ class NodeServerIT {
         identitySession1 = Identity.of(169092, "030a59784f88c74dcd64258387f9126739c3aeb7965f36bb501ff01f5036b3d72b", "0f1e188d5e3b98daf2266d7916d2e1179ae6209faa7477a2a66d4bb61dab4399");
         identitySession2 = Identity.of(26778671, "0236fde6a49564a0eaa2a7d6c8f73b97062d5feb36160398c08a5b73f646aa5fe5", "093d1ee70518508cac18eaf90d312f768c14d43de9bfd2618a2794d8df392da0");
 
-        config = new DrasylNodeConfig(ConfigFactory.load("configs/NodeServerIT.conf"));
+        config = DrasylNodeConfig.newBuilder()
+                .identityProofOfWork(ProofOfWork.of(6657650))
+                .identityPublicKey(CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"))
+                .identityPrivateKey(CompressedPrivateKey.of("0c27af38c77f2cd5cc2a0ff5c461003a9c24beb955f316135d251ecaf4dda03f"))
+                .serverBindHost("127.0.0.1")
+                .serverBindPort(0)
+                .serverHandshakeTimeout(ofSeconds(5))
+                .serverSSLEnabled(true)
+                .serverIdleTimeout(ofSeconds(1))
+                .serverIdleRetries((short) 1)
+                .superPeerEnabled(false)
+                .build();
         DrasylNode.setLogLevel(config.getLoglevel());
         identityManager = new IdentityManager(config);
         identityManager.loadOrCreateIdentity();
@@ -130,7 +143,7 @@ class NodeServerIT {
         messenger = new Messenger();
         superPeerConnected = Observable.just(false);
 
-        server = new NodeServer(identityManager, messenger, peersManager, superPeerConnected, config, workerGroup, bossGroup);
+        server = new NodeServer(identityManager::getIdentity, messenger, peersManager, config, workerGroup, bossGroup, superPeerConnected);
         server.open();
     }
 
@@ -140,7 +153,7 @@ class NodeServerIT {
 
         IdentityManager.deleteIdentityFile(config.getIdentityPath());
 
-        colorizedPrintln("FINISHED " + info.getDisplayName(), AnsiColor.COLOR_CYAN, AnsiColor.STYLE_REVERSED);
+        colorizedPrintln("FINISHED " + info.getDisplayName(), COLOR_CYAN, STYLE_REVERSED);
     }
 
     @Test
@@ -150,7 +163,7 @@ class NodeServerIT {
         TestNodeServerConnection session = clientSession(config, server, identitySession1);
 
         // send message
-        RequestMessage request = new JoinMessage(session.getIdentity().getPoW(), session.getIdentity().getPublicKey(), Set.of());
+        RequestMessage request = new JoinMessage(session.getIdentity().getProofOfWork(), session.getIdentity().getPublicKey(), Set.of());
         CompletableFuture<ResponseMessage<?>> send = session.sendRequest(request);
 
         // verify response
@@ -167,10 +180,10 @@ class NodeServerIT {
         TestNodeServerConnection session2 = clientSession(config, server, identitySession2);
 
         // send messages
-        RequestMessage request1 = new JoinMessage(session1.getIdentity().getPoW(), session1.getIdentity().getPublicKey(), Set.of());
+        RequestMessage request1 = new JoinMessage(session1.getIdentity().getProofOfWork(), session1.getIdentity().getPublicKey(), Set.of());
         CompletableFuture<ResponseMessage<?>> send1 = session1.sendRequest(request1);
 
-        RequestMessage request2 = new JoinMessage(session2.getIdentity().getPoW(), session2.getIdentity().getPublicKey(), Set.of());
+        RequestMessage request2 = new JoinMessage(session2.getIdentity().getProofOfWork(), session2.getIdentity().getPublicKey(), Set.of());
         CompletableFuture<ResponseMessage<?>> send2 = session2.sendRequest(request2);
 
         // verify responses
@@ -273,12 +286,12 @@ class NodeServerIT {
         TestObserver<Message> receivedMessages2 = session2.receivedMessages().test();
 
         // send messages
-        RequestMessage request1 = new JoinMessage(session1.getIdentity().getPoW(), session1.getIdentity().getPublicKey(), Set.of());
+        RequestMessage request1 = new JoinMessage(session1.getIdentity().getProofOfWork(), session1.getIdentity().getPublicKey(), Set.of());
         ResponseMessage<?> response1 = session1.sendRequest(request1).get();
         session1.send(new StatusMessage(STATUS_OK, response1.getId()));
         await().until(() -> server.getChannelGroup().find(session1.getIdentity().getPublicKey()) != null);
 
-        RequestMessage request2 = new JoinMessage(session1.getIdentity().getPoW(), session1.getIdentity().getPublicKey(), Set.of());
+        RequestMessage request2 = new JoinMessage(session1.getIdentity().getProofOfWork(), session1.getIdentity().getPublicKey(), Set.of());
         ResponseMessage<?> response2 = session2.sendRequest(request2).join();
         session2.send(new StatusMessage(STATUS_OK, response2.getId()));
 
@@ -290,7 +303,7 @@ class NodeServerIT {
             }
             WelcomeMessage msg = (WelcomeMessage) val;
 
-            return Objects.equals(server.getIdentityManager().getPublicKey(), msg.getPublicKey()) && Objects.equals(PeerInformation.of(server.getEndpoints()), msg.getPeerInformation()) && Objects.equals(msg.getCorrespondingId(), request1.getId());
+            return Objects.equals(server.getIdentity().getPublicKey(), msg.getPublicKey()) && Objects.equals(PeerInformation.of(server.getEndpoints()), msg.getPeerInformation()) && Objects.equals(msg.getCorrespondingId(), request1.getId());
         });
         receivedMessages1.assertValueAt(1, val -> ((QuitMessage) val).getReason() == REASON_NEW_SESSION);
         receivedMessages2.awaitCount(1);
@@ -300,7 +313,7 @@ class NodeServerIT {
             }
             WelcomeMessage msg = (WelcomeMessage) val;
 
-            return Objects.equals(server.getIdentityManager().getPublicKey(), msg.getPublicKey()) && Objects.equals(PeerInformation.of(server.getEndpoints()), msg.getPeerInformation()) && Objects.equals(msg.getCorrespondingId(), request2.getId());
+            return Objects.equals(server.getIdentity().getPublicKey(), msg.getPublicKey()) && Objects.equals(PeerInformation.of(server.getEndpoints()), msg.getPeerInformation()) && Objects.equals(msg.getCorrespondingId(), request2.getId());
         });
     }
 
@@ -445,7 +458,7 @@ class NodeServerIT {
 
     @Test
     void shouldOpenAndCloseGracefully() throws DrasylException {
-        NodeServer server = new NodeServer(identityManager, messenger, peersManager, workerGroup, bossGroup, superPeerConnected);
+        NodeServer server = new NodeServer(identityManager::getIdentity, messenger, peersManager, new DrasylNodeConfig(), workerGroup, bossGroup, superPeerConnected);
 
         server.open();
         server.close();
@@ -455,9 +468,8 @@ class NodeServerIT {
 
     @Test
     void openShouldFailIfInvalidPortIsGiven() throws DrasylException {
-        Config config =
-                ConfigFactory.parseString("drasyl.server.bind-port = 72522").withFallback(ConfigFactory.load());
-        NodeServer server = new NodeServer(identityManager, messenger, peersManager, superPeerConnected, config, workerGroup, bossGroup);
+        DrasylNodeConfig config = DrasylNodeConfig.newBuilder().serverBindPort(72722).build();
+        NodeServer server = new NodeServer(identityManager::getIdentity, messenger, peersManager, config, workerGroup, bossGroup, superPeerConnected);
 
         assertThrows(NodeServerException.class, server::open);
     }
@@ -484,7 +496,7 @@ class NodeServerIT {
         server.close();
 
         // send message
-        RequestMessage request = new JoinMessage(session.getIdentity().getPoW(), session.getIdentity().getPublicKey(), Set.of());
+        RequestMessage request = new JoinMessage(session.getIdentity().getProofOfWork(), session.getIdentity().getPublicKey(), Set.of());
         CompletableFuture<ResponseMessage<?>> send = session.sendRequest(request);
 
         // verify response
@@ -521,7 +533,7 @@ class NodeServerIT {
         TestObserver<Message> receivedMessages = session.receivedMessages().filter(msg -> msg instanceof ConnectionExceptionMessage).test();
 
         // send messages
-        RequestMessage request1 = new JoinMessage(identitySession2.getPoW(), session.getIdentity().getPublicKey(), Set.of());
+        RequestMessage request1 = new JoinMessage(identitySession2.getProofOfWork(), session.getIdentity().getPublicKey(), Set.of());
         session.sendRequest(request1);
 
         // verify response

@@ -264,7 +264,7 @@ public class TestNodeServerConnection {
                                                                   Identity identity) throws ExecutionException,
             InterruptedException {
         TestNodeServerConnection session = TestNodeServerConnection.clientSession(config, server, identity, true);
-        ResponseMessage<?> responseMessage = session.sendRequest(new JoinMessage(session.getIdentity().getPoW(), session.getIdentity().getPublicKey(), Set.of())).get();
+        ResponseMessage<?> responseMessage = session.sendRequest(new JoinMessage(session.getIdentity().getProofOfWork(), session.getIdentity().getPublicKey(), Set.of())).get();
         session.send(new StatusMessage(STATUS_OK, responseMessage.getId()));
         await().until(() -> server.getChannelGroup().find(session.getIdentity().getPublicKey()) != null);
 

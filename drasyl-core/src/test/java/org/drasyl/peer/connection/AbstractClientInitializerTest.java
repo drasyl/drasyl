@@ -77,8 +77,9 @@ class AbstractClientInitializerTest {
 
         initializer.beforeMarshalStage(pipeline);
 
-        verify(pipeline).addLast(any(HttpClientCodec.class), any(HttpObjectAggregator.class),
-                any(WebSocketHandshakeClientHandler.class));
+        verify(pipeline).addLast(any(HttpClientCodec.class));
+        verify(pipeline).addLast(any(HttpObjectAggregator.class));
+        verify(pipeline).addLast(any(WebSocketHandshakeClientHandler.class));
     }
 
     @Test
@@ -99,7 +100,8 @@ class AbstractClientInitializerTest {
             initializer.beforeMarshalStage(pipeline);
         });
 
-        verify(pipeline, never()).addLast(any(HttpClientCodec.class), any(HttpObjectAggregator.class),
-                any(WebSocketHandshakeClientHandler.class));
+        verify(pipeline, never()).addLast(any(HttpClientCodec.class));
+        verify(pipeline, never()).addLast(any(HttpObjectAggregator.class));
+        verify(pipeline, never()).addLast(any(WebSocketHandshakeClientHandler.class));
     }
 }

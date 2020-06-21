@@ -16,21 +16,23 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection.superpeer;
+package org.drasyl.util;
 
-import io.netty.channel.ChannelPipeline;
-import org.drasyl.DrasylNodeConfig;
-import org.drasyl.peer.connection.server.NodeServer;
-import org.drasyl.peer.connection.server.NodeServerChannelInitializer;
+import org.drasyl.DrasylException;
 
-public class DummyServerChannelInitializer extends NodeServerChannelInitializer {
-    public DummyServerChannelInitializer(DrasylNodeConfig config, NodeServer server) {
-        super(config, server);
-    }
-
-    @Override
-    protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
-        super.afterPojoMarshalStage(pipeline);
-        pipeline.addLast(new IntegrationTestHandler());
-    }
+/**
+ * {@link java.util.function.Function} that can throw a {@link org.drasyl.DrasylException}.
+ *
+ * @param <T> the type of the input to the function
+ * @param <R> the type of the result of the function
+ */
+@FunctionalInterface
+public interface DrasylFunction<T, R> {
+    /**
+     * Applies this function to the given argument.
+     *
+     * @param t the function argument
+     * @return the function result
+     */
+    R apply(T t) throws DrasylException;
 }

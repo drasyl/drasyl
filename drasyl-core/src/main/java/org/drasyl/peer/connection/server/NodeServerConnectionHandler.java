@@ -21,7 +21,6 @@ package org.drasyl.peer.connection.server;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.DrasylNodeConfig;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
@@ -63,15 +62,14 @@ import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE
 public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServerHandler<JoinMessage, WelcomeMessage> {
     public static final String NODE_SERVER_CONNECTION_HANDLER = "nodeServerConnectionHandler";
     private static final Logger LOG = LoggerFactory.getLogger(NodeServerConnectionHandler.class);
-    private final NodeServer server;
+    private final NodeServerEnvironment environment;
 
-    public NodeServerConnectionHandler(DrasylNodeConfig config,
-                                       NodeServer server) {
-        super(config.getServerHandshakeTimeout(), server.getMessenger());
-        this.server = server;
+    public NodeServerConnectionHandler(NodeServerEnvironment environment) {
+        super(environment.getConfig().getServerHandshakeTimeout(), environment.getMessenger());
+        this.environment = environment;
     }
 
-    NodeServerConnectionHandler(NodeServer server,
+    NodeServerConnectionHandler(NodeServerEnvironment environment,
                                 Duration timeout,
                                 Messenger messenger,
                                 CompletableFuture<Void> handshakeFuture,
@@ -79,14 +77,14 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
                                 JoinMessage requestMessage,
                                 WelcomeMessage offerMessage) {
         super(timeout, messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
-        this.server = server;
+        this.environment = environment;
     }
 
     @Override
     protected ConnectionExceptionMessage.Error validateSessionRequest(JoinMessage requestMessage) {
         CompressedPublicKey clientPublicKey = requestMessage.getPublicKey();
 
-        if (server.getIdentityManager().getPublicKey().equals(clientPublicKey)) {
+        if (environment.getIdentity().getPublicKey().equals(clientPublicKey)) {
             return CONNECTION_ERROR_IDENTITY_COLLISION;
         }
         else if (!requestMessage.getProofOfWork().isValid(requestMessage.getPublicKey(),
@@ -101,7 +99,7 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
     @Override
     protected WelcomeMessage offerSession(ChannelHandlerContext ctx,
                                           JoinMessage requestMessage) {
-        return new WelcomeMessage(server.getIdentityManager().getPublicKey(), PeerInformation.of(server.getEndpoints()), requestMessage.getId());
+        return new WelcomeMessage(environment.getIdentity().getPublicKey(), PeerInformation.of(environment.getEndpoints()), requestMessage.getId());
     }
 
     @Override
@@ -112,13 +110,13 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
         Path path = ctx::writeAndFlush; // We start at this point to save resources
         PeerInformation clientInformation = PeerInformation.of(path);
 
-        server.getChannelGroup().add(clientPublicKey, channel);
+        environment.getChannelGroup().add(clientPublicKey, channel);
 
         // remove peer information on disconnect
-        channel.closeFuture().addListener(future -> server.getPeersManager().removeChildrenAndRemovePeerInformation(clientPublicKey, clientInformation));
+        channel.closeFuture().addListener(future -> environment.getPeersManager().removeChildrenAndRemovePeerInformation(clientPublicKey, clientInformation));
 
         // store peer information
-        server.getPeersManager().addPeerInformationAndAddChildren(clientPublicKey, clientInformation);
+        environment.getPeersManager().addPeerInformationAndAddChildren(clientPublicKey, clientInformation);
 
         // inform super peer about my new children and grandchildren
         Set<CompressedPublicKey> childrenAndGrandchildren = SetUtil.merge(requestMessage.getChildrenAndGrandchildren(), clientPublicKey);
@@ -130,7 +128,7 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
 
     private void registerGrandchildrenAtSuperPeer(ChannelHandlerContext ctx,
                                                   Set<CompressedPublicKey> grandchildren) {
-        Pair<CompressedPublicKey, PeerInformation> superPeer = server.getPeersManager().getSuperPeer();
+        Pair<CompressedPublicKey, PeerInformation> superPeer = environment.getPeersManager().getSuperPeer();
         if (superPeer != null) {
             PeerInformation superPeerInformation = superPeer.second();
             Path superPeerPath = superPeerInformation.getPaths().iterator().next();
@@ -155,14 +153,14 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
         for (CompressedPublicKey grandchildIdentity : grandchildren) {
 
             // remove peer information on disconnect
-            channel.closeFuture().addListener(future -> server.getPeersManager().removeGrandchildrenRoute(grandchildIdentity));
+            channel.closeFuture().addListener(future -> environment.getPeersManager().removeGrandchildrenRoute(grandchildIdentity));
 
             // store peer information
             CompressedPublicKey clientPublicKey = channel.attr(ATTRIBUTE_PUBLIC_KEY).get();
             if (getLogger().isDebugEnabled()) {
                 getLogger().debug("[{}]: Client {} can Route to {}", channel.id().asShortText(), clientPublicKey, grandchildIdentity);
             }
-            server.getPeersManager().addGrandchildrenRoute(grandchildIdentity, clientPublicKey);
+            environment.getPeersManager().addGrandchildrenRoute(grandchildIdentity, clientPublicKey);
         }
     }
 
@@ -190,7 +188,7 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
 
     private void unregisterGrandchildrenAtSuperPeer(ChannelHandlerContext ctx,
                                                     Set<CompressedPublicKey> grandchildren) {
-        Pair<CompressedPublicKey, PeerInformation> superPeer = server.getPeersManager().getSuperPeer();
+        Pair<CompressedPublicKey, PeerInformation> superPeer = environment.getPeersManager().getSuperPeer();
         if (superPeer != null) {
             PeerInformation superPeerInformation = superPeer.second();
             Path superPeerPath = superPeerInformation.getPaths().iterator().next();
@@ -217,7 +215,7 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
             unregisterGrandchildrenAtSuperPeer(ctx, Set.of(grandchildIdentity));
 
             // remove peer information
-            server.getPeersManager().removeGrandchildrenRoute(grandchildIdentity);
+            environment.getPeersManager().removeGrandchildrenRoute(grandchildIdentity);
         }
     }
 }

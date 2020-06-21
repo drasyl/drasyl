@@ -54,7 +54,7 @@ class JoinMessageTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
-            String json = "{\"@type\":\"" + JoinMessage.class.getSimpleName() + "\",\"id\":\"4ae5cdcd8c21719f8e779f21\",\"userAgent\":\"\",\"proofOfWork\":{\"nonce\":3556154},\"publicKey\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\", \"childrenAndGrandchildren\":[\"0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458\"]}";
+            String json = "{\"@type\":\"" + JoinMessage.class.getSimpleName() + "\",\"id\":\"4ae5cdcd8c21719f8e779f21\",\"userAgent\":\"\",\"proofOfWork\":3556154,\"publicKey\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\", \"childrenAndGrandchildren\":[\"0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458\"]}";
 
             assertEquals(new JoinMessage(
                     ProofOfWork.of(3556154),

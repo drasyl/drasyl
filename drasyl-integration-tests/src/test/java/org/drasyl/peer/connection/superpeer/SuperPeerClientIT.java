@@ -18,7 +18,6 @@
  */
 package org.drasyl.peer.connection.superpeer;
 
-import com.typesafe.config.ConfigFactory;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.ResourceLeakDetector;
@@ -30,10 +29,14 @@ import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.DrasylNodeConfig;
+import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.Node;
+import org.drasyl.identity.CompressedPrivateKey;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
+import org.drasyl.identity.ProofOfWork;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.ApplicationMessage;
@@ -43,7 +46,7 @@ import org.drasyl.peer.connection.message.PingMessage;
 import org.drasyl.peer.connection.message.PongMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
-import org.drasyl.peer.connection.server.NodeServer;
+import org.drasyl.peer.connection.server.TestNodeServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -52,16 +55,20 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import testutils.AnsiColor;
-import testutils.TestHelper;
 
+import java.net.URI;
+import java.util.List;
 import java.util.Set;
 
+import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.event.EventType.EVENT_NODE_OFFLINE;
 import static org.drasyl.event.EventType.EVENT_NODE_ONLINE;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
+import static testutils.AnsiColor.COLOR_CYAN;
+import static testutils.AnsiColor.STYLE_REVERSED;
+import static testutils.TestHelper.colorizedPrintln;
 
 @Execution(ExecutionMode.SAME_THREAD)
 class SuperPeerClientIT {
@@ -73,7 +80,7 @@ class SuperPeerClientIT {
     private EventLoopGroup bossGroup;
     private IdentityManager identityManager;
     private IdentityManager identityManagerServer;
-    private NodeServer server;
+    private TestNodeServer server;
     private Messenger messenger;
     private Messenger messengerServer;
     private PeersManager peersManager;
@@ -83,8 +90,8 @@ class SuperPeerClientIT {
     private SuperPeerClient client;
 
     @BeforeEach
-    void setup(TestInfo info) throws DrasylException {
-        TestHelper.colorizedPrintln("STARTING " + info.getDisplayName(), AnsiColor.COLOR_CYAN, AnsiColor.STYLE_REVERSED);
+    void setup(TestInfo info) throws DrasylException, CryptoException {
+        colorizedPrintln("STARTING " + info.getDisplayName(), COLOR_CYAN, STYLE_REVERSED);
 
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
         System.setProperty("io.netty.leakDetection.level", "PARANOID");
@@ -93,12 +100,38 @@ class SuperPeerClientIT {
         serverWorkerGroup = new NioEventLoopGroup();
         bossGroup = new NioEventLoopGroup(1);
 
-        config = new DrasylNodeConfig(ConfigFactory.load("configs/SuperPeerClientIT.conf"));
+        config = DrasylNodeConfig.newBuilder()
+                .identityProofOfWork(ProofOfWork.of(6657650))
+                .identityPublicKey(CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"))
+                .identityPrivateKey(CompressedPrivateKey.of("0c27af38c77f2cd5cc2a0ff5c461003a9c24beb955f316135d251ecaf4dda03f"))
+                .serverBindHost("127.0.0.1")
+                .serverBindPort(8888)
+                .serverHandshakeTimeout(ofSeconds(5))
+                .serverSSLEnabled(true)
+                .serverIdleTimeout(ofSeconds(1))
+                .serverIdleRetries((short) 1)
+                .superPeerEndpoints(Set.of(URI.create("wss://127.0.0.1:22527")))
+                .superPeerRetryDelays(List.of(ofSeconds(0), ofSeconds(1), ofSeconds(2), ofSeconds(4), ofSeconds(8), ofSeconds(16), ofSeconds(32), ofSeconds(60)))
+                .superPeerIdleTimeout(ofSeconds(1))
+                .superPeerIdleRetries((short) 1)
+                .superPeerPublicKey(CompressedPublicKey.of("0234789936c7941f850c382ea9d14ecb0aad03b99a9e29a9c15b42f5f1b0c4cf3d"))
+                .build();
         DrasylNode.setLogLevel(config.getLoglevel());
         identityManager = new IdentityManager(config);
         identityManager.loadOrCreateIdentity();
 
-        serverConfig = new DrasylNodeConfig(ConfigFactory.load("configs/SuperPeerClientIT-NodeServer.conf"));
+        serverConfig = DrasylNodeConfig.newBuilder()
+                .identityProofOfWork(ProofOfWork.of(5344366))
+                .identityPublicKey(CompressedPublicKey.of("0234789936c7941f850c382ea9d14ecb0aad03b99a9e29a9c15b42f5f1b0c4cf3d"))
+                .identityPrivateKey(CompressedPrivateKey.of("064f10d37111303ee20443661c8ea758045bbf809e4950dd84b8a1348863d0f8"))
+                .serverBindHost("127.0.0.1")
+                .serverHandshakeTimeout(ofSeconds(5))
+                .serverSSLEnabled(true)
+                .serverIdleTimeout(ofSeconds(1))
+                .serverIdleRetries((short) 1)
+                .serverChannelInitializer(TestNodeServerChannelInitializer.class)
+                .superPeerEnabled(false)
+                .build();
         identityManagerServer = new IdentityManager(serverConfig);
         identityManagerServer.loadOrCreateIdentity();
         peersManager = new PeersManager(event -> {
@@ -108,7 +141,7 @@ class SuperPeerClientIT {
         messenger = new Messenger();
         messengerServer = new Messenger();
 
-        server = new NodeServer(identityManagerServer, messengerServer, peersManagerServer, superPeerConnected, serverConfig, serverWorkerGroup, bossGroup);
+        server = new TestNodeServer(identityManagerServer::getIdentity, messengerServer, peersManagerServer, serverConfig, serverWorkerGroup, bossGroup, superPeerConnected);
         server.open();
         emittedEventsSubject = ReplaySubject.<Event>create().toSerialized();
         superPeerConnected = BehaviorSubject.createDefault(false).toSerialized();
@@ -126,18 +159,18 @@ class SuperPeerClientIT {
         workerGroup.shutdownGracefully().syncUninterruptibly();
         bossGroup.shutdownGracefully().syncUninterruptibly();
         serverWorkerGroup.shutdownGracefully().syncUninterruptibly();
-        TestHelper.colorizedPrintln("FINISHED " + info.getDisplayName(), AnsiColor.COLOR_CYAN, AnsiColor.STYLE_REVERSED);
+        colorizedPrintln("FINISHED " + info.getDisplayName(), COLOR_CYAN, STYLE_REVERSED);
     }
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldSendJoinMessageOnConnect() throws SuperPeerClientException {
-        TestObserver<Message> receivedMessages = IntegrationTestHandler.receivedMessages().test();
+        TestObserver<Message> receivedMessages = server.receivedMessages().test();
 
         // start client
-        SuperPeerClient client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, event -> {
+        SuperPeerClient client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, event -> {
         });
-        client.open(server.getEndpoints());
+        client.open();
 
         // verify received messages
         receivedMessages.awaitCount(1);
@@ -147,12 +180,12 @@ class SuperPeerClientIT {
     @Disabled("Race Condition error")
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldSendQuitMessageOnClientSideDisconnect() throws SuperPeerClientException {
-        TestObserver<Message> receivedMessages = IntegrationTestHandler.receivedMessages().filter(m -> m instanceof QuitMessage).test();
+        TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof QuitMessage).test();
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
-        client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
-        client.open(server.getEndpoints());
+        client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
+        client.open();
 
         // wait for node to become online, before closing it
         emittedEvents.awaitCount(1);
@@ -169,8 +202,8 @@ class SuperPeerClientIT {
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
-        client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
-        client.open(server.getEndpoints());
+        client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
+        client.open();
 
         // wait for node to become online, before closing it
         emittedEvents.awaitCount(1);
@@ -184,43 +217,42 @@ class SuperPeerClientIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldRespondToPingMessageWithPongMessage() throws SuperPeerClientException {
-        TestObserver<Message> sentMessages = IntegrationTestHandler.sentMessages().test();
-        TestObserver<Message> receivedMessages = IntegrationTestHandler.receivedMessages().filter(m -> m instanceof PongMessage).test();
+        TestObserver<Message> sentMessages = server.sentMessages().test();
+        PingMessage request = new PingMessage();
+        TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof PongMessage && ((PongMessage) m).getCorrespondingId().equals(request.getId())).test();
 
         // start client
-        client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, event -> {
+        client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, event -> {
         });
-        client.open(server.getEndpoints());
-        sentMessages.awaitCount(1);
+        client.open();
+        sentMessages.awaitCount(2); // wait for JoinMessage and StatusMessage
 
         // send message
-        PingMessage request = new PingMessage();
-        IntegrationTestHandler.injectMessage(request);
+        server.sendMessage(identityManager.getPublicKey(), request);
 
         // verify received message
         receivedMessages.awaitCount(1);
-        receivedMessages.assertValueAt(0, new PongMessage(request.getId()));
     }
 
     @Test
     @Disabled("disabled, because StatusMessage is currently not used and therefore has been removed.")
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldRespondToApplicationMessageWithStatusOk() throws SuperPeerClientException {
-        TestObserver<Message> sentMessages = IntegrationTestHandler.sentMessages().test();
-        TestObserver<Message> receivedMessages = IntegrationTestHandler.receivedMessages().filter(m -> m instanceof StatusMessage).test();
+        TestObserver<Message> sentMessages = server.sentMessages().test();
+        TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof StatusMessage).test();
 
         // start client
-        client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, event -> {
+        client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, event -> {
         });
-        client.open(server.getEndpoints());
-        sentMessages.awaitCount(1);
+        client.open();
+        sentMessages.awaitCount(2); // wait for JoinMessage and StatusMessage
 
         // send message
         ApplicationMessage request = new ApplicationMessage(identityManager.getPublicKey(), identityManagerServer.getPublicKey(), new byte[]{
                 0x00,
                 0x01
         });
-        IntegrationTestHandler.injectMessage(request);
+        server.sendMessage(identityManager.getPublicKey(), request);
 
         // verify received message
         receivedMessages.awaitCount(2);
@@ -230,17 +262,17 @@ class SuperPeerClientIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldEmitNodeOfflineEventAfterReceivingQuitMessage() throws SuperPeerClientException {
-        TestObserver<Message> receivedMessages = IntegrationTestHandler.receivedMessages().test();
+        TestObserver<Message> receivedMessages = server.receivedMessages().test();
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
-        client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
-        client.open(server.getEndpoints());
-        receivedMessages.awaitCount(1);
+        client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
+        client.open();
+        receivedMessages.awaitCount(2); // wait for JoinMessage and StatusMessage
 
         // send message
         emittedEvents.awaitCount(1);
-        IntegrationTestHandler.injectMessage(new QuitMessage());
+        server.sendMessage(identityManager.getPublicKey(), new QuitMessage());
 
         // verify emitted events
         emittedEvents.awaitCount(2);
@@ -253,8 +285,8 @@ class SuperPeerClientIT {
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
-        client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
-        client.open(server.getEndpoints());
+        client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
+        client.open();
 
         // verify emitted events
         emittedEvents.awaitCount(1);
@@ -267,13 +299,13 @@ class SuperPeerClientIT {
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
-        client = new SuperPeerClient(config, identityManager, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
-        client.open(server.getEndpoints());
+        client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
+        client.open();
 
         emittedEvents.awaitCount(1);
         // TODO: initiate disconnect from Server?
         client.close();
-        client.open(server.getEndpoints());
+        client.open();
 
         // verify emitted events
         emittedEvents.awaitCount(3);

@@ -18,7 +18,6 @@
  */
 package org.drasyl;
 
-import com.typesafe.config.Config;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
@@ -48,7 +47,7 @@ public class ObservableDrasylNode extends DrasylNode {
         this.events = PublishSubject.create();
     }
 
-    public ObservableDrasylNode(Config config) throws DrasylException {
+    public ObservableDrasylNode(DrasylNodeConfig config) throws DrasylException {
         super(config);
         this.events = PublishSubject.<Event>create().toSerialized();
     }

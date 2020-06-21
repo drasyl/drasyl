@@ -18,8 +18,7 @@
  */
 package org.drasyl.peer.connection.message;
 
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
+import org.drasyl.DrasylNode;
 
 import java.util.function.Supplier;
 
@@ -28,16 +27,10 @@ import java.util.function.Supplier;
  */
 @SuppressWarnings({ "squid:S1444", "squid:ClassVariableVisibilityCheck" })
 public abstract class AbstractMessageWithUserAgent extends AbstractMessage {
-    public static final Supplier<String> defaultUserAgentGenerator = () -> {
-        // Fallback is required because of this problem: https://git.informatik.uni-hamburg.de/smartcity2019/sensornetz/issues/75
-        Config conf = ConfigFactory.load()
-                .withFallback(ConfigFactory.load(AbstractMessageWithUserAgent.class.getClassLoader()));
-
-        return conf.getString("drasyl.user-agent") + " (" + System.getProperty("os.name") + "; "
-                + System.getProperty("os.arch") + "; Java/"
-                + System.getProperty("java.vm.specification.version") + ":" + System.getProperty("java.version.date")
-                + ")";
-    };
+    public static final Supplier<String> defaultUserAgentGenerator = () -> "drasyl/" + DrasylNode.getVersion() + " (" + System.getProperty("os.name") + "; "
+            + System.getProperty("os.arch") + "; Java/"
+            + System.getProperty("java.vm.specification.version") + ":" + System.getProperty("java.version.date")
+            + ")";
     public static Supplier<String> userAgentGenerator = defaultUserAgentGenerator;
     private final String userAgent;
 

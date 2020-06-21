@@ -69,10 +69,10 @@ public class IdentityManager {
      * @throws IdentityManagerException
      */
     public void loadOrCreateIdentity() throws IdentityManagerException {
-        if (config.getProofOfWork() != null && config.getIdentityPublicKey() != null && config.getIdentityPrivateKey() != null) {
+        if (config.getIdentityProofOfWork() != null && config.getIdentityPublicKey() != null && config.getIdentityPrivateKey() != null) {
             LOG.debug("Load identity specified in config");
             try {
-                this.identity = Identity.of(config.getProofOfWork(), config.getIdentityPublicKey(), config.getIdentityPrivateKey());
+                this.identity = Identity.of(config.getIdentityProofOfWork(), config.getIdentityPublicKey(), config.getIdentityPrivateKey());
             }
             catch (IllegalArgumentException e) {
                 throw new IdentityManagerException("Identity read from configuration seems invalid: " + e.getMessage());
@@ -181,7 +181,7 @@ public class IdentityManager {
     }
 
     public ProofOfWork getProofOfWork() {
-        return identity.getPoW();
+        return identity.getProofOfWork();
     }
 
     /**

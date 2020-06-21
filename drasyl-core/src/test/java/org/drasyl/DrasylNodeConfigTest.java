@@ -21,10 +21,14 @@ package org.drasyl;
 import ch.qos.logback.classic.Level;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigMemorySize;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.socket.SocketChannel;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.peer.connection.server.NodeServerChannelInitializer;
+import org.drasyl.peer.connection.superpeer.SuperPeerClientChannelInitializer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -43,6 +47,7 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import static java.time.Duration.ofSeconds;
+import static org.drasyl.DrasylNodeConfig.DEFAULT;
 import static org.drasyl.DrasylNodeConfig.FLUSH_BUFFER_SIZE;
 import static org.drasyl.DrasylNodeConfig.IDENTITY_PATH;
 import static org.drasyl.DrasylNodeConfig.IDENTITY_PRIVATE_KEY;
@@ -67,7 +72,6 @@ import static org.drasyl.DrasylNodeConfig.SUPER_PEER_ENDPOINTS;
 import static org.drasyl.DrasylNodeConfig.SUPER_PEER_HANDSHAKE_TIMEOUT;
 import static org.drasyl.DrasylNodeConfig.SUPER_PEER_PUBLIC_KEY;
 import static org.drasyl.DrasylNodeConfig.SUPER_PEER_RETRY_DELAYS;
-import static org.drasyl.DrasylNodeConfig.USER_AGENT;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -99,7 +103,7 @@ class DrasylNodeConfigTest {
     private List<String> serverSSLProtocols;
     private Duration serverHandshakeTimeout;
     private Set<URI> serverEndpoints;
-    private String serverChannelInitializer;
+    private Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer;
     private int messageMaxContentLength;
     private short messageHopLimit;
     private boolean superPeerEnabled;
@@ -108,7 +112,7 @@ class DrasylNodeConfigTest {
     private CompressedPublicKey superPeerPublicKey;
     @Mock
     private List<Duration> superPeerRetryDelays;
-    private String superPeerChannelInitializer;
+    private Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer;
     private short superPeerIdleRetries;
     private Duration superPeerIdleTimeout;
     @Mock
@@ -132,12 +136,12 @@ class DrasylNodeConfigTest {
         serverSSLEnabled = false;
         serverHandshakeTimeout = ofSeconds(30);
         serverEndpoints = Set.of();
-        serverChannelInitializer = "org.drasyl.core.server.handler.NodeServerInitializer";
+        serverChannelInitializer = NodeServerChannelInitializer.class;
         messageMaxContentLength = 1024;
         messageHopLimit = 64;
         superPeerEnabled = true;
         superPeerEndpoints = Set.of(URI.create("ws://foo.bar:123"), URI.create("wss://example.com"));
-        superPeerChannelInitializer = "org.drasyl.core.client.handler.SuperPeerClientInitializer";
+        superPeerChannelInitializer = SuperPeerClientChannelInitializer.class;
         superPeerIdleRetries = 3;
         superPeerHandshakeTimeout = ofSeconds(30);
         superPeerIdleTimeout = ofSeconds(60);
@@ -162,7 +166,7 @@ class DrasylNodeConfigTest {
             when(typesafeConfig.getDuration(SERVER_IDLE_TIMEOUT)).thenReturn(serverIdleTimeout);
             when(typesafeConfig.getInt(FLUSH_BUFFER_SIZE)).thenReturn(flushBufferSize);
             when(typesafeConfig.getDuration(SERVER_HANDSHAKE_TIMEOUT)).thenReturn(serverHandshakeTimeout);
-            when(typesafeConfig.getString(SERVER_CHANNEL_INITIALIZER)).thenReturn(serverChannelInitializer);
+            when(typesafeConfig.getString(SERVER_CHANNEL_INITIALIZER)).thenReturn(serverChannelInitializer.getCanonicalName());
             when(typesafeConfig.getMemorySize(MESSAGE_MAX_CONTENT_LENGTH)).thenReturn(ConfigMemorySize.ofBytes(messageMaxContentLength));
             when(typesafeConfig.getInt(MESSAGE_HOP_LIMIT)).thenReturn((int) messageHopLimit);
             when(typesafeConfig.getBoolean(SERVER_SSL_ENABLED)).thenReturn(serverSSLEnabled);
@@ -173,17 +177,15 @@ class DrasylNodeConfigTest {
             when(typesafeConfig.getString(SUPER_PEER_PUBLIC_KEY)).thenReturn("");
             when(typesafeConfig.getDurationList(SUPER_PEER_RETRY_DELAYS)).thenReturn(superPeerRetryDelays);
             when(typesafeConfig.getDuration(SUPER_PEER_HANDSHAKE_TIMEOUT)).thenReturn(superPeerHandshakeTimeout);
-            when(typesafeConfig.getString(SUPER_PEER_CHANNEL_INITIALIZER)).thenReturn(superPeerChannelInitializer);
-            when(typesafeConfig.getString(USER_AGENT)).thenReturn(userAgent);
+            when(typesafeConfig.getString(SUPER_PEER_CHANNEL_INITIALIZER)).thenReturn(superPeerChannelInitializer.getCanonicalName());
             when(networkAddressesProvider.get()).thenReturn(Set.of("192.168.188.112"));
             when(typesafeConfig.getBoolean(INTRA_VM_DISCOVERY_ENABLED)).thenReturn(intraVmDiscoveryEnabled);
 
-            DrasylNodeConfig config = new DrasylNodeConfig(typesafeConfig, networkAddressesProvider);
+            DrasylNodeConfig config = new DrasylNodeConfig(typesafeConfig);
 
             assertEquals(serverBindHost, config.getServerBindHost());
             assertEquals(serverBindPort, config.getServerBindPort());
-            assertEquals(userAgent, config.getUserAgent());
-            assertNull(config.getProofOfWork());
+            assertNull(config.getIdentityProofOfWork());
             assertNull(config.getIdentityPublicKey());
             assertNull(config.getIdentityPrivateKey());
             assertEquals(Paths.get("drasyl.identity.json"), config.getIdentityPath());
@@ -194,7 +196,7 @@ class DrasylNodeConfigTest {
             assertEquals(flushBufferSize, config.getFlushBufferSize());
             assertEquals(serverSSLProtocols, config.getServerSSLProtocols());
             assertEquals(serverHandshakeTimeout, config.getServerHandshakeTimeout());
-            assertEquals(Set.of(URI.create("ws://192.168.188.112:22527")), config.getServerEndpoints());
+            assertEquals(Set.of(), config.getServerEndpoints());
             assertEquals(serverChannelInitializer, config.getServerChannelInitializer());
             assertEquals(messageMaxContentLength, config.getMessageMaxContentLength());
             assertEquals(messageHopLimit, config.getMessageHopLimit());
@@ -214,9 +216,47 @@ class DrasylNodeConfigTest {
         void shouldMaskSecrets() throws CryptoException {
             identityPrivateKey = CompressedPrivateKey.of("07e98a2f8162a4002825f810c0fbd69b0c42bd9cb4f74a21bc7807bc5acb4f5f");
 
-            DrasylNodeConfig config = new DrasylNodeConfig(loglevel, proofOfWork, identityPublicKey, identityPrivateKey, identityPath, userAgent, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled);
+            DrasylNodeConfig config = new DrasylNodeConfig(loglevel, proofOfWork, identityPublicKey, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled);
 
             assertThat(config.toString(), not(containsString(identityPrivateKey.getCompressedKey())));
+        }
+    }
+
+    @Nested
+    class Builder {
+        @Test
+        void shouldCreateCorrectConfig() {
+            DrasylNodeConfig config = DrasylNodeConfig.newBuilder()
+                    .loglevel(DEFAULT.getLoglevel())
+                    .identityProofOfWork(DEFAULT.getIdentityProofOfWork())
+                    .identityPublicKey(DEFAULT.getIdentityPublicKey())
+                    .identityPrivateKey(DEFAULT.getIdentityPrivateKey())
+                    .identityPath(DEFAULT.getIdentityPath())
+                    .serverBindHost(DEFAULT.getServerBindHost())
+                    .serverEnabled(DEFAULT.isServerEnabled())
+                    .serverBindPort(DEFAULT.getServerBindPort())
+                    .serverIdleRetries(DEFAULT.getServerIdleRetries())
+                    .serverIdleTimeout(DEFAULT.getServerIdleTimeout())
+                    .flushBufferSize(DEFAULT.getFlushBufferSize())
+                    .serverSSLEnabled(DEFAULT.getServerSSLEnabled())
+                    .serverSSLProtocols(DEFAULT.getServerSSLProtocols())
+                    .serverHandshakeTimeout(DEFAULT.getServerHandshakeTimeout())
+                    .serverEndpoints(DEFAULT.getServerEndpoints())
+                    .serverChannelInitializer(DEFAULT.getServerChannelInitializer())
+                    .messageMaxContentLength(DEFAULT.getMessageMaxContentLength())
+                    .messageHopLimit(DEFAULT.getMessageHopLimit())
+                    .superPeerEnabled(DEFAULT.isSuperPeerEnabled())
+                    .superPeerEndpoints(DEFAULT.getSuperPeerEndpoints())
+                    .superPeerPublicKey(DEFAULT.getSuperPeerPublicKey())
+                    .superPeerRetryDelays(DEFAULT.getSuperPeerRetryDelays())
+                    .superPeerHandshakeTimeout(DEFAULT.getSuperPeerHandshakeTimeout())
+                    .superPeerChannelInitializer(DEFAULT.getSuperPeerChannelInitializer())
+                    .superPeerIdleRetries(DEFAULT.getSuperPeerIdleRetries())
+                    .superPeerIdleTimeout(DEFAULT.getSuperPeerIdleTimeout())
+                    .intraVmDiscoveryEnabled(DEFAULT.isIntraVmDiscoveryEnabled())
+                    .build();
+
+            assertEquals(DEFAULT, config);
         }
     }
 }

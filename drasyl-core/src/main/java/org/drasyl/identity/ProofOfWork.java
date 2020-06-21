@@ -18,6 +18,7 @@
  */
 package org.drasyl.identity;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import org.drasyl.crypto.Hashing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -32,6 +33,7 @@ import static java.util.Objects.requireNonNull;
  */
 public class ProofOfWork {
     private static final Logger LOG = LoggerFactory.getLogger(ProofOfWork.class);
+    @JsonValue
     private int nonce;
 
     private ProofOfWork() {

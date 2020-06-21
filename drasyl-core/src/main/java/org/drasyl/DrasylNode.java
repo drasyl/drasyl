@@ -20,9 +20,7 @@ package org.drasyl;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
-import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
-import com.typesafe.config.ConfigFactory;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.sentry.Sentry;
@@ -123,7 +121,7 @@ public abstract class DrasylNode {
      * Creates a new drasyl Node.
      */
     public DrasylNode() throws DrasylException {
-        this(ConfigFactory.load());
+        this(new DrasylNodeConfig());
     }
 
     /**
@@ -131,21 +129,21 @@ public abstract class DrasylNode {
      *
      * @param config
      */
-    public DrasylNode(Config config) throws DrasylException {
+    public DrasylNode(DrasylNodeConfig config) throws DrasylException {
         try {
-            this.config = new DrasylNodeConfig(config);
+            this.config = config;
             this.identityManager = new IdentityManager(this.config);
             this.peersManager = new PeersManager(this::onEvent);
             this.messenger = new Messenger();
             this.intraVmDiscovery = new IntraVmDiscovery(identityManager::getPublicKey, messenger, peersManager, this::onEvent);
-            this.superPeerClient = new SuperPeerClient(this.config, identityManager, peersManager, messenger, DrasylNode.WORKER_GROUP, this::onEvent);
-            this.server = new NodeServer(identityManager, messenger, peersManager, superPeerClient.connectionEstablished(), this.config, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP);
+            this.superPeerClient = new SuperPeerClient(this.config, identityManager::getIdentity, peersManager, messenger, DrasylNode.WORKER_GROUP, this::onEvent);
+            this.server = new NodeServer(identityManager::getIdentity, messenger, peersManager, this.config, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP, superPeerClient.connectionEstablished());
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = new CompletableFuture<>();
-            this.loopbackMessageSink = (identity, message) -> {
-                if (!identityManager.getPublicKey().equals(identity)) {
-                    throw new NoPathToIdentityException(identity);
+            this.loopbackMessageSink = (recipient, message) -> {
+                if (!identityManager.getPublicKey().equals(recipient)) {
+                    throw new NoPathToIdentityException(recipient);
                 }
 
                 if (message instanceof ApplicationMessage) {
@@ -481,7 +479,7 @@ public abstract class DrasylNode {
         if (config.isSuperPeerEnabled()) {
             try {
                 LOG.debug("Start Super Peer Client...");
-                superPeerClient.open(server.getEndpoints());
+                superPeerClient.open();
                 LOG.debug("Super Peer started");
             }
             catch (Exception e) {

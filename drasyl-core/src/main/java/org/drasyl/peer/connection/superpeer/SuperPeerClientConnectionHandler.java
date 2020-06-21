@@ -21,7 +21,8 @@ package org.drasyl.peer.connection.superpeer;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.DrasylNodeConfig;
+import org.drasyl.event.Event;
+import org.drasyl.event.Node;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.messenger.MessageSink;
 import org.drasyl.messenger.Messenger;
@@ -39,6 +40,8 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
+import static org.drasyl.event.EventType.EVENT_NODE_OFFLINE;
+import static org.drasyl.event.EventType.EVENT_NODE_ONLINE;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_WRONG_PUBLIC_KEY;
 import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
 
@@ -54,34 +57,29 @@ import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE
 public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeClientHandler<JoinMessage, WelcomeMessage> {
     public static final String SUPER_PEER_CLIENT_CONNECTION_HANDLER = "superPeerClientConnectionHandler";
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClientConnectionHandler.class);
-    private final DrasylNodeConfig config;
-    private final SuperPeerClient client;
+    private final SuperPeerClientEnvironment environment;
 
-    public SuperPeerClientConnectionHandler(DrasylNodeConfig config,
-                                            SuperPeerClient client) {
+    public SuperPeerClientConnectionHandler(SuperPeerClientEnvironment environment) {
         super(
-                config.getSuperPeerHandshakeTimeout(),
-                client.getMessenger(),
-                new JoinMessage(client.getIdentityManager().getProofOfWork(),
-                        client.getIdentityManager().getPublicKey(),
-                        client.getPeersManager().getChildrenAndGrandchildren().keySet()
+                environment.getConfig().getSuperPeerHandshakeTimeout(),
+                environment.getMessenger(),
+                new JoinMessage(environment.getIdentity().getProofOfWork(),
+                        environment.getIdentity().getPublicKey(),
+                        environment.getPeersManager().getChildrenAndGrandchildren().keySet()
                 )
         );
-        this.config = config;
-        this.client = client;
+        this.environment = environment;
     }
 
     @SuppressWarnings({ "java:S107" })
-    SuperPeerClientConnectionHandler(DrasylNodeConfig config,
-                                     SuperPeerClient client,
+    SuperPeerClientConnectionHandler(SuperPeerClientEnvironment environment,
                                      Duration timeout,
                                      Messenger messenger,
                                      CompletableFuture<Void> handshakeFuture,
                                      ScheduledFuture<?> timeoutFuture,
                                      JoinMessage requestMessage) {
         super(timeout, messenger, handshakeFuture, timeoutFuture, requestMessage);
-        this.config = config;
-        this.client = client;
+        this.environment = environment;
     }
 
     @Override
@@ -97,10 +95,10 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
     @Override
     protected ConnectionExceptionMessage.Error validateSessionOffer(WelcomeMessage offerMessage) {
         CompressedPublicKey superPeerPublicKey = offerMessage.getPublicKey();
-        if (config.getSuperPeerPublicKey() != null && !superPeerPublicKey.equals(config.getSuperPeerPublicKey())) {
+        if (environment.getConfig().getSuperPeerPublicKey() != null && !superPeerPublicKey.equals(environment.getConfig().getSuperPeerPublicKey())) {
             return CONNECTION_ERROR_WRONG_PUBLIC_KEY;
         }
-        else if (superPeerPublicKey.equals(client.getIdentityManager().getPublicKey())) {
+        else if (superPeerPublicKey.equals(environment.getIdentity().getPublicKey())) {
             return CONNECTION_ERROR_WRONG_PUBLIC_KEY;
         }
         else {
@@ -120,10 +118,15 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
         channel.attr(ATTRIBUTE_PUBLIC_KEY).set(identity);
 
         // remove peer information on disconnect
-        channel.closeFuture().addListener(future -> client.getPeersManager().unsetSuperPeerAndRemovePeerInformation(peerInformation));
+        channel.closeFuture().addListener(future -> {
+            environment.getConnected().onNext(false);
+            environment.getEventConsumer().accept(new Event(EVENT_NODE_OFFLINE, Node.of(environment.getIdentity())));
+
+            environment.getPeersManager().unsetSuperPeerAndRemovePeerInformation(peerInformation);
+        });
 
         // store peer information
-        client.getPeersManager().addPeerInformationAndSetSuperPeer(identity, peerInformation);
+        environment.getPeersManager().addPeerInformationAndSetSuperPeer(identity, peerInformation);
 
         MessageSink messageSink = (recipient, message) -> {
             if (channel.isWritable()) {
@@ -134,5 +137,8 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
             }
         };
         messenger.setSuperPeerSink(messageSink);
+
+        environment.getConnected().onNext(true);
+        environment.getEventConsumer().accept(new Event(EVENT_NODE_ONLINE, Node.of(environment.getIdentity())));
     }
 }
