@@ -26,14 +26,13 @@ import io.netty.handler.timeout.IdleStateHandler;
 import org.drasyl.peer.connection.handler.MessageDecoder;
 import org.drasyl.peer.connection.handler.MessageEncoder;
 import org.drasyl.peer.connection.handler.PingPongHandler;
+import org.drasyl.peer.connection.server.NodeServerException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.mockito.junit.jupiter.MockitoSettings;
-import org.mockito.quality.Strictness;
 
 import java.lang.reflect.Field;
 import java.time.Duration;
@@ -64,7 +63,7 @@ class DefaultSessionInitializerTest {
 
     // should call all stages of the pipeline
     @Test
-    void initChannel() {
+    void initChannel() throws NodeServerException {
         when(ch.pipeline()).thenReturn(pipeline);
         when(classUnderTest.generateSslContext(ch)).thenReturn(sslHandler);
 
@@ -102,7 +101,7 @@ class DefaultSessionInitializerTest {
     }
 
     @Test
-    void testSslStage() {
+    void testSslStage() throws NodeServerException {
         when(ch.pipeline()).thenReturn(pipeline);
         when(classUnderTest.generateSslContext(ch)).thenReturn(sslHandler);
 
@@ -112,7 +111,7 @@ class DefaultSessionInitializerTest {
     }
 
     @Test
-    void testSslStageNull() {
+    void testSslStageNull() throws NodeServerException {
         when(classUnderTest.generateSslContext(ch)).thenReturn(sslHandler);
 
         when(classUnderTest.generateSslContext(ch)).thenReturn(null);

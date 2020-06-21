@@ -35,8 +35,6 @@ import org.drasyl.peer.connection.handler.RelayableMessageGuard;
 import org.drasyl.peer.connection.handler.SignatureHandler;
 import org.drasyl.peer.connection.server.handler.NodeServerHttpHandler;
 import org.drasyl.peer.connection.server.handler.NodeServerNewConnectionsGuard;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLException;
 import java.security.cert.CertificateException;
@@ -49,7 +47,6 @@ import static org.drasyl.peer.connection.server.NodeServerConnectionHandler.NODE
  */
 @SuppressWarnings({ "java:S4818" })
 public class NodeServerChannelInitializer extends DefaultSessionInitializer {
-    private static final Logger LOG = LoggerFactory.getLogger(NodeServerChannelInitializer.class);
     private final DrasylNodeConfig config;
     protected final NodeServer server;
 
@@ -91,7 +88,7 @@ public class NodeServerChannelInitializer extends DefaultSessionInitializer {
     }
 
     @Override
-    protected SslHandler generateSslContext(SocketChannel ch) {
+    protected SslHandler generateSslContext(SocketChannel ch) throws NodeServerException {
         if (config.getServerSSLEnabled()) {
             try {
                 SelfSignedCertificate ssc = new SelfSignedCertificate();
@@ -100,7 +97,7 @@ public class NodeServerChannelInitializer extends DefaultSessionInitializer {
                         .protocols(config.getServerSSLProtocols()).build().newHandler(ch.alloc());
             }
             catch (SSLException | CertificateException e) {
-                LOG.error("SSLException: ", e);
+                throw new NodeServerException(e);
             }
         }
         return null;

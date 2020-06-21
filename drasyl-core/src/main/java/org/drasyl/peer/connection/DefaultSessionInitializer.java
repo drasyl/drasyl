@@ -29,6 +29,7 @@ import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.MessageDecoder;
 import org.drasyl.peer.connection.handler.MessageEncoder;
 import org.drasyl.peer.connection.handler.PingPongHandler;
+import org.drasyl.peer.connection.server.NodeServerException;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -61,7 +62,7 @@ public abstract class DefaultSessionInitializer extends ChannelInitializer<Socke
     }
 
     @Override
-    protected void initChannel(SocketChannel ch) {
+    protected void initChannel(SocketChannel ch) throws NodeServerException {
         ChannelPipeline pipeline = ch.pipeline();
 
         beforeBufferStage(pipeline);
@@ -103,7 +104,7 @@ public abstract class DefaultSessionInitializer extends ChannelInitializer<Socke
      *
      * @param ch the {@link SocketChannel}
      */
-    protected void sslStage(SocketChannel ch) {
+    protected void sslStage(SocketChannel ch) throws NodeServerException {
         SslHandler sslHandler = generateSslContext(ch);
 
         if (sslHandler != null) {
@@ -235,5 +236,5 @@ public abstract class DefaultSessionInitializer extends ChannelInitializer<Socke
      * @param ch the {@link SocketChannel} to initialize a {@link SslHandler}
      * @return {@link SslHandler} or {@code null}
      */
-    protected abstract SslHandler generateSslContext(SocketChannel ch);
+    protected abstract SslHandler generateSslContext(SocketChannel ch) throws NodeServerException;
 }
