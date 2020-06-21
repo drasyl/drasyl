@@ -18,8 +18,6 @@
  */
 package org.drasyl.peer.connection.message;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.drasyl.crypto.CryptoException;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -28,21 +26,20 @@ import java.io.IOException;
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_FORMAT;
 import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_INTERNAL;
+import static org.drasyl.util.JSONUtil.JACKSON_MAPPER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ExceptionMessageTest {
-    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
-
     @Nested
     class JsonDeserialization {
         @Test
-        void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
+        void shouldDeserializeToCorrectObject() throws IOException {
             String json = "{\"@type\":\"" + ExceptionMessage.class.getSimpleName() + "\",\"id\":\"77175D7235920F3BA17341D7\"," +
                     "\"error\":\"" + ERROR_INTERNAL.getDescription() + "\"}";
 
-            assertEquals(new ExceptionMessage(ERROR_INTERNAL), JSON_MAPPER.readValue(json, Message.class));
+            assertEquals(new ExceptionMessage(ERROR_INTERNAL), JACKSON_MAPPER.readValue(json, Message.class));
         }
     }
 
@@ -52,7 +49,7 @@ class ExceptionMessageTest {
         void shouldSerializeToCorrectJson() throws IOException {
             ExceptionMessage message = new ExceptionMessage(ERROR_INTERNAL);
 
-            assertThatJson(JSON_MAPPER.writeValueAsString(message))
+            assertThatJson(JACKSON_MAPPER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", ExceptionMessage.class.getSimpleName())
                     .containsKeys("id", "error");

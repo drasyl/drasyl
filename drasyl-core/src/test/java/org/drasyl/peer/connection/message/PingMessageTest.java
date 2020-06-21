@@ -18,7 +18,6 @@
  */
 package org.drasyl.peer.connection.message;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,19 +26,18 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.IOException;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
+import static org.drasyl.util.JSONUtil.JACKSON_MAPPER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
 class PingMessageTest {
-    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
-
     @Nested
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException {
             String json = "{\"@type\":\"" + PingMessage.class.getSimpleName() + "\",\"id\":\"77175D7235920F3BA17341D7\"}";
 
-            assertEquals(new PingMessage(), JSON_MAPPER.readValue(json, Message.class));
+            assertEquals(new PingMessage(), JACKSON_MAPPER.readValue(json, Message.class));
         }
     }
 
@@ -49,7 +47,7 @@ class PingMessageTest {
         void shouldSerializeToCorrectJson() throws IOException {
             PingMessage message = new PingMessage();
 
-            assertThatJson(JSON_MAPPER.writeValueAsString(message))
+            assertThatJson(JACKSON_MAPPER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", PingMessage.class.getSimpleName())
                     .containsKeys("id");

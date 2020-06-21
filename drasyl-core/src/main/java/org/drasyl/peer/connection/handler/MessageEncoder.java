@@ -19,7 +19,6 @@
 package org.drasyl.peer.connection.handler;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
@@ -31,6 +30,8 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
+import static org.drasyl.util.JSONUtil.JACKSON_MAPPER;
+
 /**
  * Encodes a {@link Message} into a {@link String} object.
  */
@@ -39,7 +40,6 @@ public class MessageEncoder extends MessageToMessageEncoder<Message> {
     public static final MessageEncoder INSTANCE = new MessageEncoder();
     public static final String MESSAGE_ENCODER = "messageEncoder";
     private static final Logger LOG = LoggerFactory.getLogger(MessageEncoder.class);
-    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
     private MessageEncoder() {
     }
@@ -51,7 +51,7 @@ public class MessageEncoder extends MessageToMessageEncoder<Message> {
         }
 
         try {
-            String json = JSON_MAPPER.writeValueAsString(msg);
+            String json = JACKSON_MAPPER.writeValueAsString(msg);
 
             out.add(new TextWebSocketFrame(json));
         }

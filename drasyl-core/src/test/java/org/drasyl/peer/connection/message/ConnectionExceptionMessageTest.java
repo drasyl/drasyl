@@ -18,8 +18,6 @@
  */
 package org.drasyl.peer.connection.message;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.drasyl.crypto.CryptoException;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -28,21 +26,20 @@ import java.io.IOException;
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_HANDSHAKE_TIMEOUT;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_PING_PONG;
+import static org.drasyl.util.JSONUtil.JACKSON_MAPPER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class ConnectionExceptionMessageTest {
-    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
-
     @Nested
     class JsonDeserialization {
         @Test
-        void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
+        void shouldDeserializeToCorrectObject() throws IOException {
             String json = "{\"@type\":\"" + ConnectionExceptionMessage.class.getSimpleName() + "\",\"id\":\"77175D7235920F3BA17341D7\"," +
                     "\"error\":\"" + CONNECTION_ERROR_PING_PONG.getDescription() + "\"}";
 
-            assertEquals(new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG), JSON_MAPPER.readValue(json, Message.class));
+            assertEquals(new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG), JACKSON_MAPPER.readValue(json, Message.class));
         }
     }
 
@@ -52,7 +49,7 @@ class ConnectionExceptionMessageTest {
         void shouldSerializeToCorrectJson() throws IOException {
             ConnectionExceptionMessage message = new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG);
 
-            assertThatJson(JSON_MAPPER.writeValueAsString(message))
+            assertThatJson(JACKSON_MAPPER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", ConnectionExceptionMessage.class.getSimpleName())
                     .containsKeys("id", "error");

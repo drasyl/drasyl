@@ -18,24 +18,21 @@
  */
 package org.drasyl.identity;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import net.javacrumbs.jsonunit.core.Option;
-import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.security.KeyPair;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
+import static org.drasyl.util.JSONUtil.JACKSON_MAPPER;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class CompressedPublicKeyTest {
-    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
     private CompressedPublicKey publicKey;
 
     @BeforeEach
@@ -66,7 +63,7 @@ class CompressedPublicKeyTest {
         void shouldDeserializeToCorrectObject() throws IOException {
             String json = "\"0340A4F2ADBDDEEDC8F9ACE30E3F18713A3405F43F4871B4BAC9624FE80D2056A7\"";
 
-            assertThat(JSON_MAPPER.readValue(json, CompressedPublicKey.class), instanceOf(CompressedPublicKey.class));
+            assertThat(JACKSON_MAPPER.readValue(json, CompressedPublicKey.class), instanceOf(CompressedPublicKey.class));
         }
     }
 
@@ -74,11 +71,11 @@ class CompressedPublicKeyTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException {
-            assertThatJson(JSON_MAPPER.writeValueAsString(publicKey))
+            assertThatJson(JACKSON_MAPPER.writeValueAsString(publicKey))
                     .when(Option.IGNORING_ARRAY_ORDER)
                     .isEqualTo(publicKey.toString());
 
-            assertEquals(publicKey, JSON_MAPPER.readValue(JSON_MAPPER.writeValueAsString(publicKey), CompressedPublicKey.class));
+            assertEquals(publicKey, JACKSON_MAPPER.readValue(JACKSON_MAPPER.writeValueAsString(publicKey), CompressedPublicKey.class));
         }
     }
 }

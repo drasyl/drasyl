@@ -19,7 +19,6 @@
 package org.drasyl.peer;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import net.javacrumbs.jsonunit.core.Option;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
@@ -40,6 +39,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
+import static org.drasyl.util.JSONUtil.JACKSON_MAPPER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -254,8 +254,6 @@ class PeersManagerTest {
 
     @Nested
     class ToJson {
-        private final ObjectMapper jsonMapper = new ObjectMapper();
-
         @BeforeEach
         void setup() throws CryptoException {
             when(lock.readLock()).thenReturn(readLock);
@@ -268,7 +266,7 @@ class PeersManagerTest {
 
         @Test
         void shouldProduceCorrectJsonObject() throws JsonProcessingException {
-            assertThatJson(jsonMapper.writeValueAsString(underTest))
+            assertThatJson(JACKSON_MAPPER.writeValueAsString(underTest))
                     .when(Option.IGNORING_ARRAY_ORDER)
                     .isEqualTo("{\"peers\":[[\"022910262d4b1b4681055d4d6ed047ed6c35d7a55e8bcbbbb5528a8a40414991ac\", {\"endpoints\":[]}]],\"children\":[[\"022910262d4b1b4681055d4d6ed047ed6c35d7a55e8bcbbbb5528a8a40414991ac\", {\"endpoints\":[]}]],\"grandchildrenRoutes\":[],\"superPeer\":null}");
         }

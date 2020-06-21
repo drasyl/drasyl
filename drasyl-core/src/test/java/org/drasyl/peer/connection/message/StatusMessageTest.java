@@ -18,8 +18,6 @@
  */
 package org.drasyl.peer.connection.message;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.drasyl.crypto.CryptoException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -31,12 +29,12 @@ import java.io.IOException;
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
+import static org.drasyl.util.JSONUtil.JACKSON_MAPPER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 @ExtendWith(MockitoExtension.class)
 class StatusMessageTest {
-    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
     private String correspondingId;
 
     @BeforeEach
@@ -47,10 +45,10 @@ class StatusMessageTest {
     @Nested
     class JsonDeserialization {
         @Test
-        void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
+        void shouldDeserializeToCorrectObject() throws IOException {
             String json = "{\"@type\":\"" + StatusMessage.class.getSimpleName() + "\",\"id\":\"205E5ECE2F3F1E744D951658\",\"code\":" + STATUS_OK.getNumber() + ",\"correspondingId\":123}";
 
-            assertEquals(new StatusMessage(STATUS_OK, "123"), JSON_MAPPER.readValue(json, Message.class));
+            assertEquals(new StatusMessage(STATUS_OK, "123"), JACKSON_MAPPER.readValue(json, Message.class));
         }
     }
 
@@ -60,7 +58,7 @@ class StatusMessageTest {
         void shouldSerializeToCorrectJson() throws IOException {
             StatusMessage message = new StatusMessage(STATUS_OK, correspondingId);
 
-            assertThatJson(JSON_MAPPER.writeValueAsString(message))
+            assertThatJson(JACKSON_MAPPER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", StatusMessage.class.getSimpleName())
                     .containsKeys("id", "correspondingId", "code");

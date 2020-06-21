@@ -19,7 +19,6 @@
 package org.drasyl.example.chat.gui;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
@@ -47,11 +46,12 @@ import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
+import static org.drasyl.util.JSONUtil.JACKSON_MAPPER;
+
 /**
  * A simple JavaFX Chat that uses drasyl as backend overlay network.
  */
 public class ChatGUI extends Application {
-    private static final ObjectMapper jackson = new ObjectMapper();
     private static final String ERROR_CSS = "error";
     private Scene chatScene;
     private TextField usernameInput;
@@ -148,7 +148,7 @@ public class ChatGUI extends Application {
 
     private void parseMessage(Pair<CompressedPublicKey, byte[]> payload) {
         try {
-            Message msg = jackson.readValue(new String(payload.second()), Message.class);
+            Message msg = JACKSON_MAPPER.readValue(new String(payload.second()), Message.class);
 
             txtArea.appendText("[" + msg.getUsername() + "]: " + msg.getMsg() + "\n");
         }
@@ -191,7 +191,7 @@ public class ChatGUI extends Application {
     private void newInputAction(ActionEvent actionEvent) {
         if (validateInput(chatField, s -> !s.isEmpty())) {
             try {
-                node.send(recipient, jackson.writeValueAsBytes(new Message(chatField.getText(), username)));
+                node.send(recipient, JACKSON_MAPPER.writeValueAsBytes(new Message(chatField.getText(), username)));
                 txtArea.appendText("[" + username + "]: " + chatField.getText() + "\n");
             }
             catch (DrasylException | JsonProcessingException e) {

@@ -18,8 +18,6 @@
  */
 package org.drasyl.peer.connection.message;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.Signature;
 import org.drasyl.identity.CompressedKeyPair;
@@ -35,11 +33,11 @@ import java.io.IOException;
 import java.security.KeyPair;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
+import static org.drasyl.util.JSONUtil.JACKSON_MAPPER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
 class SignedMessageTest {
-    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
     private static KeyPair keyPair;
     @Mock
     private CompressedPublicKey publicKey;
@@ -126,7 +124,7 @@ class SignedMessageTest {
                     0x54,
                     (byte) 0xf2,
                     (byte) 0x97
-            })), JSON_MAPPER.readValue(json, Message.class));
+            })), JACKSON_MAPPER.readValue(json, Message.class));
         }
     }
 
@@ -136,7 +134,7 @@ class SignedMessageTest {
         void shouldSerializeToCorrectJson() throws IOException {
             SignedMessage message = new SignedMessage(new PingMessage(), publicKey);
 
-            assertThatJson(JSON_MAPPER.writeValueAsString(message))
+            assertThatJson(JACKSON_MAPPER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", SignedMessage.class.getSimpleName())
                     .containsKeys("payload", "kid", "signature");
