@@ -32,7 +32,7 @@ import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.event.Event;
-import org.drasyl.identity.IdentityManager;
+import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.QuitMessage;
@@ -64,7 +64,7 @@ public class SuperPeerClient implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClient.class);
     private final DrasylNodeConfig config;
     private final EventLoopGroup workerGroup;
-    private final IdentityManager identityManager;
+    private final Supplier<Identity> identitySupplier;
     private final Messenger messenger;
     private final PeersManager peersManager;
     private final Set<URI> endpoints;
@@ -77,7 +77,7 @@ public class SuperPeerClient implements AutoCloseable {
     private Channel clientChannel;
 
     SuperPeerClient(DrasylNodeConfig config,
-                    IdentityManager identityManager,
+                    Supplier<Identity> identitySupplier,
                     PeersManager peersManager,
                     Messenger messenger,
                     EventLoopGroup workerGroup,
@@ -89,7 +89,7 @@ public class SuperPeerClient implements AutoCloseable {
                     Channel clientChannel,
                     Function<Supplier<Set<URI>>, Thread> threadSupplier,
                     Subject<Boolean> connected) {
-        this.identityManager = identityManager;
+        this.identitySupplier = identitySupplier;
         this.messenger = messenger;
         this.peersManager = peersManager;
         this.config = config;
@@ -105,7 +105,7 @@ public class SuperPeerClient implements AutoCloseable {
     }
 
     public SuperPeerClient(DrasylNodeConfig config,
-                           IdentityManager identityManager,
+                           Supplier<Identity> identitySupplier,
                            PeersManager peersManager,
                            Messenger messenger,
                            EventLoopGroup workerGroup,
@@ -116,7 +116,7 @@ public class SuperPeerClient implements AutoCloseable {
             throw new SuperPeerClientException("At least one Super Peer Endpoint must be specified.");
         }
 
-        this.identityManager = identityManager;
+        this.identitySupplier = identitySupplier;
         this.messenger = messenger;
         this.peersManager = peersManager;
         this.config = config;
@@ -243,8 +243,8 @@ public class SuperPeerClient implements AutoCloseable {
         }
     }
 
-    IdentityManager getIdentityManager() {
-        return identityManager;
+    Identity getIdentity() {
+        return identitySupplier.get();
     }
 
     Messenger getMessenger() {

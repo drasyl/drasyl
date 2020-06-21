@@ -66,8 +66,8 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
         super(
                 config.getSuperPeerHandshakeTimeout(),
                 client.getMessenger(),
-                new JoinMessage(client.getIdentityManager().getProofOfWork(),
-                        client.getIdentityManager().getPublicKey(),
+                new JoinMessage(client.getIdentity().getPoW(),
+                        client.getIdentity().getPublicKey(),
                         client.getPeersManager().getChildrenAndGrandchildren().keySet()
                 )
         );
@@ -104,7 +104,7 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
         if (config.getSuperPeerPublicKey() != null && !superPeerPublicKey.equals(config.getSuperPeerPublicKey())) {
             return CONNECTION_ERROR_WRONG_PUBLIC_KEY;
         }
-        else if (superPeerPublicKey.equals(client.getIdentityManager().getPublicKey())) {
+        else if (superPeerPublicKey.equals(client.getIdentity().getPublicKey())) {
             return CONNECTION_ERROR_WRONG_PUBLIC_KEY;
         }
         else {
@@ -126,7 +126,7 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
         // remove peer information on disconnect
         channel.closeFuture().addListener(future -> {
             client.getConnected().onNext(false);
-            client.getEventConsumer().accept(new Event(EVENT_NODE_OFFLINE, Node.of(client.getIdentityManager().getIdentity())));
+            client.getEventConsumer().accept(new Event(EVENT_NODE_OFFLINE, Node.of(client.getIdentity())));
 
             client.getPeersManager().unsetSuperPeerAndRemovePeerInformation(peerInformation);
         });
@@ -145,6 +145,6 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
         messenger.setSuperPeerSink(messageSink);
 
         client.getConnected().onNext(true);
-        client.getEventConsumer().accept(new Event(EVENT_NODE_ONLINE, Node.of(client.getIdentityManager().getIdentity())));
+        client.getEventConsumer().accept(new Event(EVENT_NODE_ONLINE, Node.of(client.getIdentity())));
     }
 }

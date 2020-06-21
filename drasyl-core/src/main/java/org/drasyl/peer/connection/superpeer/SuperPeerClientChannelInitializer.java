@@ -67,7 +67,7 @@ public class SuperPeerClientChannelInitializer extends AbstractClientInitializer
 
     @Override
     protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
-        pipeline.addLast(SignatureHandler.SIGNATURE_HANDLER, new SignatureHandler(client.getIdentityManager().getIdentity()));
+        pipeline.addLast(SignatureHandler.SIGNATURE_HANDLER, new SignatureHandler(client.getIdentity()));
         pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(config.getMessageHopLimit()));
     }
 
