@@ -19,73 +19,88 @@
 package org.drasyl.peer.connection.superpeer;
 
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.socket.SocketChannel;
-import io.netty.handler.ssl.SslContext;
-import io.netty.handler.ssl.SslContextBuilder;
-import io.netty.handler.ssl.SslHandler;
-import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
-import io.netty.handler.stream.ChunkedWriteHandler;
-import org.drasyl.peer.connection.AbstractClientInitializer;
-import org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler;
-import org.drasyl.peer.connection.handler.ExceptionHandler;
-import org.drasyl.peer.connection.handler.RelayableMessageGuard;
-import org.drasyl.peer.connection.handler.SignatureHandler;
-import org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler;
-import org.drasyl.util.WebSocketUtil;
+import io.netty.handler.codec.http.DefaultHttpHeaders;
+import io.netty.handler.codec.http.HttpClientCodec;
+import io.netty.handler.codec.http.HttpObjectAggregator;
+import io.netty.handler.codec.http.websocketx.WebSocketClientHandshakerFactory;
+import io.netty.handler.codec.http.websocketx.WebSocketVersion;
+import org.drasyl.peer.connection.DefaultSessionInitializer;
+import org.drasyl.peer.connection.handler.WebSocketHandshakeClientHandler;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import javax.net.ssl.SSLException;
-
-import static org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler.EXCEPTION_MESSAGE_HANDLER;
-import static org.drasyl.peer.connection.handler.ExceptionHandler.EXCEPTION_HANDLER;
-import static org.drasyl.peer.connection.handler.RelayableMessageGuard.HOP_COUNT_GUARD;
-import static org.drasyl.peer.connection.handler.SignatureHandler.SIGNATURE_HANDLER;
-import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_HANDLER;
-import static org.drasyl.peer.connection.superpeer.SuperPeerClientConnectionHandler.SUPER_PEER_CLIENT_CONNECTION_HANDLER;
+import java.net.URI;
+import java.time.Duration;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Creates a newly configured {@link ChannelPipeline} for a ClientConnection to a node server.
  */
-@SuppressWarnings({ "java:S110", "java:S4818" })
-public class SuperPeerClientChannelInitializer extends AbstractClientInitializer {
-    private final SuperPeerClientEnvironment environment;
+@SuppressWarnings("java:S4818")
+public abstract class SuperPeerClientChannelInitializer extends DefaultSessionInitializer {
+    private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClientChannelInitializer.class);
+    protected final URI target;
+    private final CompletableFuture<Void> channelReadyFuture;
 
-    public SuperPeerClientChannelInitializer(SuperPeerClientEnvironment environment) {
-        super(environment.getConfig().getFlushBufferSize(), environment.getConfig().getSuperPeerIdleTimeout(),
-                environment.getConfig().getSuperPeerIdleRetries(), environment.getEndpoint());
-        this.environment = environment;
+    /**
+     * Initialize a netty Channel for an outbound connection to a node server.
+     *
+     * @param flushBufferSize The size of the flush buffer, to minimize IO overhead. A high value is
+     *                        good for throughput. A low value is good for latency.
+     * @param readIdleTimeout The maximum time that an active connection can spend in idle before
+     *                        the client checks with a PING request whether the remote station is
+     *                        still alive. Note: every long value <= 0 s deactivates the idle
+     *                        function.
+     * @param pingPongRetries The maximum amount that a remote station cannot reply to a PING
+     *                        request in succession in the interval {@code readIdleTimeout}. Min
+     *                        value is 1, max 32767
+     * @param target          the target URI
+     */
+    public SuperPeerClientChannelInitializer(int flushBufferSize,
+                                             Duration readIdleTimeout,
+                                             short pingPongRetries,
+                                             URI target) {
+        this(flushBufferSize, readIdleTimeout, pingPongRetries,
+                target, new CompletableFuture<>());
+    }
+
+    protected SuperPeerClientChannelInitializer(int flushBufferSize,
+                                                Duration readIdleTimeout,
+                                                short pingPongRetries,
+                                                URI target,
+                                                CompletableFuture<Void> channelReadyFuture) {
+        super(flushBufferSize, readIdleTimeout, pingPongRetries);
+        this.channelReadyFuture = channelReadyFuture;
+        this.target = target;
     }
 
     @Override
-    protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
-        pipeline.addLast(SIGNATURE_HANDLER, new SignatureHandler(environment.getIdentity()));
-        pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(environment.getConfig().getMessageHopLimit()));
-        pipeline.addLast("streamer", new ChunkedWriteHandler());
-        pipeline.addLast(CHUNK_HANDLER, new ChunkedMessageHandler(environment.getConfig().getMessageMaxContentLength(), environment.getIdentity().getPublicKey()));
-    }
-
-    @Override
-    protected void customStage(ChannelPipeline pipeline) {
-        pipeline.addLast(EXCEPTION_MESSAGE_HANDLER, ConnectionExceptionMessageHandler.INSTANCE);
-        pipeline.addLast(SUPER_PEER_CLIENT_CONNECTION_HANDLER, new SuperPeerClientConnectionHandler(environment));
-    }
-
-    @Override
-    protected void exceptionStage(ChannelPipeline pipeline) {
-        pipeline.addLast(EXCEPTION_HANDLER, new ExceptionHandler());
-    }
-
-    @Override
-    protected SslHandler generateSslContext(SocketChannel ch) throws SuperPeerClientException {
-        if (WebSocketUtil.isWebSocketSecureURI(target)) {
-            try {
-                SslContext sslContext = SslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE)
-                        .protocols(environment.getConfig().getServerSSLProtocols()).build();
-                return sslContext.newHandler(ch.alloc(), target.getHost(), WebSocketUtil.webSocketPort(target));
+    protected void beforeMarshalStage(ChannelPipeline pipeline) {
+        WebSocketHandshakeClientHandler webSocketHandshakeClientHandler =
+                new WebSocketHandshakeClientHandler(WebSocketClientHandshakerFactory.newHandshaker(target,
+                        WebSocketVersion.V13, null, false, new DefaultHttpHeaders()));
+        webSocketHandshakeClientHandler.handshakeFuture().whenComplete((v, cause) -> {
+            if (cause != null) {
+                channelReadyFuture.completeExceptionally(cause);
             }
-            catch (SSLException e) {
-                throw new SuperPeerClientException(e);
+            else {
+                channelReadyFuture.complete(null);
+                LOG.debug("Client WebSocket created for {}", target);
             }
-        }
-        return null;
+        });
+
+        pipeline.addLast(new HttpClientCodec());
+        pipeline.addLast(new HttpObjectAggregator(65536));
+        pipeline.addLast(webSocketHandshakeClientHandler);
+    }
+
+    /**
+     * A future is returned if the handshake was successful and the channel is ready to receive and
+     * send messages.
+     * <p>
+     * The future may fail if a connection could not be established.
+     */
+    public CompletableFuture<Void> connectedFuture() {
+        return channelReadyFuture;
     }
 }

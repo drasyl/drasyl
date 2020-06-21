@@ -29,6 +29,9 @@ import java.net.URI;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
+/**
+ * This class encapsulates all information needed by a {@link SuperPeerClientChannelInitializer}.
+ */
 public class SuperPeerClientEnvironment {
     private final DrasylNodeConfig config;
     private final Supplier<Identity> identitySupplier;
