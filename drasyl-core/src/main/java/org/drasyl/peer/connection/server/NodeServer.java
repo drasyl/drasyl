@@ -65,6 +65,33 @@ public class NodeServer implements AutoCloseable {
     private int actualPort;
     private Set<URI> actualEndpoints;
 
+    NodeServer(Supplier<Identity> identitySupplier,
+               Messenger messenger,
+               PeersManager peersManager,
+               DrasylNodeConfig config,
+               ServerBootstrap serverBootstrap,
+               EventLoopGroup workerGroup,
+               EventLoopGroup bossGroup,
+               ChannelInitializer<SocketChannel> channelInitializer,
+               AtomicBoolean opened,
+               NodeServerChannelGroup channelGroup,
+               int actualPort, Channel channel,
+               Set<URI> actualEndpoints) {
+        this.identitySupplier = identitySupplier;
+        this.peersManager = peersManager;
+        this.config = config;
+        this.channel = channel;
+        this.serverBootstrap = serverBootstrap;
+        this.workerGroup = workerGroup;
+        this.bossGroup = bossGroup;
+        this.channelInitializer = channelInitializer;
+        this.opened = opened;
+        this.messenger = messenger;
+        this.actualPort = actualPort;
+        this.actualEndpoints = actualEndpoints;
+        this.channelGroup = channelGroup;
+    }
+
     /**
      * Node server for forwarding messages to child peers.
      *
@@ -107,26 +134,6 @@ public class NodeServer implements AutoCloseable {
         this.messenger = messenger;
         this.actualPort = -1;
         this.actualEndpoints = new HashSet<>();
-    }
-
-    private ChannelInitializer<SocketChannel> initiateChannelInitializer(NodeServerEnvironment environment,
-                                                                         Class<? extends ChannelInitializer<SocketChannel>> clazz) throws NodeServerException {
-        try {
-            Constructor<?> constructor = clazz.getConstructor(NodeServerEnvironment.class);
-            return (ChannelInitializer<SocketChannel>) constructor.newInstance(environment);
-        }
-        catch (NoSuchMethodException e) {
-            throw new NodeServerException("The given channel initializer has not the correct signature: '" + clazz + "'");
-        }
-        catch (IllegalAccessException e) {
-            throw new NodeServerException("Can't access the given channel initializer: '" + clazz + "'");
-        }
-        catch (InvocationTargetException e) {
-            throw new NodeServerException("Can't invoke the given channel initializer: '" + clazz + "'");
-        }
-        catch (InstantiationException e) {
-            throw new NodeServerException("Can't instantiate the given channel initializer: '" + clazz + "'");
-        }
     }
 
     /**
@@ -238,30 +245,24 @@ public class NodeServer implements AutoCloseable {
         }
     }
 
-    NodeServer(Supplier<Identity> identitySupplier,
-               Messenger messenger,
-               PeersManager peersManager,
-               DrasylNodeConfig config,
-               ServerBootstrap serverBootstrap,
-               EventLoopGroup workerGroup,
-               EventLoopGroup bossGroup,
-               ChannelInitializer<SocketChannel> channelInitializer,
-               AtomicBoolean opened,
-               NodeServerChannelGroup channelGroup,
-               int actualPort, Channel channel,
-               Set<URI> actualEndpoints) {
-        this.identitySupplier = identitySupplier;
-        this.peersManager = peersManager;
-        this.config = config;
-        this.channel = channel;
-        this.serverBootstrap = serverBootstrap;
-        this.workerGroup = workerGroup;
-        this.bossGroup = bossGroup;
-        this.channelInitializer = channelInitializer;
-        this.opened = opened;
-        this.messenger = messenger;
-        this.actualPort = actualPort;
-        this.actualEndpoints = actualEndpoints;
-        this.channelGroup = channelGroup;
+    private static ChannelInitializer<SocketChannel> initiateChannelInitializer(
+            NodeServerEnvironment environment,
+            Class<? extends ChannelInitializer<SocketChannel>> clazz) throws NodeServerException {
+        try {
+            Constructor<?> constructor = clazz.getConstructor(NodeServerEnvironment.class);
+            return (ChannelInitializer<SocketChannel>) constructor.newInstance(environment);
+        }
+        catch (NoSuchMethodException e) {
+            throw new NodeServerException("The given channel initializer has not the correct signature: '" + clazz + "'");
+        }
+        catch (IllegalAccessException e) {
+            throw new NodeServerException("Can't access the given channel initializer: '" + clazz + "'");
+        }
+        catch (InvocationTargetException e) {
+            throw new NodeServerException("Can't invoke the given channel initializer: '" + clazz + "'");
+        }
+        catch (InstantiationException e) {
+            throw new NodeServerException("Can't instantiate the given channel initializer: '" + clazz + "'");
+        }
     }
 }
