@@ -18,18 +18,58 @@
  */
 package org.drasyl.peer.connection.superpeer;
 
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.ChannelPromise;
+import io.reactivex.rxjava3.subjects.PublishSubject;
+import org.drasyl.peer.connection.handler.SimpleChannelDuplexHandler;
+import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.server.NodeServerChannelInitializer;
 import org.drasyl.peer.connection.server.NodeServerEnvironment;
 
 public class TestNodeServerChannelInitializer extends NodeServerChannelInitializer {
+    private final PublishSubject<Message> sentMessages;
+    private final PublishSubject<Message> receivedMessages;
+
     public TestNodeServerChannelInitializer(NodeServerEnvironment environment) {
         super(environment);
+        sentMessages = PublishSubject.create();
+        receivedMessages = PublishSubject.create();
+    }
+
+    public PublishSubject<Message> sentMessages() {
+        return sentMessages;
+    }
+
+    public PublishSubject<Message> receivedMessages() {
+        return receivedMessages;
     }
 
     @Override
     protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
         super.afterPojoMarshalStage(pipeline);
-        pipeline.addLast(new IntegrationTestHandler());
+        pipeline.addLast(new SimpleChannelDuplexHandler<Message, Message>() {
+            @Override
+            protected void channelRead0(ChannelHandlerContext ctx,
+                                        Message msg) {
+                receivedMessages.onNext(msg);
+                ctx.fireChannelRead(msg);
+            }
+
+            @Override
+            protected void channelWrite0(ChannelHandlerContext ctx,
+                                         Message msg,
+                                         ChannelPromise promise) {
+                sentMessages.onNext(msg);
+                ctx.write(msg, promise);
+            }
+
+            @Override
+            public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
+                sentMessages.onComplete();
+                receivedMessages.onComplete();
+                super.channelUnregistered(ctx);
+            }
+        });
     }
 }

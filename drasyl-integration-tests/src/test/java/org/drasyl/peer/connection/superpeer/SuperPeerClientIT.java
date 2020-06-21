@@ -45,7 +45,7 @@ import org.drasyl.peer.connection.message.PingMessage;
 import org.drasyl.peer.connection.message.PongMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
-import org.drasyl.peer.connection.server.NodeServer;
+import org.drasyl.peer.connection.server.TestNodeServer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -79,7 +79,7 @@ class SuperPeerClientIT {
     private EventLoopGroup bossGroup;
     private IdentityManager identityManager;
     private IdentityManager identityManagerServer;
-    private NodeServer server;
+    private TestNodeServer server;
     private Messenger messenger;
     private Messenger messengerServer;
     private PeersManager peersManager;
@@ -139,7 +139,7 @@ class SuperPeerClientIT {
         messenger = new Messenger();
         messengerServer = new Messenger();
 
-        server = new NodeServer(identityManagerServer::getIdentity, messengerServer, peersManagerServer, serverConfig, serverWorkerGroup, bossGroup, superPeerConnected);
+        server = new TestNodeServer(identityManagerServer::getIdentity, messengerServer, peersManagerServer, serverConfig, serverWorkerGroup, bossGroup, superPeerConnected);
         server.open();
         emittedEventsSubject = ReplaySubject.<Event>create().toSerialized();
         superPeerConnected = BehaviorSubject.createDefault(false).toSerialized();
@@ -163,7 +163,7 @@ class SuperPeerClientIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldSendJoinMessageOnConnect() throws SuperPeerClientException {
-        TestObserver<Message> receivedMessages = IntegrationTestHandler.receivedMessages().test();
+        TestObserver<Message> receivedMessages = server.receivedMessages().test();
 
         // start client
         SuperPeerClient client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, event -> {
@@ -178,7 +178,7 @@ class SuperPeerClientIT {
     @Disabled("Race Condition error")
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldSendQuitMessageOnClientSideDisconnect() throws SuperPeerClientException {
-        TestObserver<Message> receivedMessages = IntegrationTestHandler.receivedMessages().filter(m -> m instanceof QuitMessage).test();
+        TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof QuitMessage).test();
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
@@ -215,43 +215,42 @@ class SuperPeerClientIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldRespondToPingMessageWithPongMessage() throws SuperPeerClientException {
-        TestObserver<Message> sentMessages = IntegrationTestHandler.sentMessages().test();
-        TestObserver<Message> receivedMessages = IntegrationTestHandler.receivedMessages().filter(m -> m instanceof PongMessage).test();
+        TestObserver<Message> sentMessages = server.sentMessages().test();
+        PingMessage request = new PingMessage();
+        TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof PongMessage && ((PongMessage) m).getCorrespondingId().equals(request.getId())).test();
 
         // start client
         client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, event -> {
         });
         client.open();
-        sentMessages.awaitCount(1);
+        sentMessages.awaitCount(2); // wait for JoinMessage and StatusMessage
 
         // send message
-        PingMessage request = new PingMessage();
-        IntegrationTestHandler.injectMessage(request);
+        server.sendMessage(identityManager.getPublicKey(), request);
 
         // verify received message
         receivedMessages.awaitCount(1);
-        receivedMessages.assertValueAt(0, new PongMessage(request.getId()));
     }
 
     @Test
     @Disabled("disabled, because StatusMessage is currently not used and therefore has been removed.")
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldRespondToApplicationMessageWithStatusOk() throws SuperPeerClientException {
-        TestObserver<Message> sentMessages = IntegrationTestHandler.sentMessages().test();
-        TestObserver<Message> receivedMessages = IntegrationTestHandler.receivedMessages().filter(m -> m instanceof StatusMessage).test();
+        TestObserver<Message> sentMessages = server.sentMessages().test();
+        TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof StatusMessage).test();
 
         // start client
         client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, event -> {
         });
         client.open();
-        sentMessages.awaitCount(1);
+        sentMessages.awaitCount(2); // wait for JoinMessage and StatusMessage
 
         // send message
         ApplicationMessage request = new ApplicationMessage(identityManager.getPublicKey(), identityManagerServer.getPublicKey(), new byte[]{
                 0x00,
                 0x01
         });
-        IntegrationTestHandler.injectMessage(request);
+        server.sendMessage(identityManager.getPublicKey(), request);
 
         // verify received message
         receivedMessages.awaitCount(2);
@@ -261,17 +260,17 @@ class SuperPeerClientIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldEmitNodeOfflineEventAfterReceivingQuitMessage() throws SuperPeerClientException {
-        TestObserver<Message> receivedMessages = IntegrationTestHandler.receivedMessages().test();
+        TestObserver<Message> receivedMessages = server.receivedMessages().test();
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
         client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
         client.open();
-        receivedMessages.awaitCount(1);
+        receivedMessages.awaitCount(2); // wait for JoinMessage and StatusMessage
 
         // send message
         emittedEvents.awaitCount(1);
-        IntegrationTestHandler.injectMessage(new QuitMessage());
+        server.sendMessage(identityManager.getPublicKey(), new QuitMessage());
 
         // verify emitted events
         emittedEvents.awaitCount(2);

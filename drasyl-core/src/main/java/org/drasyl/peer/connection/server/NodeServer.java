@@ -59,8 +59,8 @@ public class NodeServer implements AutoCloseable {
     private final DrasylNodeConfig config;
     private final Messenger messenger;
     private final AtomicBoolean opened;
-    private final NodeServerChannelGroup channelGroup;
-    private final ChannelInitializer<SocketChannel> channelInitializer;
+    protected final NodeServerChannelGroup channelGroup;
+    protected final ChannelInitializer<SocketChannel> channelInitializer;
     private Channel channel;
     private int actualPort;
     private Set<URI> actualEndpoints;
