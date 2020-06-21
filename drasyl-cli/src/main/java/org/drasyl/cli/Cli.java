@@ -18,8 +18,7 @@
  */
 package org.drasyl.cli;
 
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
+import ch.qos.logback.classic.Level;
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -159,31 +158,31 @@ class Cli {
 
     private void runNode(CommandLine cmd) throws CliException {
         try {
-            Config config;
+            DrasylNodeConfig config;
             if (!cmd.hasOption(OPT_CONFIGFILE)) {
                 File defaultFile = new File(DEFAULT_CONF);
                 if (defaultFile.exists()) {
                     log.info("Node is using default configuration file '{}'", defaultFile);
-                    config = ConfigFactory.parseFile(defaultFile).withFallback(ConfigFactory.load());
+                    config = DrasylNodeConfig.parseFile(defaultFile);
                 }
                 else {
                     log.info("Node is using configuration defaults as '{}' does not exist", DEFAULT_CONF);
-                    config = ConfigFactory.load();
+                    config = new DrasylNodeConfig();
                 }
             }
             else {
                 File file = new File(cmd.getOptionValue(OPT_CONFIGFILE));
                 log.info("Node is using configuration file '{}'", file);
-                config = ConfigFactory.parseFile(file).withFallback(ConfigFactory.load());
+                config = DrasylNodeConfig.parseFile(file);
             }
 
             // override log level
             if (cmd.hasOption(OPT_LOGLEVEL)) {
                 String level = cmd.getOptionValue(OPT_LOGLEVEL);
-                config = ConfigFactory.parseString("drasyl.loglevel = \"" + level + "\"").withFallback(config);
+                config = DrasylNodeConfig.newBuilder(config).loglevel(Level.valueOf(level)).build();
             }
 
-            node = new DrasylNode(new DrasylNodeConfig(config)) {
+            node = new DrasylNode(config) {
                 @Override
                 public void onEvent(Event event) {
                     log.info("Event received: {}", event);

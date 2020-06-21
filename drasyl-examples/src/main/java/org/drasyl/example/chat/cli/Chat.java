@@ -18,8 +18,6 @@
  */
 package org.drasyl.example.chat.cli;
 
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.DrasylNodeConfig;
@@ -40,16 +38,16 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @SuppressWarnings({ "squid:S106", "java:S1141" })
 public class Chat {
     public static void main(String[] args) throws DrasylException {
-        Config config;
+        DrasylNodeConfig config;
         if (args.length == 1) {
-            config = ConfigFactory.parseFile(new File(args[0])).withFallback(ConfigFactory.load());
+            config = DrasylNodeConfig.parseFile(new File(args[0]));
         }
         else {
-            config = ConfigFactory.load();
+            config = new DrasylNodeConfig();
         }
 
         CompletableFuture<Void> online = new CompletableFuture<>();
-        DrasylNode node = new DrasylNode(new DrasylNodeConfig(config)) {
+        DrasylNode node = new DrasylNode(config) {
             @Override
             public void onEvent(Event event) {
                 switch (event.getType()) {

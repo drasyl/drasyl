@@ -20,8 +20,6 @@ package org.drasyl.peer.connection.server;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.reactivex.rxjava3.core.Observable;
@@ -439,9 +437,8 @@ class NodeServerIT {
 
     @Test
     void openShouldFailIfInvalidPortIsGiven() throws DrasylException {
-        Config config =
-                ConfigFactory.parseString("drasyl.server.bind-port = 72522").withFallback(ConfigFactory.load());
-        NodeServer server = new NodeServer(identityManager::getIdentity, messenger, peersManager, new DrasylNodeConfig(config), workerGroup, bossGroup, superPeerConnected);
+        DrasylNodeConfig config = DrasylNodeConfig.newBuilder().serverBindPort(72722).build();
+        NodeServer server = new NodeServer(identityManager::getIdentity, messenger, peersManager, config, workerGroup, bossGroup, superPeerConnected);
 
         assertThrows(NodeServerException.class, server::open);
     }

@@ -29,6 +29,7 @@ import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 
+import java.io.File;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.file.Path;
@@ -522,35 +523,43 @@ public class DrasylNodeConfig {
                 '}';
     }
 
+    public static DrasylNodeConfig parseFile(File file) {
+        return new DrasylNodeConfig(ConfigFactory.parseFile(file).withFallback(ConfigFactory.load()));
+    }
+
     public static Builder newBuilder() {
+        return newBuilder(DEFAULT);
+    }
+
+    public static Builder newBuilder(DrasylNodeConfig config) {
         return new Builder(
-                DEFAULT.loglevel,
-                DEFAULT.identityProofOfWork,
-                DEFAULT.identityPublicKey,
-                DEFAULT.identityPrivateKey,
-                DEFAULT.identityPath,
-                DEFAULT.serverBindHost,
-                DEFAULT.serverEnabled,
-                DEFAULT.serverBindPort,
-                DEFAULT.serverIdleRetries,
-                DEFAULT.serverIdleTimeout,
-                DEFAULT.flushBufferSize,
-                DEFAULT.serverSSLEnabled,
-                DEFAULT.serverSSLProtocols,
-                DEFAULT.serverHandshakeTimeout,
-                DEFAULT.serverEndpoints,
-                DEFAULT.serverChannelInitializer,
-                DEFAULT.messageMaxContentLength,
-                DEFAULT.messageHopLimit,
-                DEFAULT.superPeerEnabled,
-                DEFAULT.superPeerEndpoints,
-                DEFAULT.superPeerPublicKey,
-                DEFAULT.superPeerRetryDelays,
-                DEFAULT.superPeerHandshakeTimeout,
-                DEFAULT.superPeerChannelInitializer,
-                DEFAULT.superPeerIdleRetries,
-                DEFAULT.superPeerIdleTimeout,
-                DEFAULT.intraVmDiscoveryEnabled
+                config.loglevel,
+                config.identityProofOfWork,
+                config.identityPublicKey,
+                config.identityPrivateKey,
+                config.identityPath,
+                config.serverBindHost,
+                config.serverEnabled,
+                config.serverBindPort,
+                config.serverIdleRetries,
+                config.serverIdleTimeout,
+                config.flushBufferSize,
+                config.serverSSLEnabled,
+                config.serverSSLProtocols,
+                config.serverHandshakeTimeout,
+                config.serverEndpoints,
+                config.serverChannelInitializer,
+                config.messageMaxContentLength,
+                config.messageHopLimit,
+                config.superPeerEnabled,
+                config.superPeerEndpoints,
+                config.superPeerPublicKey,
+                config.superPeerRetryDelays,
+                config.superPeerHandshakeTimeout,
+                config.superPeerChannelInitializer,
+                config.superPeerIdleRetries,
+                config.superPeerIdleTimeout,
+                config.intraVmDiscoveryEnabled
         );
     }
 
