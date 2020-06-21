@@ -54,8 +54,6 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import testutils.AnsiColor;
-import testutils.TestHelper;
 
 import java.net.URI;
 import java.util.List;
@@ -67,6 +65,9 @@ import static org.drasyl.event.EventType.EVENT_NODE_OFFLINE;
 import static org.drasyl.event.EventType.EVENT_NODE_ONLINE;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
+import static testutils.AnsiColor.COLOR_CYAN;
+import static testutils.AnsiColor.STYLE_REVERSED;
+import static testutils.TestHelper.colorizedPrintln;
 
 @Execution(ExecutionMode.SAME_THREAD)
 class SuperPeerClientIT {
@@ -89,7 +90,7 @@ class SuperPeerClientIT {
 
     @BeforeEach
     void setup(TestInfo info) throws DrasylException, CryptoException {
-        TestHelper.colorizedPrintln("STARTING " + info.getDisplayName(), AnsiColor.COLOR_CYAN, AnsiColor.STYLE_REVERSED);
+        colorizedPrintln("STARTING " + info.getDisplayName(), COLOR_CYAN, STYLE_REVERSED);
 
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
 
@@ -156,7 +157,7 @@ class SuperPeerClientIT {
         workerGroup.shutdownGracefully().syncUninterruptibly();
         bossGroup.shutdownGracefully().syncUninterruptibly();
         serverWorkerGroup.shutdownGracefully().syncUninterruptibly();
-        TestHelper.colorizedPrintln("FINISHED " + info.getDisplayName(), AnsiColor.COLOR_CYAN, AnsiColor.STYLE_REVERSED);
+        colorizedPrintln("FINISHED " + info.getDisplayName(), COLOR_CYAN, STYLE_REVERSED);
     }
 
     @Test

@@ -60,7 +60,6 @@ import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
-import testutils.AnsiColor;
 
 import java.security.KeyPair;
 import java.util.Arrays;
@@ -93,6 +92,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static testutils.AnsiColor.COLOR_CYAN;
+import static testutils.AnsiColor.STYLE_REVERSED;
 import static testutils.TestHelper.colorizedPrintln;
 
 //import net.jcip.annotations.NotThreadSafe;
@@ -114,7 +115,7 @@ class NodeServerIT {
 
     @BeforeEach
     void setup(TestInfo info) throws DrasylException, CryptoException {
-        colorizedPrintln("STARTING " + info.getDisplayName(), AnsiColor.COLOR_CYAN, AnsiColor.STYLE_REVERSED);
+        colorizedPrintln("STARTING " + info.getDisplayName(), COLOR_CYAN, STYLE_REVERSED);
 
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
 
@@ -151,7 +152,7 @@ class NodeServerIT {
 
         IdentityManager.deleteIdentityFile(config.getIdentityPath());
 
-        colorizedPrintln("FINISHED " + info.getDisplayName(), AnsiColor.COLOR_CYAN, AnsiColor.STYLE_REVERSED);
+        colorizedPrintln("FINISHED " + info.getDisplayName(), COLOR_CYAN, STYLE_REVERSED);
     }
 
     @Test
