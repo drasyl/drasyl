@@ -127,7 +127,7 @@ class SuperPeerClientIT {
                 .serverSSLEnabled(true)
                 .serverIdleTimeout(ofSeconds(1))
                 .serverIdleRetries((short) 1)
-                .serverChannelInitializer(DummyServerChannelInitializer.class)
+                .serverChannelInitializer(TestNodeServerChannelInitializer.class)
                 .superPeerEnabled(false)
                 .build();
         identityManagerServer = new IdentityManager(serverConfig);

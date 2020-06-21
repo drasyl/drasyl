@@ -83,8 +83,8 @@ class NodeServerTest {
             when(serverBootstrap.group(any(), any()).channel(any()).childHandler(any()).bind((String) null, 0).channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
             NodeServer server = new NodeServer(identitySupplier, messenger, peersManager,
-                    config, serverChannel, serverBootstrap, workerGroup, bossGroup,
-                    channelInitializer, new AtomicBoolean(false), -1, new HashSet<>(), channelGroup, superPeerConnected);
+                    config, serverBootstrap, workerGroup, bossGroup, channelInitializer, new AtomicBoolean(false), channelGroup, -1, serverChannel,
+                    new HashSet<>());
             server.open();
 
             assertTrue(server.isOpen());
@@ -93,8 +93,8 @@ class NodeServerTest {
         @Test
         void shouldDoNothingIfServerHasAlreadyBeenStarted() throws NodeServerException {
             NodeServer server = new NodeServer(identitySupplier, messenger, peersManager,
-                    config, serverChannel, serverBootstrap, workerGroup, bossGroup,
-                    channelInitializer, new AtomicBoolean(true), -1, new HashSet<>(), channelGroup, superPeerConnected);
+                    config, serverBootstrap, workerGroup, bossGroup, channelInitializer, new AtomicBoolean(true), channelGroup, -1, serverChannel,
+                    new HashSet<>());
 
             server.open();
 
@@ -107,8 +107,8 @@ class NodeServerTest {
         @Test
         void shouldDoNothingIfServerHasAlreadyBeenShutDown() {
             NodeServer server = new NodeServer(identitySupplier, messenger, peersManager,
-                    config, serverChannel, serverBootstrap, workerGroup, bossGroup,
-                    channelInitializer, new AtomicBoolean(false), -1, new HashSet<>(), channelGroup, superPeerConnected);
+                    config, serverBootstrap, workerGroup, bossGroup, channelInitializer, new AtomicBoolean(false), channelGroup, -1, serverChannel,
+                    new HashSet<>());
 
             server.close();
 

@@ -20,7 +20,6 @@ package org.drasyl.peer.connection.server;
 
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
-import org.drasyl.DrasylNodeConfig;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -28,12 +27,11 @@ import java.lang.reflect.InvocationTargetException;
 public class NodeServerChannelBootstrap {
     private final ChannelInitializer<SocketChannel> channelInitializer;
 
-    public NodeServerChannelBootstrap(DrasylNodeConfig config,
-                                      NodeServer server) throws NodeServerException {
-        Class<? extends ChannelInitializer<SocketChannel>> channelInitializerClazz = config.getServerChannelInitializer();
+    public NodeServerChannelBootstrap(NodeServerEnvironment environment) throws NodeServerException {
+        Class<? extends ChannelInitializer<SocketChannel>> channelInitializerClazz = environment.getConfig().getServerChannelInitializer();
 
         try {
-            this.channelInitializer = initiateChannelInitializer(config, server, channelInitializerClazz);
+            this.channelInitializer = initiateChannelInitializer(environment, channelInitializerClazz);
         }
         catch (NoSuchMethodException e) {
             throw new NodeServerException("The given channel initializer has not the correct signature: '" + channelInitializerClazz + "'");
@@ -49,13 +47,12 @@ public class NodeServerChannelBootstrap {
         }
     }
 
-    private ChannelInitializer<SocketChannel> initiateChannelInitializer(DrasylNodeConfig config,
-                                                                         NodeServer server,
+    private ChannelInitializer<SocketChannel> initiateChannelInitializer(NodeServerEnvironment environment,
                                                                          Class<? extends ChannelInitializer<SocketChannel>> clazz) throws
             NoSuchMethodException, IllegalAccessException, InvocationTargetException, InstantiationException {
-        Constructor<?> cons = clazz.getConstructor(DrasylNodeConfig.class, NodeServer.class);
+        Constructor<?> cons = clazz.getConstructor(NodeServerEnvironment.class);
 
-        return (ChannelInitializer<SocketChannel>) cons.newInstance(config, server);
+        return (ChannelInitializer<SocketChannel>) cons.newInstance(environment);
     }
 
     public ChannelInitializer<SocketChannel> getChannelInitializer() {

@@ -112,11 +112,11 @@ class NodeServerConnectionHandlerTest {
     @Mock
     private WelcomeMessage offerMessage;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-    private NodeServer server;
+    private NodeServerEnvironment environment;
 
     @Test
     void shouldSendExceptionMessageIfHandshakeIsNotDoneInTime() {
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(server, ofMillis(0), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(environment, ofMillis(0), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         assertEquals(new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE_TIMEOUT), channel.readOutbound());
@@ -124,7 +124,7 @@ class NodeServerConnectionHandlerTest {
 
     @Test
     void closeBeforeTimeoutShouldNotSendHandshakeTimeoutExceptionMessage() {
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(server, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
         channel.close();
 
@@ -133,10 +133,10 @@ class NodeServerConnectionHandlerTest {
 
     @Test
     void shouldRejectIncomingJoinMessageWithSamePublicKey() {
-        when(server.getIdentity().getPublicKey()).thenReturn(publicKey0);
+        when(environment.getIdentity().getPublicKey()).thenReturn(publicKey0);
         when(joinMessage.getPublicKey()).thenReturn(publicKey0);
 
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(server, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, null, offerMessage);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, null, offerMessage);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(joinMessage);
@@ -149,7 +149,7 @@ class NodeServerConnectionHandlerTest {
     void shouldRejectUnexpectedMessagesDuringHandshake() {
         when(applicationMessage.getId()).thenReturn("123");
 
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(server, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(applicationMessage);
@@ -164,7 +164,7 @@ class NodeServerConnectionHandlerTest {
         when(ctx.channel()).thenReturn(nettyChannel);
         when(nettyChannel.id()).thenReturn(channelId);
 
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(server, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         handler.exceptionCaught(ctx, cause);
 
         verify(ctx).writeAndFlush(any(ConnectionExceptionMessage.class));
@@ -175,7 +175,7 @@ class NodeServerConnectionHandlerTest {
     void shouldCloseChannelOnQuitMessage() {
         when(handshakeFuture.isDone()).thenReturn(true);
 
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(server, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(quitMessage);
@@ -186,13 +186,13 @@ class NodeServerConnectionHandlerTest {
 
     @Test
     void shouldAddGrandchildRouteAndInformSuperPeerOnRegisterGrandchildMessageAndRemoveGrandchildRouteAndInformSuperPeerOnClose() {
-        when(server.getPeersManager()).thenReturn(peersManager);
+        when(environment.getPeersManager()).thenReturn(peersManager);
         when(handshakeFuture.isDone()).thenReturn(true);
         when(registerGrandchildMessage.getGrandchildren()).thenReturn(Set.of(grandchildrenPublicKey0));
         when(peersManager.getSuperPeer()).thenReturn(Pair.of(superPeerPublicKey, superPeerInformation));
         when(superPeerInformation.getPaths()).thenReturn(Set.of(superPeerPath));
 
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(server, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
         channel.attr(ATTRIBUTE_PUBLIC_KEY).set(publicKey0);
 
@@ -216,13 +216,13 @@ class NodeServerConnectionHandlerTest {
 
     @Test
     void shouldRemoveGrandchildRouteAndInformSuperPeerOnUnregisterGrandchildMessage() {
-        when(server.getPeersManager()).thenReturn(peersManager);
+        when(environment.getPeersManager()).thenReturn(peersManager);
         when(handshakeFuture.isDone()).thenReturn(true);
         when(unregisterGrandchildrenMessage.getGrandchildren()).thenReturn(Set.of(grandchildrenPublicKey0));
         when(peersManager.getSuperPeer()).thenReturn(Pair.of(superPeerPublicKey, superPeerInformation));
         when(superPeerInformation.getPaths()).thenReturn(Set.of(superPeerPath));
 
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(server, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
         channel.attr(ATTRIBUTE_PUBLIC_KEY).set(publicKey0);
 
@@ -238,8 +238,8 @@ class NodeServerConnectionHandlerTest {
 
     @Test
     void shouldAddGrandchildRouteAndInformSuperPeerOnSessionCreationAndRemoveGrandchildRouteAndInformSuperPeerOnClose() {
-        when(server.getPeersManager()).thenReturn(peersManager);
-        when(server.getChannelGroup()).thenReturn(channelGroup);
+        when(environment.getPeersManager()).thenReturn(peersManager);
+        when(environment.getChannelGroup()).thenReturn(channelGroup);
         when(offerMessage.getId()).thenReturn("123");
         when(requestMessage.getPublicKey()).thenReturn(publicKey0);
         when(requestMessage.getChildrenAndGrandchildren()).thenReturn(Set.of(grandchildrenPublicKey0));
@@ -248,7 +248,7 @@ class NodeServerConnectionHandlerTest {
         when(peersManager.getSuperPeer()).thenReturn(Pair.of(superPeerPublicKey, superPeerInformation));
         when(superPeerInformation.getPaths()).thenReturn(Set.of(superPeerPath));
 
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(server, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
         channel.attr(ATTRIBUTE_PUBLIC_KEY).set(publicKey0);
 

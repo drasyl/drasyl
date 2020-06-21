@@ -36,6 +36,8 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.util.NetworkUtil;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.HashSet;
@@ -58,9 +60,8 @@ public class NodeServer implements AutoCloseable {
     private final Messenger messenger;
     private final AtomicBoolean opened;
     private final NodeServerChannelGroup channelGroup;
-    private final Observable<Boolean> superPeerConnected;
+    private final ChannelInitializer<SocketChannel> channelInitializer;
     private Channel channel;
-    private ChannelInitializer<SocketChannel> channelInitializer;
     private int actualPort;
     private Set<URI> actualEndpoints;
 
@@ -82,66 +83,50 @@ public class NodeServer implements AutoCloseable {
                       EventLoopGroup workerGroup,
                       EventLoopGroup bossGroup,
                       Observable<Boolean> superPeerConnected) throws NodeServerException {
-        this(identitySupplier,
-                messenger,
-                peersManager,
-                config,
-                null,
-                new ServerBootstrap(),
-                workerGroup,
-                bossGroup,
-                null,
-                new AtomicBoolean(false),
-                -1,
-                new HashSet<>(),
-                new NodeServerChannelGroup(),
-                superPeerConnected);
-        channelInitializer = new NodeServerChannelBootstrap(config, this).getChannelInitializer();
-    }
-
-    NodeServer(Supplier<Identity> identitySupplier,
-               Messenger messenger,
-               PeersManager peersManager,
-               DrasylNodeConfig config,
-               Channel channel,
-               ServerBootstrap serverBootstrap,
-               EventLoopGroup workerGroup,
-               EventLoopGroup bossGroup,
-               ChannelInitializer<SocketChannel> channelInitializer,
-               AtomicBoolean opened,
-               int actualPort,
-               Set<URI> actualEndpoints,
-               NodeServerChannelGroup channelGroup,
-               Observable<Boolean> superPeerConnected) {
         this.identitySupplier = identitySupplier;
         this.peersManager = peersManager;
         this.config = config;
-        this.channel = channel;
-        this.serverBootstrap = serverBootstrap;
+        this.channel = null;
+        this.serverBootstrap = new ServerBootstrap();
         this.workerGroup = workerGroup;
         this.bossGroup = bossGroup;
-        this.channelInitializer = channelInitializer;
-        this.opened = opened;
+        this.channelGroup = new NodeServerChannelGroup();
+        this.channelInitializer = initiateChannelInitializer(
+                new NodeServerEnvironment(
+                        config,
+                        identitySupplier,
+                        peersManager,
+                        messenger,
+                        this::getEndpoints,
+                        channelGroup,
+                        () -> this.isOpen() && (!config.isSuperPeerEnabled() || superPeerConnected.blockingFirst())
+                ),
+                config.getServerChannelInitializer()
+        );
+        this.opened = new AtomicBoolean(false);
         this.messenger = messenger;
-        this.actualPort = actualPort;
-        this.actualEndpoints = actualEndpoints;
-        this.channelGroup = channelGroup;
-        this.superPeerConnected = superPeerConnected;
+        this.actualPort = -1;
+        this.actualEndpoints = new HashSet<>();
     }
 
-    NodeServerChannelGroup getChannelGroup() {
-        return channelGroup;
-    }
-
-    Messenger getMessenger() {
-        return messenger;
-    }
-
-    /**
-     * @return the peers manager
-     */
-    PeersManager getPeersManager() {
-        return peersManager;
+    private ChannelInitializer<SocketChannel> initiateChannelInitializer(NodeServerEnvironment environment,
+                                                                         Class<? extends ChannelInitializer<SocketChannel>> clazz) throws NodeServerException {
+        try {
+            Constructor<?> constructor = clazz.getConstructor(NodeServerEnvironment.class);
+            return (ChannelInitializer<SocketChannel>) constructor.newInstance(environment);
+        }
+        catch (NoSuchMethodException e) {
+            throw new NodeServerException("The given channel initializer has not the correct signature: '" + clazz + "'");
+        }
+        catch (IllegalAccessException e) {
+            throw new NodeServerException("Can't access the given channel initializer: '" + clazz + "'");
+        }
+        catch (InvocationTargetException e) {
+            throw new NodeServerException("Can't invoke the given channel initializer: '" + clazz + "'");
+        }
+        catch (InstantiationException e) {
+            throw new NodeServerException("Can't instantiate the given channel initializer: '" + clazz + "'");
+        }
     }
 
     /**
@@ -151,24 +136,16 @@ public class NodeServer implements AutoCloseable {
         return actualEndpoints;
     }
 
-    EventLoopGroup getBossGroup() {
-        return bossGroup;
-    }
-
-    EventLoopGroup getWorkerGroup() {
-        return workerGroup;
-    }
-
     public boolean isOpen() {
         return opened.get();
     }
 
-    Identity getIdentity() {
-        return identitySupplier.get();
+    NodeServerChannelGroup getChannelGroup() {
+        return channelGroup;
     }
 
-    Observable<Boolean> getSuperPeerConnected() {
-        return superPeerConnected;
+    Identity getIdentity() {
+        return identitySupplier.get();
     }
 
     /**
@@ -259,5 +236,32 @@ public class NodeServer implements AutoCloseable {
                         channel = null;
                     });
         }
+    }
+
+    NodeServer(Supplier<Identity> identitySupplier,
+               Messenger messenger,
+               PeersManager peersManager,
+               DrasylNodeConfig config,
+               ServerBootstrap serverBootstrap,
+               EventLoopGroup workerGroup,
+               EventLoopGroup bossGroup,
+               ChannelInitializer<SocketChannel> channelInitializer,
+               AtomicBoolean opened,
+               NodeServerChannelGroup channelGroup,
+               int actualPort, Channel channel,
+               Set<URI> actualEndpoints) {
+        this.identitySupplier = identitySupplier;
+        this.peersManager = peersManager;
+        this.config = config;
+        this.channel = channel;
+        this.serverBootstrap = serverBootstrap;
+        this.workerGroup = workerGroup;
+        this.bossGroup = bossGroup;
+        this.channelInitializer = channelInitializer;
+        this.opened = opened;
+        this.messenger = messenger;
+        this.actualPort = actualPort;
+        this.actualEndpoints = actualEndpoints;
+        this.channelGroup = channelGroup;
     }
 }

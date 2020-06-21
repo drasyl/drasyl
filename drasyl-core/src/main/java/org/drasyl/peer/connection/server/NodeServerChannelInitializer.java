@@ -27,7 +27,6 @@ import io.netty.handler.codec.http.websocketx.extensions.compression.WebSocketSe
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
-import org.drasyl.DrasylNodeConfig;
 import org.drasyl.peer.connection.DefaultSessionInitializer;
 import org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
@@ -51,13 +50,11 @@ import static org.drasyl.peer.connection.server.handler.NodeServerNewConnections
  */
 @SuppressWarnings({ "java:S4818" })
 public class NodeServerChannelInitializer extends DefaultSessionInitializer {
-    private final DrasylNodeConfig config;
-    protected final NodeServer server;
+    protected final NodeServerEnvironment environment;
 
-    public NodeServerChannelInitializer(DrasylNodeConfig config, NodeServer server) {
-        super(config.getFlushBufferSize(), config.getServerIdleTimeout(), config.getServerIdleRetries());
-        this.config = config;
-        this.server = server;
+    public NodeServerChannelInitializer(NodeServerEnvironment environment) {
+        super(environment.getConfig().getFlushBufferSize(), environment.getConfig().getServerIdleTimeout(), environment.getConfig().getServerIdleRetries());
+        this.environment = environment;
     }
 
     @Override
@@ -65,21 +62,21 @@ public class NodeServerChannelInitializer extends DefaultSessionInitializer {
         pipeline.addLast(new HttpServerCodec());
         pipeline.addLast(new HttpObjectAggregator(65536));
         pipeline.addLast(new WebSocketServerCompressionHandler());
-        pipeline.addLast(new NodeServerHttpHandler(server.getIdentity().getPublicKey(), server.getPeersManager()));
+        pipeline.addLast(new NodeServerHttpHandler(environment.getIdentity().getPublicKey(), environment.getPeersManager()));
         pipeline.addLast(new WebSocketServerProtocolHandler("/", null, true));
     }
 
     @Override
     protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
-        pipeline.addLast(SIGNATURE_HANDLER, new SignatureHandler(server.getIdentity()));
-        pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(config.getMessageHopLimit()));
-        pipeline.addLast(CONNECTION_GUARD, new NodeServerNewConnectionsGuard(() -> server.isOpen() && (!config.isSuperPeerEnabled() || server.getSuperPeerConnected().blockingFirst())));
+        pipeline.addLast(SIGNATURE_HANDLER, new SignatureHandler(environment.getIdentity()));
+        pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(environment.getConfig().getMessageHopLimit()));
+        pipeline.addLast(CONNECTION_GUARD, new NodeServerNewConnectionsGuard(environment.getAcceptNewConnectionsSupplier()));
     }
 
     @Override
     protected void customStage(ChannelPipeline pipeline) {
         pipeline.addLast(EXCEPTION_MESSAGE_HANDLER, ConnectionExceptionMessageHandler.INSTANCE);
-        pipeline.addLast(NODE_SERVER_CONNECTION_HANDLER, new NodeServerConnectionHandler(config, server));
+        pipeline.addLast(NODE_SERVER_CONNECTION_HANDLER, new NodeServerConnectionHandler(environment));
     }
 
     @Override
@@ -89,12 +86,12 @@ public class NodeServerChannelInitializer extends DefaultSessionInitializer {
 
     @Override
     protected SslHandler generateSslContext(SocketChannel ch) throws NodeServerException {
-        if (config.getServerSSLEnabled()) {
+        if (environment.getConfig().getServerSSLEnabled()) {
             try {
                 SelfSignedCertificate ssc = new SelfSignedCertificate();
 
                 return SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey())
-                        .protocols(config.getServerSSLProtocols()).build().newHandler(ch.alloc());
+                        .protocols(environment.getConfig().getServerSSLProtocols()).build().newHandler(ch.alloc());
             }
             catch (SSLException | CertificateException e) {
                 throw new NodeServerException(e);
