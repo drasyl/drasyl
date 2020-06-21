@@ -79,6 +79,7 @@ public class SuperPeerClient implements AutoCloseable {
     private final Subject<Boolean> connected;
     private final DrasylFunction<URI, ChannelInitializer<SocketChannel>> channelInitializerSupplier;
     private Channel clientChannel;
+    protected ChannelInitializer<SocketChannel> channelInitializer;
 
     SuperPeerClient(DrasylNodeConfig config,
                     Supplier<Identity> identitySupplier,
@@ -140,8 +141,7 @@ public class SuperPeerClient implements AutoCloseable {
             URI endpoint = getEndpoint();
             LOG.debug("Connect to Super Peer Endpoint '{}'", endpoint);
             try {
-                ChannelInitializer<SocketChannel> channelInitializer = channelInitializerSupplier.apply(endpoint);
-
+                channelInitializer = channelInitializerSupplier.apply(endpoint);
                 ChannelFuture channelFuture = new Bootstrap()
                         .group(workerGroup)
                         .channel(NioSocketChannel.class)
