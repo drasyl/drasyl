@@ -143,7 +143,7 @@ class NodeServerIT {
         messenger = new Messenger();
         superPeerConnected = Observable.just(false);
 
-        server = new NodeServer(identityManager::getIdentity, messenger, peersManager, superPeerConnected, config, workerGroup, bossGroup);
+        server = new NodeServer(identityManager::getIdentity, messenger, peersManager, config, workerGroup, bossGroup, superPeerConnected);
         server.open();
     }
 
@@ -429,7 +429,7 @@ class NodeServerIT {
 
     @Test
     void shouldOpenAndCloseGracefully() throws DrasylException {
-        NodeServer server = new NodeServer(identityManager::getIdentity, messenger, peersManager, workerGroup, bossGroup, superPeerConnected);
+        NodeServer server = new NodeServer(identityManager::getIdentity, messenger, peersManager, new DrasylNodeConfig(), workerGroup, bossGroup, superPeerConnected);
 
         server.open();
         server.close();
@@ -441,7 +441,7 @@ class NodeServerIT {
     void openShouldFailIfInvalidPortIsGiven() throws DrasylException {
         Config config =
                 ConfigFactory.parseString("drasyl.server.bind-port = 72522").withFallback(ConfigFactory.load());
-        NodeServer server = new NodeServer(identityManager::getIdentity, messenger, peersManager, superPeerConnected, config, workerGroup, bossGroup);
+        NodeServer server = new NodeServer(identityManager::getIdentity, messenger, peersManager, new DrasylNodeConfig(config), workerGroup, bossGroup, superPeerConnected);
 
         assertThrows(NodeServerException.class, server::open);
     }

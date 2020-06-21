@@ -18,8 +18,6 @@
  */
 package org.drasyl.peer.connection.server;
 
-import com.typesafe.config.Config;
-import com.typesafe.config.ConfigFactory;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -29,7 +27,6 @@ import io.netty.channel.group.ChannelGroupFutureListener;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.reactivex.rxjava3.core.Observable;
-import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
@@ -68,65 +65,23 @@ public class NodeServer implements AutoCloseable {
     private Set<URI> actualEndpoints;
 
     /**
-     * Starts a node server for forwarding messages to child peers.<br> Default Port: 22527
+     * Node server for forwarding messages to child peers.
      *
      * @param identitySupplier   the identity manager
      * @param messenger          the messenger object
      * @param peersManager       the peers manager
-     * @param workerGroup        netty shared worker group
-     * @param bossGroup          netty shared boss group
-     * @param superPeerConnected
-     * @throws DrasylException if the loaded default config is invalid
-     */
-    public NodeServer(Supplier<Identity> identitySupplier,
-                      Messenger messenger,
-                      PeersManager peersManager,
-                      EventLoopGroup workerGroup,
-                      EventLoopGroup bossGroup,
-                      Observable<Boolean> superPeerConnected) throws DrasylException {
-        this(identitySupplier, messenger, peersManager, superPeerConnected, ConfigFactory.load(), workerGroup, bossGroup);
-    }
-
-    /**
-     * Node server for forwarding messages to child peers.
-     *
-     * @param identitySupplier    the identity manager
-     * @param messenger          the messenger object
-     * @param peersManager       the peers manager
-     * @param superPeerConnected
      * @param config             config that should be used
      * @param workerGroup        netty shared worker group
      * @param bossGroup          netty shared boss group
-     * @throws DrasylException if the given config is invalid
-     */
-    public NodeServer(Supplier<Identity> identitySupplier,
-                      Messenger messenger,
-                      PeersManager peersManager,
-                      Observable<Boolean> superPeerConnected,
-                      Config config,
-                      EventLoopGroup workerGroup,
-                      EventLoopGroup bossGroup) throws DrasylException {
-        this(identitySupplier, messenger, peersManager, superPeerConnected, new DrasylNodeConfig(config), workerGroup, bossGroup);
-    }
-
-    /**
-     * Node server for forwarding messages to child peers.
-     *
-     * @param identitySupplier    the identity manager
-     * @param messenger          the messenger object
-     * @param peersManager       the peers manager
      * @param superPeerConnected
-     * @param config             config that should be used
-     * @param workerGroup        netty shared worker group
-     * @param bossGroup          netty shared boss group
      */
     public NodeServer(Supplier<Identity> identitySupplier,
                       Messenger messenger,
                       PeersManager peersManager,
-                      Observable<Boolean> superPeerConnected,
                       DrasylNodeConfig config,
                       EventLoopGroup workerGroup,
-                      EventLoopGroup bossGroup) throws NodeServerException {
+                      EventLoopGroup bossGroup,
+                      Observable<Boolean> superPeerConnected) throws NodeServerException {
         this(identitySupplier,
                 messenger,
                 peersManager,

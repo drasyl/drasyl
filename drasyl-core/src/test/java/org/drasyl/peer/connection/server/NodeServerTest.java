@@ -123,7 +123,7 @@ class NodeServerTest {
     class Constructor {
         @Test
         void shouldRejectNullValues() throws DrasylException {
-            NodeServer server = new NodeServer(identitySupplier, messenger, peersManager, workerGroup, bossGroup, superPeerConnected);
+            NodeServer server = new NodeServer(identitySupplier, messenger, peersManager, config, workerGroup, bossGroup, superPeerConnected);
 
             assertNotNull(server.getBossGroup());
             assertNotNull(server.getWorkerGroup());
