@@ -124,17 +124,17 @@ class ApplicationMessageTest {
     class HashCode {
         @Test
         void notSameBecauseOfDifferentPayload() {
-            ApplicationMessage message1 = new ApplicationMessage(id, recipient, sender, new byte[]{
+            ApplicationMessage message1 = new ApplicationMessage(id, sender, recipient, new byte[]{
                     0x00,
                     0x01,
                     0x02
             }, hopCount);
-            ApplicationMessage message2 = new ApplicationMessage(id, recipient, sender, new byte[]{
+            ApplicationMessage message2 = new ApplicationMessage(id, sender, recipient, new byte[]{
                     0x00,
                     0x01,
                     0x02
             }, hopCount);
-            ApplicationMessage message3 = new ApplicationMessage(id, recipient, sender, new byte[]{
+            ApplicationMessage message3 = new ApplicationMessage(id, sender, recipient, new byte[]{
                     0x03,
                     0x02,
                     0x01
