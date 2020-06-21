@@ -31,8 +31,6 @@ import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.RelayableMessageGuard;
 import org.drasyl.peer.connection.handler.SignatureHandler;
 import org.drasyl.util.WebSocketUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLException;
 import java.net.URI;
@@ -46,7 +44,6 @@ import static org.drasyl.peer.connection.superpeer.SuperPeerClientConnectionHand
  */
 @SuppressWarnings({ "java:S110", "java:S4818" })
 public class SuperPeerClientChannelInitializer extends AbstractClientInitializer {
-    private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClientChannelInitializer.class);
     private final DrasylNodeConfig config;
     private final SuperPeerClientConnectionHandler clientHandler;
     private final SuperPeerClient client;
@@ -87,7 +84,7 @@ public class SuperPeerClientChannelInitializer extends AbstractClientInitializer
     }
 
     @Override
-    protected SslHandler generateSslContext(SocketChannel ch) {
+    protected SslHandler generateSslContext(SocketChannel ch) throws SuperPeerClientException {
         if (WebSocketUtil.isWebSocketSecureURI(target)) {
             try {
                 SslContext sslContext = SslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE)
@@ -95,7 +92,7 @@ public class SuperPeerClientChannelInitializer extends AbstractClientInitializer
                 return sslContext.newHandler(ch.alloc(), target.getHost(), WebSocketUtil.webSocketPort(target));
             }
             catch (SSLException e) {
-                LOG.error("SSLException: ", e);
+                throw new SuperPeerClientException(e);
             }
         }
         return null;

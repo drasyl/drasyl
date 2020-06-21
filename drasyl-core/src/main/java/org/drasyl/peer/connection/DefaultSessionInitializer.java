@@ -25,11 +25,13 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.flush.FlushConsolidationHandler;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.timeout.IdleStateHandler;
+import org.drasyl.DrasylException;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.MessageDecoder;
 import org.drasyl.peer.connection.handler.MessageEncoder;
 import org.drasyl.peer.connection.handler.PingPongHandler;
 import org.drasyl.peer.connection.server.NodeServerException;
+import org.drasyl.peer.connection.superpeer.SuperPeerClientException;
 
 import java.time.Duration;
 import java.util.concurrent.TimeUnit;
@@ -62,7 +64,7 @@ public abstract class DefaultSessionInitializer extends ChannelInitializer<Socke
     }
 
     @Override
-    protected void initChannel(SocketChannel ch) throws NodeServerException {
+    protected void initChannel(SocketChannel ch) throws DrasylException {
         ChannelPipeline pipeline = ch.pipeline();
 
         beforeBufferStage(pipeline);
@@ -104,7 +106,7 @@ public abstract class DefaultSessionInitializer extends ChannelInitializer<Socke
      *
      * @param ch the {@link SocketChannel}
      */
-    protected void sslStage(SocketChannel ch) throws NodeServerException {
+    protected void sslStage(SocketChannel ch) throws DrasylException {
         SslHandler sslHandler = generateSslContext(ch);
 
         if (sslHandler != null) {
@@ -236,5 +238,5 @@ public abstract class DefaultSessionInitializer extends ChannelInitializer<Socke
      * @param ch the {@link SocketChannel} to initialize a {@link SslHandler}
      * @return {@link SslHandler} or {@code null}
      */
-    protected abstract SslHandler generateSslContext(SocketChannel ch) throws NodeServerException;
+    protected abstract SslHandler generateSslContext(SocketChannel ch) throws NodeServerException, SuperPeerClientException;
 }

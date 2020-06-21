@@ -23,10 +23,10 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.flush.FlushConsolidationHandler;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.timeout.IdleStateHandler;
+import org.drasyl.DrasylException;
 import org.drasyl.peer.connection.handler.MessageDecoder;
 import org.drasyl.peer.connection.handler.MessageEncoder;
 import org.drasyl.peer.connection.handler.PingPongHandler;
-import org.drasyl.peer.connection.server.NodeServerException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -63,7 +63,7 @@ class DefaultSessionInitializerTest {
 
     // should call all stages of the pipeline
     @Test
-    void initChannel() throws NodeServerException {
+    void initChannel() throws DrasylException {
         when(ch.pipeline()).thenReturn(pipeline);
         when(classUnderTest.generateSslContext(ch)).thenReturn(sslHandler);
 
@@ -101,7 +101,7 @@ class DefaultSessionInitializerTest {
     }
 
     @Test
-    void testSslStage() throws NodeServerException {
+    void testSslStage() throws DrasylException {
         when(ch.pipeline()).thenReturn(pipeline);
         when(classUnderTest.generateSslContext(ch)).thenReturn(sslHandler);
 
@@ -111,7 +111,7 @@ class DefaultSessionInitializerTest {
     }
 
     @Test
-    void testSslStageNull() throws NodeServerException {
+    void testSslStageNull() throws DrasylException {
         when(classUnderTest.generateSslContext(ch)).thenReturn(sslHandler);
 
         when(classUnderTest.generateSslContext(ch)).thenReturn(null);
