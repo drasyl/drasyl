@@ -34,12 +34,12 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.AbstractClientInitializer;
 import org.drasyl.peer.connection.DefaultSessionInitializer;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.MessageDecoder;
 import org.drasyl.peer.connection.handler.MessageEncoder;
 import org.drasyl.peer.connection.handler.SignatureHandler;
+import org.drasyl.peer.connection.superpeer.SuperPeerClientChannelInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -288,7 +288,7 @@ public class OutboundConnectionFactory {
      * The default initializer for the {@link OutboundConnectionFactory}.
      */
     private DefaultSessionInitializer defaultInitializer() {
-        return new AbstractClientInitializer(FlushConsolidationHandler.DEFAULT_EXPLICIT_FLUSH_AFTER_FLUSHES, //NOSONAR
+        return new SuperPeerClientChannelInitializer(FlushConsolidationHandler.DEFAULT_EXPLICIT_FLUSH_AFTER_FLUSHES, //NOSONAR
                 idleTimeout, idleRetries, uri, channelReadyFuture) {
             @Override
             protected void pojoMarshalStage(ChannelPipeline pipeline) {

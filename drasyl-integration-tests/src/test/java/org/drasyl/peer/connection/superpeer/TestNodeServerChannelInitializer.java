@@ -24,10 +24,10 @@ import io.netty.channel.ChannelPromise;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import org.drasyl.peer.connection.handler.SimpleChannelDuplexHandler;
 import org.drasyl.peer.connection.message.Message;
-import org.drasyl.peer.connection.server.NodeServerChannelInitializer;
+import org.drasyl.peer.connection.server.DefaultNodeServerChannelInitializer;
 import org.drasyl.peer.connection.server.NodeServerEnvironment;
 
-public class TestNodeServerChannelInitializer extends NodeServerChannelInitializer {
+public class TestNodeServerChannelInitializer extends DefaultNodeServerChannelInitializer {
     private final PublishSubject<Message> sentMessages;
     private final PublishSubject<Message> receivedMessages;
 

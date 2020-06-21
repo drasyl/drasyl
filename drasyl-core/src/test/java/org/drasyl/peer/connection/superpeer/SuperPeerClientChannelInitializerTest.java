@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection;
+package org.drasyl.peer.connection.superpeer;
 
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
@@ -42,7 +42,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class AbstractClientInitializerTest {
+class SuperPeerClientChannelInitializerTest {
     private int flushBufferSize;
     private Duration readIdleTimeout;
     private short pingPongRetries;
@@ -62,7 +62,7 @@ class AbstractClientInitializerTest {
 
     @Test
     void beforeMarshalStage() {
-        AbstractClientInitializer initializer = new AbstractClientInitializer(flushBufferSize, readIdleTimeout, pingPongRetries,
+        SuperPeerClientChannelInitializer initializer = new SuperPeerClientChannelInitializer(flushBufferSize, readIdleTimeout, pingPongRetries,
                 ipAddress, channelReadyFuture) {
             @Override
             protected void customStage(ChannelPipeline pipeline) {
@@ -85,7 +85,7 @@ class AbstractClientInitializerTest {
     @Test
     void exceptionOnInvalidTarget() {
         assertThrows(URISyntaxException.class, () -> {
-            AbstractClientInitializer initializer = new AbstractClientInitializer(flushBufferSize, readIdleTimeout, pingPongRetries,
+            SuperPeerClientChannelInitializer initializer = new SuperPeerClientChannelInitializer(flushBufferSize, readIdleTimeout, pingPongRetries,
                     new URI("|<>:22527"), channelReadyFuture) {
                 @Override
                 protected void customStage(ChannelPipeline pipeline) {

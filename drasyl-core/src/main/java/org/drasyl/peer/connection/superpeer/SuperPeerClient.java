@@ -279,12 +279,12 @@ public class SuperPeerClient implements AutoCloseable {
         }
     }
 
-    private static ChannelInitializer<SocketChannel> initiateChannelInitializer(
+    private static SuperPeerClientChannelInitializer initiateChannelInitializer(
             SuperPeerClientEnvironment environment,
             Class<? extends ChannelInitializer<SocketChannel>> clazz) throws SuperPeerClientException {
         try {
             Constructor<?> constructor = clazz.getConstructor(SuperPeerClientEnvironment.class);
-            return (ChannelInitializer<SocketChannel>) constructor.newInstance(environment);
+            return (SuperPeerClientChannelInitializer) constructor.newInstance(environment);
         }
         catch (NoSuchMethodException e) {
             throw new SuperPeerClientException("The given channel initializer has not the correct signature: '" + clazz + "'");

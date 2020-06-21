@@ -245,12 +245,12 @@ public class NodeServer implements AutoCloseable {
         }
     }
 
-    private static ChannelInitializer<SocketChannel> initiateChannelInitializer(
+    private static NodeServerChannelInitializer initiateChannelInitializer(
             NodeServerEnvironment environment,
             Class<? extends ChannelInitializer<SocketChannel>> clazz) throws NodeServerException {
         try {
             Constructor<?> constructor = clazz.getConstructor(NodeServerEnvironment.class);
-            return (ChannelInitializer<SocketChannel>) constructor.newInstance(environment);
+            return (NodeServerChannelInitializer) constructor.newInstance(environment);
         }
         catch (NoSuchMethodException e) {
             throw new NodeServerException("The given channel initializer has not the correct signature: '" + clazz + "'");
