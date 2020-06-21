@@ -299,14 +299,13 @@ class SuperPeerClientIT {
         // start client
         client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
         client.open();
+        server.awaitClient(identityManager.getPublicKey());
 
-        emittedEvents.awaitCount(1);
-        // TODO: initiate disconnect from Server?
-        client.close();
-        client.open();
+        // server-side disconnect
+        server.closeClient(identityManager.getPublicKey());
 
         // verify emitted events
-        emittedEvents.awaitCount(3);
+        emittedEvents.awaitCount(3); // wait for EVENT_NODE_OFFLINE and EVENT_NODE_ONLINE
         emittedEvents.assertValueAt(0, new Event(EVENT_NODE_ONLINE, Node.of(identityManager.getIdentity(), Set.of())));
         emittedEvents.assertValueAt(1, new Event(EVENT_NODE_OFFLINE, Node.of(identityManager.getIdentity(), Set.of())));
         emittedEvents.assertValueAt(2, new Event(EVENT_NODE_ONLINE, Node.of(identityManager.getIdentity(), Set.of())));
