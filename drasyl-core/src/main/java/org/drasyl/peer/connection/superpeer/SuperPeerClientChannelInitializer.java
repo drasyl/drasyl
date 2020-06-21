@@ -24,7 +24,6 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
-import org.drasyl.DrasylNodeConfig;
 import org.drasyl.peer.connection.AbstractClientInitializer;
 import org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
@@ -33,7 +32,6 @@ import org.drasyl.peer.connection.handler.SignatureHandler;
 import org.drasyl.util.WebSocketUtil;
 
 import javax.net.ssl.SSLException;
-import java.net.URI;
 
 import static org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler.EXCEPTION_MESSAGE_HANDLER;
 import static org.drasyl.peer.connection.handler.ExceptionHandler.EXCEPTION_HANDLER;
@@ -46,28 +44,24 @@ import static org.drasyl.peer.connection.superpeer.SuperPeerClientConnectionHand
  */
 @SuppressWarnings({ "java:S110", "java:S4818" })
 public class SuperPeerClientChannelInitializer extends AbstractClientInitializer {
-    private final DrasylNodeConfig config;
-    private final SuperPeerClient client;
+    private final SuperPeerClientEnvironment environment;
 
-    public SuperPeerClientChannelInitializer(DrasylNodeConfig config,
-                                             SuperPeerClient client,
-                                             URI endpoint) {
-        super(config.getFlushBufferSize(), config.getSuperPeerIdleTimeout(),
-                config.getSuperPeerIdleRetries(), endpoint);
-        this.config = config;
-        this.client = client;
+    public SuperPeerClientChannelInitializer(SuperPeerClientEnvironment environment) {
+        super(environment.getConfig().getFlushBufferSize(), environment.getConfig().getSuperPeerIdleTimeout(),
+                environment.getConfig().getSuperPeerIdleRetries(), environment.getEndpoint());
+        this.environment = environment;
     }
 
     @Override
     protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
-        pipeline.addLast(SIGNATURE_HANDLER, new SignatureHandler(client.getIdentity()));
-        pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(config.getMessageHopLimit()));
+        pipeline.addLast(SIGNATURE_HANDLER, new SignatureHandler(environment.getIdentity()));
+        pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(environment.getConfig().getMessageHopLimit()));
     }
 
     @Override
     protected void customStage(ChannelPipeline pipeline) {
         pipeline.addLast(EXCEPTION_MESSAGE_HANDLER, ConnectionExceptionMessageHandler.INSTANCE);
-        pipeline.addLast(SUPER_PEER_CLIENT_CONNECTION_HANDLER, new SuperPeerClientConnectionHandler(config, client));
+        pipeline.addLast(SUPER_PEER_CLIENT_CONNECTION_HANDLER, new SuperPeerClientConnectionHandler(environment));
     }
 
     @Override
@@ -80,7 +74,7 @@ public class SuperPeerClientChannelInitializer extends AbstractClientInitializer
         if (WebSocketUtil.isWebSocketSecureURI(target)) {
             try {
                 SslContext sslContext = SslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE)
-                        .protocols(config.getServerSSLProtocols()).build();
+                        .protocols(environment.getConfig().getServerSSLProtocols()).build();
                 return sslContext.newHandler(ch.alloc(), target.getHost(), WebSocketUtil.webSocketPort(target));
             }
             catch (SSLException e) {

@@ -29,6 +29,7 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
+import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.event.Event;
@@ -36,11 +37,14 @@ import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.QuitMessage;
+import org.drasyl.util.DrasylFunction;
 import org.drasyl.util.DrasylScheduler;
 import org.drasyl.util.WebSocketUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
@@ -73,6 +77,7 @@ public class SuperPeerClient implements AutoCloseable {
     private final AtomicInteger nextRetryDelayPointer;
     private final Supplier<Thread> threadSupplier;
     private final Subject<Boolean> connected;
+    private final DrasylFunction<URI, ChannelInitializer<SocketChannel>> channelInitializerSupplier;
     private Channel clientChannel;
 
     SuperPeerClient(DrasylNodeConfig config,
@@ -87,6 +92,7 @@ public class SuperPeerClient implements AutoCloseable {
                     AtomicInteger nextRetryDelayPointer,
                     Supplier<Thread> threadSupplier,
                     Subject<Boolean> connected,
+                    DrasylFunction<URI, ChannelInitializer<SocketChannel>> channelInitializerSupplier,
                     Channel clientChannel) {
         this.config = config;
         this.identitySupplier = identitySupplier;
@@ -100,6 +106,7 @@ public class SuperPeerClient implements AutoCloseable {
         this.nextRetryDelayPointer = nextRetryDelayPointer;
         this.threadSupplier = threadSupplier;
         this.connected = connected;
+        this.channelInitializerSupplier = channelInitializerSupplier;
         this.clientChannel = clientChannel;
     }
 
@@ -125,6 +132,7 @@ public class SuperPeerClient implements AutoCloseable {
         this.nextRetryDelayPointer = new AtomicInteger(0);
         this.threadSupplier = () -> new Thread(this::keepConnectionAlive);
         this.connected = BehaviorSubject.createDefault(false);
+        this.channelInitializerSupplier = endpoint -> initiateChannelInitializer(new SuperPeerClientEnvironment(config, identitySupplier, endpoint, messenger, peersManager, connected, eventConsumer), config.getSuperPeerChannelInitializer());
     }
 
     void keepConnectionAlive() {
@@ -132,7 +140,7 @@ public class SuperPeerClient implements AutoCloseable {
             URI endpoint = getEndpoint();
             LOG.debug("Connect to Super Peer Endpoint '{}'", endpoint);
             try {
-                ChannelInitializer<SocketChannel> channelInitializer = new SuperPeerClientChannelBootstrap(config, this, endpoint).getChannelInitializer();
+                ChannelInitializer<SocketChannel> channelInitializer = channelInitializerSupplier.apply(endpoint);
 
                 ChannelFuture channelFuture = new Bootstrap()
                         .group(workerGroup)
@@ -149,7 +157,7 @@ public class SuperPeerClient implements AutoCloseable {
                     throw new SuperPeerClientException(channelFuture.cause());
                 }
             }
-            catch (SuperPeerClientException e) {
+            catch (DrasylException e) {
                 LOG.warn("Error while trying to connect to Super Peer:", e);
             }
             catch (IllegalStateException e) {
@@ -268,6 +276,27 @@ public class SuperPeerClient implements AutoCloseable {
 
             clientChannel.closeFuture().syncUninterruptibly();
             clientChannel = null;
+        }
+    }
+
+    private static ChannelInitializer<SocketChannel> initiateChannelInitializer(
+            SuperPeerClientEnvironment environment,
+            Class<? extends ChannelInitializer<SocketChannel>> clazz) throws SuperPeerClientException {
+        try {
+            Constructor<?> constructor = clazz.getConstructor(SuperPeerClientEnvironment.class);
+            return (ChannelInitializer<SocketChannel>) constructor.newInstance(environment);
+        }
+        catch (NoSuchMethodException e) {
+            throw new SuperPeerClientException("The given channel initializer has not the correct signature: '" + clazz + "'");
+        }
+        catch (IllegalAccessException e) {
+            throw new SuperPeerClientException("Can't access the given channel initializer: '" + clazz + "'");
+        }
+        catch (InvocationTargetException e) {
+            throw new SuperPeerClientException("Can't invoke the given channel initializer: '" + clazz + "'");
+        }
+        catch (InstantiationException e) {
+            throw new SuperPeerClientException("Can't instantiate the given channel initializer: '" + clazz + "'");
         }
     }
 }

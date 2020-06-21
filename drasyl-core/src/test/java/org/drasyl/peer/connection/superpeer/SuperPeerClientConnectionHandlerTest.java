@@ -20,7 +20,6 @@ package org.drasyl.peer.connection.superpeer;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.DrasylNodeConfig;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
@@ -55,15 +54,13 @@ class SuperPeerClientConnectionHandlerTest {
     @Mock
     private StatusMessage statusMessage;
     @Mock
-    private DrasylNodeConfig config;
-    @Mock
-    private SuperPeerClient client;
+    private SuperPeerClientEnvironment environment;
 
     @Test
     void shouldCloseChannelOnQuitMessage() {
         when(handshakeFuture.isDone()).thenReturn(true);
 
-        SuperPeerClientConnectionHandler handler = new SuperPeerClientConnectionHandler(config, client, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage);
+        SuperPeerClientConnectionHandler handler = new SuperPeerClientConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage);
         channel = new EmbeddedChannel(handler);
         channel.readOutbound(); // join message
         channel.flush();
@@ -81,7 +78,7 @@ class SuperPeerClientConnectionHandlerTest {
         when(statusMessage.getCorrespondingId()).thenReturn("123");
         when(statusMessage.getCode()).thenReturn(STATUS_SERVICE_UNAVAILABLE);
 
-        SuperPeerClientConnectionHandler handler = new SuperPeerClientConnectionHandler(config, client, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage);
+        SuperPeerClientConnectionHandler handler = new SuperPeerClientConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage);
         channel = new EmbeddedChannel(handler);
         channel.readOutbound(); // join message
         channel.flush();
