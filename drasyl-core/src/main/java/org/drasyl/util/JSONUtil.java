@@ -19,14 +19,21 @@
 package org.drasyl.util;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.ObjectReader;
+import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 
 public final class JSONUtil {
     public static final ObjectMapper JACKSON_MAPPER;
+    public static final ObjectWriter JACKSON_WRITER;
+    public static final ObjectReader JACKSON_READER;
 
     static {
         JACKSON_MAPPER = new ObjectMapper();
         JACKSON_MAPPER.registerModule(new AfterburnerModule());
+
+        JACKSON_WRITER = JACKSON_MAPPER.writer();
+        JACKSON_READER = JACKSON_MAPPER.reader();
     }
 
     private JSONUtil() {

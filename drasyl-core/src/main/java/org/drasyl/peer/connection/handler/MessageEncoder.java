@@ -30,7 +30,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.List;
 
-import static org.drasyl.util.JSONUtil.JACKSON_MAPPER;
+import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 
 /**
  * Encodes a {@link Message} into a {@link String} object.
@@ -51,7 +51,7 @@ public class MessageEncoder extends MessageToMessageEncoder<Message> {
         }
 
         try {
-            String json = JACKSON_MAPPER.writeValueAsString(msg);
+            String json = JACKSON_WRITER.writeValueAsString(msg);
 
             out.add(new TextWebSocketFrame(json));
         }

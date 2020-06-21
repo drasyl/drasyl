@@ -32,7 +32,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.util.JSONUtil.JACKSON_MAPPER;
+import static org.drasyl.util.JSONUtil.JACKSON_READER;
 
 /**
  * Decodes a {@link String} into a {@link Message} object.
@@ -53,7 +53,7 @@ public class MessageDecoder extends MessageToMessageDecoder<TextWebSocketFrame> 
         }
 
         try {
-            Message message = requireNonNull(JACKSON_MAPPER.readValue(msg.text(), Message.class));
+            Message message = requireNonNull(JACKSON_READER.readValue(msg.text(), Message.class));
             out.add(message);
         }
         catch (IOException e) {
