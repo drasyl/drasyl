@@ -61,13 +61,13 @@ public class NodeServerChannelInitializer extends DefaultSessionInitializer {
         pipeline.addLast(new HttpServerCodec());
         pipeline.addLast(new HttpObjectAggregator(65536));
         pipeline.addLast(new WebSocketServerCompressionHandler());
-        pipeline.addLast(new NodeServerHttpHandler(server.getIdentityManager().getPublicKey(), server.getPeersManager()));
+        pipeline.addLast(new NodeServerHttpHandler(server.getIdentity().getPublicKey(), server.getPeersManager()));
         pipeline.addLast(new WebSocketServerProtocolHandler("/", null, true));
     }
 
     @Override
     protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
-        pipeline.addLast(SignatureHandler.SIGNATURE_HANDLER, new SignatureHandler(server.getIdentityManager().getIdentity()));
+        pipeline.addLast(SignatureHandler.SIGNATURE_HANDLER, new SignatureHandler(server.getIdentity()));
         pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(config.getMessageHopLimit()));
         pipeline.addLast(NodeServerNewConnectionsGuard.CONNECTION_GUARD, new NodeServerNewConnectionsGuard(() -> server.isOpen() && (!config.isSuperPeerEnabled() || server.getSuperPeerConnected().blockingFirst())));
     }

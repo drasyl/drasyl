@@ -32,7 +32,7 @@ import io.reactivex.rxjava3.core.Observable;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeConfig;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.identity.IdentityManager;
+import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.messenger.NoPathToIdentityException;
 import org.drasyl.peer.PeersManager;
@@ -44,6 +44,7 @@ import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
@@ -54,7 +55,7 @@ public class NodeServer implements AutoCloseable {
     public final EventLoopGroup workerGroup;
     public final EventLoopGroup bossGroup;
     public final ServerBootstrap serverBootstrap;
-    private final IdentityManager identityManager;
+    private final Supplier<Identity> identitySupplier;
     private final PeersManager peersManager;
     private final DrasylNodeConfig config;
     private final Messenger messenger;
@@ -69,7 +70,7 @@ public class NodeServer implements AutoCloseable {
     /**
      * Starts a node server for forwarding messages to child peers.<br> Default Port: 22527
      *
-     * @param identityManager    the identity manager
+     * @param identitySupplier   the identity manager
      * @param messenger          the messenger object
      * @param peersManager       the peers manager
      * @param workerGroup        netty shared worker group
@@ -77,19 +78,19 @@ public class NodeServer implements AutoCloseable {
      * @param superPeerConnected
      * @throws DrasylException if the loaded default config is invalid
      */
-    public NodeServer(IdentityManager identityManager,
+    public NodeServer(Supplier<Identity> identitySupplier,
                       Messenger messenger,
                       PeersManager peersManager,
                       EventLoopGroup workerGroup,
                       EventLoopGroup bossGroup,
                       Observable<Boolean> superPeerConnected) throws DrasylException {
-        this(identityManager, messenger, peersManager, superPeerConnected, ConfigFactory.load(), workerGroup, bossGroup);
+        this(identitySupplier, messenger, peersManager, superPeerConnected, ConfigFactory.load(), workerGroup, bossGroup);
     }
 
     /**
      * Node server for forwarding messages to child peers.
      *
-     * @param identityManager    the identity manager
+     * @param identitySupplier    the identity manager
      * @param messenger          the messenger object
      * @param peersManager       the peers manager
      * @param superPeerConnected
@@ -98,20 +99,20 @@ public class NodeServer implements AutoCloseable {
      * @param bossGroup          netty shared boss group
      * @throws DrasylException if the given config is invalid
      */
-    public NodeServer(IdentityManager identityManager,
+    public NodeServer(Supplier<Identity> identitySupplier,
                       Messenger messenger,
                       PeersManager peersManager,
                       Observable<Boolean> superPeerConnected,
                       Config config,
                       EventLoopGroup workerGroup,
                       EventLoopGroup bossGroup) throws DrasylException {
-        this(identityManager, messenger, peersManager, superPeerConnected, new DrasylNodeConfig(config), workerGroup, bossGroup);
+        this(identitySupplier, messenger, peersManager, superPeerConnected, new DrasylNodeConfig(config), workerGroup, bossGroup);
     }
 
     /**
      * Node server for forwarding messages to child peers.
      *
-     * @param identityManager    the identity manager
+     * @param identitySupplier    the identity manager
      * @param messenger          the messenger object
      * @param peersManager       the peers manager
      * @param superPeerConnected
@@ -119,14 +120,14 @@ public class NodeServer implements AutoCloseable {
      * @param workerGroup        netty shared worker group
      * @param bossGroup          netty shared boss group
      */
-    public NodeServer(IdentityManager identityManager,
+    public NodeServer(Supplier<Identity> identitySupplier,
                       Messenger messenger,
                       PeersManager peersManager,
                       Observable<Boolean> superPeerConnected,
                       DrasylNodeConfig config,
                       EventLoopGroup workerGroup,
                       EventLoopGroup bossGroup) throws NodeServerException {
-        this(identityManager,
+        this(identitySupplier,
                 messenger,
                 peersManager,
                 config,
@@ -143,7 +144,7 @@ public class NodeServer implements AutoCloseable {
         channelInitializer = new NodeServerChannelBootstrap(config, this).getChannelInitializer();
     }
 
-    NodeServer(IdentityManager identityManager,
+    NodeServer(Supplier<Identity> identitySupplier,
                Messenger messenger,
                PeersManager peersManager,
                DrasylNodeConfig config,
@@ -157,7 +158,7 @@ public class NodeServer implements AutoCloseable {
                Set<URI> actualEndpoints,
                NodeServerChannelGroup channelGroup,
                Observable<Boolean> superPeerConnected) {
-        this.identityManager = identityManager;
+        this.identitySupplier = identitySupplier;
         this.peersManager = peersManager;
         this.config = config;
         this.channel = channel;
@@ -207,8 +208,8 @@ public class NodeServer implements AutoCloseable {
         return opened.get();
     }
 
-    IdentityManager getIdentityManager() {
-        return identityManager;
+    Identity getIdentity() {
+        return identitySupplier.get();
     }
 
     Observable<Boolean> getSuperPeerConnected() {

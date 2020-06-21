@@ -143,7 +143,7 @@ class NodeServerIT {
         messenger = new Messenger();
         superPeerConnected = Observable.just(false);
 
-        server = new NodeServer(identityManager, messenger, peersManager, superPeerConnected, config, workerGroup, bossGroup);
+        server = new NodeServer(identityManager::getIdentity, messenger, peersManager, superPeerConnected, config, workerGroup, bossGroup);
         server.open();
     }
 
@@ -303,7 +303,7 @@ class NodeServerIT {
             }
             WelcomeMessage msg = (WelcomeMessage) val;
 
-            return Objects.equals(server.getIdentityManager().getPublicKey(), msg.getPublicKey()) && Objects.equals(PeerInformation.of(server.getEndpoints()), msg.getPeerInformation()) && Objects.equals(msg.getCorrespondingId(), request1.getId());
+            return Objects.equals(server.getIdentity().getPublicKey(), msg.getPublicKey()) && Objects.equals(PeerInformation.of(server.getEndpoints()), msg.getPeerInformation()) && Objects.equals(msg.getCorrespondingId(), request1.getId());
         });
         receivedMessages1.assertValueAt(1, val -> ((QuitMessage) val).getReason() == REASON_NEW_SESSION);
         receivedMessages2.awaitCount(1);
@@ -313,7 +313,7 @@ class NodeServerIT {
             }
             WelcomeMessage msg = (WelcomeMessage) val;
 
-            return Objects.equals(server.getIdentityManager().getPublicKey(), msg.getPublicKey()) && Objects.equals(PeerInformation.of(server.getEndpoints()), msg.getPeerInformation()) && Objects.equals(msg.getCorrespondingId(), request2.getId());
+            return Objects.equals(server.getIdentity().getPublicKey(), msg.getPublicKey()) && Objects.equals(PeerInformation.of(server.getEndpoints()), msg.getPeerInformation()) && Objects.equals(msg.getCorrespondingId(), request2.getId());
         });
     }
 
@@ -429,7 +429,7 @@ class NodeServerIT {
 
     @Test
     void shouldOpenAndCloseGracefully() throws DrasylException {
-        NodeServer server = new NodeServer(identityManager, messenger, peersManager, workerGroup, bossGroup, superPeerConnected);
+        NodeServer server = new NodeServer(identityManager::getIdentity, messenger, peersManager, workerGroup, bossGroup, superPeerConnected);
 
         server.open();
         server.close();
@@ -441,7 +441,7 @@ class NodeServerIT {
     void openShouldFailIfInvalidPortIsGiven() throws DrasylException {
         Config config =
                 ConfigFactory.parseString("drasyl.server.bind-port = 72522").withFallback(ConfigFactory.load());
-        NodeServer server = new NodeServer(identityManager, messenger, peersManager, superPeerConnected, config, workerGroup, bossGroup);
+        NodeServer server = new NodeServer(identityManager::getIdentity, messenger, peersManager, superPeerConnected, config, workerGroup, bossGroup);
 
         assertThrows(NodeServerException.class, server::open);
     }

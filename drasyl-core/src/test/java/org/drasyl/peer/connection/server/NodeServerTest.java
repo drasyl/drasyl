@@ -26,7 +26,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.reactivex.rxjava3.core.Observable;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeConfig;
-import org.drasyl.identity.IdentityManager;
+import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.junit.jupiter.api.Nested;
@@ -41,6 +41,7 @@ import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Supplier;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -54,7 +55,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class NodeServerTest {
     @Mock
-    private IdentityManager identityManager;
+    private Supplier<Identity> identitySupplier;
     @Mock
     private Messenger messenger;
     @Mock
@@ -84,7 +85,7 @@ class NodeServerTest {
             when(serverBootstrap.group(any(), any()).channel(any()).childHandler(any()).bind((String) null, 0).isSuccess()).thenReturn(true);
             when(serverBootstrap.group(any(), any()).channel(any()).childHandler(any()).bind((String) null, 0).channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
-            NodeServer server = new NodeServer(identityManager, messenger, peersManager,
+            NodeServer server = new NodeServer(identitySupplier, messenger, peersManager,
                     config, serverChannel, serverBootstrap, workerGroup, bossGroup,
                     channelInitializer, new AtomicBoolean(false), -1, new HashSet<>(), channelGroup, superPeerConnected);
             server.open();
@@ -94,7 +95,7 @@ class NodeServerTest {
 
         @Test
         void shouldDoNothingIfServerHasAlreadyBeenStarted() throws NodeServerException {
-            NodeServer server = new NodeServer(identityManager, messenger, peersManager,
+            NodeServer server = new NodeServer(identitySupplier, messenger, peersManager,
                     config, serverChannel, serverBootstrap, workerGroup, bossGroup,
                     channelInitializer, new AtomicBoolean(true), -1, new HashSet<>(), channelGroup, superPeerConnected);
 
@@ -108,7 +109,7 @@ class NodeServerTest {
     class Close {
         @Test
         void shouldDoNothingIfServerHasAlreadyBeenShutDown() {
-            NodeServer server = new NodeServer(identityManager, messenger, peersManager,
+            NodeServer server = new NodeServer(identitySupplier, messenger, peersManager,
                     config, serverChannel, serverBootstrap, workerGroup, bossGroup,
                     channelInitializer, new AtomicBoolean(false), -1, new HashSet<>(), channelGroup, superPeerConnected);
 
@@ -122,7 +123,7 @@ class NodeServerTest {
     class Constructor {
         @Test
         void shouldRejectNullValues() throws DrasylException {
-            NodeServer server = new NodeServer(identityManager, messenger, peersManager, workerGroup, bossGroup, superPeerConnected);
+            NodeServer server = new NodeServer(identitySupplier, messenger, peersManager, workerGroup, bossGroup, superPeerConnected);
 
             assertNotNull(server.getBossGroup());
             assertNotNull(server.getWorkerGroup());

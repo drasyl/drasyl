@@ -26,7 +26,6 @@ import io.netty.channel.ChannelId;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
@@ -43,6 +42,7 @@ import org.drasyl.peer.connection.message.WelcomeMessage;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -111,10 +111,8 @@ class NodeServerConnectionHandlerTest {
     private StatusMessage statusMessage;
     @Mock
     private WelcomeMessage offerMessage;
-    @Mock
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private NodeServer server;
-    @Mock
-    private IdentityManager identityManager;
 
     @Test
     void shouldSendExceptionMessageIfHandshakeIsNotDoneInTime() {
@@ -135,8 +133,7 @@ class NodeServerConnectionHandlerTest {
 
     @Test
     void shouldRejectIncomingJoinMessageWithSamePublicKey() {
-        when(server.getIdentityManager()).thenReturn(identityManager);
-        when(identityManager.getPublicKey()).thenReturn(publicKey0);
+        when(server.getIdentity().getPublicKey()).thenReturn(publicKey0);
         when(joinMessage.getPublicKey()).thenReturn(publicKey0);
 
         NodeServerConnectionHandler handler = new NodeServerConnectionHandler(server, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, null, offerMessage);

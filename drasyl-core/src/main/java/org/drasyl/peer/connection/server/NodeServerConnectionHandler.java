@@ -86,7 +86,7 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
     protected ConnectionExceptionMessage.Error validateSessionRequest(JoinMessage requestMessage) {
         CompressedPublicKey clientPublicKey = requestMessage.getPublicKey();
 
-        if (server.getIdentityManager().getPublicKey().equals(clientPublicKey)) {
+        if (server.getIdentity().getPublicKey().equals(clientPublicKey)) {
             return CONNECTION_ERROR_IDENTITY_COLLISION;
         }
         else if (!requestMessage.getProofOfWork().isValid(requestMessage.getPublicKey(),
@@ -101,7 +101,7 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
     @Override
     protected WelcomeMessage offerSession(ChannelHandlerContext ctx,
                                           JoinMessage requestMessage) {
-        return new WelcomeMessage(server.getIdentityManager().getPublicKey(), PeerInformation.of(server.getEndpoints()), requestMessage.getId());
+        return new WelcomeMessage(server.getIdentity().getPublicKey(), PeerInformation.of(server.getEndpoints()), requestMessage.getId());
     }
 
     @Override

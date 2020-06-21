@@ -137,7 +137,7 @@ public abstract class DrasylNode {
             this.messenger = new Messenger();
             this.intraVmDiscovery = new IntraVmDiscovery(identityManager::getPublicKey, messenger, peersManager, this::onEvent);
             this.superPeerClient = new SuperPeerClient(this.config, identityManager::getIdentity, peersManager, messenger, DrasylNode.WORKER_GROUP, this::onEvent);
-            this.server = new NodeServer(identityManager, messenger, peersManager, superPeerClient.connectionEstablished(), this.config, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP);
+            this.server = new NodeServer(identityManager::getIdentity, messenger, peersManager, superPeerClient.connectionEstablished(), this.config, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP);
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = new CompletableFuture<>();
