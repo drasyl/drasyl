@@ -53,7 +53,6 @@ import javax.net.ssl.SSLException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
@@ -72,7 +71,6 @@ import static org.drasyl.util.WebSocketUtil.webSocketPort;
 @SuppressWarnings({ "squid:S3776", "squid:S00107" })
 public class OutboundConnectionFactory {
     private static final Logger LOG = LoggerFactory.getLogger(OutboundConnectionFactory.class);
-    private final CompletableFuture<Void> channelReadyFuture;
     private final List<ChannelHandler> handler;
     private final List<String> sslProtocols;
     private final URI uri;
@@ -85,8 +83,8 @@ public class OutboundConnectionFactory {
     private Duration transferTimeout;
     private short idleRetries;
     private boolean ssl;
-    private int maxContentLength;
     private final Identity identity;
+    private final int maxContentLength;
 
     /**
      * Produces an {@link OutboundConnectionFactory} with the given {@link URI} as target.
@@ -96,8 +94,7 @@ public class OutboundConnectionFactory {
     public OutboundConnectionFactory(URI target,
                                      EventLoopGroup eventGroup,
                                      Identity identity) {
-        this(target, null, () -> {
-        }, null, new ArrayList<>(), Collections.singletonList("TLSv1.3"), eventGroup, 1000000, identity, Duration.ofSeconds(60));
+        this(target, null, () -> {}, null, new ArrayList<>(), Collections.singletonList("TLSv1.3"), eventGroup, 1000000, identity, Duration.ofSeconds(60));
     }
 
     private OutboundConnectionFactory(URI target,
@@ -136,18 +133,6 @@ public class OutboundConnectionFactory {
     }
 
     /**
-     * Sets the max content length for a web frame.
-     *
-     * @param maxContentLength max content length
-     * @return {@link OutboundConnectionFactory} with the changed property
-     */
-    public OutboundConnectionFactory maxContentLength(int maxContentLength) {
-        this.maxContentLength = maxContentLength;
-
-        return this;
-    }
-
-    /**
      * Adds a handler to the default initializer.
      *
      * <b>If you override the default initializer with {@link #initializer}, this method does
@@ -158,42 +143,6 @@ public class OutboundConnectionFactory {
      */
     public OutboundConnectionFactory handler(ChannelHandler handler) {
         this.handler.add(handler);
-
-        return this;
-    }
-
-    /**
-     * Adds an event group to the outbound connection.
-     *
-     * @param eventGroup the event group
-     * @return {@link OutboundConnectionFactory} with the changed property
-     */
-    public OutboundConnectionFactory eventGroup(EventLoopGroup eventGroup) {
-        this.eventGroup = eventGroup;
-
-        return this;
-    }
-
-    /**
-     * Adds a list of supported SSL protocols.
-     *
-     * @param protocols a list of supported protocols
-     * @return {@link OutboundConnectionFactory} with the changed property
-     */
-    public OutboundConnectionFactory sslProtocols(String... protocols) {
-        this.sslProtocols.addAll(Arrays.asList(protocols));
-
-        return this;
-    }
-
-    /**
-     * Adds a list of supported SSL protocols.
-     *
-     * @param protocols a list of supported protocols
-     * @return {@link OutboundConnectionFactory} with the changed property
-     */
-    public OutboundConnectionFactory sslProtocols(List<String> protocols) {
-        this.sslProtocols.addAll(protocols);
 
         return this;
     }
@@ -230,42 +179,6 @@ public class OutboundConnectionFactory {
      */
     public OutboundConnectionFactory idleTimeout(Duration timeout) {
         this.idleTimeout = timeout;
-
-        return this;
-    }
-
-    /**
-     * Sets a {@link SslContext}.
-     *
-     * @param sslCtx the ssl context
-     * @return {@link OutboundConnectionFactory} with the changed property
-     */
-    public OutboundConnectionFactory sslContext(SslContext sslCtx) {
-        this.sslCtx = sslCtx;
-
-        return this;
-    }
-
-    /**
-     * Adds the given {@link Runnable} to the close listener.
-     *
-     * @param procedure the procedure
-     * @return {@link OutboundConnectionFactory} with the changed property
-     */
-    public OutboundConnectionFactory shutdownProcedure(Runnable procedure) {
-        this.shutdownProcedure = procedure;
-
-        return this;
-    }
-
-    /**
-     * Replaced the default initializer with this one.
-     *
-     * @param initializer the new initializer
-     * @return {@link OutboundConnectionFactory} with the changed property
-     */
-    public OutboundConnectionFactory initializer(ChannelHandler initializer) {
-        this.initializer = initializer;
 
         return this;
     }
