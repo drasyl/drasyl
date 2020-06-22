@@ -46,7 +46,7 @@ public class MessageEncoderBenchmark {
             ctx = mock(ChannelHandlerContext.class, Answers.RETURNS_DEEP_STUBS);
             CompressedPublicKey sender = CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb");
             CompressedPublicKey recipient = CompressedPublicKey.of("033de3da699f6f9ffbd427c56725910655ba3913be4ff55b13c628e957c860fd55");
-            byte[] payload = new byte[1024 * 1024]; // 1 MB
+            byte[] payload = new byte[1024 * 1024 * 100]; // 1 MB
             new Random().nextBytes(payload);
             msg = new ApplicationMessage(sender, recipient, payload);
         }

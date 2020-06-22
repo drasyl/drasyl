@@ -18,16 +18,19 @@
  */
 package org.drasyl.peer.connection.handler;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
+import io.netty.buffer.ByteBufOutputStream;
+import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
-import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
+import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.util.LoggingUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.List;
 
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
@@ -51,11 +54,13 @@ public class MessageEncoder extends MessageToMessageEncoder<Message> {
         }
 
         try {
-            String json = JACKSON_WRITER.writeValueAsString(msg);
+            BinaryWebSocketFrame frame = new BinaryWebSocketFrame(PooledByteBufAllocator.DEFAULT.buffer());
+            ByteBufOutputStream outputStream = new ByteBufOutputStream(frame.content());
+            JACKSON_WRITER.writeValue((OutputStream) outputStream, msg);
 
-            out.add(new TextWebSocketFrame(json));
+            out.add(frame);
         }
-        catch (JsonProcessingException e) {
+        catch (IOException e) {
             LOG.error("[{}]: Unable to serialize '{}'", ctx.channel().id().asShortText(), LoggingUtil.sanitizeLogArg(msg));
             throw new IllegalArgumentException("Message could not be serialized. This could indicate a bug in drasyl: " + e.getMessage());
         }

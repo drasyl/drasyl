@@ -18,10 +18,13 @@
  */
 package org.drasyl.peer.connection.server;
 
+import ch.qos.logback.classic.Level;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylException;
@@ -51,6 +54,7 @@ import org.drasyl.peer.connection.message.ResponseMessage;
 import org.drasyl.peer.connection.message.SignedMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
+import org.drasyl.util.JSONUtil;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -124,6 +128,7 @@ class NodeServerIT {
         identitySession2 = Identity.of(26778671, "0236fde6a49564a0eaa2a7d6c8f73b97062d5feb36160398c08a5b73f646aa5fe5", "093d1ee70518508cac18eaf90d312f768c14d43de9bfd2618a2794d8df392da0");
 
         config = DrasylNodeConfig.newBuilder()
+//                .loglevel(Level.TRACE)
                 .messageMaxContentLength(1024000)
                 .identityProofOfWork(ProofOfWork.of(6657650))
                 .identityPublicKey(CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"))
@@ -269,7 +274,7 @@ class NodeServerIT {
         TestObserver<Message> receivedMessages = session.receivedMessages().test();
 
         // send message
-        session.sendRawString("invalid message");
+        session.sendRawBinary(Unpooled.buffer().writeBytes("invalid message".getBytes()));
 
         // verify response
         receivedMessages.awaitCount(1);
@@ -517,9 +522,9 @@ class NodeServerIT {
         // send message
         Message request = new PingMessage();
         SignedMessage signedMessage = new SignedMessage(request, session.getPublicKey());
-        KeyPair keyPair = CompressedKeyPair.of("0300f9df12eed957a17b2b373978ea32177b3e1ce00c92003b5dd2c68de253b35c", "00b96ac2757f5f427a210c7a68f357bfa03f986b547a3b68e0bf79daa45f9edd").toUncompressedKeyPair();
-        Crypto.sign(keyPair.getPrivate(), signedMessage);
-        session.sendRawString(new ObjectMapper().writeValueAsString(signedMessage));
+        Crypto.sign(identitySession2.getPrivateKey().toUncompressedKey(), signedMessage);
+        byte[] binary = JSONUtil.JACKSON_WRITER.writeValueAsBytes(signedMessage);
+        session.sendRawBinary(Unpooled.wrappedBuffer(binary));
 
         // verify response
         receivedMessages.awaitCount(1);

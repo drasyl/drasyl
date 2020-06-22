@@ -20,7 +20,9 @@ package org.drasyl.peer.connection.handler;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
@@ -41,7 +43,7 @@ import static org.mockito.Mockito.mock;
 //@Measurement(iterations = 3)
 public class MessageDecoderBenchmark {
     private final ChannelHandlerContext ctx;
-    private final TextWebSocketFrame msg;
+    private final byte[] msg;
 
     public MessageDecoderBenchmark() {
         try {
@@ -50,8 +52,7 @@ public class MessageDecoderBenchmark {
             CompressedPublicKey recipient = CompressedPublicKey.of("033de3da699f6f9ffbd427c56725910655ba3913be4ff55b13c628e957c860fd55");
             byte[] payload = new byte[1024 * 1024]; // 1 MB
             new Random().nextBytes(payload);
-            String json = new ObjectMapper().writeValueAsString(new ApplicationMessage(sender, recipient, payload));
-            msg = new TextWebSocketFrame(json);
+            msg = new ObjectMapper().writeValueAsBytes(new ApplicationMessage(sender, recipient, payload));
         }
         catch (CryptoException | JsonProcessingException e) {
             throw new RuntimeException(e);
@@ -59,7 +60,7 @@ public class MessageDecoderBenchmark {
     }
 
     @Benchmark
-    public void encode() {
-        MessageDecoder.INSTANCE.decode(ctx, msg, new ArrayList<>());
+    public void decode() {
+        MessageDecoder.INSTANCE.decode(ctx, new BinaryWebSocketFrame(Unpooled.wrappedBuffer(msg)), new ArrayList<>());
     }
 }

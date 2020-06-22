@@ -18,11 +18,15 @@
  */
 package org.drasyl.peer.connection.handler;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.DecoderException;
+import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import org.drasyl.peer.connection.message.QuitMessage;
+import org.drasyl.util.JSONUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -40,20 +44,20 @@ class MessageDecoderTest {
     }
 
     @Test
-    void shouldDeserializeInboundJsonStringToMessage() {
-        String json = "{\"@type\":\"" + QuitMessage.class.getSimpleName() + "\",\"id\":\"123\"}";
+    void shouldDeserializeInboundJsonStringToMessage() throws JsonProcessingException {
+        byte[] binary = JSONUtil.JACKSON_WRITER.writeValueAsBytes(new QuitMessage());
 
-        channel.writeInbound(new TextWebSocketFrame(json));
+        channel.writeInbound(new BinaryWebSocketFrame(Unpooled.wrappedBuffer(binary)));
         channel.flush();
 
         assertThat(channel.readInbound(), instanceOf(QuitMessage.class));
     }
 
     @Test
-    void ShouldThrowExceptionIfInboundJsonStringDeserializationFail() {
-        String json = "invalid";
+    void ShouldThrowExceptionIfInboundJsonStringDeserializationFail() throws JsonProcessingException {
+        byte[] json = JSONUtil.JACKSON_WRITER.writeValueAsBytes("invalid");
 
-        TextWebSocketFrame frame = new TextWebSocketFrame(json);
+        BinaryWebSocketFrame frame = new BinaryWebSocketFrame(Unpooled.wrappedBuffer(json));
         assertThrows(DecoderException.class, () -> {
             channel.writeInbound(frame);
         });
