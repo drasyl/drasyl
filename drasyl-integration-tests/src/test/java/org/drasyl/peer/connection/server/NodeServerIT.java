@@ -60,6 +60,7 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 
+import java.net.URI;
 import java.util.Arrays;
 import java.util.Objects;
 import java.util.Random;
@@ -103,12 +104,13 @@ class NodeServerIT {
     public static final long TIMEOUT = 10000L;
     private static EventLoopGroup workerGroup;
     private static EventLoopGroup bossGroup;
-    DrasylConfig config;
-    private IdentityManager identityManager;
+    private DrasylConfig config;
+    private DrasylConfig serverConfig;
+    private IdentityManager serverIdentityManager;
     private NodeServer server;
-    private Messenger messenger;
+    private Messenger serverMessenger;
     private PeersManager peersManager;
-    private Observable<Boolean> superPeerConnected;
+    private Observable<Boolean> serverSuperPeerConnected;
     private Identity identitySession1;
     private Identity identitySession2;
 
@@ -121,29 +123,39 @@ class NodeServerIT {
         identitySession1 = Identity.of(169092, "030a59784f88c74dcd64258387f9126739c3aeb7965f36bb501ff01f5036b3d72b", "0f1e188d5e3b98daf2266d7916d2e1179ae6209faa7477a2a66d4bb61dab4399");
         identitySession2 = Identity.of(26778671, "0236fde6a49564a0eaa2a7d6c8f73b97062d5feb36160398c08a5b73f646aa5fe5", "093d1ee70518508cac18eaf90d312f768c14d43de9bfd2618a2794d8df392da0");
 
-        config = DrasylConfig.newBuilder()
-                //                .loglevel(Level.TRACE)
+        serverConfig = DrasylConfig.newBuilder()
+//                .loglevel(Level.TRACE)
                 .identityProofOfWork(ProofOfWork.of(6657650))
                 .identityPublicKey(CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"))
                 .identityPrivateKey(CompressedPrivateKey.of("0c27af38c77f2cd5cc2a0ff5c461003a9c24beb955f316135d251ecaf4dda03f"))
                 .serverBindHost("127.0.0.1")
                 .serverBindPort(0)
+                .serverEndpoints(Set.of(URI.create("wss://127.0.0.1:0")))
                 .serverHandshakeTimeout(ofSeconds(5))
                 .serverSSLEnabled(true)
                 .serverIdleTimeout(ofSeconds(1))
                 .serverIdleRetries((short) 1)
                 .superPeerEnabled(false)
                 .build();
-        DrasylNode.setLogLevel(config.getLoglevel());
-        identityManager = new IdentityManager(config);
-        identityManager.loadOrCreateIdentity();
+        DrasylNode.setLogLevel(serverConfig.getLoglevel());
+        serverIdentityManager = new IdentityManager(serverConfig);
+        serverIdentityManager.loadOrCreateIdentity();
         peersManager = new PeersManager(event -> {
         });
-        messenger = new Messenger();
-        superPeerConnected = Observable.just(false);
+        serverMessenger = new Messenger();
+        serverSuperPeerConnected = Observable.just(false);
 
-        server = new NodeServer(identityManager::getIdentity, messenger, peersManager, config, workerGroup, bossGroup, superPeerConnected);
+        server = new NodeServer(serverIdentityManager::getIdentity, serverMessenger, peersManager, serverConfig, workerGroup, bossGroup, serverSuperPeerConnected);
         server.open();
+
+        config = DrasylConfig.newBuilder()
+//                .loglevel(Level.TRACE)
+                .identityProofOfWork(ProofOfWork.of(169092))
+                .identityPublicKey(CompressedPublicKey.of("030a59784f88c74dcd64258387f9126739c3aeb7965f36bb501ff01f5036b3d72b"))
+                .identityPrivateKey(CompressedPrivateKey.of("0f1e188d5e3b98daf2266d7916d2e1179ae6209faa7477a2a66d4bb61dab4399"))
+                .serverEnabled(false)
+                .superPeerEndpoints(server.getEndpoints())
+                .build();
     }
 
     @AfterEach
@@ -252,7 +264,7 @@ class NodeServerIT {
         TestNodeServerConnection session = clientSessionAfterJoin(config, server, identitySession1);
 
         // wait until timeout
-        Thread.sleep(config.getServerHandshakeTimeout().plusSeconds(2).toMillis());// NOSONAR
+        Thread.sleep(serverConfig.getServerHandshakeTimeout().plusSeconds(2).toMillis());// NOSONAR
 
         // verify session status
         assertFalse(session.isClosed().isDone());
@@ -325,7 +337,7 @@ class NodeServerIT {
         TestObserver<Message> receivedMessages = session.receivedMessages().test();
 
         // wait until timeout
-        Thread.sleep(config.getServerIdleTimeout().toMillis() * (config.getServerIdleRetries() + 1) + 1000);// NOSONAR
+        Thread.sleep(serverConfig.getServerIdleTimeout().toMillis() * (serverConfig.getServerIdleRetries() + 1) + 1000);// NOSONAR
 
         // verify responses
         receivedMessages.awaitCount(3);
@@ -341,7 +353,7 @@ class NodeServerIT {
         TestNodeServerConnection session = clientSessionAfterJoin(config, server, identitySession1);
 
         // wait until timeout
-        Thread.sleep(config.getServerIdleTimeout().toMillis() * (config.getServerIdleRetries() + 1) + 1000);// NOSONAR
+        Thread.sleep(serverConfig.getServerIdleTimeout().toMillis() * (serverConfig.getServerIdleRetries() + 1) + 1000);// NOSONAR
 
         // verify session status
         assertFalse(session.isClosed().isDone());
@@ -428,7 +440,7 @@ class NodeServerIT {
 
     @Test
     void shouldOpenAndCloseGracefully() throws DrasylException {
-        NodeServer server = new NodeServer(identityManager::getIdentity, messenger, peersManager, new DrasylConfig(), workerGroup, bossGroup, superPeerConnected);
+        NodeServer server = new NodeServer(serverIdentityManager::getIdentity, serverMessenger, peersManager, new DrasylConfig(), workerGroup, bossGroup, serverSuperPeerConnected);
 
         server.open();
         server.close();
@@ -439,7 +451,7 @@ class NodeServerIT {
     @Test
     void openShouldFailIfInvalidPortIsGiven() throws DrasylException {
         DrasylConfig config = DrasylConfig.newBuilder().serverBindPort(72722).build();
-        NodeServer server = new NodeServer(identityManager::getIdentity, messenger, peersManager, config, workerGroup, bossGroup, superPeerConnected);
+        NodeServer server = new NodeServer(serverIdentityManager::getIdentity, serverMessenger, peersManager, config, workerGroup, bossGroup, serverSuperPeerConnected);
 
         assertThrows(NodeServerException.class, server::open);
     }
