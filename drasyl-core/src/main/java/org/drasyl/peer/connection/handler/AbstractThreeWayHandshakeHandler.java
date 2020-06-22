@@ -143,12 +143,14 @@ public abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDupl
     }
 
     protected void startTimeoutGuard(ChannelHandlerContext ctx) {
-        // schedule connection error if handshake did not take place within timeout
-        timeoutFuture = ctx.executor().schedule(() -> {
-            if (!timeoutFuture.isCancelled()) {
-                rejectSession(ctx, CONNECTION_ERROR_HANDSHAKE_TIMEOUT);
-            }
-        }, timeout.toMillis(), MILLISECONDS);
+        if (timeoutFuture == null) {
+            // schedule connection error if handshake did not take place within timeout
+            timeoutFuture = ctx.executor().schedule(() -> {
+                if (!timeoutFuture.isCancelled()) {
+                    rejectSession(ctx, CONNECTION_ERROR_HANDSHAKE_TIMEOUT);
+                }
+            }, timeout.toMillis(), MILLISECONDS);
+        }
     }
 
     protected void rejectSession(ChannelHandlerContext ctx,

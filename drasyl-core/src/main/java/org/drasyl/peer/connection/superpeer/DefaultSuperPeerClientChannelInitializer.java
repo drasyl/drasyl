@@ -18,8 +18,11 @@
  */
 package org.drasyl.peer.connection.superpeer;
 
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.SocketChannel;
+import io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
@@ -31,9 +34,13 @@ import org.drasyl.peer.connection.handler.RelayableMessageGuard;
 import org.drasyl.peer.connection.handler.SignatureHandler;
 import org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler;
 import org.drasyl.util.WebSocketUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import javax.net.ssl.SSLException;
 
+import static io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler.ClientHandshakeStateEvent.HANDSHAKE_COMPLETE;
+import static io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler.ClientHandshakeStateEvent.HANDSHAKE_TIMEOUT;
 import static org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler.EXCEPTION_MESSAGE_HANDLER;
 import static org.drasyl.peer.connection.handler.ExceptionHandler.EXCEPTION_HANDLER;
 import static org.drasyl.peer.connection.handler.RelayableMessageGuard.HOP_COUNT_GUARD;
@@ -46,6 +53,7 @@ import static org.drasyl.peer.connection.superpeer.SuperPeerClientConnectionHand
  */
 @SuppressWarnings({ "java:S110", "java:S4818" })
 public class DefaultSuperPeerClientChannelInitializer extends SuperPeerClientChannelInitializer {
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultSuperPeerClientChannelInitializer.class);
     private final SuperPeerClientEnvironment environment;
 
     public DefaultSuperPeerClientChannelInitializer(SuperPeerClientEnvironment environment) {
@@ -65,7 +73,35 @@ public class DefaultSuperPeerClientChannelInitializer extends SuperPeerClientCha
     @Override
     protected void customStage(ChannelPipeline pipeline) {
         pipeline.addLast(EXCEPTION_MESSAGE_HANDLER, ConnectionExceptionMessageHandler.INSTANCE);
-        pipeline.addLast(SUPER_PEER_CLIENT_CONNECTION_HANDLER, new SuperPeerClientConnectionHandler(environment));
+
+        pipeline.addLast(new SimpleChannelInboundHandler<>() {
+            @Override
+            public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+                super.userEventTriggered(ctx, evt);
+
+                if (evt instanceof WebSocketClientProtocolHandler.ClientHandshakeStateEvent) {
+                    WebSocketClientProtocolHandler.ClientHandshakeStateEvent e = (WebSocketClientProtocolHandler.ClientHandshakeStateEvent) evt;
+                    if (e == HANDSHAKE_COMPLETE) {
+                        if (LOG.isTraceEnabled()) {
+                            LOG.trace("[{}]: WebSocket Handshake completed. Now adding SuperPeerClientConnectionHandler.", ctx.channel().id().asShortText());
+                        }
+                        pipeline.addLast(SUPER_PEER_CLIENT_CONNECTION_HANDLER, new SuperPeerClientConnectionHandler(environment));
+                        pipeline.remove(this);
+                    }
+                    else if (e == HANDSHAKE_TIMEOUT) {
+                        if (LOG.isTraceEnabled()) {
+                            LOG.trace("[{}]: WebSocket Handshake timed out. Close channel.", ctx.channel().id().asShortText());
+                        }
+                        ctx.close();
+                    }
+                }
+            }
+
+            @Override
+            protected void channelRead0(ChannelHandlerContext ctx, Object msg) {
+                ctx.fireChannelRead(msg);
+            }
+        });
     }
 
     @Override

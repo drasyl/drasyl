@@ -22,9 +22,9 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpObjectAggregator;
+import io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler;
 import io.netty.handler.flush.FlushConsolidationHandler;
 import io.netty.handler.ssl.SslHandler;
-import org.drasyl.peer.connection.handler.WebSocketHandshakeClientHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -63,7 +63,7 @@ class SuperPeerClientChannelInitializerTest {
     @Test
     void beforeMarshalStage() {
         SuperPeerClientChannelInitializer initializer = new SuperPeerClientChannelInitializer(flushBufferSize, readIdleTimeout, pingPongRetries,
-                ipAddress, channelReadyFuture) {
+                ipAddress) {
             @Override
             protected void customStage(ChannelPipeline pipeline) {
 
@@ -79,14 +79,14 @@ class SuperPeerClientChannelInitializerTest {
 
         verify(pipeline).addLast(any(HttpClientCodec.class));
         verify(pipeline).addLast(any(HttpObjectAggregator.class));
-        verify(pipeline).addLast(any(WebSocketHandshakeClientHandler.class));
+        verify(pipeline).addLast(any(WebSocketClientProtocolHandler.class));
     }
 
     @Test
     void exceptionOnInvalidTarget() {
         assertThrows(URISyntaxException.class, () -> {
             SuperPeerClientChannelInitializer initializer = new SuperPeerClientChannelInitializer(flushBufferSize, readIdleTimeout, pingPongRetries,
-                    new URI("|<>:22527"), channelReadyFuture) {
+                    new URI("|<>:22527")) {
                 @Override
                 protected void customStage(ChannelPipeline pipeline) {
 
@@ -102,6 +102,6 @@ class SuperPeerClientChannelInitializerTest {
 
         verify(pipeline, never()).addLast(any(HttpClientCodec.class));
         verify(pipeline, never()).addLast(any(HttpObjectAggregator.class));
-        verify(pipeline, never()).addLast(any(WebSocketHandshakeClientHandler.class));
+        verify(pipeline, never()).addLast(any(WebSocketClientProtocolHandler.class));
     }
 }
