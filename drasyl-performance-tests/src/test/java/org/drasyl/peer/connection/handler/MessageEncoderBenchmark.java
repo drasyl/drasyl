@@ -19,6 +19,7 @@
 package org.drasyl.peer.connection.handler;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.ApplicationMessage;
@@ -57,6 +58,8 @@ public class MessageEncoderBenchmark {
 
     @Benchmark
     public void encode() {
-        MessageEncoder.INSTANCE.encode(ctx, msg, new ArrayList<>());
+        ArrayList<Object> out = new ArrayList<>();
+        MessageEncoder.INSTANCE.encode(ctx, msg, out);
+        ((BinaryWebSocketFrame) out.get(0)).release();
     }
 }
