@@ -18,7 +18,6 @@
  */
 package org.drasyl.peer.connection.handler;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
@@ -33,6 +32,7 @@ import java.io.IOException;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.util.JSONUtil.JACKSON_READER;
 
 /**
  * Decodes a {@link String} into a {@link Message} object.
@@ -42,7 +42,6 @@ public class MessageDecoder extends MessageToMessageDecoder<TextWebSocketFrame> 
     public static final MessageDecoder INSTANCE = new MessageDecoder();
     public static final String MESSAGE_DECODER = "messageDecoder";
     private static final Logger LOG = LoggerFactory.getLogger(MessageDecoder.class);
-    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
 
     private MessageDecoder() {
     }
@@ -54,7 +53,7 @@ public class MessageDecoder extends MessageToMessageDecoder<TextWebSocketFrame> 
         }
 
         try {
-            Message message = requireNonNull(JSON_MAPPER.readValue(msg.text(), Message.class));
+            Message message = requireNonNull(JACKSON_READER.readValue(msg.text(), Message.class));
             out.add(message);
         }
         catch (IOException e) {

@@ -18,7 +18,6 @@
  */
 package org.drasyl.peer.connection.message;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,13 +29,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.IOException;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
+import static org.drasyl.util.JSONUtil.JACKSON_READER;
+import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
 class ApplicationMessageTest {
-    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
     CompressedPublicKey sender;
     CompressedPublicKey recipient;
     private String id;
@@ -60,7 +60,7 @@ class ApplicationMessageTest {
                     0x00,
                     0x01,
                     0x02
-            }), JSON_MAPPER.readValue(json, ApplicationMessage.class));
+            }), JACKSON_READER.readValue(json, ApplicationMessage.class));
         }
     }
 
@@ -74,7 +74,7 @@ class ApplicationMessageTest {
                     0x02
             }, (short) 64);
 
-            assertThatJson(JSON_MAPPER.writeValueAsString(message))
+            assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", ApplicationMessage.class.getSimpleName())
                     .containsKeys("id", "recipient", "hopCount", "sender", "payload");

@@ -18,7 +18,6 @@
  */
 package org.drasyl.peer.connection.message;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -32,13 +31,14 @@ import java.io.IOException;
 import java.util.Set;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
+import static org.drasyl.util.JSONUtil.JACKSON_READER;
+import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
 class JoinMessageTest {
-    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
     @Mock
     private CompressedPublicKey publicKey;
     @Mock
@@ -60,7 +60,7 @@ class JoinMessageTest {
                     ProofOfWork.of(3556154),
                     CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"),
                     Set.of(CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458"))
-            ), JSON_MAPPER.readValue(json, Message.class));
+            ), JACKSON_READER.readValue(json, Message.class));
         }
     }
 
@@ -70,7 +70,7 @@ class JoinMessageTest {
         void shouldSerializeToCorrectJson() throws IOException {
             JoinMessage message = new JoinMessage(ProofOfWork.of(1), publicKey, Set.of());
 
-            assertThatJson(JSON_MAPPER.writeValueAsString(message))
+            assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", JoinMessage.class.getSimpleName())
                     .containsKeys("id", "userAgent", "proofOfWork", "publicKey", "childrenAndGrandchildren");

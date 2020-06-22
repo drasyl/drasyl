@@ -19,7 +19,6 @@
 package org.drasyl.peer.connection.message;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.drasyl.crypto.Signable;
 import org.drasyl.crypto.Signature;
 import org.drasyl.identity.CompressedPublicKey;
@@ -29,6 +28,7 @@ import java.io.OutputStream;
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 
 /**
  * Represents a container with a signature for the {@link #payload}. The {@link #signature} must be
@@ -41,7 +41,6 @@ import static java.util.Objects.requireNonNull;
  * </b>
  */
 public class SignedMessage implements Message, Signable {
-    private static final ObjectMapper JACKSON = new ObjectMapper();
     private final Message payload;
     private final CompressedPublicKey kid;
     private Signature signature;
@@ -74,7 +73,7 @@ public class SignedMessage implements Message, Signable {
     public void writeFieldsTo(OutputStream outstream) throws IOException {
         requireNonNull(payload);
 
-        outstream.write(JACKSON.writeValueAsBytes(payload));
+        outstream.write(JACKSON_WRITER.writeValueAsBytes(payload));
     }
 
     @Override
