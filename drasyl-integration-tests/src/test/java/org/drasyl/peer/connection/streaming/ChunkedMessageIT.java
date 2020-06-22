@@ -46,7 +46,7 @@ import static testutils.AnsiColor.COLOR_CYAN;
 import static testutils.AnsiColor.STYLE_REVERSED;
 import static testutils.TestHelper.colorizedPrintln;
 
-@Disabled("Only for benchmark purposes")
+//@Disabled("Only for benchmark purposes")
 class ChunkedMessageIT {
     private static EventLoopGroup workerGroup;
     private static EventLoopGroup bossGroup;
@@ -66,7 +66,7 @@ class ChunkedMessageIT {
         colorizedPrintln("FINISHED " + info.getDisplayName(), AnsiColor.COLOR_CYAN, AnsiColor.STYLE_REVERSED);
     }
 
-    @RepeatedTest(20)
+    @RepeatedTest(5)
     void messageWithMaxSizeShouldArrive() {
         Observable<Message> receivedMessages = session2.receivedMessages().filter(msg -> msg instanceof ApplicationMessage);
 
