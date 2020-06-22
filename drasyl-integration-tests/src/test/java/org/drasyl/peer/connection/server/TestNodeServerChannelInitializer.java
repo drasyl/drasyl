@@ -46,7 +46,7 @@ public class TestNodeServerChannelInitializer extends DefaultNodeServerChannelIn
     @Override
     protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
         super.afterPojoMarshalStage(pipeline);
-        pipeline.addLast(new SimpleChannelDuplexHandler<Message, Message>() {
+        pipeline.addLast(new SimpleChannelDuplexHandler<Message, Message>(false, false, false) {
             @Override
             protected void channelRead0(ChannelHandlerContext ctx,
                                         Message msg) {
