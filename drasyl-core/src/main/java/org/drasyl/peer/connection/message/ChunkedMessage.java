@@ -30,11 +30,11 @@ import java.util.Optional;
  * <br>
  * <br>
  * A chunked message sequence looks like the follow: <br> 1. ChunkedMessage with {@link #recipient},
- * {@link #sender}, {@link #hopCount}, {@link #id}, {@link #payload}, {@link #sequenceNumber},
- * {@link #contentLength} and {@link #checksum} <br> 2. - (n-1). ChunkedMessage {@link #recipient},
- * {@link #sender}, {@link #hopCount}, {@link #id}, {@link #payload} and {@link #sequenceNumber}
- * <br> n. ChunkedMessage {@link #recipient}, {@link #sender}, {@link #hopCount}, {@link #id},
- * {@link #payload payload := new byte[]{}} and {@link #sequenceNumber}
+ * {@link #sender}, {@link #hopCount}, {@link #id}, {@link #payload}, {@link #contentLength} and
+ * {@link #checksum} <br> 2. - (n-1). ChunkedMessage {@link #recipient}, {@link #sender}, {@link
+ * #hopCount}, {@link #id} and {@link #payload}
+ * <br> n. ChunkedMessage {@link #recipient}, {@link #sender}, {@link #hopCount}, {@link #id} and
+ * {@link #payload payload := new byte[]{}}
  */
 public class ChunkedMessage extends ApplicationMessage {
     /*
@@ -45,11 +45,6 @@ public class ChunkedMessage extends ApplicationMessage {
      */
     @JsonInclude(JsonInclude.Include.NON_DEFAULT)
     private final int contentLength;
-    /*
-     * Specifies the position of this message in the composite message. Allows the
-     * recipient to correctly compose the message.
-     */
-    private final int sequenceNumber;
     /*
      * Specifies the checksum of the composite message. Gives the recipient the option
      * to discard damaged messages.
@@ -64,32 +59,28 @@ public class ChunkedMessage extends ApplicationMessage {
      */
     private ChunkedMessage() {
         this.contentLength = 0;
-        this.sequenceNumber = 0;
         this.checksum = null;
     }
 
     /**
      * Creates a new chunked message.
      *
-     * @param sender         the sender of the message
-     * @param recipient      the recipient of the message
-     * @param msgID          the id of this message (must be the same as the initial chunk)
-     * @param payload        the chunk
-     * @param contentLength  the final content length
-     * @param checksum       the final checksum
-     * @param sequenceNumber the sequence number of this message
+     * @param sender        the sender of the message
+     * @param recipient     the recipient of the message
+     * @param msgID         the id of this message (must be the same as the initial chunk)
+     * @param payload       the chunk
+     * @param contentLength the final content length
+     * @param checksum      the final checksum
      */
     protected ChunkedMessage(CompressedPublicKey sender,
                              CompressedPublicKey recipient,
                              String msgID,
                              byte[] payload,
                              int contentLength,
-                             String checksum,
-                             int sequenceNumber) {
+                             String checksum) {
         super(msgID, sender, recipient, payload, (short) 0);
         this.contentLength = contentLength;
         this.checksum = checksum;
-        this.sequenceNumber = sequenceNumber;
     }
 
     /**
@@ -108,7 +99,7 @@ public class ChunkedMessage extends ApplicationMessage {
                                                   byte[] payload,
                                                   int contentLength,
                                                   String checksum) {
-        return new ChunkedMessage(sender, recipient, msgID, payload, contentLength, checksum, 0);
+        return new ChunkedMessage(sender, recipient, msgID, payload, contentLength, checksum);
     }
 
     /**
@@ -123,9 +114,8 @@ public class ChunkedMessage extends ApplicationMessage {
     public static ChunkedMessage createFollowChunk(CompressedPublicKey sender,
                                                    CompressedPublicKey recipient,
                                                    String msgID,
-                                                   byte[] payload,
-                                                   int sequenceNumber) {
-        return new ChunkedMessage(sender, recipient, msgID, payload, 0, null, sequenceNumber);
+                                                   byte[] payload) {
+        return new ChunkedMessage(sender, recipient, msgID, payload, 0, null);
     }
 
     /**
@@ -138,17 +128,12 @@ public class ChunkedMessage extends ApplicationMessage {
      */
     public static ChunkedMessage createLastChunk(CompressedPublicKey sender,
                                                  CompressedPublicKey recipient,
-                                                 String msgID,
-                                                 int sequenceNumber) {
-        return new ChunkedMessage(sender, recipient, msgID, new byte[]{}, 0, null, sequenceNumber);
+                                                 String msgID) {
+        return new ChunkedMessage(sender, recipient, msgID, new byte[]{}, 0, null);
     }
 
     public int getContentLength() {
         return contentLength;
-    }
-
-    public int getSequenceNumber() {
-        return sequenceNumber;
     }
 
     public String getChecksum() {
@@ -157,7 +142,7 @@ public class ChunkedMessage extends ApplicationMessage {
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(super.hashCode(), contentLength, sequenceNumber, sender, checksum);
+        int result = Objects.hash(super.hashCode(), contentLength, sender, checksum);
         result = 31 * result + Arrays.hashCode(payload);
         return result;
     }
@@ -175,7 +160,6 @@ public class ChunkedMessage extends ApplicationMessage {
         }
         ChunkedMessage that = (ChunkedMessage) o;
         return contentLength == that.contentLength &&
-                sequenceNumber == that.sequenceNumber &&
                 Arrays.equals(payload, that.payload) &&
                 Objects.equals(sender, that.sender) &&
                 Objects.equals(checksum, that.checksum);
@@ -185,7 +169,6 @@ public class ChunkedMessage extends ApplicationMessage {
     public String toString() {
         return "ChunkedMessage{" +
                 "contentLength=" + contentLength +
-                ", sequenceNumber=" + sequenceNumber +
                 ", payload=byte[" + Optional.ofNullable(payload).orElse(new byte[]{}).length + "] { ... }" +
                 ", sender=" + sender +
                 ", checksum='" + checksum + '\'' +

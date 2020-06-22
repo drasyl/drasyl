@@ -36,12 +36,10 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
     private final CompressedPublicKey sender;
     private final CompressedPublicKey recipient;
     private final int contentLength;
-    private final int chunkSize;
     private final String checksum;
     private final Queue<ByteBuf> chunks;
     private final ByteBuf sourcePayload;
     private final String msgID;
-    private int sequenceNumber;
     private long progress;
     private boolean sentLastChuck;
 
@@ -57,10 +55,8 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
         this.checksum = Hashing.murmur3x64Hex(msg.getPayload());
         this.contentLength = msg.payloadAsByteBuf().readableBytes();
         this.msgID = msg.getId();
-        this.sequenceNumber = 0;
-        this.chunkSize = chunkSize;
         this.sourcePayload = msg.payloadAsByteBuf();
-        this.chunks = chunkedArray(sourcePayload, this.chunkSize);
+        this.chunks = chunkedArray(sourcePayload, chunkSize);
         this.sentLastChuck = false;
     }
 
@@ -89,7 +85,7 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
             else {
                 // Send last chunk for this input
                 sentLastChuck = true;
-                return ChunkedMessage.createLastChunk(sender, recipient, msgID, sequenceNumber);
+                return ChunkedMessage.createLastChunk(sender, recipient, msgID);
             }
         }
         else {
@@ -99,19 +95,18 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
                 ChunkedMessage chunkedMessage;
                 int readableBytes = byteBuf.readableBytes();
 
-                if (sequenceNumber == 0) {
+                if (progress == 0) {
                     // Send first chunk for this input
                     chunkedMessage = ChunkedMessage.createFirstChunk(sender, recipient, msgID, new byte[readableBytes], contentLength, checksum);
                 }
                 else {
                     // Send follow chunk for this input
-                    chunkedMessage = ChunkedMessage.createFollowChunk(sender, recipient, msgID, new byte[readableBytes], sequenceNumber);
+                    chunkedMessage = ChunkedMessage.createFollowChunk(sender, recipient, msgID, new byte[readableBytes]);
                 }
 
                 byteBuf.readBytes(chunkedMessage.getPayload());
                 release = false;
                 progress += readableBytes;
-                sequenceNumber++;
 
                 return chunkedMessage;
             }

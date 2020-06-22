@@ -146,7 +146,7 @@ public class TestNodeServerConnection {
                                                          NodeServer server,
                                                          Identity identity) throws ExecutionException, InterruptedException {
         URI serverEndpoint = URI.create("ws://" + config.getServerBindHost() + ":" + server.getPort());
-        return TestNodeServerConnection.clientSession(serverEndpoint, identity, true, server.workerGroup, config.getMessageMaxContentLength(), config.getServerSSLEnabled());
+        return TestNodeServerConnection.clientSession(serverEndpoint, identity, true, server.workerGroup, config.getMessageMaxContentLength(), config.getServerSSLEnabled(), config.getComposedMessageTransferTimeout());
     }
 
     public void send(Message message) {
@@ -224,7 +224,8 @@ public class TestNodeServerConnection {
                                                          boolean pingPong,
                                                          EventLoopGroup eventLoopGroup,
                                                          int maxContentLength,
-                                                         boolean ssl) throws InterruptedException,
+                                                         boolean ssl,
+                                                         Duration transferTimeout) throws InterruptedException,
             ExecutionException {
         CompletableFuture<TestNodeServerConnection> future = new CompletableFuture<>();
 
@@ -255,7 +256,8 @@ public class TestNodeServerConnection {
                 .idleTimeout(Duration.ZERO)
                 .idleRetries(Short.MAX_VALUE)
                 .pingPong(pingPong)
-                .maxContentLength(maxContentLength);
+                .maxContentLength(maxContentLength)
+                .transferTimeout(transferTimeout);
 
         factory.build();
         factory.getChannelReadyFuture().get();
@@ -318,7 +320,7 @@ public class TestNodeServerConnection {
         URI serverEndpoint = URI.create("ws://" + config.getServerBindHost() + ":" + server.getPort());
 
         return TestNodeServerConnection.clientSession(serverEndpoint,
-                identity, pingPong, server.workerGroup, config.getMessageMaxContentLength(), config.getServerSSLEnabled());
+                identity, pingPong, server.workerGroup, config.getMessageMaxContentLength(), config.getServerSSLEnabled(), config.getComposedMessageTransferTimeout());
     }
 
     /**
@@ -335,7 +337,8 @@ public class TestNodeServerConnection {
                                                          Identity identity,
                                                          boolean pingPong,
                                                          int maxContentLength,
-                                                         boolean ssl) throws ExecutionException, InterruptedException {
-        return TestNodeServerConnection.clientSession(targetSystem, identity, pingPong, null, maxContentLength, ssl);
+                                                         boolean ssl,
+                                                         Duration transferTimeout) throws ExecutionException, InterruptedException {
+        return TestNodeServerConnection.clientSession(targetSystem, identity, pingPong, null, maxContentLength, ssl, transferTimeout);
     }
 }

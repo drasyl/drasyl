@@ -36,11 +36,11 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.DefaultSessionInitializer;
-import org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.MessageDecoder;
 import org.drasyl.peer.connection.handler.MessageEncoder;
 import org.drasyl.peer.connection.handler.SignatureHandler;
+import org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler;
 import org.drasyl.peer.connection.superpeer.SuperPeerClientChannelInitializer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -54,10 +54,10 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
-import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_HANDLER;
 import static org.drasyl.peer.connection.handler.ExceptionHandler.EXCEPTION_HANDLER;
 import static org.drasyl.peer.connection.handler.MessageDecoder.MESSAGE_DECODER;
 import static org.drasyl.peer.connection.handler.MessageEncoder.MESSAGE_ENCODER;
+import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_HANDLER;
 import static org.drasyl.util.WebSocketUtil.webSocketPort;
 
 /**
@@ -76,6 +76,7 @@ public class OutboundConnectionFactory {
     private boolean pingPong = true;
     private SslContext sslCtx;
     private Duration idleTimeout;
+    private Duration transferTimeout;
     private short idleRetries;
     private boolean ssl;
     private int maxContentLength;
@@ -90,7 +91,7 @@ public class OutboundConnectionFactory {
                                      EventLoopGroup eventGroup,
                                      Identity identity) {
         this(target, null, () -> {
-        }, null, new ArrayList<>(), Collections.singletonList("TLSv1.3"), eventGroup, 1000000, identity);
+        }, null, new ArrayList<>(), Collections.singletonList("TLSv1.3"), eventGroup, 1000000, identity, Duration.ofSeconds(60));
     }
 
     private OutboundConnectionFactory(URI target,
@@ -101,7 +102,8 @@ public class OutboundConnectionFactory {
                                       List<String> sslProtocols,
                                       EventLoopGroup eventGroup,
                                       int maxContentLength,
-                                      Identity identity) {
+                                      Identity identity,
+                                      Duration transferTimeout) {
         this.uri = target;
         this.initializer = initializer;
         this.shutdownProcedure = shutdownProcedure;
@@ -112,6 +114,19 @@ public class OutboundConnectionFactory {
         this.maxContentLength = maxContentLength;
         this.channelReadyFuture = new CompletableFuture<>();
         this.identity = identity;
+        this.transferTimeout = transferTimeout;
+    }
+
+    /**
+     * Sets the transferTimeout for a composed message.
+     *
+     * @param transferTimeout transfer timeout
+     * @return {@link OutboundConnectionFactory} with the changed property
+     */
+    public OutboundConnectionFactory transferTimeout(Duration transferTimeout) {
+        this.transferTimeout = transferTimeout;
+
+        return this;
     }
 
     /**
@@ -304,7 +319,7 @@ public class OutboundConnectionFactory {
             protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
                 pipeline.addLast(SignatureHandler.SIGNATURE_HANDLER, new SignatureHandler(identity));
                 pipeline.addLast("streamer", new ChunkedWriteHandler());
-                pipeline.addLast(CHUNK_HANDLER, new ChunkedMessageHandler(maxContentLength, identity.getPublicKey()));
+                pipeline.addLast(CHUNK_HANDLER, new ChunkedMessageHandler(maxContentLength, identity.getPublicKey(), transferTimeout));
             }
 
             @Override

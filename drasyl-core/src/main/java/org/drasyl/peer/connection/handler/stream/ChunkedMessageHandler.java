@@ -18,23 +18,19 @@
  */
 package org.drasyl.peer.connection.handler.stream;
 
-import com.google.common.collect.HashMultimap;
-import com.google.common.collect.Multimap;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
-import org.drasyl.crypto.Hashing;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.handler.SimpleChannelDuplexHandler;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ChunkedMessage;
-import org.drasyl.peer.connection.message.RelayableMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.ArrayList;
-import java.util.Comparator;
+import java.time.Duration;
+import java.util.HashMap;
 
 /**
  * Allows sending bigger messages in chunks.
@@ -44,15 +40,18 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
     public static final int CHUNK_SIZE = 32768; // 32768 := 2^15 bytes for payload and 2^15 bytes for meta-data
     private static final Logger LOG = LoggerFactory.getLogger(ChunkedMessageHandler.class);
     private final int maxContentLength;
-    // TODO: Delete chunks if after n seconds not all chunks have arrived
-    private final Multimap<String, ChunkedMessage> chunks;
+    private final HashMap<String, ChunkedMessageOutput> chunks;
     private final CompressedPublicKey myIdentity;
+    private final Duration transferTimeout;
 
-    public ChunkedMessageHandler(int maxContentLength, CompressedPublicKey myIdentity) {
+    public ChunkedMessageHandler(int maxContentLength,
+                                 CompressedPublicKey myIdentity,
+                                 Duration transferTimeout) {
         super(true, false, false);
         this.maxContentLength = maxContentLength;
-        chunks = HashMultimap.create();
+        chunks = new HashMap<>();
         this.myIdentity = myIdentity;
+        this.transferTimeout = transferTimeout;
     }
 
     @Override
@@ -65,26 +64,23 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
             return;
         }
 
-        if (msg.getContentLength() > maxContentLength) {
-            ctx.writeAndFlush(new StatusMessage(StatusMessage.Code.STATUS_PAYLOAD_TOO_LARGE, msg.getId()));
-
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("[{}]: Dropped chunked message `{}` because content length of `{}` > `{}`", ctx.channel().id().asShortText(), msg, msg.getContentLength(), maxContentLength);
-            }
-        }
-        else if (msg.getSequenceNumber() > 0 && !chunks.containsKey(msg.getId())) {
-            ctx.writeAndFlush(new StatusMessage(StatusMessage.Code.STATUS_BAD_REQUEST, msg.getId()));
-
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("[{}]: Dropped chunked message `{}` because start chunk was not sent", ctx.channel().id().asShortText(), msg);
-            }
-        }
-
-        if (msg.getPayload().length != 0) {
-            chunks.put(msg.getId(), msg);
+        if (msg.getChecksum() != null) {
+            chunks.put(msg.getId(), new ChunkedMessageOutput(ctx, msg.getSender(),
+                    msg.getRecipient(), msg.getContentLength(), msg.getChecksum(),
+                    msg.getId(), maxContentLength, () -> chunks.remove(msg.getId()), transferTimeout.toMillis()));
+            chunks.get(msg.getId()).addChunk(msg);
         }
         else {
-            joinOnLastChunk(ctx, msg);
+            if (chunks.containsKey(msg.getId())) {
+                chunks.get(msg.getId()).addChunk(msg);
+            }
+            else {
+                ctx.writeAndFlush(new StatusMessage(StatusMessage.Code.STATUS_BAD_REQUEST, msg.getId()));
+
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("[{}]: Dropped chunked message `{}` because start chunk was not sent", ctx.channel().id().asShortText(), msg);
+                }
+            }
         }
     }
 
@@ -108,45 +104,6 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
         else {
             // Skip
             ctx.write(msg, promise);
-        }
-    }
-
-    /**
-     * Joins the chunks if the last chunk has arrived.
-     *
-     * @param ctx channel context
-     * @param msg last chunk
-     */
-    private void joinOnLastChunk(ChannelHandlerContext ctx, ChunkedMessage msg) {
-        ArrayList<ChunkedMessage> sortedChunks = new ArrayList<>(chunks.get(msg.getId()));
-        sortedChunks.sort(Comparator.comparingInt(ChunkedMessage::getSequenceNumber));
-
-        String chunkedMessageChecksum = sortedChunks.get(0).getChecksum();
-        byte[] payload = new byte[sortedChunks.get(0).getContentLength()];
-
-        int offset = 0;
-        for (ChunkedMessage chunk : sortedChunks) {
-            System.arraycopy(chunk.getPayload(), 0, payload, offset, chunk.getPayload().length);
-            offset += chunk.getPayload().length;
-        }
-
-        // Delete chunked messages
-        chunks.asMap().remove(msg.getId());
-
-        // Check if checksum is correct
-        String checksum = Hashing.murmur3x64Hex(payload);
-
-        if (!checksum.equals(chunkedMessageChecksum)) {
-            ctx.writeAndFlush(new StatusMessage(StatusMessage.Code.STATUS_PRECONDITION_FAILED, msg.getId()));
-
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("[{}]: Dropped chunked message `{}` because checksum was invalid", ctx.channel().id().asShortText(), msg);
-            }
-        }
-        else {
-            RelayableMessage applicationMessage = new ApplicationMessage(msg.getId(), msg.getSender(), msg.getRecipient(), payload, (short) 0);
-
-            ctx.fireChannelRead(applicationMessage);
         }
     }
 }
