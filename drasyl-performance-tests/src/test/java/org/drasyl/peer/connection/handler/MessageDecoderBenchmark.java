@@ -59,7 +59,7 @@ public class MessageDecoderBenchmark {
     }
 
     @Benchmark
-    public void encode() {
+    public void decode() {
         MessageDecoder.INSTANCE.decode(ctx, msg, new ArrayList<>());
     }
 }
