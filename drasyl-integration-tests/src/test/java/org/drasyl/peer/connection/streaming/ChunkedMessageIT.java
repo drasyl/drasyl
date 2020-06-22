@@ -21,15 +21,10 @@ package org.drasyl.peer.connection.streaming;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.reactivex.rxjava3.core.Observable;
+import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylNode;
-import org.drasyl.DrasylNodeConfig;
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.identity.CompressedPrivateKey;
-import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.identity.Identity;
-import org.drasyl.identity.IdentityManager;
-import org.drasyl.identity.IdentityManagerException;
-import org.drasyl.identity.ProofOfWork;
+import org.drasyl.identity.*;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.ApplicationMessage;
@@ -38,13 +33,7 @@ import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.server.NodeServer;
 import org.drasyl.peer.connection.server.NodeServerException;
 import org.drasyl.peer.connection.server.TestNodeServerConnection;
-import org.junit.jupiter.api.AfterAll;
-import org.junit.jupiter.api.AfterEach;
-import org.junit.jupiter.api.BeforeAll;
-import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
-import org.junit.jupiter.api.RepeatedTest;
-import org.junit.jupiter.api.TestInfo;
+import org.junit.jupiter.api.*;
 import testutils.AnsiColor;
 
 import java.util.Random;
@@ -61,7 +50,7 @@ import static testutils.TestHelper.colorizedPrintln;
 class ChunkedMessageIT {
     private static EventLoopGroup workerGroup;
     private static EventLoopGroup bossGroup;
-    private static DrasylNodeConfig config;
+    private static DrasylConfig config;
     private static NodeServer server;
     private static TestNodeServerConnection session1;
     private static TestNodeServerConnection session2;
@@ -100,7 +89,7 @@ class ChunkedMessageIT {
         Identity identitySession1 = Identity.of(169092, "030a59784f88c74dcd64258387f9126739c3aeb7965f36bb501ff01f5036b3d72b", "0f1e188d5e3b98daf2266d7916d2e1179ae6209faa7477a2a66d4bb61dab4399");
         Identity identitySession2 = Identity.of(26778671, "0236fde6a49564a0eaa2a7d6c8f73b97062d5feb36160398c08a5b73f646aa5fe5", "093d1ee70518508cac18eaf90d312f768c14d43de9bfd2618a2794d8df392da0");
 
-        config = DrasylNodeConfig.newBuilder()
+        config = DrasylConfig.newBuilder()
                 .messageMaxContentLength(1024 * 1024 * 100)
                 .identityProofOfWork(ProofOfWork.of(6657650))
                 .identityPublicKey(CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"))
