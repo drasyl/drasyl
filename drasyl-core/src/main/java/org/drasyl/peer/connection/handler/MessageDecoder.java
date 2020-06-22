@@ -18,17 +18,19 @@
  */
 package org.drasyl.peer.connection.handler;
 
+import io.netty.buffer.ByteBufInputStream;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandler;
 import io.netty.handler.codec.MessageToMessageDecoder;
-import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
+import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.util.LoggingUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.util.List;
 
 import static java.util.Objects.requireNonNull;
@@ -38,7 +40,7 @@ import static org.drasyl.util.JSONUtil.JACKSON_READER;
  * Decodes a {@link String} into a {@link Message} object.
  */
 @Sharable
-public class MessageDecoder extends MessageToMessageDecoder<TextWebSocketFrame> implements ChannelInboundHandler {
+public class MessageDecoder extends MessageToMessageDecoder<BinaryWebSocketFrame> implements ChannelInboundHandler {
     public static final MessageDecoder INSTANCE = new MessageDecoder();
     public static final String MESSAGE_DECODER = "messageDecoder";
     private static final Logger LOG = LoggerFactory.getLogger(MessageDecoder.class);
@@ -47,17 +49,18 @@ public class MessageDecoder extends MessageToMessageDecoder<TextWebSocketFrame> 
     }
 
     @Override
-    protected void decode(ChannelHandlerContext ctx, TextWebSocketFrame msg, List<Object> out) {
-        if (LOG.isTraceEnabled()) {
-            LOG.trace("[{}]: Receive Message '{}'", ctx.channel().id().asShortText(), msg.text());
-        }
-
+    protected void decode(ChannelHandlerContext ctx, BinaryWebSocketFrame msg, List<Object> out) {
         try {
-            Message message = requireNonNull(JACKSON_READER.readValue(msg.text(), Message.class));
+            ByteBufInputStream inputStream = new ByteBufInputStream(msg.content());
+            Message message = requireNonNull(JACKSON_READER.readValue((InputStream) inputStream, Message.class));
             out.add(message);
+
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("[{}]: Receive Message '{}'", ctx.channel().id().asShortText(), message);
+            }
         }
         catch (IOException e) {
-            LOG.warn("[{}]: Unable to deserialize '{}': ", ctx.channel().id().asShortText(), LoggingUtil.sanitizeLogArg(msg.text()));
+            LOG.warn("[{}]: Unable to deserialize '{}': ", ctx.channel().id().asShortText(), LoggingUtil.sanitizeLogArg(msg));
             throw new IllegalArgumentException("Message could not be deserialized: " + e.getMessage());
         }
     }

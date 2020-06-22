@@ -18,14 +18,17 @@
  */
 package org.drasyl.peer.connection.handler;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
+import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.DecoderException;
-import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
+import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -40,22 +43,20 @@ class MessageDecoderTest {
     }
 
     @Test
-    void shouldDeserializeInboundJsonStringToMessage() {
-        String json = "{\"@type\":\"" + QuitMessage.class.getSimpleName() + "\",\"id\":\"123\"}";
+    void shouldDeserializeInboundJsonStringToMessage() throws JsonProcessingException {
+        byte[] binary = JACKSON_WRITER.writeValueAsBytes(new QuitMessage());
 
-        channel.writeInbound(new TextWebSocketFrame(json));
+        channel.writeInbound(new BinaryWebSocketFrame(Unpooled.wrappedBuffer(binary)));
         channel.flush();
 
         assertThat(channel.readInbound(), instanceOf(QuitMessage.class));
     }
 
     @Test
-    void ShouldThrowExceptionIfInboundJsonStringDeserializationFail() {
-        String json = "invalid";
+    void ShouldThrowExceptionIfInboundJsonStringDeserializationFail() throws JsonProcessingException {
+        byte[] binary = JACKSON_WRITER.writeValueAsBytes("invalid");
 
-        TextWebSocketFrame frame = new TextWebSocketFrame(json);
-        assertThrows(DecoderException.class, () -> {
-            channel.writeInbound(frame);
-        });
+        BinaryWebSocketFrame frame = new BinaryWebSocketFrame(Unpooled.wrappedBuffer(binary));
+        assertThrows(DecoderException.class, () -> channel.writeInbound(frame));
     }
 }
