@@ -18,7 +18,6 @@
  */
 package org.drasyl.peer.connection.message;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -27,19 +26,19 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.IOException;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
+import static org.drasyl.util.JSONUtil.JACKSON_READER;
+import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
 class QuitMessageTest {
-    private static final ObjectMapper JSON_MAPPER = new ObjectMapper();
-
     @Nested
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException {
             String json = "{\"@type\":\"" + QuitMessage.class.getSimpleName() + "\",\"id\":\"77175D7235920F3BA17341D7\"}";
 
-            assertEquals(new QuitMessage(), JSON_MAPPER.readValue(json, Message.class));
+            assertEquals(new QuitMessage(), JACKSON_READER.readValue(json, Message.class));
         }
     }
 
@@ -49,7 +48,7 @@ class QuitMessageTest {
         void shouldSerializeToCorrectJson() throws IOException {
             QuitMessage message = new QuitMessage();
 
-            assertThatJson(JSON_MAPPER.writeValueAsString(message))
+            assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", QuitMessage.class.getSimpleName())
                     .containsKeys("id", "reason");

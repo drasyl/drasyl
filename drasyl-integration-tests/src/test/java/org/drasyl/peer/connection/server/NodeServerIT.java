@@ -19,7 +19,6 @@
 package org.drasyl.peer.connection.server;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.reactivex.rxjava3.core.Observable;
@@ -86,6 +85,7 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_SERVICE_UNAVAILABLE;
 import static org.drasyl.peer.connection.server.TestNodeServerConnection.clientSession;
 import static org.drasyl.peer.connection.server.TestNodeServerConnection.clientSessionAfterJoin;
+import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -488,7 +488,7 @@ class NodeServerIT {
         SignedMessage signedMessage = new SignedMessage(request, session.getPublicKey());
         KeyPair keyPair = CompressedKeyPair.of("0300f9df12eed957a17b2b373978ea32177b3e1ce00c92003b5dd2c68de253b35c", "00b96ac2757f5f427a210c7a68f357bfa03f986b547a3b68e0bf79daa45f9edd").toUncompressedKeyPair();
         Crypto.sign(keyPair.getPrivate(), signedMessage);
-        session.sendRawString(new ObjectMapper().writeValueAsString(signedMessage));
+        session.sendRawString(JACKSON_WRITER.writeValueAsString(signedMessage));
 
         // verify response
         receivedMessages.awaitCount(1);

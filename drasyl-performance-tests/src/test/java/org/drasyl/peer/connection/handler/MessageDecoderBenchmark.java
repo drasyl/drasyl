@@ -19,7 +19,6 @@
 package org.drasyl.peer.connection.handler;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import org.drasyl.crypto.CryptoException;
@@ -33,6 +32,7 @@ import org.openjdk.jmh.annotations.State;
 import java.util.ArrayList;
 import java.util.Random;
 
+import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.mockito.Mockito.mock;
 
 @State(Scope.Benchmark)
@@ -50,7 +50,7 @@ public class MessageDecoderBenchmark {
             CompressedPublicKey recipient = CompressedPublicKey.of("033de3da699f6f9ffbd427c56725910655ba3913be4ff55b13c628e957c860fd55");
             byte[] payload = new byte[1024 * 1024]; // 1 MB
             new Random().nextBytes(payload);
-            String json = new ObjectMapper().writeValueAsString(new ApplicationMessage(sender, recipient, payload));
+            String json = JACKSON_WRITER.writeValueAsString(new ApplicationMessage(sender, recipient, payload));
             msg = new TextWebSocketFrame(json);
         }
         catch (CryptoException | JsonProcessingException e) {

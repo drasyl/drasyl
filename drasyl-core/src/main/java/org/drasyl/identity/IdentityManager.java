@@ -19,7 +19,7 @@
 package org.drasyl.identity;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
@@ -33,6 +33,8 @@ import java.nio.file.Path;
 import java.security.KeyPair;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.util.JSONUtil.JACKSON_READER;
+import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 
 /**
  * This class provides the identity of the node. Messages to the node are addressed to the identity.
@@ -42,7 +44,6 @@ import static java.util.Objects.requireNonNull;
 public class IdentityManager {
     public static final short POW_DIFFICULTY = 6;
     private static final Logger LOG = LoggerFactory.getLogger(IdentityManager.class);
-    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
     private final DrasylConfig config;
     private Identity identity;
 
@@ -115,7 +116,7 @@ public class IdentityManager {
      */
     private static Identity readIdentityFile(Path path) throws IdentityManagerException {
         try {
-            return OBJECT_MAPPER.readValue(path.toFile(), Identity.class);
+            return JACKSON_READER.readValue(path.toFile(), Identity.class);
         }
         catch (JsonProcessingException e) {
             throw new IdentityManagerException("Unable to load identity from file '" + path + "': " + e.getMessage());
@@ -164,7 +165,7 @@ public class IdentityManager {
         }
         else {
             try {
-                IdentityManager.OBJECT_MAPPER.writerWithDefaultPrettyPrinter().writeValue(file, identity);
+                JACKSON_WRITER.with(new DefaultPrettyPrinter()).writeValue(file, identity);
             }
             catch (IOException e) {
                 throw new IdentityManagerException("Unable to write identity to file '" + path + "': " + e.getMessage());
