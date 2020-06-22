@@ -18,6 +18,7 @@
  */
 package org.drasyl.peer.connection.codec;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.identity.CompressedPublicKey;
@@ -28,6 +29,9 @@ import org.openjdk.jmh.annotations.Benchmark;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 
+import java.io.BufferedOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.Random;
 
@@ -42,11 +46,11 @@ public class JacksonCodecBenchmark {
     private final ChannelHandlerContext ctx;
     private final Message msg;
     private final byte[] bytes;
-    private final JacksonCodec<Message> codec;
+    private final JacksonCodec codec;
 
     public JacksonCodecBenchmark() {
         try {
-            codec = new JacksonCodec<>(Message.class);
+            codec = new JacksonCodec();
             ctx = mock(ChannelHandlerContext.class, Answers.RETURNS_DEEP_STUBS);
             CompressedPublicKey sender = CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb");
             CompressedPublicKey recipient = CompressedPublicKey.of("033de3da699f6f9ffbd427c56725910655ba3913be4ff55b13c628e957c860fd55");
@@ -65,8 +69,19 @@ public class JacksonCodecBenchmark {
         codec.encode(ctx, msg, Unpooled.buffer());
     }
 
-//    @Benchmark
+    @Benchmark
     public void decode() throws Exception {
         codec.decode(ctx, Unpooled.wrappedBuffer(bytes), new ArrayList<>());
+    }
+
+    @Benchmark
+    public void rawEncoding() throws IOException {
+        BufferedOutputStream out = new BufferedOutputStream(new OutputStream() {
+            @Override
+            public void write(int b) throws IOException {
+
+            }
+        });
+        JACKSON_WRITER.writeValue(out, msg);
     }
 }

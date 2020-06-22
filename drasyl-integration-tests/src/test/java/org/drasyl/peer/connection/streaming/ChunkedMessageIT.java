@@ -57,7 +57,7 @@ import static testutils.AnsiColor.COLOR_CYAN;
 import static testutils.AnsiColor.STYLE_REVERSED;
 import static testutils.TestHelper.colorizedPrintln;
 
-@Disabled("Only for benchmark purposes")
+//@Disabled("Only for benchmark purposes")
 class ChunkedMessageIT {
     private static EventLoopGroup workerGroup;
     private static EventLoopGroup bossGroup;
