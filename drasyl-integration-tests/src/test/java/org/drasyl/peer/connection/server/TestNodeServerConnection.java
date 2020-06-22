@@ -70,9 +70,9 @@ public class TestNodeServerConnection {
     private final Subject<Message> receivedMessages;
     private final ConcurrentHashMap<String, CompletableFuture<ResponseMessage<?>>> futures;
     private final CompressedKeyPair keyPair;
-    private Identity identity;
-    private AtomicBoolean isClosed;
-    private CompletableFuture<Boolean> closedCompletable;
+    private final Identity identity;
+    private final AtomicBoolean isClosed;
+    private final CompletableFuture<Boolean> closedCompletable;
 
     /**
      * Creates a new connection.

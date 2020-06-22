@@ -19,13 +19,7 @@
 package org.drasyl.peer.connection.server;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.Channel;
-import io.netty.channel.ChannelHandler;
-import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.ChannelPipeline;
-import io.netty.channel.EventLoopGroup;
-import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.channel.*;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler;
@@ -71,20 +65,21 @@ import static org.drasyl.util.WebSocketUtil.webSocketPort;
 @SuppressWarnings({ "squid:S3776", "squid:S00107" })
 public class OutboundConnectionFactory {
     private static final Logger LOG = LoggerFactory.getLogger(OutboundConnectionFactory.class);
+    private final CompletableFuture<Void> channelReadyFuture;
     private final List<ChannelHandler> handler;
     private final List<String> sslProtocols;
     private final URI uri;
-    private Runnable shutdownProcedure;
-    private ChannelHandler initializer;
-    private EventLoopGroup eventGroup;
+    private final Runnable shutdownProcedure;
+    private final ChannelHandler initializer;
+    private final EventLoopGroup eventGroup;
     private boolean pingPong = true;
     private SslContext sslCtx;
     private Duration idleTimeout;
     private Duration transferTimeout;
     private short idleRetries;
     private boolean ssl;
+    private int maxContentLength;
     private final Identity identity;
-    private final int maxContentLength;
 
     /**
      * Produces an {@link OutboundConnectionFactory} with the given {@link URI} as target.
@@ -94,7 +89,8 @@ public class OutboundConnectionFactory {
     public OutboundConnectionFactory(URI target,
                                      EventLoopGroup eventGroup,
                                      Identity identity) {
-        this(target, null, () -> {}, null, new ArrayList<>(), Collections.singletonList("TLSv1.3"), eventGroup, 1000000, identity, Duration.ofSeconds(60));
+        this(target, null, () -> {
+        }, null, new ArrayList<>(), Collections.singletonList("TLSv1.3"), eventGroup, 1000000, identity, Duration.ofSeconds(60));
     }
 
     private OutboundConnectionFactory(URI target,
@@ -167,6 +163,18 @@ public class OutboundConnectionFactory {
      */
     public OutboundConnectionFactory idleRetries(short retries) {
         this.idleRetries = retries;
+
+        return this;
+    }
+
+    /**
+     * Sets the max content length for a web frame.
+     *
+     * @param maxContentLength max content length
+     * @return {@link OutboundConnectionFactory} with the changed property
+     */
+    public OutboundConnectionFactory maxContentLength(int maxContentLength) {
+        this.maxContentLength = maxContentLength;
 
         return this;
     }
