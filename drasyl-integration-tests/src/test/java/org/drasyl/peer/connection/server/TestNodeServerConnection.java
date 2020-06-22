@@ -18,6 +18,7 @@
  */
 package org.drasyl.peer.connection.server;
 
+import io.netty.buffer.ByteBuf;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
@@ -25,7 +26,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
+import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.subjects.PublishSubject;
@@ -134,13 +135,8 @@ public class TestNodeServerConnection {
         return receivedMessages;
     }
 
-    public void sendRawString(final String string) {
-        if (string != null && !isClosed.get() && channel.isOpen()) {
-            channel.writeAndFlush(new TextWebSocketFrame(string));
-        }
-        else {
-            LOG.info("[{} Can't send message {}", TestNodeServerConnection.this, string);
-        }
+    public void sendRawBinary(final ByteBuf byteBuf) {
+        channel.writeAndFlush(new BinaryWebSocketFrame(byteBuf));
     }
 
     /**
