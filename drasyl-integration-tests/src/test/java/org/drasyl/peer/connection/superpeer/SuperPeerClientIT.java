@@ -223,7 +223,7 @@ class SuperPeerClientIT {
         client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, event -> {
         });
         client.open();
-        sentMessages.awaitCount(2); // wait for JoinMessage and StatusMessage
+        server.awaitClient(identityManager.getPublicKey());
 
         // send message
         server.sendMessage(identityManager.getPublicKey(), request);
@@ -236,14 +236,13 @@ class SuperPeerClientIT {
     @Disabled("disabled, because StatusMessage is currently not used and therefore has been removed.")
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldRespondToApplicationMessageWithStatusOk() throws SuperPeerClientException {
-        TestObserver<Message> sentMessages = server.sentMessages().test();
         TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof StatusMessage).test();
 
         // start client
         client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, event -> {
         });
         client.open();
-        sentMessages.awaitCount(2); // wait for JoinMessage and StatusMessage
+        server.awaitClient(identityManager.getPublicKey());
 
         // send message
         ApplicationMessage request = new ApplicationMessage(identityManager.getPublicKey(), identityManagerServer.getPublicKey(), new byte[]{
@@ -260,16 +259,15 @@ class SuperPeerClientIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldEmitNodeOfflineEventAfterReceivingQuitMessage() throws SuperPeerClientException {
-        TestObserver<Message> receivedMessages = server.receivedMessages().test();
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
-        client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
+        DrasylNodeConfig noRetryConfig = DrasylNodeConfig.newBuilder(config).superPeerRetryDelays(List.of()).build();
+        client = new SuperPeerClient(noRetryConfig, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
         client.open();
-        receivedMessages.awaitCount(2); // wait for JoinMessage and StatusMessage
+        server.awaitClient(identityManager.getPublicKey());
 
         // send message
-        emittedEvents.awaitCount(1);
         server.sendMessage(identityManager.getPublicKey(), new QuitMessage());
 
         // verify emitted events
