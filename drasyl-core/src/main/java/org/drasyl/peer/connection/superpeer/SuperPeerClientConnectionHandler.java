@@ -84,6 +84,8 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
 
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) {
+        super.handlerAdded(ctx);
+
         ctx.channel().closeFuture().addListener(future -> messenger.unsetRelaySink());
     }
 
