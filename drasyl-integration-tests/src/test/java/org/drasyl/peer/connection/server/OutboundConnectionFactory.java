@@ -40,6 +40,7 @@ import org.drasyl.peer.connection.handler.MessageDecoder;
 import org.drasyl.peer.connection.handler.MessageEncoder;
 import org.drasyl.peer.connection.handler.SignatureHandler;
 import org.drasyl.peer.connection.superpeer.SuperPeerClientChannelInitializer;
+import org.drasyl.peer.connection.superpeer.SuperPeerClientException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -321,7 +322,7 @@ public class OutboundConnectionFactory {
             }
 
             @Override
-            protected SslHandler generateSslContext(SocketChannel ch) {
+            protected SslHandler generateSslContext(SocketChannel ch) throws SuperPeerClientException {
                 if (ssl) {
                     try {
                         if (sslCtx == null) {
@@ -331,7 +332,7 @@ public class OutboundConnectionFactory {
                         return sslCtx.newHandler(ch.alloc(), uri.getHost(), uri.getPort());
                     }
                     catch (SSLException e) {
-                        LOG.error("SSLException: ", e);
+                        throw new SuperPeerClientException(e);
                     }
                 }
                 return null;
