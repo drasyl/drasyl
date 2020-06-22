@@ -22,25 +22,21 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.http.DefaultHttpHeaders;
 import io.netty.handler.codec.http.HttpClientCodec;
 import io.netty.handler.codec.http.HttpObjectAggregator;
+import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshakerFactory;
+import io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler;
 import io.netty.handler.codec.http.websocketx.WebSocketVersion;
 import org.drasyl.peer.connection.DefaultSessionInitializer;
-import org.drasyl.peer.connection.handler.WebSocketHandshakeClientHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * Creates a newly configured {@link ChannelPipeline} for a ClientConnection to a node server.
  */
 @SuppressWarnings("java:S4818")
 public abstract class SuperPeerClientChannelInitializer extends DefaultSessionInitializer {
-    private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClientChannelInitializer.class);
     protected final URI target;
-    private final CompletableFuture<Void> channelReadyFuture;
 
     /**
      * Initialize a netty Channel for an outbound connection to a node server.
@@ -60,47 +56,15 @@ public abstract class SuperPeerClientChannelInitializer extends DefaultSessionIn
                                              Duration readIdleTimeout,
                                              short pingPongRetries,
                                              URI target) {
-        this(flushBufferSize, readIdleTimeout, pingPongRetries,
-                target, new CompletableFuture<>());
-    }
-
-    protected SuperPeerClientChannelInitializer(int flushBufferSize,
-                                                Duration readIdleTimeout,
-                                                short pingPongRetries,
-                                                URI target,
-                                                CompletableFuture<Void> channelReadyFuture) {
         super(flushBufferSize, readIdleTimeout, pingPongRetries);
-        this.channelReadyFuture = channelReadyFuture;
         this.target = target;
     }
 
     @Override
     protected void beforeMarshalStage(ChannelPipeline pipeline) {
-        WebSocketHandshakeClientHandler webSocketHandshakeClientHandler =
-                new WebSocketHandshakeClientHandler(WebSocketClientHandshakerFactory.newHandshaker(target,
-                        WebSocketVersion.V13, null, false, new DefaultHttpHeaders()));
-        webSocketHandshakeClientHandler.handshakeFuture().whenComplete((v, cause) -> {
-            if (cause != null) {
-                channelReadyFuture.completeExceptionally(cause);
-            }
-            else {
-                channelReadyFuture.complete(null);
-                LOG.debug("Client WebSocket created for {}", target);
-            }
-        });
-
         pipeline.addLast(new HttpClientCodec());
         pipeline.addLast(new HttpObjectAggregator(65536));
-        pipeline.addLast(webSocketHandshakeClientHandler);
-    }
-
-    /**
-     * A future is returned if the handshake was successful and the channel is ready to receive and
-     * send messages.
-     * <p>
-     * The future may fail if a connection could not be established.
-     */
-    public CompletableFuture<Void> connectedFuture() {
-        return channelReadyFuture;
+        WebSocketClientHandshaker webSocketHandshaker = WebSocketClientHandshakerFactory.newHandshaker(target, WebSocketVersion.V13, null, false, new DefaultHttpHeaders());
+        pipeline.addLast(new WebSocketClientProtocolHandler(webSocketHandshaker, false, false));
     }
 }

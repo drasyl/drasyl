@@ -86,10 +86,11 @@ public abstract class AbstractThreeWayHandshakeClientHandler<R extends RequestMe
     }
 
     @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
-        requestSession(ctx);
+    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+        super.handlerAdded(ctx);
 
-        super.channelActive(ctx);
+        startTimeoutGuard(ctx);
+        requestSession(ctx);
     }
 
     protected void requestSession(ChannelHandlerContext ctx) {
