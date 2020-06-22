@@ -24,7 +24,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.reactivex.rxjava3.subjects.Subject;
-import org.drasyl.DrasylNodeConfig;
+import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
@@ -60,7 +60,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class SuperPeerClientTest {
     @Mock
-    private DrasylNodeConfig config;
+    private DrasylConfig config;
     @Mock
     private Supplier<Identity> identitySupplier;
     @Mock

@@ -19,7 +19,7 @@
 package org.drasyl.peer.connection.superpeer;
 
 import io.reactivex.rxjava3.subjects.Subject;
-import org.drasyl.DrasylNodeConfig;
+import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
@@ -33,7 +33,7 @@ import java.util.function.Supplier;
  * This class encapsulates all information needed by a {@link SuperPeerClientChannelInitializer}.
  */
 public class SuperPeerClientEnvironment {
-    private final DrasylNodeConfig config;
+    private final DrasylConfig config;
     private final Supplier<Identity> identitySupplier;
     private final URI endpoint;
     private final Messenger messenger;
@@ -41,7 +41,7 @@ public class SuperPeerClientEnvironment {
     private final Subject<Boolean> connected;
     private final Consumer<Event> eventConsumer;
 
-    public SuperPeerClientEnvironment(DrasylNodeConfig config,
+    public SuperPeerClientEnvironment(DrasylConfig config,
                                       Supplier<Identity> identitySupplier,
                                       URI endpoint,
                                       Messenger messenger,
@@ -57,7 +57,7 @@ public class SuperPeerClientEnvironment {
         this.eventConsumer = eventConsumer;
     }
 
-    public DrasylNodeConfig getConfig() {
+    public DrasylConfig getConfig() {
         return config;
     }
 

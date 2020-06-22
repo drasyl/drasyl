@@ -39,7 +39,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
-import static org.drasyl.util.JSONUtil.JACKSON_MAPPER;
+import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -266,7 +266,7 @@ class PeersManagerTest {
 
         @Test
         void shouldProduceCorrectJsonObject() throws JsonProcessingException {
-            assertThatJson(JACKSON_MAPPER.writeValueAsString(underTest))
+            assertThatJson(JACKSON_WRITER.writeValueAsString(underTest))
                     .when(Option.IGNORING_ARRAY_ORDER)
                     .isEqualTo("{\"peers\":[[\"022910262d4b1b4681055d4d6ed047ed6c35d7a55e8bcbbbb5528a8a40414991ac\", {\"endpoints\":[]}]],\"children\":[[\"022910262d4b1b4681055d4d6ed047ed6c35d7a55e8bcbbbb5528a8a40414991ac\", {\"endpoints\":[]}]],\"grandchildrenRoutes\":[],\"superPeer\":null}");
         }

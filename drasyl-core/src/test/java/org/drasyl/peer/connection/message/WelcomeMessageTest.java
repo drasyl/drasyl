@@ -32,7 +32,8 @@ import java.net.URI;
 import java.util.Set;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
-import static org.drasyl.util.JSONUtil.JACKSON_MAPPER;
+import static org.drasyl.util.JSONUtil.JACKSON_READER;
+import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
@@ -49,7 +50,7 @@ class WelcomeMessageTest {
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
             String json = "{\"@type\":\"WelcomeMessage\",\"id\":\"4AE5CDCD8C21719F8E779F21\",\"userAgent\":\"\",\"publicKey\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\",\"peerInformation\":{\"endpoints\":[\"ws://test\"]},\"correspondingId\":\"123\"}";
 
-            assertEquals(new WelcomeMessage(CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"), PeerInformation.of(Set.of(URI.create("ws://test"))), "123"), JACKSON_MAPPER.readValue(json, Message.class));
+            assertEquals(new WelcomeMessage(CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"), PeerInformation.of(Set.of(URI.create("ws://test"))), "123"), JACKSON_READER.readValue(json, Message.class));
         }
     }
 
@@ -59,7 +60,7 @@ class WelcomeMessageTest {
         void shouldSerializeToCorrectJson() throws IOException {
             WelcomeMessage message = new WelcomeMessage(publicKey, PeerInformation.of(), correspondingId);
 
-            assertThatJson(JACKSON_MAPPER.writeValueAsString(message))
+            assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", WelcomeMessage.class.getSimpleName())
                     .containsKeys("id", "userAgent", "publicKey", "peerInformation", "correspondingId");

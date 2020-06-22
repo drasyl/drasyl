@@ -29,8 +29,8 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
+import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
-import org.drasyl.DrasylNodeConfig;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
@@ -65,7 +65,7 @@ import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_
 @SuppressWarnings({ "java:S107", "java:S4818" })
 public class SuperPeerClient implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClient.class);
-    private final DrasylNodeConfig config;
+    private final DrasylConfig config;
     private final Supplier<Identity> identitySupplier;
     private final PeersManager peersManager;
     private final Messenger messenger;
@@ -81,7 +81,7 @@ public class SuperPeerClient implements AutoCloseable {
     private Channel clientChannel;
     protected ChannelInitializer<SocketChannel> channelInitializer;
 
-    SuperPeerClient(DrasylNodeConfig config,
+    SuperPeerClient(DrasylConfig config,
                     Supplier<Identity> identitySupplier,
                     PeersManager peersManager,
                     Messenger messenger,
@@ -111,7 +111,7 @@ public class SuperPeerClient implements AutoCloseable {
         this.clientChannel = clientChannel;
     }
 
-    public SuperPeerClient(DrasylNodeConfig config,
+    public SuperPeerClient(DrasylConfig config,
                            Supplier<Identity> identitySupplier,
                            PeersManager peersManager,
                            Messenger messenger,

@@ -27,7 +27,8 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
-import static org.drasyl.util.JSONUtil.JACKSON_MAPPER;
+import static org.drasyl.util.JSONUtil.JACKSON_READER;
+import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -63,7 +64,7 @@ class CompressedPrivateKeyTest {
         void shouldDeserializeToCorrectObject() throws IOException {
             String json = "\"045ADCB39AA39A81E8C95A0E309B448FA60A41535B3F3CA41AA2745558DFFD6B\"";
 
-            assertThat(JACKSON_MAPPER.readValue(json, CompressedPrivateKey.class), instanceOf(CompressedPrivateKey.class));
+            assertThat(JACKSON_READER.readValue(json, CompressedPrivateKey.class), instanceOf(CompressedPrivateKey.class));
         }
     }
 
@@ -71,11 +72,12 @@ class CompressedPrivateKeyTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException {
-            assertThatJson(JACKSON_MAPPER.writeValueAsString(privateKey))
+
+            assertThatJson(JACKSON_WRITER.writeValueAsString(privateKey))
                     .when(Option.IGNORING_ARRAY_ORDER)
                     .isEqualTo(privateKey.toString());
 
-            assertEquals(privateKey, JACKSON_MAPPER.readValue(JACKSON_MAPPER.writeValueAsString(privateKey), CompressedPrivateKey.class));
+            assertEquals(privateKey, JACKSON_READER.readValue(JACKSON_WRITER.writeValueAsString(privateKey), CompressedPrivateKey.class));
         }
     }
 }

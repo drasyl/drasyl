@@ -26,9 +26,9 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
+import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
-import org.drasyl.DrasylNodeConfig;
 import org.drasyl.event.Event;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -158,28 +158,28 @@ class Cli {
 
     private void runNode(CommandLine cmd) throws CliException {
         try {
-            DrasylNodeConfig config;
+            DrasylConfig config;
             if (!cmd.hasOption(OPT_CONFIGFILE)) {
                 File defaultFile = new File(DEFAULT_CONF);
                 if (defaultFile.exists()) {
                     log.info("Node is using default configuration file '{}'", defaultFile);
-                    config = DrasylNodeConfig.parseFile(defaultFile);
+                    config = DrasylConfig.parseFile(defaultFile);
                 }
                 else {
                     log.info("Node is using configuration defaults as '{}' does not exist", DEFAULT_CONF);
-                    config = new DrasylNodeConfig();
+                    config = new DrasylConfig();
                 }
             }
             else {
                 File file = new File(cmd.getOptionValue(OPT_CONFIGFILE));
                 log.info("Node is using configuration file '{}'", file);
-                config = DrasylNodeConfig.parseFile(file);
+                config = DrasylConfig.parseFile(file);
             }
 
             // override log level
             if (cmd.hasOption(OPT_LOGLEVEL)) {
                 String level = cmd.getOptionValue(OPT_LOGLEVEL);
-                config = DrasylNodeConfig.newBuilder(config).loglevel(Level.valueOf(level)).build();
+                config = DrasylConfig.newBuilder(config).loglevel(Level.valueOf(level)).build();
             }
 
             node = new DrasylNode(config) {

@@ -47,12 +47,12 @@ public class ObservableDrasylNode extends DrasylNode {
         this.events = PublishSubject.create();
     }
 
-    public ObservableDrasylNode(DrasylNodeConfig config) throws DrasylException {
+    public ObservableDrasylNode(DrasylConfig config) throws DrasylException {
         super(config);
         this.events = PublishSubject.<Event>create().toSerialized();
     }
 
-    ObservableDrasylNode(DrasylNodeConfig config,
+    ObservableDrasylNode(DrasylConfig config,
                          IdentityManager identityManager,
                          PeersManager peersManager,
                          Messenger messenger,

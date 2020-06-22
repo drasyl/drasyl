@@ -70,7 +70,7 @@ class DrasylNodeIT {
         colorizedPrintln("FINISHED " + info.getDisplayName(), COLOR_CYAN, STYLE_REVERSED);
     }
 
-    private Pair<DrasylNode, Observable<Event>> createNode(DrasylNodeConfig config) throws DrasylException {
+    private Pair<DrasylNode, Observable<Event>> createNode(DrasylConfig config) throws DrasylException {
         Subject<Event> subject = ReplaySubject.<Event>create().toSerialized();
         DrasylNode node = new DrasylNode(config) {
             @Override
@@ -103,10 +103,10 @@ class DrasylNodeIT {
             //
             // create nodes
             //
-            DrasylNodeConfig config;
+            DrasylConfig config;
 
             // super super peer
-            config = DrasylNodeConfig.newBuilder()
+            config = DrasylConfig.newBuilder()
                     .identityProofOfWork(ProofOfWork.of(13290399))
                     .identityPublicKey(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"))
                     .identityPrivateKey(CompressedPrivateKey.of("0c2945e523e1ab27c3b38ba62f0a67a21567dcfcbad4ff3fe7f8f7b202a18c93"))
@@ -121,7 +121,7 @@ class DrasylNodeIT {
             colorizedPrintln("CREATED superSuperPeer", COLOR_CYAN, STYLE_REVERSED);
 
             // super peer
-            config = DrasylNodeConfig.newBuilder()
+            config = DrasylConfig.newBuilder()
                     .identityProofOfWork(ProofOfWork.of(6518542))
                     .identityPublicKey(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
                     .identityPrivateKey(CompressedPrivateKey.of("6b4df6d8b8b509cb984508a681076efce774936c17cf450819e2262a9862f8"))
@@ -137,7 +137,7 @@ class DrasylNodeIT {
             colorizedPrintln("CREATED superPeer", COLOR_CYAN, STYLE_REVERSED);
 
             // client1
-            config = DrasylNodeConfig.newBuilder()
+            config = DrasylConfig.newBuilder()
                     .identityProofOfWork(ProofOfWork.of(12304070))
                     .identityPublicKey(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))
                     .identityPrivateKey(CompressedPrivateKey.of("073a34ecaff06fdf3fbe44ddf3abeace43e3547033493b1ac4c0ae3c6ecd6173"))
@@ -150,7 +150,7 @@ class DrasylNodeIT {
             colorizedPrintln("CREATED client1", COLOR_CYAN, STYLE_REVERSED);
 
             // client2
-            config = DrasylNodeConfig.newBuilder()
+            config = DrasylConfig.newBuilder()
                     .identityProofOfWork(ProofOfWork.of(33957767))
                     .identityPublicKey(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))
                     .identityPrivateKey(CompressedPrivateKey.of("0310991def7b530fced318876ac71025ebc0449a95967a0efc2e423086198f54"))
@@ -247,10 +247,10 @@ class DrasylNodeIT {
             //
             // create nodes
             //
-            DrasylNodeConfig config;
+            DrasylConfig config;
 
             // super super peer
-            config = DrasylNodeConfig.newBuilder()
+            config = DrasylConfig.newBuilder()
                     .identityProofOfWork(ProofOfWork.of(13290399))
                     .identityPublicKey(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"))
                     .identityPrivateKey(CompressedPrivateKey.of("0c2945e523e1ab27c3b38ba62f0a67a21567dcfcbad4ff3fe7f8f7b202a18c93"))
@@ -261,7 +261,7 @@ class DrasylNodeIT {
             colorizedPrintln("CREATED node1", COLOR_CYAN, STYLE_REVERSED);
 
             // super peer
-            config = DrasylNodeConfig.newBuilder()
+            config = DrasylConfig.newBuilder()
                     .identityProofOfWork(ProofOfWork.of(6518542))
                     .identityPublicKey(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
                     .identityPrivateKey(CompressedPrivateKey.of("6b4df6d8b8b509cb984508a681076efce774936c17cf450819e2262a9862f8"))
@@ -272,7 +272,7 @@ class DrasylNodeIT {
             colorizedPrintln("CREATED node2", COLOR_CYAN, STYLE_REVERSED);
 
             // client1
-            config = DrasylNodeConfig.newBuilder()
+            config = DrasylConfig.newBuilder()
                     .identityProofOfWork(ProofOfWork.of(12304070))
                     .identityPublicKey(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))
                     .identityPrivateKey(CompressedPrivateKey.of("073a34ecaff06fdf3fbe44ddf3abeace43e3547033493b1ac4c0ae3c6ecd6173"))
@@ -283,7 +283,7 @@ class DrasylNodeIT {
             colorizedPrintln("CREATED node3", COLOR_CYAN, STYLE_REVERSED);
 
             // client2
-            config = DrasylNodeConfig.newBuilder()
+            config = DrasylConfig.newBuilder()
                     .identityProofOfWork(ProofOfWork.of(33957767))
                     .identityPublicKey(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))
                     .identityPrivateKey(CompressedPrivateKey.of("0310991def7b530fced318876ac71025ebc0449a95967a0efc2e423086198f54"))
@@ -386,10 +386,10 @@ class DrasylNodeIT {
             //
             // create nodes
             //
-            DrasylNodeConfig config;
+            DrasylConfig config;
 
             // super super peer
-            config = DrasylNodeConfig.newBuilder()
+            config = DrasylConfig.newBuilder()
                     .identityProofOfWork(ProofOfWork.of(13290399))
                     .identityPublicKey(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"))
                     .identityPrivateKey(CompressedPrivateKey.of("0c2945e523e1ab27c3b38ba62f0a67a21567dcfcbad4ff3fe7f8f7b202a18c93"))
@@ -402,7 +402,7 @@ class DrasylNodeIT {
             colorizedPrintln("CREATED node1", COLOR_CYAN, STYLE_REVERSED);
 
             // super peer
-            config = DrasylNodeConfig.newBuilder()
+            config = DrasylConfig.newBuilder()
                     .identityProofOfWork(ProofOfWork.of(6518542))
                     .identityPublicKey(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
                     .identityPrivateKey(CompressedPrivateKey.of("6b4df6d8b8b509cb984508a681076efce774936c17cf450819e2262a9862f8"))
@@ -415,7 +415,7 @@ class DrasylNodeIT {
             colorizedPrintln("CREATED node2", COLOR_CYAN, STYLE_REVERSED);
 
             // client1
-            config = DrasylNodeConfig.newBuilder()
+            config = DrasylConfig.newBuilder()
                     .identityProofOfWork(ProofOfWork.of(12304070))
                     .identityPublicKey(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))
                     .identityPrivateKey(CompressedPrivateKey.of("073a34ecaff06fdf3fbe44ddf3abeace43e3547033493b1ac4c0ae3c6ecd6173"))
@@ -428,7 +428,7 @@ class DrasylNodeIT {
             colorizedPrintln("CREATED node3", COLOR_CYAN, STYLE_REVERSED);
 
             // client2
-            config = DrasylNodeConfig.newBuilder()
+            config = DrasylConfig.newBuilder()
                     .identityProofOfWork(ProofOfWork.of(33957767))
                     .identityPublicKey(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))
                     .identityPrivateKey(CompressedPrivateKey.of("0310991def7b530fced318876ac71025ebc0449a95967a0efc2e423086198f54"))

@@ -31,7 +31,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
-import org.drasyl.DrasylNodeConfig;
+import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.identity.CompressedKeyPair;
 import org.drasyl.identity.CompressedPublicKey;
@@ -142,7 +142,7 @@ public class TestNodeServerConnection {
     /**
      * Creates a new session to the given server.
      */
-    public static TestNodeServerConnection clientSession(DrasylNodeConfig config,
+    public static TestNodeServerConnection clientSession(DrasylConfig config,
                                                          NodeServer server,
                                                          Identity identity) throws ExecutionException, InterruptedException {
         URI serverEndpoint = URI.create("ws://" + config.getServerBindHost() + ":" + server.getPort());
@@ -265,7 +265,7 @@ public class TestNodeServerConnection {
     /**
      * Creates a new session with the given sessionUID and joins the given server.
      */
-    public static TestNodeServerConnection clientSessionAfterJoin(DrasylNodeConfig config,
+    public static TestNodeServerConnection clientSessionAfterJoin(DrasylConfig config,
                                                                   NodeServer server,
                                                                   Identity identity) throws ExecutionException,
             InterruptedException {
@@ -310,7 +310,7 @@ public class TestNodeServerConnection {
     /**
      * Creates a new session to the given server.
      */
-    public static TestNodeServerConnection clientSession(DrasylNodeConfig config,
+    public static TestNodeServerConnection clientSession(DrasylConfig config,
                                                          NodeServer server,
                                                          Identity identity,
                                                          boolean pingPong) throws ExecutionException,

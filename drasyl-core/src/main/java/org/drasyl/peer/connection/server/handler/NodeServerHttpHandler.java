@@ -48,7 +48,7 @@ import static io.netty.handler.codec.http.HttpResponseStatus.BAD_REQUEST;
 import static io.netty.handler.codec.http.HttpResponseStatus.FORBIDDEN;
 import static io.netty.handler.codec.http.HttpResponseStatus.NOT_FOUND;
 import static io.netty.handler.codec.http.HttpResponseStatus.OK;
-import static org.drasyl.util.JSONUtil.JACKSON_MAPPER;
+import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 
 /**
  * This handler returns an HTML error page if the HTTP request does not perform a Websocket
@@ -134,7 +134,7 @@ public class NodeServerHttpHandler extends SimpleChannelInboundHandler<FullHttpR
 
     public static ByteBuf getPeers(PeersManager peersManager) {
         try {
-            return Unpooled.copiedBuffer(JACKSON_MAPPER.writeValueAsString(peersManager), CharsetUtil.UTF_8);
+            return Unpooled.copiedBuffer(JACKSON_WRITER.writeValueAsString(peersManager), CharsetUtil.UTF_8);
         }
         catch (JsonProcessingException e) {
             LOG.error("Unable to create peers list:", e);

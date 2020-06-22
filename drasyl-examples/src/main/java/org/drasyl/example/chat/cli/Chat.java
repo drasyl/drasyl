@@ -18,9 +18,9 @@
  */
 package org.drasyl.example.chat.cli;
 
+import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
-import org.drasyl.DrasylNodeConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.messenger.MessengerException;
@@ -38,12 +38,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 @SuppressWarnings({ "squid:S106", "java:S1141" })
 public class Chat {
     public static void main(String[] args) throws DrasylException {
-        DrasylNodeConfig config;
+        DrasylConfig config;
         if (args.length == 1) {
-            config = DrasylNodeConfig.parseFile(new File(args[0]));
+            config = DrasylConfig.parseFile(new File(args[0]));
         }
         else {
-            config = new DrasylNodeConfig();
+            config = new DrasylConfig();
         }
 
         CompletableFuture<Void> online = new CompletableFuture<>();

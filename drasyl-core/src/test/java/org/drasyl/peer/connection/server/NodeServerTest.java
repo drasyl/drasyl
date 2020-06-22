@@ -24,7 +24,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.reactivex.rxjava3.core.Observable;
-import org.drasyl.DrasylNodeConfig;
+import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
@@ -58,7 +58,7 @@ class NodeServerTest {
     @Mock
     private PeersManager peersManager;
     @Mock
-    private DrasylNodeConfig config;
+    private DrasylConfig config;
     @Mock
     private Channel serverChannel;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)

@@ -27,7 +27,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.IOException;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
-import static org.drasyl.util.JSONUtil.JACKSON_MAPPER;
+import static org.drasyl.util.JSONUtil.JACKSON_READER;
+import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,7 +46,7 @@ class PongMessageTest {
         void shouldDeserializeToCorrectObject() throws IOException {
             String json = "{\"@type\":\"" + PongMessage.class.getSimpleName() + "\",\"id\":\"77175D7235920F3BA17341D7\",\"correspondingId\":\"123\"}";
 
-            assertEquals(new PongMessage("123"), JACKSON_MAPPER.readValue(json, Message.class));
+            assertEquals(new PongMessage("123"), JACKSON_READER.readValue(json, Message.class));
         }
     }
 
@@ -55,7 +56,7 @@ class PongMessageTest {
         void shouldSerializeToCorrectJson() throws IOException {
             PongMessage message = new PongMessage(correspondingId);
 
-            assertThatJson(JACKSON_MAPPER.writeValueAsString(message))
+            assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", PongMessage.class.getSimpleName())
                     .containsKeys("id", "correspondingId");

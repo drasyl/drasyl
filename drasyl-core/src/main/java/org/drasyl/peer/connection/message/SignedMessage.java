@@ -28,7 +28,7 @@ import java.io.OutputStream;
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.util.JSONUtil.JACKSON_MAPPER;
+import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 
 /**
  * Represents a container with a signature for the {@link #payload}. The {@link #signature} must be
@@ -73,7 +73,7 @@ public class SignedMessage implements Message, Signable {
     public void writeFieldsTo(OutputStream outstream) throws IOException {
         requireNonNull(payload);
 
-        outstream.write(JACKSON_MAPPER.writeValueAsBytes(payload));
+        outstream.write(JACKSON_WRITER.writeValueAsBytes(payload));
     }
 
     @Override

@@ -47,8 +47,8 @@ import static org.drasyl.util.SecretUtil.maskSecret;
  * This class represents the configuration for a {@link DrasylNode}. For example, it defines the
  * identity and the Super Peer.
  */
-public class DrasylNodeConfig {
-    static final DrasylNodeConfig DEFAULT = new DrasylNodeConfig(ConfigFactory.defaultReference());
+public class DrasylConfig {
+    static final DrasylConfig DEFAULT = new DrasylConfig(ConfigFactory.defaultReference());
     //======================================== Config Paths ========================================
     static final String LOGLEVEL = "drasyl.loglevel";
     static final String IDENTITY_PROOF_OF_WORK = "drasyl.identity.proof-of-work";
@@ -106,13 +106,17 @@ public class DrasylNodeConfig {
     private final Duration superPeerIdleTimeout;
     private final boolean intraVmDiscoveryEnabled;
 
+    public DrasylConfig() {
+        this(ConfigFactory.load());
+    }
+
     /**
      * Creates a new config for a drasyl node.
      *
      * @param config config to be loaded
      * @throws ConfigException if the given config is invalid
      */
-    public DrasylNodeConfig(Config config) {
+    public DrasylConfig(Config config) {
         config.checkValid(ConfigFactory.defaultReference(), "drasyl");
 
         this.loglevel = getLoglevel(config, LOGLEVEL);
@@ -169,10 +173,6 @@ public class DrasylNodeConfig {
         this.superPeerIdleTimeout = config.getDuration(SUPER_PEER_IDLE_TIMEOUT);
 
         this.intraVmDiscoveryEnabled = config.getBoolean(INTRA_VM_DISCOVERY_ENABLED);
-    }
-
-    public DrasylNodeConfig() {
-        this(ConfigFactory.load());
     }
 
     private Level getLoglevel(Config config, String path) {
@@ -283,33 +283,33 @@ public class DrasylNodeConfig {
     }
 
     @SuppressWarnings({ "java:S107" })
-    DrasylNodeConfig(Level loglevel,
-                     ProofOfWork identityProofOfWork,
-                     CompressedPublicKey identityPublicKey,
-                     CompressedPrivateKey identityPrivateKey,
-                     Path identityPath,
-                     String serverBindHost,
-                     boolean serverEnabled,
-                     int serverBindPort,
-                     short serverIdleRetries,
-                     Duration serverIdleTimeout,
-                     int flushBufferSize,
-                     boolean serverSSLEnabled,
-                     List<String> serverSSLProtocols,
-                     Duration serverHandshakeTimeout,
-                     Set<URI> serverEndpoints,
-                     Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer,
-                     int messageMaxContentLength,
-                     short messageHopLimit,
-                     boolean superPeerEnabled,
-                     Set<URI> superPeerEndpoints,
-                     CompressedPublicKey superPeerPublicKey,
-                     List<Duration> superPeerRetryDelays,
-                     Duration superPeerHandshakeTimeout,
-                     Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer,
-                     short superPeerIdleRetries,
-                     Duration superPeerIdleTimeout,
-                     boolean intraVmDiscoveryEnabled) {
+    DrasylConfig(Level loglevel,
+                 ProofOfWork identityProofOfWork,
+                 CompressedPublicKey identityPublicKey,
+                 CompressedPrivateKey identityPrivateKey,
+                 Path identityPath,
+                 String serverBindHost,
+                 boolean serverEnabled,
+                 int serverBindPort,
+                 short serverIdleRetries,
+                 Duration serverIdleTimeout,
+                 int flushBufferSize,
+                 boolean serverSSLEnabled,
+                 List<String> serverSSLProtocols,
+                 Duration serverHandshakeTimeout,
+                 Set<URI> serverEndpoints,
+                 Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer,
+                 int messageMaxContentLength,
+                 short messageHopLimit,
+                 boolean superPeerEnabled,
+                 Set<URI> superPeerEndpoints,
+                 CompressedPublicKey superPeerPublicKey,
+                 List<Duration> superPeerRetryDelays,
+                 Duration superPeerHandshakeTimeout,
+                 Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer,
+                 short superPeerIdleRetries,
+                 Duration superPeerIdleTimeout,
+                 boolean intraVmDiscoveryEnabled) {
         this.loglevel = loglevel;
         this.identityProofOfWork = identityProofOfWork;
         this.identityPublicKey = identityPublicKey;
@@ -460,7 +460,7 @@ public class DrasylNodeConfig {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        DrasylNodeConfig that = (DrasylNodeConfig) o;
+        DrasylConfig that = (DrasylConfig) o;
         return loglevel == that.loglevel &&
                 serverEnabled == that.serverEnabled &&
                 serverBindPort == that.serverBindPort &&
@@ -492,7 +492,7 @@ public class DrasylNodeConfig {
 
     @Override
     public String toString() {
-        return "DrasylNodeConfig{" +
+        return "DrasylConfig{" +
                 "loglevel='" + loglevel + '\'' +
                 ", identityProofOfWork='" + identityProofOfWork + '\'' +
                 ", identityPublicKey='" + identityPublicKey + '\'' +
@@ -523,15 +523,15 @@ public class DrasylNodeConfig {
                 '}';
     }
 
-    public static DrasylNodeConfig parseFile(File file) {
-        return new DrasylNodeConfig(ConfigFactory.parseFile(file).withFallback(ConfigFactory.load()));
+    public static DrasylConfig parseFile(File file) {
+        return new DrasylConfig(ConfigFactory.parseFile(file).withFallback(ConfigFactory.load()));
     }
 
     public static Builder newBuilder() {
         return newBuilder(DEFAULT);
     }
 
-    public static Builder newBuilder(DrasylNodeConfig config) {
+    public static Builder newBuilder(DrasylConfig config) {
         return new Builder(
                 config.loglevel,
                 config.identityProofOfWork,
@@ -785,8 +785,8 @@ public class DrasylNodeConfig {
             return this;
         }
 
-        public DrasylNodeConfig build() {
-            return new DrasylNodeConfig(loglevel, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled);
+        public DrasylConfig build() {
+            return new DrasylConfig(loglevel, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled);
         }
     }
 }

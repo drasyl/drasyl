@@ -29,7 +29,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.IOException;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
-import static org.drasyl.util.JSONUtil.JACKSON_MAPPER;
+import static org.drasyl.util.JSONUtil.JACKSON_READER;
+import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -59,7 +60,7 @@ class ApplicationMessageTest {
                     0x00,
                     0x01,
                     0x02
-            }), JACKSON_MAPPER.readValue(json, ApplicationMessage.class));
+            }), JACKSON_READER.readValue(json, ApplicationMessage.class));
         }
     }
 
@@ -73,7 +74,7 @@ class ApplicationMessageTest {
                     0x02
             }, (short) 64);
 
-            assertThatJson(JACKSON_MAPPER.writeValueAsString(message))
+            assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", ApplicationMessage.class.getSimpleName())
                     .containsKeys("id", "recipient", "hopCount", "sender", "payload");

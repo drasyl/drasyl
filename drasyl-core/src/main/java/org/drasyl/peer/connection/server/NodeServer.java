@@ -27,7 +27,7 @@ import io.netty.channel.group.ChannelGroupFutureListener;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.reactivex.rxjava3.core.Observable;
-import org.drasyl.DrasylNodeConfig;
+import org.drasyl.DrasylConfig;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
@@ -56,7 +56,7 @@ public class NodeServer implements AutoCloseable {
     public final ServerBootstrap serverBootstrap;
     private final Supplier<Identity> identitySupplier;
     private final PeersManager peersManager;
-    private final DrasylNodeConfig config;
+    private final DrasylConfig config;
     private final Messenger messenger;
     private final AtomicBoolean opened;
     protected final NodeServerChannelGroup channelGroup;
@@ -68,7 +68,7 @@ public class NodeServer implements AutoCloseable {
     NodeServer(Supplier<Identity> identitySupplier,
                Messenger messenger,
                PeersManager peersManager,
-               DrasylNodeConfig config,
+               DrasylConfig config,
                ServerBootstrap serverBootstrap,
                EventLoopGroup workerGroup,
                EventLoopGroup bossGroup,
@@ -106,7 +106,7 @@ public class NodeServer implements AutoCloseable {
     public NodeServer(Supplier<Identity> identitySupplier,
                       Messenger messenger,
                       PeersManager peersManager,
-                      DrasylNodeConfig config,
+                      DrasylConfig config,
                       EventLoopGroup workerGroup,
                       EventLoopGroup bossGroup,
                       Observable<Boolean> superPeerConnected) throws NodeServerException {

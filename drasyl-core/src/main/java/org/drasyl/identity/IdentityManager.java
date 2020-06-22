@@ -19,7 +19,8 @@
 package org.drasyl.identity;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
-import org.drasyl.DrasylNodeConfig;
+import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
+import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.slf4j.Logger;
@@ -32,7 +33,8 @@ import java.nio.file.Path;
 import java.security.KeyPair;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.util.JSONUtil.JACKSON_MAPPER;
+import static org.drasyl.util.JSONUtil.JACKSON_READER;
+import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 
 /**
  * This class provides the identity of the node. Messages to the node are addressed to the identity.
@@ -42,18 +44,18 @@ import static org.drasyl.util.JSONUtil.JACKSON_MAPPER;
 public class IdentityManager {
     public static final short POW_DIFFICULTY = 6;
     private static final Logger LOG = LoggerFactory.getLogger(IdentityManager.class);
-    private final DrasylNodeConfig config;
+    private final DrasylConfig config;
     private Identity identity;
 
     /**
      * Manages the identity at the specified file path. If there is no identity at this file path
      * yet, a new one is created.
      */
-    public IdentityManager(DrasylNodeConfig config) {
+    public IdentityManager(DrasylConfig config) {
         this(config, null);
     }
 
-    IdentityManager(DrasylNodeConfig config, Identity identity) {
+    IdentityManager(DrasylConfig config, Identity identity) {
         this.config = config;
         this.identity = identity;
     }
@@ -114,7 +116,7 @@ public class IdentityManager {
      */
     private static Identity readIdentityFile(Path path) throws IdentityManagerException {
         try {
-            return JACKSON_MAPPER.readValue(path.toFile(), Identity.class);
+            return JACKSON_READER.readValue(path.toFile(), Identity.class);
         }
         catch (JsonProcessingException e) {
             throw new IdentityManagerException("Unable to load identity from file '" + path + "': " + e.getMessage());
@@ -163,7 +165,7 @@ public class IdentityManager {
         }
         else {
             try {
-                JACKSON_MAPPER.writerWithDefaultPrettyPrinter().writeValue(file, identity);
+                JACKSON_WRITER.with(new DefaultPrettyPrinter()).writeValue(file, identity);
             }
             catch (IOException e) {
                 throw new IdentityManagerException("Unable to write identity to file '" + path + "': " + e.getMessage());

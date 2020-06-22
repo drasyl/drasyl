@@ -26,7 +26,8 @@ import java.io.IOException;
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_FORMAT;
 import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_INTERNAL;
-import static org.drasyl.util.JSONUtil.JACKSON_MAPPER;
+import static org.drasyl.util.JSONUtil.JACKSON_READER;
+import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -39,7 +40,7 @@ class ExceptionMessageTest {
             String json = "{\"@type\":\"" + ExceptionMessage.class.getSimpleName() + "\",\"id\":\"77175D7235920F3BA17341D7\"," +
                     "\"error\":\"" + ERROR_INTERNAL.getDescription() + "\"}";
 
-            assertEquals(new ExceptionMessage(ERROR_INTERNAL), JACKSON_MAPPER.readValue(json, Message.class));
+            assertEquals(new ExceptionMessage(ERROR_INTERNAL), JACKSON_READER.readValue(json, Message.class));
         }
     }
 
@@ -49,7 +50,7 @@ class ExceptionMessageTest {
         void shouldSerializeToCorrectJson() throws IOException {
             ExceptionMessage message = new ExceptionMessage(ERROR_INTERNAL);
 
-            assertThatJson(JACKSON_MAPPER.writeValueAsString(message))
+            assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", ExceptionMessage.class.getSimpleName())
                     .containsKeys("id", "error");

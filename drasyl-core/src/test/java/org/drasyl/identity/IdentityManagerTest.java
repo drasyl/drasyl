@@ -19,7 +19,7 @@
 package org.drasyl.identity;
 
 import net.javacrumbs.jsonunit.core.Option;
-import org.drasyl.DrasylNodeConfig;
+import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.CryptoException;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -43,7 +43,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class IdentityManagerTest {
     @Mock
-    private DrasylNodeConfig config;
+    private DrasylConfig config;
 
     @Nested
     class LoadOrCreateIdentity {

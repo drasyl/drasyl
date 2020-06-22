@@ -26,7 +26,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.IOException;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
-import static org.drasyl.util.JSONUtil.JACKSON_MAPPER;
+import static org.drasyl.util.JSONUtil.JACKSON_READER;
+import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
@@ -37,7 +38,7 @@ class QuitMessageTest {
         void shouldDeserializeToCorrectObject() throws IOException {
             String json = "{\"@type\":\"" + QuitMessage.class.getSimpleName() + "\",\"id\":\"77175D7235920F3BA17341D7\"}";
 
-            assertEquals(new QuitMessage(), JACKSON_MAPPER.readValue(json, Message.class));
+            assertEquals(new QuitMessage(), JACKSON_READER.readValue(json, Message.class));
         }
     }
 
@@ -47,7 +48,7 @@ class QuitMessageTest {
         void shouldSerializeToCorrectJson() throws IOException {
             QuitMessage message = new QuitMessage();
 
-            assertThatJson(JACKSON_MAPPER.writeValueAsString(message))
+            assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", QuitMessage.class.getSimpleName())
                     .containsKeys("id", "reason");

@@ -46,7 +46,8 @@ import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 
-import static org.drasyl.util.JSONUtil.JACKSON_MAPPER;
+import static org.drasyl.util.JSONUtil.JACKSON_READER;
+import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 
 /**
  * A simple JavaFX Chat that uses drasyl as backend overlay network.
@@ -148,7 +149,7 @@ public class ChatGUI extends Application {
 
     private void parseMessage(Pair<CompressedPublicKey, byte[]> payload) {
         try {
-            Message msg = JACKSON_MAPPER.readValue(new String(payload.second()), Message.class);
+            Message msg = JACKSON_READER.readValue(new String(payload.second()), Message.class);
 
             txtArea.appendText("[" + msg.getUsername() + "]: " + msg.getMsg() + "\n");
         }
@@ -191,7 +192,7 @@ public class ChatGUI extends Application {
     private void newInputAction(ActionEvent actionEvent) {
         if (validateInput(chatField, s -> !s.isEmpty())) {
             try {
-                node.send(recipient, JACKSON_MAPPER.writeValueAsBytes(new Message(chatField.getText(), username)));
+                node.send(recipient, JACKSON_WRITER.writeValueAsBytes(new Message(chatField.getText(), username)));
                 txtArea.appendText("[" + username + "]: " + chatField.getText() + "\n");
             }
             catch (DrasylException | JsonProcessingException e) {

@@ -105,7 +105,7 @@ public abstract class DrasylNode {
         BOSS_GROUP = new NioEventLoopGroup(2);
     }
 
-    private final DrasylNodeConfig config;
+    private final DrasylConfig config;
     private final IdentityManager identityManager;
     private final PeersManager peersManager;
     private final Messenger messenger;
@@ -121,7 +121,7 @@ public abstract class DrasylNode {
      * Creates a new drasyl Node.
      */
     public DrasylNode() throws DrasylException {
-        this(new DrasylNodeConfig());
+        this(new DrasylConfig());
     }
 
     /**
@@ -129,7 +129,7 @@ public abstract class DrasylNode {
      *
      * @param config
      */
-    public DrasylNode(DrasylNodeConfig config) throws DrasylException {
+    public DrasylNode(DrasylConfig config) throws DrasylException {
         try {
             this.config = config;
             this.identityManager = new IdentityManager(this.config);
@@ -200,7 +200,7 @@ public abstract class DrasylNode {
         context.getLoggerList().stream().filter(l -> l.getName().startsWith("org.drasyl")).forEach(l -> l.setLevel(level));
     }
 
-    DrasylNode(DrasylNodeConfig config,
+    DrasylNode(DrasylConfig config,
                IdentityManager identityManager,
                PeersManager peersManager,
                Messenger messenger,

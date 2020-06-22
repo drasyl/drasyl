@@ -26,7 +26,8 @@ import java.io.IOException;
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_HANDSHAKE_TIMEOUT;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_PING_PONG;
-import static org.drasyl.util.JSONUtil.JACKSON_MAPPER;
+import static org.drasyl.util.JSONUtil.JACKSON_READER;
+import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -39,7 +40,7 @@ class ConnectionExceptionMessageTest {
             String json = "{\"@type\":\"" + ConnectionExceptionMessage.class.getSimpleName() + "\",\"id\":\"77175D7235920F3BA17341D7\"," +
                     "\"error\":\"" + CONNECTION_ERROR_PING_PONG.getDescription() + "\"}";
 
-            assertEquals(new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG), JACKSON_MAPPER.readValue(json, Message.class));
+            assertEquals(new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG), JACKSON_READER.readValue(json, Message.class));
         }
     }
 
@@ -49,7 +50,7 @@ class ConnectionExceptionMessageTest {
         void shouldSerializeToCorrectJson() throws IOException {
             ConnectionExceptionMessage message = new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG);
 
-            assertThatJson(JACKSON_MAPPER.writeValueAsString(message))
+            assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", ConnectionExceptionMessage.class.getSimpleName())
                     .containsKeys("id", "error");
