@@ -18,6 +18,7 @@
  */
 package org.drasyl.peer.connection.server;
 
+import ch.qos.logback.classic.Level;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.EventLoopGroup;
@@ -49,6 +50,9 @@ import org.drasyl.peer.connection.message.ResponseMessage;
 import org.drasyl.peer.connection.message.SignedMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
+import org.drasyl.peer.connection.superpeer.SuperPeerClientException;
+import org.drasyl.peer.connection.superpeer.TestSuperPeerClient;
+import org.drasyl.peer.connection.superpeer.TestSuperPeerClientChannelInitializer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -62,6 +66,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.net.URI;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Objects;
 import java.util.Random;
 import java.util.Set;
@@ -89,7 +94,6 @@ import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static testutils.AnsiColor.COLOR_CYAN;
@@ -124,7 +128,7 @@ class NodeServerIT {
         identitySession2 = Identity.of(26778671, "0236fde6a49564a0eaa2a7d6c8f73b97062d5feb36160398c08a5b73f646aa5fe5", "093d1ee70518508cac18eaf90d312f768c14d43de9bfd2618a2794d8df392da0");
 
         serverConfig = DrasylConfig.newBuilder()
-//                .loglevel(Level.TRACE)
+                .loglevel(Level.TRACE)
                 .identityProofOfWork(ProofOfWork.of(6657650))
                 .identityPublicKey(CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"))
                 .identityPrivateKey(CompressedPrivateKey.of("0c27af38c77f2cd5cc2a0ff5c461003a9c24beb955f316135d251ecaf4dda03f"))
@@ -149,12 +153,14 @@ class NodeServerIT {
         server.open();
 
         config = DrasylConfig.newBuilder()
-//                .loglevel(Level.TRACE)
+                .loglevel(Level.TRACE)
                 .identityProofOfWork(ProofOfWork.of(169092))
                 .identityPublicKey(CompressedPublicKey.of("030a59784f88c74dcd64258387f9126739c3aeb7965f36bb501ff01f5036b3d72b"))
                 .identityPrivateKey(CompressedPrivateKey.of("0f1e188d5e3b98daf2266d7916d2e1179ae6209faa7477a2a66d4bb61dab4399"))
                 .serverEnabled(false)
                 .superPeerEndpoints(server.getEndpoints())
+                .superPeerPublicKey(CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"))
+                .superPeerChannelInitializer(TestSuperPeerClientChannelInitializer.class)
                 .build();
     }
 
@@ -259,15 +265,17 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void joinedClientsShouldNoBeDroppedAfterTimeout() throws InterruptedException, ExecutionException {
+    void joinedClientsShouldNoBeDroppedAfterTimeout() throws InterruptedException, SuperPeerClientException {
         // create connection
-        TestNodeServerConnection session = clientSessionAfterJoin(config, server, identitySession1);
+        DrasylConfig noRetryConfig = DrasylConfig.newBuilder(config).superPeerRetryDelays(List.of()).build();
+        TestSuperPeerClient client = new TestSuperPeerClient(noRetryConfig, server, identitySession1, workerGroup);
+        client.openAndAwaitOnline();
 
         // wait until timeout
         Thread.sleep(serverConfig.getServerHandshakeTimeout().plusSeconds(2).toMillis());// NOSONAR
 
         // verify session status
-        assertFalse(session.isClosed().isDone());
+        assertTrue(client.connectionEstablished().blockingFirst());
     }
 
     @Test
@@ -348,15 +356,17 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientsSendingPongMessageShouldNotBeDroppedAfterTimeout() throws ExecutionException, InterruptedException {
+    void clientsSendingPongMessageShouldNotBeDroppedAfterTimeout() throws InterruptedException, SuperPeerClientException {
         // create connection
-        TestNodeServerConnection session = clientSessionAfterJoin(config, server, identitySession1);
+        DrasylConfig noRetryConfig = DrasylConfig.newBuilder(config).superPeerRetryDelays(List.of()).build();
+        TestSuperPeerClient client = new TestSuperPeerClient(noRetryConfig, server, identitySession1, workerGroup);
+        client.openAndAwaitOnline();
 
         // wait until timeout
         Thread.sleep(serverConfig.getServerIdleTimeout().toMillis() * (serverConfig.getServerIdleRetries() + 1) + 1000);// NOSONAR
 
         // verify session status
-        assertFalse(session.isClosed().isDone());
+        assertTrue(client.connectionEstablished().blockingFirst());
     }
 
     @Test
@@ -457,12 +467,13 @@ class NodeServerIT {
     }
 
     @Test
-    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void shuttingDownServerShouldSendLeaveMessage() throws ExecutionException, InterruptedException {
-        TestNodeServerConnection session = clientSessionAfterJoin(config, server, identitySession1);
+    void shuttingDownServerShouldSendLeaveMessage() throws SuperPeerClientException, InterruptedException {
+        DrasylConfig noRetryConfig = DrasylConfig.newBuilder(config).superPeerRetryDelays(List.of()).build();
+        TestSuperPeerClient client = new TestSuperPeerClient(noRetryConfig, server, identitySession1, workerGroup);
+        client.open();
 
-        TestObserver<Message> receivedMessages = session.receivedMessages().test();
-
+        TestObserver<Message> receivedMessages = client.receivedMessages().filter(m -> m instanceof QuitMessage).test();
+        await().until(() -> server.getChannelGroup().find(identitySession1.getPublicKey()) != null);
         server.close();
 
         // verify responses

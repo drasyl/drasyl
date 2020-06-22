@@ -138,7 +138,7 @@ public class ExceptionHandler extends ChannelDuplexHandler {
             }
             ctx.writeAndFlush(msg);
         }
-        LOG.debug("", e);
+        LOG.debug("Exception caught: {}", e.getMessage());
     }
 
     class ChannelExceptionListener {

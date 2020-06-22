@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection.server;
+package org.drasyl.peer.connection.superpeer;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
@@ -25,11 +25,11 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
 import org.drasyl.peer.connection.handler.SimpleChannelDuplexHandler;
 import org.drasyl.peer.connection.message.Message;
 
-public class TestNodeServerChannelInitializer extends DefaultNodeServerChannelInitializer {
+public class TestSuperPeerClientChannelInitializer extends DefaultSuperPeerClientChannelInitializer {
     private final PublishSubject<Message> sentMessages;
     private final PublishSubject<Message> receivedMessages;
 
-    public TestNodeServerChannelInitializer(NodeServerEnvironment environment) {
+    public TestSuperPeerClientChannelInitializer(SuperPeerClientEnvironment environment) {
         super(environment);
         sentMessages = PublishSubject.create();
         receivedMessages = PublishSubject.create();
