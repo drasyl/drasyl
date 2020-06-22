@@ -116,7 +116,7 @@ class NodeServerConnectionHandlerTest {
 
     @Test
     void shouldSendExceptionMessageIfHandshakeIsNotDoneInTime() {
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(environment, ofMillis(0), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
+        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(environment, ofMillis(0), messenger, handshakeFuture, null, requestMessage, offerMessage);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         assertEquals(new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE_TIMEOUT), channel.readOutbound());
