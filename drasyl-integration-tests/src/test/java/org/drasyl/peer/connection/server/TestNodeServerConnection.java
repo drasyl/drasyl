@@ -32,7 +32,6 @@ import io.reactivex.rxjava3.core.Single;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylConfig;
-import org.drasyl.crypto.Crypto;
 import org.drasyl.identity.CompressedKeyPair;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
@@ -46,9 +45,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
-import java.text.MessageFormat;
 import java.time.Duration;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -69,16 +66,13 @@ import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE
 @SuppressWarnings({ "java:S1452" })
 public class TestNodeServerConnection {
     private final static Logger LOG = LoggerFactory.getLogger(TestNodeServerConnection.class);
-    protected final String connectionId = Crypto.randomString(8);
-    protected final Channel channel;
-    protected final String userAgent;
-    protected final String channelId;
-    protected final Subject<Message> receivedMessages;
-    protected final ConcurrentHashMap<String, CompletableFuture<ResponseMessage<?>>> futures;
-    protected final CompressedKeyPair keyPair;
-    protected Identity identity;
-    protected AtomicBoolean isClosed;
-    protected CompletableFuture<Boolean> closedCompletable;
+    private final Channel channel;
+    private final Subject<Message> receivedMessages;
+    private final ConcurrentHashMap<String, CompletableFuture<ResponseMessage<?>>> futures;
+    private final CompressedKeyPair keyPair;
+    private Identity identity;
+    private AtomicBoolean isClosed;
+    private CompletableFuture<Boolean> closedCompletable;
 
     /**
      * Creates a new connection.
@@ -87,20 +81,17 @@ public class TestNodeServerConnection {
      * @param identity the identity of this {@link TestNodeServerConnection}
      */
     public TestNodeServerConnection(Channel channel, Identity identity) {
-        this(identity, channel, "JUnit-Test", new AtomicBoolean(false), new CompletableFuture<>());
+        this(identity, channel, new AtomicBoolean(false), new CompletableFuture<>());
 
         this.channel.closeFuture().addListener((ChannelFutureListener) this::onChannelClose);
     }
 
     protected TestNodeServerConnection(Identity identity,
                                        Channel channel,
-                                       String userAgent,
                                        AtomicBoolean isClosed,
                                        CompletableFuture<Boolean> closedCompletable) {
         this.identity = identity;
         this.channel = channel;
-        this.userAgent = userAgent;
-        this.channelId = channel.id().asShortText();
         this.isClosed = isClosed;
         this.closedCompletable = closedCompletable;
         this.receivedMessages = PublishSubject.create();
@@ -159,34 +150,8 @@ public class TestNodeServerConnection {
         }
     }
 
-    public String getUserAgent() {
-        return this.userAgent;
-    }
-
     public CompletableFuture<Boolean> isClosed() {
         return closedCompletable;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(connectionId);
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        TestNodeServerConnection that = (TestNodeServerConnection) o;
-        return Objects.equals(connectionId, that.connectionId);
-    }
-
-    @Override
-    public String toString() {
-        return MessageFormat.format("{0} [{1}/Channel:{2}]", getClass().getSimpleName(), identity, channelId);
     }
 
     /**
