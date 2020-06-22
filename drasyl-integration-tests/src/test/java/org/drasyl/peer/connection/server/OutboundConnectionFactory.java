@@ -21,11 +21,14 @@ package org.drasyl.peer.connection.server;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
+import io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler;
 import io.netty.handler.flush.FlushConsolidationHandler;
 import io.netty.handler.logging.LogLevel;
 import io.netty.handler.logging.LoggingHandler;
@@ -53,6 +56,8 @@ import java.util.Collections;
 import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
+import static io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler.ClientHandshakeStateEvent.HANDSHAKE_COMPLETE;
+import static io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler.ClientHandshakeStateEvent.HANDSHAKE_TIMEOUT;
 import static org.drasyl.peer.connection.handler.ExceptionHandler.EXCEPTION_HANDLER;
 import static org.drasyl.peer.connection.handler.MessageDecoder.MESSAGE_DECODER;
 import static org.drasyl.peer.connection.handler.MessageEncoder.MESSAGE_ENCODER;
@@ -290,7 +295,7 @@ public class OutboundConnectionFactory {
      */
     private DefaultSessionInitializer defaultInitializer() {
         return new SuperPeerClientChannelInitializer(FlushConsolidationHandler.DEFAULT_EXPLICIT_FLUSH_AFTER_FLUSHES, //NOSONAR
-                idleTimeout, idleRetries, uri, channelReadyFuture) {
+                idleTimeout, idleRetries, uri) {
             @Override
             protected void pojoMarshalStage(ChannelPipeline pipeline) {
                 // From String to Message
@@ -313,6 +318,31 @@ public class OutboundConnectionFactory {
             @Override
             protected void customStage(ChannelPipeline pipeline) {
                 handler.forEach(pipeline::addLast);
+
+                pipeline.addLast(new SimpleChannelInboundHandler<Object>() {
+                    @Override
+                    public void userEventTriggered(ChannelHandlerContext ctx,
+                                                   Object evt) throws Exception {
+                        super.userEventTriggered(ctx, evt);
+
+                        if (evt instanceof WebSocketClientProtocolHandler.ClientHandshakeStateEvent) {
+                            WebSocketClientProtocolHandler.ClientHandshakeStateEvent e = (WebSocketClientProtocolHandler.ClientHandshakeStateEvent) evt;
+                            if (e == HANDSHAKE_COMPLETE) {
+                                channelReadyFuture.complete(null);
+                                pipeline.remove(this);
+                            }
+                            else if (e == HANDSHAKE_TIMEOUT) {
+                                channelReadyFuture.completeExceptionally(new Exception("WebSocket Handshake Timeout"));
+                                ctx.close();
+                            }
+                        }
+                    }
+
+                    @Override
+                    protected void channelRead0(ChannelHandlerContext ctx, Object msg) {
+                        ctx.fireChannelRead(msg);
+                    }
+                });
             }
 
             @Override
