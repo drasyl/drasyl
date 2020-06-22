@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+@SuppressWarnings({ "java:S107" })
 public class ChunkedMessageOutput {
     private static final Logger LOG = LoggerFactory.getLogger(ChunkedMessageOutput.class);
     private final ChannelHandlerContext ctx;

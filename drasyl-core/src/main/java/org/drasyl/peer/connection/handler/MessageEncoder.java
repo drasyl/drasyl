@@ -49,6 +49,7 @@ public class MessageEncoder extends MessageToMessageEncoder<Message> {
     }
 
     @Override
+    @SuppressWarnings("java:S2093")
     protected void encode(ChannelHandlerContext ctx, Message msg, List<Object> out) {
         if (LOG.isTraceEnabled()) {
             LOG.trace("[{}]: Send Message '{}'", ctx.channel().id().asShortText(), msg);
@@ -60,6 +61,7 @@ public class MessageEncoder extends MessageToMessageEncoder<Message> {
             ByteBufOutputStream outputStream = new ByteBufOutputStream(frame.content());
             JACKSON_WRITER.writeValue((OutputStream) outputStream, msg);
 
+            outputStream.close();
             out.add(frame.retain());
         }
         catch (IOException e) {

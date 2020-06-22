@@ -21,6 +21,7 @@ package org.drasyl.peer.connection.superpeer;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
+import io.netty.util.ReferenceCountUtil;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import org.drasyl.peer.connection.handler.SimpleChannelDuplexHandler;
 import org.drasyl.peer.connection.message.Message;
@@ -48,7 +49,7 @@ public class TestNodeServerChannelInitializer extends DefaultNodeServerChannelIn
     @Override
     protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
         super.afterPojoMarshalStage(pipeline);
-        pipeline.addLast(new SimpleChannelDuplexHandler<Message, Message>() {
+        pipeline.addLast(new SimpleChannelDuplexHandler<Message, Message>(false, false, false) {
             @Override
             protected void channelRead0(ChannelHandlerContext ctx,
                                         Message msg) {
