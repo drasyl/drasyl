@@ -24,12 +24,11 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
-import io.netty.handler.codec.http.websocketx.TextWebSocketFrame;
 import org.drasyl.peer.connection.message.QuitMessage;
-import org.drasyl.util.JSONUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -45,7 +44,7 @@ class MessageDecoderTest {
 
     @Test
     void shouldDeserializeInboundJsonStringToMessage() throws JsonProcessingException {
-        byte[] binary = JSONUtil.JACKSON_WRITER.writeValueAsBytes(new QuitMessage());
+        byte[] binary = JACKSON_WRITER.writeValueAsBytes(new QuitMessage());
 
         channel.writeInbound(new BinaryWebSocketFrame(Unpooled.wrappedBuffer(binary)));
         channel.flush();
@@ -55,11 +54,9 @@ class MessageDecoderTest {
 
     @Test
     void ShouldThrowExceptionIfInboundJsonStringDeserializationFail() throws JsonProcessingException {
-        byte[] json = JSONUtil.JACKSON_WRITER.writeValueAsBytes("invalid");
+        byte[] binary = JACKSON_WRITER.writeValueAsBytes("invalid");
 
-        BinaryWebSocketFrame frame = new BinaryWebSocketFrame(Unpooled.wrappedBuffer(json));
-        assertThrows(DecoderException.class, () -> {
-            channel.writeInbound(frame);
-        });
+        BinaryWebSocketFrame frame = new BinaryWebSocketFrame(Unpooled.wrappedBuffer(binary));
+        assertThrows(DecoderException.class, () -> channel.writeInbound(frame));
     }
 }
