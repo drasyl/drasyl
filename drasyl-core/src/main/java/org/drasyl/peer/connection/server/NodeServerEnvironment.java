@@ -18,7 +18,7 @@
  */
 package org.drasyl.peer.connection.server;
 
-import org.drasyl.DrasylNodeConfig;
+import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
@@ -32,7 +32,7 @@ import java.util.function.Supplier;
  * This class encapsulates all information needed by a {@link NodeServerChannelInitializer}.
  */
 public class NodeServerEnvironment {
-    private final DrasylNodeConfig config;
+    private final DrasylConfig config;
     private final Supplier<Identity> identitySupplier;
     private final PeersManager peersManager;
     private final BooleanSupplier acceptedNewConnectionsSupplier;
@@ -40,7 +40,7 @@ public class NodeServerEnvironment {
     private final Supplier<Set<URI>> endpointsSupplier;
     private final NodeServerChannelGroup channelGroup;
 
-    public NodeServerEnvironment(DrasylNodeConfig config,
+    public NodeServerEnvironment(DrasylConfig config,
                                  Supplier<Identity> identitySupplier,
                                  PeersManager peersManager,
                                  Messenger messenger,
@@ -68,7 +68,7 @@ public class NodeServerEnvironment {
         return acceptedNewConnectionsSupplier;
     }
 
-    public DrasylNodeConfig getConfig() {
+    public DrasylConfig getConfig() {
         return config;
     }
 

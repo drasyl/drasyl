@@ -20,7 +20,7 @@ package org.drasyl.identity;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.drasyl.DrasylNodeConfig;
+import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.slf4j.Logger;
@@ -43,18 +43,18 @@ public class IdentityManager {
     public static final short POW_DIFFICULTY = 6;
     private static final Logger LOG = LoggerFactory.getLogger(IdentityManager.class);
     private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
-    private final DrasylNodeConfig config;
+    private final DrasylConfig config;
     private Identity identity;
 
     /**
      * Manages the identity at the specified file path. If there is no identity at this file path
      * yet, a new one is created.
      */
-    public IdentityManager(DrasylNodeConfig config) {
+    public IdentityManager(DrasylConfig config) {
         this(config, null);
     }
 
-    IdentityManager(DrasylNodeConfig config, Identity identity) {
+    IdentityManager(DrasylConfig config, Identity identity) {
         this.config = config;
         this.identity = identity;
     }

@@ -48,7 +48,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class DrasylNodeTest {
     @Mock
-    private DrasylNodeConfig config;
+    private DrasylConfig config;
     @Mock
     private IdentityManager identityManager;
     @Mock

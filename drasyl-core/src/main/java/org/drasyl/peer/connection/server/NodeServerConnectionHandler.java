@@ -21,6 +21,7 @@ package org.drasyl.peer.connection.server;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
+import org.drasyl.DrasylConfig;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
@@ -52,8 +53,8 @@ import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE
  * received. Every other incoming message is also dropped unless a {@link JoinMessage} was
  * received.
  * <p>
- * If a {@link JoinMessage} was not received in {@link org.drasyl.DrasylNodeConfig#getServerHandshakeTimeout()}
- * the connection will be closed.
+ * If a {@link JoinMessage} was not received in {@link DrasylConfig#getServerHandshakeTimeout()} the
+ * connection will be closed.
  * <p>
  * This handler closes the channel if an exception occurs before a {@link JoinMessage} has been
  * received.

@@ -47,31 +47,31 @@ import java.util.Set;
 import java.util.function.Supplier;
 
 import static java.time.Duration.ofSeconds;
-import static org.drasyl.DrasylNodeConfig.DEFAULT;
-import static org.drasyl.DrasylNodeConfig.FLUSH_BUFFER_SIZE;
-import static org.drasyl.DrasylNodeConfig.IDENTITY_PATH;
-import static org.drasyl.DrasylNodeConfig.IDENTITY_PRIVATE_KEY;
-import static org.drasyl.DrasylNodeConfig.IDENTITY_PROOF_OF_WORK;
-import static org.drasyl.DrasylNodeConfig.IDENTITY_PUBLIC_KEY;
-import static org.drasyl.DrasylNodeConfig.INTRA_VM_DISCOVERY_ENABLED;
-import static org.drasyl.DrasylNodeConfig.MESSAGE_HOP_LIMIT;
-import static org.drasyl.DrasylNodeConfig.MESSAGE_MAX_CONTENT_LENGTH;
-import static org.drasyl.DrasylNodeConfig.SERVER_BIND_HOST;
-import static org.drasyl.DrasylNodeConfig.SERVER_BIND_PORT;
-import static org.drasyl.DrasylNodeConfig.SERVER_CHANNEL_INITIALIZER;
-import static org.drasyl.DrasylNodeConfig.SERVER_ENABLED;
-import static org.drasyl.DrasylNodeConfig.SERVER_ENDPOINTS;
-import static org.drasyl.DrasylNodeConfig.SERVER_HANDSHAKE_TIMEOUT;
-import static org.drasyl.DrasylNodeConfig.SERVER_IDLE_RETRIES;
-import static org.drasyl.DrasylNodeConfig.SERVER_IDLE_TIMEOUT;
-import static org.drasyl.DrasylNodeConfig.SERVER_SSL_ENABLED;
-import static org.drasyl.DrasylNodeConfig.SERVER_SSL_PROTOCOLS;
-import static org.drasyl.DrasylNodeConfig.SUPER_PEER_CHANNEL_INITIALIZER;
-import static org.drasyl.DrasylNodeConfig.SUPER_PEER_ENABLED;
-import static org.drasyl.DrasylNodeConfig.SUPER_PEER_ENDPOINTS;
-import static org.drasyl.DrasylNodeConfig.SUPER_PEER_HANDSHAKE_TIMEOUT;
-import static org.drasyl.DrasylNodeConfig.SUPER_PEER_PUBLIC_KEY;
-import static org.drasyl.DrasylNodeConfig.SUPER_PEER_RETRY_DELAYS;
+import static org.drasyl.DrasylConfig.DEFAULT;
+import static org.drasyl.DrasylConfig.FLUSH_BUFFER_SIZE;
+import static org.drasyl.DrasylConfig.IDENTITY_PATH;
+import static org.drasyl.DrasylConfig.IDENTITY_PRIVATE_KEY;
+import static org.drasyl.DrasylConfig.IDENTITY_PROOF_OF_WORK;
+import static org.drasyl.DrasylConfig.IDENTITY_PUBLIC_KEY;
+import static org.drasyl.DrasylConfig.INTRA_VM_DISCOVERY_ENABLED;
+import static org.drasyl.DrasylConfig.MESSAGE_HOP_LIMIT;
+import static org.drasyl.DrasylConfig.MESSAGE_MAX_CONTENT_LENGTH;
+import static org.drasyl.DrasylConfig.SERVER_BIND_HOST;
+import static org.drasyl.DrasylConfig.SERVER_BIND_PORT;
+import static org.drasyl.DrasylConfig.SERVER_CHANNEL_INITIALIZER;
+import static org.drasyl.DrasylConfig.SERVER_ENABLED;
+import static org.drasyl.DrasylConfig.SERVER_ENDPOINTS;
+import static org.drasyl.DrasylConfig.SERVER_HANDSHAKE_TIMEOUT;
+import static org.drasyl.DrasylConfig.SERVER_IDLE_RETRIES;
+import static org.drasyl.DrasylConfig.SERVER_IDLE_TIMEOUT;
+import static org.drasyl.DrasylConfig.SERVER_SSL_ENABLED;
+import static org.drasyl.DrasylConfig.SERVER_SSL_PROTOCOLS;
+import static org.drasyl.DrasylConfig.SUPER_PEER_CHANNEL_INITIALIZER;
+import static org.drasyl.DrasylConfig.SUPER_PEER_ENABLED;
+import static org.drasyl.DrasylConfig.SUPER_PEER_ENDPOINTS;
+import static org.drasyl.DrasylConfig.SUPER_PEER_HANDSHAKE_TIMEOUT;
+import static org.drasyl.DrasylConfig.SUPER_PEER_PUBLIC_KEY;
+import static org.drasyl.DrasylConfig.SUPER_PEER_RETRY_DELAYS;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -81,7 +81,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.WARN)
-class DrasylNodeConfigTest {
+class DrasylConfigTest {
     private Level loglevel;
     @Mock
     private ProofOfWork proofOfWork;
@@ -181,7 +181,7 @@ class DrasylNodeConfigTest {
             when(networkAddressesProvider.get()).thenReturn(Set.of("192.168.188.112"));
             when(typesafeConfig.getBoolean(INTRA_VM_DISCOVERY_ENABLED)).thenReturn(intraVmDiscoveryEnabled);
 
-            DrasylNodeConfig config = new DrasylNodeConfig(typesafeConfig);
+            DrasylConfig config = new DrasylConfig(typesafeConfig);
 
             assertEquals(serverBindHost, config.getServerBindHost());
             assertEquals(serverBindPort, config.getServerBindPort());
@@ -216,7 +216,7 @@ class DrasylNodeConfigTest {
         void shouldMaskSecrets() throws CryptoException {
             identityPrivateKey = CompressedPrivateKey.of("07e98a2f8162a4002825f810c0fbd69b0c42bd9cb4f74a21bc7807bc5acb4f5f");
 
-            DrasylNodeConfig config = new DrasylNodeConfig(loglevel, proofOfWork, identityPublicKey, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled);
+            DrasylConfig config = new DrasylConfig(loglevel, proofOfWork, identityPublicKey, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled);
 
             assertThat(config.toString(), not(containsString(identityPrivateKey.getCompressedKey())));
         }
@@ -226,7 +226,7 @@ class DrasylNodeConfigTest {
     class Builder {
         @Test
         void shouldCreateCorrectConfig() {
-            DrasylNodeConfig config = DrasylNodeConfig.newBuilder()
+            DrasylConfig config = DrasylConfig.newBuilder()
                     .loglevel(DEFAULT.getLoglevel())
                     .identityProofOfWork(DEFAULT.getIdentityProofOfWork())
                     .identityPublicKey(DEFAULT.getIdentityPublicKey())

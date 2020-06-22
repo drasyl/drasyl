@@ -22,7 +22,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.reactivex.rxjava3.core.Observable;
-import org.drasyl.DrasylNodeConfig;
+import org.drasyl.DrasylConfig;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
@@ -42,7 +42,7 @@ public class TestNodeServer extends NodeServer {
     public TestNodeServer(Supplier<Identity> identitySupplier,
                           Messenger messenger,
                           PeersManager peersManager,
-                          DrasylNodeConfig config,
+                          DrasylConfig config,
                           EventLoopGroup workerGroup,
                           EventLoopGroup bossGroup,
                           Observable<Boolean> superPeerConnected) throws NodeServerException {
