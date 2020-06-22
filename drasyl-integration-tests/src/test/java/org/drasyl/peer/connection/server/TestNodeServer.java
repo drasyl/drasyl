@@ -28,7 +28,6 @@ import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.Message;
-import org.drasyl.peer.connection.superpeer.TestNodeServerChannelInitializer;
 
 import java.util.function.Supplier;
 
