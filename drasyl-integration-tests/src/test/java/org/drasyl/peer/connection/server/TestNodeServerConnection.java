@@ -136,7 +136,7 @@ public class TestNodeServerConnection {
     public static TestNodeServerConnection clientSession(DrasylConfig config,
                                                          NodeServer server,
                                                          Identity identity) throws ExecutionException, InterruptedException {
-        URI serverEndpoint = URI.create("ws://" + config.getServerBindHost() + ":" + server.getPort());
+        URI serverEndpoint = config.getSuperPeerEndpoints().iterator().next();
         return TestNodeServerConnection.clientSession(serverEndpoint, identity, true, server.workerGroup);
     }
 
@@ -277,7 +277,7 @@ public class TestNodeServerConnection {
                                                          Identity identity,
                                                          boolean pingPong) throws ExecutionException,
             InterruptedException {
-        URI serverEndpoint = URI.create("ws://" + config.getServerBindHost() + ":" + server.getPort());
+        URI serverEndpoint = config.getSuperPeerEndpoints().iterator().next();
 
         return TestNodeServerConnection.clientSession(serverEndpoint,
                 identity, pingPong, server.workerGroup);
