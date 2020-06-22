@@ -166,7 +166,7 @@ class SuperPeerClientIT {
         TestObserver<Message> receivedMessages = server.receivedMessages().test();
 
         // start client
-        SuperPeerClient client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, event -> {
+        client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, event -> {
         });
         client.open();
 
