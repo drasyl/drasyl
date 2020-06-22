@@ -151,10 +151,8 @@ class NodeServerIT {
 
         config = DrasylConfig.newBuilder()
 //                .loglevel(Level.TRACE)
-                .identityProofOfWork(ProofOfWork.of(169092))
-                .identityPublicKey(CompressedPublicKey.of("030a59784f88c74dcd64258387f9126739c3aeb7965f36bb501ff01f5036b3d72b"))
-                .identityPrivateKey(CompressedPrivateKey.of("0f1e188d5e3b98daf2266d7916d2e1179ae6209faa7477a2a66d4bb61dab4399"))
                 .serverEnabled(false)
+                .serverSSLEnabled(true)
                 .superPeerEndpoints(server.getEndpoints())
                 .build();
     }
@@ -437,7 +435,7 @@ class NodeServerIT {
         session2.send(request);
 
         // wait until timeout
-        Thread.sleep(config.getServerHandshakeTimeout().plusSeconds(2).toMillis());// NOSONAR
+        Thread.sleep(serverConfig.getServerHandshakeTimeout().plusSeconds(2).toMillis());// NOSONAR
         receivedMessages.assertNoValues();
     }
 
