@@ -22,6 +22,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.ResourceLeakDetector;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
@@ -137,6 +138,7 @@ class NodeServerIT {
                 .serverIdleTimeout(ofSeconds(1))
                 .serverIdleRetries((short) 1)
                 .superPeerEnabled(false)
+                .messageMaxContentLength(1024 * 1024)
                 .build();
         DrasylNode.setLogLevel(serverConfig.getLoglevel());
         serverIdentityManager = new IdentityManager(serverConfig);
@@ -155,6 +157,7 @@ class NodeServerIT {
                 .serverSSLEnabled(true)
                 .superPeerEndpoints(server.getEndpoints())
                 .composedMessageTransferTimeout(ofSeconds(60))
+                .messageMaxContentLength(1024 * 1024)
                 .build();
     }
 
@@ -400,6 +403,7 @@ class NodeServerIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void messageWithMaxSizeShouldArrive() throws InterruptedException, ExecutionException {
+        ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.DISABLED);
         // create connection
         TestNodeServerConnection session1 = clientSessionAfterJoin(config, server, identitySession1);
         TestNodeServerConnection session2 = clientSessionAfterJoin(config, server, identitySession2);
