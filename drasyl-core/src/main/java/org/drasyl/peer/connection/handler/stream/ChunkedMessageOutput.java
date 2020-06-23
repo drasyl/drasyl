@@ -103,7 +103,9 @@ public class ChunkedMessageOutput {
         this.ctx.executor().schedule(() -> {
             this.ctx.writeAndFlush(new StatusMessage(StatusMessage.Code.STATUS_REQUEST_TIMEOUT, this.msgID));
             removeAction.run();
-            ReferenceCountUtil.release(payload);
+            payload.release();
+
+            logDebug("Dropped chunked message `{}` because timeout has expired.", ctx, msgID);
         }, timeout, TimeUnit.MILLISECONDS);
     }
 
@@ -118,7 +120,13 @@ public class ChunkedMessageOutput {
             if ((length + progress) > maxContentLength || (length + progress) > contentLength) {
                 ctx.writeAndFlush(new StatusMessage(StatusMessage.Code.STATUS_PAYLOAD_TOO_LARGE, msgID));
 
-                logDebug("[{}]: Dropped chunked message `{}` because payload is bigger ({} bytes) than the allowed content length.", ctx.channel().id().asShortText(), (length + progress));
+                // Release resources on invalid chunk
+                payload.release();
+                removeAction.run();
+
+                logDebug("Dropped chunked message `{}` because payload is bigger ({} bytes) than the allowed content length.", ctx, (length + progress));
+
+                return;
             }
 
             if (length != 0) {
@@ -130,7 +138,7 @@ public class ChunkedMessageOutput {
                 payload.capacity(progress);
                 if (!checksum.equals(Hashing.murmur3x64Hex(payload.array()))) {
                     ctx.writeAndFlush(new StatusMessage(StatusMessage.Code.STATUS_PRECONDITION_FAILED, msgID));
-                    logDebug("[{}]: Dropped chunked message `{}` because checksum was invalid", ctx.channel().id().asShortText(), msgID);
+                    logDebug("Dropped chunked message `{}` because checksum was invalid", ctx, msgID);
                 }
                 else {
                     try {
@@ -148,9 +156,9 @@ public class ChunkedMessageOutput {
         }
     }
 
-    private void logDebug(String format, Object... arguments) {
+    private void logDebug(String format, ChannelHandlerContext ctx, Object... arguments) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug(format, arguments);
+            LOG.debug("[{}]:" + format, ctx.channel().id().asShortText(), arguments);
         }
     }
 
