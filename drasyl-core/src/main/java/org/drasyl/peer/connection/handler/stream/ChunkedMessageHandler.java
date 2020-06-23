@@ -36,22 +36,29 @@ import java.util.HashMap;
  * Allows sending bigger messages in chunks.
  */
 public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMessage, ApplicationMessage> {
+    private static final Logger LOG = LoggerFactory.getLogger(ChunkedMessageHandler.class);
     public static final String CHUNK_HANDLER = "chunkHandler";
     public static final int CHUNK_SIZE = 32768; // 32768 := 2^15 bytes for payload and 2^15 bytes for meta-data
-    private static final Logger LOG = LoggerFactory.getLogger(ChunkedMessageHandler.class);
     private final int maxContentLength;
     private final HashMap<String, ChunkedMessageOutput> chunks;
     private final CompressedPublicKey myIdentity;
     private final Duration transferTimeout;
 
+    ChunkedMessageHandler(HashMap<String, ChunkedMessageOutput> chunks,
+                          int maxContentLength,
+                          CompressedPublicKey myIdentity,
+                          Duration transferTimeout) {
+        super(true, false, false);
+        this.chunks = chunks;
+        this.maxContentLength = maxContentLength;
+        this.myIdentity = myIdentity;
+        this.transferTimeout = transferTimeout;
+    }
+
     public ChunkedMessageHandler(int maxContentLength,
                                  CompressedPublicKey myIdentity,
                                  Duration transferTimeout) {
-        super(true, false, false);
-        this.maxContentLength = maxContentLength;
-        chunks = new HashMap<>();
-        this.myIdentity = myIdentity;
-        this.transferTimeout = transferTimeout;
+        this(new HashMap<>(), maxContentLength, myIdentity, transferTimeout);
     }
 
     @Override
@@ -70,16 +77,14 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
                     msg.getId(), maxContentLength, () -> chunks.remove(msg.getId()), transferTimeout.toMillis()));
             chunks.get(msg.getId()).addChunk(msg);
         }
+        else if (chunks.containsKey(msg.getId())) {
+            chunks.get(msg.getId()).addChunk(msg);
+        }
         else {
-            if (chunks.containsKey(msg.getId())) {
-                chunks.get(msg.getId()).addChunk(msg);
-            }
-            else {
-                ctx.writeAndFlush(new StatusMessage(StatusMessage.Code.STATUS_BAD_REQUEST, msg.getId()));
+            ctx.writeAndFlush(new StatusMessage(StatusMessage.Code.STATUS_BAD_REQUEST, msg.getId()));
 
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("[{}]: Dropped chunked message `{}` because start chunk was not sent", ctx.channel().id().asShortText(), msg);
-                }
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("[{}]: Dropped chunked message `{}` because start chunk was not sent", ctx.channel().id().asShortText(), msg);
             }
         }
     }

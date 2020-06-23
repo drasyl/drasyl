@@ -33,6 +33,10 @@ import org.slf4j.LoggerFactory;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+/**
+ * This class is responsible for merging incoming {@link ChunkedMessage}s into one {@link
+ * ApplicationMessage}.
+ */
 @SuppressWarnings({ "java:S107" })
 public class ChunkedMessageOutput {
     private static final Logger LOG = LoggerFactory.getLogger(ChunkedMessageOutput.class);
@@ -47,6 +51,45 @@ public class ChunkedMessageOutput {
     private final String msgID;
     private int progress;
 
+    ChunkedMessageOutput(ChannelHandlerContext ctx,
+                         CompressedPublicKey sender,
+                         CompressedPublicKey recipient,
+                         int contentLength,
+                         String checksum,
+                         String msgID,
+                         int maxContentLength,
+                         ByteBuf payload,
+                         int progress,
+                         Runnable removeAction) {
+        this.ctx = ctx;
+        this.sender = sender;
+        this.recipient = recipient;
+        this.removeAction = removeAction;
+        this.payload = payload;
+        this.contentLength = contentLength;
+        this.maxContentLength = maxContentLength;
+        this.checksum = checksum;
+        this.msgID = msgID;
+        this.progress = progress;
+    }
+
+    /**
+     * Generates a new ChunkedMessageOutput with combines multiple {@link ChunkedMessage}s into one
+     * {@link ApplicationMessage}.
+     *
+     * @param ctx              the channel handler context
+     * @param sender           the sender of the chunks
+     * @param recipient        the recipient of the chunks
+     * @param contentLength    the total length of the resulting {@link ApplicationMessage} payload
+     * @param checksum         the checksum of the resulting payload
+     * @param msgID            the message id of all chunks and the resulting {@link
+     *                         ApplicationMessage}
+     * @param maxContentLength the max content length on this node
+     * @param removeAction     the remove action to remove this class from the {@link
+     *                         ChunkedMessageHandler#chunks}
+     * @param timeout          the timeout for receiving all chunks, after this timeout the {@link
+     *                         #removeAction} is called
+     */
     public ChunkedMessageOutput(ChannelHandlerContext ctx,
                                 CompressedPublicKey sender,
                                 CompressedPublicKey recipient,
@@ -56,15 +99,7 @@ public class ChunkedMessageOutput {
                                 int maxContentLength,
                                 Runnable removeAction,
                                 long timeout) {
-        this.ctx = ctx;
-        this.sender = sender;
-        this.recipient = recipient;
-        this.contentLength = contentLength;
-        this.checksum = checksum;
-        this.msgID = msgID;
-        this.maxContentLength = maxContentLength;
-        this.payload = Unpooled.buffer();
-        this.removeAction = removeAction;
+        this(ctx, sender, recipient, contentLength, checksum, msgID, maxContentLength, Unpooled.buffer(), 0, removeAction);
         this.ctx.executor().schedule(() -> {
             this.ctx.writeAndFlush(new StatusMessage(StatusMessage.Code.STATUS_REQUEST_TIMEOUT, this.msgID));
             removeAction.run();

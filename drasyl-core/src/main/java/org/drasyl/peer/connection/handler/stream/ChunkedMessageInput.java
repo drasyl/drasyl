@@ -32,6 +32,7 @@ import org.drasyl.peer.connection.message.ChunkedMessage;
 import java.util.LinkedList;
 import java.util.Queue;
 
+@SuppressWarnings({ "java:S107" })
 public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
     private final CompressedPublicKey sender;
     private final CompressedPublicKey recipient;
@@ -43,6 +44,26 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
     private long progress;
     private boolean sentLastChuck;
 
+    ChunkedMessageInput(CompressedPublicKey sender,
+                        CompressedPublicKey recipient,
+                        int contentLength,
+                        String checksum,
+                        Queue<ByteBuf> chunks,
+                        ByteBuf sourcePayload,
+                        String msgID,
+                        long progress,
+                        boolean sentLastChuck) {
+        this.sender = sender;
+        this.recipient = recipient;
+        this.contentLength = contentLength;
+        this.checksum = checksum;
+        this.chunks = chunks;
+        this.sourcePayload = sourcePayload;
+        this.msgID = msgID;
+        this.progress = progress;
+        this.sentLastChuck = sentLastChuck;
+    }
+
     /**
      * Generates a {@link ChunkedInput} for the {@link ChunkedWriteHandler} from the given {@link
      * ApplicationMessage}.
@@ -50,14 +71,10 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
      * @param msg the message that should be sent in chunks
      */
     public ChunkedMessageInput(ApplicationMessage msg, int chunkSize) {
-        this.sender = msg.getSender();
-        this.recipient = msg.getRecipient();
-        this.checksum = Hashing.murmur3x64Hex(msg.getPayload());
-        this.contentLength = msg.payloadAsByteBuf().readableBytes();
-        this.msgID = msg.getId();
-        this.sourcePayload = msg.payloadAsByteBuf();
-        this.chunks = chunkedArray(sourcePayload, chunkSize);
-        this.sentLastChuck = false;
+        this(msg.getSender(), msg.getRecipient(), msg.payloadAsByteBuf().readableBytes(),
+                Hashing.murmur3x64Hex(msg.getPayload()), new LinkedList<>(),
+                msg.payloadAsByteBuf(), msg.getId(), 0, false);
+        chunkedArray(this.chunks, sourcePayload, chunkSize);
     }
 
     @Override
@@ -132,26 +149,24 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
      * Creates a list of {@link ByteBuf}s from the given <code>source</code>. The source {@link
      * ByteBuf} is not modified during this process.
      *
+     * @param buffer    the dest buffer queue
      * @param source    the source {@link ByteBuf}
-     * @param chunksize the chunk size
-     * @return a list of {@link ByteBuf} chunks/slices of the source
+     * @param chunkSize the chunk size
      */
-    private Queue<ByteBuf> chunkedArray(ByteBuf source, int chunksize) {
-        LinkedList<ByteBuf> buffer = new LinkedList<>();
-
+    void chunkedArray(Queue<ByteBuf> buffer, ByteBuf source, int chunkSize) {
         int offset = 0;
         while (offset < source.readableBytes()) {
             boolean release = true;
             ByteBuf byteBuffer = null;
 
             try {
-                if (offset + chunksize > source.readableBytes()) {
+                if (offset + chunkSize > source.readableBytes()) {
                     byteBuffer = source.slice(offset, source.readableBytes() - offset);
                     offset += source.readableBytes() - offset;
                 }
                 else {
-                    byteBuffer = source.slice(offset, chunksize);
-                    offset += chunksize;
+                    byteBuffer = source.slice(offset, chunkSize);
+                    offset += chunkSize;
                 }
 
                 release = false;
@@ -163,7 +178,5 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
                 }
             }
         }
-
-        return buffer;
     }
 }
