@@ -40,6 +40,8 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
+import static java.time.Duration.ofSeconds;
+import static org.awaitility.Awaitility.await;
 import static org.drasyl.event.EventType.EVENT_NODE_ONLINE;
 
 public class TestSuperPeerClient extends SuperPeerClient {
@@ -49,15 +51,15 @@ public class TestSuperPeerClient extends SuperPeerClient {
                                NodeServer server,
                                Identity identity,
                                EventLoopGroup workerGroup,
-                               boolean pingPong) throws SuperPeerClientException {
-        this(DrasylConfig.newBuilder(config).superPeerEnabled(true).superPeerEndpoints(server.getEndpoints()).serverIdleTimeout(Duration.ZERO).build(), identity, workerGroup);
+                               boolean doPingPong) throws SuperPeerClientException {
+        this(DrasylConfig.newBuilder(config).superPeerEnabled(true).superPeerEndpoints(server.getEndpoints()).build(), identity, workerGroup);
     }
 
     public TestSuperPeerClient(DrasylConfig config,
                                NodeServer server,
                                Identity identity,
                                EventLoopGroup workerGroup) throws SuperPeerClientException {
-        this(DrasylConfig.newBuilder(config).superPeerEnabled(true).superPeerEndpoints(server.getEndpoints()).build(), identity, workerGroup);
+        this(config, server, identity, workerGroup, true);
     }
 
     public TestSuperPeerClient(DrasylConfig config,
@@ -84,7 +86,8 @@ public class TestSuperPeerClient extends SuperPeerClient {
     }
 
     public CompletableFuture<Boolean> isClosed() {
-        return connectionEstablished().map(b -> !b).firstElement().toCompletionStage().toCompletableFuture();
+//        return connectionEstablished().map(b -> !b).firstElement().toCompletionStage().toCompletableFuture();
+        return CompletableFuture.completedFuture(clientChannel == null || !clientChannel.isOpen());
     }
 
     public void awaitOnline() {
@@ -92,12 +95,12 @@ public class TestSuperPeerClient extends SuperPeerClient {
     }
 
     public Observable<Message> receivedMessages() {
-        awaitOnline();
+        await().until(() -> clientChannel != null);
         return ((TestSuperPeerClientChannelInitializer) channelInitializer).receivedMessages();
     }
 
     public Observable<Message> sentMessages() {
-        awaitOnline();
+        await().until(() -> clientChannel != null);
         return ((TestSuperPeerClientChannelInitializer) channelInitializer).sentMessages();
     }
 
@@ -106,6 +109,7 @@ public class TestSuperPeerClient extends SuperPeerClient {
     }
 
     public void send(Message message) {
+        await().until(() -> clientChannel != null);
         ChannelFuture future = clientChannel.writeAndFlush(message).awaitUninterruptibly();
         if (!future.isSuccess()) {
             throw new RuntimeException(future.cause());

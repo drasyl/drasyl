@@ -51,6 +51,7 @@ import org.drasyl.peer.connection.message.SignedMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
 import org.drasyl.peer.connection.superpeer.SuperPeerClientException;
+import org.drasyl.peer.connection.superpeer.TestNotJoiningSuperPeerClientChannelInitializer;
 import org.drasyl.peer.connection.superpeer.TestSuperPeerClient;
 import org.drasyl.peer.connection.superpeer.TestSuperPeerClientChannelInitializer;
 import org.junit.jupiter.api.AfterAll;
@@ -72,13 +73,11 @@ import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.NANOSECONDS;
 import static org.awaitility.Awaitility.await;
-import static org.awaitility.Awaitility.with;
-import static org.awaitility.Durations.FIVE_MINUTES;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_HANDSHAKE_TIMEOUT;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_INITIALIZATION;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_PING_PONG;
@@ -116,6 +115,7 @@ class NodeServerIT {
     private Observable<Boolean> serverSuperPeerConnected;
     private Identity identitySession1;
     private Identity identitySession2;
+    private AtomicBoolean opened;
 
     @BeforeEach
     void setup(TestInfo info) throws DrasylException, CryptoException {
@@ -134,7 +134,7 @@ class NodeServerIT {
                 .serverBindHost("127.0.0.1")
                 .serverBindPort(0)
                 .serverEndpoints(Set.of(URI.create("wss://127.0.0.1:0")))
-                .serverHandshakeTimeout(ofSeconds(5))
+                .serverHandshakeTimeout(ofSeconds(50000))
                 .serverSSLEnabled(true)
                 .serverIdleTimeout(ofSeconds(1))
                 .serverIdleRetries((short) 1)
@@ -147,8 +147,9 @@ class NodeServerIT {
         });
         serverMessenger = new Messenger();
         serverSuperPeerConnected = Observable.just(false);
+        opened = new AtomicBoolean(false);
 
-        server = new NodeServer(serverIdentityManager::getIdentity, serverMessenger, peersManager, serverConfig, workerGroup, bossGroup, serverSuperPeerConnected);
+        server = new NodeServer(serverIdentityManager::getIdentity, serverMessenger, peersManager, serverConfig, workerGroup, bossGroup, serverSuperPeerConnected, opened);
         server.open();
 
         config = DrasylConfig.newBuilder()
@@ -160,6 +161,7 @@ class NodeServerIT {
                 .superPeerEndpoints(server.getEndpoints())
                 .superPeerPublicKey(CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"))
                 .superPeerChannelInitializer(TestSuperPeerClientChannelInitializer.class)
+                .superPeerRetryDelays(List.of())
                 .build();
     }
 
@@ -229,7 +231,7 @@ class NodeServerIT {
         RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session2.getPublicKey(), payload);
         session1.send(request);
         receivedMessages2.awaitCount(1);
-        receivedMessages2.assertValue(val -> {
+        receivedMessages2.assertValueAt(0, val -> {
             if (!(val instanceof ApplicationMessage)) {
                 return false;
             }
@@ -240,26 +242,18 @@ class NodeServerIT {
     }
 
     @Test
-    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void notJoiningClientsShouldBeDroppedAfterTimeout() throws SuperPeerClientException {
+    void notJoiningClientsShouldBeDroppedAfterTimeout() throws SuperPeerClientException, InterruptedException {
         // create connection
         TestSuperPeerClient session = clientSession(config, server, identitySession1);
 
-        TestObserver<Message> receivedMessages = session.receivedMessages().test();
+        TestObserver<Message> receivedMessages = session.receivedMessages().filter(m -> m instanceof ConnectionExceptionMessage).test();
 
         // wait for timeout
-        with().pollInSameThread().await().pollDelay(0, NANOSECONDS).atMost(FIVE_MINUTES)
-                .until(() -> session.isClosed().isDone());
+        Thread.sleep(serverConfig.getServerHandshakeTimeout().plusSeconds(2).toMillis());// NOSONAR
 
         // verify response
         receivedMessages.awaitCount(1);
-        receivedMessages.assertValue(val -> {
-            if (!(val instanceof ConnectionExceptionMessage)) {
-                return false;
-            }
-
-            return ((ConnectionExceptionMessage) val).getError() == CONNECTION_ERROR_HANDSHAKE_TIMEOUT;
-        });
+        receivedMessages.assertValueAt(0, new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE_TIMEOUT));
     }
 
     @Test
@@ -288,7 +282,7 @@ class NodeServerIT {
 
         // verify response
         receivedMessages.awaitCount(1);
-        receivedMessages.assertValue(val -> ((ConnectionExceptionMessage) val).getError() == CONNECTION_ERROR_INITIALIZATION);
+        receivedMessages.assertValueAt(0, val -> ((ConnectionExceptionMessage) val).getError() == CONNECTION_ERROR_INITIALIZATION);
     }
 
     @Test
@@ -339,16 +333,14 @@ class NodeServerIT {
         // create connection
         TestSuperPeerClient session = clientSession(config, server, identitySession1, false);
 
-        TestObserver<Message> receivedMessages = session.receivedMessages().test();
+        TestObserver<Message> receivedMessages = session.receivedMessages().filter(m -> m instanceof ConnectionExceptionMessage).test();
 
         // wait until timeout
         Thread.sleep(serverConfig.getServerIdleTimeout().toMillis() * (serverConfig.getServerIdleRetries() + 1) + 1000);// NOSONAR
 
         // verify responses
-        receivedMessages.awaitCount(3);
-        receivedMessages.assertValueAt(0, val -> val instanceof PingMessage);
-        receivedMessages.assertValueAt(1, val -> val instanceof PingMessage);
-        receivedMessages.assertValueAt(2, val -> ((ConnectionExceptionMessage) val).getError() == CONNECTION_ERROR_PING_PONG);
+        receivedMessages.awaitCount(1);
+        receivedMessages.assertValueAt(0, new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG));
     }
 
     @Test
@@ -422,13 +414,13 @@ class NodeServerIT {
 
         // verify response
         receivedMessages.awaitCount(1);
-        receivedMessages.assertValue(request);
+        receivedMessages.assertValueAt(0, request);
     }
 
     @Disabled("Muss noch implementiert werden")
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void messageExceedingMaxSizeShouldThrowExceptionOnSend() throws InterruptedException, ExecutionException, SuperPeerClientException {
+    void messageExceedingMaxSizeShouldThrowExceptionOnSend() throws SuperPeerClientException {
         // create connection
         TestSuperPeerClient session1 = clientSessionAfterJoin(config, server, identitySession1);
         TestSuperPeerClient session2 = clientSessionAfterJoin(config, server, identitySession1);
@@ -470,7 +462,7 @@ class NodeServerIT {
 
         // verify responses
         receivedMessages.awaitCount(1);
-        receivedMessages.assertValue(val -> ((QuitMessage) val).getReason() == REASON_SHUTTING_DOWN);
+        receivedMessages.assertValueAt(0, val -> ((QuitMessage) val).getReason() == REASON_SHUTTING_DOWN);
     }
 
     @Test
@@ -478,7 +470,7 @@ class NodeServerIT {
     void shuttingDownServerShouldRejectNewConnections() throws ExecutionException, InterruptedException, SuperPeerClientException {
         TestSuperPeerClient session = clientSession(config, server, identitySession1);
 
-        server.close();
+        opened.set(false);
 
         // send message
         RequestMessage request = new JoinMessage(session.getIdentity().getProofOfWork(), session.getIdentity().getPublicKey(), Set.of());
@@ -507,7 +499,7 @@ class NodeServerIT {
 
         // verify response
         receivedMessages.awaitCount(1);
-        receivedMessages.assertValue(val -> ((StatusMessage) val).getCode() == StatusMessage.Code.STATUS_INVALID_SIGNATURE);
+        receivedMessages.assertValueAt(0, val -> ((StatusMessage) val).getCode() == StatusMessage.Code.STATUS_INVALID_SIGNATURE);
     }
 
     @Test
@@ -523,7 +515,7 @@ class NodeServerIT {
 
         // verify response
         receivedMessages.awaitCount(1);
-        receivedMessages.assertValue(val -> ((ConnectionExceptionMessage) val).getError() == CONNECTION_ERROR_PROOF_OF_WORK_INVALID);
+        receivedMessages.assertValueAt(0, val -> ((ConnectionExceptionMessage) val).getError() == CONNECTION_ERROR_PROOF_OF_WORK_INVALID);
     }
 
     private void awaitClientJoin(Identity identity) {
@@ -533,7 +525,7 @@ class NodeServerIT {
     private TestSuperPeerClient clientSessionAfterJoin(DrasylConfig config,
                                                        NodeServer server,
                                                        Identity identity) throws SuperPeerClientException {
-        TestSuperPeerClient client = new TestSuperPeerClient(config, server, identity, workerGroup);
+        TestSuperPeerClient client = new TestSuperPeerClient(config, server, identity, workerGroup, true);
         client.open();
         awaitClientJoin(identitySession2);
         return client;
@@ -541,19 +533,20 @@ class NodeServerIT {
 
     private TestSuperPeerClient clientSession(DrasylConfig config,
                                               NodeServer server,
-                                              Identity identity) throws SuperPeerClientException {
-        TestSuperPeerClient client = new TestSuperPeerClient(config, server, identity, workerGroup);
-        client.openAndAwaitOnline();
+                                              Identity identity,
+                                              boolean doPingPong) throws SuperPeerClientException {
+        DrasylConfig noJoiningConfig = DrasylConfig.newBuilder(config)
+                .superPeerChannelInitializer(TestNotJoiningSuperPeerClientChannelInitializer.class)
+                .build();
+        TestSuperPeerClient client = new TestSuperPeerClient(noJoiningConfig, server, identity, workerGroup, doPingPong);
+        client.open();
         return client;
     }
 
     private TestSuperPeerClient clientSession(DrasylConfig config,
                                               NodeServer server,
-                                              Identity identity,
-                                              boolean pingPong) throws SuperPeerClientException {
-        TestSuperPeerClient client = new TestSuperPeerClient(config, server, identity, workerGroup, pingPong);
-        client.openAndAwaitOnline();
-        return client;
+                                              Identity identity) throws SuperPeerClientException {
+        return clientSession(config, server, identity, true);
     }
 
 
