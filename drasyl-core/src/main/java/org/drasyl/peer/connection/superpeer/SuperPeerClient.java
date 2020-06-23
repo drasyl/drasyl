@@ -78,7 +78,7 @@ public class SuperPeerClient implements AutoCloseable {
     private final Supplier<Thread> threadSupplier;
     private final Subject<Boolean> connected;
     private final DrasylFunction<URI, ChannelInitializer<SocketChannel>> channelInitializerSupplier;
-    private Channel clientChannel;
+    protected Channel clientChannel;
     protected ChannelInitializer<SocketChannel> channelInitializer;
 
     SuperPeerClient(DrasylConfig config,
