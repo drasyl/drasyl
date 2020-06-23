@@ -51,7 +51,6 @@ import org.drasyl.peer.connection.message.SignedMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
 import org.drasyl.peer.connection.superpeer.SuperPeerClientException;
-import org.drasyl.peer.connection.superpeer.TestNotJoiningSuperPeerClientChannelInitializer;
 import org.drasyl.peer.connection.superpeer.TestSuperPeerClient;
 import org.drasyl.peer.connection.superpeer.TestSuperPeerClientChannelInitializer;
 import org.junit.jupiter.api.AfterAll;
@@ -134,7 +133,7 @@ class NodeServerIT {
                 .serverBindHost("127.0.0.1")
                 .serverBindPort(0)
                 .serverEndpoints(Set.of(URI.create("wss://127.0.0.1:0")))
-                .serverHandshakeTimeout(ofSeconds(50000))
+                .serverHandshakeTimeout(ofSeconds(5))
                 .serverSSLEnabled(true)
                 .serverIdleTimeout(ofSeconds(1))
                 .serverIdleRetries((short) 1)
@@ -242,6 +241,7 @@ class NodeServerIT {
     }
 
     @Test
+    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void notJoiningClientsShouldBeDroppedAfterTimeout() throws SuperPeerClientException, InterruptedException {
         // create connection
         TestSuperPeerClient session = clientSession(config, server, identitySession1);
@@ -525,7 +525,7 @@ class NodeServerIT {
     private TestSuperPeerClient clientSessionAfterJoin(DrasylConfig config,
                                                        NodeServer server,
                                                        Identity identity) throws SuperPeerClientException {
-        TestSuperPeerClient client = new TestSuperPeerClient(config, server, identity, workerGroup, true);
+        TestSuperPeerClient client = new TestSuperPeerClient(config, server, identity, workerGroup, true, true);
         client.open();
         awaitClientJoin(identitySession2);
         return client;
@@ -535,10 +535,7 @@ class NodeServerIT {
                                               NodeServer server,
                                               Identity identity,
                                               boolean doPingPong) throws SuperPeerClientException {
-        DrasylConfig noJoiningConfig = DrasylConfig.newBuilder(config)
-                .superPeerChannelInitializer(TestNotJoiningSuperPeerClientChannelInitializer.class)
-                .build();
-        TestSuperPeerClient client = new TestSuperPeerClient(noJoiningConfig, server, identity, workerGroup, doPingPong);
+        TestSuperPeerClient client = new TestSuperPeerClient(config, server, identity, workerGroup, doPingPong, false);
         client.open();
         return client;
     }

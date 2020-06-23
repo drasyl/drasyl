@@ -23,6 +23,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylConfig;
@@ -36,7 +37,6 @@ import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.ResponseMessage;
 import org.drasyl.peer.connection.server.NodeServer;
 
-import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
@@ -51,28 +51,36 @@ public class TestSuperPeerClient extends SuperPeerClient {
                                NodeServer server,
                                Identity identity,
                                EventLoopGroup workerGroup,
-                               boolean doPingPong) throws SuperPeerClientException {
-        this(DrasylConfig.newBuilder(config).superPeerEnabled(true).superPeerEndpoints(server.getEndpoints()).build(), identity, workerGroup);
-    }
-
-    public TestSuperPeerClient(DrasylConfig config,
-                               NodeServer server,
-                               Identity identity,
-                               EventLoopGroup workerGroup) throws SuperPeerClientException {
-        this(config, server, identity, workerGroup, true);
+                               boolean doPingPong,
+                               boolean doJoin) throws SuperPeerClientException {
+        this(DrasylConfig.newBuilder(config).superPeerEnabled(true).superPeerEndpoints(server.getEndpoints()).build(), () -> identity, workerGroup, ReplaySubject.create(), doPingPong, doJoin);
     }
 
     public TestSuperPeerClient(DrasylConfig config,
                                Identity identity,
                                EventLoopGroup workerGroup) throws SuperPeerClientException {
-        this(config, () -> identity, workerGroup, ReplaySubject.create());
+        this(config, () -> identity, workerGroup, ReplaySubject.create(), true, true);
     }
 
     private TestSuperPeerClient(DrasylConfig config,
                                 Supplier<Identity> identitySupplier,
                                 EventLoopGroup workerGroup,
-                                Subject<Event> receivedEvents) throws SuperPeerClientException {
-        super(config, identitySupplier, new PeersManager(receivedEvents::onNext), new Messenger(), workerGroup, receivedEvents::onNext);
+                                Subject<Event> receivedEvents,
+                                boolean doPingPong,
+                                boolean doJoin) throws SuperPeerClientException {
+        this(config, identitySupplier, workerGroup, receivedEvents, new PeersManager(receivedEvents::onNext), new Messenger(), BehaviorSubject.createDefault(false), doPingPong, doJoin);
+    }
+
+    private TestSuperPeerClient(DrasylConfig config,
+                                Supplier<Identity> identitySupplier,
+                                EventLoopGroup workerGroup,
+                                Subject<Event> receivedEvents,
+                                PeersManager peersManager,
+                                Messenger messenger,
+                                Subject<Boolean> connected,
+                                boolean doPingPong,
+                                boolean doJoin) throws SuperPeerClientException {
+        super(config, identitySupplier, peersManager, messenger, workerGroup, receivedEvents::onNext, connected, endpoint -> new TestSuperPeerClientChannelInitializer(new SuperPeerClientEnvironment(config, identitySupplier, endpoint, messenger, peersManager, connected, receivedEvents::onNext), doPingPong, doJoin));
         this.receivedEvents = receivedEvents;
     }
 

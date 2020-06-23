@@ -25,12 +25,18 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
 import org.drasyl.peer.connection.handler.SimpleChannelDuplexHandler;
 import org.drasyl.peer.connection.message.Message;
 
+import static org.drasyl.peer.connection.handler.PingPongHandler.PING_PONG_HANDLER;
+
 public class TestSuperPeerClientChannelInitializer extends DefaultSuperPeerClientChannelInitializer {
     private final PublishSubject<Message> sentMessages;
     private final PublishSubject<Message> receivedMessages;
+    private final boolean doPingPong;
+    private final boolean doJoin;
 
-    public TestSuperPeerClientChannelInitializer(SuperPeerClientEnvironment environment) {
+    public TestSuperPeerClientChannelInitializer(SuperPeerClientEnvironment environment, boolean doPingPong, boolean doJoin) {
         super(environment);
+        this.doPingPong = doPingPong;
+        this.doJoin = doJoin;
         sentMessages = PublishSubject.create();
         receivedMessages = PublishSubject.create();
     }
@@ -69,5 +75,23 @@ public class TestSuperPeerClientChannelInitializer extends DefaultSuperPeerClien
                 super.channelUnregistered(ctx);
             }
         });
+    }
+
+    @Override
+    protected void idleStage(ChannelPipeline pipeline) {
+        super.idleStage(pipeline);
+
+        if (!doPingPong) {
+            pipeline.remove(PING_PONG_HANDLER);
+        }
+    }
+
+    @Override
+    protected void customStage(ChannelPipeline pipeline) {
+        super.customStage(pipeline);
+
+        if (!doJoin) {
+            pipeline.remove(DRASYL_HANDSHAKE_AFTER_WEBSOCKET_HANDSHAKE);
+        }
     }
 }
