@@ -57,6 +57,7 @@ public class DrasylConfig {
     static final String IDENTITY_PATH = "drasyl.identity.path";
     static final String MESSAGE_MAX_CONTENT_LENGTH = "drasyl.message.max-content-length";
     static final String MESSAGE_HOP_LIMIT = "drasyl.message.hop-limit";
+    static final String MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT = "drasyl.message.composed-message-transfer-timeout";
     static final String FLUSH_BUFFER_SIZE = "drasyl.flush-buffer-size";
     static final String SERVER_ENABLED = "drasyl.server.enabled";
     static final String SERVER_BIND_HOST = "drasyl.server.bind-host";
@@ -77,7 +78,6 @@ public class DrasylConfig {
     static final String SUPER_PEER_IDLE_RETRIES = "drasyl.super-peer.idle.retries";
     static final String SUPER_PEER_IDLE_TIMEOUT = "drasyl.super-peer.idle.timeout";
     static final String INTRA_VM_DISCOVERY_ENABLED = "drasyl.intra-vm-discovery.enabled";
-    static final String COMPOSED_MESSAGE_TRANSFER_TIMEOUT = "drasyl.message.composed-message-transfer-timeout";
     //======================================= Config Values ========================================
     private final Level loglevel; // NOSONAR
     private final ProofOfWork identityProofOfWork;
@@ -97,6 +97,7 @@ public class DrasylConfig {
     private final Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer;
     private final int messageMaxContentLength;
     private final short messageHopLimit;
+    private final Duration messageComposedMessageTransferTimeout;
     private final boolean superPeerEnabled;
     private final Set<URI> superPeerEndpoints;
     private final CompressedPublicKey superPeerPublicKey;
@@ -106,7 +107,6 @@ public class DrasylConfig {
     private final short superPeerIdleRetries;
     private final Duration superPeerIdleTimeout;
     private final boolean intraVmDiscoveryEnabled;
-    private final Duration composedMessageTransferTimeout;
 
     public DrasylConfig() {
         this(ConfigFactory.load());
@@ -154,6 +154,7 @@ public class DrasylConfig {
         this.serverHandshakeTimeout = config.getDuration(SERVER_HANDSHAKE_TIMEOUT);
         this.serverChannelInitializer = getChannelInitializer(config, SERVER_CHANNEL_INITIALIZER);
         this.messageMaxContentLength = (int) Math.min(config.getMemorySize(MESSAGE_MAX_CONTENT_LENGTH).toBytes(), Integer.MAX_VALUE);
+        this.messageComposedMessageTransferTimeout = config.getDuration(MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT);
         this.messageHopLimit = getShort(config, MESSAGE_HOP_LIMIT);
         this.serverSSLEnabled = config.getBoolean(SERVER_SSL_ENABLED);
         this.serverSSLProtocols = config.getStringList(SERVER_SSL_PROTOCOLS);
@@ -175,7 +176,6 @@ public class DrasylConfig {
         this.superPeerIdleTimeout = config.getDuration(SUPER_PEER_IDLE_TIMEOUT);
 
         this.intraVmDiscoveryEnabled = config.getBoolean(INTRA_VM_DISCOVERY_ENABLED);
-        this.composedMessageTransferTimeout = config.getDuration(COMPOSED_MESSAGE_TRANSFER_TIMEOUT);
     }
 
     private Level getLoglevel(Config config, String path) {
@@ -304,7 +304,7 @@ public class DrasylConfig {
                  Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer,
                  int messageMaxContentLength,
                  short messageHopLimit,
-                 boolean superPeerEnabled,
+                 Duration messageComposedMessageTransferTimeout, boolean superPeerEnabled,
                  Set<URI> superPeerEndpoints,
                  CompressedPublicKey superPeerPublicKey,
                  List<Duration> superPeerRetryDelays,
@@ -312,8 +312,7 @@ public class DrasylConfig {
                  Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer,
                  short superPeerIdleRetries,
                  Duration superPeerIdleTimeout,
-                 boolean intraVmDiscoveryEnabled,
-                 Duration composedMessageTransferTimeout) {
+                 boolean intraVmDiscoveryEnabled) {
         this.loglevel = loglevel;
         this.identityProofOfWork = identityProofOfWork;
         this.identityPublicKey = identityPublicKey;
@@ -332,6 +331,7 @@ public class DrasylConfig {
         this.serverChannelInitializer = serverChannelInitializer;
         this.messageMaxContentLength = messageMaxContentLength;
         this.messageHopLimit = messageHopLimit;
+        this.messageComposedMessageTransferTimeout = messageComposedMessageTransferTimeout;
         this.superPeerEnabled = superPeerEnabled;
         this.superPeerEndpoints = superPeerEndpoints;
         this.superPeerPublicKey = superPeerPublicKey;
@@ -341,11 +341,6 @@ public class DrasylConfig {
         this.superPeerIdleRetries = superPeerIdleRetries;
         this.superPeerIdleTimeout = superPeerIdleTimeout;
         this.intraVmDiscoveryEnabled = intraVmDiscoveryEnabled;
-        this.composedMessageTransferTimeout = composedMessageTransferTimeout;
-    }
-
-    public Duration getComposedMessageTransferTimeout() {
-        return composedMessageTransferTimeout;
     }
 
     public Level getLoglevel() {
@@ -424,6 +419,10 @@ public class DrasylConfig {
         return messageHopLimit;
     }
 
+    public Duration getMessageComposedMessageTransferTimeout() {
+        return messageComposedMessageTransferTimeout;
+    }
+
     public boolean isSuperPeerEnabled() {
         return superPeerEnabled;
     }
@@ -458,7 +457,7 @@ public class DrasylConfig {
 
     @Override
     public int hashCode() {
-        return Objects.hash(identityPublicKey, identityProofOfWork, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled, composedMessageTransferTimeout);
+        return Objects.hash(identityPublicKey, identityProofOfWork, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled, messageComposedMessageTransferTimeout);
     }
 
     @Override
@@ -496,7 +495,7 @@ public class DrasylConfig {
                 Objects.equals(superPeerHandshakeTimeout, that.superPeerHandshakeTimeout) &&
                 Objects.equals(superPeerChannelInitializer, that.superPeerChannelInitializer) &&
                 Objects.equals(superPeerIdleTimeout, that.superPeerIdleTimeout) &&
-                Objects.equals(composedMessageTransferTimeout, that.composedMessageTransferTimeout) &&
+                Objects.equals(messageComposedMessageTransferTimeout, that.messageComposedMessageTransferTimeout) &&
                 intraVmDiscoveryEnabled == that.intraVmDiscoveryEnabled;
     }
 
@@ -530,7 +529,7 @@ public class DrasylConfig {
                 ", superPeerIdleRetries=" + superPeerIdleRetries +
                 ", superPeerIdleTimeout=" + superPeerIdleTimeout +
                 ", intraVmDiscoveryEnabled=" + intraVmDiscoveryEnabled +
-                ", composedMessageTransferTimeout=" + composedMessageTransferTimeout +
+                ", messageComposedMessageTransferTimeout=" + messageComposedMessageTransferTimeout +
                 '}';
     }
 
@@ -562,6 +561,7 @@ public class DrasylConfig {
                 config.serverChannelInitializer,
                 config.messageMaxContentLength,
                 config.messageHopLimit,
+                config.messageComposedMessageTransferTimeout,
                 config.superPeerEnabled,
                 config.superPeerEndpoints,
                 config.superPeerPublicKey,
@@ -570,8 +570,7 @@ public class DrasylConfig {
                 config.superPeerChannelInitializer,
                 config.superPeerIdleRetries,
                 config.superPeerIdleTimeout,
-                config.intraVmDiscoveryEnabled,
-                config.composedMessageTransferTimeout
+                config.intraVmDiscoveryEnabled
         );
     }
 
@@ -595,6 +594,7 @@ public class DrasylConfig {
         private Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer;
         private int messageMaxContentLength;
         private short messageHopLimit;
+        private Duration messageComposedMessageTransferTimeout;
         private boolean superPeerEnabled;
         private Set<URI> superPeerEndpoints;
         private CompressedPublicKey superPeerPublicKey;
@@ -604,7 +604,6 @@ public class DrasylConfig {
         private short superPeerIdleRetries;
         private Duration superPeerIdleTimeout;
         private boolean intraVmDiscoveryEnabled;
-        private Duration composedMessageTransferTimeout;
 
         @SuppressWarnings({ "java:S107" })
         private Builder(Level loglevel,
@@ -625,6 +624,7 @@ public class DrasylConfig {
                         Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer,
                         int messageMaxContentLength,
                         short messageHopLimit,
+                        Duration messageComposedMessageTransferTimeout,
                         boolean superPeerEnabled,
                         Set<URI> superPeerEndpoints,
                         CompressedPublicKey superPeerPublicKey,
@@ -633,8 +633,7 @@ public class DrasylConfig {
                         Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer,
                         short superPeerIdleRetries,
                         Duration superPeerIdleTimeout,
-                        boolean intraVmDiscoveryEnabled,
-                        Duration composedMessageTransferTimeout) {
+                        boolean intraVmDiscoveryEnabled) {
             this.loglevel = loglevel;
             this.identityProofOfWork = identityProofOfWork;
             this.identityPublicKey = identityPublicKey;
@@ -653,6 +652,7 @@ public class DrasylConfig {
             this.serverChannelInitializer = serverChannelInitializer;
             this.messageMaxContentLength = messageMaxContentLength;
             this.messageHopLimit = messageHopLimit;
+            this.messageComposedMessageTransferTimeout = messageComposedMessageTransferTimeout;
             this.superPeerEnabled = superPeerEnabled;
             this.superPeerEndpoints = superPeerEndpoints;
             this.superPeerPublicKey = superPeerPublicKey;
@@ -662,7 +662,6 @@ public class DrasylConfig {
             this.superPeerIdleRetries = superPeerIdleRetries;
             this.superPeerIdleTimeout = superPeerIdleTimeout;
             this.intraVmDiscoveryEnabled = intraVmDiscoveryEnabled;
-            this.composedMessageTransferTimeout = composedMessageTransferTimeout;
         }
 
         public Builder loglevel(Level loglevel) {
@@ -755,6 +754,11 @@ public class DrasylConfig {
             return this;
         }
 
+        public Builder messageComposedMessageTransferTimeout(Duration composedMessageTransferTimeout) {
+            this.messageComposedMessageTransferTimeout = composedMessageTransferTimeout;
+            return this;
+        }
+
         public Builder superPeerEnabled(boolean superPeerEnabled) {
             this.superPeerEnabled = superPeerEnabled;
             return this;
@@ -800,13 +804,8 @@ public class DrasylConfig {
             return this;
         }
 
-        public Builder composedMessageTransferTimeout(Duration composedMessageTransferTimeout) {
-            this.composedMessageTransferTimeout = composedMessageTransferTimeout;
-            return this;
-        }
-
         public DrasylConfig build() {
-            return new DrasylConfig(loglevel, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled, composedMessageTransferTimeout);
+            return new DrasylConfig(loglevel, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, messageComposedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled);
         }
     }
 }

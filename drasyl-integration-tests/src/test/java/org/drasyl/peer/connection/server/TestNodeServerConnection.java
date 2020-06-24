@@ -137,7 +137,7 @@ public class TestNodeServerConnection {
                                                          NodeServer server,
                                                          Identity identity) throws ExecutionException, InterruptedException {
         URI serverEndpoint = config.getSuperPeerEndpoints().iterator().next();
-        return TestNodeServerConnection.clientSession(serverEndpoint, identity, true, server.workerGroup, config.getMessageMaxContentLength(), config.getServerSSLEnabled(), config.getComposedMessageTransferTimeout());
+        return TestNodeServerConnection.clientSession(serverEndpoint, identity, true, server.workerGroup, config.getMessageMaxContentLength(), config.getServerSSLEnabled(), config.getMessageComposedMessageTransferTimeout());
     }
 
     public void send(Message message) {
@@ -285,7 +285,7 @@ public class TestNodeServerConnection {
         URI serverEndpoint = config.getSuperPeerEndpoints().iterator().next();
 
         return TestNodeServerConnection.clientSession(serverEndpoint,
-                identity, pingPong, server.workerGroup, config.getMessageMaxContentLength(), config.getServerSSLEnabled(), config.getComposedMessageTransferTimeout());
+                identity, pingPong, server.workerGroup, config.getMessageMaxContentLength(), config.getServerSSLEnabled(), config.getMessageComposedMessageTransferTimeout());
     }
 
     /**

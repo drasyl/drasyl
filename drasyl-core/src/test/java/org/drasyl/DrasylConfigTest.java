@@ -66,7 +66,7 @@ import static org.drasyl.DrasylConfig.SERVER_IDLE_RETRIES;
 import static org.drasyl.DrasylConfig.SERVER_IDLE_TIMEOUT;
 import static org.drasyl.DrasylConfig.SERVER_SSL_ENABLED;
 import static org.drasyl.DrasylConfig.SERVER_SSL_PROTOCOLS;
-import static org.drasyl.DrasylConfig.COMPOSED_MESSAGE_TRANSFER_TIMEOUT;
+import static org.drasyl.DrasylConfig.MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT;
 import static org.drasyl.DrasylConfig.SUPER_PEER_CHANNEL_INITIALIZER;
 import static org.drasyl.DrasylConfig.SUPER_PEER_ENABLED;
 import static org.drasyl.DrasylConfig.SUPER_PEER_ENDPOINTS;
@@ -183,7 +183,7 @@ class DrasylConfigTest {
             when(typesafeConfig.getString(SUPER_PEER_CHANNEL_INITIALIZER)).thenReturn(superPeerChannelInitializer.getCanonicalName());
             when(networkAddressesProvider.get()).thenReturn(Set.of("192.168.188.112"));
             when(typesafeConfig.getBoolean(INTRA_VM_DISCOVERY_ENABLED)).thenReturn(intraVmDiscoveryEnabled);
-            when(typesafeConfig.getDuration(COMPOSED_MESSAGE_TRANSFER_TIMEOUT)).thenReturn(composedMessageTransferTimeout);
+            when(typesafeConfig.getDuration(MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT)).thenReturn(composedMessageTransferTimeout);
 
             DrasylConfig config = new DrasylConfig(typesafeConfig);
 
@@ -211,7 +211,7 @@ class DrasylConfigTest {
             assertEquals(superPeerHandshakeTimeout, config.getSuperPeerHandshakeTimeout());
             assertEquals(superPeerChannelInitializer, config.getSuperPeerChannelInitializer());
             assertEquals(intraVmDiscoveryEnabled, config.isIntraVmDiscoveryEnabled());
-            assertEquals(composedMessageTransferTimeout, config.getComposedMessageTransferTimeout());
+            assertEquals(composedMessageTransferTimeout, config.getMessageComposedMessageTransferTimeout());
         }
     }
 
@@ -221,7 +221,7 @@ class DrasylConfigTest {
         void shouldMaskSecrets() throws CryptoException {
             identityPrivateKey = CompressedPrivateKey.of("07e98a2f8162a4002825f810c0fbd69b0c42bd9cb4f74a21bc7807bc5acb4f5f");
 
-            DrasylConfig config = new DrasylConfig(loglevel, proofOfWork, identityPublicKey, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled, composedMessageTransferTimeout);
+            DrasylConfig config = new DrasylConfig(loglevel, proofOfWork, identityPublicKey, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, composedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled);
 
             assertThat(config.toString(), not(containsString(identityPrivateKey.getCompressedKey())));
         }
@@ -259,7 +259,7 @@ class DrasylConfigTest {
                     .superPeerIdleRetries(DEFAULT.getSuperPeerIdleRetries())
                     .superPeerIdleTimeout(DEFAULT.getSuperPeerIdleTimeout())
                     .intraVmDiscoveryEnabled(DEFAULT.isIntraVmDiscoveryEnabled())
-                    .composedMessageTransferTimeout(DEFAULT.getComposedMessageTransferTimeout())
+                    .messageComposedMessageTransferTimeout(DEFAULT.getMessageComposedMessageTransferTimeout())
                     .build();
 
             assertEquals(DEFAULT, config);

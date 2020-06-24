@@ -156,7 +156,7 @@ class NodeServerIT {
                 .serverEnabled(false)
                 .serverSSLEnabled(true)
                 .superPeerEndpoints(server.getEndpoints())
-                .composedMessageTransferTimeout(ofSeconds(60))
+                .messageComposedMessageTransferTimeout(ofSeconds(60))
                 .messageMaxContentLength(1024 * 1024)
                 .build();
     }
