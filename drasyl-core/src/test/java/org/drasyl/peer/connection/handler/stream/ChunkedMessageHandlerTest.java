@@ -94,6 +94,7 @@ class ChunkedMessageHandlerTest {
         ChunkedMessage message = mock(ChunkedMessage.class);
         when(message.getRecipient()).thenReturn(identity.getPublicKey());
         when(message.getChecksum()).thenReturn("checksum");
+        when(message.isInitialChunk()).thenReturn(true);
         when(message.getId()).thenReturn(msgID);
 
         when(chunks.get(msgID)).thenReturn(chunkedMessageOutput);
@@ -111,7 +112,7 @@ class ChunkedMessageHandlerTest {
 
         ChunkedMessage message = mock(ChunkedMessage.class);
         when(message.getRecipient()).thenReturn(identity.getPublicKey());
-        when(message.getChecksum()).thenReturn(null);
+        when(message.isInitialChunk()).thenReturn(false);
         when(message.getId()).thenReturn(msgID);
 
         when(chunks.get(msgID)).thenReturn(chunkedMessageOutput);
@@ -130,7 +131,7 @@ class ChunkedMessageHandlerTest {
 
         ChunkedMessage message = mock(ChunkedMessage.class);
         when(message.getRecipient()).thenReturn(identity.getPublicKey());
-        when(message.getChecksum()).thenReturn(null);
+        when(message.isInitialChunk()).thenReturn(false);
         when(message.getId()).thenReturn(msgID);
 
         when(chunks.containsKey(msgID)).thenReturn(false);
