@@ -74,9 +74,20 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
         }
 
         if (msg.getChecksum() != null) {
-            chunks.put(msg.getId(), new ChunkedMessageOutput(ctx, msg.getSender(),
-                    msg.getRecipient(), msg.getContentLength(), msg.getChecksum(),
-                    msg.getId(), maxContentLength, () -> chunks.remove(msg.getId()), transferTimeout.toMillis()));
+            chunks.put(
+                    msg.getId(),
+                    new ChunkedMessageOutput(
+                            ctx,
+                            msg.getSender(),
+                            msg.getRecipient(),
+                            msg.getContentLength(),
+                            msg.getChecksum(),
+                            msg.getId(),
+                            maxContentLength,
+                            () -> chunks.remove(msg.getId()),
+                            transferTimeout.toMillis()
+                    )
+            );
             chunks.get(msg.getId()).addChunk(msg);
         }
         else if (chunks.containsKey(msg.getId())) {
