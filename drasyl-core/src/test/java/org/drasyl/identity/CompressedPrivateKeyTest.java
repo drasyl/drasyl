@@ -72,7 +72,6 @@ class CompressedPrivateKeyTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException {
-
             assertThatJson(JACKSON_WRITER.writeValueAsString(privateKey))
                     .when(Option.IGNORING_ARRAY_ORDER)
                     .isEqualTo(privateKey.toString());

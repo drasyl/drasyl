@@ -66,7 +66,7 @@ import static org.drasyl.DrasylConfig.SERVER_IDLE_RETRIES;
 import static org.drasyl.DrasylConfig.SERVER_IDLE_TIMEOUT;
 import static org.drasyl.DrasylConfig.SERVER_SSL_ENABLED;
 import static org.drasyl.DrasylConfig.SERVER_SSL_PROTOCOLS;
-import static org.drasyl.DrasylConfig.STREAMING_COMPOSED_MESSAGE_TRANSFER_TIMEOUT;
+import static org.drasyl.DrasylConfig.COMPOSED_MESSAGE_TRANSFER_TIMEOUT;
 import static org.drasyl.DrasylConfig.SUPER_PEER_CHANNEL_INITIALIZER;
 import static org.drasyl.DrasylConfig.SUPER_PEER_ENABLED;
 import static org.drasyl.DrasylConfig.SUPER_PEER_ENDPOINTS;
@@ -183,7 +183,7 @@ class DrasylConfigTest {
             when(typesafeConfig.getString(SUPER_PEER_CHANNEL_INITIALIZER)).thenReturn(superPeerChannelInitializer.getCanonicalName());
             when(networkAddressesProvider.get()).thenReturn(Set.of("192.168.188.112"));
             when(typesafeConfig.getBoolean(INTRA_VM_DISCOVERY_ENABLED)).thenReturn(intraVmDiscoveryEnabled);
-            when(typesafeConfig.getDuration(STREAMING_COMPOSED_MESSAGE_TRANSFER_TIMEOUT)).thenReturn(composedMessageTransferTimeout);
+            when(typesafeConfig.getDuration(COMPOSED_MESSAGE_TRANSFER_TIMEOUT)).thenReturn(composedMessageTransferTimeout);
 
             DrasylConfig config = new DrasylConfig(typesafeConfig);
 

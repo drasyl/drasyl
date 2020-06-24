@@ -19,7 +19,13 @@
 package org.drasyl.peer.connection.server;
 
 import io.netty.bootstrap.Bootstrap;
-import io.netty.channel.*;
+import io.netty.channel.Channel;
+import io.netty.channel.ChannelHandler;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInitializer;
+import io.netty.channel.ChannelPipeline;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler;
@@ -245,7 +251,7 @@ public class OutboundConnectionFactory {
             @Override
             protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
                 pipeline.addLast(SignatureHandler.SIGNATURE_HANDLER, new SignatureHandler(identity));
-                pipeline.addLast("streamer", new ChunkedWriteHandler());
+                pipeline.addLast(CHUNKED_WRITER, new ChunkedWriteHandler());
                 pipeline.addLast(CHUNK_HANDLER, new ChunkedMessageHandler(maxContentLength, identity.getPublicKey(), transferTimeout));
             }
 

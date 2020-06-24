@@ -33,7 +33,9 @@ import java.time.Duration;
 import java.util.HashMap;
 
 /**
- * Allows sending bigger messages in chunks.
+ * This handler allows you to send messages that are too large for the underlying WebSocket
+ * transport layer. To do this, this handler splits the message into a series of non-overlapping
+ * chunks.
  */
 public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMessage, ApplicationMessage> {
     private static final Logger LOG = LoggerFactory.getLogger(ChunkedMessageHandler.class);

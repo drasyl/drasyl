@@ -40,6 +40,7 @@ class MessageEncoderTest {
                 return "abc";
             }
         };
+
         ChannelHandler handler = MessageEncoder.INSTANCE;
         channel = new EmbeddedChannel(handler);
     }

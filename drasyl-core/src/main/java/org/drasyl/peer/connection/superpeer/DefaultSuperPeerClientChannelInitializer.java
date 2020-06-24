@@ -66,7 +66,7 @@ public class DefaultSuperPeerClientChannelInitializer extends SuperPeerClientCha
     protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
         pipeline.addLast(SIGNATURE_HANDLER, new SignatureHandler(environment.getIdentity()));
         pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(environment.getConfig().getMessageHopLimit()));
-        pipeline.addLast("streamer", new ChunkedWriteHandler());
+        pipeline.addLast(CHUNKED_WRITER, new ChunkedWriteHandler());
         pipeline.addLast(CHUNK_HANDLER, new ChunkedMessageHandler(environment.getConfig().getMessageMaxContentLength(), environment.getIdentity().getPublicKey(), environment.getConfig().getComposedMessageTransferTimeout()));
     }
 
