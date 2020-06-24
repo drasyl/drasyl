@@ -73,7 +73,7 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
             return;
         }
 
-        if (msg.getChecksum() != null) {
+        if (msg.isInitialChunk()) {
             chunks.put(
                     msg.getId(),
                     new ChunkedMessageOutput(

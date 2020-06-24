@@ -177,4 +177,8 @@ public class ChunkedMessage extends ApplicationMessage {
                 ", id='" + id + '\'' +
                 "} ";
     }
+
+    public boolean isInitialChunk() {
+        return checksum != null;
+    }
 }
