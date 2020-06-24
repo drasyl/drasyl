@@ -73,7 +73,7 @@ public class SignedMessage implements Message, Signable {
     public void writeFieldsTo(OutputStream outstream) throws IOException {
         requireNonNull(payload);
 
-        outstream.write(JACKSON_WRITER.writeValueAsBytes(payload));
+        JACKSON_WRITER.writeValue(outstream, payload);
     }
 
     @Override
