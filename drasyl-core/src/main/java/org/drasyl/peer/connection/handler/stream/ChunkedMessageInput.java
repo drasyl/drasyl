@@ -78,23 +78,23 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
     }
 
     @Override
-    public boolean isEndOfInput() throws Exception {
+    public boolean isEndOfInput() {
         return sentLastChuck;
     }
 
     @Override
-    public void close() throws Exception {
+    public void close() {
         chunks.clear();
         sourcePayload.release();
     }
 
     @Override
-    public ChunkedMessage readChunk(ChannelHandlerContext ctx) throws Exception {
+    public ChunkedMessage readChunk(ChannelHandlerContext ctx) {
         return readChunk(ctx.alloc());
     }
 
     @Override
-    public ChunkedMessage readChunk(ByteBufAllocator allocator) throws Exception {
+    public ChunkedMessage readChunk(ByteBufAllocator allocator) {
         if (chunks.isEmpty()) {
             if (sentLastChuck) {
                 return null;
