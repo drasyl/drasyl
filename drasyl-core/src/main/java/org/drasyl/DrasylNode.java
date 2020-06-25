@@ -18,33 +18,52 @@
  */
 package org.drasyl;
 
-import ch.qos.logback.classic.*;
-import com.typesafe.config.*;
-import io.netty.channel.*;
-import io.netty.channel.nio.*;
-import io.sentry.*;
-import io.sentry.event.*;
-import org.drasyl.crypto.*;
+import ch.qos.logback.classic.Level;
+import ch.qos.logback.classic.LoggerContext;
+import com.typesafe.config.ConfigException;
+import io.netty.channel.EventLoopGroup;
+import io.netty.channel.nio.NioEventLoopGroup;
+import io.sentry.Sentry;
+import io.sentry.event.User;
+import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
-import org.drasyl.event.*;
-import org.drasyl.identity.*;
-import org.drasyl.messenger.*;
-import org.drasyl.peer.*;
-import org.drasyl.peer.connection.intravm.*;
-import org.drasyl.peer.connection.message.*;
-import org.drasyl.peer.connection.server.*;
-import org.drasyl.peer.connection.superpeer.*;
-import org.drasyl.util.*;
+import org.drasyl.event.EventType;
+import org.drasyl.event.Node;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.IdentityManager;
+import org.drasyl.identity.IdentityManagerException;
+import org.drasyl.messenger.MessageSinkException;
+import org.drasyl.messenger.Messenger;
+import org.drasyl.messenger.MessengerException;
+import org.drasyl.messenger.NoPathToIdentityException;
+import org.drasyl.peer.PeerInformation;
+import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.intravm.IntraVmDiscovery;
+import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.peer.connection.message.IdentityMessage;
+import org.drasyl.peer.connection.message.Message;
+import org.drasyl.peer.connection.message.WhoisMessage;
+import org.drasyl.peer.connection.server.NodeServer;
+import org.drasyl.peer.connection.server.NodeServerException;
+import org.drasyl.peer.connection.superpeer.SuperPeerClient;
+import org.drasyl.util.Pair;
 import org.slf4j.Logger;
-import org.slf4j.*;
+import org.slf4j.LoggerFactory;
 
-import java.io.*;
-import java.util.*;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.*;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Properties;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.concurrent.CompletableFuture.runAsync;
-import static org.drasyl.event.EventType.*;
+import static org.drasyl.event.EventType.EVENT_NODE_DOWN;
+import static org.drasyl.event.EventType.EVENT_NODE_NORMAL_TERMINATION;
+import static org.drasyl.event.EventType.EVENT_NODE_UNRECOVERABLE_ERROR;
+import static org.drasyl.event.EventType.EVENT_NODE_UP;
 
 /**
  * Represents a node in the drasyl Overlay Network. Applications that want to run on drasyl must
