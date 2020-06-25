@@ -18,10 +18,8 @@
  */
 package org.drasyl.peer.connection.superpeer;
 
-import ch.qos.logback.classic.Level;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.util.ResourceLeakDetector;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
@@ -63,7 +61,6 @@ import java.net.URI;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -71,6 +68,7 @@ import static org.drasyl.event.EventType.EVENT_NODE_OFFLINE;
 import static org.drasyl.event.EventType.EVENT_NODE_ONLINE;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static testutils.AnsiColor.COLOR_CYAN;
 import static testutils.AnsiColor.STYLE_REVERSED;
 import static testutils.TestHelper.colorizedPrintln;
@@ -318,9 +316,7 @@ class SuperPeerClientIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void messageExceedingMaxSizeShouldNotBeSend() throws SuperPeerClientException, InterruptedException {
-        TestObserver<Event> emittedEvents = emittedEventsSubject.test();
-
+    void messageExceedingMaxSizeShouldNotBeSend() throws SuperPeerClientException {
         // start client
         client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
         client.open();
@@ -332,10 +328,6 @@ class SuperPeerClientIT {
 
         // send message
         RequestMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), bigPayload);
-        server.sendMessage(identityManager.getPublicKey(), request);
-
-        // wait until timeout
-        Thread.sleep(serverConfig.getServerHandshakeTimeout().plusSeconds(2).toMillis());// NOSONAR
-        emittedEvents.assertNoValues();
+        assertThrows(RuntimeException.class, () -> server.sendMessage(identityManager.getPublicKey(), request));
     }
 }
