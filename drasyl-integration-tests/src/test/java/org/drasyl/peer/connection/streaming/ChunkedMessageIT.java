@@ -37,7 +37,10 @@ import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.server.NodeServer;
 import org.drasyl.peer.connection.server.NodeServerException;
-import org.drasyl.peer.connection.server.TestNodeServerConnection;
+import org.drasyl.peer.connection.server.TestNodeServer;
+import org.drasyl.peer.connection.superpeer.SuperPeerClientException;
+import org.drasyl.peer.connection.superpeer.TestSuperPeerClient;
+import org.drasyl.peer.connection.superpeer.TestSuperPeerClientChannelInitializer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -50,10 +53,9 @@ import testutils.AnsiColor;
 import java.net.URI;
 import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 
 import static java.time.Duration.ofSeconds;
-import static org.drasyl.peer.connection.server.TestNodeServerConnection.clientSessionAfterJoin;
+import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static testutils.AnsiColor.COLOR_CYAN;
 import static testutils.AnsiColor.STYLE_REVERSED;
@@ -64,9 +66,9 @@ class ChunkedMessageIT {
     private static EventLoopGroup workerGroup;
     private static EventLoopGroup bossGroup;
     private static DrasylConfig config;
-    private static NodeServer server;
-    private static TestNodeServerConnection session1;
-    private static TestNodeServerConnection session2;
+    private static TestNodeServer server;
+    private static TestSuperPeerClient session1;
+    private static TestSuperPeerClient session2;
     private static byte[] bigPayload;
 
     @BeforeEach
@@ -92,7 +94,7 @@ class ChunkedMessageIT {
     }
 
     @BeforeAll
-    static void beforeAll() throws IdentityManagerException, NodeServerException, CryptoException, ExecutionException, InterruptedException {
+    static void beforeAll() throws IdentityManagerException, NodeServerException, CryptoException, SuperPeerClientException {
         workerGroup = new NioEventLoopGroup();
         bossGroup = new NioEventLoopGroup(1);
 
@@ -125,7 +127,7 @@ class ChunkedMessageIT {
         Messenger serverMessenger = new Messenger();
         Observable<Boolean> serverSuperPeerConnected = Observable.just(false);
 
-        server = new NodeServer(serverIdentityManager::getIdentity, serverMessenger, peersManager, serverConfig, workerGroup, bossGroup, serverSuperPeerConnected);
+        server = new TestNodeServer(serverIdentityManager::getIdentity, serverMessenger, peersManager, serverConfig, workerGroup, bossGroup, serverSuperPeerConnected);
         server.open();
 
         config = DrasylConfig.newBuilder()
@@ -134,6 +136,8 @@ class ChunkedMessageIT {
                 .serverEnabled(false)
                 .serverSSLEnabled(true)
                 .superPeerEndpoints(server.getEndpoints())
+                .superPeerPublicKey(CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"))
+                .superPeerChannelInitializer(TestSuperPeerClientChannelInitializer.class)
                 .build();
 
         session1 = clientSessionAfterJoin(config, server, identitySession1);
@@ -152,5 +156,18 @@ class ChunkedMessageIT {
 
         workerGroup.shutdownGracefully().syncUninterruptibly();
         bossGroup.shutdownGracefully().syncUninterruptibly();
+    }
+
+    private static void awaitClientJoin(Identity identity) {
+        await().until(() -> server.getChannelGroup().find(identity.getPublicKey()) != null);
+    }
+
+    private static TestSuperPeerClient clientSessionAfterJoin(DrasylConfig config,
+                                                              NodeServer server,
+                                                              Identity identity) throws SuperPeerClientException {
+        TestSuperPeerClient client = new TestSuperPeerClient(config, server, identity, workerGroup, true, true);
+        client.open();
+        awaitClientJoin(identity);
+        return client;
     }
 }
