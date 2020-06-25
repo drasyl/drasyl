@@ -46,6 +46,7 @@ import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.PingMessage;
 import org.drasyl.peer.connection.message.PongMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
+import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.server.TestNodeServer;
 import org.drasyl.peer.connection.server.TestNodeServerChannelInitializer;
@@ -60,7 +61,9 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -220,7 +223,6 @@ class SuperPeerClientIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldRespondToPingMessageWithPongMessage() throws SuperPeerClientException {
-        TestObserver<Message> sentMessages = server.sentMessages().test();
         PingMessage request = new PingMessage();
         TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof PongMessage && ((PongMessage) m).getCorrespondingId().equals(request.getId())).test();
 
@@ -312,5 +314,28 @@ class SuperPeerClientIT {
         emittedEvents.assertValueAt(0, new Event(EVENT_NODE_ONLINE, Node.of(identityManager.getIdentity(), Set.of())));
         emittedEvents.assertValueAt(1, new Event(EVENT_NODE_OFFLINE, Node.of(identityManager.getIdentity(), Set.of())));
         emittedEvents.assertValueAt(2, new Event(EVENT_NODE_ONLINE, Node.of(identityManager.getIdentity(), Set.of())));
+    }
+
+    @Test
+    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+    void messageExceedingMaxSizeShouldNotBeSend() throws SuperPeerClientException, InterruptedException {
+        TestObserver<Event> emittedEvents = emittedEventsSubject.test();
+
+        // start client
+        client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
+        client.open();
+        server.awaitClient(identityManager.getPublicKey());
+
+        // create message with exceeded payload size
+        byte[] bigPayload = new byte[config.getMessageMaxContentLength() + 1];
+        new Random().nextBytes(bigPayload);
+
+        // send message
+        RequestMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), bigPayload);
+        server.sendMessage(identityManager.getPublicKey(), request);
+
+        // wait until timeout
+        Thread.sleep(serverConfig.getServerHandshakeTimeout().plusSeconds(2).toMillis());// NOSONAR
+        emittedEvents.assertNoValues();
     }
 }
