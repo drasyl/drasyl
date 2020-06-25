@@ -54,6 +54,7 @@ import static org.drasyl.peer.connection.superpeer.SuperPeerClientConnectionHand
 @SuppressWarnings({ "java:S110", "java:S4818" })
 public class DefaultSuperPeerClientChannelInitializer extends SuperPeerClientChannelInitializer {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultSuperPeerClientChannelInitializer.class);
+    protected static final String DRASYL_HANDSHAKE_AFTER_WEBSOCKET_HANDSHAKE = "drasylHandshakeAfterWebsocketHandshake";
     private final SuperPeerClientEnvironment environment;
 
     public DefaultSuperPeerClientChannelInitializer(SuperPeerClientEnvironment environment) {
@@ -74,7 +75,7 @@ public class DefaultSuperPeerClientChannelInitializer extends SuperPeerClientCha
     protected void customStage(ChannelPipeline pipeline) {
         pipeline.addLast(EXCEPTION_MESSAGE_HANDLER, ConnectionExceptionMessageHandler.INSTANCE);
 
-        pipeline.addLast(new SimpleChannelInboundHandler<>() {
+        pipeline.addLast(DRASYL_HANDSHAKE_AFTER_WEBSOCKET_HANDSHAKE, new SimpleChannelInboundHandler<>() {
             @Override
             public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
                 super.userEventTriggered(ctx, evt);
@@ -86,7 +87,7 @@ public class DefaultSuperPeerClientChannelInitializer extends SuperPeerClientCha
                             LOG.trace("[{}]: WebSocket Handshake completed. Now adding SuperPeerClientConnectionHandler.", ctx.channel().id().asShortText());
                         }
                         pipeline.addLast(SUPER_PEER_CLIENT_CONNECTION_HANDLER, new SuperPeerClientConnectionHandler(environment));
-                        pipeline.remove(this);
+                        pipeline.remove(DRASYL_HANDSHAKE_AFTER_WEBSOCKET_HANDSHAKE);
                     }
                     else if (e == HANDSHAKE_TIMEOUT) {
                         if (LOG.isTraceEnabled()) {
