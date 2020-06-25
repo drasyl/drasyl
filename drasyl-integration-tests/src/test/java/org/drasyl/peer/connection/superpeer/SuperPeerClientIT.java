@@ -18,7 +18,6 @@
  */
 package org.drasyl.peer.connection.superpeer;
 
-import ch.qos.logback.classic.Level;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.reactivex.rxjava3.core.Observable;
@@ -146,11 +145,9 @@ class SuperPeerClientIT {
         });
         peersManagerServer = new PeersManager(event -> {
         });
-        messenger = new Messenger();
-        messenger.setLoopbackSink((key, msg) -> {
+        messenger = new Messenger((recipient, message) -> {
         });
-        messengerServer = new Messenger();
-        messengerServer.setLoopbackSink((key, msg) -> {
+        messengerServer = new Messenger((recipient, message) -> {
         });
 
         server = new TestNodeServer(identityManagerServer::getIdentity, messengerServer, peersManagerServer, serverConfig, serverWorkerGroup, bossGroup, superPeerConnected);
@@ -306,6 +303,10 @@ class SuperPeerClientIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldReconnectOnDisconnect() throws SuperPeerClientException {
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
+
+        DrasylConfig config1 = DrasylConfig.newBuilder(config)
+                .superPeerPublicKey(null)
+                .build();
 
         // start client
         client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);

@@ -33,6 +33,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.messenger.MessageSink;
+import org.drasyl.messenger.MessageSinkException;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.messenger.MessengerException;
 import org.drasyl.messenger.NoPathToIdentityException;
@@ -41,6 +42,7 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.intravm.IntraVmDiscovery;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.IdentityMessage;
+import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.WhoisMessage;
 import org.drasyl.peer.connection.server.NodeServer;
 import org.drasyl.peer.connection.server.NodeServerException;
@@ -134,46 +136,14 @@ public abstract class DrasylNode {
             this.config = config;
             this.identityManager = new IdentityManager(this.config);
             this.peersManager = new PeersManager(this::onEvent);
-            this.messenger = new Messenger();
+            this.messenger = new Messenger(this::messageSink);
             this.intraVmDiscovery = new IntraVmDiscovery(identityManager::getPublicKey, messenger, peersManager, this::onEvent);
             this.superPeerClient = new SuperPeerClient(this.config, identityManager::getIdentity, peersManager, messenger, DrasylNode.WORKER_GROUP, this::onEvent);
             this.server = new NodeServer(identityManager::getIdentity, messenger, peersManager, this.config, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP, superPeerClient.connectionEstablished());
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = new CompletableFuture<>();
-            this.loopbackMessageSink = (recipient, message) -> {
-                if (!identityManager.getPublicKey().equals(recipient)) {
-                    throw new NoPathToIdentityException(recipient);
-                }
-
-                if (message instanceof ApplicationMessage) {
-                    ApplicationMessage applicationMessage = (ApplicationMessage) message;
-                    onEvent(new Event(EventType.EVENT_MESSAGE, Pair.of(applicationMessage.getSender(), applicationMessage.getPayload())));
-                }
-                else if (message instanceof WhoisMessage) {
-                    WhoisMessage whoisMessage = (WhoisMessage) message;
-
-                    if (!server.getEndpoints().isEmpty()) {
-                        CompressedPublicKey myPublicKey = identityManager.getPublicKey();
-                        PeerInformation myPeerInformation = PeerInformation.of(server.getEndpoints());
-                        IdentityMessage identityMessage = new IdentityMessage(whoisMessage.getRequester(), myPublicKey, myPeerInformation, whoisMessage.getId());
-
-                        try {
-                            messenger.send(identityMessage);
-                        }
-                        catch (MessengerException e) {
-                            LOG.info("Unable to reply to {}: {}", whoisMessage, e.getMessage());
-                        }
-                    }
-                }
-                else if (message instanceof IdentityMessage) {
-                    IdentityMessage identityMessage = (IdentityMessage) message;
-                    peersManager.addPeerInformation(identityMessage.getPublicKey(), identityMessage.getPeerInformation());
-                }
-                else {
-                    throw new IllegalArgumentException("DrasylNode.loopbackMessageSink is not able to handle messages of type " + message.getClass().getSimpleName());
-                }
-            };
+            this.loopbackMessageSink = this::messageSink;
             setLogLevel(this.config.getLoglevel());
         }
         catch (ConfigException e) {
@@ -299,7 +269,6 @@ public abstract class DrasylNode {
             shutdownSequence = runAsync(this::stopSuperPeerClient)
                     .thenRun(this::stopServer)
                     .thenRun(this::stopIntraVmDiscovery)
-                    .thenRun(this::destroyLoopbackPeerConnection)
                     .whenComplete((r, e) -> {
                         try {
                             if (e == null) {
@@ -359,10 +328,6 @@ public abstract class DrasylNode {
         }
     }
 
-    private void destroyLoopbackPeerConnection() {
-        messenger.unsetLoopbackSink();
-    }
-
     /**
      * Start the Drasyl node.
      * <p>
@@ -384,7 +349,6 @@ public abstract class DrasylNode {
             LOG.debug("The following configuration will be used: {}", config);
             startSequence = runAsync(this::loadIdentity)
                     .thenRun(this::startIntraVmDiscovery)
-                    .thenRun(this::createLoopbackPeerConnection)
                     .thenRun(this::startServer)
                     .thenRun(this::startSuperPeerClient)
                     .whenComplete((r, e) -> {
@@ -450,10 +414,6 @@ public abstract class DrasylNode {
         }
     }
 
-    private void createLoopbackPeerConnection() {
-        messenger.setLoopbackSink(loopbackMessageSink);
-    }
-
     /**
      * If activated, the local server should be started in this method. Method should block and wait
      * until the server is running.
@@ -501,6 +461,41 @@ public abstract class DrasylNode {
         if (INSTANCES.isEmpty()) {
             BOSS_GROUP.shutdownGracefully().syncUninterruptibly();
             WORKER_GROUP.shutdownGracefully().syncUninterruptibly();
+        }
+    }
+
+    private void messageSink(CompressedPublicKey recipient,
+                             Message message) throws MessageSinkException {
+        if (!identityManager.getPublicKey().equals(recipient)) {
+            throw new NoPathToIdentityException(recipient);
+        }
+
+        if (message instanceof ApplicationMessage) {
+            ApplicationMessage applicationMessage = (ApplicationMessage) message;
+            onEvent(new Event(EventType.EVENT_MESSAGE, Pair.of(applicationMessage.getSender(), applicationMessage.getPayload())));
+        }
+        else if (message instanceof WhoisMessage) {
+            WhoisMessage whoisMessage = (WhoisMessage) message;
+
+            if (!server.getEndpoints().isEmpty()) {
+                CompressedPublicKey myPublicKey = identityManager.getPublicKey();
+                PeerInformation myPeerInformation = PeerInformation.of(server.getEndpoints());
+                IdentityMessage identityMessage = new IdentityMessage(whoisMessage.getRequester(), myPublicKey, myPeerInformation, whoisMessage.getId());
+
+                try {
+                    messenger.send(identityMessage);
+                }
+                catch (MessengerException e) {
+                    LOG.info("Unable to reply to {}: {}", whoisMessage, e.getMessage());
+                }
+            }
+        }
+        else if (message instanceof IdentityMessage) {
+            IdentityMessage identityMessage = (IdentityMessage) message;
+            peersManager.addPeerInformation(identityMessage.getPublicKey(), identityMessage.getPeerInformation());
+        }
+        else {
+            throw new IllegalArgumentException("DrasylNode.loopbackMessageSink is not able to handle messages of type " + message.getClass().getSimpleName());
         }
     }
 }

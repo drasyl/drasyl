@@ -37,6 +37,7 @@ import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.messenger.Messenger;
+import org.drasyl.messenger.NoPathToIdentityException;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler;
@@ -146,7 +147,11 @@ class NodeServerIT {
         serverIdentityManager.loadOrCreateIdentity();
         peersManager = new PeersManager(event -> {
         });
-        serverMessenger = new Messenger();
+        serverMessenger = new Messenger((recipient, message) -> {
+            if (!recipient.equals(serverIdentityManager.getPublicKey())) {
+                throw new NoPathToIdentityException(recipient);
+            }
+        });
         serverSuperPeerConnected = Observable.just(false);
         opened = new AtomicBoolean(false);
 

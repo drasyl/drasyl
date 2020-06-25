@@ -124,7 +124,8 @@ class ChunkedMessageIT {
         serverIdentityManager.loadOrCreateIdentity();
         PeersManager peersManager = new PeersManager(event -> {
         });
-        Messenger serverMessenger = new Messenger();
+        Messenger serverMessenger = new Messenger((recipient, message) -> {
+        });
         Observable<Boolean> serverSuperPeerConnected = Observable.just(false);
 
         server = new TestNodeServer(serverIdentityManager::getIdentity, serverMessenger, peersManager, serverConfig, workerGroup, bossGroup, serverSuperPeerConnected);

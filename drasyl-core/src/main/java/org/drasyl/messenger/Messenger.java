@@ -28,26 +28,28 @@ import java.util.List;
 import java.util.Objects;
 import java.util.stream.Collectors;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * The Messenger is responsible for handling the outgoing message flow and sending messages to the
  * recipient.
  */
 public class Messenger {
     private static final Logger LOG = LoggerFactory.getLogger(Messenger.class);
-    private MessageSink loopbackSink;
+    private final MessageSink loopbackSink;
     private MessageSink intraVmSink;
     private MessageSink serverSink;
     private MessageSink superPeerSink;
 
-    public Messenger() {
-        this(null, null, null, null);
+    public Messenger(MessageSink loopbackSink) {
+        this(loopbackSink, null, null, null);
     }
 
     Messenger(MessageSink loopbackSink,
               MessageSink intraVmSink,
               MessageSink serverSink,
               MessageSink superPeerSink) {
-        this.loopbackSink = loopbackSink;
+        this.loopbackSink = requireNonNull(loopbackSink);
         this.intraVmSink = intraVmSink;
         this.serverSink = serverSink;
         this.superPeerSink = superPeerSink;
@@ -85,14 +87,6 @@ public class Messenger {
         }
 
         throw new NoPathToIdentityException(recipientPublicKey);
-    }
-
-    public void setLoopbackSink(MessageSink loopbackSink) {
-        this.loopbackSink = loopbackSink;
-    }
-
-    public void unsetLoopbackSink() {
-        this.loopbackSink = null;
     }
 
     public void setIntraVmSink(MessageSink intraVmSink) {
