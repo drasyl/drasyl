@@ -18,7 +18,6 @@
  */
 package org.drasyl.peer.connection.server;
 
-import ch.qos.logback.classic.Level;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.EventLoopGroup;
@@ -26,7 +25,6 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.ResourceLeakDetector;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
-import org.awaitility.core.ConditionTimeoutException;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
@@ -261,7 +259,7 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void joinedClientsShouldNoBeDroppedAfterTimeout() throws InterruptedException, SuperPeerClientException, ExecutionException {
+    void joinedClientsShouldNoBeDroppedAfterTimeout() throws InterruptedException, SuperPeerClientException {
         // create connection
         TestSuperPeerClient session = clientSessionAfterJoin(config, server, identitySession1);
 
@@ -274,7 +272,7 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void invalidMessageShouldBeRespondedWithExceptionMessage() throws SuperPeerClientException, InterruptedException {
+    void invalidMessageShouldBeRespondedWithExceptionMessage() throws SuperPeerClientException {
         // create connection
         TestSuperPeerClient session = clientSession(config, server, identitySession1);
 
@@ -557,7 +555,6 @@ class NodeServerIT {
                                               Identity identity) throws SuperPeerClientException {
         return clientSession(config, server, identity, true);
     }
-
 
     @BeforeAll
     static void beforeAll() {
