@@ -21,11 +21,17 @@ package org.drasyl.peer.connection.superpeer;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
+import io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import org.drasyl.peer.connection.handler.SimpleChannelDuplexHandler;
 import org.drasyl.peer.connection.message.Message;
 
+import java.util.concurrent.CompletableFuture;
+
+import static io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler.ClientHandshakeStateEvent.HANDSHAKE_COMPLETE;
+import static io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler.ClientHandshakeStateEvent.HANDSHAKE_TIMEOUT;
 import static org.drasyl.peer.connection.handler.PingPongHandler.PING_PONG_HANDLER;
+import static org.drasyl.peer.connection.superpeer.SuperPeerClientConnectionHandler.SUPER_PEER_CLIENT_CONNECTION_HANDLER;
 
 public class TestSuperPeerClientChannelInitializer extends DefaultSuperPeerClientChannelInitializer {
     private final PublishSubject<Message> sentMessages;
@@ -33,12 +39,15 @@ public class TestSuperPeerClientChannelInitializer extends DefaultSuperPeerClien
     private final boolean doPingPong;
     private final boolean doJoin;
 
+    private final CompletableFuture<Void> websocketHandshake;
+
     public TestSuperPeerClientChannelInitializer(SuperPeerClientEnvironment environment, boolean doPingPong, boolean doJoin) {
         super(environment);
         this.doPingPong = doPingPong;
         this.doJoin = doJoin;
         sentMessages = PublishSubject.create();
         receivedMessages = PublishSubject.create();
+        websocketHandshake = new CompletableFuture<>();
     }
 
     public PublishSubject<Message> sentMessages() {
@@ -74,6 +83,21 @@ public class TestSuperPeerClientChannelInitializer extends DefaultSuperPeerClien
                 receivedMessages.onComplete();
                 super.channelUnregistered(ctx);
             }
+
+            @Override
+            public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+                super.userEventTriggered(ctx, evt);
+
+                if (evt instanceof WebSocketClientProtocolHandler.ClientHandshakeStateEvent) {
+                    WebSocketClientProtocolHandler.ClientHandshakeStateEvent e = (WebSocketClientProtocolHandler.ClientHandshakeStateEvent) evt;
+                    if (e == HANDSHAKE_COMPLETE) {
+                        websocketHandshake.complete(null);
+                    }
+                    else if (e == HANDSHAKE_TIMEOUT) {
+                        websocketHandshake.completeExceptionally(new Exception("WebSocket Handshake Timeout"));
+                    }
+                }
+            }
         });
     }
 
@@ -93,5 +117,9 @@ public class TestSuperPeerClientChannelInitializer extends DefaultSuperPeerClien
         if (!doJoin) {
             pipeline.remove(DRASYL_HANDSHAKE_AFTER_WEBSOCKET_HANDSHAKE);
         }
+    }
+
+    public CompletableFuture<Void> websocketHandshake() {
+        return websocketHandshake;
     }
 }

@@ -67,7 +67,7 @@ public class SuperPeerClient implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClient.class);
     private final DrasylConfig config;
     private final Supplier<Identity> identitySupplier;
-    private final PeersManager peersManager;
+    protected final PeersManager peersManager;
     private final Messenger messenger;
     private final EventLoopGroup workerGroup;
     private final Consumer<Event> eventConsumer;

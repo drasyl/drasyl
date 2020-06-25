@@ -93,9 +93,8 @@ public class TestSuperPeerClient extends SuperPeerClient {
         awaitOnline();
     }
 
-    public CompletableFuture<Boolean> isClosed() {
-//        return connectionEstablished().map(b -> !b).firstElement().toCompletionStage().toCompletableFuture();
-        return CompletableFuture.completedFuture(clientChannel == null || !clientChannel.isOpen());
+    public boolean isClosed() {
+        return clientChannel == null || !clientChannel.isOpen();
     }
 
     public void awaitOnline() {
@@ -117,7 +116,8 @@ public class TestSuperPeerClient extends SuperPeerClient {
     }
 
     public void send(Message message) {
-        await().until(() -> clientChannel != null);
+        await().until(() -> channelInitializer != null);
+        ((TestSuperPeerClientChannelInitializer) channelInitializer).websocketHandshake().join();
         ChannelFuture future = clientChannel.writeAndFlush(message).awaitUninterruptibly();
         if (!future.isSuccess()) {
             throw new RuntimeException(future.cause());
@@ -137,7 +137,9 @@ public class TestSuperPeerClient extends SuperPeerClient {
     }
 
     public void sendRawBinary(ByteBuf byteBuf) {
-        ChannelFuture future = clientChannel.writeAndFlush(new BinaryWebSocketFrame(byteBuf));
+        await().until(() -> channelInitializer != null);
+        ((TestSuperPeerClientChannelInitializer) channelInitializer).websocketHandshake().join();
+        ChannelFuture future = clientChannel.writeAndFlush(new BinaryWebSocketFrame(byteBuf)).awaitUninterruptibly();
         if (!future.isSuccess()) {
             throw new RuntimeException(future.cause());
         }
