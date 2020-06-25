@@ -250,7 +250,7 @@ class SuperPeerClientIT {
         server.awaitClient(identityManager.getPublicKey());
 
         // send message
-        ApplicationMessage request = new ApplicationMessage(identityManager.getPublicKey(), identityManagerServer.getPublicKey(), new byte[]{
+        ApplicationMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), new byte[]{
                 0x00,
                 0x01
         });
