@@ -23,7 +23,6 @@ import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.event.Event;
 import org.drasyl.identity.IdentityManager;
-import org.drasyl.messenger.MessageSink;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.intravm.IntraVmDiscovery;
@@ -62,9 +61,8 @@ public class ObservableDrasylNode extends DrasylNode {
                          AtomicBoolean started,
                          CompletableFuture<Void> startSequence,
                          CompletableFuture<Void> shutdownSequence,
-                         Subject<Event> events,
-                         MessageSink messageSink) {
-        super(config, identityManager, peersManager, messenger, intraVmDiscovery, superPeerClient, server, started, startSequence, shutdownSequence, messageSink);
+                         Subject<Event> events) {
+        super(config, identityManager, peersManager, messenger, intraVmDiscovery, superPeerClient, server, started, startSequence, shutdownSequence);
         this.events = events;
     }
 
