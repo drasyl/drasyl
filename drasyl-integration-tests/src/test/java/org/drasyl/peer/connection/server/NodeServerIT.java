@@ -145,7 +145,8 @@ class NodeServerIT {
         serverIdentityManager.loadOrCreateIdentity();
         peersManager = new PeersManager(event -> {
         });
-        serverMessenger = new Messenger();
+        serverMessenger = new Messenger((recipient, message) -> {
+        });
         serverSuperPeerConnected = Observable.just(false);
 
         server = new NodeServer(serverIdentityManager::getIdentity, serverMessenger, peersManager, serverConfig, workerGroup, bossGroup, serverSuperPeerConnected);

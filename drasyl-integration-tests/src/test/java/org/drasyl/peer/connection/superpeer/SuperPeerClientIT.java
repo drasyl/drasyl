@@ -18,7 +18,6 @@
  */
 package org.drasyl.peer.connection.superpeer;
 
-import ch.qos.logback.classic.Level;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.reactivex.rxjava3.core.Observable;
@@ -46,7 +45,6 @@ import org.drasyl.peer.connection.message.PingMessage;
 import org.drasyl.peer.connection.message.PongMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
-import org.drasyl.peer.connection.message.WhoAreYouMessage;
 import org.drasyl.peer.connection.server.TestNodeServer;
 import org.drasyl.peer.connection.server.TestNodeServerChannelInitializer;
 import org.junit.jupiter.api.AfterEach;
@@ -141,8 +139,10 @@ class SuperPeerClientIT {
         });
         peersManagerServer = new PeersManager(event -> {
         });
-        messenger = new Messenger();
-        messengerServer = new Messenger();
+        messenger = new Messenger((recipient, message) -> {
+        });
+        messengerServer = new Messenger((recipient, message) -> {
+        });
 
         server = new TestNodeServer(identityManagerServer::getIdentity, messengerServer, peersManagerServer, serverConfig, serverWorkerGroup, bossGroup, superPeerConnected);
         server.open();
