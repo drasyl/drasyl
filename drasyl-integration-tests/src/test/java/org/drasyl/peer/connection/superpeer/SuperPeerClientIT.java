@@ -18,10 +18,8 @@
  */
 package org.drasyl.peer.connection.superpeer;
 
-import ch.qos.logback.classic.Level;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.util.ResourceLeakDetector;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
@@ -142,7 +140,11 @@ class SuperPeerClientIT {
         peersManagerServer = new PeersManager(event -> {
         });
         messenger = new Messenger();
+        messenger.setLoopbackSink((key, msg) -> {
+        });
         messengerServer = new Messenger();
+        messengerServer.setLoopbackSink((key, msg) -> {
+        });
 
         server = new TestNodeServer(identityManagerServer::getIdentity, messengerServer, peersManagerServer, serverConfig, serverWorkerGroup, bossGroup, superPeerConnected);
         server.open();
@@ -250,7 +252,7 @@ class SuperPeerClientIT {
         server.awaitClient(identityManager.getPublicKey());
 
         // send message
-        ApplicationMessage request = new ApplicationMessage(identityManager.getPublicKey(), identityManagerServer.getPublicKey(), new byte[]{
+        ApplicationMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), new byte[]{
                 0x00,
                 0x01
         });
