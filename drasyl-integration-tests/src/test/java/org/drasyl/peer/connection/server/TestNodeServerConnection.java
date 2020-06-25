@@ -70,9 +70,9 @@ public class TestNodeServerConnection {
     private final Subject<Message> receivedMessages;
     private final ConcurrentHashMap<String, CompletableFuture<ResponseMessage<?>>> futures;
     private final CompressedKeyPair keyPair;
-    private Identity identity;
-    private AtomicBoolean isClosed;
-    private CompletableFuture<Boolean> closedCompletable;
+    private final Identity identity;
+    private final AtomicBoolean isClosed;
+    private final CompletableFuture<Boolean> closedCompletable;
 
     /**
      * Creates a new connection.
@@ -137,7 +137,7 @@ public class TestNodeServerConnection {
                                                          NodeServer server,
                                                          Identity identity) throws ExecutionException, InterruptedException {
         URI serverEndpoint = config.getSuperPeerEndpoints().iterator().next();
-        return TestNodeServerConnection.clientSession(serverEndpoint, identity, true, server.workerGroup);
+        return TestNodeServerConnection.clientSession(serverEndpoint, identity, true, server.workerGroup, config.getMessageMaxContentLength(), config.getServerSSLEnabled(), config.getMessageComposedMessageTransferTimeout());
     }
 
     public void send(Message message) {
@@ -187,7 +187,10 @@ public class TestNodeServerConnection {
     public static TestNodeServerConnection clientSession(URI targetSystem,
                                                          Identity identity,
                                                          boolean pingPong,
-                                                         EventLoopGroup eventLoopGroup) throws InterruptedException,
+                                                         EventLoopGroup eventLoopGroup,
+                                                         int maxContentLength,
+                                                         boolean ssl,
+                                                         Duration transferTimeout) throws InterruptedException,
             ExecutionException {
         CompletableFuture<TestNodeServerConnection> future = new CompletableFuture<>();
 
@@ -214,10 +217,12 @@ public class TestNodeServerConnection {
                         session.receiveMessage(msg);
                     }
                 })
-                .ssl(true)
+                .ssl(ssl)
                 .idleTimeout(Duration.ZERO)
                 .idleRetries(Short.MAX_VALUE)
-                .pingPong(pingPong);
+                .pingPong(pingPong)
+                .maxContentLength(maxContentLength)
+                .transferTimeout(transferTimeout);
 
         factory.build();
         factory.getChannelReadyFuture().get();
@@ -280,7 +285,7 @@ public class TestNodeServerConnection {
         URI serverEndpoint = config.getSuperPeerEndpoints().iterator().next();
 
         return TestNodeServerConnection.clientSession(serverEndpoint,
-                identity, pingPong, server.workerGroup);
+                identity, pingPong, server.workerGroup, config.getMessageMaxContentLength(), config.getServerSSLEnabled(), config.getMessageComposedMessageTransferTimeout());
     }
 
     /**
@@ -295,7 +300,10 @@ public class TestNodeServerConnection {
      */
     public static TestNodeServerConnection clientSession(URI targetSystem,
                                                          Identity identity,
-                                                         boolean pingPong) throws ExecutionException, InterruptedException {
-        return TestNodeServerConnection.clientSession(targetSystem, identity, pingPong, null);
+                                                         boolean pingPong,
+                                                         int maxContentLength,
+                                                         boolean ssl,
+                                                         Duration transferTimeout) throws ExecutionException, InterruptedException {
+        return TestNodeServerConnection.clientSession(targetSystem, identity, pingPong, null, maxContentLength, ssl, transferTimeout);
     }
 }

@@ -18,8 +18,10 @@
  */
 package org.drasyl.peer.connection.superpeer;
 
+import ch.qos.logback.classic.Level;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.ResourceLeakDetector;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
@@ -94,17 +96,19 @@ class SuperPeerClientIT {
         colorizedPrintln("STARTING " + info.getDisplayName(), COLOR_CYAN, STYLE_REVERSED);
 
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
+        System.setProperty("io.netty.leakDetection.level", "PARANOID");
 
         workerGroup = new NioEventLoopGroup();
         serverWorkerGroup = new NioEventLoopGroup();
         bossGroup = new NioEventLoopGroup(1);
 
         config = DrasylConfig.newBuilder()
+//                .loglevel(Level.TRACE)
                 .identityProofOfWork(ProofOfWork.of(6657650))
                 .identityPublicKey(CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"))
                 .identityPrivateKey(CompressedPrivateKey.of("0c27af38c77f2cd5cc2a0ff5c461003a9c24beb955f316135d251ecaf4dda03f"))
                 .serverBindHost("127.0.0.1")
-                .serverBindPort(8888)
+                .serverBindPort(0)
                 .serverHandshakeTimeout(ofSeconds(5))
                 .serverSSLEnabled(true)
                 .serverIdleTimeout(ofSeconds(1))

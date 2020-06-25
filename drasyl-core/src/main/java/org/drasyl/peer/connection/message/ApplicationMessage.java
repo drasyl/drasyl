@@ -18,10 +18,13 @@
  */
 package org.drasyl.peer.connection.message;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import org.drasyl.identity.CompressedPublicKey;
 
 import java.util.Arrays;
 import java.util.Objects;
+import java.util.Optional;
 
 import static java.util.Objects.requireNonNull;
 
@@ -29,8 +32,8 @@ import static java.util.Objects.requireNonNull;
  * A message that is sent by an application running on drasyl.
  */
 public class ApplicationMessage extends RelayableMessage implements RequestMessage {
-    private final CompressedPublicKey sender;
-    private final byte[] payload;
+    protected final CompressedPublicKey sender;
+    protected final byte[] payload;
 
     protected ApplicationMessage() {
         super();
@@ -38,7 +41,7 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
         this.payload = null;
     }
 
-    ApplicationMessage(String id,
+    public ApplicationMessage(String id,
                        CompressedPublicKey sender,
                        CompressedPublicKey recipient,
                        byte[] payload,
@@ -78,6 +81,13 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
         return payload;
     }
 
+    /**
+     * @return a ByteBuf that wraps the underling payload byte array
+     */
+    public ByteBuf payloadAsByteBuf() {
+        return Unpooled.wrappedBuffer(payload);
+    }
+
     @Override
     public int hashCode() {
         int result = Objects.hash(super.hashCode(), sender);
@@ -105,7 +115,7 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
     public String toString() {
         return "ApplicationMessage{" +
                 "sender=" + sender +
-                ", payload=" + Arrays.toString(payload) +
+                ", payload=byte[" + Optional.ofNullable(payload).orElse(new byte[]{}).length + "] { ... }" +
                 ", recipient=" + recipient +
                 ", hopCount=" + hopCount +
                 ", id='" + id + '\'' +

@@ -44,8 +44,10 @@ public class DrasylScheduler {
                 .setNameFormat("Drasyl-ThreadPool-%d")
                 .build();
         Executor executor = new ThreadPoolExecutor(
-                Math.min(1, Math.max(1, Runtime.getRuntime().availableProcessors() / 3)),  //corePoolSize
-                Math.min(2, Math.max(1, Runtime.getRuntime().availableProcessors() / 3)),  //maximumPoolSize
+                1,
+                2,
+//                Math.min(1, Math.max(1, Runtime.getRuntime().availableProcessors() / 3)),  //corePoolSize
+//                Math.min(2, Math.max(1, Runtime.getRuntime().availableProcessors() / 3)),  //maximumPoolSize
                 60L, TimeUnit.MILLISECONDS, //keepAliveTime, unit
                 new LinkedBlockingQueue<>(1000),  //workQueue
                 threadFactory
