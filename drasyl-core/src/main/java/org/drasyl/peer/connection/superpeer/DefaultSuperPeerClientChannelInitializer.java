@@ -19,8 +19,8 @@
 package org.drasyl.peer.connection.superpeer;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler;
 import io.netty.handler.ssl.SslContext;
@@ -47,6 +47,8 @@ import static org.drasyl.peer.connection.handler.RelayableMessageGuard.HOP_COUNT
 import static org.drasyl.peer.connection.handler.SignatureHandler.SIGNATURE_HANDLER;
 import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_HANDLER;
 import static org.drasyl.peer.connection.superpeer.SuperPeerClientConnectionHandler.SUPER_PEER_CLIENT_CONNECTION_HANDLER;
+import static org.drasyl.peer.connection.superpeer.SuperPeerPublicKeyHandler.SUPER_PEER_PUBLIC_KEY;
+import static org.drasyl.peer.connection.superpeer.SuperPeerPublicKeyHandler.SuperPeerPublicKeyState.KEY_AVAILABLE;
 
 /**
  * Creates a newly configured {@link ChannelPipeline} for a ClientConnection to a node server.
@@ -75,7 +77,7 @@ public class DefaultSuperPeerClientChannelInitializer extends SuperPeerClientCha
     protected void customStage(ChannelPipeline pipeline) {
         pipeline.addLast(EXCEPTION_MESSAGE_HANDLER, ConnectionExceptionMessageHandler.INSTANCE);
 
-        pipeline.addLast(DRASYL_HANDSHAKE_AFTER_WEBSOCKET_HANDSHAKE, new SimpleChannelInboundHandler<>() {
+        pipeline.addLast(DRASYL_HANDSHAKE_AFTER_WEBSOCKET_HANDSHAKE, new ChannelInboundHandlerAdapter() {
             @Override
             public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
                 super.userEventTriggered(ctx, evt);
@@ -84,10 +86,9 @@ public class DefaultSuperPeerClientChannelInitializer extends SuperPeerClientCha
                     WebSocketClientProtocolHandler.ClientHandshakeStateEvent e = (WebSocketClientProtocolHandler.ClientHandshakeStateEvent) evt;
                     if (e == HANDSHAKE_COMPLETE) {
                         if (LOG.isTraceEnabled()) {
-                            LOG.trace("[{}]: WebSocket Handshake completed. Now adding SuperPeerClientConnectionHandler.", ctx.channel().id().asShortText());
+                            LOG.trace("[{}]: WebSocket Handshake completed. Now adding SuperPeerPublicKeyHandler.", ctx.channel().id().asShortText());
                         }
-                        pipeline.addLast(SUPER_PEER_CLIENT_CONNECTION_HANDLER, new SuperPeerClientConnectionHandler(environment));
-                        pipeline.remove(DRASYL_HANDSHAKE_AFTER_WEBSOCKET_HANDSHAKE);
+                        pipeline.addLast(SUPER_PEER_PUBLIC_KEY, new SuperPeerPublicKeyHandler(environment.getConfig().getSuperPeerPublicKey(), environment.getConfig().getServerHandshakeTimeout()));
                     }
                     else if (e == HANDSHAKE_TIMEOUT) {
                         if (LOG.isTraceEnabled()) {
@@ -96,11 +97,17 @@ public class DefaultSuperPeerClientChannelInitializer extends SuperPeerClientCha
                         ctx.close();
                     }
                 }
-            }
+                else if (evt instanceof SuperPeerPublicKeyHandler.SuperPeerPublicKeyState) {
+                    SuperPeerPublicKeyHandler.SuperPeerPublicKeyState e = (SuperPeerPublicKeyHandler.SuperPeerPublicKeyState) evt;
+                    if (e == KEY_AVAILABLE) {
+                        if (LOG.isTraceEnabled()) {
+                            LOG.trace("[{}]: Public key available. Now adding SuperPeerClientConnectionHandler.", ctx.channel().id().asShortText());
+                        }
 
-            @Override
-            protected void channelRead0(ChannelHandlerContext ctx, Object msg) {
-                ctx.fireChannelRead(msg);
+                        pipeline.addLast(SUPER_PEER_CLIENT_CONNECTION_HANDLER, new SuperPeerClientConnectionHandler(environment));
+                        pipeline.remove(this);
+                    }
+                }
             }
         });
     }

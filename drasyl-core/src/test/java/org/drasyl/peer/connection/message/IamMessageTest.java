@@ -19,35 +19,30 @@
 package org.drasyl.peer.connection.message;
 
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.peer.PeerInformation;
+import org.drasyl.identity.CompressedPublicKey;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
-import java.net.URI;
-import java.util.Set;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-@ExtendWith(MockitoExtension.class)
-class WelcomeMessageTest {
-    private final String correspondingId = "123";
+class IamMessageTest {
     @Mock
-    private PeerInformation peerInformation;
+    private CompressedPublicKey publicKey;
+    private final String correspondingId = "123";
 
     @Nested
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
-            String json = "{\"@type\":\"WelcomeMessage\",\"id\":\"4AE5CDCD8C21719F8E779F21\",\"userAgent\":\"\",\"peerInformation\":{\"endpoints\":[\"ws://test\"]},\"correspondingId\":\"123\"}";
+            String json = "{\"@type\":\"" + IamMessage.class.getSimpleName() + "\",\"id\":\"123\",\"publicKey\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"correspondingId\":\"123\"}";
 
-            assertEquals(new WelcomeMessage(PeerInformation.of(Set.of(URI.create("ws://test"))), "123"), JACKSON_READER.readValue(json, Message.class));
+            assertEquals(new IamMessage(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), "123"), JACKSON_READER.readValue(json, Message.class));
         }
     }
 
@@ -55,12 +50,12 @@ class WelcomeMessageTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException {
-            WelcomeMessage message = new WelcomeMessage(PeerInformation.of(), correspondingId);
+            IamMessage message = new IamMessage(publicKey, correspondingId);
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
-                    .containsEntry("@type", WelcomeMessage.class.getSimpleName())
-                    .containsKeys("id", "userAgent", "peerInformation", "correspondingId");
+                    .containsEntry("@type", IamMessage.class.getSimpleName())
+                    .containsKeys("id", "publicKey");
         }
     }
 
@@ -68,10 +63,13 @@ class WelcomeMessageTest {
     class Equals {
         @Test
         void shouldReturnTrue() {
-            WelcomeMessage message1 = new WelcomeMessage(peerInformation, correspondingId);
-            WelcomeMessage message2 = new WelcomeMessage(peerInformation, correspondingId);
+            IamMessage message1 = new IamMessage(publicKey, correspondingId);
+            IamMessage message2 = new IamMessage(publicKey, correspondingId);
 
             assertEquals(message1, message2);
+
+            // Ignore toString
+            message1.toString();
         }
     }
 
@@ -79,8 +77,8 @@ class WelcomeMessageTest {
     class HashCode {
         @Test
         void shouldReturnTrue() {
-            WelcomeMessage message1 = new WelcomeMessage(peerInformation, correspondingId);
-            WelcomeMessage message2 = new WelcomeMessage(peerInformation, correspondingId);
+            IamMessage message1 = new IamMessage(publicKey, correspondingId);
+            IamMessage message2 = new IamMessage(publicKey, correspondingId);
 
             assertEquals(message1.hashCode(), message2.hashCode());
         }

@@ -58,6 +58,7 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
     public static final String SUPER_PEER_CLIENT_CONNECTION_HANDLER = "superPeerClientConnectionHandler";
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClientConnectionHandler.class);
     private final SuperPeerClientEnvironment environment;
+    private ChannelHandlerContext ctx;
 
     public SuperPeerClientConnectionHandler(SuperPeerClientEnvironment environment) {
         super(
@@ -85,6 +86,7 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
     @Override
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
         super.handlerAdded(ctx);
+        this.ctx = ctx;
 
         ctx.channel().closeFuture().addListener(future -> messenger.unsetRelaySink());
     }
@@ -96,11 +98,8 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
 
     @Override
     protected ConnectionExceptionMessage.Error validateSessionOffer(WelcomeMessage offerMessage) {
-        CompressedPublicKey superPeerPublicKey = offerMessage.getPublicKey();
-        if (environment.getConfig().getSuperPeerPublicKey() != null && !superPeerPublicKey.equals(environment.getConfig().getSuperPeerPublicKey())) {
-            return CONNECTION_ERROR_WRONG_PUBLIC_KEY;
-        }
-        else if (superPeerPublicKey.equals(environment.getIdentity().getPublicKey())) {
+        // Raise error if the public key is equals to my public key
+        if (environment.getConfig().getIdentityPublicKey().equals(ctx.channel().attr(ATTRIBUTE_PUBLIC_KEY).get())) {
             return CONNECTION_ERROR_WRONG_PUBLIC_KEY;
         }
         else {
@@ -111,13 +110,10 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
     @Override
     protected void createConnection(ChannelHandlerContext ctx,
                                     WelcomeMessage offerMessage) {
-        CompressedPublicKey identity = offerMessage.getPublicKey();
+        CompressedPublicKey identity = ctx.channel().attr(ATTRIBUTE_PUBLIC_KEY).get();
         Channel channel = ctx.channel();
         Path path = ctx::writeAndFlush; // We start at this point to save resources
         PeerInformation peerInformation = PeerInformation.of(offerMessage.getPeerInformation().getEndpoints(), path);
-
-        // attach identity to channel (this information is required for validation signatures of incoming messages)
-        channel.attr(ATTRIBUTE_PUBLIC_KEY).set(identity);
 
         // remove peer information on disconnect
         channel.closeFuture().addListener(future -> {
