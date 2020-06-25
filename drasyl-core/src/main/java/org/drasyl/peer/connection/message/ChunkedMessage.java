@@ -109,7 +109,6 @@ public class ChunkedMessage extends ApplicationMessage {
      * @param recipient      the recipient of the message
      * @param msgID          the id of this message (must be the same as the initial chunk)
      * @param payload        the chunk
-     * @param sequenceNumber the sequence number of this message
      */
     public static ChunkedMessage createFollowChunk(CompressedPublicKey sender,
                                                    CompressedPublicKey recipient,
@@ -124,7 +123,6 @@ public class ChunkedMessage extends ApplicationMessage {
      * @param sender         the sender of the message
      * @param recipient      the recipient of the message
      * @param msgID          the id of this message (must be the same as the initial chunk)
-     * @param sequenceNumber the sequence number of this message
      */
     public static ChunkedMessage createLastChunk(CompressedPublicKey sender,
                                                  CompressedPublicKey recipient,
