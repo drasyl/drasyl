@@ -35,6 +35,7 @@ import org.drasyl.peer.connection.handler.SignatureHandler;
 import org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler;
 import org.drasyl.peer.connection.server.handler.NodeServerHttpHandler;
 import org.drasyl.peer.connection.server.handler.NodeServerNewConnectionsGuard;
+import org.drasyl.peer.connection.server.handler.WhoAmIHandler;
 
 import javax.net.ssl.SSLException;
 import java.security.cert.CertificateException;
@@ -46,6 +47,7 @@ import static org.drasyl.peer.connection.handler.SignatureHandler.SIGNATURE_HAND
 import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_HANDLER;
 import static org.drasyl.peer.connection.server.NodeServerConnectionHandler.NODE_SERVER_CONNECTION_HANDLER;
 import static org.drasyl.peer.connection.server.handler.NodeServerNewConnectionsGuard.CONNECTION_GUARD;
+import static org.drasyl.peer.connection.server.handler.WhoAmIHandler.WHO_AM_I;
 
 /**
  * Creates a newly configured {@link ChannelPipeline} for the node server.
@@ -73,6 +75,7 @@ public class DefaultNodeServerChannelInitializer extends NodeServerChannelInitia
         pipeline.addLast(SIGNATURE_HANDLER, new SignatureHandler(environment.getIdentity()));
         pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(environment.getConfig().getMessageHopLimit()));
         pipeline.addLast(CONNECTION_GUARD, new NodeServerNewConnectionsGuard(environment.getAcceptNewConnectionsSupplier()));
+        pipeline.addLast(WHO_AM_I, new WhoAmIHandler(environment.getIdentity().getPublicKey()));
         pipeline.addLast(CHUNKED_WRITER, new ChunkedWriteHandler());
         pipeline.addLast(CHUNK_HANDLER, new ChunkedMessageHandler(environment.getConfig().getMessageMaxContentLength(), environment.getIdentity().getPublicKey(), environment.getConfig().getMessageComposedMessageTransferTimeout()));
     }

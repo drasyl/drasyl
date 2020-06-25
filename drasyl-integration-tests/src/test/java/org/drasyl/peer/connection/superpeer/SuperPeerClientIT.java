@@ -21,7 +21,6 @@ package org.drasyl.peer.connection.superpeer;
 import ch.qos.logback.classic.Level;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.util.ResourceLeakDetector;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
@@ -47,6 +46,7 @@ import org.drasyl.peer.connection.message.PingMessage;
 import org.drasyl.peer.connection.message.PongMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
+import org.drasyl.peer.connection.message.WhoAreYouMessage;
 import org.drasyl.peer.connection.server.TestNodeServer;
 import org.drasyl.peer.connection.server.TestNodeServerChannelInitializer;
 import org.junit.jupiter.api.AfterEach;
@@ -287,6 +287,24 @@ class SuperPeerClientIT {
 
         // start client
         client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
+        client.open();
+
+        // verify emitted events
+        emittedEvents.awaitCount(1);
+        emittedEvents.assertValue(new Event(EVENT_NODE_ONLINE, Node.of(identityManager.getIdentity())));
+    }
+
+    @Test
+    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+    void clientShouldEmitNodeOnlineAlsoWithoutSuperPeerPubKeyInConfig() throws SuperPeerClientException {
+        TestObserver<Event> emittedEvents = emittedEventsSubject.test();
+
+        DrasylConfig config1 = DrasylConfig.newBuilder(config)
+                .superPeerPublicKey(null)
+                .build();
+
+        // start client
+        client = new SuperPeerClient(config1, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
         client.open();
 
         // verify emitted events

@@ -317,7 +317,7 @@ class NodeServerIT {
             }
             WelcomeMessage msg = (WelcomeMessage) val;
 
-            return Objects.equals(server.getIdentity().getPublicKey(), msg.getPublicKey()) && Objects.equals(PeerInformation.of(server.getEndpoints()), msg.getPeerInformation()) && Objects.equals(msg.getCorrespondingId(), request1.getId());
+            return Objects.equals(PeerInformation.of(server.getEndpoints()), msg.getPeerInformation()) && Objects.equals(msg.getCorrespondingId(), request1.getId());
         });
         receivedMessages1.assertValueAt(1, val -> ((QuitMessage) val).getReason() == REASON_NEW_SESSION);
         receivedMessages2.awaitCount(1);
@@ -327,7 +327,7 @@ class NodeServerIT {
             }
             WelcomeMessage msg = (WelcomeMessage) val;
 
-            return Objects.equals(server.getIdentity().getPublicKey(), msg.getPublicKey()) && Objects.equals(PeerInformation.of(server.getEndpoints()), msg.getPeerInformation()) && Objects.equals(msg.getCorrespondingId(), request2.getId());
+            return Objects.equals(PeerInformation.of(server.getEndpoints()), msg.getPeerInformation()) && Objects.equals(msg.getCorrespondingId(), request2.getId());
         });
     }
 

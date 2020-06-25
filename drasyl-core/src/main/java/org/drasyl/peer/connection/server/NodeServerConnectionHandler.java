@@ -100,7 +100,7 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
     @Override
     protected WelcomeMessage offerSession(ChannelHandlerContext ctx,
                                           JoinMessage requestMessage) {
-        return new WelcomeMessage(environment.getIdentity().getPublicKey(), PeerInformation.of(environment.getEndpoints()), requestMessage.getId());
+        return new WelcomeMessage(PeerInformation.of(environment.getEndpoints()), requestMessage.getId());
     }
 
     @Override
