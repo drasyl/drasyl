@@ -18,40 +18,26 @@
  */
 package org.drasyl.peer.connection.message;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import org.drasyl.peer.PeerInformation;
+import org.drasyl.identity.CompressedPublicKey;
 
 import java.util.Objects;
 
-import static java.util.Objects.requireNonNull;
-
 /**
- * A message representing the welcome message of the node server, including fallback information..
+ * This message is used as response to a {@link WhoAreYouMessage} and contains the public key of
+ * this peer.
  */
-public class WelcomeMessage extends AbstractMessageWithUserAgent implements ResponseMessage<JoinMessage> {
-    private final PeerInformation peerInformation;
-    @JsonInclude(JsonInclude.Include.NON_NULL)
+public class IamMessage extends AbstractMessage implements ResponseMessage<WhoAreYouMessage> {
+    private final CompressedPublicKey publicKey;
     private final String correspondingId;
 
-    protected WelcomeMessage() {
-        peerInformation = null;
+    IamMessage() {
+        publicKey = null;
         correspondingId = null;
     }
 
-    /**
-     * Creates new welcome message.
-     *
-     * @param peerInformation the peer information of the node server
-     * @param correspondingId
-     */
-    public WelcomeMessage(PeerInformation peerInformation,
-                          String correspondingId) {
-        this.peerInformation = requireNonNull(peerInformation);
+    public IamMessage(CompressedPublicKey publicKey, String correspondingId) {
+        this.publicKey = publicKey;
         this.correspondingId = correspondingId;
-    }
-
-    public PeerInformation getPeerInformation() {
-        return this.peerInformation;
     }
 
     @Override
@@ -59,9 +45,8 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
         return correspondingId;
     }
 
-    @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), peerInformation, correspondingId);
+    public CompressedPublicKey getPublicKey() {
+        return publicKey;
     }
 
     @Override
@@ -75,17 +60,22 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
         if (!super.equals(o)) {
             return false;
         }
-        WelcomeMessage that = (WelcomeMessage) o;
-        return Objects.equals(peerInformation, that.peerInformation) &&
+        IamMessage that = (IamMessage) o;
+        return Objects.equals(publicKey, that.publicKey) &&
                 Objects.equals(correspondingId, that.correspondingId);
     }
 
     @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), publicKey, correspondingId);
+    }
+
+    @Override
     public String toString() {
-        return "WelcomeMessage{" +
-                "peerInformation=" + peerInformation +
+        return "IamMessage{" +
+                "publicKey=" + publicKey +
                 ", correspondingId='" + correspondingId + '\'' +
-                ", id='" + id +
-                '}';
+                ", id='" + id + '\'' +
+                "} ";
     }
 }

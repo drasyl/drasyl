@@ -35,12 +35,12 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.identity.CompressedKeyPair;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.peer.connection.message.IamMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.ResponseMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
-import org.drasyl.peer.connection.message.WelcomeMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -211,8 +211,8 @@ public class TestNodeServerConnection {
                     @Override
                     protected void channelRead0(ChannelHandlerContext ctx,
                                                 Message msg) {
-                        if (msg instanceof WelcomeMessage) {
-                            ctx.channel().attr(ATTRIBUTE_PUBLIC_KEY).set(((WelcomeMessage) msg).getPublicKey());
+                        if (msg instanceof IamMessage) {
+                            ctx.channel().attr(ATTRIBUTE_PUBLIC_KEY).set(((IamMessage) msg).getPublicKey());
                         }
                         session.receiveMessage(msg);
                     }

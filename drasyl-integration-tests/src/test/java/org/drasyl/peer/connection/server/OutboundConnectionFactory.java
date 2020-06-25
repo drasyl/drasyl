@@ -22,10 +22,10 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler;
@@ -266,7 +266,7 @@ public class OutboundConnectionFactory {
             protected void customStage(ChannelPipeline pipeline) {
                 handler.forEach(pipeline::addLast);
 
-                pipeline.addLast(new SimpleChannelInboundHandler<Object>() {
+                pipeline.addLast(new ChannelInboundHandlerAdapter() {
                     @Override
                     public void userEventTriggered(ChannelHandlerContext ctx,
                                                    Object evt) throws Exception {
@@ -283,11 +283,6 @@ public class OutboundConnectionFactory {
                                 ctx.close();
                             }
                         }
-                    }
-
-                    @Override
-                    protected void channelRead0(ChannelHandlerContext ctx, Object msg) {
-                        ctx.fireChannelRead(msg);
                     }
                 });
             }
