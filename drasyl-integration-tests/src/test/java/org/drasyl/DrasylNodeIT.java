@@ -58,6 +58,8 @@ class DrasylNodeIT {
 
     @BeforeEach
     void setup(TestInfo info) {
+        System.setProperty("io.netty.leakDetection.level", "PARANOID");
+
         colorizedPrintln("STARTING " + info.getDisplayName(), COLOR_CYAN, STYLE_REVERSED);
         nodes = new ArrayList<>();
     }

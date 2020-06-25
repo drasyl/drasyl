@@ -24,6 +24,7 @@ import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.MessageToMessageEncoder;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
+import io.netty.util.ReferenceCountUtil;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.util.LoggingUtil;
 import org.slf4j.Logger;
@@ -48,21 +49,30 @@ public class MessageEncoder extends MessageToMessageEncoder<Message> {
     }
 
     @Override
+    @SuppressWarnings("java:S2093")
     protected void encode(ChannelHandlerContext ctx, Message msg, List<Object> out) {
         if (LOG.isTraceEnabled()) {
             LOG.trace("[{}]: Send Message '{}'", ctx.channel().id().asShortText(), msg);
         }
 
+        BinaryWebSocketFrame frame = null;
         try {
-            BinaryWebSocketFrame frame = new BinaryWebSocketFrame(PooledByteBufAllocator.DEFAULT.buffer());
+            frame = new BinaryWebSocketFrame(PooledByteBufAllocator.DEFAULT.buffer());
             ByteBufOutputStream outputStream = new ByteBufOutputStream(frame.content());
             JACKSON_WRITER.writeValue((OutputStream) outputStream, msg);
 
-            out.add(frame);
+            outputStream.close();
+            out.add(frame.retain());
         }
         catch (IOException e) {
             LOG.error("[{}]: Unable to serialize '{}'", ctx.channel().id().asShortText(), LoggingUtil.sanitizeLogArg(msg));
             throw new IllegalArgumentException("Message could not be serialized. This could indicate a bug in drasyl: " + e.getMessage());
+        }
+        finally {
+            if (frame != null) {
+                // If exception occurs, release the frame
+                ReferenceCountUtil.release(frame);
+            }
         }
     }
 }

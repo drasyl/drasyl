@@ -19,7 +19,7 @@
 package org.drasyl.identity;
 
 import com.fasterxml.jackson.annotation.JsonValue;
-import org.apache.commons.codec.digest.DigestUtils;
+import org.drasyl.crypto.Hashing;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -100,7 +100,7 @@ public class ProofOfWork {
     public boolean isValid(CompressedPublicKey publicKey, short difficulty) {
         requireNonNull(publicKey);
 
-        String hash = DigestUtils.sha256Hex(publicKey.getCompressedKey() + this.nonce);
+        String hash = Hashing.sha256Hex(publicKey.getCompressedKey() + this.nonce);
 
         return hash.startsWith("0".repeat(difficulty));
     }

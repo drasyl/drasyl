@@ -36,12 +36,14 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
+import io.netty.handler.stream.ChunkedWriteHandler;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.DefaultSessionInitializer;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.MessageDecoder;
 import org.drasyl.peer.connection.handler.MessageEncoder;
 import org.drasyl.peer.connection.handler.SignatureHandler;
+import org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler;
 import org.drasyl.peer.connection.superpeer.SuperPeerClientChannelInitializer;
 import org.drasyl.peer.connection.superpeer.SuperPeerClientException;
 import org.slf4j.Logger;
@@ -60,6 +62,7 @@ import static io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHand
 import static org.drasyl.peer.connection.handler.ExceptionHandler.EXCEPTION_HANDLER;
 import static org.drasyl.peer.connection.handler.MessageDecoder.MESSAGE_DECODER;
 import static org.drasyl.peer.connection.handler.MessageEncoder.MESSAGE_ENCODER;
+import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_HANDLER;
 import static org.drasyl.util.WebSocketUtil.webSocketPort;
 
 /**
@@ -72,14 +75,16 @@ public class OutboundConnectionFactory {
     private final List<ChannelHandler> handler;
     private final List<String> sslProtocols;
     private final URI uri;
-    private Runnable shutdownProcedure;
-    private ChannelHandler initializer;
-    private EventLoopGroup eventGroup;
+    private final Runnable shutdownProcedure;
+    private final ChannelHandler initializer;
+    private final EventLoopGroup eventGroup;
     private boolean pingPong = true;
     private SslContext sslCtx;
     private Duration idleTimeout;
+    private Duration transferTimeout;
     private short idleRetries;
     private boolean ssl;
+    private int maxContentLength;
     private final Identity identity;
 
     /**
@@ -91,7 +96,7 @@ public class OutboundConnectionFactory {
                                      EventLoopGroup eventGroup,
                                      Identity identity) {
         this(target, null, () -> {
-        }, null, new ArrayList<>(), Collections.singletonList("TLSv1.3"), eventGroup, identity);
+        }, null, new ArrayList<>(), Collections.singletonList("TLSv1.3"), eventGroup, 1000000, identity, Duration.ofSeconds(60));
     }
 
     private OutboundConnectionFactory(URI target,
@@ -101,7 +106,9 @@ public class OutboundConnectionFactory {
                                       List<ChannelHandler> handler,
                                       List<String> sslProtocols,
                                       EventLoopGroup eventGroup,
-                                      Identity identity) {
+                                      int maxContentLength,
+                                      Identity identity,
+                                      Duration transferTimeout) {
         this.uri = target;
         this.initializer = initializer;
         this.shutdownProcedure = shutdownProcedure;
@@ -109,8 +116,22 @@ public class OutboundConnectionFactory {
         this.handler = handler;
         this.sslProtocols = sslProtocols;
         this.eventGroup = eventGroup;
+        this.maxContentLength = maxContentLength;
         this.channelReadyFuture = new CompletableFuture<>();
         this.identity = identity;
+        this.transferTimeout = transferTimeout;
+    }
+
+    /**
+     * Sets the transferTimeout for a composed message.
+     *
+     * @param transferTimeout transfer timeout
+     * @return {@link OutboundConnectionFactory} with the changed property
+     */
+    public OutboundConnectionFactory transferTimeout(Duration transferTimeout) {
+        this.transferTimeout = transferTimeout;
+
+        return this;
     }
 
     /**
@@ -148,6 +169,18 @@ public class OutboundConnectionFactory {
      */
     public OutboundConnectionFactory idleRetries(short retries) {
         this.idleRetries = retries;
+
+        return this;
+    }
+
+    /**
+     * Sets the max content length for a web frame.
+     *
+     * @param maxContentLength max content length
+     * @return {@link OutboundConnectionFactory} with the changed property
+     */
+    public OutboundConnectionFactory maxContentLength(int maxContentLength) {
+        this.maxContentLength = maxContentLength;
 
         return this;
     }
@@ -218,6 +251,8 @@ public class OutboundConnectionFactory {
             @Override
             protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
                 pipeline.addLast(SignatureHandler.SIGNATURE_HANDLER, new SignatureHandler(identity));
+                pipeline.addLast(CHUNKED_WRITER, new ChunkedWriteHandler());
+                pipeline.addLast(CHUNK_HANDLER, new ChunkedMessageHandler(maxContentLength, identity.getPublicKey(), transferTimeout));
             }
 
             @Override

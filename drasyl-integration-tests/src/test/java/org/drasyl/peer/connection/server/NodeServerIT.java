@@ -22,6 +22,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
+import io.netty.util.ResourceLeakDetector;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
@@ -38,6 +39,7 @@ import org.drasyl.identity.ProofOfWork;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
@@ -53,7 +55,6 @@ import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
@@ -119,6 +120,7 @@ class NodeServerIT {
         colorizedPrintln("STARTING " + info.getDisplayName(), COLOR_CYAN, STYLE_REVERSED);
 
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
+        System.setProperty("io.netty.leakDetection.level", "PARANOID");
 
         identitySession1 = Identity.of(169092, "030a59784f88c74dcd64258387f9126739c3aeb7965f36bb501ff01f5036b3d72b", "0f1e188d5e3b98daf2266d7916d2e1179ae6209faa7477a2a66d4bb61dab4399");
         identitySession2 = Identity.of(26778671, "0236fde6a49564a0eaa2a7d6c8f73b97062d5feb36160398c08a5b73f646aa5fe5", "093d1ee70518508cac18eaf90d312f768c14d43de9bfd2618a2794d8df392da0");
@@ -136,6 +138,7 @@ class NodeServerIT {
                 .serverIdleTimeout(ofSeconds(1))
                 .serverIdleRetries((short) 1)
                 .superPeerEnabled(false)
+                .messageMaxContentLength(1024 * 1024)
                 .build();
         DrasylNode.setLogLevel(serverConfig.getLoglevel());
         serverIdentityManager = new IdentityManager(serverConfig);
@@ -150,11 +153,11 @@ class NodeServerIT {
 
         config = DrasylConfig.newBuilder()
 //                .loglevel(Level.TRACE)
-                .identityProofOfWork(ProofOfWork.of(169092))
-                .identityPublicKey(CompressedPublicKey.of("030a59784f88c74dcd64258387f9126739c3aeb7965f36bb501ff01f5036b3d72b"))
-                .identityPrivateKey(CompressedPrivateKey.of("0f1e188d5e3b98daf2266d7916d2e1179ae6209faa7477a2a66d4bb61dab4399"))
                 .serverEnabled(false)
+                .serverSSLEnabled(true)
                 .superPeerEndpoints(server.getEndpoints())
+                .messageComposedMessageTransferTimeout(ofSeconds(60))
+                .messageMaxContentLength(1024 * 1024)
                 .build();
     }
 
@@ -397,13 +400,13 @@ class NodeServerIT {
         assertEquals(request.getId(), response.getCorrespondingId());
     }
 
-    @Disabled("Muss noch implementiert werden")
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void messageWithMaxSizeShouldArrive() throws InterruptedException, ExecutionException {
+        ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.DISABLED);
         // create connection
         TestNodeServerConnection session1 = clientSessionAfterJoin(config, server, identitySession1);
-        TestNodeServerConnection session2 = clientSessionAfterJoin(config, server, identitySession1);
+        TestNodeServerConnection session2 = clientSessionAfterJoin(config, server, identitySession2);
 
         TestObserver<Message> receivedMessages = session2.receivedMessages().test();
 
@@ -420,13 +423,13 @@ class NodeServerIT {
         receivedMessages.assertValue(request);
     }
 
-    @Disabled("Muss noch implementiert werden")
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void messageExceedingMaxSizeShouldThrowExceptionOnSend() throws InterruptedException, ExecutionException {
+    void messageExceedingMaxSizeShouldNotBeSend() throws InterruptedException, ExecutionException {
         // create connection
         TestNodeServerConnection session1 = clientSessionAfterJoin(config, server, identitySession1);
-        TestNodeServerConnection session2 = clientSessionAfterJoin(config, server, identitySession1);
+        TestNodeServerConnection session2 = clientSessionAfterJoin(config, server, identitySession2);
+        TestObserver<Message> receivedMessages = session2.receivedMessages().filter(msg -> msg instanceof ApplicationMessage).test();
 
         // create message with exceeded payload size
         byte[] bigPayload = new byte[config.getMessageMaxContentLength() + 1];
@@ -434,8 +437,38 @@ class NodeServerIT {
 
         // send message
         RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session2.getPublicKey(), bigPayload);
+        session2.send(request);
 
-        assertThrows(DrasylException.class, () -> session2.send(request));
+        // wait until timeout
+        Thread.sleep(serverConfig.getServerHandshakeTimeout().plusSeconds(2).toMillis());// NOSONAR
+        receivedMessages.assertNoValues();
+    }
+
+    @Test
+    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+    void messageExceedingChunkSizeShouldBeSend() throws InterruptedException, ExecutionException {
+        // create connections
+        TestNodeServerConnection session1 = clientSessionAfterJoin(config, server, identitySession1);
+        TestNodeServerConnection session2 = clientSessionAfterJoin(config, server, identitySession2);
+
+        TestObserver<Message> receivedMessages2 = session2.receivedMessages().test();
+
+        // create message with exceeded chunk size
+        byte[] bigPayload = new byte[Math.min(ChunkedMessageHandler.CHUNK_SIZE * 2 + ChunkedMessageHandler.CHUNK_SIZE / 2, config.getMessageMaxContentLength())];
+        new Random().nextBytes(bigPayload);
+
+        // send message
+        RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session2.getPublicKey(), bigPayload);
+        session1.send(request);
+        receivedMessages2.awaitCount(1);
+        receivedMessages2.assertValue(val -> {
+            if (!(val instanceof ApplicationMessage)) {
+                return false;
+            }
+            ApplicationMessage msg = (ApplicationMessage) val;
+
+            return Objects.equals(session1.getPublicKey(), msg.getSender()) && Objects.equals(session2.getPublicKey(), msg.getRecipient()) && Arrays.equals(bigPayload, msg.getPayload());
+        });
     }
 
     @Test
