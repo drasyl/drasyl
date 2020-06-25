@@ -129,7 +129,7 @@ class NodeServerIT {
         identitySession2 = Identity.of(26778671, "0236fde6a49564a0eaa2a7d6c8f73b97062d5feb36160398c08a5b73f646aa5fe5", "093d1ee70518508cac18eaf90d312f768c14d43de9bfd2618a2794d8df392da0");
 
         serverConfig = DrasylConfig.newBuilder()
-                .loglevel(Level.TRACE)
+//                .loglevel(Level.TRACE)
                 .identityProofOfWork(ProofOfWork.of(6657650))
                 .identityPublicKey(CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"))
                 .identityPrivateKey(CompressedPrivateKey.of("0c27af38c77f2cd5cc2a0ff5c461003a9c24beb955f316135d251ecaf4dda03f"))
@@ -156,14 +156,14 @@ class NodeServerIT {
         server.open();
 
         config = DrasylConfig.newBuilder()
-                .loglevel(Level.TRACE)
+//                .loglevel(Level.TRACE)
                 .serverEnabled(false)
                 .serverSSLEnabled(true)
                 .superPeerEndpoints(server.getEndpoints())
                 .superPeerPublicKey(CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"))
                 .superPeerChannelInitializer(TestSuperPeerClientChannelInitializer.class)
                 .messageComposedMessageTransferTimeout(ofSeconds(60))
-                .messageMaxContentLength(1024 * 1024 * 2)
+                .messageMaxContentLength(1024 * 1024)
                 .superPeerRetryDelays(List.of())
                 .build();
     }
@@ -320,7 +320,7 @@ class NodeServerIT {
         });
         receivedMessages1.assertValueAt(1, val -> ((QuitMessage) val).getReason() == REASON_NEW_SESSION);
         receivedMessages2.awaitCount(1);
-        receivedMessages2.assertValue(val -> {
+        receivedMessages2.assertValueAt(0, val -> {
             if (!(val instanceof WelcomeMessage)) {
                 return false;
             }
@@ -437,7 +437,7 @@ class NodeServerIT {
         RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session2.getPublicKey(), bigPayload);
         session1.send(request);
         receivedMessages2.awaitCount(1);
-        receivedMessages2.assertValue(val -> {
+        receivedMessages2.assertValueAt(0, val -> {
             if (!(val instanceof ApplicationMessage)) {
                 return false;
             }
