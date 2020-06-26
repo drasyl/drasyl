@@ -67,7 +67,7 @@ public class SuperPeerClient implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClient.class);
     private final DrasylConfig config;
     private final Supplier<Identity> identitySupplier;
-    private final PeersManager peersManager;
+    protected final PeersManager peersManager;
     private final Messenger messenger;
     private final EventLoopGroup workerGroup;
     private final Consumer<Event> eventConsumer;
@@ -78,7 +78,7 @@ public class SuperPeerClient implements AutoCloseable {
     private final Supplier<Thread> threadSupplier;
     private final Subject<Boolean> connected;
     private final DrasylFunction<URI, ChannelInitializer<SocketChannel>> channelInitializerSupplier;
-    private Channel clientChannel;
+    protected Channel clientChannel;
     protected ChannelInitializer<SocketChannel> channelInitializer;
 
     SuperPeerClient(DrasylConfig config,
@@ -134,6 +134,33 @@ public class SuperPeerClient implements AutoCloseable {
         this.threadSupplier = () -> new Thread(this::keepConnectionAlive);
         this.connected = BehaviorSubject.createDefault(false);
         this.channelInitializerSupplier = endpoint -> initiateChannelInitializer(new SuperPeerClientEnvironment(config, identitySupplier, endpoint, messenger, peersManager, connected, eventConsumer), config.getSuperPeerChannelInitializer());
+    }
+
+    public SuperPeerClient(DrasylConfig config,
+                           Supplier<Identity> identitySupplier,
+                           PeersManager peersManager,
+                           Messenger messenger,
+                           EventLoopGroup workerGroup,
+                           Consumer<Event> eventConsumer,
+                           Subject<Boolean> connected,
+                           DrasylFunction<URI, ChannelInitializer<SocketChannel>> channelInitializerSupplier) throws SuperPeerClientException {
+        this.config = config;
+        this.identitySupplier = identitySupplier;
+        this.peersManager = peersManager;
+        this.messenger = messenger;
+        this.workerGroup = workerGroup;
+        this.eventConsumer = eventConsumer;
+        endpoints = config.getSuperPeerEndpoints();
+        if (endpoints.isEmpty()) {
+            throw new SuperPeerClientException("At least one Super Peer Endpoint must be specified.");
+        }
+        this.opened = new AtomicBoolean(false);
+        // The pointer should point to a random endpoint. This creates a distribution on different super peer's endpoints
+        this.nextEndpointPointer = new AtomicInteger(endpoints.isEmpty() ? 0 : Crypto.randomNumber(endpoints.size()));
+        this.nextRetryDelayPointer = new AtomicInteger(0);
+        this.threadSupplier = () -> new Thread(this::keepConnectionAlive);
+        this.connected = connected;
+        this.channelInitializerSupplier = channelInitializerSupplier;
     }
 
     void keepConnectionAlive() {

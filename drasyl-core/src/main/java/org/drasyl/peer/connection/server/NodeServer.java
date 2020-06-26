@@ -109,7 +109,8 @@ public class NodeServer implements AutoCloseable {
                       DrasylConfig config,
                       EventLoopGroup workerGroup,
                       EventLoopGroup bossGroup,
-                      Observable<Boolean> superPeerConnected) throws NodeServerException {
+                      Observable<Boolean> superPeerConnected,
+                      AtomicBoolean opened) throws NodeServerException {
         this.identitySupplier = identitySupplier;
         this.peersManager = peersManager;
         this.config = config;
@@ -130,10 +131,20 @@ public class NodeServer implements AutoCloseable {
                 ),
                 config.getServerChannelInitializer()
         );
-        this.opened = new AtomicBoolean(false);
+        this.opened = opened;
         this.messenger = messenger;
         this.actualPort = -1;
         this.actualEndpoints = new HashSet<>();
+    }
+
+    public NodeServer(Supplier<Identity> identitySupplier,
+                      Messenger messenger,
+                      PeersManager peersManager,
+                      DrasylConfig config,
+                      EventLoopGroup workerGroup,
+                      EventLoopGroup bossGroup,
+                      Observable<Boolean> superPeerConnected) throws NodeServerException {
+        this(identitySupplier, messenger, peersManager, config, workerGroup, bossGroup, superPeerConnected, new AtomicBoolean(false));
     }
 
     /**
