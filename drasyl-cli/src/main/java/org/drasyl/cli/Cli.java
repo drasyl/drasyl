@@ -30,11 +30,14 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.event.Event;
+import org.drasyl.util.DrasylFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.util.function.Supplier;
+
+import static java.util.Objects.requireNonNull;
 
 class Cli {
     private static final Logger log = LoggerFactory.getLogger(Cli.class);
@@ -45,17 +48,31 @@ class Cli {
     private static final String OPT_HELP = "help";
     private final HelpFormatter formatter;
     private final Supplier<String> versionSupplier;
+    private final DrasylFunction<DrasylConfig, DrasylNode> nodeSupplier;
     private DrasylNode node;
 
-    Cli(HelpFormatter formatter,
-        Supplier<String> versionSupplier, DrasylNode node) {
-        this.node = node;
-        this.formatter = formatter;
-        this.versionSupplier = versionSupplier;
+    public Cli() {
+        this(
+                new HelpFormatter(),
+                DrasylNode::getVersion,
+                config -> new DrasylNode(config) {
+                    @Override
+                    public void onEvent(Event event) {
+                        log.info("Event received: {}", event);
+                    }
+                },
+                null
+        );
     }
 
-    public Cli() {
-        this(new HelpFormatter(), DrasylNode::getVersion, null);
+    Cli(HelpFormatter formatter,
+        Supplier<String> versionSupplier,
+        DrasylFunction<DrasylConfig, DrasylNode> nodeSupplier,
+        DrasylNode node) {
+        this.formatter = requireNonNull(formatter);
+        this.versionSupplier = requireNonNull(versionSupplier);
+        this.nodeSupplier = requireNonNull(nodeSupplier);
+        this.node = node;
     }
 
     public static void main(String[] args) throws CliException {
@@ -182,12 +199,7 @@ class Cli {
                 config = DrasylConfig.newBuilder(config).loglevel(Level.valueOf(level)).build();
             }
 
-            node = new DrasylNode(config) {
-                @Override
-                public void onEvent(Event event) {
-                    log.info("Event received: {}", event);
-                }
-            };
+            node = nodeSupplier.apply(config);
             node.start().join();
         }
         catch (DrasylException e) {
