@@ -255,7 +255,7 @@ class SuperPeerClientIT {
         server.awaitClient(identityManager.getPublicKey());
 
         // send message
-        ApplicationMessage request = new ApplicationMessage(identityManager.getPublicKey(), identityManagerServer.getPublicKey(), new byte[]{
+        ApplicationMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), new byte[]{
                 0x00,
                 0x01
         });
@@ -292,6 +292,24 @@ class SuperPeerClientIT {
 
         // start client
         client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
+        client.open();
+
+        // verify emitted events
+        emittedEvents.awaitCount(1);
+        emittedEvents.assertValue(new Event(EVENT_NODE_ONLINE, Node.of(identityManager.getIdentity())));
+    }
+
+    @Test
+    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+    void clientShouldEmitNodeOnlineAlsoWithoutSuperPeerPubKeyInConfig() throws SuperPeerClientException {
+        TestObserver<Event> emittedEvents = emittedEventsSubject.test();
+
+        DrasylConfig config1 = DrasylConfig.newBuilder(config)
+                .superPeerPublicKey(null)
+                .build();
+
+        // start client
+        client = new SuperPeerClient(config1, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
         client.open();
 
         // verify emitted events
