@@ -28,6 +28,7 @@ import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
+import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
@@ -40,9 +41,7 @@ import org.drasyl.peer.connection.server.NodeServer;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
-import static java.time.Duration.ofSeconds;
 import static org.awaitility.Awaitility.await;
-import static org.drasyl.event.EventType.EVENT_NODE_ONLINE;
 
 public class TestSuperPeerClient extends SuperPeerClient {
     private final Subject<Event> receivedEvents;
@@ -98,7 +97,7 @@ public class TestSuperPeerClient extends SuperPeerClient {
     }
 
     public void awaitOnline() {
-        receivedEvents.map(Event::getType).filter(type -> type == EVENT_NODE_ONLINE).blockingFirst();
+        receivedEvents.filter(e -> e instanceof NodeOnlineEvent).blockingFirst();
     }
 
     public Observable<Message> receivedMessages() {

@@ -39,6 +39,10 @@ import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
+import org.drasyl.event.MessageEvent;
+import org.drasyl.event.NodeEvent;
+import org.drasyl.event.NodeOfflineEvent;
+import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.util.Pair;
 
@@ -79,25 +83,21 @@ public class ChatGUI extends Application {
             node = new DrasylNode() {
                 @Override
                 public void onEvent(Event event) {
-                    switch (event.getType()) {
-                        case EVENT_MESSAGE:
-                            parseMessage(event.getMessage());
-                            break;
-                        case EVENT_NODE_ONLINE:
-                            if (!online.isDone()) {
-                                online.complete(null);
-                            }
-                            myID = event.getNode().getIdentity().getPublicKey();
-                            txtArea.appendText("[~System~]: The node is online. Your address is: " + myID + "\n");
-                            break;
-                        case EVENT_NODE_OFFLINE:
-                            txtArea.appendText("[~System~]: The node is offline. No messages can be sent at the moment. Wait until node comes back online.\n");
-                            break;
-                        case EVENT_NODE_UP:
-                        case EVENT_NODE_DOWN:
-                            // ignore
-                            break;
-                        default:
+                    if (event instanceof MessageEvent) {
+                        parseMessage(((MessageEvent) event).getMessage());
+                    }
+                    else if (event instanceof NodeOnlineEvent) {
+                        if (!online.isDone()) {
+                            online.complete(null);
+                        }
+                        myID = ((NodeEvent) event).getNode().getIdentity().getPublicKey();
+                        txtArea.appendText("[~System~]: The node is online. Your address is: " + myID + "\n");
+                    }
+                    else if (event instanceof NodeOfflineEvent) {
+                        txtArea.appendText("[~System~]: The node is offline. No messages can be sent at the moment. Wait until node comes back online.\n");
+                    }
+                    else {
+                        // ignore
                     }
                 }
             };

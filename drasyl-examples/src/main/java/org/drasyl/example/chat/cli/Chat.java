@@ -22,6 +22,12 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.event.Event;
+import org.drasyl.event.MessageEvent;
+import org.drasyl.event.NodeDownEvent;
+import org.drasyl.event.NodeEvent;
+import org.drasyl.event.NodeOfflineEvent;
+import org.drasyl.event.NodeOnlineEvent;
+import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.messenger.MessengerException;
 import org.drasyl.util.Pair;
@@ -50,24 +56,22 @@ public class Chat {
         DrasylNode node = new DrasylNode(config) {
             @Override
             public void onEvent(Event event) {
-                switch (event.getType()) {
-                    case EVENT_MESSAGE:
-                        Pair<CompressedPublicKey, byte[]> message = event.getMessage();
-                        System.out.println("From " + message.first() + ": " + new String(message.second()));
-                        break;
-                    case EVENT_NODE_ONLINE:
-                        online.complete(null);
-                        System.out.println("Online! Your Public Key (address) is: " + event.getNode().getIdentity().getPublicKey());
-                        break;
-                    case EVENT_NODE_OFFLINE:
-                        System.out.println("Offline! No messages can be sent at the moment. Wait until node comes back online.");
-                        break;
-                    case EVENT_NODE_UP:
-                    case EVENT_NODE_DOWN:
-                        // ignore
-                        break;
-                    default:
-                        System.out.println(event);
+                if (event instanceof MessageEvent) {
+                    Pair<CompressedPublicKey, byte[]> message = ((MessageEvent) event).getMessage();
+                    System.out.println("From " + message.first() + ": " + new String(message.second()));
+                }
+                else if (event instanceof NodeOnlineEvent) {
+                    online.complete(null);
+                    System.out.println("Online! Your Public Key (address) is: " + ((NodeEvent) event).getNode().getIdentity().getPublicKey());
+                }
+                else if (event instanceof NodeOfflineEvent) {
+                    System.out.println("Offline! No messages can be sent at the moment. Wait until node comes back online.");
+                }
+                else if (event instanceof NodeUpEvent || event instanceof NodeDownEvent) {
+                    // ignore
+                }
+                else {
+                    System.out.println(event);
                 }
             }
         };

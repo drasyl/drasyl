@@ -19,7 +19,7 @@
 package org.drasyl.peer.connection.intravm;
 
 import org.drasyl.event.Event;
-import org.drasyl.event.EventType;
+import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.messenger.MessageSink;
 import org.drasyl.messenger.Messenger;
@@ -75,7 +75,7 @@ public class IntraVmDiscovery implements AutoCloseable {
                     }
 
                     ApplicationMessage applicationMessage = (ApplicationMessage) message;
-                    eventConsumer.accept(new Event(EventType.EVENT_MESSAGE, Pair.of(applicationMessage.getSender(), applicationMessage.getPayload())));
+                    eventConsumer.accept(new MessageEvent(Pair.of(applicationMessage.getSender(), applicationMessage.getPayload())));
                 }
         );
     }

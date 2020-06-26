@@ -56,7 +56,7 @@ These provide information about the state of your node, received messages or con
 It is therefore important that you become familiar with the [definitions and implications](../../drasyl-core/src/main/java/org/drasyl/event/EventCode.java) of
 the different event types.
 
-For example, you should listen for `EVENT_NODE_ONLINE` before start sending messages, and pause when `EVENT_NODE_OFFLINE` has been received.
+For example, you should listen for `NodeOnlineEvent` before start sending messages, and pause when `NodeOfflineEvent` has been received.
 
 The state diagram below shows which events occur in which order during the lifetime of a drasyl node:
 
@@ -64,20 +64,20 @@ The state diagram below shows which events occur in which order during the lifet
 stateDiagram
   state started <<fork>>
 	[*] --> started
-	started --> EVENT_NODE_UP
-	EVENT_NODE_UP --> EVENT_NODE_DOWN
-	EVENT_NODE_UP --> EVENT_NODE_ONLINE
-	EVENT_NODE_ONLINE --> EVENT_NODE_OFFLINE
-	EVENT_NODE_OFFLINE --> EVENT_NODE_ONLINE
-	EVENT_NODE_OFFLINE --> EVENT_NODE_DOWN
-	EVENT_NODE_OFFLINE --> EVENT_NODE_IDENTITY_COLLISION
-	EVENT_NODE_UP --> EVENT_NODE_IDENTITY_COLLISION
-	EVENT_NODE_IDENTITY_COLLISION --> EVENT_NODE_ONLINE
-	EVENT_NODE_IDENTITY_COLLISION --> EVENT_NODE_DOWN
-	EVENT_NODE_DOWN --> EVENT_NODE_NORMAL_TERMINATION
-	EVENT_NODE_NORMAL_TERMINATION --> [*]
-	started --> EVENT_NODE_UNRECOVERABLE_ERROR
-	EVENT_NODE_UNRECOVERABLE_ERROR --> [*]
+	started --> NodeUpEvent
+	NodeUpEvent --> NodeDownEvent
+	NodeUpEvent --> NodeOnlineEvent
+	NodeOnlineEvent --> NodeOfflineEvent
+	NodeOfflineEvent --> NodeOnlineEvent
+	NodeOfflineEvent --> NodeDownEvent
+	NodeOfflineEvent --> NodeIdentityCollisionEvent
+	NodeUpEvent --> NodeIdentityCollisionEvent
+	NodeIdentityCollisionEvent --> NodeOnlineEvent
+	NodeIdentityCollisionEvent --> NodeDownEvent
+	NodeDownEvent --> NodeNormalTerminationEvent
+	NodeNormalTerminationEvent --> [*]
+	started --> NodeUnrecoverableErrorEvent
+	NodeUnrecoverableErrorEvent --> [*]
 ```
 
 ## Sending Messages
@@ -113,13 +113,13 @@ public void onEvent(Event event) {
 Before you can use the drasyl node, you must start it using `node.start()`.
 For communication with other nodes in the local network, the node starts a server
 listening on port 22527. Make sure that the port is available.
-After the node has been successfully started, it emits an `EVENT_NODE_UP` to the application.
-Then, once it has successfully connected to the overlay network, an `EVENT_NODE_ONLINE` is emitted.
+After the node has been successfully started, it emits an `NodeUpEvent` to the application.
+Then, once it has successfully connected to the overlay network, an `NodeOnlineEvent` is emitted.
 
 If the node is temporarily or permanently no longer needed, it can be shut down using `node.shutdown()`.
-An `EVENT_NODE_DOWN` is emitted immediately after this call. The application should now no longer attempt to send messages.
-As soon as the connection to the drasyl network is terminated, an `EVENT_NODE_OFFLINE` is emitted.
-An `EVENT_NODE_NORMAL_TERMINATION` is created when the shutdown is done.
+An `NodeDownEvent` is emitted immediately after this call. The application should now no longer attempt to send messages.
+As soon as the connection to the drasyl network is terminated, an `NodeOfflineEvent` is emitted.
+An `NodeNormalTerminationEvent` is created when the shutdown is done.
 
 ## Customize Configuration
 

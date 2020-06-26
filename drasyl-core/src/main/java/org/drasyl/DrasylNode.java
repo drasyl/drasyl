@@ -27,8 +27,12 @@ import io.sentry.Sentry;
 import io.sentry.event.User;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
-import org.drasyl.event.EventType;
+import org.drasyl.event.MessageEvent;
 import org.drasyl.event.Node;
+import org.drasyl.event.NodeDownEvent;
+import org.drasyl.event.NodeNormalTerminationEvent;
+import org.drasyl.event.NodeUnrecoverableErrorEvent;
+import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
@@ -60,10 +64,6 @@ import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.concurrent.CompletableFuture.runAsync;
-import static org.drasyl.event.EventType.EVENT_NODE_DOWN;
-import static org.drasyl.event.EventType.EVENT_NODE_NORMAL_TERMINATION;
-import static org.drasyl.event.EventType.EVENT_NODE_UNRECOVERABLE_ERROR;
-import static org.drasyl.event.EventType.EVENT_NODE_UP;
 
 /**
  * Represents a node in the drasyl Overlay Network. Applications that want to run on drasyl must
@@ -259,7 +259,7 @@ public abstract class DrasylNode {
     public CompletableFuture<Void> shutdown() {
         if (started.compareAndSet(true, false)) {
             DrasylNode self = this;
-            onEvent(new Event(EVENT_NODE_DOWN, Node.of(identityManager.getIdentity(), server.getEndpoints())));
+            onEvent(new NodeDownEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
             LOG.info("Shutdown drasyl Node with Identity '{}'...", identityManager.getIdentity());
             shutdownSequence = runAsync(this::stopSuperPeerClient)
                     .thenRun(this::stopServer)
@@ -267,7 +267,7 @@ public abstract class DrasylNode {
                     .whenComplete((r, e) -> {
                         try {
                             if (e == null) {
-                                onEvent(new Event(EVENT_NODE_NORMAL_TERMINATION, Node.of(identityManager.getIdentity(), server.getEndpoints())));
+                                onEvent(new NodeNormalTerminationEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
                                 LOG.info("drasyl Node with Identity '{}' has shut down", identityManager.getIdentity());
                             }
                             else {
@@ -348,11 +348,11 @@ public abstract class DrasylNode {
                     .thenRun(this::startSuperPeerClient)
                     .whenComplete((r, e) -> {
                         if (e == null) {
-                            onEvent(new Event(EVENT_NODE_UP, Node.of(identityManager.getIdentity(), server.getEndpoints())));
+                            onEvent(new NodeUpEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
                             LOG.info("drasyl Node with Identity '{}' has started", identityManager.getIdentity());
                         }
                         else {
-                            onEvent(new Event(EVENT_NODE_UNRECOVERABLE_ERROR, Node.of(identityManager.getIdentity(), server.getEndpoints())));
+                            onEvent(new NodeUnrecoverableErrorEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
                             LOG.info("Could not start drasyl Node: {}", e.getMessage());
                             LOG.info("Stop all running components...");
                             this.stopServer();
@@ -467,7 +467,7 @@ public abstract class DrasylNode {
 
         if (message instanceof ApplicationMessage) {
             ApplicationMessage applicationMessage = (ApplicationMessage) message;
-            onEvent(new Event(EventType.EVENT_MESSAGE, Pair.of(applicationMessage.getSender(), applicationMessage.getPayload())));
+            onEvent(new MessageEvent(Pair.of(applicationMessage.getSender(), applicationMessage.getPayload())));
         }
         else if (message instanceof WhoisMessage) {
             WhoisMessage whoisMessage = (WhoisMessage) message;

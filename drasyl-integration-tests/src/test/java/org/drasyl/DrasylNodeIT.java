@@ -24,7 +24,13 @@ import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
-import org.drasyl.event.EventType;
+import org.drasyl.event.MessageEvent;
+import org.drasyl.event.NodeEvent;
+import org.drasyl.event.NodeNormalTerminationEvent;
+import org.drasyl.event.NodeOnlineEvent;
+import org.drasyl.event.NodeUpEvent;
+import org.drasyl.event.PeerDirectEvent;
+import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -42,12 +48,6 @@ import java.util.List;
 import java.util.Set;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.event.EventType.EVENT_MESSAGE;
-import static org.drasyl.event.EventType.EVENT_NODE_NORMAL_TERMINATION;
-import static org.drasyl.event.EventType.EVENT_NODE_ONLINE;
-import static org.drasyl.event.EventType.EVENT_NODE_UP;
-import static org.drasyl.event.EventType.EVENT_PEER_DIRECT;
-import static org.drasyl.event.EventType.EVENT_PEER_RELAY;
 import static testutils.AnsiColor.COLOR_CYAN;
 import static testutils.AnsiColor.STYLE_REVERSED;
 import static testutils.TestHelper.colorizedPrintln;
@@ -76,7 +76,7 @@ class DrasylNodeIT {
             @Override
             public void onEvent(Event event) {
                 subject.onNext(event);
-                if (event.getType() == EVENT_NODE_NORMAL_TERMINATION) {
+                if (event instanceof NodeNormalTerminationEvent) {
                     subject.onComplete();
                 }
             }
@@ -116,7 +116,7 @@ class DrasylNodeIT {
                     .intraVmDiscoveryEnabled(false)
                     .build();
             superSuperPeer = createNode(config);
-            Event superSuperPeerNodeUp = superSuperPeer.second().filter(e -> e.getType() == EVENT_NODE_UP).firstElement().blockingGet();
+            NodeEvent superSuperPeerNodeUp = (NodeEvent) superSuperPeer.second().filter(e -> e instanceof NodeUpEvent).firstElement().blockingGet();
             int superSuperPeerPort = superSuperPeerNodeUp.getNode().getEndpoints().iterator().next().getPort();
             colorizedPrintln("CREATED superSuperPeer", COLOR_CYAN, STYLE_REVERSED);
 
@@ -132,7 +132,7 @@ class DrasylNodeIT {
                     .intraVmDiscoveryEnabled(false)
                     .build();
             superPeer = createNode(config);
-            Event superPeerNodeUp = superPeer.second().filter(e -> e.getType() == EVENT_NODE_UP).firstElement().blockingGet();
+            NodeEvent superPeerNodeUp = (NodeEvent) superPeer.second().filter(e -> e instanceof NodeUpEvent).firstElement().blockingGet();
             int superPeerPort = superPeerNodeUp.getNode().getEndpoints().iterator().next().getPort();
             colorizedPrintln("CREATED superPeer", COLOR_CYAN, STYLE_REVERSED);
 
@@ -162,10 +162,10 @@ class DrasylNodeIT {
             client2 = createNode(config);
             colorizedPrintln("CREATED client2", COLOR_CYAN, STYLE_REVERSED);
 
-            superSuperPeer.second().map(Event::getType).filter(t -> t == EVENT_NODE_UP || t == EVENT_PEER_DIRECT || t == EVENT_PEER_RELAY).test().awaitCount(4);
-            superPeer.second().map(Event::getType).filter(t -> t == EVENT_NODE_ONLINE || t == EVENT_PEER_DIRECT).test().awaitCount(3);
-            client1.second().map(Event::getType).filter(t -> t == EVENT_NODE_ONLINE || t == EVENT_PEER_DIRECT).test().awaitCount(2);
-            client2.second().map(Event::getType).filter(t -> t == EVENT_NODE_ONLINE || t == EVENT_PEER_DIRECT).test().awaitCount(2);
+            superSuperPeer.second().filter(e -> e instanceof NodeUpEvent || e instanceof PeerDirectEvent || e instanceof PeerRelayEvent).test().awaitCount(4);
+            superPeer.second().filter(e -> e instanceof NodeOnlineEvent || e instanceof PeerDirectEvent).test().awaitCount(3);
+            client1.second().filter(e -> e instanceof NodeOnlineEvent || e instanceof PeerDirectEvent).test().awaitCount(2);
+            client2.second().filter(e -> e instanceof NodeOnlineEvent || e instanceof PeerDirectEvent).test().awaitCount(2);
         }
 
         /**
@@ -179,10 +179,10 @@ class DrasylNodeIT {
             //
             // send messages
             //
-            TestObserver<EventType> superSuperPeerMessages = superSuperPeer.second().map(Event::getType).filter(c -> c == EVENT_MESSAGE).test();
-            TestObserver<EventType> superPeerMessages = superPeer.second().map(Event::getType).filter(c -> c == EVENT_MESSAGE).test();
-            TestObserver<EventType> client1Messages = client1.second().map(Event::getType).filter(c -> c == EVENT_MESSAGE).test();
-            TestObserver<EventType> client2Messages = client2.second().map(Event::getType).filter(c -> c == EVENT_MESSAGE).test();
+            TestObserver<Event> superSuperPeerMessages = superSuperPeer.second().filter(e -> e instanceof MessageEvent).test();
+            TestObserver<Event> superPeerMessages = superPeer.second().filter(e -> e instanceof MessageEvent).test();
+            TestObserver<Event> client1Messages = client1.second().filter(e -> e instanceof MessageEvent).test();
+            TestObserver<Event> client2Messages = client2.second().filter(e -> e instanceof MessageEvent).test();
 
 //        superSuperPeer.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("SSP: " + e));
 //        superPeer.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("SP: " + e));
@@ -215,10 +215,10 @@ class DrasylNodeIT {
             //
             // send messages
             //
-            TestObserver<EventType> superSuperPeerEvents = superSuperPeer.second().map(Event::getType).filter(t -> t == EVENT_PEER_DIRECT || t == EVENT_PEER_RELAY).test();
-            TestObserver<EventType> superPeerEvents = superPeer.second().map(Event::getType).filter(t -> t == EVENT_PEER_DIRECT).test();
-            TestObserver<EventType> client1Events = client1.second().map(Event::getType).filter(t -> t == EVENT_PEER_DIRECT).test();
-            TestObserver<EventType> client2Events = client2.second().map(Event::getType).filter(t -> t == EVENT_PEER_DIRECT).test();
+            TestObserver<Event> superSuperPeerEvents = superSuperPeer.second().filter(e -> e instanceof PeerDirectEvent || e instanceof PeerRelayEvent).test();
+            TestObserver<Event> superPeerEvents = superPeer.second().filter(e -> e instanceof PeerDirectEvent).test();
+            TestObserver<Event> client1Events = client1.second().filter(e -> e instanceof PeerDirectEvent).test();
+            TestObserver<Event> client2Events = client2.second().filter(e -> e instanceof PeerDirectEvent).test();
 
 //            superSuperPeer.second().subscribe(e -> System.err.println("SSP: " + e));
 //            superPeer.second().subscribe(e -> System.err.println("SP: " + e));
@@ -293,10 +293,10 @@ class DrasylNodeIT {
             node4 = createNode(config);
             colorizedPrintln("CREATED node4", COLOR_CYAN, STYLE_REVERSED);
 
-            node1.second().map(Event::getType).filter(t -> t == EVENT_NODE_UP || t == EVENT_PEER_DIRECT).test().awaitCount(3);
-            node2.second().map(Event::getType).filter(t -> t == EVENT_NODE_UP || t == EVENT_PEER_DIRECT).test().awaitCount(3);
-            node3.second().map(Event::getType).filter(t -> t == EVENT_NODE_UP || t == EVENT_PEER_DIRECT).test().awaitCount(3);
-            node4.second().map(Event::getType).filter(t -> t == EVENT_NODE_UP || t == EVENT_PEER_DIRECT).test().awaitCount(3);
+            node1.second().filter(e -> e instanceof NodeUpEvent || e instanceof PeerDirectEvent).test().awaitCount(3);
+            node2.second().filter(e -> e instanceof NodeUpEvent || e instanceof PeerDirectEvent).test().awaitCount(3);
+            node3.second().filter(e -> e instanceof NodeUpEvent || e instanceof PeerDirectEvent).test().awaitCount(3);
+            node4.second().filter(e -> e instanceof NodeUpEvent || e instanceof PeerDirectEvent).test().awaitCount(3);
         }
 
         /**
@@ -310,10 +310,10 @@ class DrasylNodeIT {
             //
             // send messages
             //
-            TestObserver<EventType> superSuperPeerMessages = node1.second().map(Event::getType).filter(c -> c == EVENT_MESSAGE).test();
-            TestObserver<EventType> superPeerMessages = node2.second().map(Event::getType).filter(c -> c == EVENT_MESSAGE).test();
-            TestObserver<EventType> client1Messages = node3.second().map(Event::getType).filter(c -> c == EVENT_MESSAGE).test();
-            TestObserver<EventType> client2Messages = node4.second().map(Event::getType).filter(c -> c == EVENT_MESSAGE).test();
+            TestObserver<Event> superSuperPeerMessages = node1.second().filter(e -> e instanceof MessageEvent).test();
+            TestObserver<Event> superPeerMessages = node2.second().filter(e -> e instanceof MessageEvent).test();
+            TestObserver<Event> client1Messages = node3.second().filter(e -> e instanceof MessageEvent).test();
+            TestObserver<Event> client2Messages = node4.second().filter(e -> e instanceof MessageEvent).test();
 
 //        superPeer.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("SSP: " + e));
 //        superPeer.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("SP: " + e));
@@ -346,27 +346,15 @@ class DrasylNodeIT {
             //
             // send messages
             //
-            TestObserver<EventType> node1Events = node1.second().map(Event::getType).filter(EventType::isPeerEvent).test();
-            TestObserver<EventType> node2Events = node2.second().map(Event::getType).filter(EventType::isPeerEvent).test();
-            TestObserver<EventType> node3Events = node3.second().map(Event::getType).filter(EventType::isPeerEvent).test();
-            TestObserver<EventType> node4Events = node4.second().map(Event::getType).filter(EventType::isPeerEvent).test();
+            TestObserver<Event> node1Events = node1.second().filter(e -> e instanceof PeerDirectEvent).test();
+            TestObserver<Event> node2Events = node2.second().filter(e -> e instanceof PeerDirectEvent).test();
+            TestObserver<Event> node3Events = node3.second().filter(e -> e instanceof PeerDirectEvent).test();
+            TestObserver<Event> node4Events = node4.second().filter(e -> e instanceof PeerDirectEvent).test();
 
             node1Events.awaitCount(3);
-            node1Events.assertValueAt(0, EVENT_PEER_DIRECT);
-            node1Events.assertValueAt(1, EVENT_PEER_DIRECT);
-            node1Events.assertValueAt(2, EVENT_PEER_DIRECT);
             node2Events.awaitCount(3);
-            node2Events.assertValueAt(0, EVENT_PEER_DIRECT);
-            node2Events.assertValueAt(1, EVENT_PEER_DIRECT);
-            node2Events.assertValueAt(2, EVENT_PEER_DIRECT);
             node3Events.awaitCount(3);
-            node3Events.assertValueAt(0, EVENT_PEER_DIRECT);
-            node3Events.assertValueAt(1, EVENT_PEER_DIRECT);
-            node3Events.assertValueAt(2, EVENT_PEER_DIRECT);
             node4Events.awaitCount(3);
-            node4Events.assertValueAt(0, EVENT_PEER_DIRECT);
-            node4Events.assertValueAt(1, EVENT_PEER_DIRECT);
-            node4Events.assertValueAt(2, EVENT_PEER_DIRECT);
         }
     }
 
@@ -398,7 +386,7 @@ class DrasylNodeIT {
                     .intraVmDiscoveryEnabled(false)
                     .build();
             node1 = createNode(config);
-            node1.second().filter(e -> e.getType() == EVENT_NODE_UP).test().awaitCount(1);
+            node1.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1);
             colorizedPrintln("CREATED node1", COLOR_CYAN, STYLE_REVERSED);
 
             // super peer
@@ -411,7 +399,7 @@ class DrasylNodeIT {
                     .intraVmDiscoveryEnabled(false)
                     .build();
             node2 = createNode(config);
-            node2.second().filter(e -> e.getType() == EVENT_NODE_UP).test().awaitCount(1);
+            node2.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1);
             colorizedPrintln("CREATED node2", COLOR_CYAN, STYLE_REVERSED);
 
             // client1
@@ -424,7 +412,7 @@ class DrasylNodeIT {
                     .intraVmDiscoveryEnabled(false)
                     .build();
             node3 = createNode(config);
-            node3.second().filter(e -> e.getType() == EVENT_NODE_UP).test().awaitCount(1);
+            node3.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1);
             colorizedPrintln("CREATED node3", COLOR_CYAN, STYLE_REVERSED);
 
             // client2
@@ -436,7 +424,7 @@ class DrasylNodeIT {
                     .superPeerEnabled(false)
                     .build();
             node4 = createNode(config);
-            node4.second().filter(e -> e.getType() == EVENT_NODE_UP).test().awaitCount(1);
+            node4.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1);
             colorizedPrintln("CREATED node4", COLOR_CYAN, STYLE_REVERSED);
         }
 
@@ -451,10 +439,10 @@ class DrasylNodeIT {
             //
             // send messages
             //
-            TestObserver<EventType> superSuperPeerMessages = node1.second().map(Event::getType).filter(c -> c == EVENT_MESSAGE).test();
-            TestObserver<EventType> superPeerMessages = node2.second().map(Event::getType).filter(c -> c == EVENT_MESSAGE).test();
-            TestObserver<EventType> client1Messages = node3.second().map(Event::getType).filter(c -> c == EVENT_MESSAGE).test();
-            TestObserver<EventType> client2Messages = node4.second().map(Event::getType).filter(c -> c == EVENT_MESSAGE).test();
+            TestObserver<Event> superSuperPeerMessages = node1.second().filter(e -> e instanceof MessageEvent).test();
+            TestObserver<Event> superPeerMessages = node2.second().filter(e -> e instanceof MessageEvent).test();
+            TestObserver<Event> client1Messages = node3.second().filter(e -> e instanceof MessageEvent).test();
+            TestObserver<Event> client2Messages = node4.second().filter(e -> e instanceof MessageEvent).test();
 
 //        superPeer.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("SSP: " + e));
 //        superPeer.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("SP: " + e));
