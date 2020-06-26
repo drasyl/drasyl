@@ -463,10 +463,9 @@ class NodeServerIT {
 
     @Test
     void shouldOpenAndCloseGracefully() throws DrasylException {
-        NodeServer server = new NodeServer(serverIdentityManager::getIdentity, serverMessenger, peersManager, new DrasylConfig(), workerGroup, bossGroup, serverSuperPeerConnected);
-
-        server.open();
-        server.close();
+        try (NodeServer myServer = new NodeServer(serverIdentityManager::getIdentity, serverMessenger, peersManager, new DrasylConfig(), workerGroup, bossGroup, serverSuperPeerConnected)) {
+            myServer.open();
+        }
 
         assertTrue(true);
     }
@@ -474,9 +473,9 @@ class NodeServerIT {
     @Test
     void openShouldFailIfInvalidPortIsGiven() throws DrasylException {
         DrasylConfig config = DrasylConfig.newBuilder().serverBindPort(72722).build();
-        NodeServer server = new NodeServer(serverIdentityManager::getIdentity, serverMessenger, peersManager, config, workerGroup, bossGroup, serverSuperPeerConnected);
-
-        assertThrows(NodeServerException.class, server::open);
+        try (NodeServer myServer = new NodeServer(serverIdentityManager::getIdentity, serverMessenger, peersManager, config, workerGroup, bossGroup, serverSuperPeerConnected)) {
+            assertThrows(NodeServerException.class, myServer::open);
+        }
     }
 
     @Test
@@ -511,7 +510,7 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void MessageWithWrongSignatureShouldProduceExceptionMessage() throws CryptoException, JsonProcessingException, SuperPeerClientException {
+    void messageWithWrongSignatureShouldProduceExceptionMessage() throws CryptoException, JsonProcessingException, SuperPeerClientException {
         // create connection
         TestSuperPeerClient session = clientSession(configClient1, server, identitySession1, false);
         TestObserver<Message> receivedMessages = session.receivedMessages().filter(msg -> msg instanceof StatusMessage).test();
