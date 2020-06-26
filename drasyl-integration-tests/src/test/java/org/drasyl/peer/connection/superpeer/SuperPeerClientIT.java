@@ -30,7 +30,10 @@ import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
+import org.drasyl.event.MessageEvent;
 import org.drasyl.event.Node;
+import org.drasyl.event.NodeOfflineEvent;
+import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.IdentityManager;
@@ -64,8 +67,6 @@ import java.util.Set;
 
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.event.EventType.EVENT_NODE_OFFLINE;
-import static org.drasyl.event.EventType.EVENT_NODE_ONLINE;
 import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_SIZE;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
@@ -220,7 +221,7 @@ class SuperPeerClientIT {
 
         // verify emitted events
         emittedEvents.awaitCount(2);
-        emittedEvents.assertValueAt(1, new Event(EVENT_NODE_OFFLINE, Node.of(identityManager.getIdentity())));
+        emittedEvents.assertValueAt(1, new NodeOfflineEvent(Node.of(identityManager.getIdentity())));
     }
 
     @Test
@@ -282,7 +283,7 @@ class SuperPeerClientIT {
 
         // verify emitted events
         emittedEvents.awaitCount(2);
-        emittedEvents.assertValueAt(1, new Event(EVENT_NODE_OFFLINE, Node.of(identityManager.getIdentity())));
+        emittedEvents.assertValueAt(1, new NodeOfflineEvent(Node.of(identityManager.getIdentity())));
     }
 
     @Test
@@ -296,7 +297,7 @@ class SuperPeerClientIT {
 
         // verify emitted events
         emittedEvents.awaitCount(1);
-        emittedEvents.assertValue(new Event(EVENT_NODE_ONLINE, Node.of(identityManager.getIdentity())));
+        emittedEvents.assertValue(new NodeOnlineEvent(Node.of(identityManager.getIdentity())));
     }
 
     @Test
@@ -314,7 +315,7 @@ class SuperPeerClientIT {
 
         // verify emitted events
         emittedEvents.awaitCount(1);
-        emittedEvents.assertValue(new Event(EVENT_NODE_ONLINE, Node.of(identityManager.getIdentity())));
+        emittedEvents.assertValue(new NodeOnlineEvent(Node.of(identityManager.getIdentity())));
     }
 
     @Test
@@ -336,16 +337,16 @@ class SuperPeerClientIT {
 
         // verify emitted events
         emittedEvents.awaitCount(3); // wait for EVENT_NODE_OFFLINE and EVENT_NODE_ONLINE
-        emittedEvents.assertValueAt(0, new Event(EVENT_NODE_ONLINE, Node.of(identityManager.getIdentity(), Set.of())));
-        emittedEvents.assertValueAt(1, new Event(EVENT_NODE_OFFLINE, Node.of(identityManager.getIdentity(), Set.of())));
-        emittedEvents.assertValueAt(2, new Event(EVENT_NODE_ONLINE, Node.of(identityManager.getIdentity(), Set.of())));
+        emittedEvents.assertValueAt(0, new NodeOnlineEvent(Node.of(identityManager.getIdentity(), Set.of())));
+        emittedEvents.assertValueAt(1, new NodeOfflineEvent(Node.of(identityManager.getIdentity(), Set.of())));
+        emittedEvents.assertValueAt(2, new NodeOnlineEvent(Node.of(identityManager.getIdentity(), Set.of())));
     }
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void messageExceedingMaxSizeShouldNotBeSend() throws SuperPeerClientException {
         TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof StatusMessage).test();
-        TestObserver<Event> emittedEvents = emittedEventsSubject.filter(event -> event.getType().isMessageEvent()).test();
+        TestObserver<Event> emittedEvents = emittedEventsSubject.filter(e -> e instanceof MessageEvent).test();
 
         // start client
         client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);

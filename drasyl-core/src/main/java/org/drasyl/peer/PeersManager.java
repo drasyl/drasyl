@@ -23,6 +23,9 @@ import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableMap;
 import org.drasyl.event.Event;
 import org.drasyl.event.Peer;
+import org.drasyl.event.PeerDirectEvent;
+import org.drasyl.event.PeerRelayEvent;
+import org.drasyl.event.PeerUnreachableEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.util.MapToPairArraySerializer;
 import org.drasyl.util.Pair;
@@ -40,9 +43,6 @@ import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.event.EventType.EVENT_PEER_DIRECT;
-import static org.drasyl.event.EventType.EVENT_PEER_RELAY;
-import static org.drasyl.event.EventType.EVENT_PEER_UNREACHABLE;
 
 /**
  * This class contains information about other peers. This includes the identities, public keys,
@@ -120,10 +120,10 @@ public class PeersManager {
         int newPathCount = existingInformation.getPaths().size();
 
         if (existingPathCount == 0 && newPathCount > 0) {
-            eventConsumer.accept(new Event(EVENT_PEER_DIRECT, new Peer(identity)));
+            eventConsumer.accept(new PeerDirectEvent(new Peer(identity)));
         }
         else if (created && newPathCount == 0) {
-            eventConsumer.accept(new Event(EVENT_PEER_RELAY, new Peer(identity)));
+            eventConsumer.accept(new PeerRelayEvent(new Peer(identity)));
         }
     }
 
@@ -152,10 +152,10 @@ public class PeersManager {
 
         if (existingPathCount > 0 && newPathCount == 0) {
             if (identity.equals(superPeer) || superPeer == null) {
-                eventConsumer.accept(new Event(EVENT_PEER_UNREACHABLE, new Peer(identity)));
+                eventConsumer.accept(new PeerUnreachableEvent(new Peer(identity)));
             }
             else {
-                eventConsumer.accept(new Event(EVENT_PEER_RELAY, new Peer(identity)));
+                eventConsumer.accept(new PeerRelayEvent(new Peer(identity)));
             }
         }
     }
