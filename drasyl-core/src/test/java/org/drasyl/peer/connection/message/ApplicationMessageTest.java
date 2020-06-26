@@ -140,7 +140,7 @@ class ApplicationMessageTest {
                     0x01
             }, hopCount);
 
-            assertEquals(message1, message2);
+            assertEquals(message1.hashCode(), message2.hashCode());
             assertEquals(message1.hashCode(), message2.hashCode());
             assertNotEquals(message2.hashCode(), message3.hashCode());
         }
