@@ -253,8 +253,13 @@ public class PeersManager {
         try {
             lock.readLock().lock();
 
-            peers.computeIfAbsent(identity, i -> PeerInformation.of());
-            return peers.get(identity);
+            PeerInformation peerInformation = peers.get(identity);
+            if (peerInformation != null) {
+                return peerInformation;
+            }
+            else {
+                return PeerInformation.of();
+            }
         }
         finally {
             lock.readLock().unlock();
@@ -292,8 +297,13 @@ public class PeersManager {
                 return null;
             }
             else {
-                PeerInformation peerInformation = peers.computeIfAbsent(superPeer, i -> PeerInformation.of());
-                return Pair.of(superPeer, peerInformation);
+                PeerInformation peerInformation = peers.get(superPeer);
+                if (peerInformation != null) {
+                    return Pair.of(superPeer, peerInformation);
+                }
+                else {
+                    return Pair.of(superPeer, PeerInformation.of());
+                }
             }
         }
         finally {
