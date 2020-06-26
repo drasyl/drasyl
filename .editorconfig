@@ -31,6 +31,7 @@ ij_hocon_space_before_comma = false
 ij_hocon_spaces_within_braces = false
 ij_hocon_spaces_within_brackets = false
 ij_hocon_spaces_within_method_call_parentheses = false
+max_line_length = 100
 
 [*.css]
 ij_css_align_closing_brace_with_properties = false
