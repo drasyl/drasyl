@@ -79,4 +79,8 @@ public class TestNodeServer extends NodeServer {
     public void awaitClient(CompressedPublicKey client) {
         await().until(() -> channelGroup.find(client) != null);
     }
+
+    public NodeServerChannelGroup getChannelGroup() {
+        return channelGroup;
+    }
 }

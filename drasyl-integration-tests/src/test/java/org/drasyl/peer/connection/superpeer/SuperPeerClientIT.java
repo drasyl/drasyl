@@ -44,6 +44,7 @@ import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.PingMessage;
 import org.drasyl.peer.connection.message.PongMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
+import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.server.TestNodeServer;
 import org.drasyl.peer.connection.server.TestNodeServerChannelInitializer;
@@ -58,14 +59,17 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.net.URI;
 import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.event.EventType.EVENT_NODE_OFFLINE;
 import static org.drasyl.event.EventType.EVENT_NODE_ONLINE;
+import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_SIZE;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static testutils.AnsiColor.COLOR_CYAN;
 import static testutils.AnsiColor.STYLE_REVERSED;
 import static testutils.TestHelper.colorizedPrintln;
@@ -115,6 +119,7 @@ class SuperPeerClientIT {
                 .superPeerRetryDelays(List.of(ofSeconds(0), ofSeconds(1), ofSeconds(2), ofSeconds(4), ofSeconds(8), ofSeconds(16), ofSeconds(32), ofSeconds(60)))
                 .superPeerIdleTimeout(ofSeconds(1))
                 .superPeerIdleRetries((short) 1)
+                .messageMaxContentLength(CHUNK_SIZE + 1)
                 .superPeerPublicKey(CompressedPublicKey.of("0234789936c7941f850c382ea9d14ecb0aad03b99a9e29a9c15b42f5f1b0c4cf3d"))
                 .build();
         DrasylNode.setLogLevel(config.getLoglevel());
@@ -132,6 +137,7 @@ class SuperPeerClientIT {
                 .serverIdleRetries((short) 1)
                 .serverChannelInitializer(TestNodeServerChannelInitializer.class)
                 .superPeerEnabled(false)
+                .messageMaxContentLength(CHUNK_SIZE + 2)
                 .build();
         identityManagerServer = new IdentityManager(serverConfig);
         identityManagerServer.loadOrCreateIdentity();
@@ -220,7 +226,6 @@ class SuperPeerClientIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldRespondToPingMessageWithPongMessage() throws SuperPeerClientException {
-        TestObserver<Message> sentMessages = server.sentMessages().test();
         PingMessage request = new PingMessage();
         TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof PongMessage && ((PongMessage) m).getCorrespondingId().equals(request.getId())).test();
 
@@ -317,6 +322,10 @@ class SuperPeerClientIT {
     void clientShouldReconnectOnDisconnect() throws SuperPeerClientException {
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
+        DrasylConfig config1 = DrasylConfig.newBuilder(config)
+                .superPeerPublicKey(null)
+                .build();
+
         // start client
         client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
         client.open();
@@ -330,5 +339,46 @@ class SuperPeerClientIT {
         emittedEvents.assertValueAt(0, new Event(EVENT_NODE_ONLINE, Node.of(identityManager.getIdentity(), Set.of())));
         emittedEvents.assertValueAt(1, new Event(EVENT_NODE_OFFLINE, Node.of(identityManager.getIdentity(), Set.of())));
         emittedEvents.assertValueAt(2, new Event(EVENT_NODE_ONLINE, Node.of(identityManager.getIdentity(), Set.of())));
+    }
+
+    @Test
+    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+    void messageExceedingMaxSizeShouldNotBeSend() throws SuperPeerClientException {
+        TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof StatusMessage).test();
+        TestObserver<Event> emittedEvents = emittedEventsSubject.filter(event -> event.getType().isMessageEvent()).test();
+
+        // start client
+        client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
+        client.open();
+        server.awaitClient(identityManager.getPublicKey());
+
+        // create message with exceeded payload size of the client, but not of the server
+        byte[] bigPayload = new byte[serverConfig.getMessageMaxContentLength()];
+        new Random().nextBytes(bigPayload);
+
+        // send message
+        RequestMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), bigPayload);
+        server.sendMessage(identityManager.getPublicKey(), request);
+
+        receivedMessages.awaitCount(2);
+        emittedEvents.assertNoValues();
+        receivedMessages.assertValueAt(1, new StatusMessage(StatusMessage.Code.STATUS_PAYLOAD_TOO_LARGE, request.getId()));
+    }
+
+    @Test
+    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+    void messageExceedingMaxSizeShouldOnSendShouldThrowException() throws SuperPeerClientException {
+        // start client
+        client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
+        client.open();
+        server.awaitClient(identityManager.getPublicKey());
+
+        // create message with exceeded payload size of client and server
+        byte[] bigPayload = new byte[serverConfig.getMessageMaxContentLength() + 1];
+        new Random().nextBytes(bigPayload);
+
+        // send message
+        RequestMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), bigPayload);
+        assertThrows(RuntimeException.class, () -> server.sendMessage(identityManager.getPublicKey(), request));
     }
 }
