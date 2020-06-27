@@ -40,6 +40,9 @@ import org.drasyl.peer.PeersManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.Map;
+import java.util.Set;
+
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
 import static io.netty.handler.codec.http.HttpHeaderNames.SERVER;
 import static io.netty.handler.codec.http.HttpMethod.GET;
@@ -134,7 +137,7 @@ public class NodeServerHttpHandler extends SimpleChannelInboundHandler<FullHttpR
 
     public static ByteBuf getPeers(PeersManager peersManager) {
         try {
-            return Unpooled.copiedBuffer(JACKSON_WRITER.writeValueAsString(peersManager), CharsetUtil.UTF_8);
+            return Unpooled.copiedBuffer(JACKSON_WRITER.writeValueAsString(new PeersStatus(peersManager)), CharsetUtil.UTF_8);
         }
         catch (JsonProcessingException e) {
             LOG.error("Unable to create peers list:", e);
@@ -154,5 +157,47 @@ public class NodeServerHttpHandler extends SimpleChannelInboundHandler<FullHttpR
                         "<hr>\n" +
                         "<address>drasyl/" + DrasylNode.getVersion() + " with Public Key " + identity + "</address>\n" +
                         "</body></html>\n", CharsetUtil.UTF_8);
+    }
+
+    private static class PeersStatus {
+        private final Set<CompressedPublicKey> peers;
+        private final Set<CompressedPublicKey> children;
+        private final Map<CompressedPublicKey, CompressedPublicKey> grandchildrenRoutes;
+        private final CompressedPublicKey superPeer;
+
+        public PeersStatus(PeersManager peersManager) {
+            this(
+                    peersManager.getPeers().keySet(),
+                    peersManager.getChildrenKeys(),
+                    peersManager.getGrandchildrenRoutes(),
+                    peersManager.getSuperPeerKey()
+            );
+        }
+
+        PeersStatus(Set<CompressedPublicKey> peers,
+                    Set<CompressedPublicKey> children,
+                    Map<CompressedPublicKey, CompressedPublicKey> grandchildrenRoutes,
+                    CompressedPublicKey superPeer) {
+            this.peers = peers;
+            this.children = children;
+            this.grandchildrenRoutes = grandchildrenRoutes;
+            this.superPeer = superPeer;
+        }
+
+        public Set<CompressedPublicKey> getPeers() {
+            return peers;
+        }
+
+        public Set<CompressedPublicKey> getChildren() {
+            return children;
+        }
+
+        public Map<CompressedPublicKey, CompressedPublicKey> getGrandchildrenRoutes() {
+            return grandchildrenRoutes;
+        }
+
+        public CompressedPublicKey getSuperPeer() {
+            return superPeer;
+        }
     }
 }

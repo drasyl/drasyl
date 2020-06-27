@@ -18,8 +18,6 @@
  */
 package org.drasyl.peer;
 
-import com.fasterxml.jackson.annotation.JsonIgnore;
-import com.fasterxml.jackson.databind.annotation.JsonSerialize;
 import com.google.common.collect.ImmutableMap;
 import org.drasyl.event.Event;
 import org.drasyl.event.Peer;
@@ -27,7 +25,6 @@ import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.event.PeerUnreachableEvent;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.util.MapToPairArraySerializer;
 import org.drasyl.util.Pair;
 
 import java.util.HashMap;
@@ -57,10 +54,8 @@ import static java.util.Objects.requireNonNull;
  */
 public class PeersManager {
     private final ReadWriteLock lock;
-    @JsonSerialize(using = MapToPairArraySerializer.class)
     private final Map<CompressedPublicKey, PeerInformation> peers;
     private final Set<CompressedPublicKey> children;
-    @JsonSerialize(using = MapToPairArraySerializer.class)
     private final Map<CompressedPublicKey, CompressedPublicKey> grandchildrenRoutes;
     private final Consumer<Event> eventConsumer;
     private CompressedPublicKey superPeer;
@@ -160,7 +155,6 @@ public class PeersManager {
         }
     }
 
-    @JsonIgnore
     public Map<CompressedPublicKey, PeerInformation> getChildrenAndGrandchildren() {
         try {
             lock.readLock().lock();
@@ -307,6 +301,17 @@ public class PeersManager {
         }
     }
 
+    public CompressedPublicKey getSuperPeerKey() {
+        try {
+            lock.readLock().lock();
+
+            return superPeer;
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
     public void setSuperPeer(CompressedPublicKey identity) {
         requireNonNull(identity);
 
@@ -434,7 +439,6 @@ public class PeersManager {
         }
     }
 
-    @JsonSerialize(using = MapToPairArraySerializer.class)
     public Map<CompressedPublicKey, PeerInformation> getChildren() {
         try {
             lock.readLock().lock();
@@ -443,6 +447,17 @@ public class PeersManager {
                     .filter(e -> children.contains(e.getKey()))
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
             );
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public Set<CompressedPublicKey> getChildrenKeys() {
+        try {
+            lock.readLock().lock();
+
+            return children;
         }
         finally {
             lock.readLock().unlock();

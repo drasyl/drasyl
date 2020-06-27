@@ -18,9 +18,6 @@
  */
 package org.drasyl.peer;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
-import net.javacrumbs.jsonunit.core.Option;
-import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.junit.jupiter.api.AfterEach;
@@ -38,8 +35,6 @@ import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.function.Consumer;
 
-import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
-import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -249,26 +244,6 @@ class PeersManagerTest {
         void tearDown() {
             verify(writeLock).lock();
             verify(writeLock).unlock();
-        }
-    }
-
-    @Nested
-    class ToJson {
-        @BeforeEach
-        void setup() throws CryptoException {
-            when(lock.readLock()).thenReturn(readLock);
-
-            publicKey = CompressedPublicKey.of("022910262d4b1b4681055d4d6ed047ed6c35d7a55e8bcbbbb5528a8a40414991ac");
-            PeerInformation peerInformation = PeerInformation.of();
-
-            underTest = new PeersManager(lock, Map.of(publicKey, peerInformation), Set.of(publicKey), Map.of(), null, eventConsumer);
-        }
-
-        @Test
-        void shouldProduceCorrectJsonObject() throws JsonProcessingException {
-            assertThatJson(JACKSON_WRITER.writeValueAsString(underTest))
-                    .when(Option.IGNORING_ARRAY_ORDER)
-                    .isEqualTo("{\"peers\":[[\"022910262d4b1b4681055d4d6ed047ed6c35d7a55e8bcbbbb5528a8a40414991ac\", {\"endpoints\":[]}]],\"children\":[[\"022910262d4b1b4681055d4d6ed047ed6c35d7a55e8bcbbbb5528a8a40414991ac\", {\"endpoints\":[]}]],\"grandchildrenRoutes\":[],\"superPeer\":null}");
         }
     }
 }
