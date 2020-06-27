@@ -85,9 +85,9 @@ public class SuperPeerPublicKeyHandler extends SimpleChannelInboundHandler<IamMe
     protected void channelRead0(ChannelHandlerContext ctx,
                                 IamMessage msg) throws Exception {
         if (msg.getCorrespondingId().equals(requestID)) {
+            timeoutFuture.cancel(true);
             if (superPeerPublicKey != null && !superPeerPublicKey.equals(msg.getPublicKey())) {
                 ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_WRONG_PUBLIC_KEY)).addListener(ChannelFutureListener.CLOSE);
-                timeoutFuture.cancel(true);
             }
             else {
                 attachIdentityToChannel(ctx, msg.getPublicKey());
