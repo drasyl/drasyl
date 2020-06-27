@@ -173,6 +173,9 @@ public abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDupl
             // close connection if an error occurred before handshake
             ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_INITIALIZATION)).addListener(ChannelFutureListener.CLOSE);
         }
+        else {
+            ctx.fireExceptionCaught(cause);
+        }
     }
 
     public CompletableFuture<Void> handshakeFuture() {
