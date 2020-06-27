@@ -98,7 +98,7 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
     @Override
     protected ConnectionExceptionMessage.Error validateSessionOffer(WelcomeMessage offerMessage) {
         // Raise error if the public key is equals to my public key
-        if (environment.getConfig().getIdentityPublicKey().equals(ctx.channel().attr(ATTRIBUTE_PUBLIC_KEY).get())) {
+        if (environment.getIdentity().getPublicKey().equals(ctx.channel().attr(ATTRIBUTE_PUBLIC_KEY).get())) {
             return CONNECTION_ERROR_WRONG_PUBLIC_KEY;
         }
         else {
