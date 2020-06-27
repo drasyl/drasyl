@@ -131,7 +131,7 @@ public class SuperPeerClient implements AutoCloseable {
         // The pointer should point to a random endpoint. This creates a distribution on different super peer's endpoints
         this.nextEndpointPointer = new AtomicInteger(endpoints.isEmpty() ? 0 : Crypto.randomNumber(endpoints.size()));
         this.nextRetryDelayPointer = new AtomicInteger(0);
-        this.threadSupplier = () -> new Thread(this::keepConnectionAlive);
+        this.threadSupplier = () -> new Thread(this::keepConnectionAlive, "SuperPeerClient-" + identitySupplier.get().getPublicKey());
         this.connected = BehaviorSubject.createDefault(false);
         this.channelInitializerSupplier = endpoint -> initiateChannelInitializer(new SuperPeerClientEnvironment(config, identitySupplier, endpoint, messenger, peersManager, connected, eventConsumer), config.getSuperPeerChannelInitializer());
     }
@@ -158,7 +158,7 @@ public class SuperPeerClient implements AutoCloseable {
         // The pointer should point to a random endpoint. This creates a distribution on different super peer's endpoints
         this.nextEndpointPointer = new AtomicInteger(endpoints.isEmpty() ? 0 : Crypto.randomNumber(endpoints.size()));
         this.nextRetryDelayPointer = new AtomicInteger(0);
-        this.threadSupplier = () -> new Thread(this::keepConnectionAlive);
+        this.threadSupplier = () -> new Thread(this::keepConnectionAlive, "SuperPeerClient-" + identitySupplier.get().getPublicKey());
         this.connected = connected;
         this.channelInitializerSupplier = channelInitializerSupplier;
     }
