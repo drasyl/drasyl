@@ -84,6 +84,11 @@ public abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDupl
             else {
                 processMessageAfterHandshake(ctx, msg);
             }
+        }).addListener(future -> {
+            Throwable cause = future.cause();
+            if (cause != null) {
+                exceptionCaught(ctx, cause);
+            }
         });
     }
 
