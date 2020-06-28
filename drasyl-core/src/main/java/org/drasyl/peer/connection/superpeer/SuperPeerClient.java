@@ -20,7 +20,6 @@ package org.drasyl.peer.connection.superpeer;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
@@ -39,7 +38,6 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.util.DrasylFunction;
 import org.drasyl.util.DrasylScheduler;
-import org.drasyl.util.WebSocketUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,8 +52,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
-import static java.lang.Thread.sleep;
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
+import static org.drasyl.util.WebSocketUtil.webSocketPort;
 
 /**
  * This class represents the link between <code>DrasylNode</code> and the super peer. It is
@@ -65,9 +64,9 @@ import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_
 @SuppressWarnings({ "java:S107", "java:S4818" })
 public class SuperPeerClient implements AutoCloseable {
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClient.class);
+    protected final PeersManager peersManager;
     private final DrasylConfig config;
     private final Supplier<Identity> identitySupplier;
-    protected final PeersManager peersManager;
     private final Messenger messenger;
     private final EventLoopGroup workerGroup;
     private final Consumer<Event> eventConsumer;
@@ -75,7 +74,7 @@ public class SuperPeerClient implements AutoCloseable {
     private final AtomicBoolean opened;
     private final AtomicInteger nextEndpointPointer;
     private final AtomicInteger nextRetryDelayPointer;
-    private final Supplier<Thread> threadSupplier;
+    private final Supplier<Bootstrap> bootstrapSupplier;
     private final Subject<Boolean> connected;
     private final DrasylFunction<URI, ChannelInitializer<SocketChannel>> channelInitializerSupplier;
     protected Channel clientChannel;
@@ -91,7 +90,7 @@ public class SuperPeerClient implements AutoCloseable {
                     AtomicBoolean opened,
                     AtomicInteger nextEndpointPointer,
                     AtomicInteger nextRetryDelayPointer,
-                    Supplier<Thread> threadSupplier,
+                    Supplier<Bootstrap> bootstrapSupplier,
                     Subject<Boolean> connected,
                     DrasylFunction<URI, ChannelInitializer<SocketChannel>> channelInitializerSupplier,
                     Channel clientChannel) {
@@ -105,7 +104,7 @@ public class SuperPeerClient implements AutoCloseable {
         this.opened = opened;
         this.nextEndpointPointer = nextEndpointPointer;
         this.nextRetryDelayPointer = nextRetryDelayPointer;
-        this.threadSupplier = threadSupplier;
+        this.bootstrapSupplier = bootstrapSupplier;
         this.connected = connected;
         this.channelInitializerSupplier = channelInitializerSupplier;
         this.clientChannel = clientChannel;
@@ -131,7 +130,7 @@ public class SuperPeerClient implements AutoCloseable {
         // The pointer should point to a random endpoint. This creates a distribution on different super peer's endpoints
         this.nextEndpointPointer = new AtomicInteger(endpoints.isEmpty() ? 0 : Crypto.randomNumber(endpoints.size()));
         this.nextRetryDelayPointer = new AtomicInteger(0);
-        this.threadSupplier = () -> new Thread(this::keepConnectionAlive, "SuperPeerClient-" + identitySupplier.get().getPublicKey());
+        this.bootstrapSupplier = Bootstrap::new;
         this.connected = BehaviorSubject.createDefault(false);
         this.channelInitializerSupplier = endpoint -> initiateChannelInitializer(new SuperPeerClientEnvironment(config, identitySupplier, endpoint, messenger, peersManager, connected, eventConsumer), config.getSuperPeerChannelInitializer());
     }
@@ -158,41 +157,9 @@ public class SuperPeerClient implements AutoCloseable {
         // The pointer should point to a random endpoint. This creates a distribution on different super peer's endpoints
         this.nextEndpointPointer = new AtomicInteger(endpoints.isEmpty() ? 0 : Crypto.randomNumber(endpoints.size()));
         this.nextRetryDelayPointer = new AtomicInteger(0);
-        this.threadSupplier = () -> new Thread(this::keepConnectionAlive, "SuperPeerClient-" + identitySupplier.get().getPublicKey());
+        this.bootstrapSupplier = Bootstrap::new;
         this.connected = connected;
         this.channelInitializerSupplier = channelInitializerSupplier;
-    }
-
-    void keepConnectionAlive() {
-        do {
-            URI endpoint = getEndpoint();
-            LOG.debug("Connect to Super Peer Endpoint '{}'", endpoint);
-            try {
-                channelInitializer = channelInitializerSupplier.apply(endpoint);
-                ChannelFuture channelFuture = new Bootstrap()
-                        .group(workerGroup)
-                        .channel(NioSocketChannel.class)
-                        .handler(channelInitializer)
-                        .connect(endpoint.getHost(), WebSocketUtil.webSocketPort(endpoint));
-                channelFuture.awaitUninterruptibly();
-
-                if (channelFuture.isSuccess()) {
-                    clientChannel = channelFuture.channel();
-                    clientChannel.closeFuture().syncUninterruptibly();
-                }
-                else {
-                    throw new SuperPeerClientException(channelFuture.cause());
-                }
-            }
-            catch (DrasylException e) {
-                LOG.warn("Error while trying to connect to Super Peer:", e);
-            }
-            catch (IllegalStateException e) {
-                LOG.debug("Working Group has rejected the new bootstrap. Maybe the node is shutting down.");
-                Thread.currentThread().interrupt();
-                break;
-            }
-        } while (retryConnection() && doRetryCycle()); //NOSONAR
     }
 
     /**
@@ -206,42 +173,59 @@ public class SuperPeerClient implements AutoCloseable {
         return myEndpoints[nextEndpointPointer.get()];
     }
 
-    /**
-     * This message blocks until the client should make another connect attempt and then returns
-     * <code>true</code. Otherwise <code>false</code> is returned.
-     *
-     * @return
-     */
-    boolean retryConnection() {
-        if (opened.get() && !config.getSuperPeerRetryDelays().isEmpty()) {
-            try {
-                Duration duration = retryDelay();
-                LOG.debug("Wait {}ms before retry connect to Super Peer", duration.toMillis());
-                sleep(duration.toMillis());
-            }
-            catch (InterruptedException e) {
-                Thread.currentThread().interrupt();
-            }
-
-            return true;
+    void connect() {
+        URI endpoint = getEndpoint();
+        LOG.debug("Connect to Super Peer Endpoint '{}'", endpoint);
+        try {
+            channelInitializer = channelInitializerSupplier.apply(endpoint);
         }
-        else {
-            return false;
+        catch (DrasylException e) {
+            LOG.warn("Unable to create channel initializer:", e);
+            conditionalScheduledReconnect();
+        }
+
+        bootstrapSupplier.get().group(workerGroup).channel(NioSocketChannel.class).handler(channelInitializer).connect(endpoint.getHost(), webSocketPort(endpoint))
+                .addListener((ChannelFutureListener) channelFuture -> {
+                    if (channelFuture.isSuccess()) {
+                        LOG.debug("Connection to Super Peer Endpoint '{}' established", endpoint);
+                        clientChannel = channelFuture.channel();
+                        clientChannel.closeFuture().addListener(future -> {
+                            LOG.debug("Connection to Super Peer Endpoint '{}' closed", endpoint);
+                            conditionalScheduledReconnect();
+                        });
+                    }
+                    else {
+                        LOG.warn("Error while trying to connect to Super Peer Endpoint '{}':", endpoint, channelFuture.cause());
+                        conditionalScheduledReconnect();
+                    }
+                });
+    }
+
+    /**
+     * If {@link #shouldRetry()} returns <code>true</code>, an attempt to (re)connect to the Super
+     * Peer is scheduled.
+     */
+    void conditionalScheduledReconnect() {
+        if (shouldRetry()) {
+            doRetryCycle();
+            Duration duration = retryDelay();
+            LOG.debug("Wait {}ms before retry connect to Super Peer", duration.toMillis());
+            workerGroup.schedule(() -> {
+                if (opened.get()) {
+                    connect();
+                }
+            }, duration.toMillis(), MILLISECONDS);
         }
     }
 
     /**
-     * Increases the internal counters for retries. Ensures that the client iterates over the
-     * available Super Peer endpoints and throttles the speed of attempts to reconnect. Always
-     * returns <code>true</code>.
+     * Returns <code>true</code> if the client should attempt to reconnect. Otherwise
+     * <code>false</code> is returned.
      *
      * @return
      */
-    boolean doRetryCycle() {
-        nextEndpointPointer.updateAndGet(p -> (p + 1) % endpoints.size());
-        List<Duration> delays = config.getSuperPeerRetryDelays();
-        nextRetryDelayPointer.updateAndGet(p -> Math.min(p + 1, delays.size() - 1));
-        return true;
+    private boolean shouldRetry() {
+        return opened.get() && !config.getSuperPeerRetryDelays().isEmpty();
     }
 
     /**
@@ -269,10 +253,16 @@ public class SuperPeerClient implements AutoCloseable {
         return connected.subscribeOn(DrasylScheduler.getInstance());
     }
 
-    public void open() {
-        if (opened.compareAndSet(false, true)) {
-            threadSupplier.get().start();
-        }
+    /**
+     * Increases the internal counters for retries. Ensures that the client iterates over the
+     * available Super Peer endpoints and throttles the speed of attempts to reconnect.
+     *
+     * @return
+     */
+    void doRetryCycle() {
+        nextEndpointPointer.updateAndGet(p -> (p + 1) % endpoints.size());
+        List<Duration> delays = config.getSuperPeerRetryDelays();
+        nextRetryDelayPointer.updateAndGet(p -> Math.min(p + 1, delays.size() - 1));
     }
 
     Identity getIdentity() {
@@ -293,6 +283,12 @@ public class SuperPeerClient implements AutoCloseable {
 
     Subject<Boolean> getConnected() {
         return connected;
+    }
+
+    public void open() {
+        if (opened.compareAndSet(false, true)) {
+            connect();
+        }
     }
 
     @Override
