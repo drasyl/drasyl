@@ -106,7 +106,7 @@ public class Messenger {
         this.superPeerSink = superPeerSink;
     }
 
-    public void unsetRelaySink() {
+    public void unsetSuperPeerSink() {
         this.superPeerSink = null;
     }
 }
