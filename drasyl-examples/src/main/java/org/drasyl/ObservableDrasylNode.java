@@ -25,9 +25,9 @@ import org.drasyl.event.Event;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.client.SuperPeerClient;
 import org.drasyl.peer.connection.intravm.IntraVmDiscovery;
 import org.drasyl.peer.connection.server.NodeServer;
-import org.drasyl.peer.connection.superpeer.SuperPeerClient;
 import org.drasyl.util.DrasylScheduler;
 
 import java.util.concurrent.CompletableFuture;

@@ -20,6 +20,7 @@
 package org.drasyl.peer.connection.superpeer;
 
 import org.drasyl.DrasylException;
+import org.drasyl.peer.connection.client.SuperPeerClient;
 
 /**
  * A SuperPeerClientException is thrown by the {@link SuperPeerClient} when errors occur.
