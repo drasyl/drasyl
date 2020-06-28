@@ -67,7 +67,8 @@ public class TestSuperPeerClient extends SuperPeerClient {
                                 Subject<Event> receivedEvents,
                                 boolean doPingPong,
                                 boolean doJoin) throws SuperPeerClientException {
-        this(config, identitySupplier, workerGroup, receivedEvents, new PeersManager(receivedEvents::onNext), new Messenger(((recipient, message) -> {})), BehaviorSubject.createDefault(false), doPingPong, doJoin);
+        this(config, identitySupplier, workerGroup, receivedEvents, new PeersManager(receivedEvents::onNext), new Messenger((message -> {
+        })), BehaviorSubject.createDefault(false), doPingPong, doJoin);
     }
 
     private TestSuperPeerClient(DrasylConfig config,

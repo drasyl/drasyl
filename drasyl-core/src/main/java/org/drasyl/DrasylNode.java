@@ -45,7 +45,7 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.intravm.IntraVmDiscovery;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.IdentityMessage;
-import org.drasyl.peer.connection.message.Message;
+import org.drasyl.peer.connection.message.RelayableMessage;
 import org.drasyl.peer.connection.message.WhoisMessage;
 import org.drasyl.peer.connection.server.NodeServer;
 import org.drasyl.peer.connection.server.NodeServerException;
@@ -459,8 +459,9 @@ public abstract class DrasylNode {
         }
     }
 
-    private void messageSink(CompressedPublicKey recipient,
-                             Message message) throws MessageSinkException {
+    private void messageSink(RelayableMessage message) throws MessageSinkException {
+        CompressedPublicKey recipient = message.getRecipient();
+
         if (!identityManager.getPublicKey().equals(recipient)) {
             throw new NoPathToIdentityException(recipient);
         }

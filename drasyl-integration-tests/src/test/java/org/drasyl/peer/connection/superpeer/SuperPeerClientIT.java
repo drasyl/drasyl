@@ -146,9 +146,9 @@ class SuperPeerClientIT {
         });
         peersManagerServer = new PeersManager(event -> {
         });
-        messenger = new Messenger((recipient, message) -> {
+        messenger = new Messenger(message -> {
         });
-        messengerServer = new Messenger((recipient, message) -> {
+        messengerServer = new Messenger(message -> {
         });
 
         server = new TestNodeServer(identityManagerServer::getIdentity, messengerServer, peersManagerServer, serverConfig, serverWorkerGroup, bossGroup, superPeerConnected);

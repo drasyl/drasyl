@@ -125,12 +125,12 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
         // store peer information
         environment.getPeersManager().addPeerInformationAndSetSuperPeer(identity, peerInformation);
 
-        MessageSink messageSink = (recipient, message) -> {
+        MessageSink messageSink = message -> {
             if (channel.isWritable()) {
                 ctx.writeAndFlush(message);
             }
             else {
-                throw new NoPathToIdentityException(recipient);
+                throw new NoPathToIdentityException(message.getRecipient());
             }
         };
         messenger.setSuperPeerSink(messageSink);

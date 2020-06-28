@@ -44,7 +44,8 @@ import java.util.function.Supplier;
 public class IntraVmDiscovery implements AutoCloseable {
     private static final ReadWriteLock lock = new ReentrantReadWriteLock(true);
     private static final Map<CompressedPublicKey, IntraVmDiscovery> discoveries = new HashMap<>();
-    private static final MessageSink MESSAGE_SINK = (recipient, message) -> {
+    private static final MessageSink MESSAGE_SINK = message -> {
+        CompressedPublicKey recipient = message.getRecipient();
         IntraVmDiscovery discoveree = discoveries.get(recipient);
 
         if (discoveree == null) {

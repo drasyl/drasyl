@@ -18,7 +18,6 @@
  */
 package org.drasyl.peer.connection.server;
 
-import ch.qos.logback.classic.Level;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.EventLoopGroup;
@@ -149,7 +148,8 @@ class NodeServerIT {
         serverIdentityManager.loadOrCreateIdentity();
         peersManager = new PeersManager(event -> {
         });
-        serverMessenger = new Messenger((recipient, message) -> {
+        serverMessenger = new Messenger(message -> {
+            CompressedPublicKey recipient = message.getRecipient();
             if (!recipient.equals(serverIdentityManager.getPublicKey())) {
                 throw new NoPathToIdentityException(recipient);
             }

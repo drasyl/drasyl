@@ -205,7 +205,9 @@ public class NodeServer implements AutoCloseable {
                         actualEndpoints = NetworkUtil.getAddresses().stream().map(a -> URI.create(scheme + "://" + a + ":" + actualPort)).collect(Collectors.toSet());
                     }
 
-                    messenger.setServerSink((recipient, message) -> {
+                    messenger.setServerSink(message -> {
+                        CompressedPublicKey recipient = message.getRecipient();
+
                         // if recipient is a grandchild, we must send message to appropriate child
                         CompressedPublicKey grandchildrenPath = peersManager.getGrandchildrenRoutes().get(recipient);
                         if (grandchildrenPath != null) {
