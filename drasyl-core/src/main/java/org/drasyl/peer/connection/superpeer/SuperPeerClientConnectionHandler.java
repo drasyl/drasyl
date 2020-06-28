@@ -25,7 +25,6 @@ import org.drasyl.event.Node;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.messenger.MessageSink;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.messenger.NoPathToIdentityException;
 import org.drasyl.peer.Path;
@@ -86,8 +85,6 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
     public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
         super.handlerAdded(ctx);
         this.ctx = ctx;
-
-        ctx.channel().closeFuture().addListener(future -> messenger.unsetSuperPeerSink());
     }
 
     @Override
@@ -116,8 +113,10 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
 
         // remove peer information on disconnect
         channel.closeFuture().addListener(future -> {
-            environment.getConnected().onNext(false);
             environment.getEventConsumer().accept(new NodeOfflineEvent(Node.of(environment.getIdentity())));
+            environment.getConnected().onNext(false);
+
+            messenger.unsetSuperPeerSink();
 
             environment.getPeersManager().unsetSuperPeerAndRemovePeerInformation(peerInformation);
         });
@@ -125,15 +124,14 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
         // store peer information
         environment.getPeersManager().addPeerInformationAndSetSuperPeer(identity, peerInformation);
 
-        MessageSink messageSink = message -> {
+        messenger.setSuperPeerSink(message -> {
             if (channel.isWritable()) {
                 ctx.writeAndFlush(message);
             }
             else {
                 throw new NoPathToIdentityException(message.getRecipient());
             }
-        };
-        messenger.setSuperPeerSink(messageSink);
+        });
 
         environment.getConnected().onNext(true);
         environment.getEventConsumer().accept(new NodeOnlineEvent(Node.of(environment.getIdentity())));
