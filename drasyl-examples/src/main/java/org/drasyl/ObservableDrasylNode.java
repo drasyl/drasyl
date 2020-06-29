@@ -22,16 +22,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.event.Event;
-import org.drasyl.identity.IdentityManager;
-import org.drasyl.messenger.Messenger;
-import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.client.SuperPeerClient;
-import org.drasyl.peer.connection.intravm.IntraVmDiscovery;
-import org.drasyl.peer.connection.server.Server;
 import org.drasyl.util.DrasylScheduler;
-
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
  * This particular Implementation of a drasyl Node shows exemplary how incoming Events can be
@@ -49,21 +40,6 @@ public class ObservableDrasylNode extends DrasylNode {
     public ObservableDrasylNode(DrasylConfig config) throws DrasylException {
         super(config);
         this.events = PublishSubject.<Event>create().toSerialized();
-    }
-
-    ObservableDrasylNode(DrasylConfig config,
-                         IdentityManager identityManager,
-                         PeersManager peersManager,
-                         Messenger messenger,
-                         IntraVmDiscovery intraVmDiscovery,
-                         Server server,
-                         SuperPeerClient superPeerClient,
-                         AtomicBoolean started,
-                         CompletableFuture<Void> startSequence,
-                         CompletableFuture<Void> shutdownSequence,
-                         Subject<Event> events) {
-        super(config, identityManager, peersManager, messenger, intraVmDiscovery, superPeerClient, server, started, startSequence, shutdownSequence);
-        this.events = events;
     }
 
     @Override
