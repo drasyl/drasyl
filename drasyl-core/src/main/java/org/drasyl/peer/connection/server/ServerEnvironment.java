@@ -29,24 +29,24 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 /**
- * This class encapsulates all information needed by a {@link NodeServerChannelInitializer}.
+ * This class encapsulates all information needed by a {@link ServerChannelInitializer}.
  */
-public class NodeServerEnvironment {
+public class ServerEnvironment {
     private final DrasylConfig config;
     private final Supplier<Identity> identitySupplier;
     private final PeersManager peersManager;
     private final BooleanSupplier acceptedNewConnectionsSupplier;
     private final Messenger messenger;
     private final Supplier<Set<URI>> endpointsSupplier;
-    private final NodeServerChannelGroup channelGroup;
+    private final ServerChannelGroup channelGroup;
 
-    public NodeServerEnvironment(DrasylConfig config,
-                                 Supplier<Identity> identitySupplier,
-                                 PeersManager peersManager,
-                                 Messenger messenger,
-                                 Supplier<Set<URI>> endpointsSupplier,
-                                 NodeServerChannelGroup channelGroup,
-                                 BooleanSupplier acceptedNewConnectionsSupplier) {
+    public ServerEnvironment(DrasylConfig config,
+                             Supplier<Identity> identitySupplier,
+                             PeersManager peersManager,
+                             Messenger messenger,
+                             Supplier<Set<URI>> endpointsSupplier,
+                             ServerChannelGroup channelGroup,
+                             BooleanSupplier acceptedNewConnectionsSupplier) {
         this.config = config;
         this.identitySupplier = identitySupplier;
         this.peersManager = peersManager;
@@ -80,7 +80,7 @@ public class NodeServerEnvironment {
         return endpointsSupplier.get();
     }
 
-    public NodeServerChannelGroup getChannelGroup() {
+    public ServerChannelGroup getChannelGroup() {
         return channelGroup;
     }
 }

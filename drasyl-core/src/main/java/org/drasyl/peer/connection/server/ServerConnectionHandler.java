@@ -25,7 +25,6 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
-import org.drasyl.messenger.NoPathToIdentityException;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.connection.handler.AbstractThreeWayHandshakeServerHandler;
@@ -46,7 +45,7 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_IDENTITY_COLLISION;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_PROOF_OF_WORK_INVALID;
-import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
+import static org.drasyl.peer.connection.server.ServerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
 
 /**
  * Acts as a guard for in- and outbound connections. A channel is only created, when a {@link
@@ -61,23 +60,23 @@ import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE
  * received.
  */
 @SuppressWarnings({ "java:S107", "java:S110" })
-public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServerHandler<JoinMessage, WelcomeMessage> {
-    public static final String NODE_SERVER_CONNECTION_HANDLER = "nodeServerConnectionHandler";
-    private static final Logger LOG = LoggerFactory.getLogger(NodeServerConnectionHandler.class);
-    private final NodeServerEnvironment environment;
+public class ServerConnectionHandler extends AbstractThreeWayHandshakeServerHandler<JoinMessage, WelcomeMessage> {
+    public static final String SERVER_CONNECTION_HANDLER = "serverConnectionHandler";
+    private static final Logger LOG = LoggerFactory.getLogger(ServerConnectionHandler.class);
+    private final ServerEnvironment environment;
 
-    public NodeServerConnectionHandler(NodeServerEnvironment environment) {
+    public ServerConnectionHandler(ServerEnvironment environment) {
         super(environment.getConfig().getServerHandshakeTimeout(), environment.getMessenger());
         this.environment = environment;
     }
 
-    NodeServerConnectionHandler(NodeServerEnvironment environment,
-                                Duration timeout,
-                                Messenger messenger,
-                                CompletableFuture<Void> handshakeFuture,
-                                ScheduledFuture<?> timeoutFuture,
-                                JoinMessage requestMessage,
-                                WelcomeMessage offerMessage) {
+    ServerConnectionHandler(ServerEnvironment environment,
+                            Duration timeout,
+                            Messenger messenger,
+                            CompletableFuture<Void> handshakeFuture,
+                            ScheduledFuture<?> timeoutFuture,
+                            JoinMessage requestMessage,
+                            WelcomeMessage offerMessage) {
         super(timeout, messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         this.environment = environment;
     }

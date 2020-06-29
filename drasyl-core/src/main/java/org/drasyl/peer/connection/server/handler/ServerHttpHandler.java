@@ -57,13 +57,13 @@ import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
  * This handler returns an HTML error page if the HTTP request does not perform a Websocket
  * upgrade.
  */
-public class NodeServerHttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
-    private static final Logger LOG = LoggerFactory.getLogger(NodeServerHttpHandler.class);
+public class ServerHttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
+    private static final Logger LOG = LoggerFactory.getLogger(ServerHttpHandler.class);
     private final CompressedPublicKey publicKey;
     private final PeersManager peersManager;
 
-    public NodeServerHttpHandler(CompressedPublicKey publicKey,
-                                 PeersManager peersManager) {
+    public ServerHttpHandler(CompressedPublicKey publicKey,
+                             PeersManager peersManager) {
         this.publicKey = publicKey;
         this.peersManager = peersManager;
     }

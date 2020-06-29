@@ -50,7 +50,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class NodeServerTest {
+class ServerTest {
     @Mock
     private Supplier<Identity> identitySupplier;
     @Mock
@@ -70,19 +70,19 @@ class NodeServerTest {
     @Mock
     private ChannelInitializer<SocketChannel> channelInitializer;
     @Mock
-    private NodeServerChannelGroup channelGroup;
+    private ServerChannelGroup channelGroup;
     @Mock
     private Observable<Boolean> superPeerConnected;
 
     @Nested
     class Open {
         @Test
-        void shouldSetOpenToTrue() throws NodeServerException {
+        void shouldSetOpenToTrue() throws ServerException {
             when(config.getServerEndpoints()).thenReturn(Set.of(URI.create("ws://localhost:22527/")));
             when(serverBootstrap.group(any(), any()).channel(any()).childHandler(any()).bind((String) null, 0).isSuccess()).thenReturn(true);
             when(serverBootstrap.group(any(), any()).channel(any()).childHandler(any()).bind((String) null, 0).channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
-            NodeServer server = new NodeServer(identitySupplier, messenger, peersManager,
+            Server server = new Server(identitySupplier, messenger, peersManager,
                     config, serverBootstrap, workerGroup, bossGroup, channelInitializer, new AtomicBoolean(false), channelGroup, -1, serverChannel,
                     new HashSet<>());
             server.open();
@@ -91,8 +91,8 @@ class NodeServerTest {
         }
 
         @Test
-        void shouldDoNothingIfServerHasAlreadyBeenStarted() throws NodeServerException {
-            NodeServer server = new NodeServer(identitySupplier, messenger, peersManager,
+        void shouldDoNothingIfServerHasAlreadyBeenStarted() throws ServerException {
+            Server server = new Server(identitySupplier, messenger, peersManager,
                     config, serverBootstrap, workerGroup, bossGroup, channelInitializer, new AtomicBoolean(true), channelGroup, -1, serverChannel,
                     new HashSet<>());
 
@@ -106,7 +106,7 @@ class NodeServerTest {
     class Close {
         @Test
         void shouldDoNothingIfServerHasAlreadyBeenShutDown() {
-            NodeServer server = new NodeServer(identitySupplier, messenger, peersManager,
+            Server server = new Server(identitySupplier, messenger, peersManager,
                     config, serverBootstrap, workerGroup, bossGroup, channelInitializer, new AtomicBoolean(false), channelGroup, -1, serverChannel,
                     new HashSet<>());
 

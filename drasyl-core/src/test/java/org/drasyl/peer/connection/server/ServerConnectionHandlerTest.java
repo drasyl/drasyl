@@ -55,7 +55,7 @@ import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Erro
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_IDENTITY_COLLISION;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
-import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
+import static org.drasyl.peer.connection.server.ServerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -65,7 +65,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class NodeServerConnectionHandlerTest {
+class ServerConnectionHandlerTest {
     @Mock
     private ChannelHandlerContext ctx;
     @Mock
@@ -95,7 +95,7 @@ class NodeServerConnectionHandlerTest {
     @Mock
     private Channel nettyChannel;
     @Mock
-    private NodeServerChannelGroup channelGroup;
+    private ServerChannelGroup channelGroup;
     @Mock
     private RegisterGrandchildMessage registerGrandchildMessage;
     @Mock
@@ -113,11 +113,11 @@ class NodeServerConnectionHandlerTest {
     @Mock
     private WelcomeMessage offerMessage;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-    private NodeServerEnvironment environment;
+    private ServerEnvironment environment;
 
     @Test
     void shouldSendExceptionMessageIfHandshakeIsNotDoneInTime() {
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(environment, ofMillis(0), messenger, handshakeFuture, null, requestMessage, offerMessage);
+        ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(0), messenger, handshakeFuture, null, requestMessage, offerMessage);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         assertEquals(new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE_TIMEOUT), channel.readOutbound());
@@ -125,7 +125,7 @@ class NodeServerConnectionHandlerTest {
 
     @Test
     void closeBeforeTimeoutShouldNotSendHandshakeTimeoutExceptionMessage() {
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
+        ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
         channel.close();
 
@@ -137,7 +137,7 @@ class NodeServerConnectionHandlerTest {
         when(environment.getIdentity().getPublicKey()).thenReturn(publicKey0);
         when(joinMessage.getPublicKey()).thenReturn(publicKey0);
 
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, null, offerMessage);
+        ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, null, offerMessage);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(joinMessage);
@@ -150,7 +150,7 @@ class NodeServerConnectionHandlerTest {
     void shouldRejectUnexpectedMessagesDuringHandshake() {
         when(applicationMessage.getId()).thenReturn("123");
 
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
+        ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(applicationMessage);
@@ -165,7 +165,7 @@ class NodeServerConnectionHandlerTest {
         when(ctx.channel()).thenReturn(nettyChannel);
         when(nettyChannel.id()).thenReturn(channelId);
 
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
+        ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         handler.exceptionCaught(ctx, cause);
 
         verify(ctx).writeAndFlush(any(ConnectionExceptionMessage.class));
@@ -176,7 +176,7 @@ class NodeServerConnectionHandlerTest {
     void shouldCloseChannelOnQuitMessage() {
         when(handshakeFuture.isDone()).thenReturn(true);
 
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
+        ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(quitMessage);
@@ -195,7 +195,7 @@ class NodeServerConnectionHandlerTest {
             when(peersManager.getSuperPeer()).thenReturn(Pair.of(superPeerPublicKey, superPeerInformation));
             when(superPeerInformation.getPaths()).thenReturn(Set.of(superPeerPath));
 
-            NodeServerConnectionHandler handler = new NodeServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
+            ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
             EmbeddedChannel channel = new EmbeddedChannel(handler);
             channel.attr(ATTRIBUTE_PUBLIC_KEY).set(publicKey0);
 
@@ -225,7 +225,7 @@ class NodeServerConnectionHandlerTest {
             when(peersManager.getSuperPeer()).thenReturn(Pair.of(superPeerPublicKey, superPeerInformation));
             when(superPeerInformation.getPaths()).thenReturn(Set.of(superPeerPath));
 
-            NodeServerConnectionHandler handler = new NodeServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
+            ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
             EmbeddedChannel channel = new EmbeddedChannel(handler);
             channel.attr(ATTRIBUTE_PUBLIC_KEY).set(publicKey0);
 
@@ -252,7 +252,7 @@ class NodeServerConnectionHandlerTest {
             when(peersManager.getSuperPeer()).thenReturn(Pair.of(superPeerPublicKey, superPeerInformation));
             when(superPeerInformation.getPaths()).thenReturn(Set.of(superPeerPath));
 
-            NodeServerConnectionHandler handler = new NodeServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
+            ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
             EmbeddedChannel channel = new EmbeddedChannel(handler);
             channel.attr(ATTRIBUTE_PUBLIC_KEY).set(publicKey0);
 
@@ -291,7 +291,7 @@ class NodeServerConnectionHandlerTest {
             when(statusMessage.getCorrespondingId()).thenReturn("123");
             when(statusMessage.getCode()).thenReturn(STATUS_OK);
 
-            NodeServerConnectionHandler handler = new NodeServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
+            ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
             EmbeddedChannel channel = new EmbeddedChannel(handler);
             channel.attr(ATTRIBUTE_PUBLIC_KEY).set(publicKey0);
 

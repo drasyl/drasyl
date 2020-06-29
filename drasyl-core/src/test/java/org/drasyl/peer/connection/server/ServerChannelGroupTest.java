@@ -44,11 +44,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class NodeServerChannelGroupTest {
+class ServerChannelGroupTest {
     @Mock
     private Map<CompressedPublicKey, ChannelId> identity2channelId;
     @InjectMocks
-    private NodeServerChannelGroup underTest;
+    private ServerChannelGroup underTest;
 
     @Nested
     class WriteAndFlush {

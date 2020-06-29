@@ -22,10 +22,10 @@ import org.drasyl.peer.connection.DefaultSessionInitializer;
 
 import java.time.Duration;
 
-public abstract class NodeServerChannelInitializer extends DefaultSessionInitializer {
-    protected NodeServerChannelInitializer(int flushBufferSize,
-                                           Duration readIdleTimeout,
-                                           short pingPongRetries) {
+public abstract class ServerChannelInitializer extends DefaultSessionInitializer {
+    protected ServerChannelInitializer(int flushBufferSize,
+                                       Duration readIdleTimeout,
+                                       short pingPongRetries) {
         super(flushBufferSize, readIdleTimeout, pingPongRetries);
     }
 }

@@ -49,8 +49,8 @@ import org.drasyl.peer.connection.message.PongMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
-import org.drasyl.peer.connection.server.TestNodeServer;
-import org.drasyl.peer.connection.server.TestNodeServerChannelInitializer;
+import org.drasyl.peer.connection.server.TestServer;
+import org.drasyl.peer.connection.server.TestServerChannelInitializer;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -85,7 +85,7 @@ class SuperPeerClientIT {
     private EventLoopGroup bossGroup;
     private IdentityManager identityManager;
     private IdentityManager identityManagerServer;
-    private TestNodeServer server;
+    private TestServer server;
     private Messenger messenger;
     private Messenger messengerServer;
     private PeersManager peersManager;
@@ -136,7 +136,7 @@ class SuperPeerClientIT {
                 .serverSSLEnabled(true)
                 .serverIdleTimeout(ofSeconds(1))
                 .serverIdleRetries((short) 1)
-                .serverChannelInitializer(TestNodeServerChannelInitializer.class)
+                .serverChannelInitializer(TestServerChannelInitializer.class)
                 .superPeerEnabled(false)
                 .messageMaxContentLength(CHUNK_SIZE + 2)
                 .build();
@@ -151,7 +151,7 @@ class SuperPeerClientIT {
         messengerServer = new Messenger(message -> {
         });
 
-        server = new TestNodeServer(identityManagerServer::getIdentity, messengerServer, peersManagerServer, serverConfig, serverWorkerGroup, bossGroup, superPeerConnected);
+        server = new TestServer(identityManagerServer::getIdentity, messengerServer, peersManagerServer, serverConfig, serverWorkerGroup, bossGroup, superPeerConnected);
         server.open();
         emittedEventsSubject = ReplaySubject.<Event>create().toSerialized();
         superPeerConnected = BehaviorSubject.createDefault(false).toSerialized();

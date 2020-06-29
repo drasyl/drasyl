@@ -21,10 +21,10 @@ package org.drasyl.peer.connection.message;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
-import org.drasyl.peer.connection.server.NodeServer;
+import org.drasyl.peer.connection.server.Server;
 
 /**
- * Describes messages that are sent by the {@link NodeServer} or a client.
+ * Describes messages that are sent by the {@link Server} or a client.
  */
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
 @JsonSubTypes({

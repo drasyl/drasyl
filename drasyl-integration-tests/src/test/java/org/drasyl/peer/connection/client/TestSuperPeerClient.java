@@ -36,7 +36,7 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.ResponseMessage;
-import org.drasyl.peer.connection.server.NodeServer;
+import org.drasyl.peer.connection.server.Server;
 import org.drasyl.peer.connection.superpeer.TestClientChannelInitializer;
 
 import java.util.concurrent.CompletableFuture;
@@ -49,7 +49,7 @@ public class TestSuperPeerClient extends SuperPeerClient {
     private final Subject<Event> receivedEvents;
 
     public TestSuperPeerClient(DrasylConfig config,
-                               NodeServer server,
+                               Server server,
                                Identity identity,
                                EventLoopGroup workerGroup,
                                boolean doPingPong,

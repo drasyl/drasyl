@@ -34,26 +34,26 @@ import java.util.function.Supplier;
 import static org.awaitility.Awaitility.await;
 
 /**
- * This is a special implementation of the NodeServer which is used for testing. It offers
- * additional interfaces for reading internal states and for injecting messages.
+ * This is a special implementation of the Server which is used for testing. It offers additional
+ * interfaces for reading internal states and for injecting messages.
  */
-public class TestNodeServer extends NodeServer {
-    public TestNodeServer(Supplier<Identity> identitySupplier,
-                          Messenger messenger,
-                          PeersManager peersManager,
-                          DrasylConfig config,
-                          EventLoopGroup workerGroup,
-                          EventLoopGroup bossGroup,
-                          Observable<Boolean> superPeerConnected) throws NodeServerException {
+public class TestServer extends Server {
+    public TestServer(Supplier<Identity> identitySupplier,
+                      Messenger messenger,
+                      PeersManager peersManager,
+                      DrasylConfig config,
+                      EventLoopGroup workerGroup,
+                      EventLoopGroup bossGroup,
+                      Observable<Boolean> superPeerConnected) throws ServerException {
         super(identitySupplier, messenger, peersManager, config, workerGroup, bossGroup, superPeerConnected);
     }
 
     public Observable<Message> receivedMessages() {
-        return ((TestNodeServerChannelInitializer) channelInitializer).receivedMessages();
+        return ((TestServerChannelInitializer) channelInitializer).receivedMessages();
     }
 
     public Observable<Message> sentMessages() {
-        return ((TestNodeServerChannelInitializer) channelInitializer).sentMessages();
+        return ((TestServerChannelInitializer) channelInitializer).sentMessages();
     }
 
     public void sendMessage(CompressedPublicKey recipient, Message message) {
@@ -80,7 +80,7 @@ public class TestNodeServer extends NodeServer {
         await().until(() -> channelGroup.find(client) != null);
     }
 
-    public NodeServerChannelGroup getChannelGroup() {
+    public ServerChannelGroup getChannelGroup() {
         return channelGroup;
     }
 }

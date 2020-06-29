@@ -48,8 +48,8 @@ import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.IdentityMessage;
 import org.drasyl.peer.connection.message.RelayableMessage;
 import org.drasyl.peer.connection.message.WhoisMessage;
-import org.drasyl.peer.connection.server.NodeServer;
-import org.drasyl.peer.connection.server.NodeServerException;
+import org.drasyl.peer.connection.server.Server;
+import org.drasyl.peer.connection.server.ServerException;
 import org.drasyl.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -112,7 +112,7 @@ public abstract class DrasylNode {
     private final Messenger messenger;
     private final IntraVmDiscovery intraVmDiscovery;
     private final SuperPeerClient superPeerClient;
-    private final NodeServer server;
+    private final Server server;
     private final AtomicBoolean started;
     private CompletableFuture<Void> startSequence;
     private CompletableFuture<Void> shutdownSequence;
@@ -137,7 +137,7 @@ public abstract class DrasylNode {
             this.messenger = new Messenger(this::messageSink);
             this.intraVmDiscovery = new IntraVmDiscovery(identityManager::getPublicKey, messenger, peersManager, this::onEvent);
             this.superPeerClient = new SuperPeerClient(this.config, identityManager::getIdentity, peersManager, messenger, DrasylNode.WORKER_GROUP, this::onEvent);
-            this.server = new NodeServer(identityManager::getIdentity, messenger, peersManager, this.config, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP, superPeerClient.connectionEstablished());
+            this.server = new Server(identityManager::getIdentity, messenger, peersManager, this.config, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP, superPeerClient.connectionEstablished());
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = new CompletableFuture<>();
@@ -173,7 +173,7 @@ public abstract class DrasylNode {
                Messenger messenger,
                IntraVmDiscovery intraVmDiscovery,
                SuperPeerClient superPeerClient,
-               NodeServer server,
+               Server server,
                AtomicBoolean started,
                CompletableFuture<Void> startSequence,
                CompletableFuture<Void> shutdownSequence) {
@@ -420,7 +420,7 @@ public abstract class DrasylNode {
                 server.open();
                 LOG.debug("Server is now listening at {}:{}", config.getServerBindHost(), server.getPort());
             }
-            catch (NodeServerException e) {
+            catch (ServerException e) {
                 throw new CompletionException(e);
             }
         }

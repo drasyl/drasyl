@@ -102,7 +102,7 @@ import static testutils.TestHelper.colorizedPrintln;
 
 //@NotThreadSafe
 @Execution(ExecutionMode.SAME_THREAD)
-class NodeServerIT {
+class ServerIT {
     public static final long TIMEOUT = 10000L;
     private static EventLoopGroup workerGroup;
     private static EventLoopGroup bossGroup;
@@ -110,7 +110,7 @@ class NodeServerIT {
     private DrasylConfig configClient2;
     private DrasylConfig serverConfig;
     private IdentityManager serverIdentityManager;
-    private NodeServer server;
+    private Server server;
     private Messenger serverMessenger;
     private PeersManager peersManager;
     private Observable<Boolean> serverSuperPeerConnected;
@@ -157,7 +157,7 @@ class NodeServerIT {
         serverSuperPeerConnected = Observable.just(false);
         opened = new AtomicBoolean(false);
 
-        server = new NodeServer(serverIdentityManager::getIdentity, serverMessenger, peersManager, serverConfig, workerGroup, bossGroup, serverSuperPeerConnected, opened);
+        server = new Server(serverIdentityManager::getIdentity, serverMessenger, peersManager, serverConfig, workerGroup, bossGroup, serverSuperPeerConnected, opened);
         server.open();
 
         configClient1 = DrasylConfig.newBuilder()
@@ -463,7 +463,7 @@ class NodeServerIT {
 
     @Test
     void shouldOpenAndCloseGracefully() throws DrasylException {
-        try (NodeServer myServer = new NodeServer(serverIdentityManager::getIdentity, serverMessenger, peersManager, new DrasylConfig(), workerGroup, bossGroup, serverSuperPeerConnected)) {
+        try (Server myServer = new Server(serverIdentityManager::getIdentity, serverMessenger, peersManager, new DrasylConfig(), workerGroup, bossGroup, serverSuperPeerConnected)) {
             myServer.open();
         }
 
@@ -473,8 +473,8 @@ class NodeServerIT {
     @Test
     void openShouldFailIfInvalidPortIsGiven() throws DrasylException {
         DrasylConfig config = DrasylConfig.newBuilder().serverBindPort(72722).build();
-        try (NodeServer myServer = new NodeServer(serverIdentityManager::getIdentity, serverMessenger, peersManager, config, workerGroup, bossGroup, serverSuperPeerConnected)) {
-            assertThrows(NodeServerException.class, myServer::open);
+        try (Server myServer = new Server(serverIdentityManager::getIdentity, serverMessenger, peersManager, config, workerGroup, bossGroup, serverSuperPeerConnected)) {
+            assertThrows(ServerException.class, myServer::open);
         }
     }
 
@@ -548,7 +548,7 @@ class NodeServerIT {
     }
 
     private TestSuperPeerClient clientSessionAfterJoin(DrasylConfig config,
-                                                       NodeServer server,
+                                                       Server server,
                                                        Identity identity) throws ClientException {
         TestSuperPeerClient client = new TestSuperPeerClient(config, server, identity, workerGroup, true, true);
         client.open();
@@ -557,7 +557,7 @@ class NodeServerIT {
     }
 
     private TestSuperPeerClient clientSession(DrasylConfig config,
-                                              NodeServer server,
+                                              Server server,
                                               Identity identity,
                                               boolean doPingPong) throws ClientException {
         TestSuperPeerClient client = new TestSuperPeerClient(config, server, identity, workerGroup, doPingPong, false);
@@ -566,7 +566,7 @@ class NodeServerIT {
     }
 
     private TestSuperPeerClient clientSession(DrasylConfig config,
-                                              NodeServer server,
+                                              Server server,
                                               Identity identity) throws ClientException {
         return clientSession(config, server, identity, true);
     }

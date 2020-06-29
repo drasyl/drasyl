@@ -31,7 +31,7 @@ import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.client.SuperPeerClient;
 import org.drasyl.peer.connection.intravm.IntraVmDiscovery;
-import org.drasyl.peer.connection.server.NodeServer;
+import org.drasyl.peer.connection.server.Server;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -56,7 +56,7 @@ class DrasylNodeTest {
     @Mock
     private Messenger messenger;
     @Mock
-    private NodeServer server;
+    private Server server;
     @Mock
     private PeersManager peersManager;
     @Mock

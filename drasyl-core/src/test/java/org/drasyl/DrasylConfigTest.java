@@ -27,7 +27,7 @@ import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
-import org.drasyl.peer.connection.server.DefaultNodeServerChannelInitializer;
+import org.drasyl.peer.connection.server.DefaultServerChannelInitializer;
 import org.drasyl.peer.connection.client.DefaultClientChannelInitializer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -138,7 +138,7 @@ class DrasylConfigTest {
         serverSSLEnabled = false;
         serverHandshakeTimeout = ofSeconds(30);
         serverEndpoints = Set.of();
-        serverChannelInitializer = DefaultNodeServerChannelInitializer.class;
+        serverChannelInitializer = DefaultServerChannelInitializer.class;
         messageMaxContentLength = 1024;
         messageHopLimit = 64;
         superPeerEnabled = true;

@@ -36,9 +36,9 @@ import org.drasyl.peer.connection.client.TestSuperPeerClient;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
-import org.drasyl.peer.connection.server.NodeServer;
-import org.drasyl.peer.connection.server.NodeServerException;
-import org.drasyl.peer.connection.server.TestNodeServer;
+import org.drasyl.peer.connection.server.Server;
+import org.drasyl.peer.connection.server.ServerException;
+import org.drasyl.peer.connection.server.TestServer;
 import org.drasyl.peer.connection.client.ClientException;
 import org.drasyl.peer.connection.superpeer.TestClientChannelInitializer;
 import org.junit.jupiter.api.AfterAll;
@@ -66,7 +66,7 @@ class ChunkedMessageIT {
     private static EventLoopGroup workerGroup;
     private static EventLoopGroup bossGroup;
     private static DrasylConfig config;
-    private static TestNodeServer server;
+    private static TestServer server;
     private static TestSuperPeerClient session1;
     private static TestSuperPeerClient session2;
     private static byte[] bigPayload;
@@ -94,7 +94,7 @@ class ChunkedMessageIT {
     }
 
     @BeforeAll
-    static void beforeAll() throws IdentityManagerException, NodeServerException, CryptoException, ClientException {
+    static void beforeAll() throws IdentityManagerException, ServerException, CryptoException, ClientException {
         workerGroup = new NioEventLoopGroup();
         bossGroup = new NioEventLoopGroup(1);
 
@@ -128,7 +128,7 @@ class ChunkedMessageIT {
         });
         Observable<Boolean> serverSuperPeerConnected = Observable.just(false);
 
-        server = new TestNodeServer(serverIdentityManager::getIdentity, serverMessenger, peersManager, serverConfig, workerGroup, bossGroup, serverSuperPeerConnected);
+        server = new TestServer(serverIdentityManager::getIdentity, serverMessenger, peersManager, serverConfig, workerGroup, bossGroup, serverSuperPeerConnected);
         server.open();
 
         config = DrasylConfig.newBuilder()
@@ -164,7 +164,7 @@ class ChunkedMessageIT {
     }
 
     private static TestSuperPeerClient clientSessionAfterJoin(DrasylConfig config,
-                                                              NodeServer server,
+                                                              Server server,
                                                               Identity identity) throws ClientException {
         TestSuperPeerClient client = new TestSuperPeerClient(config, server, identity, workerGroup, true, true);
         client.open();

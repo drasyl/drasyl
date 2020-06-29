@@ -21,16 +21,15 @@ package org.drasyl.peer.connection.server;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
-import io.netty.util.ReferenceCountUtil;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import org.drasyl.peer.connection.handler.SimpleChannelDuplexHandler;
 import org.drasyl.peer.connection.message.Message;
 
-public class TestNodeServerChannelInitializer extends DefaultNodeServerChannelInitializer {
+public class TestServerChannelInitializer extends DefaultServerChannelInitializer {
     private final PublishSubject<Message> sentMessages;
     private final PublishSubject<Message> receivedMessages;
 
-    public TestNodeServerChannelInitializer(NodeServerEnvironment environment) {
+    public TestServerChannelInitializer(ServerEnvironment environment) {
         super(environment);
         sentMessages = PublishSubject.create();
         receivedMessages = PublishSubject.create();

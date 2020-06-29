@@ -50,7 +50,7 @@ import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_
 import static org.drasyl.util.UriUtil.overridePort;
 
 @SuppressWarnings({ "squid:S00107" })
-public class NodeServer implements AutoCloseable {
+public class Server implements AutoCloseable {
     public final EventLoopGroup workerGroup;
     public final EventLoopGroup bossGroup;
     public final ServerBootstrap serverBootstrap;
@@ -59,24 +59,24 @@ public class NodeServer implements AutoCloseable {
     private final DrasylConfig config;
     private final Messenger messenger;
     private final AtomicBoolean opened;
-    protected final NodeServerChannelGroup channelGroup;
+    protected final ServerChannelGroup channelGroup;
     protected final ChannelInitializer<SocketChannel> channelInitializer;
     private Channel channel;
     private int actualPort;
     private Set<URI> actualEndpoints;
 
-    NodeServer(Supplier<Identity> identitySupplier,
-               Messenger messenger,
-               PeersManager peersManager,
-               DrasylConfig config,
-               ServerBootstrap serverBootstrap,
-               EventLoopGroup workerGroup,
-               EventLoopGroup bossGroup,
-               ChannelInitializer<SocketChannel> channelInitializer,
-               AtomicBoolean opened,
-               NodeServerChannelGroup channelGroup,
-               int actualPort, Channel channel,
-               Set<URI> actualEndpoints) {
+    Server(Supplier<Identity> identitySupplier,
+           Messenger messenger,
+           PeersManager peersManager,
+           DrasylConfig config,
+           ServerBootstrap serverBootstrap,
+           EventLoopGroup workerGroup,
+           EventLoopGroup bossGroup,
+           ChannelInitializer<SocketChannel> channelInitializer,
+           AtomicBoolean opened,
+           ServerChannelGroup channelGroup,
+           int actualPort, Channel channel,
+           Set<URI> actualEndpoints) {
         this.identitySupplier = identitySupplier;
         this.peersManager = peersManager;
         this.config = config;
@@ -103,14 +103,14 @@ public class NodeServer implements AutoCloseable {
      * @param bossGroup          netty shared boss group
      * @param superPeerConnected
      */
-    public NodeServer(Supplier<Identity> identitySupplier,
-                      Messenger messenger,
-                      PeersManager peersManager,
-                      DrasylConfig config,
-                      EventLoopGroup workerGroup,
-                      EventLoopGroup bossGroup,
-                      Observable<Boolean> superPeerConnected,
-                      AtomicBoolean opened) throws NodeServerException {
+    public Server(Supplier<Identity> identitySupplier,
+                  Messenger messenger,
+                  PeersManager peersManager,
+                  DrasylConfig config,
+                  EventLoopGroup workerGroup,
+                  EventLoopGroup bossGroup,
+                  Observable<Boolean> superPeerConnected,
+                  AtomicBoolean opened) throws ServerException {
         this.identitySupplier = identitySupplier;
         this.peersManager = peersManager;
         this.config = config;
@@ -118,9 +118,9 @@ public class NodeServer implements AutoCloseable {
         this.serverBootstrap = new ServerBootstrap();
         this.workerGroup = workerGroup;
         this.bossGroup = bossGroup;
-        this.channelGroup = new NodeServerChannelGroup();
+        this.channelGroup = new ServerChannelGroup();
         this.channelInitializer = initiateChannelInitializer(
-                new NodeServerEnvironment(
+                new ServerEnvironment(
                         config,
                         identitySupplier,
                         peersManager,
@@ -137,13 +137,13 @@ public class NodeServer implements AutoCloseable {
         this.actualEndpoints = new HashSet<>();
     }
 
-    public NodeServer(Supplier<Identity> identitySupplier,
-                      Messenger messenger,
-                      PeersManager peersManager,
-                      DrasylConfig config,
-                      EventLoopGroup workerGroup,
-                      EventLoopGroup bossGroup,
-                      Observable<Boolean> superPeerConnected) throws NodeServerException {
+    public Server(Supplier<Identity> identitySupplier,
+                  Messenger messenger,
+                  PeersManager peersManager,
+                  DrasylConfig config,
+                  EventLoopGroup workerGroup,
+                  EventLoopGroup bossGroup,
+                  Observable<Boolean> superPeerConnected) throws ServerException {
         this(identitySupplier, messenger, peersManager, config, workerGroup, bossGroup, superPeerConnected, new AtomicBoolean(false));
     }
 
@@ -158,7 +158,7 @@ public class NodeServer implements AutoCloseable {
         return opened.get();
     }
 
-    NodeServerChannelGroup getChannelGroup() {
+    ServerChannelGroup getChannelGroup() {
         return channelGroup;
     }
 
@@ -170,7 +170,7 @@ public class NodeServer implements AutoCloseable {
      * Starts the relay server.
      */
     @SuppressWarnings({ "java:S3776" })
-    public void open() throws NodeServerException {
+    public void open() throws ServerException {
         if (opened.compareAndSet(false, true)) {
             try {
                 ChannelFuture channelFuture = serverBootstrap
@@ -223,11 +223,11 @@ public class NodeServer implements AutoCloseable {
                     });
                 }
                 else {
-                    throw new NodeServerException("Unable to start server: " + channelFuture.cause().getMessage());
+                    throw new ServerException("Unable to start server: " + channelFuture.cause().getMessage());
                 }
             }
             catch (IllegalArgumentException e) {
-                throw new NodeServerException("Unable to get channel: " + e.getMessage());
+                throw new ServerException("Unable to get channel: " + e.getMessage());
             }
         }
     }
@@ -258,24 +258,24 @@ public class NodeServer implements AutoCloseable {
         }
     }
 
-    private static NodeServerChannelInitializer initiateChannelInitializer(
-            NodeServerEnvironment environment,
-            Class<? extends ChannelInitializer<SocketChannel>> clazz) throws NodeServerException {
+    private static ServerChannelInitializer initiateChannelInitializer(
+            ServerEnvironment environment,
+            Class<? extends ChannelInitializer<SocketChannel>> clazz) throws ServerException {
         try {
-            Constructor<?> constructor = clazz.getConstructor(NodeServerEnvironment.class);
-            return (NodeServerChannelInitializer) constructor.newInstance(environment);
+            Constructor<?> constructor = clazz.getConstructor(ServerEnvironment.class);
+            return (ServerChannelInitializer) constructor.newInstance(environment);
         }
         catch (NoSuchMethodException e) {
-            throw new NodeServerException("The given channel initializer has not the correct signature: '" + clazz + "'");
+            throw new ServerException("The given channel initializer has not the correct signature: '" + clazz + "'");
         }
         catch (IllegalAccessException e) {
-            throw new NodeServerException("Can't access the given channel initializer: '" + clazz + "'");
+            throw new ServerException("Can't access the given channel initializer: '" + clazz + "'");
         }
         catch (InvocationTargetException e) {
-            throw new NodeServerException("Can't invoke the given channel initializer: '" + clazz + "'");
+            throw new ServerException("Can't invoke the given channel initializer: '" + clazz + "'");
         }
         catch (InstantiationException e) {
-            throw new NodeServerException("Can't instantiate the given channel initializer: '" + clazz + "'");
+            throw new ServerException("Can't instantiate the given channel initializer: '" + clazz + "'");
         }
     }
 }

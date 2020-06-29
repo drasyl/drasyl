@@ -40,22 +40,22 @@ import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_
  * Special type of {@link ChannelGroup}, which has a lookup complexity of O(1) instead of O(n) for
  * lookups by {@link CompressedPublicKey}.
  */
-public class NodeServerChannelGroup extends DefaultChannelGroup {
+public class ServerChannelGroup extends DefaultChannelGroup {
     public static final AttributeKey<CompressedPublicKey> ATTRIBUTE_PUBLIC_KEY = AttributeKey.valueOf("publicKey");
     private final Map<CompressedPublicKey, ChannelId> identity2channelId;
     private final ChannelFutureListener remover = future -> remove(future.channel());
 
-    public NodeServerChannelGroup() {
+    public ServerChannelGroup() {
         this(new HashMap<>(), GlobalEventExecutor.INSTANCE);
     }
 
-    NodeServerChannelGroup(Map<CompressedPublicKey, ChannelId> identity2channelId,
-                           EventExecutor executor) {
+    ServerChannelGroup(Map<CompressedPublicKey, ChannelId> identity2channelId,
+                       EventExecutor executor) {
         super(executor);
         this.identity2channelId = identity2channelId;
     }
 
-    public NodeServerChannelGroup(EventExecutor executor) {
+    public ServerChannelGroup(EventExecutor executor) {
         this(new HashMap<>(), executor);
     }
 

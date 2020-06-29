@@ -27,7 +27,7 @@ import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.client.SuperPeerClient;
 import org.drasyl.peer.connection.intravm.IntraVmDiscovery;
-import org.drasyl.peer.connection.server.NodeServer;
+import org.drasyl.peer.connection.server.Server;
 import org.drasyl.util.DrasylScheduler;
 
 import java.util.concurrent.CompletableFuture;
@@ -56,7 +56,7 @@ public class ObservableDrasylNode extends DrasylNode {
                          PeersManager peersManager,
                          Messenger messenger,
                          IntraVmDiscovery intraVmDiscovery,
-                         NodeServer server,
+                         Server server,
                          SuperPeerClient superPeerClient,
                          AtomicBoolean started,
                          CompletableFuture<Void> startSequence,

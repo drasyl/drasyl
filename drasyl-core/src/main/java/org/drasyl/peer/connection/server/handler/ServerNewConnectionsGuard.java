@@ -24,7 +24,7 @@ import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.StatusMessage;
-import org.drasyl.peer.connection.server.NodeServer;
+import org.drasyl.peer.connection.server.Server;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -34,15 +34,15 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_SERVI
 
 /**
  * This handler acts as a channel creation guard. A new channel should not be created, if the {@code
- * isOpenSupplier} returns <code>false</code>. Used by the {@link NodeServer} to prevent new
+ * isOpenSupplier} returns <code>false</code>. Used by the {@link Server} to prevent new
  * connections from being established during shutdown.
  */
-public class NodeServerNewConnectionsGuard extends SimpleChannelInboundHandler<Message> {
+public class ServerNewConnectionsGuard extends SimpleChannelInboundHandler<Message> {
     public static final String CONNECTION_GUARD = "connectionGuard";
-    private static final Logger LOG = LoggerFactory.getLogger(NodeServerNewConnectionsGuard.class);
+    private static final Logger LOG = LoggerFactory.getLogger(ServerNewConnectionsGuard.class);
     private final BooleanSupplier acceptNewConnectionsSupplier;
 
-    public NodeServerNewConnectionsGuard(BooleanSupplier acceptNewConnectionsSupplier) {
+    public ServerNewConnectionsGuard(BooleanSupplier acceptNewConnectionsSupplier) {
         this.acceptNewConnectionsSupplier = acceptNewConnectionsSupplier;
     }
 

@@ -32,7 +32,7 @@ import org.slf4j.LoggerFactory;
 
 import java.security.PublicKey;
 
-import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
+import static org.drasyl.peer.connection.server.ServerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
 
 /**
  * Acts as a guard for in- and outbound messages. <br> Signs automatically outbound messages. <br>

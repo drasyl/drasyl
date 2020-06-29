@@ -21,14 +21,14 @@ package org.drasyl.peer.connection.server;
 import org.drasyl.DrasylException;
 
 /**
- * A NodeServerException is thrown by the {@link NodeServer} when errors occur.
+ * A ServerException is thrown by the {@link Server} when errors occur.
  */
-public class NodeServerException extends DrasylException {
-    public NodeServerException(Throwable cause) {
+public class ServerException extends DrasylException {
+    public ServerException(Throwable cause) {
         super(cause);
     }
 
-    public NodeServerException(String cause) {
+    public ServerException(String cause) {
         super(cause);
     }
 }
