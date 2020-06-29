@@ -18,6 +18,8 @@
  */
 package org.drasyl.peer.connection.message;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -33,15 +35,34 @@ import static java.util.Objects.requireNonNull;
 public class JoinMessage extends AbstractMessageWithUserAgent implements RequestMessage {
     private final ProofOfWork proofOfWork;
     private final CompressedPublicKey publicKey;
-
     private final boolean childrenJoin;
     private final Set<CompressedPublicKey> childrenAndGrandchildren;
 
-    protected JoinMessage() {
-        proofOfWork = null;
-        publicKey = null;
-        childrenJoin = false;
-        childrenAndGrandchildren = null;
+    @JsonCreator
+    private JoinMessage(@JsonProperty("id") String id,
+                        @JsonProperty("userAgent") String userAgent,
+                        @JsonProperty("proofOfWork") ProofOfWork proofOfWork,
+                        @JsonProperty("publicKey") CompressedPublicKey publicKey,
+                        @JsonProperty("childrenJoin") boolean childrenJoin,
+                        @JsonProperty("childrenAndGrandchildren") Set<CompressedPublicKey> childrenAndGrandchildren) {
+        super(id, userAgent);
+        this.proofOfWork = requireNonNull(proofOfWork);
+        this.publicKey = requireNonNull(publicKey);
+        this.childrenJoin = childrenJoin;
+        this.childrenAndGrandchildren = requireNonNull(childrenAndGrandchildren);
+    }
+
+    /**
+     * Creates a new join message.
+     *
+     * @param proofOfWork              the proof of work
+     * @param publicKey                the identity of the joining node
+     * @param childrenAndGrandchildren the (grand-)children of this node
+     */
+    public JoinMessage(ProofOfWork proofOfWork,
+                       CompressedPublicKey publicKey,
+                       Set<CompressedPublicKey> childrenAndGrandchildren) {
+        this(proofOfWork, publicKey, true, childrenAndGrandchildren);
     }
 
     /**
@@ -60,19 +81,6 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
         this.publicKey = requireNonNull(publicKey);
         this.childrenJoin = childrenJoin;
         this.childrenAndGrandchildren = requireNonNull(childrenAndGrandchildren);
-    }
-
-    /**
-     * Creates a new join message.
-     *
-     * @param proofOfWork              the proof of work
-     * @param publicKey                the identity of the joining node
-     * @param childrenAndGrandchildren the (grand-)children of this node
-     */
-    public JoinMessage(ProofOfWork proofOfWork,
-                       CompressedPublicKey publicKey,
-                       Set<CompressedPublicKey> childrenAndGrandchildren) {
-        this(proofOfWork, publicKey, true, childrenAndGrandchildren);
     }
 
     public boolean isChildrenJoin() {

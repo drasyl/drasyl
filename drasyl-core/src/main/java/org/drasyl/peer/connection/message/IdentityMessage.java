@@ -18,10 +18,14 @@
  */
 package org.drasyl.peer.connection.message;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.PeerInformation;
 
 import java.util.Objects;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * This message is used as a response to a {@link WhoisMessage} and contains information about a
@@ -32,32 +36,27 @@ public class IdentityMessage extends RelayableMessage implements ResponseMessage
     private final PeerInformation peerInformation;
     private final String correspondingId;
 
-    private IdentityMessage() {
-        super();
-        publicKey = null;
-        peerInformation = null;
-        correspondingId = null;
-    }
-
     public IdentityMessage(CompressedPublicKey recipient,
                            CompressedPublicKey publicKey,
                            PeerInformation peerInformation,
                            String correspondingId) {
         super(recipient);
-        this.publicKey = publicKey;
-        this.peerInformation = peerInformation;
-        this.correspondingId = correspondingId;
+        this.publicKey = requireNonNull(publicKey);
+        this.peerInformation = requireNonNull(peerInformation);
+        this.correspondingId = requireNonNull(correspondingId);
     }
 
-    public IdentityMessage(CompressedPublicKey recipient,
-                           CompressedPublicKey publicKey,
-                           PeerInformation peerInformation,
-                           String correspondingId,
-                           short hopCount) {
-        super(recipient, hopCount);
-        this.publicKey = publicKey;
-        this.peerInformation = peerInformation;
-        this.correspondingId = correspondingId;
+    @JsonCreator
+    private IdentityMessage(@JsonProperty("id") String id,
+                            @JsonProperty("recipient") CompressedPublicKey recipient,
+                            @JsonProperty("publicKey") CompressedPublicKey publicKey,
+                            @JsonProperty("peerInformation") PeerInformation peerInformation,
+                            @JsonProperty("correspondingId") String correspondingId,
+                            @JsonProperty("hopCount") short hopCount) {
+        super(id, recipient, hopCount);
+        this.publicKey = requireNonNull(publicKey);
+        this.peerInformation = requireNonNull(peerInformation);
+        this.correspondingId = requireNonNull(correspondingId);
     }
 
     public CompressedPublicKey getPublicKey() {

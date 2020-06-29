@@ -18,6 +18,7 @@
  */
 package org.drasyl.peer.connection.message;
 
+import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -30,6 +31,7 @@ import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
 class PongMessageTest {
@@ -47,6 +49,13 @@ class PongMessageTest {
             String json = "{\"@type\":\"" + PongMessage.class.getSimpleName() + "\",\"id\":\"77175D7235920F3BA17341D7\",\"correspondingId\":\"123\"}";
 
             assertEquals(new PongMessage("123"), JACKSON_READER.readValue(json, Message.class));
+        }
+
+        @Test
+        void shouldRejectIncompleteData() {
+            String json = "{\"@type\":\"" + PongMessage.class.getSimpleName() + "\",\"id\":\"77175D7235920F3BA17341D7\"}";
+
+            assertThrows(ValueInstantiationException.class, () -> JACKSON_READER.readValue(json, Message.class));
         }
     }
 

@@ -19,6 +19,7 @@
 package org.drasyl.peer.connection.message;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 import java.util.HashMap;
@@ -77,12 +78,13 @@ import static java.util.Objects.requireNonNull;
 public class StatusMessage extends AbstractResponseMessage<RequestMessage> {
     private final Code code;
 
-    protected StatusMessage() {
-        super("");
-        code = null;
+    @JsonCreator
+    private StatusMessage(@JsonProperty("id") String id,
+                          @JsonProperty("code") Code code,
+                          @JsonProperty("correspondingId") String correspondingId) {
+        super(id, correspondingId);
+        this.code = requireNonNull(code);
     }
-
-    // -------- methods --------
 
     public StatusMessage(int code, String correspondingId) {
         this(Code.from(code), correspondingId);

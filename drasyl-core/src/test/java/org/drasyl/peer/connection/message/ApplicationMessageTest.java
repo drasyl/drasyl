@@ -18,6 +18,7 @@
  */
 package org.drasyl.peer.connection.message;
 
+import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,6 +62,13 @@ class ApplicationMessageTest {
                     0x01,
                     0x02
             }), JACKSON_READER.readValue(json, ApplicationMessage.class));
+        }
+
+        @Test
+        void shouldRejectIncompleteData() {
+            String json = "{\"@type\":\"" + ApplicationMessage.class.getSimpleName() + "\",\"id\":\"123\",\"recipient\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"payload\":\"AAEC\"}";
+
+            assertThrows(ValueInstantiationException.class, () -> JACKSON_READER.readValue(json, Message.class));
         }
     }
 

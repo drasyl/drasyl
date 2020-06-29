@@ -24,15 +24,18 @@ import org.drasyl.identity.CompressedPublicKey;
 import java.util.Objects;
 import java.util.Set;
 
+import static java.util.Objects.requireNonNull;
+
 public abstract class AbstractGrandchildMessage extends AbstractMessage implements RequestMessage {
     protected Set<CompressedPublicKey> grandchildren;
 
-    protected AbstractGrandchildMessage() {
-        grandchildren = null;
+    protected AbstractGrandchildMessage(String id, Set<CompressedPublicKey> grandchildren) {
+        super(id);
+        this.grandchildren = requireNonNull(grandchildren);
     }
 
     public AbstractGrandchildMessage(Set<CompressedPublicKey> grandchildren) {
-        this.grandchildren = grandchildren;
+        this.grandchildren = requireNonNull(grandchildren);
     }
 
     public Set<CompressedPublicKey> getGrandchildren() {

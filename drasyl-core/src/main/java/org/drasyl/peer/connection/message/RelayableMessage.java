@@ -31,7 +31,9 @@ public abstract class RelayableMessage extends AbstractMessage {
     protected final CompressedPublicKey recipient;
     protected short hopCount = 0;
 
-    protected RelayableMessage(String id, short hopCount, CompressedPublicKey recipient) {
+    protected RelayableMessage(String id,
+                               CompressedPublicKey recipient,
+                               short hopCount) {
         super(id);
         this.recipient = requireNonNull(recipient);
         this.hopCount = hopCount;

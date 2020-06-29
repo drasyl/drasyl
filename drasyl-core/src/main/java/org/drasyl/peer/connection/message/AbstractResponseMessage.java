@@ -26,8 +26,9 @@ import static java.util.Objects.requireNonNull;
 public abstract class AbstractResponseMessage<R extends RequestMessage> extends AbstractMessage implements ResponseMessage<R> {
     protected final String correspondingId;
 
-    protected AbstractResponseMessage() {
-        correspondingId = null;
+    protected AbstractResponseMessage(String id, String correspondingId) {
+        super(id);
+        this.correspondingId = requireNonNull(correspondingId);
     }
 
     protected AbstractResponseMessage(String correspondingId) {

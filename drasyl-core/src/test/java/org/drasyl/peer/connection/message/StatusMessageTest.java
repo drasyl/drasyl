@@ -18,6 +18,7 @@
  */
 package org.drasyl.peer.connection.message;
 
+import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -33,6 +34,7 @@ import static org.drasyl.util.JSONUtil.JACKSON_READER;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
 class StatusMessageTest {
@@ -50,6 +52,13 @@ class StatusMessageTest {
             String json = "{\"@type\":\"" + StatusMessage.class.getSimpleName() + "\",\"id\":\"205E5ECE2F3F1E744D951658\",\"code\":" + STATUS_OK.getNumber() + ",\"correspondingId\":123}";
 
             assertEquals(new StatusMessage(STATUS_OK, "123"), JACKSON_READER.readValue(json, Message.class));
+        }
+
+        @Test
+        void shouldRejectIncompleteData() {
+            String json = "{\"@type\":\"" + StatusMessage.class.getSimpleName() + "\",\"id\":\"205E5ECE2F3F1E744D951658\",\"correspondingId\":123}";
+
+            assertThrows(ValueInstantiationException.class, () -> JACKSON_READER.readValue(json, Message.class));
         }
     }
 

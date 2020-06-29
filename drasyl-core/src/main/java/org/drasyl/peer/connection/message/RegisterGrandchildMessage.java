@@ -18,13 +18,17 @@
  */
 package org.drasyl.peer.connection.message;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.drasyl.identity.CompressedPublicKey;
 
 import java.util.Set;
 
 public class RegisterGrandchildMessage extends AbstractGrandchildMessage {
-    private RegisterGrandchildMessage() {
-        super();
+    @JsonCreator
+    private RegisterGrandchildMessage(@JsonProperty("id") String id,
+                                      @JsonProperty("grandchildren") Set<CompressedPublicKey> grandchildren) {
+        super(id, grandchildren);
     }
 
     /**

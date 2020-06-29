@@ -18,9 +18,13 @@
  */
 package org.drasyl.peer.connection.message;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.drasyl.identity.CompressedPublicKey;
 
 import java.util.Objects;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * This message is used as response to a {@link WhoAreYouMessage} and contains the public key of
@@ -30,14 +34,18 @@ public class IamMessage extends AbstractMessage implements ResponseMessage<WhoAr
     private final CompressedPublicKey publicKey;
     private final String correspondingId;
 
-    IamMessage() {
-        publicKey = null;
-        correspondingId = null;
+    @JsonCreator
+    public IamMessage(@JsonProperty("id") String id,
+                      @JsonProperty("publicKey") CompressedPublicKey publicKey,
+                      @JsonProperty("correspondingId") String correspondingId) {
+        super(id);
+        this.publicKey = requireNonNull(publicKey);
+        this.correspondingId = requireNonNull(correspondingId);
     }
 
     public IamMessage(CompressedPublicKey publicKey, String correspondingId) {
-        this.publicKey = publicKey;
-        this.correspondingId = correspondingId;
+        this.publicKey = requireNonNull(publicKey);
+        this.correspondingId = requireNonNull(correspondingId);
     }
 
     @Override

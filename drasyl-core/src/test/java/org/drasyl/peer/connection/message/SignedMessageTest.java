@@ -18,6 +18,7 @@
  */
 package org.drasyl.peer.connection.message;
 
+import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.Signature;
 import org.drasyl.identity.CompressedKeyPair;
@@ -36,6 +37,7 @@ import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
 class SignedMessageTest {
@@ -126,6 +128,13 @@ class SignedMessageTest {
                     (byte) 0xf2,
                     (byte) 0x97
             })), JACKSON_READER.readValue(json, Message.class));
+        }
+
+        @Test
+        void shouldRejectIncompleteData() {
+            String json = "{\"@type\":\"SignedMessage\",\"kid\":\"0313c96bed7252c22218972dd21d611fec413d76e9eaac2717ed76889dcd357edf\",\"signature\":{\"bytes\":\"MEQCIAESpHbepeb9cRDA5Hd0GErCQnpSj+GN2bQIFEO2AgN5AiAGJwpL9G2BEki8c+VdCcnvKloYXKCDYJSTYt3e5VTylw==\"}}\n";
+
+            assertThrows(ValueInstantiationException.class, () -> JACKSON_READER.readValue(json, Message.class));
         }
     }
 

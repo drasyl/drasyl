@@ -18,7 +18,9 @@
  */
 package org.drasyl.peer.connection.message;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.drasyl.crypto.Signable;
 import org.drasyl.crypto.Signature;
 import org.drasyl.identity.CompressedPublicKey;
@@ -45,17 +47,14 @@ public class SignedMessage implements Message, Signable {
     private final CompressedPublicKey kid;
     private Signature signature;
 
-    private SignedMessage() {
-        this.payload = null;
-        this.signature = null;
-        this.kid = null;
-    }
-
     public SignedMessage(Message payload, CompressedPublicKey kid) {
         this(payload, kid, null);
     }
 
-    public SignedMessage(Message payload, CompressedPublicKey kid, Signature signature) {
+    @JsonCreator
+    public SignedMessage(@JsonProperty("payload") Message payload,
+                         @JsonProperty("kid") CompressedPublicKey kid,
+                         @JsonProperty("signature") Signature signature) {
         this.payload = requireNonNull(payload);
         this.kid = kid;
         this.signature = signature;

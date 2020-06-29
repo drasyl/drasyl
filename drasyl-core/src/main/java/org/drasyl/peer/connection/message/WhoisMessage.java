@@ -18,6 +18,8 @@
  */
 package org.drasyl.peer.connection.message;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.PeerInformation;
 
@@ -33,10 +35,15 @@ public class WhoisMessage extends RelayableMessage implements RequestMessage {
     private final CompressedPublicKey requester;
     private final PeerInformation peerInformation;
 
-    WhoisMessage() {
-        super();
-        requester = null;
-        peerInformation = null;
+    @JsonCreator
+    private WhoisMessage(@JsonProperty("id") String id,
+                         @JsonProperty("hopCount") short hopCount,
+                         @JsonProperty("recipient") CompressedPublicKey recipient,
+                         @JsonProperty("requester") CompressedPublicKey requester,
+                         @JsonProperty("peerInformation") PeerInformation peerInformation) {
+        super(id, recipient, hopCount);
+        this.requester = requireNonNull(requester);
+        this.peerInformation = requireNonNull(peerInformation);
     }
 
     public WhoisMessage(CompressedPublicKey recipient,

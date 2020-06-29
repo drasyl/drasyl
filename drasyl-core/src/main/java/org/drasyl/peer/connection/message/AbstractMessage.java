@@ -22,6 +22,8 @@ import org.drasyl.crypto.Crypto;
 
 import java.util.Objects;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Message that represents a message from one node to another one.
  */
@@ -33,9 +35,7 @@ public abstract class AbstractMessage implements Message {
     }
 
     protected AbstractMessage(String id) {
-        Objects.requireNonNull(id);
-
-        this.id = id;
+        this.id = requireNonNull(id);
     }
 
     @Override
