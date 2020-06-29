@@ -41,6 +41,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class JoinMessageTest {
     @Mock
     private CompressedPublicKey publicKey;
+    private boolean childrenJoin = false;
     @Mock
     private Set<CompressedPublicKey> childrenAndGrandchildren;
     @Mock
@@ -59,6 +60,7 @@ class JoinMessageTest {
             assertEquals(new JoinMessage(
                     ProofOfWork.of(3556154),
                     CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"),
+                    false,
                     Set.of(CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458"))
             ), JACKSON_READER.readValue(json, Message.class));
         }
@@ -73,7 +75,7 @@ class JoinMessageTest {
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", JoinMessage.class.getSimpleName())
-                    .containsKeys("id", "userAgent", "proofOfWork", "publicKey", "childrenAndGrandchildren");
+                    .containsKeys("id", "userAgent", "proofOfWork", "publicKey", "childrenJoin", "childrenAndGrandchildren");
         }
     }
 
@@ -91,9 +93,9 @@ class JoinMessageTest {
     class Equals {
         @Test
         void notSameBecauseOfDifferentChildrenAndGrandchildren() {
-            JoinMessage message1 = new JoinMessage(proofOfWork, publicKey, childrenAndGrandchildren);
-            JoinMessage message2 = new JoinMessage(proofOfWork, publicKey, childrenAndGrandchildren);
-            JoinMessage message3 = new JoinMessage(proofOfWork2, publicKey2, Set.of());
+            JoinMessage message1 = new JoinMessage(proofOfWork, publicKey, childrenJoin, childrenAndGrandchildren);
+            JoinMessage message2 = new JoinMessage(proofOfWork, publicKey, childrenJoin, childrenAndGrandchildren);
+            JoinMessage message3 = new JoinMessage(proofOfWork2, publicKey2, childrenJoin, Set.of());
 
             assertEquals(message1, message2);
             assertNotEquals(message2, message3);
@@ -104,9 +106,9 @@ class JoinMessageTest {
     class HashCode {
         @Test
         void notSameBecauseOfDifferentChildrenAndGrandchildren() {
-            JoinMessage message1 = new JoinMessage(proofOfWork, publicKey, childrenAndGrandchildren);
-            JoinMessage message2 = new JoinMessage(proofOfWork, publicKey, childrenAndGrandchildren);
-            JoinMessage message3 = new JoinMessage(proofOfWork2, publicKey2, Set.of());
+            JoinMessage message1 = new JoinMessage(proofOfWork, publicKey, childrenJoin, childrenAndGrandchildren);
+            JoinMessage message2 = new JoinMessage(proofOfWork, publicKey, childrenJoin, childrenAndGrandchildren);
+            JoinMessage message3 = new JoinMessage(proofOfWork2, publicKey2, childrenJoin, Set.of());
 
             assertEquals(message1.hashCode(), message2.hashCode());
             assertNotEquals(message2.hashCode(), message3.hashCode());

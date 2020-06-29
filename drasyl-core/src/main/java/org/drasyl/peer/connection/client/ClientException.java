@@ -17,20 +17,19 @@
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.drasyl.peer.connection.superpeer;
+package org.drasyl.peer.connection.client;
 
 import org.drasyl.DrasylException;
-import org.drasyl.peer.connection.client.SuperPeerClient;
 
 /**
- * A SuperPeerClientException is thrown by the {@link SuperPeerClient} when errors occur.
+ * A ClientException is thrown by the {@link AbstractClient} when errors occur.
  */
-public class SuperPeerClientException extends DrasylException {
-    public SuperPeerClientException(Throwable cause) {
+public class ClientException extends DrasylException {
+    public ClientException(Throwable cause) {
         super(cause);
     }
 
-    public SuperPeerClientException(String cause) {
+    public ClientException(String cause) {
         super(cause);
     }
 }

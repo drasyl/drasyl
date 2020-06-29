@@ -39,8 +39,8 @@ import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.server.NodeServer;
 import org.drasyl.peer.connection.server.NodeServerException;
 import org.drasyl.peer.connection.server.TestNodeServer;
-import org.drasyl.peer.connection.superpeer.SuperPeerClientException;
-import org.drasyl.peer.connection.superpeer.TestSuperPeerClientChannelInitializer;
+import org.drasyl.peer.connection.client.ClientException;
+import org.drasyl.peer.connection.superpeer.TestClientChannelInitializer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -94,7 +94,7 @@ class ChunkedMessageIT {
     }
 
     @BeforeAll
-    static void beforeAll() throws IdentityManagerException, NodeServerException, CryptoException, SuperPeerClientException {
+    static void beforeAll() throws IdentityManagerException, NodeServerException, CryptoException, ClientException {
         workerGroup = new NioEventLoopGroup();
         bossGroup = new NioEventLoopGroup(1);
 
@@ -138,7 +138,7 @@ class ChunkedMessageIT {
                 .serverSSLEnabled(true)
                 .superPeerEndpoints(server.getEndpoints())
                 .superPeerPublicKey(CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"))
-                .superPeerChannelInitializer(TestSuperPeerClientChannelInitializer.class)
+                .superPeerChannelInitializer(TestClientChannelInitializer.class)
                 .build();
 
         session1 = clientSessionAfterJoin(config, server, identitySession1);
@@ -165,7 +165,7 @@ class ChunkedMessageIT {
 
     private static TestSuperPeerClient clientSessionAfterJoin(DrasylConfig config,
                                                               NodeServer server,
-                                                              Identity identity) throws SuperPeerClientException {
+                                                              Identity identity) throws ClientException {
         TestSuperPeerClient client = new TestSuperPeerClient(config, server, identity, workerGroup, true, true);
         client.open();
         awaitClientJoin(identity);

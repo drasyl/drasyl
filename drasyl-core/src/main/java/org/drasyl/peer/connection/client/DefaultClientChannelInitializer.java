@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection.superpeer;
+package org.drasyl.peer.connection.client;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
@@ -46,22 +46,22 @@ import static org.drasyl.peer.connection.handler.ExceptionHandler.EXCEPTION_HAND
 import static org.drasyl.peer.connection.handler.RelayableMessageGuard.HOP_COUNT_GUARD;
 import static org.drasyl.peer.connection.handler.SignatureHandler.SIGNATURE_HANDLER;
 import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_HANDLER;
-import static org.drasyl.peer.connection.superpeer.SuperPeerClientConnectionHandler.SUPER_PEER_CLIENT_CONNECTION_HANDLER;
-import static org.drasyl.peer.connection.superpeer.SuperPeerPublicKeyHandler.SUPER_PEER_PUBLIC_KEY;
-import static org.drasyl.peer.connection.superpeer.SuperPeerPublicKeyHandler.SuperPeerPublicKeyState.KEY_AVAILABLE;
+import static org.drasyl.peer.connection.client.ClientConnectionHandler.CLIENT_CONNECTION_HANDLER;
+import static org.drasyl.peer.connection.client.PublicKeyExchangeHandler.PUBLIC_KEY_EXCHANGE_HANDLER;
+import static org.drasyl.peer.connection.client.PublicKeyExchangeHandler.PublicKeyExchangeState.KEY_AVAILABLE;
 
 /**
  * Creates a newly configured {@link ChannelPipeline} for a ClientConnection to a node server.
  */
 @SuppressWarnings({ "java:S110", "java:S4818" })
-public class DefaultSuperPeerClientChannelInitializer extends SuperPeerClientChannelInitializer {
-    private static final Logger LOG = LoggerFactory.getLogger(DefaultSuperPeerClientChannelInitializer.class);
+public class DefaultClientChannelInitializer extends ClientChannelInitializer {
+    private static final Logger LOG = LoggerFactory.getLogger(DefaultClientChannelInitializer.class);
     protected static final String DRASYL_HANDSHAKE_AFTER_WEBSOCKET_HANDSHAKE = "drasylHandshakeAfterWebsocketHandshake";
-    private final SuperPeerClientEnvironment environment;
+    private final ClientEnvironment environment;
 
-    public DefaultSuperPeerClientChannelInitializer(SuperPeerClientEnvironment environment) {
-        super(environment.getConfig().getFlushBufferSize(), environment.getConfig().getSuperPeerIdleTimeout(),
-                environment.getConfig().getSuperPeerIdleRetries(), environment.getEndpoint());
+    public DefaultClientChannelInitializer(ClientEnvironment environment) {
+        super(environment.getConfig().getFlushBufferSize(), environment.getIdleTimeout(),
+                environment.getIdleRetries(), environment.getEndpoint());
         this.environment = environment;
     }
 
@@ -86,9 +86,9 @@ public class DefaultSuperPeerClientChannelInitializer extends SuperPeerClientCha
                     WebSocketClientProtocolHandler.ClientHandshakeStateEvent e = (WebSocketClientProtocolHandler.ClientHandshakeStateEvent) evt;
                     if (e == HANDSHAKE_COMPLETE) {
                         if (LOG.isTraceEnabled()) {
-                            LOG.trace("[{}]: WebSocket Handshake completed. Now adding SuperPeerPublicKeyHandler.", ctx.channel().id().asShortText());
+                            LOG.trace("[{}]: WebSocket Handshake completed. Now adding {}.", ctx.channel().id().asShortText(), PublicKeyExchangeHandler.class.getSimpleName());
                         }
-                        pipeline.addLast(SUPER_PEER_PUBLIC_KEY, new SuperPeerPublicKeyHandler(environment.getConfig().getSuperPeerPublicKey(), environment.getConfig().getServerHandshakeTimeout()));
+                        pipeline.addLast(PUBLIC_KEY_EXCHANGE_HANDLER, new PublicKeyExchangeHandler(environment.getServerPublicKey(), environment.getConfig().getServerHandshakeTimeout()));
                     }
                     else if (e == HANDSHAKE_TIMEOUT) {
                         if (LOG.isTraceEnabled()) {
@@ -97,14 +97,14 @@ public class DefaultSuperPeerClientChannelInitializer extends SuperPeerClientCha
                         ctx.close();
                     }
                 }
-                else if (evt instanceof SuperPeerPublicKeyHandler.SuperPeerPublicKeyState) {
-                    SuperPeerPublicKeyHandler.SuperPeerPublicKeyState e = (SuperPeerPublicKeyHandler.SuperPeerPublicKeyState) evt;
+                else if (evt instanceof PublicKeyExchangeHandler.PublicKeyExchangeState) {
+                    PublicKeyExchangeHandler.PublicKeyExchangeState e = (PublicKeyExchangeHandler.PublicKeyExchangeState) evt;
                     if (e == KEY_AVAILABLE) {
                         if (LOG.isTraceEnabled()) {
-                            LOG.trace("[{}]: Public key available. Now adding SuperPeerClientConnectionHandler.", ctx.channel().id().asShortText());
+                            LOG.trace("[{}]: Public key available. Now adding {}.", ctx.channel().id().asShortText(), ClientConnectionHandler.class.getSimpleName());
                         }
 
-                        pipeline.addLast(SUPER_PEER_CLIENT_CONNECTION_HANDLER, new SuperPeerClientConnectionHandler(environment));
+                        pipeline.addLast(CLIENT_CONNECTION_HANDLER, new ClientConnectionHandler(environment));
                         pipeline.remove(this);
                     }
                 }
@@ -118,7 +118,7 @@ public class DefaultSuperPeerClientChannelInitializer extends SuperPeerClientCha
     }
 
     @Override
-    protected SslHandler generateSslContext(SocketChannel ch) throws SuperPeerClientException {
+    protected SslHandler generateSslContext(SocketChannel ch) throws ClientException {
         if (WebSocketUtil.isWebSocketSecureURI(target)) {
             try {
                 SslContext sslContext = SslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE)
@@ -126,7 +126,7 @@ public class DefaultSuperPeerClientChannelInitializer extends SuperPeerClientCha
                 return sslContext.newHandler(ch.alloc(), target.getHost(), WebSocketUtil.webSocketPort(target));
             }
             catch (SSLException e) {
-                throw new SuperPeerClientException(e);
+                throw new ClientException(e);
             }
         }
         return null;

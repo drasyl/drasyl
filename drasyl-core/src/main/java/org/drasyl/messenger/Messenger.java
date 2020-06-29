@@ -19,6 +19,7 @@
 package org.drasyl.messenger;
 
 import com.google.common.collect.Lists;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.RelayableMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,19 +38,22 @@ public class Messenger {
     private static final Logger LOG = LoggerFactory.getLogger(Messenger.class);
     private final MessageSink loopbackSink;
     private MessageSink intraVmSink;
+    private final MultiMessageSink clientSink;
     private MessageSink serverSink;
     private MessageSink superPeerSink;
 
     public Messenger(MessageSink loopbackSink) {
-        this(loopbackSink, null, null, null);
+        this(loopbackSink, null, new MultiMessageSink(), null, null);
     }
 
     Messenger(MessageSink loopbackSink,
               MessageSink intraVmSink,
+              MultiMessageSink clientSink,
               MessageSink serverSink,
               MessageSink superPeerSink) {
         this.loopbackSink = requireNonNull(loopbackSink);
         this.intraVmSink = intraVmSink;
+        this.clientSink = requireNonNull(clientSink);
         this.serverSink = serverSink;
         this.superPeerSink = superPeerSink;
     }
@@ -70,7 +74,7 @@ public class Messenger {
     public void send(RelayableMessage message) throws MessengerException {
         LOG.trace("Send Message: {}", message);
 
-        List<MessageSink> messageSinks = Lists.newArrayList(loopbackSink, intraVmSink, serverSink, superPeerSink)
+        List<MessageSink> messageSinks = Lists.newArrayList(loopbackSink, intraVmSink, clientSink, serverSink, superPeerSink)
                 .stream().filter(Objects::nonNull).collect(Collectors.toList());
         for (MessageSink messageSink : messageSinks) {
             try {
@@ -92,6 +96,14 @@ public class Messenger {
 
     public void unsetIntraVmSink() {
         this.intraVmSink = null;
+    }
+
+    public void addClientSink(CompressedPublicKey publicKey, MessageSink messageSink) {
+        clientSink.add(publicKey, messageSink);
+    }
+
+    public void removeClientSink(CompressedPublicKey publicKey) {
+        clientSink.remove(publicKey);
     }
 
     public void setServerSink(MessageSink serverSink) {

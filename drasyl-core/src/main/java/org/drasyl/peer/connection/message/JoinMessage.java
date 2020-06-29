@@ -33,12 +33,33 @@ import static java.util.Objects.requireNonNull;
 public class JoinMessage extends AbstractMessageWithUserAgent implements RequestMessage {
     private final ProofOfWork proofOfWork;
     private final CompressedPublicKey publicKey;
+
+    private final boolean childrenJoin;
     private final Set<CompressedPublicKey> childrenAndGrandchildren;
 
     protected JoinMessage() {
         proofOfWork = null;
         publicKey = null;
+        childrenJoin = false;
         childrenAndGrandchildren = null;
+    }
+
+    /**
+     * Creates a new join message.
+     *
+     * @param proofOfWork              the proof of work
+     * @param publicKey                the identity of the joining node
+     * @param childrenJoin             join peer as children
+     * @param childrenAndGrandchildren the (grand-)children of this node
+     */
+    public JoinMessage(ProofOfWork proofOfWork,
+                       CompressedPublicKey publicKey,
+                       boolean childrenJoin,
+                       Set<CompressedPublicKey> childrenAndGrandchildren) {
+        this.proofOfWork = requireNonNull(proofOfWork);
+        this.publicKey = requireNonNull(publicKey);
+        this.childrenJoin = childrenJoin;
+        this.childrenAndGrandchildren = requireNonNull(childrenAndGrandchildren);
     }
 
     /**
@@ -51,9 +72,11 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
     public JoinMessage(ProofOfWork proofOfWork,
                        CompressedPublicKey publicKey,
                        Set<CompressedPublicKey> childrenAndGrandchildren) {
-        this.proofOfWork = requireNonNull(proofOfWork);
-        this.publicKey = requireNonNull(publicKey);
-        this.childrenAndGrandchildren = requireNonNull(childrenAndGrandchildren);
+        this(proofOfWork, publicKey, true, childrenAndGrandchildren);
+    }
+
+    public boolean isChildrenJoin() {
+        return childrenJoin;
     }
 
     public Set<CompressedPublicKey> getChildrenAndGrandchildren() {
@@ -70,7 +93,7 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), publicKey, proofOfWork);
+        return Objects.hash(super.hashCode(), proofOfWork, publicKey, childrenJoin, childrenAndGrandchildren);
     }
 
     @Override
@@ -84,19 +107,21 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
         if (!super.equals(o)) {
             return false;
         }
-        JoinMessage join = (JoinMessage) o;
-        return Objects.equals(publicKey, join.publicKey) &&
-                Objects.equals(childrenAndGrandchildren, join.childrenAndGrandchildren) &&
-                Objects.equals(proofOfWork, join.proofOfWork);
+        JoinMessage that = (JoinMessage) o;
+        return childrenJoin == that.childrenJoin &&
+                Objects.equals(proofOfWork, that.proofOfWork) &&
+                Objects.equals(publicKey, that.publicKey) &&
+                Objects.equals(childrenAndGrandchildren, that.childrenAndGrandchildren);
     }
 
     @Override
     public String toString() {
         return "JoinMessage{" +
-                "childrenAndGrandchildren=" + childrenAndGrandchildren +
+                "proofOfWork=" + proofOfWork +
+                ", publicKey=" + publicKey +
+                ", childrenJoin=" + childrenJoin +
+                ", childrenAndGrandchildren=" + childrenAndGrandchildren +
                 ", id='" + id + '\'' +
-                ", identity=" + publicKey +
-                ", proofOfWork=" + proofOfWork +
                 '}';
     }
 }

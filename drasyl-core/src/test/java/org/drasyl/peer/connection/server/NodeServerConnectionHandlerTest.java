@@ -40,6 +40,7 @@ import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.message.UnregisterGrandchildMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
 import org.drasyl.util.Pair;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
@@ -184,93 +185,126 @@ class NodeServerConnectionHandlerTest {
         assertFalse(channel.isOpen());
     }
 
-    @Test
-    void shouldAddGrandchildRouteAndInformSuperPeerOnRegisterGrandchildMessageAndRemoveGrandchildRouteAndInformSuperPeerOnClose() {
-        when(environment.getPeersManager()).thenReturn(peersManager);
-        when(handshakeFuture.isDone()).thenReturn(true);
-        when(registerGrandchildMessage.getGrandchildren()).thenReturn(Set.of(grandchildrenPublicKey0));
-        when(peersManager.getSuperPeer()).thenReturn(Pair.of(superPeerPublicKey, superPeerInformation));
-        when(superPeerInformation.getPaths()).thenReturn(Set.of(superPeerPath));
+    @Nested
+    class ClientAsChildren {
+        @Test
+        void shouldAddGrandchildRouteAndInformSuperPeerOnRegisterGrandchildMessageAndRemoveGrandchildRouteAndInformSuperPeerOnClose() {
+            when(environment.getPeersManager()).thenReturn(peersManager);
+            when(handshakeFuture.isDone()).thenReturn(true);
+            when(registerGrandchildMessage.getGrandchildren()).thenReturn(Set.of(grandchildrenPublicKey0));
+            when(peersManager.getSuperPeer()).thenReturn(Pair.of(superPeerPublicKey, superPeerInformation));
+            when(superPeerInformation.getPaths()).thenReturn(Set.of(superPeerPath));
 
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
-        channel.attr(ATTRIBUTE_PUBLIC_KEY).set(publicKey0);
+            NodeServerConnectionHandler handler = new NodeServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
+            EmbeddedChannel channel = new EmbeddedChannel(handler);
+            channel.attr(ATTRIBUTE_PUBLIC_KEY).set(publicKey0);
 
-        channel.writeInbound(registerGrandchildMessage);
-        channel.flush();
+            channel.writeInbound(registerGrandchildMessage);
+            channel.flush();
 
-        // update peers manager
-        verify(peersManager).addGrandchildrenRoute(grandchildrenPublicKey0, publicKey0);
+            // update peers manager
+            verify(peersManager).addGrandchildrenRoute(grandchildrenPublicKey0, publicKey0);
 
-        // inform super peer
-        verify(superPeerPath).send(new RegisterGrandchildMessage(Set.of(grandchildrenPublicKey0)));
+            // inform super peer
+            verify(superPeerPath).send(new RegisterGrandchildMessage(Set.of(grandchildrenPublicKey0)));
 
-        channel.close();
+            channel.close();
 
-        // update peers manager
-        verify(peersManager).removeGrandchildrenRoute(grandchildrenPublicKey0);
+            // update peers manager
+            verify(peersManager).removeGrandchildrenRoute(grandchildrenPublicKey0);
 
-        // inform super peer
-        verify(superPeerPath).send(new UnregisterGrandchildMessage(Set.of(grandchildrenPublicKey0)));
+            // inform super peer
+            verify(superPeerPath).send(new UnregisterGrandchildMessage(Set.of(grandchildrenPublicKey0)));
+        }
+
+        @Test
+        void shouldRemoveGrandchildRouteAndInformSuperPeerOnUnregisterGrandchildMessage() {
+            when(environment.getPeersManager()).thenReturn(peersManager);
+            when(handshakeFuture.isDone()).thenReturn(true);
+            when(unregisterGrandchildrenMessage.getGrandchildren()).thenReturn(Set.of(grandchildrenPublicKey0));
+            when(peersManager.getSuperPeer()).thenReturn(Pair.of(superPeerPublicKey, superPeerInformation));
+            when(superPeerInformation.getPaths()).thenReturn(Set.of(superPeerPath));
+
+            NodeServerConnectionHandler handler = new NodeServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
+            EmbeddedChannel channel = new EmbeddedChannel(handler);
+            channel.attr(ATTRIBUTE_PUBLIC_KEY).set(publicKey0);
+
+            channel.writeInbound(unregisterGrandchildrenMessage);
+            channel.flush();
+
+            // update peers manager
+            verify(peersManager).removeGrandchildrenRoute(grandchildrenPublicKey0);
+
+            // inform super peer
+            verify(superPeerPath).send(new UnregisterGrandchildMessage(Set.of(grandchildrenPublicKey0)));
+        }
+
+        @Test
+        void shouldAddPeerInformationAndGrandchildRouteAndInformSuperPeerOnSessionCreationAndRemovePeerInformationAndGrandchildRouteAndInformSuperPeerOnClose() {
+            when(environment.getPeersManager()).thenReturn(peersManager);
+            when(environment.getChannelGroup()).thenReturn(channelGroup);
+            when(offerMessage.getId()).thenReturn("123");
+            when(requestMessage.getPublicKey()).thenReturn(publicKey0);
+            when(requestMessage.getChildrenAndGrandchildren()).thenReturn(Set.of(grandchildrenPublicKey0));
+            when(requestMessage.isChildrenJoin()).thenReturn(true);
+            when(statusMessage.getCorrespondingId()).thenReturn("123");
+            when(statusMessage.getCode()).thenReturn(STATUS_OK);
+            when(peersManager.getSuperPeer()).thenReturn(Pair.of(superPeerPublicKey, superPeerInformation));
+            when(superPeerInformation.getPaths()).thenReturn(Set.of(superPeerPath));
+
+            NodeServerConnectionHandler handler = new NodeServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
+            EmbeddedChannel channel = new EmbeddedChannel(handler);
+            channel.attr(ATTRIBUTE_PUBLIC_KEY).set(publicKey0);
+
+            channel.writeInbound(statusMessage);
+            channel.flush();
+
+            Set<CompressedPublicKey> childrenAndGrandchildren = Set.of(publicKey0, grandchildrenPublicKey0);
+
+            // update peers manager
+            verify(peersManager).addPeerInformationAndAddChildren(eq(publicKey0), any());
+            verify(peersManager).addGrandchildrenRoute(grandchildrenPublicKey0, publicKey0);
+
+            // inform super peer
+            verify(superPeerPath).send(new RegisterGrandchildMessage(childrenAndGrandchildren));
+
+            channel.close();
+
+            // update peers manager
+            verify(peersManager).removeChildrenAndRemovePeerInformation(eq(publicKey0), any());
+            verify(peersManager).removeGrandchildrenRoute(grandchildrenPublicKey0);
+
+            // inform super peer
+            verify(superPeerPath).send(new UnregisterGrandchildMessage(childrenAndGrandchildren));
+        }
     }
 
-    @Test
-    void shouldRemoveGrandchildRouteAndInformSuperPeerOnUnregisterGrandchildMessage() {
-        when(environment.getPeersManager()).thenReturn(peersManager);
-        when(handshakeFuture.isDone()).thenReturn(true);
-        when(unregisterGrandchildrenMessage.getGrandchildren()).thenReturn(Set.of(grandchildrenPublicKey0));
-        when(peersManager.getSuperPeer()).thenReturn(Pair.of(superPeerPublicKey, superPeerInformation));
-        when(superPeerInformation.getPaths()).thenReturn(Set.of(superPeerPath));
+    @Nested
+    class ClientAsPeer {
+        @Test
+        void shouldAddPeerInformationOnSessionCreationAndRemovePeerInformationOnClose() {
+            when(environment.getPeersManager()).thenReturn(peersManager);
+            when(environment.getChannelGroup()).thenReturn(channelGroup);
+            when(offerMessage.getId()).thenReturn("123");
+            when(requestMessage.getPublicKey()).thenReturn(publicKey0);
+            when(requestMessage.isChildrenJoin()).thenReturn(false);
+            when(statusMessage.getCorrespondingId()).thenReturn("123");
+            when(statusMessage.getCode()).thenReturn(STATUS_OK);
 
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
-        channel.attr(ATTRIBUTE_PUBLIC_KEY).set(publicKey0);
+            NodeServerConnectionHandler handler = new NodeServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
+            EmbeddedChannel channel = new EmbeddedChannel(handler);
+            channel.attr(ATTRIBUTE_PUBLIC_KEY).set(publicKey0);
 
-        channel.writeInbound(unregisterGrandchildrenMessage);
-        channel.flush();
+            channel.writeInbound(statusMessage);
+            channel.flush();
 
-        // update peers manager
-        verify(peersManager).removeGrandchildrenRoute(grandchildrenPublicKey0);
+            // update peers manager
+            verify(peersManager).addPeerInformation(eq(publicKey0), any());
 
-        // inform super peer
-        verify(superPeerPath).send(new UnregisterGrandchildMessage(Set.of(grandchildrenPublicKey0)));
-    }
+            channel.close();
 
-    @Test
-    void shouldAddGrandchildRouteAndInformSuperPeerOnSessionCreationAndRemoveGrandchildRouteAndInformSuperPeerOnClose() {
-        when(environment.getPeersManager()).thenReturn(peersManager);
-        when(environment.getChannelGroup()).thenReturn(channelGroup);
-        when(offerMessage.getId()).thenReturn("123");
-        when(requestMessage.getPublicKey()).thenReturn(publicKey0);
-        when(requestMessage.getChildrenAndGrandchildren()).thenReturn(Set.of(grandchildrenPublicKey0));
-        when(statusMessage.getCorrespondingId()).thenReturn("123");
-        when(statusMessage.getCode()).thenReturn(STATUS_OK);
-        when(peersManager.getSuperPeer()).thenReturn(Pair.of(superPeerPublicKey, superPeerInformation));
-        when(superPeerInformation.getPaths()).thenReturn(Set.of(superPeerPath));
-
-        NodeServerConnectionHandler handler = new NodeServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
-        channel.attr(ATTRIBUTE_PUBLIC_KEY).set(publicKey0);
-
-        channel.writeInbound(statusMessage);
-        channel.flush();
-
-        Set<CompressedPublicKey> childrenAndGrandchildren = Set.of(publicKey0, grandchildrenPublicKey0);
-
-        // update peers manager
-        verify(peersManager).addPeerInformationAndAddChildren(eq(publicKey0), any());
-        verify(peersManager).addGrandchildrenRoute(grandchildrenPublicKey0, publicKey0);
-
-        // inform super peer
-        verify(superPeerPath).send(new RegisterGrandchildMessage(childrenAndGrandchildren));
-
-        channel.close();
-
-        // update peers manager
-        verify(peersManager).removeChildrenAndRemovePeerInformation(eq(publicKey0), any());
-        verify(peersManager).removeGrandchildrenRoute(grandchildrenPublicKey0);
-
-        // inform super peer
-        verify(superPeerPath).send(new UnregisterGrandchildMessage(childrenAndGrandchildren));
+            // update peers manager
+            verify(peersManager).removePeerInformation(eq(publicKey0), any());
+        }
     }
 }
