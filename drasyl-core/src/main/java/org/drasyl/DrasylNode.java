@@ -472,18 +472,17 @@ public abstract class DrasylNode {
         }
         else if (message instanceof WhoisMessage) {
             WhoisMessage whoisMessage = (WhoisMessage) message;
+            peersManager.addPeerInformation(whoisMessage.getRequester(), whoisMessage.getPeerInformation());
 
-            if (!server.getEndpoints().isEmpty()) {
-                CompressedPublicKey myPublicKey = identityManager.getPublicKey();
-                PeerInformation myPeerInformation = PeerInformation.of(server.getEndpoints());
-                IdentityMessage identityMessage = new IdentityMessage(whoisMessage.getRequester(), myPublicKey, myPeerInformation, whoisMessage.getId());
+            CompressedPublicKey myPublicKey = identityManager.getPublicKey();
+            PeerInformation myPeerInformation = PeerInformation.of(server.getEndpoints());
+            IdentityMessage identityMessage = new IdentityMessage(whoisMessage.getRequester(), myPublicKey, myPeerInformation, whoisMessage.getId());
 
-                try {
-                    messenger.send(identityMessage);
-                }
-                catch (MessengerException e) {
-                    LOG.info("Unable to reply to {}: {}", whoisMessage, e.getMessage());
-                }
+            try {
+                messenger.send(identityMessage);
+            }
+            catch (MessengerException e) {
+                LOG.info("Unable to reply to {}: {}", whoisMessage, e.getMessage());
             }
         }
         else if (message instanceof IdentityMessage) {
