@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection.superpeer;
+package org.drasyl.peer.connection.client;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -27,6 +27,7 @@ import io.netty.util.Attribute;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.peer.connection.client.PublicKeyExchangeHandler;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.IamMessage;
 import org.drasyl.peer.connection.message.WhoAreYouMessage;
@@ -53,7 +54,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class SuperPeerPublicKeyHandlerTest {
+class PublicKeyExchangeHandlerTest {
     @Mock
     private EventExecutor eventExecutor;
     @Mock
@@ -79,7 +80,7 @@ class SuperPeerPublicKeyHandlerTest {
 
     @Test
     void shouldSendRequestOnHandlerAdded() {
-        SuperPeerPublicKeyHandler handler = new SuperPeerPublicKeyHandler(mockedPublicKey, timeout, requestID, timeoutFuture);
+        PublicKeyExchangeHandler handler = new PublicKeyExchangeHandler(mockedPublicKey, timeout, requestID, timeoutFuture);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         assertEquals(new WhoAreYouMessage(), channel.readOutbound());
@@ -91,12 +92,12 @@ class SuperPeerPublicKeyHandlerTest {
         when(mockedChannel.attr(ATTRIBUTE_PUBLIC_KEY)).thenReturn(mockedAttribute);
         when(ctx.pipeline()).thenReturn(pipeline);
 
-        SuperPeerPublicKeyHandler handler = new SuperPeerPublicKeyHandler(mockedPublicKey, timeout, requestID, timeoutFuture);
+        PublicKeyExchangeHandler handler = new PublicKeyExchangeHandler(mockedPublicKey, timeout, requestID, timeoutFuture);
 
         IamMessage msg = new IamMessage(mockedPublicKey, requestID);
         handler.channelRead0(ctx, msg);
 
-        verify(pipeline).fireUserEventTriggered(eq(SuperPeerPublicKeyHandler.SuperPeerPublicKeyState.KEY_AVAILABLE));
+        verify(pipeline).fireUserEventTriggered(eq(PublicKeyExchangeHandler.PublicKeyExchangeState.KEY_AVAILABLE));
         verify(pipeline).remove(handler);
     }
 
@@ -106,12 +107,12 @@ class SuperPeerPublicKeyHandlerTest {
         when(mockedChannel.attr(ATTRIBUTE_PUBLIC_KEY)).thenReturn(mockedAttribute);
         when(ctx.pipeline()).thenReturn(pipeline);
 
-        SuperPeerPublicKeyHandler handler = new SuperPeerPublicKeyHandler(null, timeout, requestID, timeoutFuture);
+        PublicKeyExchangeHandler handler = new PublicKeyExchangeHandler(null, timeout, requestID, timeoutFuture);
 
         IamMessage msg = new IamMessage(mockedPublicKey, requestID);
         handler.channelRead0(ctx, msg);
 
-        verify(pipeline).fireUserEventTriggered(eq(SuperPeerPublicKeyHandler.SuperPeerPublicKeyState.KEY_AVAILABLE));
+        verify(pipeline).fireUserEventTriggered(eq(PublicKeyExchangeHandler.PublicKeyExchangeState.KEY_AVAILABLE));
         verify(pipeline).remove(handler);
     }
 
@@ -119,26 +120,26 @@ class SuperPeerPublicKeyHandlerTest {
     void shouldCloseConnectionOnWrongKey() throws Exception {
         when(ctx.writeAndFlush(any())).thenReturn(mock(ChannelFuture.class));
 
-        SuperPeerPublicKeyHandler handler = new SuperPeerPublicKeyHandler(mock(CompressedPublicKey.class), timeout, requestID, timeoutFuture);
+        PublicKeyExchangeHandler handler = new PublicKeyExchangeHandler(mock(CompressedPublicKey.class), timeout, requestID, timeoutFuture);
 
         IamMessage msg = new IamMessage(mockedPublicKey, requestID);
         handler.channelRead0(ctx, msg);
 
         verify(ctx).writeAndFlush(eq(new ConnectionExceptionMessage(CONNECTION_ERROR_WRONG_PUBLIC_KEY)));
-        verify(pipeline, never()).fireUserEventTriggered(eq(SuperPeerPublicKeyHandler.SuperPeerPublicKeyState.KEY_AVAILABLE));
+        verify(pipeline, never()).fireUserEventTriggered(eq(PublicKeyExchangeHandler.PublicKeyExchangeState.KEY_AVAILABLE));
         verify(pipeline, never()).remove(handler);
     }
 
     @Test
     void shouldNotMatchingMessagePassOn() throws Exception {
-        SuperPeerPublicKeyHandler handler = new SuperPeerPublicKeyHandler(mock(CompressedPublicKey.class), timeout, requestID, timeoutFuture);
+        PublicKeyExchangeHandler handler = new PublicKeyExchangeHandler(mock(CompressedPublicKey.class), timeout, requestID, timeoutFuture);
 
         IamMessage msg = new IamMessage(mockedPublicKey, "id2");
         handler.channelRead0(ctx, msg);
 
         verify(ctx).fireChannelRead(msg);
         verify(ctx, never()).writeAndFlush(eq(new ConnectionExceptionMessage(CONNECTION_ERROR_WRONG_PUBLIC_KEY)));
-        verify(pipeline, never()).fireUserEventTriggered(eq(SuperPeerPublicKeyHandler.SuperPeerPublicKeyState.KEY_AVAILABLE));
+        verify(pipeline, never()).fireUserEventTriggered(eq(PublicKeyExchangeHandler.PublicKeyExchangeState.KEY_AVAILABLE));
         verify(pipeline, never()).remove(handler);
     }
 
@@ -147,7 +148,7 @@ class SuperPeerPublicKeyHandlerTest {
         final ArgumentCaptor<Callable> captor = ArgumentCaptor.forClass(Callable.class);
         when(ctx.executor()).thenReturn(eventExecutor);
 
-        SuperPeerPublicKeyHandler handler = new SuperPeerPublicKeyHandler(mockedPublicKey, timeout);
+        PublicKeyExchangeHandler handler = new PublicKeyExchangeHandler(mockedPublicKey, timeout);
         handler.handlerAdded(ctx);
 
         verify(eventExecutor).schedule(captor.capture(), eq(timeout.toMillis()), eq(TimeUnit.MILLISECONDS));

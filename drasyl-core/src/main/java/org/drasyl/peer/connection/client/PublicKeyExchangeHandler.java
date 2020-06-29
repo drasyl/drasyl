@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection.superpeer;
+package org.drasyl.peer.connection.client;
 
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
@@ -34,30 +34,31 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_HANDSHAKE_TIMEOUT;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_WRONG_PUBLIC_KEY;
 import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
+import static org.drasyl.peer.connection.client.PublicKeyExchangeHandler.PublicKeyExchangeState.KEY_AVAILABLE;
 
 /**
  * This handler obtains the PublicKey of the super peer so that a join proof can be issued later.
  * The handler issues a UserEvent as soon as the PublicKey is available.
  */
-public class SuperPeerPublicKeyHandler extends SimpleChannelInboundHandler<IamMessage> {
-    public static final String SUPER_PEER_PUBLIC_KEY = "superPeerPublicKey";
-    private final CompressedPublicKey superPeerPublicKey;
+public class PublicKeyExchangeHandler extends SimpleChannelInboundHandler<IamMessage> {
+    public static final String PUBLIC_KEY_EXCHANGE_HANDLER = "publicKeyExchangeHandler";
+    private final CompressedPublicKey serverPublicKey;
     private final Duration timeout;
     private String requestID;
     protected ScheduledFuture<?> timeoutFuture;
 
-    SuperPeerPublicKeyHandler(CompressedPublicKey superPeerPublicKey,
-                              Duration timeout,
-                              String requestID,
-                              ScheduledFuture<?> timeoutFuture) {
-        this.superPeerPublicKey = superPeerPublicKey;
+    PublicKeyExchangeHandler(CompressedPublicKey serverPublicKey,
+                             Duration timeout,
+                             String requestID,
+                             ScheduledFuture<?> timeoutFuture) {
+        this.serverPublicKey = serverPublicKey;
         this.timeout = timeout;
         this.requestID = requestID;
         this.timeoutFuture = timeoutFuture;
     }
 
-    public SuperPeerPublicKeyHandler(CompressedPublicKey superPeerPublicKey, Duration timeout) {
-        this(superPeerPublicKey, timeout, null, null);
+    public PublicKeyExchangeHandler(CompressedPublicKey serverPublicKey, Duration timeout) {
+        this(serverPublicKey, timeout, null, null);
     }
 
     @Override
@@ -76,7 +77,7 @@ public class SuperPeerPublicKeyHandler extends SimpleChannelInboundHandler<IamMe
         // attach identity to channel (this information is required for validation signatures of incoming messages)
         ctx.channel().attr(ATTRIBUTE_PUBLIC_KEY).set(identity);
         // emit event
-        ctx.pipeline().fireUserEventTriggered(SuperPeerPublicKeyState.KEY_AVAILABLE);
+        ctx.pipeline().fireUserEventTriggered(KEY_AVAILABLE);
         // remove this handler from pipeline
         ctx.pipeline().remove(this);
     }
@@ -86,7 +87,7 @@ public class SuperPeerPublicKeyHandler extends SimpleChannelInboundHandler<IamMe
                                 IamMessage msg) throws Exception {
         if (msg.getCorrespondingId().equals(requestID)) {
             timeoutFuture.cancel(true);
-            if (superPeerPublicKey != null && !superPeerPublicKey.equals(msg.getPublicKey())) {
+            if (serverPublicKey != null && !serverPublicKey.equals(msg.getPublicKey())) {
                 ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_WRONG_PUBLIC_KEY)).addListener(ChannelFutureListener.CLOSE);
             }
             else {
@@ -99,7 +100,7 @@ public class SuperPeerPublicKeyHandler extends SimpleChannelInboundHandler<IamMe
         }
     }
 
-    public enum SuperPeerPublicKeyState {
+    public enum PublicKeyExchangeState {
         KEY_AVAILABLE
     }
 }

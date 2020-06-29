@@ -41,6 +41,8 @@ class MessengerTest {
     @Mock
     private MessageSink intraVmSink;
     @Mock
+    private MultiMessageSink directConnectionSink;
+    @Mock
     private MessageSink serverSink;
     @Mock
     private MessageSink superPeerSink;
@@ -55,7 +57,7 @@ class MessengerTest {
     class Send {
         @Test
         void shouldSendMessageToLoopbackSinkIfAllSinksArePresent() throws DrasylException {
-            Messenger messenger = new Messenger(loopbackSink, intraVmSink, serverSink, superPeerSink);
+            Messenger messenger = new Messenger(loopbackSink, intraVmSink, directConnectionSink, serverSink, superPeerSink);
             messenger.send(applicationMessage);
 
             verify(loopbackSink).send(applicationMessage);
@@ -68,7 +70,7 @@ class MessengerTest {
         void shouldSendMessageToIntraVmSinkIfLoopbackSinkCanNotSendMessage() throws DrasylException {
             doThrow(noPathToIdentityException).when(loopbackSink).send(any());
 
-            Messenger messenger = new Messenger(loopbackSink, intraVmSink, serverSink, superPeerSink);
+            Messenger messenger = new Messenger(loopbackSink, intraVmSink, directConnectionSink, serverSink, superPeerSink);
             messenger.send(applicationMessage);
 
             verify(intraVmSink).send(applicationMessage);
@@ -77,13 +79,14 @@ class MessengerTest {
         }
 
         @Test
-        void shouldSendMessageToServerIfIntraVmSinkIsNotPresent() throws DrasylException {
+        void shouldSendMessageToDirectConnectionsSinkIfIntraVmSinkIsNotPresent() throws DrasylException {
             doThrow(NoPathToIdentityException.class).when(loopbackSink).send(any());
 
-            Messenger messenger = new Messenger(loopbackSink, null, serverSink, superPeerSink);
+            Messenger messenger = new Messenger(loopbackSink, null, directConnectionSink, serverSink, superPeerSink);
             messenger.send(applicationMessage);
 
-            verify(serverSink).send(applicationMessage);
+            verify(directConnectionSink).send(applicationMessage);
+            verify(serverSink, never()).send(any());
             verify(superPeerSink, never()).send(any());
         }
 
@@ -92,10 +95,11 @@ class MessengerTest {
             when(applicationMessage.getRecipient()).thenReturn(address);
             doThrow(noPathToIdentityException).when(loopbackSink).send(any());
             doThrow(noPathToIdentityException).when(intraVmSink).send(any());
+            doThrow(noPathToIdentityException).when(directConnectionSink).send(any());
             doThrow(noPathToIdentityException).when(serverSink).send(any());
             doThrow(noPathToIdentityException).when(superPeerSink).send(any());
 
-            Messenger messenger = new Messenger(loopbackSink, intraVmSink, serverSink, superPeerSink);
+            Messenger messenger = new Messenger(loopbackSink, intraVmSink, directConnectionSink, serverSink, superPeerSink);
 
             assertThrows(NoPathToIdentityException.class, () -> messenger.send(applicationMessage));
         }
@@ -104,8 +108,9 @@ class MessengerTest {
         void shouldThrowExceptionIfNoSinkCanProcessMessage() throws MessageSinkException {
             when(applicationMessage.getRecipient()).thenReturn(address);
             doThrow(NoPathToIdentityException.class).when(loopbackSink).send(any());
+            doThrow(NoPathToIdentityException.class).when(directConnectionSink).send(any());
 
-            Messenger messenger = new Messenger(loopbackSink, null, null, null);
+            Messenger messenger = new Messenger(loopbackSink, null, directConnectionSink, null, null);
 
             assertThrows(NoPathToIdentityException.class, () -> messenger.send(applicationMessage));
         }

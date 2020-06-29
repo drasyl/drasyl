@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection.superpeer;
+package org.drasyl.peer.connection.client;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.ScheduledFuture;
@@ -25,24 +25,23 @@ import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.messenger.Messenger;
-import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.client.ClientConnectionHandler;
+import org.drasyl.peer.connection.client.ClientEnvironment;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.net.URI;
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static java.time.Duration.ofMillis;
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_SERVICE_UNAVAILABLE;
 import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -53,7 +52,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class SuperPeerClientConnectionHandlerTest {
+class ClientConnectionHandlerTest {
     private EmbeddedChannel channel;
     @Mock
     private Messenger messenger;
@@ -68,7 +67,7 @@ class SuperPeerClientConnectionHandlerTest {
     @Mock
     private StatusMessage statusMessage;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-    private SuperPeerClientEnvironment environment;
+    private ClientEnvironment environment;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private WelcomeMessage offerMessage;
     @Mock
@@ -80,7 +79,7 @@ class SuperPeerClientConnectionHandlerTest {
     void shouldCloseChannelOnQuitMessage() {
         when(handshakeFuture.isDone()).thenReturn(true);
 
-        SuperPeerClientConnectionHandler handler = new SuperPeerClientConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage);
+        ClientConnectionHandler handler = new ClientConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage);
         channel = new EmbeddedChannel(handler);
         channel.readOutbound(); // join message
         channel.flush();
@@ -98,7 +97,7 @@ class SuperPeerClientConnectionHandlerTest {
         when(statusMessage.getCorrespondingId()).thenReturn("123");
         when(statusMessage.getCode()).thenReturn(STATUS_SERVICE_UNAVAILABLE);
 
-        SuperPeerClientConnectionHandler handler = new SuperPeerClientConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage);
+        ClientConnectionHandler handler = new ClientConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage);
         channel = new EmbeddedChannel(handler);
         channel.readOutbound(); // join message
         channel.flush();
@@ -108,31 +107,65 @@ class SuperPeerClientConnectionHandlerTest {
         verify(handshakeFuture).completeExceptionally(any());
     }
 
-    @Test
-    void shouldAddPeerInformationAndSetSuperPeerAndEmitNodeOnlineEventOnSessionCreationAndRemovePeerInformationAndUnsetSuperPeerAndEmitNodeOfflineEventOnClose() {
-        when(requestMessage.getId()).thenReturn("123");
-        when(offerMessage.getCorrespondingId()).thenReturn("123");
-        when(offerMessage.getId()).thenReturn("456");
-        when(environment.getPeersManager()).thenReturn(peersManager);
+    @Nested
+    class ServerAsSuperPeer {
+        @Test
+        void shouldAddPeerInformationAndSetSuperPeerAndEmitNodeOnlineEventOnSessionCreationAndRemovePeerInformationAndUnsetSuperPeerAndEmitNodeOfflineEventOnClose() {
+            when(requestMessage.getId()).thenReturn("123");
+            when(offerMessage.getCorrespondingId()).thenReturn("123");
+            when(offerMessage.getId()).thenReturn("456");
+            when(environment.getPeersManager()).thenReturn(peersManager);
+            when(environment.joinAsChildren()).thenReturn(true);
 
-        SuperPeerClientConnectionHandler handler = new SuperPeerClientConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage);
-        channel = new EmbeddedChannel(handler);
-        channel.attr(ATTRIBUTE_PUBLIC_KEY).set(publicKey);
+            ClientConnectionHandler handler = new ClientConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage);
+            channel = new EmbeddedChannel(handler);
+            channel.attr(ATTRIBUTE_PUBLIC_KEY).set(publicKey);
 
-        channel.writeInbound(offerMessage);
-        channel.flush();
+            channel.writeInbound(offerMessage);
+            channel.flush();
 
-        verify(peersManager).addPeerInformationAndSetSuperPeer(eq(publicKey), any());
-        verify(messenger).setSuperPeerSink(any());
-        verify(environment.getConnected()).onNext(true);
-        verify(environment.getEventConsumer()).accept(new NodeOnlineEvent(Node.of(environment.getIdentity())));
+            verify(peersManager).addPeerInformationAndSetSuperPeer(eq(publicKey), any());
+            verify(messenger).setSuperPeerSink(any());
+            verify(environment.getConnected()).onNext(true);
+            verify(environment.getEventConsumer()).accept(new NodeOnlineEvent(Node.of(environment.getIdentity())));
 //        assertEquals(new StatusMessage(STATUS_OK, "456"), channel.readOutbound());
 
-        channel.close();
+            channel.close();
 
-        verify(peersManager).unsetSuperPeerAndRemovePeerInformation(any());
-        verify(messenger).unsetSuperPeerSink();
-        verify(environment.getConnected()).onNext(false);
-        verify(environment.getEventConsumer()).accept(new NodeOfflineEvent(Node.of(environment.getIdentity())));
+            verify(peersManager).unsetSuperPeerAndRemovePeerInformation(any());
+            verify(messenger).unsetSuperPeerSink();
+            verify(environment.getConnected()).onNext(false);
+            verify(environment.getEventConsumer()).accept(new NodeOfflineEvent(Node.of(environment.getIdentity())));
+        }
+    }
+
+    @Nested
+    class ServerAsPeer {
+        @Test
+        void shouldAddPeerInformationAndSetSuperPeerAndEmitNodeOnlineEventOnSessionCreationAndRemovePeerInformationAndUnsetSuperPeerAndEmitNodeOfflineEventOnClose() {
+            when(requestMessage.getId()).thenReturn("123");
+            when(offerMessage.getCorrespondingId()).thenReturn("123");
+            when(offerMessage.getId()).thenReturn("456");
+            when(environment.getPeersManager()).thenReturn(peersManager);
+            when(environment.joinAsChildren()).thenReturn(false);
+
+            ClientConnectionHandler handler = new ClientConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage);
+            channel = new EmbeddedChannel(handler);
+            channel.attr(ATTRIBUTE_PUBLIC_KEY).set(publicKey);
+
+            channel.writeInbound(offerMessage);
+            channel.flush();
+
+            verify(peersManager).addPeerInformation(eq(publicKey), any());
+            verify(messenger).addClientSink(eq(publicKey), any());
+            verify(environment.getConnected()).onNext(true);
+//        assertEquals(new StatusMessage(STATUS_OK, "456"), channel.readOutbound());
+
+            channel.close();
+
+            verify(peersManager).removePeerInformation(eq(publicKey), any());
+            verify(messenger).removeClientSink(publicKey);
+            verify(environment.getConnected()).onNext(false);
+        }
     }
 }

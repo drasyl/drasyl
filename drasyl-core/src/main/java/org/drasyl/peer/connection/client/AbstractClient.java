@@ -17,6 +17,8 @@ import org.drasyl.util.DrasylFunction;
 import org.drasyl.util.DrasylScheduler;
 import org.slf4j.Logger;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.time.Duration;
 import java.util.List;
@@ -29,7 +31,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 import static org.drasyl.util.WebSocketUtil.webSocketPort;
 
-public abstract class NodeClient implements AutoCloseable {
+public abstract class AbstractClient implements AutoCloseable {
     private final EventLoopGroup workerGroup;
     private final Set<URI> endpoints;
     private final AtomicBoolean opened;
@@ -42,10 +44,10 @@ public abstract class NodeClient implements AutoCloseable {
     protected ChannelInitializer<SocketChannel> channelInitializer;
     protected Channel channel;
 
-    protected NodeClient(List<Duration> retryDelays,
-                         EventLoopGroup workerGroup,
-                         Set<URI> endpoints,
-                         DrasylFunction<URI, ChannelInitializer<SocketChannel>> channelInitializerSupplier) {
+    protected AbstractClient(List<Duration> retryDelays,
+                             EventLoopGroup workerGroup,
+                             Set<URI> endpoints,
+                             DrasylFunction<URI, ChannelInitializer<SocketChannel>> channelInitializerSupplier) {
         this(
                 retryDelays,
                 workerGroup,
@@ -55,17 +57,17 @@ public abstract class NodeClient implements AutoCloseable {
         );
     }
 
-    protected NodeClient(List<Duration> retryDelays,
-                         EventLoopGroup workerGroup,
-                         Set<URI> endpoints,
-                         Subject<Boolean> connected,
-                         DrasylFunction<URI, ChannelInitializer<SocketChannel>> channelInitializerSupplier) {
+    protected AbstractClient(List<Duration> retryDelays,
+                             EventLoopGroup workerGroup,
+                             Set<URI> endpoints,
+                             Subject<Boolean> connected,
+                             DrasylFunction<URI, ChannelInitializer<SocketChannel>> channelInitializerSupplier) {
         this(
                 retryDelays,
                 workerGroup,
                 endpoints,
                 new AtomicBoolean(false),
-                // The pointer should point to a random endpoint. This creates a distribution on different super peer's endpoints
+                // The pointer should point to a random endpoint. This creates a distribution on different server's endpoints
                 new AtomicInteger(endpoints.isEmpty() ? 0 : Crypto.randomNumber(endpoints.size())),
                 new AtomicInteger(0),
                 Bootstrap::new,
@@ -76,17 +78,17 @@ public abstract class NodeClient implements AutoCloseable {
         );
     }
 
-    protected NodeClient(List<Duration> retryDelays,
-                         EventLoopGroup workerGroup,
-                         Set<URI> endpoints,
-                         AtomicBoolean opened,
-                         AtomicInteger nextEndpointPointer,
-                         AtomicInteger nextRetryDelayPointer,
-                         Supplier<Bootstrap> bootstrapSupplier,
-                         Subject<Boolean> connected,
-                         DrasylFunction<URI, ChannelInitializer<SocketChannel>> channelInitializerSupplier,
-                         ChannelInitializer<SocketChannel> channelInitializer,
-                         Channel channel) {
+    protected AbstractClient(List<Duration> retryDelays,
+                             EventLoopGroup workerGroup,
+                             Set<URI> endpoints,
+                             AtomicBoolean opened,
+                             AtomicInteger nextEndpointPointer,
+                             AtomicInteger nextRetryDelayPointer,
+                             Supplier<Bootstrap> bootstrapSupplier,
+                             Subject<Boolean> connected,
+                             DrasylFunction<URI, ChannelInitializer<SocketChannel>> channelInitializerSupplier,
+                             ChannelInitializer<SocketChannel> channelInitializer,
+                             Channel channel) {
         this.retryDelays = retryDelays;
         this.workerGroup = workerGroup;
         this.endpoints = endpoints;
@@ -108,7 +110,7 @@ public abstract class NodeClient implements AutoCloseable {
 
     void connect() {
         URI endpoint = getCurrentEndpoint();
-        getLogger().debug("Connect to Super Peer Endpoint '{}'", endpoint);
+        getLogger().debug("Connect to Endpoint '{}'", endpoint);
         try {
             channelInitializer = channelInitializerSupplier.apply(endpoint);
         }
@@ -146,8 +148,8 @@ public abstract class NodeClient implements AutoCloseable {
     }
 
     /**
-     * If {@link #shouldRetry()} returns <code>true</code>, an attempt to (re)connect to the Super
-     * Peer is scheduled.
+     * If {@link #shouldRetry()} returns <code>true</code>, an attempt to (re)connect to the Server
+     * is scheduled.
      */
     void conditionalScheduledReconnect() {
         if (shouldRetry()) {
@@ -174,7 +176,7 @@ public abstract class NodeClient implements AutoCloseable {
 
     /**
      * Returns the duration of delay before the client should make a new attempt to reconnect to
-     * Super Peer. Iterates over list of all delays specified in configuration. Uses last element
+     * Server. Iterates over list of all delays specified in configuration. Uses last element
      * permanently when end of list is reached. If list is empty, a {@link IllegalArgumentException}
      * is thrown.
      *
@@ -185,8 +187,8 @@ public abstract class NodeClient implements AutoCloseable {
     }
 
     /**
-     * Returns an observable which emits the value <code>true</code> if a connection with the super
-     * peer including handshake could be established. Otherwise <code>false</code> is returned.
+     * Returns an observable which emits the value <code>true</code> if a connection with the Server
+     * including handshake could be established. Otherwise <code>false</code> is returned.
      * <p>
      * The Observable immediately returns an item with the current state of the connection on a new
      * subscription.
@@ -199,7 +201,7 @@ public abstract class NodeClient implements AutoCloseable {
 
     /**
      * Increases the internal counters for retries. Ensures that the client iterates over the
-     * available Super Peer endpoints and throttles the speed of attempts to reconnect.
+     * available Server endpoints and throttles the speed of attempts to reconnect.
      *
      * @return
      */
@@ -218,6 +220,27 @@ public abstract class NodeClient implements AutoCloseable {
 
             channel.closeFuture().syncUninterruptibly();
             channel = null;
+        }
+    }
+
+    protected static ClientChannelInitializer initiateChannelInitializer(
+            ClientEnvironment environment,
+            Class<? extends ChannelInitializer<SocketChannel>> clazz) throws ClientException {
+        try {
+            Constructor<?> constructor = clazz.getConstructor(ClientEnvironment.class);
+            return (ClientChannelInitializer) constructor.newInstance(environment);
+        }
+        catch (NoSuchMethodException e) {
+            throw new ClientException("The given channel initializer has not the correct signature: '" + clazz + "'");
+        }
+        catch (IllegalAccessException e) {
+            throw new ClientException("Can't access the given channel initializer: '" + clazz + "'");
+        }
+        catch (InvocationTargetException e) {
+            throw new ClientException("Can't invoke the given channel initializer: '" + clazz + "'");
+        }
+        catch (InstantiationException e) {
+            throw new ClientException("Can't instantiate the given channel initializer: '" + clazz + "'");
         }
     }
 

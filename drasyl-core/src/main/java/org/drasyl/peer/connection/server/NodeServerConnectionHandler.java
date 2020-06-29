@@ -25,6 +25,7 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
+import org.drasyl.messenger.NoPathToIdentityException;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.connection.handler.AbstractThreeWayHandshakeServerHandler;
@@ -113,18 +114,27 @@ public class NodeServerConnectionHandler extends AbstractThreeWayHandshakeServer
 
         environment.getChannelGroup().add(clientPublicKey, channel);
 
-        // remove peer information on disconnect
-        channel.closeFuture().addListener(future -> environment.getPeersManager().removeChildrenAndRemovePeerInformation(clientPublicKey, clientInformation));
+        if (requestMessage.isChildrenJoin()) {
+            // remove peer information on disconnect
+            channel.closeFuture().addListener(future -> environment.getPeersManager().removeChildrenAndRemovePeerInformation(clientPublicKey, clientInformation));
 
-        // store peer information
-        environment.getPeersManager().addPeerInformationAndAddChildren(clientPublicKey, clientInformation);
+            // store peer information
+            environment.getPeersManager().addPeerInformationAndAddChildren(clientPublicKey, clientInformation);
 
-        // inform super peer about my new children and grandchildren
-        Set<CompressedPublicKey> childrenAndGrandchildren = SetUtil.merge(requestMessage.getChildrenAndGrandchildren(), clientPublicKey);
-        registerGrandchildrenAtSuperPeer(ctx, childrenAndGrandchildren);
+            // inform super peer about my new children and grandchildren
+            Set<CompressedPublicKey> childrenAndGrandchildren = SetUtil.merge(requestMessage.getChildrenAndGrandchildren(), clientPublicKey);
+            registerGrandchildrenAtSuperPeer(ctx, childrenAndGrandchildren);
 
-        // store peer's children (my grandchildren) information
-        registerGrandchildrenLocally(ctx, requestMessage.getChildrenAndGrandchildren());
+            // store peer's children (my grandchildren) information
+            registerGrandchildrenLocally(ctx, requestMessage.getChildrenAndGrandchildren());
+        }
+        else {
+            // remove peer information on disconnect
+            channel.closeFuture().addListener(future -> environment.getPeersManager().removePeerInformation(clientPublicKey, clientInformation));
+
+            // store peer information
+            environment.getPeersManager().addPeerInformation(clientPublicKey, clientInformation);
+        }
     }
 
     private void registerGrandchildrenAtSuperPeer(ChannelHandlerContext ctx,

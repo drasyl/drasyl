@@ -23,6 +23,8 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler;
 import io.reactivex.rxjava3.subjects.PublishSubject;
+import org.drasyl.peer.connection.client.ClientEnvironment;
+import org.drasyl.peer.connection.client.DefaultClientChannelInitializer;
 import org.drasyl.peer.connection.handler.SimpleChannelDuplexHandler;
 import org.drasyl.peer.connection.message.Message;
 
@@ -31,9 +33,8 @@ import java.util.concurrent.CompletableFuture;
 import static io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler.ClientHandshakeStateEvent.HANDSHAKE_COMPLETE;
 import static io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler.ClientHandshakeStateEvent.HANDSHAKE_TIMEOUT;
 import static org.drasyl.peer.connection.handler.PingPongHandler.PING_PONG_HANDLER;
-import static org.drasyl.peer.connection.superpeer.SuperPeerClientConnectionHandler.SUPER_PEER_CLIENT_CONNECTION_HANDLER;
 
-public class TestSuperPeerClientChannelInitializer extends DefaultSuperPeerClientChannelInitializer {
+public class TestClientChannelInitializer extends DefaultClientChannelInitializer {
     private final PublishSubject<Message> sentMessages;
     private final PublishSubject<Message> receivedMessages;
     private final boolean doPingPong;
@@ -41,7 +42,7 @@ public class TestSuperPeerClientChannelInitializer extends DefaultSuperPeerClien
 
     private final CompletableFuture<Void> websocketHandshake;
 
-    public TestSuperPeerClientChannelInitializer(SuperPeerClientEnvironment environment, boolean doPingPong, boolean doJoin) {
+    public TestClientChannelInitializer(ClientEnvironment environment, boolean doPingPong, boolean doJoin) {
         super(environment);
         this.doPingPong = doPingPong;
         this.doJoin = doJoin;

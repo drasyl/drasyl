@@ -28,7 +28,7 @@ import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.connection.server.DefaultNodeServerChannelInitializer;
-import org.drasyl.peer.connection.superpeer.DefaultSuperPeerClientChannelInitializer;
+import org.drasyl.peer.connection.client.DefaultClientChannelInitializer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -143,7 +143,7 @@ class DrasylConfigTest {
         messageHopLimit = 64;
         superPeerEnabled = true;
         superPeerEndpoints = Set.of(URI.create("ws://foo.bar:123"), URI.create("wss://example.com"));
-        superPeerChannelInitializer = DefaultSuperPeerClientChannelInitializer.class;
+        superPeerChannelInitializer = DefaultClientChannelInitializer.class;
         superPeerIdleRetries = 3;
         superPeerHandshakeTimeout = ofSeconds(30);
         superPeerIdleTimeout = ofSeconds(60);

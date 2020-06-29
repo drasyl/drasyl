@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection.superpeer;
+package org.drasyl.peer.connection.client;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
@@ -52,33 +52,37 @@ import static org.drasyl.peer.connection.server.NodeServerChannelGroup.ATTRIBUTE
  * StatusMessage}.
  */
 @SuppressWarnings({ "java:S110" })
-public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeClientHandler<JoinMessage, WelcomeMessage> {
-    public static final String SUPER_PEER_CLIENT_CONNECTION_HANDLER = "superPeerClientConnectionHandler";
-    private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClientConnectionHandler.class);
-    private final SuperPeerClientEnvironment environment;
+public class ClientConnectionHandler extends AbstractThreeWayHandshakeClientHandler<JoinMessage, WelcomeMessage> {
+    public static final String CLIENT_CONNECTION_HANDLER = "clientConnectionHandler";
+    private static final Logger LOG = LoggerFactory.getLogger(ClientConnectionHandler.class);
+    private final ClientEnvironment environment;
+    private final boolean childrenJoin;
     private ChannelHandlerContext ctx;
 
-    public SuperPeerClientConnectionHandler(SuperPeerClientEnvironment environment) {
+    public ClientConnectionHandler(ClientEnvironment environment) {
         super(
-                environment.getConfig().getSuperPeerHandshakeTimeout(),
+                environment.getHandshakeTimeout(),
                 environment.getMessenger(),
                 new JoinMessage(environment.getIdentity().getProofOfWork(),
                         environment.getIdentity().getPublicKey(),
+                        environment.joinAsChildren(),
                         environment.getPeersManager().getChildrenAndGrandchildren().keySet()
                 )
         );
         this.environment = environment;
+        this.childrenJoin = environment.joinAsChildren();
     }
 
     @SuppressWarnings({ "java:S107" })
-    SuperPeerClientConnectionHandler(SuperPeerClientEnvironment environment,
-                                     Duration timeout,
-                                     Messenger messenger,
-                                     CompletableFuture<Void> handshakeFuture,
-                                     ScheduledFuture<?> timeoutFuture,
-                                     JoinMessage requestMessage) {
+    ClientConnectionHandler(ClientEnvironment environment,
+                            Duration timeout,
+                            Messenger messenger,
+                            CompletableFuture<Void> handshakeFuture,
+                            ScheduledFuture<?> timeoutFuture,
+                            JoinMessage requestMessage) {
         super(timeout, messenger, handshakeFuture, timeoutFuture, requestMessage);
         this.environment = environment;
+        this.childrenJoin = environment.joinAsChildren();
     }
 
     @Override
@@ -111,29 +115,55 @@ public class SuperPeerClientConnectionHandler extends AbstractThreeWayHandshakeC
         Path path = ctx::writeAndFlush; // We start at this point to save resources
         PeerInformation peerInformation = PeerInformation.of(offerMessage.getPeerInformation().getEndpoints(), path);
 
-        // remove peer information on disconnect
-        channel.closeFuture().addListener(future -> {
-            environment.getEventConsumer().accept(new NodeOfflineEvent(Node.of(environment.getIdentity())));
-            environment.getConnected().onNext(false);
+        if (childrenJoin) {
+            // remove peer information on disconnect
+            channel.closeFuture().addListener(future -> {
+                environment.getEventConsumer().accept(new NodeOfflineEvent(Node.of(environment.getIdentity())));
+                environment.getConnected().onNext(false);
 
-            messenger.unsetSuperPeerSink();
+                messenger.unsetSuperPeerSink();
 
-            environment.getPeersManager().unsetSuperPeerAndRemovePeerInformation(peerInformation);
-        });
+                environment.getPeersManager().unsetSuperPeerAndRemovePeerInformation(peerInformation);
+            });
 
-        // store peer information
-        environment.getPeersManager().addPeerInformationAndSetSuperPeer(identity, peerInformation);
+            // store peer information
+            environment.getPeersManager().addPeerInformationAndSetSuperPeer(identity, peerInformation);
 
-        messenger.setSuperPeerSink(message -> {
-            if (channel.isWritable()) {
-                ctx.writeAndFlush(message);
-            }
-            else {
-                throw new NoPathToIdentityException(message.getRecipient());
-            }
-        });
+            messenger.setSuperPeerSink(message -> {
+                if (channel.isWritable()) {
+                    ctx.writeAndFlush(message);
+                }
+                else {
+                    throw new NoPathToIdentityException(message.getRecipient());
+                }
+            });
 
-        environment.getConnected().onNext(true);
-        environment.getEventConsumer().accept(new NodeOnlineEvent(Node.of(environment.getIdentity())));
+            environment.getConnected().onNext(true);
+            environment.getEventConsumer().accept(new NodeOnlineEvent(Node.of(environment.getIdentity())));
+        }
+        else {
+            // remove peer information on disconnect
+            channel.closeFuture().addListener(future -> {
+                environment.getConnected().onNext(false);
+
+                messenger.removeClientSink(identity);
+
+                environment.getPeersManager().removePeerInformation(identity, peerInformation);
+            });
+
+            // store peer information
+            environment.getPeersManager().addPeerInformation(identity, peerInformation);
+
+            messenger.addClientSink(identity, message -> {
+                if (channel.isWritable()) {
+                    ctx.writeAndFlush(message);
+                }
+                else {
+                    throw new NoPathToIdentityException(message.getRecipient());
+                }
+            });
+
+            environment.getConnected().onNext(true);
+        }
     }
 }

@@ -16,23 +16,25 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection.superpeer;
+package org.drasyl.peer.connection.client;
 
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
- * This class encapsulates all information needed by a {@link SuperPeerClientChannelInitializer}.
+ * This class encapsulates all information needed by a {@link ClientChannelInitializer}.
  */
-public class SuperPeerClientEnvironment {
+public class ClientEnvironment {
     private final DrasylConfig config;
     private final Supplier<Identity> identitySupplier;
     private final URI endpoint;
@@ -40,14 +42,24 @@ public class SuperPeerClientEnvironment {
     private final PeersManager peersManager;
     private final Subject<Boolean> connected;
     private final Consumer<Event> eventConsumer;
+    private final CompressedPublicKey serverPublicKey;
+    private final boolean joinAsChildren;
+    private final short idleRetries;
+    private final Duration idleTimeout;
+    private final Duration handshakeTimeout;
 
-    public SuperPeerClientEnvironment(DrasylConfig config,
-                                      Supplier<Identity> identitySupplier,
-                                      URI endpoint,
-                                      Messenger messenger,
-                                      PeersManager peersManager,
-                                      Subject<Boolean> connected,
-                                      Consumer<Event> eventConsumer) {
+    public ClientEnvironment(DrasylConfig config,
+                             Supplier<Identity> identitySupplier,
+                             URI endpoint,
+                             Messenger messenger,
+                             PeersManager peersManager,
+                             Subject<Boolean> connected,
+                             Consumer<Event> eventConsumer,
+                             boolean joinAsChildren,
+                             CompressedPublicKey serverPublicKey,
+                             short idleRetries,
+                             Duration idleTimeout,
+                             Duration handshakeTimeout) {
         this.config = config;
         this.identitySupplier = identitySupplier;
         this.endpoint = endpoint;
@@ -55,6 +67,11 @@ public class SuperPeerClientEnvironment {
         this.peersManager = peersManager;
         this.connected = connected;
         this.eventConsumer = eventConsumer;
+        this.joinAsChildren = joinAsChildren;
+        this.serverPublicKey = serverPublicKey;
+        this.idleRetries = idleRetries;
+        this.idleTimeout = idleTimeout;
+        this.handshakeTimeout = handshakeTimeout;
     }
 
     public DrasylConfig getConfig() {
@@ -83,5 +100,25 @@ public class SuperPeerClientEnvironment {
 
     public Consumer<Event> getEventConsumer() {
         return eventConsumer;
+    }
+
+    public boolean joinAsChildren() {
+        return joinAsChildren;
+    }
+
+    public Duration getHandshakeTimeout() {
+        return handshakeTimeout;
+    }
+
+    public Duration getIdleTimeout() {
+        return idleTimeout;
+    }
+
+    public short getIdleRetries() {
+        return idleRetries;
+    }
+
+    public CompressedPublicKey getServerPublicKey() {
+        return serverPublicKey;
     }
 }

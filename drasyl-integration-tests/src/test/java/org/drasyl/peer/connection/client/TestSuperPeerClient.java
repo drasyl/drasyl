@@ -37,9 +37,7 @@ import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.ResponseMessage;
 import org.drasyl.peer.connection.server.NodeServer;
-import org.drasyl.peer.connection.superpeer.SuperPeerClientEnvironment;
-import org.drasyl.peer.connection.superpeer.SuperPeerClientException;
-import org.drasyl.peer.connection.superpeer.TestSuperPeerClientChannelInitializer;
+import org.drasyl.peer.connection.superpeer.TestClientChannelInitializer;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
@@ -55,7 +53,7 @@ public class TestSuperPeerClient extends SuperPeerClient {
                                Identity identity,
                                EventLoopGroup workerGroup,
                                boolean doPingPong,
-                               boolean doJoin) throws SuperPeerClientException {
+                               boolean doJoin) {
         this(DrasylConfig.newBuilder(config).superPeerEnabled(true).superPeerEndpoints(server.getEndpoints()).build(), () -> identity, workerGroup, ReplaySubject.create(), doPingPong, doJoin);
     }
 
@@ -64,7 +62,7 @@ public class TestSuperPeerClient extends SuperPeerClient {
                                 EventLoopGroup workerGroup,
                                 Subject<Event> receivedEvents,
                                 boolean doPingPong,
-                                boolean doJoin) throws SuperPeerClientException {
+                                boolean doJoin) {
         this(config, identitySupplier, workerGroup, receivedEvents, new PeersManager(receivedEvents::onNext), new Messenger((message -> {
         })), BehaviorSubject.createDefault(false), doPingPong, doJoin);
     }
@@ -78,7 +76,7 @@ public class TestSuperPeerClient extends SuperPeerClient {
                                 Subject<Boolean> connected,
                                 boolean doPingPong,
                                 boolean doJoin) {
-        super(config, workerGroup, connected, endpoint -> new TestSuperPeerClientChannelInitializer(new SuperPeerClientEnvironment(config, identitySupplier, endpoint, messenger, peersManager, connected, receivedEvents::onNext), doPingPong, doJoin));
+        super(config, workerGroup, connected, endpoint -> new TestClientChannelInitializer(new ClientEnvironment(config, identitySupplier, endpoint, messenger, peersManager, connected, receivedEvents::onNext, true, config.getSuperPeerPublicKey(), config.getSuperPeerIdleRetries(), config.getSuperPeerIdleTimeout(), config.getSuperPeerHandshakeTimeout()), doPingPong, doJoin));
         this.identitySupplier = identitySupplier;
         this.receivedEvents = receivedEvents;
     }
@@ -102,7 +100,7 @@ public class TestSuperPeerClient extends SuperPeerClient {
 
     public Observable<Message> sentMessages() {
         await().until(() -> channel != null);
-        return ((TestSuperPeerClientChannelInitializer) channelInitializer).sentMessages();
+        return ((TestClientChannelInitializer) channelInitializer).sentMessages();
     }
 
     public CompressedPublicKey getPublicKey() {
@@ -122,12 +120,12 @@ public class TestSuperPeerClient extends SuperPeerClient {
 
     public Observable<Message> receivedMessages() {
         await().until(() -> channel != null);
-        return ((TestSuperPeerClientChannelInitializer) channelInitializer).receivedMessages();
+        return ((TestClientChannelInitializer) channelInitializer).receivedMessages();
     }
 
     public void send(Message message) {
         await().until(() -> channelInitializer != null);
-        ((TestSuperPeerClientChannelInitializer) channelInitializer).websocketHandshake().join();
+        ((TestClientChannelInitializer) channelInitializer).websocketHandshake().join();
         ChannelFuture future = channel.writeAndFlush(message).awaitUninterruptibly();
         if (!future.isSuccess()) {
             throw new RuntimeException(future.cause());
@@ -136,7 +134,7 @@ public class TestSuperPeerClient extends SuperPeerClient {
 
     public void sendRawBinary(ByteBuf byteBuf) {
         await().until(() -> channelInitializer != null);
-        ((TestSuperPeerClientChannelInitializer) channelInitializer).websocketHandshake().join();
+        ((TestClientChannelInitializer) channelInitializer).websocketHandshake().join();
         ChannelFuture future = channel.writeAndFlush(new BinaryWebSocketFrame(byteBuf)).awaitUninterruptibly();
         if (!future.isSuccess()) {
             throw new RuntimeException(future.cause());

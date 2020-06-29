@@ -30,15 +30,10 @@ import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.superpeer.SuperPeerClientChannelInitializer;
-import org.drasyl.peer.connection.superpeer.SuperPeerClientEnvironment;
-import org.drasyl.peer.connection.superpeer.SuperPeerClientException;
 import org.drasyl.util.DrasylFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Constructor;
-import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -52,7 +47,7 @@ import java.util.function.Supplier;
  * peer in {@link PeersManager}.
  */
 @SuppressWarnings({ "java:S107", "java:S4818" })
-public class SuperPeerClient extends NodeClient {
+public class SuperPeerClient extends AbstractClient {
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClient.class);
 
     SuperPeerClient(DrasylConfig config,
@@ -123,29 +118,8 @@ public class SuperPeerClient extends NodeClient {
                 workerGroup,
                 config.getSuperPeerEndpoints(),
                 connected,
-                endpoint -> initiateChannelInitializer(new SuperPeerClientEnvironment(config, identitySupplier, endpoint, messenger, peersManager, connected, eventConsumer), config.getSuperPeerChannelInitializer())
+                endpoint -> initiateChannelInitializer(new ClientEnvironment(config, identitySupplier, endpoint, messenger, peersManager, connected, eventConsumer, true, config.getSuperPeerPublicKey(), config.getSuperPeerIdleRetries(), config.getSuperPeerIdleTimeout(), config.getSuperPeerHandshakeTimeout()), config.getSuperPeerChannelInitializer())
         );
-    }
-
-    private static SuperPeerClientChannelInitializer initiateChannelInitializer(
-            SuperPeerClientEnvironment environment,
-            Class<? extends ChannelInitializer<SocketChannel>> clazz) throws SuperPeerClientException {
-        try {
-            Constructor<?> constructor = clazz.getConstructor(SuperPeerClientEnvironment.class);
-            return (SuperPeerClientChannelInitializer) constructor.newInstance(environment);
-        }
-        catch (NoSuchMethodException e) {
-            throw new SuperPeerClientException("The given channel initializer has not the correct signature: '" + clazz + "'");
-        }
-        catch (IllegalAccessException e) {
-            throw new SuperPeerClientException("Can't access the given channel initializer: '" + clazz + "'");
-        }
-        catch (InvocationTargetException e) {
-            throw new SuperPeerClientException("Can't invoke the given channel initializer: '" + clazz + "'");
-        }
-        catch (InstantiationException e) {
-            throw new SuperPeerClientException("Can't instantiate the given channel initializer: '" + clazz + "'");
-        }
     }
 
     @Override

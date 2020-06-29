@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection.superpeer;
+package org.drasyl.peer.connection.client;
 
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
@@ -25,6 +25,7 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler;
 import io.netty.handler.flush.FlushConsolidationHandler;
 import io.netty.handler.ssl.SslHandler;
+import org.drasyl.peer.connection.client.ClientChannelInitializer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,7 +43,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class SuperPeerClientChannelInitializerTest {
+class ClientChannelInitializerTest {
     private int flushBufferSize;
     private Duration readIdleTimeout;
     private short pingPongRetries;
@@ -62,7 +63,7 @@ class SuperPeerClientChannelInitializerTest {
 
     @Test
     void beforeMarshalStage() {
-        SuperPeerClientChannelInitializer initializer = new SuperPeerClientChannelInitializer(flushBufferSize, readIdleTimeout, pingPongRetries,
+        ClientChannelInitializer initializer = new ClientChannelInitializer(flushBufferSize, readIdleTimeout, pingPongRetries,
                 ipAddress) {
             @Override
             protected void customStage(ChannelPipeline pipeline) {
@@ -85,7 +86,7 @@ class SuperPeerClientChannelInitializerTest {
     @Test
     void exceptionOnInvalidTarget() {
         assertThrows(URISyntaxException.class, () -> {
-            SuperPeerClientChannelInitializer initializer = new SuperPeerClientChannelInitializer(flushBufferSize, readIdleTimeout, pingPongRetries,
+            ClientChannelInitializer initializer = new ClientChannelInitializer(flushBufferSize, readIdleTimeout, pingPongRetries,
                     new URI("|<>:22527")) {
                 @Override
                 protected void customStage(ChannelPipeline pipeline) {

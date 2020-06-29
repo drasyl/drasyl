@@ -51,7 +51,6 @@ import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.server.TestNodeServer;
 import org.drasyl.peer.connection.server.TestNodeServerChannelInitializer;
-import org.drasyl.peer.connection.superpeer.SuperPeerClientException;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -175,7 +174,7 @@ class SuperPeerClientIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldSendJoinMessageOnConnect() throws SuperPeerClientException {
+    void clientShouldSendJoinMessageOnConnect() throws ClientException {
         TestObserver<Message> receivedMessages = server.receivedMessages().test();
 
         // start client
@@ -190,7 +189,7 @@ class SuperPeerClientIT {
 
     @Disabled("Race Condition error")
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldSendQuitMessageOnClientSideDisconnect() throws SuperPeerClientException {
+    void clientShouldSendQuitMessageOnClientSideDisconnect() throws ClientException {
         TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof QuitMessage).test();
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
@@ -209,7 +208,7 @@ class SuperPeerClientIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldEmitNodeOfflineEventOnClientSideDisconnect() throws SuperPeerClientException {
+    void clientShouldEmitNodeOfflineEventOnClientSideDisconnect() throws ClientException {
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
@@ -227,7 +226,7 @@ class SuperPeerClientIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldRespondToPingMessageWithPongMessage() throws SuperPeerClientException {
+    void clientShouldRespondToPingMessageWithPongMessage() throws ClientException {
         PingMessage request = new PingMessage();
         TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof PongMessage && ((PongMessage) m).getCorrespondingId().equals(request.getId())).test();
 
@@ -247,7 +246,7 @@ class SuperPeerClientIT {
     @Test
     @Disabled("disabled, because StatusMessage is currently not used and therefore has been removed.")
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldRespondToApplicationMessageWithStatusOk() throws SuperPeerClientException {
+    void clientShouldRespondToApplicationMessageWithStatusOk() throws ClientException {
         TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof StatusMessage).test();
 
         // start client
@@ -270,7 +269,7 @@ class SuperPeerClientIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldEmitNodeOfflineEventAfterReceivingQuitMessage() throws SuperPeerClientException {
+    void clientShouldEmitNodeOfflineEventAfterReceivingQuitMessage() throws ClientException {
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
@@ -289,7 +288,7 @@ class SuperPeerClientIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldEmitNodeOnlineEventAfterReceivingWelcomeMessage() throws SuperPeerClientException {
+    void clientShouldEmitNodeOnlineEventAfterReceivingWelcomeMessage() throws ClientException {
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
@@ -303,7 +302,7 @@ class SuperPeerClientIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldEmitNodeOnlineAlsoWithoutSuperPeerPubKeyInConfig() throws SuperPeerClientException {
+    void clientShouldEmitNodeOnlineAlsoWithoutSuperPeerPubKeyInConfig() throws ClientException {
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         DrasylConfig config1 = DrasylConfig.newBuilder(config)
@@ -321,7 +320,7 @@ class SuperPeerClientIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldReconnectOnDisconnect() throws SuperPeerClientException {
+    void clientShouldReconnectOnDisconnect() throws ClientException {
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         DrasylConfig config1 = DrasylConfig.newBuilder(config)
@@ -345,7 +344,7 @@ class SuperPeerClientIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void messageExceedingMaxSizeShouldNotBeSend() throws SuperPeerClientException {
+    void messageExceedingMaxSizeShouldNotBeSend() throws ClientException {
         TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof StatusMessage).test();
         TestObserver<Event> emittedEvents = emittedEventsSubject.filter(e -> e instanceof MessageEvent).test();
 
@@ -369,7 +368,7 @@ class SuperPeerClientIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void messageExceedingMaxSizeShouldOnSendShouldThrowException() throws SuperPeerClientException {
+    void messageExceedingMaxSizeShouldOnSendShouldThrowException() throws ClientException {
         // start client
         client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext);
         client.open();

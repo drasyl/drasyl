@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection.superpeer;
+package org.drasyl.peer.connection.client;
 
 import io.netty.channel.ChannelPipeline;
 import io.netty.handler.codec.http.DefaultHttpHeaders;
@@ -35,7 +35,7 @@ import java.time.Duration;
  * Creates a newly configured {@link ChannelPipeline} for a ClientConnection to a node server.
  */
 @SuppressWarnings("java:S4818")
-public abstract class SuperPeerClientChannelInitializer extends DefaultSessionInitializer {
+public abstract class ClientChannelInitializer extends DefaultSessionInitializer {
     protected final URI target;
 
     /**
@@ -52,10 +52,10 @@ public abstract class SuperPeerClientChannelInitializer extends DefaultSessionIn
      *                        value is 1, max 32767
      * @param target          the target URI
      */
-    public SuperPeerClientChannelInitializer(int flushBufferSize,
-                                             Duration readIdleTimeout,
-                                             short pingPongRetries,
-                                             URI target) {
+    public ClientChannelInitializer(int flushBufferSize,
+                                    Duration readIdleTimeout,
+                                    short pingPongRetries,
+                                    URI target) {
         super(flushBufferSize, readIdleTimeout, pingPongRetries);
         this.target = target;
     }

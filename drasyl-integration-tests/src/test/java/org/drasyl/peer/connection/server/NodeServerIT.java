@@ -53,8 +53,8 @@ import org.drasyl.peer.connection.message.ResponseMessage;
 import org.drasyl.peer.connection.message.SignedMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
-import org.drasyl.peer.connection.superpeer.SuperPeerClientException;
-import org.drasyl.peer.connection.superpeer.TestSuperPeerClientChannelInitializer;
+import org.drasyl.peer.connection.client.ClientException;
+import org.drasyl.peer.connection.superpeer.TestClientChannelInitializer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -169,7 +169,7 @@ class NodeServerIT {
                 .serverSSLEnabled(true)
                 .superPeerEndpoints(server.getEndpoints())
                 .superPeerPublicKey(CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"))
-                .superPeerChannelInitializer(TestSuperPeerClientChannelInitializer.class)
+                .superPeerChannelInitializer(TestClientChannelInitializer.class)
                 .messageComposedMessageTransferTimeout(ofSeconds(60))
                 .messageMaxContentLength(1024 * 1024)
                 .superPeerRetryDelays(List.of())
@@ -193,7 +193,7 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void joinMessageShouldBeRespondedWithWelcomeMessage() throws ExecutionException, InterruptedException, SuperPeerClientException {
+    void joinMessageShouldBeRespondedWithWelcomeMessage() throws ExecutionException, InterruptedException, ClientException {
         // create connection
         TestSuperPeerClient session = clientSession(configClient1, server, identitySession1);
 
@@ -209,7 +209,7 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void multipleJoinMessagesShouldBeRespondedWithWelcomeMessage() throws ExecutionException, InterruptedException, SuperPeerClientException {
+    void multipleJoinMessagesShouldBeRespondedWithWelcomeMessage() throws ExecutionException, InterruptedException, ClientException {
         // create connections
         TestSuperPeerClient session1 = clientSession(configClient1, server, identitySession1);
         TestSuperPeerClient session2 = clientSession(configClient2, server, identitySession2);
@@ -230,7 +230,7 @@ class NodeServerIT {
     }
 
     @Test
-    void applicationMessageShouldBeForwardedToRecipient() throws SuperPeerClientException {
+    void applicationMessageShouldBeForwardedToRecipient() throws ClientException {
         // create connections
         TestSuperPeerClient session1 = clientSessionAfterJoin(configClient1, server, identitySession1);
         TestSuperPeerClient session2 = clientSessionAfterJoin(configClient2, server, identitySession2);
@@ -259,7 +259,7 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void notJoiningClientsShouldBeDroppedAfterTimeout() throws SuperPeerClientException, InterruptedException {
+    void notJoiningClientsShouldBeDroppedAfterTimeout() throws ClientException, InterruptedException {
         // create connection
         TestSuperPeerClient session = clientSession(configClient1, server, identitySession1);
 
@@ -275,7 +275,7 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void joinedClientsShouldNoBeDroppedAfterTimeout() throws InterruptedException, SuperPeerClientException {
+    void joinedClientsShouldNoBeDroppedAfterTimeout() throws InterruptedException, ClientException {
         // create connection
         TestSuperPeerClient session = clientSessionAfterJoin(configClient1, server, identitySession1);
 
@@ -288,7 +288,7 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void invalidMessageShouldBeRespondedWithExceptionMessage() throws SuperPeerClientException {
+    void invalidMessageShouldBeRespondedWithExceptionMessage() throws ClientException {
         // create connection
         TestSuperPeerClient session = clientSession(configClient1, server, identitySession1);
 
@@ -304,7 +304,7 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void newSessionWithSameIdentityShouldReplaceAndCloseExistingSession() throws ExecutionException, InterruptedException, SuperPeerClientException {
+    void newSessionWithSameIdentityShouldReplaceAndCloseExistingSession() throws ExecutionException, InterruptedException, ClientException {
         // create connections
         TestSuperPeerClient session1 = clientSession(configClient1, server, identitySession1);
         TestSuperPeerClient session2 = clientSession(configClient1, server, session1.getIdentity());
@@ -346,7 +346,7 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientsNotSendingPongMessageShouldBeDroppedAfterTimeout() throws InterruptedException, SuperPeerClientException {
+    void clientsNotSendingPongMessageShouldBeDroppedAfterTimeout() throws InterruptedException, ClientException {
         // create connection
         TestSuperPeerClient session = clientSession(configClient1, server, identitySession1, false);
 
@@ -362,7 +362,7 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientsSendingPongMessageShouldNotBeDroppedAfterTimeout() throws InterruptedException, SuperPeerClientException {
+    void clientsSendingPongMessageShouldNotBeDroppedAfterTimeout() throws InterruptedException, ClientException {
         // create connection
         TestSuperPeerClient session = clientSessionAfterJoin(configClient1, server, identitySession1);
 
@@ -375,7 +375,7 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void pingMessageShouldBeRespondedWithPongMessage() throws ExecutionException, InterruptedException, SuperPeerClientException {
+    void pingMessageShouldBeRespondedWithPongMessage() throws ExecutionException, InterruptedException, ClientException {
         // create connection
         TestSuperPeerClient session = clientSession(configClient1, server, identitySession1, false);
 
@@ -391,7 +391,7 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void nonAuthorizedClientSendingNonJoinMessageShouldBeRespondedWithStatusForbiddenMessage() throws ExecutionException, InterruptedException, CryptoException, SuperPeerClientException {
+    void nonAuthorizedClientSendingNonJoinMessageShouldBeRespondedWithStatusForbiddenMessage() throws ExecutionException, InterruptedException, CryptoException, ClientException {
         // create connection
         TestSuperPeerClient session = clientSession(configClient1, server, identitySession1);
 
@@ -413,7 +413,7 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void messageWithMaxSizeShouldArrive() throws SuperPeerClientException {
+    void messageWithMaxSizeShouldArrive() throws ClientException {
         ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.DISABLED);
         // create connection
         TestSuperPeerClient session1 = clientSessionAfterJoin(configClient1, server, identitySession1);
@@ -436,7 +436,7 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void messageExceedingChunkSizeShouldBeSend() throws SuperPeerClientException {
+    void messageExceedingChunkSizeShouldBeSend() throws ClientException {
         // create connections
         TestSuperPeerClient session1 = clientSessionAfterJoin(configClient1, server, identitySession1);
         TestSuperPeerClient session2 = clientSessionAfterJoin(configClient2, server, identitySession2);
@@ -479,7 +479,7 @@ class NodeServerIT {
     }
 
     @Test
-    void shuttingDownServerShouldSendLeaveMessage() throws SuperPeerClientException {
+    void shuttingDownServerShouldSendLeaveMessage() throws ClientException {
         TestSuperPeerClient session = clientSessionAfterJoin(configClient1, server, identitySession1);
 
         TestObserver<Message> receivedMessages = session.receivedMessages().test();
@@ -492,7 +492,7 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void shuttingDownServerShouldRejectNewConnections() throws ExecutionException, InterruptedException, SuperPeerClientException {
+    void shuttingDownServerShouldRejectNewConnections() throws ExecutionException, InterruptedException, ClientException {
         TestSuperPeerClient session = clientSession(configClient1, server, identitySession1);
 
         opened.set(false);
@@ -510,7 +510,7 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void messageWithWrongSignatureShouldProduceExceptionMessage() throws CryptoException, JsonProcessingException, SuperPeerClientException {
+    void messageWithWrongSignatureShouldProduceExceptionMessage() throws CryptoException, JsonProcessingException, ClientException {
         // create connection
         TestSuperPeerClient session = clientSession(configClient1, server, identitySession1, false);
         TestObserver<Message> receivedMessages = session.receivedMessages().filter(msg -> msg instanceof StatusMessage).test();
@@ -529,7 +529,7 @@ class NodeServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void wrongPoWShouldResultInError() throws SuperPeerClientException {
+    void wrongPoWShouldResultInError() throws ClientException {
         // create connections
         TestSuperPeerClient session = clientSession(configClient1, server, identitySession1);
         TestObserver<Message> receivedMessages = session.receivedMessages().filter(msg -> msg instanceof ConnectionExceptionMessage).test();
@@ -549,7 +549,7 @@ class NodeServerIT {
 
     private TestSuperPeerClient clientSessionAfterJoin(DrasylConfig config,
                                                        NodeServer server,
-                                                       Identity identity) throws SuperPeerClientException {
+                                                       Identity identity) throws ClientException {
         TestSuperPeerClient client = new TestSuperPeerClient(config, server, identity, workerGroup, true, true);
         client.open();
         awaitClientJoin(identity);
@@ -559,7 +559,7 @@ class NodeServerIT {
     private TestSuperPeerClient clientSession(DrasylConfig config,
                                               NodeServer server,
                                               Identity identity,
-                                              boolean doPingPong) throws SuperPeerClientException {
+                                              boolean doPingPong) throws ClientException {
         TestSuperPeerClient client = new TestSuperPeerClient(config, server, identity, workerGroup, doPingPong, false);
         client.open();
         return client;
@@ -567,7 +567,7 @@ class NodeServerIT {
 
     private TestSuperPeerClient clientSession(DrasylConfig config,
                                               NodeServer server,
-                                              Identity identity) throws SuperPeerClientException {
+                                              Identity identity) throws ClientException {
         return clientSession(config, server, identity, true);
     }
 
