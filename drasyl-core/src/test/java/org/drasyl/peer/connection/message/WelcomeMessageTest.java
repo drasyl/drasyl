@@ -37,14 +37,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
 class WelcomeMessageTest {
-    private final String correspondingId = "123";
+    private String correspondingId = "123";
     @Mock
     private PeerInformation peerInformation;
 
     @Nested
     class JsonDeserialization {
         @Test
-        void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
+        void shouldDeserializeToCorrectObject() throws IOException {
             String json = "{\"@type\":\"WelcomeMessage\",\"id\":\"4AE5CDCD8C21719F8E779F21\",\"userAgent\":\"\",\"peerInformation\":{\"endpoints\":[\"ws://test\"]},\"correspondingId\":\"123\"}";
 
             assertEquals(new WelcomeMessage(PeerInformation.of(Set.of(URI.create("ws://test"))), "123"), JACKSON_READER.readValue(json, Message.class));

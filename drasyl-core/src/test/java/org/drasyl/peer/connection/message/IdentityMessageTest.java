@@ -40,7 +40,7 @@ class IdentityMessageTest {
     private CompressedPublicKey recipient;
     @Mock
     private CompressedPublicKey publicKey;
-    private final String correspondingId = "123";
+    private String correspondingId = "123";
     @Mock
     private PeerInformation peerInformation;
 
