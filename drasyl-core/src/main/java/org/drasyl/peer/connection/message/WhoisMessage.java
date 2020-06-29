@@ -19,6 +19,7 @@
 package org.drasyl.peer.connection.message;
 
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.peer.PeerInformation;
 
 import java.util.Objects;
 
@@ -30,19 +31,33 @@ import static java.util.Objects.requireNonNull;
  */
 public class WhoisMessage extends RelayableMessage implements RequestMessage {
     private final CompressedPublicKey requester;
+    private final PeerInformation peerInformation;
 
     WhoisMessage() {
         super();
         requester = null;
+        peerInformation = null;
     }
 
-    public WhoisMessage(CompressedPublicKey recipient, CompressedPublicKey requester) {
+    public WhoisMessage(CompressedPublicKey recipient,
+                        CompressedPublicKey requester,
+                        PeerInformation peerInformation) {
         super(recipient);
         this.requester = requireNonNull(requester);
+        this.peerInformation = requireNonNull(peerInformation);
     }
 
     public CompressedPublicKey getRequester() {
         return requester;
+    }
+
+    public PeerInformation getPeerInformation() {
+        return peerInformation;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), requester, peerInformation);
     }
 
     @Override
@@ -57,18 +72,15 @@ public class WhoisMessage extends RelayableMessage implements RequestMessage {
             return false;
         }
         WhoisMessage that = (WhoisMessage) o;
-        return Objects.equals(requester, that.requester);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), requester);
+        return Objects.equals(requester, that.requester) &&
+                Objects.equals(peerInformation, that.peerInformation);
     }
 
     @Override
     public String toString() {
         return "WhoisMessage{" +
                 "requester=" + requester +
+                ", peerInformation=" + peerInformation +
                 ", recipient=" + recipient +
                 ", hopCount=" + hopCount +
                 ", id='" + id + '\'' +
