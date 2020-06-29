@@ -22,6 +22,8 @@ import org.drasyl.DrasylNode;
 
 import java.util.function.Supplier;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Represents a message that contains the user agent.
  */
@@ -39,7 +41,12 @@ public abstract class AbstractMessageWithUserAgent extends AbstractMessage {
     }
 
     AbstractMessageWithUserAgent(String userAgent) {
-        this.userAgent = userAgent;
+        this.userAgent = requireNonNull(userAgent);
+    }
+
+    public AbstractMessageWithUserAgent(String id, String userAgent) {
+        super(id);
+        this.userAgent = requireNonNull(userAgent);
     }
 
     public String getUserAgent() {

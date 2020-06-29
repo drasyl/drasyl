@@ -18,7 +18,9 @@
  */
 package org.drasyl.peer.connection.message;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.drasyl.peer.PeerInformation;
 
 import java.util.Objects;
@@ -33,9 +35,14 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final String correspondingId;
 
-    protected WelcomeMessage() {
-        peerInformation = null;
-        correspondingId = null;
+    @JsonCreator
+    private WelcomeMessage(@JsonProperty("id") String id,
+                           @JsonProperty("userAgent") String userAgent,
+                           @JsonProperty("peerInformation") PeerInformation peerInformation,
+                           @JsonProperty("correspondingId") String correspondingId) {
+        super(id, userAgent);
+        this.peerInformation = requireNonNull(peerInformation);
+        this.correspondingId = requireNonNull(correspondingId);
     }
 
     /**
@@ -47,7 +54,7 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
     public WelcomeMessage(PeerInformation peerInformation,
                           String correspondingId) {
         this.peerInformation = requireNonNull(peerInformation);
-        this.correspondingId = correspondingId;
+        this.correspondingId = requireNonNull(correspondingId);
     }
 
     public PeerInformation getPeerInformation() {

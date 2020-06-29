@@ -18,6 +18,7 @@
  */
 package org.drasyl.peer.connection.message;
 
+import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
@@ -41,6 +42,13 @@ class ExceptionMessageTest {
                     "\"error\":\"" + ERROR_INTERNAL.getDescription() + "\"}";
 
             assertEquals(new ExceptionMessage(ERROR_INTERNAL), JACKSON_READER.readValue(json, Message.class));
+        }
+
+        @Test
+        void shouldRejectIncompleteData() {
+            String json = "{\"@type\":\"" + ExceptionMessage.class.getSimpleName() + "\",\"id\":\"77175D7235920F3BA17341D7\"}";
+
+            assertThrows(ValueInstantiationException.class, () -> JACKSON_READER.readValue(json, Message.class));
         }
     }
 

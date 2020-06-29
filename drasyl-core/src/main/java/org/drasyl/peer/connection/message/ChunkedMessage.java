@@ -18,7 +18,9 @@
  */
 package org.drasyl.peer.connection.message;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.drasyl.identity.CompressedPublicKey;
 
 import java.util.Arrays;
@@ -55,79 +57,35 @@ public class ChunkedMessage extends ApplicationMessage {
     private final String checksum;
 
     /**
-     * For jackson.
-     */
-    private ChunkedMessage() {
-        this.contentLength = 0;
-        this.checksum = null;
-    }
-
-    /**
      * Creates a new chunked message.
      *
      * @param sender        the sender of the message
      * @param recipient     the recipient of the message
-     * @param msgID         the id of this message (must be the same as the initial chunk)
+     * @param id            the id of this message (must be the same as the initial chunk)
      * @param payload       the chunk
      * @param contentLength the final content length
      * @param checksum      the final checksum
      */
-    protected ChunkedMessage(CompressedPublicKey sender,
-                             CompressedPublicKey recipient,
-                             String msgID,
-                             byte[] payload,
-                             int contentLength,
-                             String checksum) {
-        super(msgID, sender, recipient, payload, (short) 0);
+    ChunkedMessage(CompressedPublicKey sender,
+                   CompressedPublicKey recipient,
+                   String id,
+                   byte[] payload,
+                   int contentLength,
+                   String checksum) {
+        this(sender, recipient, payload, id, contentLength, checksum, (short) 0);
+    }
+
+    @JsonCreator
+    private ChunkedMessage(@JsonProperty("sender") CompressedPublicKey sender,
+                           @JsonProperty("recipient") CompressedPublicKey recipient,
+                           @JsonProperty("payload") byte[] payload,
+                           @JsonProperty("id") String id,
+                           @JsonProperty("contentLength") int contentLength,
+                           @JsonProperty("checksum") String checksum,
+                           @JsonProperty("hopCount") short hopCount) {
+        super(id, sender, recipient, payload, hopCount);
         this.contentLength = contentLength;
         this.checksum = checksum;
-    }
-
-    /**
-     * Creates the initial chunked message.
-     *
-     * @param sender        the sender of the message
-     * @param recipient     the recipient of the message
-     * @param msgID         the id of this message (must be the same as composed message)
-     * @param payload       the chunk
-     * @param contentLength the final content length
-     * @param checksum      the final checksum
-     */
-    public static ChunkedMessage createFirstChunk(CompressedPublicKey sender,
-                                                  CompressedPublicKey recipient,
-                                                  String msgID,
-                                                  byte[] payload,
-                                                  int contentLength,
-                                                  String checksum) {
-        return new ChunkedMessage(sender, recipient, msgID, payload, contentLength, checksum);
-    }
-
-    /**
-     * Creates a follow chunked message.
-     *
-     * @param sender         the sender of the message
-     * @param recipient      the recipient of the message
-     * @param msgID          the id of this message (must be the same as the initial chunk)
-     * @param payload        the chunk
-     */
-    public static ChunkedMessage createFollowChunk(CompressedPublicKey sender,
-                                                   CompressedPublicKey recipient,
-                                                   String msgID,
-                                                   byte[] payload) {
-        return new ChunkedMessage(sender, recipient, msgID, payload, 0, null);
-    }
-
-    /**
-     * Creates the last chunked message.
-     *
-     * @param sender         the sender of the message
-     * @param recipient      the recipient of the message
-     * @param msgID          the id of this message (must be the same as the initial chunk)
-     */
-    public static ChunkedMessage createLastChunk(CompressedPublicKey sender,
-                                                 CompressedPublicKey recipient,
-                                                 String msgID) {
-        return new ChunkedMessage(sender, recipient, msgID, new byte[]{}, 0, null);
     }
 
     public int getContentLength() {
@@ -178,5 +136,52 @@ public class ChunkedMessage extends ApplicationMessage {
 
     public boolean isInitialChunk() {
         return checksum != null;
+    }
+
+    /**
+     * Creates the initial chunked message.
+     *
+     * @param sender        the sender of the message
+     * @param recipient     the recipient of the message
+     * @param msgID         the id of this message (must be the same as composed message)
+     * @param payload       the chunk
+     * @param contentLength the final content length
+     * @param checksum      the final checksum
+     */
+    public static ChunkedMessage createFirstChunk(CompressedPublicKey sender,
+                                                  CompressedPublicKey recipient,
+                                                  String msgID,
+                                                  byte[] payload,
+                                                  int contentLength,
+                                                  String checksum) {
+        return new ChunkedMessage(sender, recipient, msgID, payload, contentLength, checksum);
+    }
+
+    /**
+     * Creates a follow chunked message.
+     *
+     * @param sender    the sender of the message
+     * @param recipient the recipient of the message
+     * @param msgID     the id of this message (must be the same as the initial chunk)
+     * @param payload   the chunk
+     */
+    public static ChunkedMessage createFollowChunk(CompressedPublicKey sender,
+                                                   CompressedPublicKey recipient,
+                                                   String msgID,
+                                                   byte[] payload) {
+        return new ChunkedMessage(sender, recipient, msgID, payload, 0, null);
+    }
+
+    /**
+     * Creates the last chunked message.
+     *
+     * @param sender    the sender of the message
+     * @param recipient the recipient of the message
+     * @param msgID     the id of this message (must be the same as the initial chunk)
+     */
+    public static ChunkedMessage createLastChunk(CompressedPublicKey sender,
+                                                 CompressedPublicKey recipient,
+                                                 String msgID) {
+        return new ChunkedMessage(sender, recipient, msgID, new byte[]{}, 0, null);
     }
 }

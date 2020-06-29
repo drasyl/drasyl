@@ -20,11 +20,14 @@ package org.drasyl.peer.connection.message;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * A message representing a termination of a connection.
@@ -33,12 +36,19 @@ public class QuitMessage extends AbstractMessage implements RequestMessage {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final CloseReason reason;
 
+    @JsonCreator
+    private QuitMessage(@JsonProperty("id") String id,
+                        @JsonProperty("reason") CloseReason reason) {
+        super(id);
+        this.reason = requireNonNull(reason);
+    }
+
     public QuitMessage() {
         this(CloseReason.REASON_UNDEFINED);
     }
 
     public QuitMessage(CloseReason reason) {
-        this.reason = reason;
+        this.reason = requireNonNull(reason);
     }
 
     @Override

@@ -18,16 +18,21 @@
  */
 package org.drasyl.peer.connection.message;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * A message representing a PONG response.
  */
 public class PongMessage extends AbstractResponseMessage<PingMessage> {
-    public PongMessage(String correspondingId) {
-        super(correspondingId);
+    @JsonCreator
+    public PongMessage(@JsonProperty("id") String id,
+                       @JsonProperty("correspondingId") String correspondingId) {
+        super(id, correspondingId);
     }
 
-    private PongMessage() {
-        super();
+    public PongMessage(String correspondingId) {
+        super(correspondingId);
     }
 
     @Override

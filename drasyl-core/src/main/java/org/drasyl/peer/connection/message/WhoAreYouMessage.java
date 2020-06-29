@@ -18,10 +18,22 @@
  */
 package org.drasyl.peer.connection.message;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
+
 /**
  * This message is used to request information the public key of the current communication partner.
  */
 public class WhoAreYouMessage extends AbstractMessage implements RequestMessage {
+    @JsonCreator
+    private WhoAreYouMessage(@JsonProperty("id") String id) {
+        super(id);
+    }
+
+    public WhoAreYouMessage() {
+        super();
+    }
+
     @Override
     public String toString() {
         return "WhoAreYouMessage{" +

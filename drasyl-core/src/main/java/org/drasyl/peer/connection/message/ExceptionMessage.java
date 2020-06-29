@@ -20,6 +20,7 @@ package org.drasyl.peer.connection.message;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 
 import java.util.HashMap;
@@ -36,9 +37,11 @@ public class ExceptionMessage extends AbstractMessage {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final Error error;
 
-    ExceptionMessage() {
-        super();
-        error = null;
+    @JsonCreator
+    private ExceptionMessage(@JsonProperty("id") String id,
+                             @JsonProperty("error") Error error) {
+        super(id);
+        this.error = requireNonNull(error);
     }
 
     /**

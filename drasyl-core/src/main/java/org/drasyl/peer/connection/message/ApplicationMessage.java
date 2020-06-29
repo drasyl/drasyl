@@ -18,6 +18,8 @@
  */
 package org.drasyl.peer.connection.message;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.drasyl.identity.CompressedPublicKey;
@@ -35,20 +37,15 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
     protected final CompressedPublicKey sender;
     protected final byte[] payload;
 
-    protected ApplicationMessage() {
-        super();
-        this.sender = null;
-        this.payload = null;
-    }
-
-    public ApplicationMessage(String id,
-                       CompressedPublicKey sender,
-                       CompressedPublicKey recipient,
-                       byte[] payload,
-                       short hopCount) {
-        super(id, hopCount, recipient);
-        this.sender = sender;
-        this.payload = payload;
+    @JsonCreator
+    public ApplicationMessage(@JsonProperty("id") String id,
+                              @JsonProperty("sender") CompressedPublicKey sender,
+                              @JsonProperty("recipient") CompressedPublicKey recipient,
+                              @JsonProperty("payload") byte[] payload,
+                              @JsonProperty("hopCount") short hopCount) {
+        super(id, recipient, hopCount);
+        this.sender = requireNonNull(sender);
+        this.payload = requireNonNull(payload);
     }
 
     /**
