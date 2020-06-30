@@ -18,13 +18,17 @@
  */
 package org.drasyl.peer;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
 
 import java.net.URI;
 import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Contains information on a specific peer (e.g. identity, public key, and known endpoints).
@@ -38,14 +42,15 @@ public class PeerInformation {
     @JsonIgnore
     private final Set<Path> paths;
 
-    private PeerInformation() {
-        endpoints = Set.of();
-        paths = Set.of();
+    @JsonCreator
+    private PeerInformation(@JsonProperty("endpoints") Set<URI> endpoints) {
+        this.endpoints = requireNonNull(endpoints);
+        this.paths = new HashSet<>();
     }
 
     PeerInformation(Set<URI> endpoints, Set<Path> paths) {
-        this.endpoints = endpoints;
-        this.paths = paths;
+        this.endpoints = requireNonNull(endpoints);
+        this.paths = requireNonNull(paths);
     }
 
     @Override
