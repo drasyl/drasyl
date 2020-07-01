@@ -83,18 +83,20 @@ public class PeerInformation {
                 '}';
     }
 
-    public void add(PeerInformation other) {
+    public PeerInformation add(PeerInformation other) {
         endpoints.addAll(other.getEndpoints());
         paths.addAll(other.getPaths());
+        return this;
     }
 
     public Set<Path> getPaths() {
         return paths;
     }
 
-    public void remove(PeerInformation other) {
+    public PeerInformation remove(PeerInformation other) {
         endpoints.removeAll(other.getEndpoints());
         paths.removeAll(other.getPaths());
+        return this;
     }
 
     public static PeerInformation of(Set<URI> endpoints) {

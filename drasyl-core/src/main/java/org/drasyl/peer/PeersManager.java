@@ -96,28 +96,49 @@ public class PeersManager {
         try {
             lock.writeLock().lock();
 
-            boolean created = !peers.containsKey(publicKey);
-            PeerInformation existingInformation = peers.computeIfAbsent(publicKey, key -> PeerInformation.of());
-            addInformationAndConditionalEventTrigger(publicKey, existingInformation, peerInformation, created);
+            handlePeerStateTransition(publicKey, peers.get(publicKey), peers.getOrDefault(publicKey, PeerInformation.of()).add(peerInformation));
         }
         finally {
             lock.writeLock().unlock();
         }
     }
 
-    private void addInformationAndConditionalEventTrigger(CompressedPublicKey publicKey,
-                                                          PeerInformation existingInformation,
-                                                          PeerInformation peerInformation,
-                                                          boolean created) {
-        int existingPathCount = existingInformation.getPaths().size();
-        existingInformation.add(peerInformation);
-        int newPathCount = existingInformation.getPaths().size();
+    private void handlePeerStateTransition(CompressedPublicKey publicKey,
+                                           PeerInformation existingInformation,
+                                           PeerInformation newInformation) {
+        if (existingInformation == null) {
+            peers.put(publicKey, newInformation);
+            int newPathCount = newInformation.getPaths().size();
 
-        if (existingPathCount == 0 && newPathCount > 0) {
-            eventConsumer.accept(new PeerDirectEvent(new Peer(publicKey)));
+            if (newPathCount > 0) {
+                // peer with direct path discovered
+                eventConsumer.accept(new PeerDirectEvent(new Peer(publicKey)));
+            }
+            else {
+                // peer without direct path discovered
+                eventConsumer.accept(new PeerRelayEvent(new Peer(publicKey)));
+            }
         }
-        else if (created && newPathCount == 0) {
-            eventConsumer.accept(new PeerRelayEvent(new Peer(publicKey)));
+        else {
+            int existingPathCount = existingInformation.getPaths().size();
+            peers.put(publicKey, newInformation);
+            int newPathCount = newInformation.getPaths().size();
+
+            if (existingPathCount == 0 && newPathCount > 0) {
+                // direct path for already known peer added
+                eventConsumer.accept(new PeerDirectEvent(new Peer(publicKey)));
+            }
+            else if (existingPathCount > 0 && newPathCount == 0) {
+                // direct path for already known peer removed
+                if (publicKey.equals(superPeer) || superPeer == null) {
+                    // there is no super peer. every peer without direct connection is unreachable
+                    eventConsumer.accept(new PeerUnreachableEvent(new Peer(publicKey)));
+                }
+                else {
+                    // there is a super peer. every peer without direct connection can be reached via super peer
+                    eventConsumer.accept(new PeerRelayEvent(new Peer(publicKey)));
+                }
+            }
         }
     }
 
@@ -129,28 +150,10 @@ public class PeersManager {
         try {
             lock.writeLock().lock();
 
-            PeerInformation existingInformation = peers.computeIfAbsent(publicKey, key -> PeerInformation.of());
-            removeInformationAndConditionalEventTrigger(publicKey, existingInformation, peerInformation);
+            handlePeerStateTransition(publicKey, peers.get(publicKey), peers.getOrDefault(publicKey, PeerInformation.of()).remove(peerInformation));
         }
         finally {
             lock.writeLock().unlock();
-        }
-    }
-
-    private void removeInformationAndConditionalEventTrigger(CompressedPublicKey publicKey,
-                                                             PeerInformation existingInformation,
-                                                             PeerInformation peerInformation) {
-        int existingPathCount = existingInformation.getPaths().size();
-        existingInformation.remove(peerInformation);
-        int newPathCount = existingInformation.getPaths().size();
-
-        if (existingPathCount > 0 && newPathCount == 0) {
-            if (publicKey.equals(superPeer) || superPeer == null) {
-                eventConsumer.accept(new PeerUnreachableEvent(new Peer(publicKey)));
-            }
-            else {
-                eventConsumer.accept(new PeerRelayEvent(new Peer(publicKey)));
-            }
         }
     }
 
@@ -353,9 +356,7 @@ public class PeersManager {
         try {
             lock.writeLock().lock();
 
-            boolean created = !peers.containsKey(publicKey);
-            PeerInformation existingInformation = peers.computeIfAbsent(publicKey, i -> PeerInformation.of());
-            addInformationAndConditionalEventTrigger(publicKey, existingInformation, peerInformation, created);
+            handlePeerStateTransition(publicKey, peers.get(publicKey), peers.getOrDefault(publicKey, PeerInformation.of()).add(peerInformation));
             superPeer = publicKey;
         }
         finally {
@@ -375,9 +376,7 @@ public class PeersManager {
         try {
             lock.writeLock().lock();
 
-            boolean created = !peers.containsKey(publicKey);
-            PeerInformation existingInformation = peers.computeIfAbsent(publicKey, i -> PeerInformation.of());
-            addInformationAndConditionalEventTrigger(publicKey, existingInformation, peerInformation, created);
+            handlePeerStateTransition(publicKey, peers.get(publicKey), peers.getOrDefault(publicKey, PeerInformation.of()).add(peerInformation));
             children.add(publicKey);
         }
         finally {
@@ -398,8 +397,7 @@ public class PeersManager {
             lock.writeLock().lock();
 
             if (superPeer != null) {
-                PeerInformation existingInformation = peers.computeIfAbsent(superPeer, i -> PeerInformation.of());
-                removeInformationAndConditionalEventTrigger(superPeer, existingInformation, peerInformation);
+                handlePeerStateTransition(superPeer, peers.get(superPeer), peers.getOrDefault(superPeer, PeerInformation.of()).remove(peerInformation));
                 superPeer = null;
             }
         }
@@ -422,8 +420,7 @@ public class PeersManager {
         try {
             lock.writeLock().lock();
 
-            PeerInformation existingInformation = peers.computeIfAbsent(publicKey, i -> PeerInformation.of());
-            removeInformationAndConditionalEventTrigger(publicKey, existingInformation, peerInformation);
+            handlePeerStateTransition(publicKey, peers.get(publicKey), peers.getOrDefault(publicKey, PeerInformation.of()).remove(peerInformation));
             children.remove(publicKey);
         }
         finally {
