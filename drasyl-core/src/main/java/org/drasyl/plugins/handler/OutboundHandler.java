@@ -16,8 +16,10 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.drasyl.plugins.handler;
 
-package org.drasyl.plugins;
+import org.drasyl.peer.connection.message.ApplicationMessage;
 
-public class OutboundHandler implements Handler{
+public interface OutboundHandler extends Handler {
+    void write(HandlerContext ctx, ApplicationMessage msg);
 }

@@ -16,8 +16,18 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
-package org.drasyl.plugins;
+package org.drasyl.plugins.handler;
 
 public interface Handler {
+    /**
+     * Gets called after the {@link Handler} was added to the actual context and it's ready to
+     * handle events.
+     */
+    void handlerAdded(HandlerContext ctx) throws Exception;
+
+    /**
+     * Gets called after the {@link Handler} was removed from the actual context and it doesn't
+     * handle events anymore.
+     */
+    void handlerRemoved(HandlerContext ctx) throws Exception;
 }
