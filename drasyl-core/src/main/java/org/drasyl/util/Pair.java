@@ -18,6 +18,7 @@
  */
 package org.drasyl.util;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
@@ -36,12 +37,14 @@ public class Pair<A, B> implements Serializable {
     private final B second; // NOSONAR
 
     /**
-     * Creates a new pair of two objects.
+     * Creates a new tuple of two elements.
      *
      * @param first  first object
-     * @param second first object
+     * @param second second object
      */
-    private Pair(A first, B second) {
+    @JsonCreator
+    private Pair(@JsonProperty("first") A first,
+                 @JsonProperty("second") B second) {
         this.first = first;
         this.second = second;
     }
@@ -77,7 +80,7 @@ public class Pair<A, B> implements Serializable {
      */
     @JsonProperty("first")
     public A first() {
-        return this.first;
+        return first;
     }
 
     /**
@@ -85,12 +88,12 @@ public class Pair<A, B> implements Serializable {
      */
     @JsonProperty("second")
     public B second() {
-        return this.second;
+        return second;
     }
 
     /**
      * <p>
-     * Obtains a pair of two objects inferring the generic types.
+     * Obtains a tuple of two elements inferring the generic types.
      * </p>
      *
      * <p>

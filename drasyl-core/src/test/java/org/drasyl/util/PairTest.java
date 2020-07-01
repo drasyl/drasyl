@@ -18,10 +18,14 @@
  */
 package org.drasyl.util;
 
-import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+
+import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
+import static org.drasyl.util.JSONUtil.JACKSON_READER;
+import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
@@ -57,9 +61,9 @@ class PairTest {
             assertEquals(pairA, pairA);
             assertEquals(pairA, pairB);
             assertEquals(pairB, pairA);
-            Assertions.assertNotEquals(null, pairA);
-            Assertions.assertNotEquals(pairA, pairC);
-            Assertions.assertNotEquals(pairC, pairA);
+            assertNotEquals(null, pairA);
+            assertNotEquals(pairA, pairC);
+            assertNotEquals(pairC, pairA);
         }
     }
 
@@ -84,6 +88,28 @@ class PairTest {
             String string = Pair.of(5, "beers").toString();
 
             assertEquals("Pair{first=5, second=beers}", string);
+        }
+    }
+
+    @Nested
+    class JsonDeserialization {
+        @Test
+        void shouldDeserializeToCorrectObject() throws IOException {
+            String json = "[5, \"beers\"]";
+
+            assertEquals(Pair.of(5, "beers"), JACKSON_READER.readValue(json, Pair.class));
+        }
+    }
+
+    @Nested
+    class JsonSerialization {
+        @Test
+        void shouldSerializeToCorrectJson() throws IOException {
+            Pair pair = Pair.of(5, "beers");
+
+            assertThatJson(JACKSON_WRITER.writeValueAsString(pair))
+                    .isArray()
+                    .containsExactlyInAnyOrder(5, "beers");
         }
     }
 }
