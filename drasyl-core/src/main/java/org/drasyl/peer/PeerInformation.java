@@ -49,8 +49,8 @@ public class PeerInformation {
     }
 
     PeerInformation(Set<URI> endpoints, Set<Path> paths) {
-        this.endpoints = requireNonNull(endpoints);
-        this.paths = requireNonNull(paths);
+        this.endpoints = new HashSet<>(endpoints);
+        this.paths = new HashSet<>(paths);
     }
 
     @Override
