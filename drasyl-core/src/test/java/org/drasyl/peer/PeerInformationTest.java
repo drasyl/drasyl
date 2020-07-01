@@ -28,18 +28,21 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.net.URI;
 import java.util.Set;
 
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class PeerInformationTest {
-    @Mock
     private Set<URI> endpoints;
-    @Mock
     private Set<Path> paths;
     private PeerInformation underTest;
 
     @BeforeEach
     void setUp() {
+        endpoints = Set.of();
+        paths = Set.of();
         underTest = new PeerInformation(endpoints, paths);
     }
 
@@ -52,8 +55,8 @@ class PeerInformationTest {
         void shouldAddNewInformationToExistingInformation() {
             underTest.add(peerInformation);
 
-            verify(endpoints).addAll(peerInformation.getEndpoints());
-            verify(paths).addAll(peerInformation.getPaths());
+            assertTrue(endpoints.containsAll(peerInformation.getEndpoints()));
+            assertTrue(paths.containsAll(peerInformation.getPaths()));
         }
     }
 
@@ -61,13 +64,25 @@ class PeerInformationTest {
     class Remove {
         @Mock
         private PeerInformation peerInformation;
+        @Mock
+        private Path path;
+
+        @BeforeEach
+        void setUp() {
+            endpoints = Set.of(URI.create("ws://local.de"), URI.create("ws://local.com"));
+            paths = Set.of(path);
+            underTest = new PeerInformation(endpoints, paths);
+        }
 
         @Test
         void shouldRemoveInformationFromExistingInformation() {
+            when(peerInformation.getEndpoints()).thenReturn(Set.of(URI.create("ws://local.de")));
+            when(peerInformation.getPaths()).thenReturn(Set.of(path));
+
             underTest.remove(peerInformation);
 
-            verify(endpoints).removeAll(peerInformation.getEndpoints());
-            verify(paths).removeAll(peerInformation.getPaths());
+            assertFalse(underTest.getEndpoints().containsAll(peerInformation.getEndpoints()));
+            assertTrue(underTest.getPaths().isEmpty());
         }
     }
 }
