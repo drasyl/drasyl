@@ -46,4 +46,25 @@ class SetUtilTest {
             assertEquals(Set.of("apple", "banana"), SetUtil.merge(a, b2));
         }
     }
+
+    @Nested
+    class Difference {
+        @Test
+        void shouldReturnSetContainingAllElementsOfSetAThatAreNotInSetB() {
+            Set<String> a = Set.of("apple", "banana");
+            Set<String> b = Set.of("pear", "cherry", "banana");
+
+            assertEquals(Set.of("apple"), SetUtil.difference(a, b));
+        }
+
+        @Test
+        void shouldReturnSetContainingAllElementsOfSetAThatAreNotB() {
+            Set<String> a = Set.of("apple", "banana");
+            String b1 = "pear";
+            String b2 = "apple";
+
+            assertEquals(Set.of("apple", "banana"), SetUtil.difference(a, b1));
+            assertEquals(Set.of("banana"), SetUtil.difference(a, b2));
+        }
+    }
 }
