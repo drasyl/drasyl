@@ -19,16 +19,22 @@
 package org.drasyl.peer;
 
 import org.drasyl.event.Event;
+import org.drasyl.event.Peer;
+import org.drasyl.event.PeerDirectEvent;
+import org.drasyl.event.PeerRelayEvent;
+import org.drasyl.event.PeerUnreachableEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
+import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.Lock;
@@ -38,8 +44,6 @@ import java.util.function.Consumer;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -47,14 +51,9 @@ import static org.mockito.Mockito.when;
 class PeersManagerTest {
     @Mock
     private ReadWriteLock lock;
-    @Mock
     private Map<CompressedPublicKey, PeerInformation> peers;
-    @Mock
     private Set<CompressedPublicKey> children;
-    @Mock
     private Map<CompressedPublicKey, CompressedPublicKey> grandchildren;
-    @Mock
-    private CompressedPublicKey publicKey;
     @Mock
     private CompressedPublicKey superPeer;
     @Mock
@@ -67,6 +66,9 @@ class PeersManagerTest {
 
     @BeforeEach
     void setUp() {
+        peers = new HashMap<>();
+        children = new HashSet<>();
+        grandchildren = new HashMap<>();
         underTest = new PeersManager(lock, peers, children, grandchildren, superPeer, eventConsumer);
     }
 
@@ -92,23 +94,42 @@ class PeersManagerTest {
     @Nested
     class AddPeerInformation {
         @Mock
-        private CompressedPublicKey identity;
+        private CompressedPublicKey publicKey;
         @Mock
         private PeerInformation peerInformation;
         @Mock
         private PeerInformation existingInformation;
+        @Mock
+        private Path path;
 
         @BeforeEach
         void setup() {
             when(lock.writeLock()).thenReturn(writeLock);
-            when(peers.computeIfAbsent(eq(identity), any())).thenReturn(existingInformation);
         }
 
         @Test
         void shouldAddInformation() {
-            underTest.addPeerInformation(identity, peerInformation);
+            peers.put(publicKey, existingInformation);
+
+            underTest.addPeerInformation(publicKey, peerInformation);
 
             verify(existingInformation).add(peerInformation);
+        }
+
+        @Test
+        void shouldEmitPeerDirectEventIfFirstPathHasBeenAdded() {
+            when(peerInformation.getPaths()).thenReturn(Set.of(path));
+
+            underTest.addPeerInformation(publicKey, peerInformation);
+
+            verify(eventConsumer).accept(new PeerDirectEvent(new Peer(publicKey)));
+        }
+
+        @Test
+        void shouldEmitPeerRelayEventIfPeerInformationWithNoPathsHasBeenCreated() {
+            underTest.addPeerInformation(publicKey, peerInformation);
+
+            verify(eventConsumer).accept(new PeerRelayEvent(new Peer(publicKey)));
         }
 
         @AfterEach
@@ -121,23 +142,50 @@ class PeersManagerTest {
     @Nested
     class RemovePeerInformation {
         @Mock
-        private CompressedPublicKey identity;
+        private CompressedPublicKey publicKey;
         @Mock
         private PeerInformation peerInformation;
-        @Mock
+        @Mock(answer = Answers.RETURNS_DEEP_STUBS)
         private PeerInformation existingInformation;
+        @Mock
+        private Path path;
 
         @BeforeEach
         void setup() {
             when(lock.writeLock()).thenReturn(writeLock);
-            when(peers.computeIfAbsent(eq(identity), any())).thenReturn(existingInformation);
         }
 
         @Test
-        void shouldAddInformation() {
-            underTest.removePeerInformation(identity, peerInformation);
+        void shouldRemoveInformation() {
+            peers.put(publicKey, existingInformation);
+
+            underTest.removePeerInformation(publicKey, peerInformation);
 
             verify(existingInformation).remove(peerInformation);
+        }
+
+        @Test
+        void shouldEmitPeerUnreachableEventIfNoPathsLeftAndNoSuperPeerExists() {
+            underTest = new PeersManager(lock, peers, children, grandchildren, null, eventConsumer);
+
+            peers.put(publicKey, existingInformation);
+            when(existingInformation.getPaths().size()).thenReturn(1).thenReturn(0);
+
+            underTest.removePeerInformation(publicKey, peerInformation);
+
+            verify(eventConsumer).accept(new PeerUnreachableEvent(new Peer(publicKey)));
+        }
+
+        @Test
+        void shouldEmitPeerRelayEventIfNoPathsLeftAndSuperPeerExists() {
+            underTest = new PeersManager(lock, peers, children, grandchildren, superPeer, eventConsumer);
+
+            peers.put(publicKey, existingInformation);
+            when(existingInformation.getPaths().size()).thenReturn(1).thenReturn(0);
+
+            underTest.removePeerInformation(publicKey, peerInformation);
+
+            verify(eventConsumer).accept(new PeerRelayEvent(new Peer(publicKey)));
         }
 
         @AfterEach
@@ -171,7 +219,7 @@ class PeersManagerTest {
     @Nested
     class IsChildren {
         @Mock
-        private CompressedPublicKey identity;
+        private CompressedPublicKey publicKey;
 
         @BeforeEach
         void setup() {
@@ -180,16 +228,14 @@ class PeersManagerTest {
 
         @Test
         void shouldReturnTrueForChildren() {
-            when(children.contains(identity)).thenReturn(true);
+            children.add(publicKey);
 
-            assertTrue(underTest.isChildren(identity));
+            assertTrue(underTest.isChildren(publicKey));
         }
 
         @Test
         void shouldReturnFalseForNonChildren() {
-            when(children.contains(identity)).thenReturn(false);
-
-            assertFalse(underTest.isChildren(identity));
+            assertFalse(underTest.isChildren(publicKey));
         }
 
         @AfterEach
@@ -202,7 +248,7 @@ class PeersManagerTest {
     @Nested
     class AddChildren {
         @Mock
-        private CompressedPublicKey identity;
+        private CompressedPublicKey publicKey;
 
         @BeforeEach
         void setup() {
@@ -211,9 +257,9 @@ class PeersManagerTest {
 
         @Test
         void shouldAddChildren() {
-            underTest.addChildren(identity);
+            underTest.addChildren(publicKey);
 
-            verify(children).addAll(List.of(identity));
+            assertTrue(children.contains(publicKey));
         }
 
         @AfterEach
@@ -237,7 +283,7 @@ class PeersManagerTest {
         void shouldRemoveChildren() {
             underTest.removeChildren(identity);
 
-            verify(children).removeAll(List.of(identity));
+            assertFalse(children.contains(identity));
         }
 
         @AfterEach

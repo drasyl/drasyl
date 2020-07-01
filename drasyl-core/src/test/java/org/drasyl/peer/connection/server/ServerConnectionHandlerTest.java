@@ -262,7 +262,7 @@ class ServerConnectionHandlerTest {
             Set<CompressedPublicKey> childrenAndGrandchildren = Set.of(publicKey0, grandchildrenPublicKey0);
 
             // update peers manager
-            verify(peersManager).addPeerInformationAndAddChildren(eq(publicKey0), any());
+            verify(peersManager).addPeerInformationAndChildren(eq(publicKey0), any());
             verify(peersManager).addGrandchildrenRoute(grandchildrenPublicKey0, publicKey0);
 
             // inform super peer
@@ -271,7 +271,7 @@ class ServerConnectionHandlerTest {
             channel.close();
 
             // update peers manager
-            verify(peersManager).removeChildrenAndRemovePeerInformation(eq(publicKey0), any());
+            verify(peersManager).removeChildrenAndPeerInformation(eq(publicKey0), any());
             verify(peersManager).removeGrandchildrenRoute(grandchildrenPublicKey0);
 
             // inform super peer

@@ -115,10 +115,10 @@ public class ServerConnectionHandler extends AbstractThreeWayHandshakeServerHand
 
         if (requestMessage.isChildrenJoin()) {
             // remove peer information on disconnect
-            channel.closeFuture().addListener(future -> environment.getPeersManager().removeChildrenAndRemovePeerInformation(clientPublicKey, clientInformation));
+            channel.closeFuture().addListener(future -> environment.getPeersManager().removeChildrenAndPeerInformation(clientPublicKey, clientInformation));
 
             // store peer information
-            environment.getPeersManager().addPeerInformationAndAddChildren(clientPublicKey, clientInformation);
+            environment.getPeersManager().addPeerInformationAndChildren(clientPublicKey, clientInformation);
 
             // inform super peer about my new children and grandchildren
             Set<CompressedPublicKey> childrenAndGrandchildren = SetUtil.merge(requestMessage.getChildrenAndGrandchildren(), clientPublicKey);

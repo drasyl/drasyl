@@ -32,7 +32,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -42,10 +41,10 @@ import java.util.stream.Collectors;
 import static java.util.Objects.requireNonNull;
 
 /**
- * This class contains information about other peers. This includes the identities, public keys,
- * available interfaces, connections or relations (e.g. direct/relayed connection, super peer,
- * child, grandchild). Before a relation is set for a peer, it must be ensured that its information
- * is available. Likewise, the information may not be removed from a peer if the peer still has a
+ * This class contains information about other peers. This includes the public keys, available
+ * interfaces, connections or relations (e.g. direct/relayed connection, super peer, child,
+ * grandchild). Before a relation is set for a peer, it must be ensured that its information is
+ * available. Likewise, the information may not be removed from a peer if the peer still has a
  * relation
  *
  * <p>
@@ -89,24 +88,24 @@ public class PeersManager {
         }
     }
 
-    public void addPeerInformation(CompressedPublicKey identity,
+    public void addPeerInformation(CompressedPublicKey publicKey,
                                    PeerInformation peerInformation) {
-        requireNonNull(identity);
+        requireNonNull(publicKey);
         requireNonNull(peerInformation);
 
         try {
             lock.writeLock().lock();
 
-            boolean created = !peers.containsKey(identity);
-            PeerInformation existingInformation = peers.computeIfAbsent(identity, i -> PeerInformation.of());
-            addInformationAndConditionalEventTrigger(identity, existingInformation, peerInformation, created);
+            boolean created = !peers.containsKey(publicKey);
+            PeerInformation existingInformation = peers.computeIfAbsent(publicKey, key -> PeerInformation.of());
+            addInformationAndConditionalEventTrigger(publicKey, existingInformation, peerInformation, created);
         }
         finally {
             lock.writeLock().unlock();
         }
     }
 
-    private void addInformationAndConditionalEventTrigger(CompressedPublicKey identity,
+    private void addInformationAndConditionalEventTrigger(CompressedPublicKey publicKey,
                                                           PeerInformation existingInformation,
                                                           PeerInformation peerInformation,
                                                           boolean created) {
@@ -115,30 +114,30 @@ public class PeersManager {
         int newPathCount = existingInformation.getPaths().size();
 
         if (existingPathCount == 0 && newPathCount > 0) {
-            eventConsumer.accept(new PeerDirectEvent(new Peer(identity)));
+            eventConsumer.accept(new PeerDirectEvent(new Peer(publicKey)));
         }
         else if (created && newPathCount == 0) {
-            eventConsumer.accept(new PeerRelayEvent(new Peer(identity)));
+            eventConsumer.accept(new PeerRelayEvent(new Peer(publicKey)));
         }
     }
 
-    public void removePeerInformation(CompressedPublicKey identity,
+    public void removePeerInformation(CompressedPublicKey publicKey,
                                       PeerInformation peerInformation) {
-        requireNonNull(identity);
+        requireNonNull(publicKey);
         requireNonNull(peerInformation);
 
         try {
             lock.writeLock().lock();
 
-            PeerInformation existingInformation = peers.computeIfAbsent(identity, i -> PeerInformation.of());
-            removeInformationAndConditionalEventTrigger(identity, existingInformation, peerInformation);
+            PeerInformation existingInformation = peers.computeIfAbsent(publicKey, key -> PeerInformation.of());
+            removeInformationAndConditionalEventTrigger(publicKey, existingInformation, peerInformation);
         }
         finally {
             lock.writeLock().unlock();
         }
     }
 
-    private void removeInformationAndConditionalEventTrigger(CompressedPublicKey identity,
+    private void removeInformationAndConditionalEventTrigger(CompressedPublicKey publicKey,
                                                              PeerInformation existingInformation,
                                                              PeerInformation peerInformation) {
         int existingPathCount = existingInformation.getPaths().size();
@@ -146,11 +145,11 @@ public class PeersManager {
         int newPathCount = existingInformation.getPaths().size();
 
         if (existingPathCount > 0 && newPathCount == 0) {
-            if (identity.equals(superPeer) || superPeer == null) {
-                eventConsumer.accept(new PeerUnreachableEvent(new Peer(identity)));
+            if (publicKey.equals(superPeer) || superPeer == null) {
+                eventConsumer.accept(new PeerUnreachableEvent(new Peer(publicKey)));
             }
             else {
-                eventConsumer.accept(new PeerRelayEvent(new Peer(identity)));
+                eventConsumer.accept(new PeerRelayEvent(new Peer(publicKey)));
             }
         }
     }
@@ -169,39 +168,39 @@ public class PeersManager {
         }
     }
 
-    public boolean isChildren(CompressedPublicKey identity) {
-        requireNonNull(identity);
+    public boolean isChildren(CompressedPublicKey publicKey) {
+        requireNonNull(publicKey);
 
         try {
             lock.readLock().lock();
 
-            return children.contains(identity);
+            return children.contains(publicKey);
         }
         finally {
             lock.readLock().unlock();
         }
     }
 
-    public void addChildren(CompressedPublicKey... identities) {
-        requireNonNull(identities);
+    public void addChildren(CompressedPublicKey... publicKeys) {
+        requireNonNull(publicKeys);
 
         try {
             lock.writeLock().lock();
 
-            children.addAll(List.of(identities));
+            children.addAll(List.of(publicKeys));
         }
         finally {
             lock.writeLock().unlock();
         }
     }
 
-    public void removeChildren(CompressedPublicKey... identities) {
-        requireNonNull(identities);
+    public void removeChildren(CompressedPublicKey... publicKeys) {
+        requireNonNull(publicKeys);
 
         try {
             lock.writeLock().lock();
 
-            children.removeAll(List.of(identities));
+            children.removeAll(List.of(publicKeys));
         }
         finally {
             lock.writeLock().unlock();
@@ -247,13 +246,13 @@ public class PeersManager {
         }
     }
 
-    public PeerInformation getPeerInformation(CompressedPublicKey identity) {
-        requireNonNull(identity);
+    public PeerInformation getPeerInformation(CompressedPublicKey publicKey) {
+        requireNonNull(publicKey);
 
         try {
             lock.readLock().lock();
 
-            PeerInformation peerInformation = peers.get(identity);
+            PeerInformation peerInformation = peers.get(publicKey);
             if (peerInformation != null) {
                 return peerInformation;
             }
@@ -266,25 +265,8 @@ public class PeersManager {
         }
     }
 
-    public CompressedPublicKey getIdentity(CompressedPublicKey identity) {
-        try {
-            lock.readLock().lock();
-
-            Optional<CompressedPublicKey> search = peers.keySet().stream().filter(i -> i.equals(identity)).findFirst();
-            if (search.isPresent()) {
-                return search.get();
-            }
-            else {
-                return identity;
-            }
-        }
-        finally {
-            lock.readLock().unlock();
-        }
-    }
-
     /**
-     * Returns identity and information about Super Peer. If no Super Peer is defined, then
+     * Returns public key and information about Super Peer. If no Super Peer is defined, then
      * <code>null</code> is returned.
      *
      * @return
@@ -322,26 +304,26 @@ public class PeersManager {
         }
     }
 
-    public void setSuperPeer(CompressedPublicKey identity) {
-        requireNonNull(identity);
+    public void setSuperPeer(CompressedPublicKey publicKey) {
+        requireNonNull(publicKey);
 
         try {
             lock.writeLock().lock();
 
-            this.superPeer = identity;
+            this.superPeer = publicKey;
         }
         finally {
             lock.writeLock().unlock();
         }
     }
 
-    public boolean isSuperPeer(CompressedPublicKey identity) {
-        requireNonNull(identity);
+    public boolean isSuperPeer(CompressedPublicKey publicKey) {
+        requireNonNull(publicKey);
 
         try {
             lock.readLock().lock();
 
-            return Objects.equals(superPeer, identity);
+            return Objects.equals(superPeer, publicKey);
         }
         finally {
             lock.readLock().unlock();
@@ -363,18 +345,18 @@ public class PeersManager {
      * Shortcut for call {@link #addPeerInformation(CompressedPublicKey, PeerInformation)} and
      * {@link #setSuperPeer(CompressedPublicKey)}.
      */
-    public void addPeerInformationAndSetSuperPeer(CompressedPublicKey identity,
+    public void addPeerInformationAndSetSuperPeer(CompressedPublicKey publicKey,
                                                   PeerInformation peerInformation) {
-        requireNonNull(identity);
+        requireNonNull(publicKey);
         requireNonNull(peerInformation);
 
         try {
             lock.writeLock().lock();
 
-            boolean created = !peers.containsKey(identity);
-            PeerInformation existingInformation = peers.computeIfAbsent(identity, i -> PeerInformation.of());
-            addInformationAndConditionalEventTrigger(identity, existingInformation, peerInformation, created);
-            superPeer = identity;
+            boolean created = !peers.containsKey(publicKey);
+            PeerInformation existingInformation = peers.computeIfAbsent(publicKey, i -> PeerInformation.of());
+            addInformationAndConditionalEventTrigger(publicKey, existingInformation, peerInformation, created);
+            superPeer = publicKey;
         }
         finally {
             lock.writeLock().unlock();
@@ -385,18 +367,18 @@ public class PeersManager {
      * Shortcut for call {@link #addPeerInformation(CompressedPublicKey, PeerInformation)} and
      * {@link #addChildren(CompressedPublicKey...)}.
      */
-    public void addPeerInformationAndAddChildren(CompressedPublicKey identity,
-                                                 PeerInformation peerInformation) {
-        requireNonNull(identity);
+    public void addPeerInformationAndChildren(CompressedPublicKey publicKey,
+                                              PeerInformation peerInformation) {
+        requireNonNull(publicKey);
         requireNonNull(peerInformation);
 
         try {
             lock.writeLock().lock();
 
-            boolean created = !peers.containsKey(identity);
-            PeerInformation existingInformation = peers.computeIfAbsent(identity, i -> PeerInformation.of());
-            addInformationAndConditionalEventTrigger(identity, existingInformation, peerInformation, created);
-            children.add(identity);
+            boolean created = !peers.containsKey(publicKey);
+            PeerInformation existingInformation = peers.computeIfAbsent(publicKey, i -> PeerInformation.of());
+            addInformationAndConditionalEventTrigger(publicKey, existingInformation, peerInformation, created);
+            children.add(publicKey);
         }
         finally {
             lock.writeLock().unlock();
@@ -432,17 +414,17 @@ public class PeersManager {
      *
      * @return
      */
-    public void removeChildrenAndRemovePeerInformation(CompressedPublicKey identity,
-                                                       PeerInformation peerInformation) {
-        requireNonNull(identity);
+    public void removeChildrenAndPeerInformation(CompressedPublicKey publicKey,
+                                                 PeerInformation peerInformation) {
+        requireNonNull(publicKey);
         requireNonNull(peerInformation);
 
         try {
             lock.writeLock().lock();
 
-            PeerInformation existingInformation = peers.computeIfAbsent(identity, i -> PeerInformation.of());
-            removeInformationAndConditionalEventTrigger(identity, existingInformation, peerInformation);
-            children.remove(identity);
+            PeerInformation existingInformation = peers.computeIfAbsent(publicKey, i -> PeerInformation.of());
+            removeInformationAndConditionalEventTrigger(publicKey, existingInformation, peerInformation);
+            children.remove(publicKey);
         }
         finally {
             lock.writeLock().unlock();
