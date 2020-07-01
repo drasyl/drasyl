@@ -21,7 +21,7 @@ package org.drasyl.util;
 import java.util.HashSet;
 import java.util.Set;
 
-public class SetUtil {
+public final class SetUtil {
     private SetUtil() {
         // util class
     }
@@ -30,10 +30,10 @@ public class SetUtil {
      * Returns a set containing all elements from set <code>a</code> and set <code>b</code>. If
      * there are duplicates in both sets, the elements from the set <code>a</code> are favored.
      *
-     * @param a
-     * @param b
-     * @param <E>
-     * @return
+     * @param a   set a
+     * @param b   set b
+     * @param <E> the {@code Set}'s element type
+     * @return a {@code Set} containing the specified elements
      */
     public static <E> Set<E> merge(Set<E> a, Set<E> b) {
         HashSet<E> result = new HashSet<>(a);
@@ -46,14 +46,13 @@ public class SetUtil {
      * <code>b</code> is ignored if an equal element is already contained in the set
      * <code>a</code>.
      *
-     * @param a
-     * @param b
-     * @param <E>
-     * @return
+     * @param a   set a
+     * @param b   set b
+     * @param <E> the {@code Set}'s element type
+     * @return a {@code Set} containing the specified elements
      */
-    public static <E> Set<E> merge(Set<E> a, E b) {
-        HashSet<E> result = new HashSet<>(a);
-        result.add(b);
-        return result;
+    @SafeVarargs
+    public static <E> Set<E> merge(Set<E> a, E... b) {
+        return merge(a, Set.of(b));
     }
 }
