@@ -18,6 +18,7 @@
  */
 package org.drasyl.pipeline;
 
+import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.event.Event;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.util.CheckedConsumer;
@@ -45,13 +46,15 @@ class DrasylPipelineTest {
     @Mock
     private Map<String, AbstractHandlerContext> handlerNames;
     @Mock
-    private DrasylPipeline.HeadContext head;
+    private AbstractHandlerContext head;
     @Mock
-    private DrasylPipeline.TailContext tail;
+    private AbstractHandlerContext tail;
     @Mock
     private Consumer<Event> eventConsumer;
     @Mock
     private CheckedConsumer<ApplicationMessage> outboundConsumer;
+    @Mock
+    private Scheduler scheduler;
 
     @BeforeEach
     void setUp() {
@@ -60,7 +63,7 @@ class DrasylPipelineTest {
     @Test
     void shouldAddHandlerOnFirstPosition() {
         when(head.getNext()).thenReturn(tail);
-        DrasylPipeline pipeline = new DrasylPipeline(handlerNames, head, tail, eventConsumer, outboundConsumer);
+        DrasylPipeline pipeline = new DrasylPipeline(handlerNames, head, tail, eventConsumer, outboundConsumer, scheduler);
 
         Handler handler = mock(Handler.class);
 
@@ -73,7 +76,7 @@ class DrasylPipelineTest {
     @Test
     void shouldAddHandlerOnLastPosition() {
         when(tail.getPrev()).thenReturn(head);
-        DrasylPipeline pipeline = new DrasylPipeline(handlerNames, head, tail, eventConsumer, outboundConsumer);
+        DrasylPipeline pipeline = new DrasylPipeline(handlerNames, head, tail, eventConsumer, outboundConsumer, scheduler);
 
         Handler handler = mock(Handler.class);
 
@@ -86,7 +89,7 @@ class DrasylPipelineTest {
     @Test
     void shouldAddHandlerBeforePosition() throws Exception {
         ArgumentCaptor<AbstractHandlerContext> captor = ArgumentCaptor.forClass(AbstractHandlerContext.class);
-        DrasylPipeline pipeline = new DrasylPipeline(handlerNames, head, tail, eventConsumer, outboundConsumer);
+        DrasylPipeline pipeline = new DrasylPipeline(handlerNames, head, tail, eventConsumer, outboundConsumer, scheduler);
 
         AbstractHandlerContext baseCtx = mock(AbstractHandlerContext.class);
         Handler handler = mock(Handler.class);
@@ -104,7 +107,7 @@ class DrasylPipelineTest {
     @Test
     void shouldAddHandlerAfterPosition() throws Exception {
         ArgumentCaptor<AbstractHandlerContext> captor = ArgumentCaptor.forClass(AbstractHandlerContext.class);
-        DrasylPipeline pipeline = new DrasylPipeline(handlerNames, head, tail, eventConsumer, outboundConsumer);
+        DrasylPipeline pipeline = new DrasylPipeline(handlerNames, head, tail, eventConsumer, outboundConsumer, scheduler);
 
         AbstractHandlerContext baseCtx = mock(AbstractHandlerContext.class);
         Handler handler = mock(Handler.class);
@@ -121,14 +124,14 @@ class DrasylPipelineTest {
 
     @Test
     void shouldThrowExceptionIfHandlerDoesNotExistsOnRemoveHandler() {
-        DrasylPipeline pipeline = new DrasylPipeline(handlerNames, head, tail, eventConsumer, outboundConsumer);
+        DrasylPipeline pipeline = new DrasylPipeline(handlerNames, head, tail, eventConsumer, outboundConsumer, scheduler);
 
         assertThrows(NoSuchElementException.class, () -> pipeline.remove("name"));
     }
 
     @Test
     void shouldRemoveHandler() throws Exception {
-        DrasylPipeline pipeline = new DrasylPipeline(handlerNames, head, tail, eventConsumer, outboundConsumer);
+        DrasylPipeline pipeline = new DrasylPipeline(handlerNames, head, tail, eventConsumer, outboundConsumer, scheduler);
 
         AbstractHandlerContext ctx = mock(AbstractHandlerContext.class);
         Handler handler = mock(Handler.class);
@@ -144,5 +147,102 @@ class DrasylPipelineTest {
         verify(ctx).setNextHandlerContext(null);
         verify(ctx).setPrevHandlerContext(null);
         verify(handler).handlerRemoved(ctx);
+    }
+
+    @Test
+    void shouldReplaceHandler() throws Exception {
+        ArgumentCaptor<AbstractHandlerContext> captor1 = ArgumentCaptor.forClass(AbstractHandlerContext.class);
+        ArgumentCaptor<AbstractHandlerContext> captor2 = ArgumentCaptor.forClass(AbstractHandlerContext.class);
+        DrasylPipeline pipeline = new DrasylPipeline(handlerNames, head, tail, eventConsumer, outboundConsumer, scheduler);
+
+        AbstractHandlerContext oldCtx = mock(AbstractHandlerContext.class);
+        Handler oldHandler = mock(Handler.class);
+
+        when(handlerNames.remove("oldName")).thenReturn(oldCtx);
+        when(oldCtx.handler()).thenReturn(oldHandler);
+        when(oldCtx.getPrev()).thenReturn(head);
+        when(oldCtx.getNext()).thenReturn(tail);
+
+        Handler newHandler = mock(Handler.class);
+
+        pipeline.replace("oldName", "newName", newHandler);
+
+        verify(oldHandler).handlerRemoved(oldCtx);
+        verify(oldCtx).setPrevHandlerContext(null);
+        verify(oldCtx).setNextHandlerContext(null);
+        verify(head).setNextHandlerContext(captor1.capture());
+        verify(tail).setPrevHandlerContext(captor2.capture());
+
+        assertEquals(captor1.getValue(), captor2.getValue());
+        assertEquals(newHandler, captor1.getValue().handler());
+
+        verify(newHandler).handlerAdded(captor1.getValue());
+    }
+
+    @Test
+    void shouldReturnCorrectHandler() {
+        DrasylPipeline pipeline = new DrasylPipeline(handlerNames, head, tail, eventConsumer, outboundConsumer, scheduler);
+
+        AbstractHandlerContext ctx = mock(AbstractHandlerContext.class);
+        Handler handler = mock(Handler.class);
+
+        when(handlerNames.containsKey("name")).thenReturn(true);
+        when(handlerNames.get("name")).thenReturn(ctx);
+        when(ctx.handler()).thenReturn(handler);
+
+        assertEquals(handler, pipeline.get("name"));
+    }
+
+    @Test
+    void shouldReturnCorrectContext() {
+        DrasylPipeline pipeline = new DrasylPipeline(handlerNames, head, tail, eventConsumer, outboundConsumer, scheduler);
+
+        AbstractHandlerContext ctx = mock(AbstractHandlerContext.class);
+
+        when(handlerNames.get("name")).thenReturn(ctx);
+
+        assertEquals(ctx, pipeline.context("name"));
+    }
+
+    @Test
+    void shouldExecuteInboundMessage() {
+        ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
+        DrasylPipeline pipeline = new DrasylPipeline(handlerNames, head, tail, eventConsumer, outboundConsumer, scheduler);
+
+        ApplicationMessage msg = mock(ApplicationMessage.class);
+
+        pipeline.executeInbound(msg);
+
+        verify(scheduler).scheduleDirect(captor.capture());
+        captor.getValue().run();
+        verify(head).fireRead(eq(msg));
+    }
+
+    @Test
+    void shouldExecuteInboundEvent() {
+        ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
+        DrasylPipeline pipeline = new DrasylPipeline(handlerNames, head, tail, eventConsumer, outboundConsumer, scheduler);
+
+        Event event = mock(Event.class);
+
+        pipeline.executeInbound(event);
+
+        verify(scheduler).scheduleDirect(captor.capture());
+        captor.getValue().run();
+        verify(head).fireEventTriggered(eq(event));
+    }
+
+    @Test
+    void shouldExecuteOutboundMessage() {
+        ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
+        DrasylPipeline pipeline = new DrasylPipeline(handlerNames, head, tail, eventConsumer, outboundConsumer, scheduler);
+
+        ApplicationMessage msg = mock(ApplicationMessage.class);
+
+        pipeline.executeOutbound(msg);
+
+        verify(scheduler).scheduleDirect(captor.capture());
+        captor.getValue().run();
+        verify(tail).write(eq(msg));
     }
 }

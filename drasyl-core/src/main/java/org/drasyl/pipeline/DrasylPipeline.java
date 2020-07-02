@@ -18,6 +18,7 @@
  */
 package org.drasyl.pipeline;
 
+import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.peer.connection.message.ApplicationMessage;
@@ -44,17 +45,20 @@ public class DrasylPipeline implements Pipeline {
     private final AbstractHandlerContext tail;
     private final Consumer<Event> eventConsumer;
     private final CheckedConsumer<ApplicationMessage> outboundConsumer;
+    private final Scheduler scheduler;
 
     DrasylPipeline(Map<String, AbstractHandlerContext> handlerNames,
                    AbstractHandlerContext head,
                    AbstractHandlerContext tail,
                    Consumer<Event> eventConsumer,
-                   CheckedConsumer<ApplicationMessage> outboundConsumer) {
+                   CheckedConsumer<ApplicationMessage> outboundConsumer,
+                   Scheduler scheduler) {
         this.handlerNames = handlerNames;
         this.head = head;
         this.tail = tail;
         this.eventConsumer = eventConsumer;
         this.outboundConsumer = outboundConsumer;
+        this.scheduler = scheduler;
     }
 
     private void initHeadAndTail() {
@@ -77,6 +81,7 @@ public class DrasylPipeline implements Pipeline {
         this.tail = new TailContext();
         this.eventConsumer = eventConsumer;
         this.outboundConsumer = outboundConsumer;
+        this.scheduler = DrasylScheduler.getInstance();
 
         initHeadAndTail();
     }
@@ -309,20 +314,20 @@ public class DrasylPipeline implements Pipeline {
 
     @Override
     public void executeInbound(ApplicationMessage msg) {
-        DrasylScheduler.getInstance().scheduleDirect(() -> this.head.fireRead(msg));
+        this.scheduler.scheduleDirect(() -> this.head.fireRead(msg));
     }
 
     @Override
     public void executeInbound(Event event) {
-        DrasylScheduler.getInstance().scheduleDirect(() -> this.head.fireEventTriggered(event));
+        this.scheduler.scheduleDirect(() -> this.head.fireEventTriggered(event));
     }
 
     @Override
     public void executeOutbound(ApplicationMessage msg) {
-        DrasylScheduler.getInstance().scheduleDirect(() -> this.tail.write(msg));
+        this.scheduler.scheduleDirect(() -> this.tail.write(msg));
     }
 
-    class HeadContext extends AbstractHandlerContext implements InboundHandler, OutboundHandler {
+    final class HeadContext extends AbstractHandlerContext implements InboundHandler, OutboundHandler {
         public HeadContext() {
             super("DRASYL_HEAD_HANDLER");
         }
@@ -382,7 +387,7 @@ public class DrasylPipeline implements Pipeline {
         }
     }
 
-    class TailContext extends AbstractHandlerContext implements InboundHandler, OutboundHandler {
+    final class TailContext extends AbstractHandlerContext implements InboundHandler, OutboundHandler {
         public TailContext() {
             super("DRASYL_TAIL_HANDLER");
         }
