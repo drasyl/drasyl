@@ -57,13 +57,7 @@ public class DrasylPipeline implements Pipeline {
         this.outboundConsumer = outboundConsumer;
     }
 
-    public DrasylPipeline(Consumer<Event> eventConsumer,
-                          CheckedConsumer<ApplicationMessage> outboundConsumer) {
-        this.eventConsumer = eventConsumer;
-        this.outboundConsumer = outboundConsumer;
-        this.handlerNames = new ConcurrentHashMap<>();
-        this.head = new HeadContext();
-        this.tail = new TailContext();
+    private void initHeadAndTail() {
         this.head.setPrevHandlerContext(this.head);
         this.head.setNextHandlerContext(this.tail);
         this.tail.setPrevHandlerContext(this.head);
@@ -74,6 +68,17 @@ public class DrasylPipeline implements Pipeline {
         catch (Exception e) {
             this.head.fireExceptionCaught(e);
         }
+    }
+
+    public DrasylPipeline(Consumer<Event> eventConsumer,
+                          CheckedConsumer<ApplicationMessage> outboundConsumer) {
+        this.handlerNames = new ConcurrentHashMap<>();
+        this.head = new HeadContext();
+        this.tail = new TailContext();
+        this.eventConsumer = eventConsumer;
+        this.outboundConsumer = outboundConsumer;
+
+        initHeadAndTail();
     }
 
     @Override
@@ -317,7 +322,7 @@ public class DrasylPipeline implements Pipeline {
         DrasylScheduler.getInstance().scheduleDirect(() -> this.tail.write(msg));
     }
 
-    final class HeadContext extends AbstractHandlerContext implements InboundHandler, OutboundHandler {
+    class HeadContext extends AbstractHandlerContext implements InboundHandler, OutboundHandler {
         public HeadContext() {
             super("DRASYL_HEAD_HANDLER");
         }
@@ -377,7 +382,7 @@ public class DrasylPipeline implements Pipeline {
         }
     }
 
-    final class TailContext extends AbstractHandlerContext implements InboundHandler, OutboundHandler {
+    class TailContext extends AbstractHandlerContext implements InboundHandler, OutboundHandler {
         public TailContext() {
             super("DRASYL_TAIL_HANDLER");
         }
