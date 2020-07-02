@@ -55,6 +55,13 @@ public class DrasylPipeline implements Pipeline {
         this.head.setPrevHandlerContext(this.head);
         this.head.setNextHandlerContext(this.tail);
         this.tail.setPrevHandlerContext(this.head);
+        try {
+            this.head.handler().handlerAdded(this.head);
+            this.tail.handler().handlerAdded(this.head);
+        }
+        catch (Exception e) {
+            this.head.fireExceptionCaught(e);
+        }
     }
 
     @Override
@@ -103,7 +110,10 @@ public class DrasylPipeline implements Pipeline {
             handlerCtx.handler().handlerAdded(handlerCtx);
         }
         catch (Exception e) {
-            LOG.warn("Error on adding handler `{}`: ", handlerCtx.name(), e);
+            handlerCtx.fireExceptionCaught(e);
+            if (LOG.isWarnEnabled()) {
+                LOG.warn("Error on adding handler `{}`: ", handlerCtx.name(), e);
+            }
         }
     }
 
@@ -197,6 +207,9 @@ public class DrasylPipeline implements Pipeline {
                 throw new NoSuchElementException("There is no handler with this name in the pipeline");
             }
 
+            // call remove action
+            removeHandlerAction(ctx);
+
             AbstractHandlerContext prev = ctx.prev;
             AbstractHandlerContext next = ctx.next;
             prev.setNextHandlerContext(next);
@@ -206,6 +219,19 @@ public class DrasylPipeline implements Pipeline {
         }
 
         return this;
+    }
+
+    private void removeHandlerAction(AbstractHandlerContext ctx) {
+        // call remove action
+        try {
+            ctx.handler().handlerRemoved(ctx);
+        }
+        catch (Exception e) {
+            ctx.fireExceptionCaught(e);
+            if (LOG.isWarnEnabled()) {
+                LOG.warn("Error on adding handler `{}`: ", ctx.name(), e);
+            }
+        }
     }
 
     @Override
@@ -223,6 +249,9 @@ public class DrasylPipeline implements Pipeline {
             AbstractHandlerContext oldCtx = handlerNames.remove(oldName);
             AbstractHandlerContext prev = oldCtx.prev;
             AbstractHandlerContext next = oldCtx.next;
+
+            // call remove action
+            removeHandlerAction(oldCtx);
 
             newCtx = new DefaultHandlerContext(newName, newHandler);
             // Set correct pointer on new context

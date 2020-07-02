@@ -24,17 +24,59 @@ import org.drasyl.peer.connection.message.ApplicationMessage;
 import java.util.concurrent.CompletableFuture;
 
 public interface HandlerContext {
+    /**
+     * @return the name of the {@link Handler}
+     */
     String name();
 
+    /**
+     * @return the associated {@link Handler}
+     */
     Handler handler();
 
+    /**
+     * Received an {@link Throwable} in one of the inbound operations.
+     * <p>
+     * This will result in having the  {@link InboundHandler#exceptionCaught(HandlerContext,
+     * Throwable)} method  called of the next  {@link InboundHandler} contained in the  {@link
+     * Pipeline}.
+     *
+     * @param cause the cause
+     */
     HandlerContext fireExceptionCaught(Throwable cause);
 
+    /**
+     * Received a message.
+     * <p>
+     * This will result in having the {@link InboundHandler#read(HandlerContext,
+     * ApplicationMessage)} method  called of the next {@link InboundHandler} contained in the
+     * {@link Pipeline}.
+     *
+     * @param msg the message
+     */
     HandlerContext fireRead(ApplicationMessage msg);
 
+    /**
+     * Received an event.
+     * <p>
+     * This will result in having the  {@link InboundHandler#eventTriggered(HandlerContext, Event)}
+     * method  called of the next  {@link InboundHandler} contained in the  {@link Pipeline}.
+     *
+     * @param event the event
+     */
     HandlerContext fireEventTriggered(Event event);
 
+    /**
+     * Request to write a message via this {@link HandlerContext} through the {@link Pipeline}.
+     *
+     * @param msg the message
+     */
     CompletableFuture<Void> write(ApplicationMessage msg);
 
+    /**
+     * Request to write a message via this {@link HandlerContext} through the {@link Pipeline}.
+     *
+     * @param msg the message
+     */
     CompletableFuture<Void> write(ApplicationMessage msg, CompletableFuture<Void> future);
 }
