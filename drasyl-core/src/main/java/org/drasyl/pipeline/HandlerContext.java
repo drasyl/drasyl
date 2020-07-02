@@ -16,8 +16,25 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
+package org.drasyl.pipeline;
 
-package org.drasyl.plugins.handler;
+import org.drasyl.event.Event;
+import org.drasyl.peer.connection.message.ApplicationMessage;
 
-public class HandlerContext {
+import java.util.concurrent.CompletableFuture;
+
+public interface HandlerContext {
+    String name();
+
+    Handler handler();
+
+    HandlerContext fireExceptionCaught(Throwable cause);
+
+    HandlerContext fireRead(ApplicationMessage msg);
+
+    HandlerContext fireEventTriggered(Event event);
+
+    CompletableFuture<Void> write(ApplicationMessage msg);
+
+    CompletableFuture<Void> write(ApplicationMessage msg, CompletableFuture<Void> future);
 }

@@ -16,16 +16,19 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.plugins.pipeline;
+package org.drasyl.pipeline;
 
-import org.drasyl.DrasylException;
+import org.drasyl.peer.connection.message.ApplicationMessage;
 
-public class PipelineException extends DrasylException {
-    public PipelineException(Throwable cause) {
-        super(cause);
-    }
+import java.util.concurrent.CompletableFuture;
 
-    public PipelineException(String cause) {
-        super(cause);
-    }
+public interface OutboundHandler extends Handler {
+    /**
+     * Gets called if a {@link ApplicationMessage} was send from the application to a recipient.
+     *
+     * @param ctx    handler context
+     * @param msg    the message
+     * @param future a future for the message
+     */
+    void write(HandlerContext ctx, ApplicationMessage msg, CompletableFuture<Void> future);
 }

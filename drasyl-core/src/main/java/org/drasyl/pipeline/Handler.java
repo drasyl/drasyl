@@ -16,18 +16,18 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.plugins.handler;
+package org.drasyl.pipeline;
 
-import org.drasyl.event.Event;
-import org.drasyl.peer.connection.message.ApplicationMessage;
-
-public interface InboundHandler extends Handler {
-    void read(HandlerContext ctx, ApplicationMessage msg);
-
-    void eventTriggered(HandlerContext ctx, Event event);
+public interface Handler {
+    /**
+     * Gets called after the {@link Handler} was added to the actual context and it's ready to
+     * handle events.
+     */
+    void handlerAdded(HandlerContext ctx) throws Exception;
 
     /**
-     * Gets called if a {@link Throwable} was thrown.
+     * Gets called after the {@link Handler} was removed from the actual context and it doesn't
+     * handle events anymore.
      */
-    void exceptionCaught(HandlerContext ctx, Throwable cause) throws Exception;
+    void handlerRemoved(HandlerContext ctx) throws Exception;
 }

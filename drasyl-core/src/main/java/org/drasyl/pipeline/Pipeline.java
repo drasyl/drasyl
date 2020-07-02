@@ -16,13 +16,59 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.plugins.pipeline;
+package org.drasyl.pipeline;
 
-import org.drasyl.plugins.handler.Handler;
-import org.drasyl.plugins.handler.HandlerContext;
+import org.drasyl.event.Event;
+import org.drasyl.peer.connection.message.ApplicationMessage;
 
 import java.util.NoSuchElementException;
 
+/**
+ * The following diagram describes how I/O events are processed by {@link Handler}s in a {@link
+ * Pipeline} typically. An I/O event is handled by either a {@link InboundHandler} or a {@link
+ * OutboundHandler} and be forwarded to its closest handler by calling the event propagation methods
+ * defined in {@link HandlerContext}, such as {@link HandlerContext#fireRead(ApplicationMessage)}
+ * and {@link HandlerContext#write(ApplicationMessage)}.
+ *
+ * <pre>
+ *                                                 I/O Request
+ *                                            via {@link HandlerContext}
+ *                                                      |
+ *  +---------------------------------------------------+---------------+
+ *  |                            Pipeline               |               |
+ *  |                                                  \|/              |
+ *  |    +---------------------+            +-----------+----------+    |
+ *  |    | Inbound Handler  N  |            | Outbound Handler  1  |    |
+ *  |    +----------+----------+            +-----------+----------+    |
+ *  |              /|\                                  |               |
+ *  |               |                                  \|/              |
+ *  |    +----------+----------+            +-----------+----------+    |
+ *  |    | Inbound Handler N-1 |            | Outbound Handler  2  |    |
+ *  |    +----------+----------+            +-----------+----------+    |
+ *  |              /|\                                  .               |
+ *  |               .                                   .               |
+ *  |   HandlerContext.fireIN_EVT()          HandlerContext.OUT_EVT()   |
+ *  |        [ method call]                       [method call]         |
+ *  |               .                                   .               |
+ *  |               .                                  \|/              |
+ *  |    +----------+----------+            +-----------+----------+    |
+ *  |    | Inbound Handler  2  |            | Outbound Handler M-1 |    |
+ *  |    +----------+----------+            +-----------+----------+    |
+ *  |              /|\                                  |               |
+ *  |               |                                  \|/              |
+ *  |    +----------+----------+            +-----------+----------+    |
+ *  |    | Inbound Handler  1  |            | Outbound Handler  M  |    |
+ *  |    +----------+----------+            +-----------+----------+    |
+ *  |              /|\                                  |               |
+ *  +---------------+-----------------------------------+---------------+
+ *                  |                                  \|/
+ *  +---------------+-----------------------------------+---------------+
+ *  |               |                                   |               |
+ *  |       [ Messenger.send() ]              [ DrasylNode.send() ]     |
+ *  |                                                                   |
+ *  |  drasyl Internal I/O                                              |
+ *  +-------------------------------------------------------------------+
+ */
 public interface Pipeline {
     /**
      * Inserts a {@link Handler} at the first position of this pipeline.
@@ -33,7 +79,7 @@ public interface Pipeline {
      *                                  pipeline
      * @throws NullPointerException     if the specified handler is {@code null}
      */
-    void addFirst(String name, Handler handler);
+    Pipeline addFirst(String name, Handler handler);
 
     /**
      * Appends a {@link Handler} at the last position of this pipeline.
@@ -44,7 +90,7 @@ public interface Pipeline {
      *                                  pipeline
      * @throws NullPointerException     if the specified handler is {@code null}
      */
-    void addLast(String name, Handler handler);
+    Pipeline addLast(String name, Handler handler);
 
     /**
      * Inserts a {@link Handler} before an existing handler of this pipeline.
@@ -58,7 +104,7 @@ public interface Pipeline {
      *                                  pipeline
      * @throws NullPointerException     if the specified baseName or handler is {@code null}
      */
-    void addBefore(String baseName, String name, Handler handler);
+    Pipeline addBefore(String baseName, String name, Handler handler);
 
     /**
      * Inserts a {@link Handler} after an existing handler of this pipeline.
@@ -72,7 +118,7 @@ public interface Pipeline {
      *                                  pipeline
      * @throws NullPointerException     if the specified baseName or handler is {@code null}
      */
-    void addAfter(String baseName, String name, Handler handler);
+    Pipeline addAfter(String baseName, String name, Handler handler);
 
     /**
      * Removes the {@link Handler} with the specified name from this pipeline.
@@ -82,7 +128,7 @@ public interface Pipeline {
      *                                pipeline
      * @throws NullPointerException   if the specified name is {@code null}
      */
-    void remove(String name);
+    Pipeline remove(String name);
 
     /**
      * Replaces the {@link Handler} of the specified name with a new handler in this pipeline.
@@ -96,7 +142,7 @@ public interface Pipeline {
      *                                  this pipeline, except for the handler to be replaced
      * @throws NullPointerException     if the specified old handler or new handler is {@code null}
      */
-    void replace(String oldName, String newName, Handler newHandler);
+    Pipeline replace(String oldName, String newName, Handler newHandler);
 
     /**
      * Returns the {@link Handler} with the specified name in this pipeline.
@@ -114,5 +160,9 @@ public interface Pipeline {
      */
     HandlerContext context(String name);
 
+    void executeInbound(ApplicationMessage msg);
 
+    void executeInbound(Event event);
+
+    void executeOutbound(ApplicationMessage msg);
 }

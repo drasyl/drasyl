@@ -16,10 +16,14 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.plugins.handler;
+package org.drasyl.util;
 
-import org.drasyl.peer.connection.message.ApplicationMessage;
-
-public interface OutboundHandler extends Handler {
-    void write(HandlerContext ctx, ApplicationMessage msg);
+@FunctionalInterface
+public interface CheckedConsumer<T> {
+    /**
+     * Performs this operation on the given argument.
+     *
+     * @param t the input argument
+     */
+    void accept(T t) throws Exception;
 }

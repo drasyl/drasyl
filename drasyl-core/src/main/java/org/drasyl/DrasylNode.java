@@ -27,7 +27,6 @@ import io.sentry.Sentry;
 import io.sentry.event.User;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
-import org.drasyl.event.MessageEvent;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
@@ -50,7 +49,7 @@ import org.drasyl.peer.connection.message.RelayableMessage;
 import org.drasyl.peer.connection.message.WhoisMessage;
 import org.drasyl.peer.connection.server.Server;
 import org.drasyl.peer.connection.server.ServerException;
-import org.drasyl.util.Pair;
+import org.drasyl.pipeline.DrasylPipeline;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -107,6 +106,7 @@ public abstract class DrasylNode {
     }
 
     private final DrasylConfig config;
+    private final DrasylPipeline pipeline;
     private final IdentityManager identityManager;
     private final PeersManager peersManager;
     private final Messenger messenger;
@@ -133,14 +133,15 @@ public abstract class DrasylNode {
         try {
             this.config = config;
             this.identityManager = new IdentityManager(this.config);
-            this.peersManager = new PeersManager(this::onEvent);
+            this.peersManager = new PeersManager(this::onInternalEvent);
             this.messenger = new Messenger(this::messageSink);
-            this.intraVmDiscovery = new IntraVmDiscovery(identityManager::getPublicKey, messenger, peersManager, this::onEvent);
-            this.superPeerClient = new SuperPeerClient(this.config, identityManager::getIdentity, peersManager, messenger, DrasylNode.WORKER_GROUP, this::onEvent);
+            this.intraVmDiscovery = new IntraVmDiscovery(identityManager::getPublicKey, messenger, peersManager, this::onInternalEvent);
+            this.superPeerClient = new SuperPeerClient(this.config, identityManager::getIdentity, peersManager, messenger, DrasylNode.WORKER_GROUP, this::onInternalEvent);
             this.server = new Server(identityManager::getIdentity, messenger, peersManager, this.config, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP, superPeerClient.connectionEstablished());
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = new CompletableFuture<>();
+            this.pipeline = new DrasylPipeline(this::onEvent, messenger::send);
             setLogLevel(this.config.getLoglevel());
         }
         catch (ConfigException e) {
@@ -151,8 +152,21 @@ public abstract class DrasylNode {
     /**
      * Sends <code>event</code> to the application and tells it information about the local node,
      * other peers, connections or incoming messages.
+     * <br>
+     * <b>This method should be used by all drasyl internal operations, so that the event can pass
+     * the {@link org.drasyl.pipeline.Pipeline}</b>
      *
-     * @param event
+     * @param event the event
+     */
+    public void onInternalEvent(Event event) {
+        pipeline.executeInbound(event);
+    }
+
+    /**
+     * Sends <code>event</code> to the application and tells it information about the local node,
+     * other peers, connections or incoming messages.
+     *
+     * @param event the event
      */
     public abstract void onEvent(Event event);
 
@@ -176,7 +190,8 @@ public abstract class DrasylNode {
                Server server,
                AtomicBoolean started,
                CompletableFuture<Void> startSequence,
-               CompletableFuture<Void> shutdownSequence) {
+               CompletableFuture<Void> shutdownSequence,
+               DrasylPipeline pipeline) {
         this.config = config;
         this.identityManager = identityManager;
         this.peersManager = peersManager;
@@ -187,6 +202,7 @@ public abstract class DrasylNode {
         this.started = started;
         this.startSequence = startSequence;
         this.shutdownSequence = shutdownSequence;
+        this.pipeline = pipeline;
     }
 
     public synchronized void send(String recipient, byte[] payload) throws DrasylException {
@@ -200,28 +216,28 @@ public abstract class DrasylNode {
 
     /**
      * Sends the content of <code>payload</code> to the identity <code>recipient</code>. Throws a
-     * {@link DrasylException} if the message could not be sent to the recipient or a super peer.
+     * {@link MessengerException} if the message could not be sent to the recipient or a super peer.
      * Important: Just because no exception was thrown does not automatically mean that the message
      * could be delivered. Delivery confirmations must be implemented by the application.
      *
      * @param recipient the recipient of a message
      * @param payload   the payload of a message
-     * @throws DrasylException if an error occurs during the processing
+     * @throws MessengerException if an error occurs during the processing
      */
     public synchronized void send(CompressedPublicKey recipient,
                                   byte[] payload) throws MessengerException {
-        messenger.send(new ApplicationMessage(identityManager.getPublicKey(), recipient, payload));
+        pipeline.executeOutbound(new ApplicationMessage(identityManager.getPublicKey(), recipient, payload));
     }
 
     /**
      * Sends the content of <code>payload</code> to the identity <code>recipient</code>. Throws a
-     * {@link DrasylException} if the message could not be sent to the recipient or a super peer.
+     * {@link MessengerException} if the message could not be sent to the recipient or a super peer.
      * Important: Just because no exception was thrown does not automatically mean that the message
      * could be delivered. Delivery confirmations must be implemented by the application.
      *
      * @param recipient the recipient of a message
      * @param payload   the payload of a message
-     * @throws DrasylException if an error occurs during the processing
+     * @throws MessengerException if an error occurs during the processing
      */
     public synchronized void send(String recipient, String payload) throws DrasylException {
         send(recipient, payload.getBytes());
@@ -229,13 +245,13 @@ public abstract class DrasylNode {
 
     /**
      * Sends the content of <code>payload</code> to the identity <code>recipient</code>. Throws a
-     * {@link DrasylException} if the message could not be sent to the recipient or a super peer.
+     * {@link MessengerException} if the message could not be sent to the recipient or a super peer.
      * Important: Just because no exception was thrown does not automatically mean that the message
      * could be delivered. Delivery confirmations must be implemented by the application.
      *
      * @param recipient the recipient of a message
      * @param payload   the payload of a message
-     * @throws DrasylException if an error occurs during the processing
+     * @throws MessengerException if an error occurs during the processing
      */
     public synchronized void send(CompressedPublicKey recipient,
                                   String payload) throws MessengerException {
@@ -259,7 +275,7 @@ public abstract class DrasylNode {
     public CompletableFuture<Void> shutdown() {
         if (started.compareAndSet(true, false)) {
             DrasylNode self = this;
-            onEvent(new NodeDownEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
+            onInternalEvent(new NodeDownEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
             LOG.info("Shutdown drasyl Node with Identity '{}'...", identityManager.getIdentity());
             shutdownSequence = runAsync(this::stopSuperPeerClient)
                     .thenRun(this::stopServer)
@@ -267,7 +283,7 @@ public abstract class DrasylNode {
                     .whenComplete((r, e) -> {
                         try {
                             if (e == null) {
-                                onEvent(new NodeNormalTerminationEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
+                                onInternalEvent(new NodeNormalTerminationEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
                                 LOG.info("drasyl Node with Identity '{}' has shut down", identityManager.getIdentity());
                             }
                             else {
@@ -348,11 +364,11 @@ public abstract class DrasylNode {
                     .thenRun(this::startSuperPeerClient)
                     .whenComplete((r, e) -> {
                         if (e == null) {
-                            onEvent(new NodeUpEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
+                            onInternalEvent(new NodeUpEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
                             LOG.info("drasyl Node with Identity '{}' has started", identityManager.getIdentity());
                         }
                         else {
-                            onEvent(new NodeUnrecoverableErrorEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
+                            onInternalEvent(new NodeUnrecoverableErrorEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
                             LOG.info("Could not start drasyl Node: {}", e.getMessage());
                             LOG.info("Stop all running components...");
                             this.stopServer();
@@ -468,7 +484,7 @@ public abstract class DrasylNode {
 
         if (message instanceof ApplicationMessage) {
             ApplicationMessage applicationMessage = (ApplicationMessage) message;
-            onEvent(new MessageEvent(Pair.of(applicationMessage.getSender(), applicationMessage.getPayload())));
+            pipeline.executeInbound(applicationMessage);
         }
         else if (message instanceof WhoisMessage) {
             WhoisMessage whoisMessage = (WhoisMessage) message;
