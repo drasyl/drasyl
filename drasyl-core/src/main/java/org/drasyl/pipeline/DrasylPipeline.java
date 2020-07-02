@@ -27,6 +27,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
@@ -191,7 +192,9 @@ public class DrasylPipeline implements Pipeline {
 
         synchronized (this) {
             AbstractHandlerContext ctx = handlerNames.remove(name);
-            Objects.requireNonNull(ctx);
+            if (ctx == null) {
+                throw new NoSuchElementException("There is no handler with this name in the pipeline");
+            }
 
             AbstractHandlerContext prev = ctx.prev;
             AbstractHandlerContext next = ctx.next;
