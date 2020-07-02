@@ -28,10 +28,10 @@ import java.util.concurrent.CompletableFuture;
 /**
  * A list of {@link Handler}s which handles or intercepts inbound events and outbound operations of
  * a {@link org.drasyl.DrasylNode}. {@link Pipeline} implements an advanced form of the
- * <a href="https://java-design-patterns.com/patterns/pipeline/">Pipeline</a> pattern
- * to give a user full control over how an event is handled and how the {@link Handler}s in a
- * pipeline interact with each other. This implementation is very closely based on the netty
- * implementation.
+ * <a href="http://www.oracle.com/technetwork/java/interceptingfilter-142169.html">Intercepting
+ * Filter</a> pattern to give a user full control over how an event is handled and how the {@link
+ * Handler}s in a pipeline interact with each other. This implementation is very closely based on
+ * the netty implementation.
  *
  * <h3>Creation of a pipeline</h3>
  * <p>
@@ -141,6 +141,21 @@ import java.util.concurrent.CompletableFuture;
  *     </ul>
  * </li>
  * </ul>
+ *
+ * <h3>Thread safety</h3>
+ * <p>
+ * A {@link Handler} can be added or removed at any time because a {@link Pipeline} is thread safe.
+ *
+ * <li>But for every invocation of:
+ *       <ul>
+ *       <li>{@link Pipeline#executeInbound(ApplicationMessage)}</li>
+ *       <li>{@link Pipeline#executeInbound(Event)}</li>
+ *       <li>{@link Pipeline#executeOutbound(ApplicationMessage)}</li>
+ *       </ul>
+ * </li>
+ * the invocation is scheduled in the {@link org.drasyl.util.DrasylScheduler}, therefore the order of
+ * invocations can't be guaranteed. You have to ensure by yourself, that your handlers are thread-safe
+ * if you need it. Also, you have to ensure the order of messages, if you need it.
  */
 public interface Pipeline {
     /**

@@ -22,6 +22,7 @@ import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.util.CheckedConsumer;
+import org.drasyl.util.DrasylScheduler;
 import org.drasyl.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -262,17 +263,17 @@ public class DrasylPipeline implements Pipeline {
 
     @Override
     public void executeInbound(ApplicationMessage msg) {
-        this.head.fireRead(msg);
+        DrasylScheduler.getInstance().scheduleDirect(() -> this.head.fireRead(msg));
     }
 
     @Override
     public void executeInbound(Event event) {
-        this.head.fireEventTriggered(event);
+        DrasylScheduler.getInstance().scheduleDirect(() -> this.head.fireEventTriggered(event));
     }
 
     @Override
     public void executeOutbound(ApplicationMessage msg) {
-        this.tail.write(msg);
+        DrasylScheduler.getInstance().scheduleDirect(() -> this.tail.write(msg));
     }
 
     final class HeadContext extends AbstractHandlerContext implements InboundHandler, OutboundHandler {
