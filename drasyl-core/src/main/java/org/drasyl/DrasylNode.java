@@ -50,6 +50,7 @@ import org.drasyl.peer.connection.message.WhoisMessage;
 import org.drasyl.peer.connection.server.Server;
 import org.drasyl.peer.connection.server.ServerException;
 import org.drasyl.pipeline.DrasylPipeline;
+import org.drasyl.pipeline.Pipeline;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -508,5 +509,14 @@ public abstract class DrasylNode {
         else {
             throw new IllegalArgumentException("DrasylNode.loopbackMessageSink is not able to handle messages of type " + message.getClass().getSimpleName());
         }
+    }
+
+    /**
+     * Returns the {@link Pipeline} to allow users to add own handlers.
+     *
+     * @return the pipeline
+     */
+    public Pipeline pipeline() {
+        return this.pipeline;
     }
 }
