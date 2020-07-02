@@ -20,18 +20,15 @@ package org.drasyl.pipeline;
 
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.event.Event;
-import org.drasyl.event.MessageEvent;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.util.CheckedConsumer;
 import org.drasyl.util.DrasylScheduler;
-import org.drasyl.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
@@ -43,25 +40,22 @@ public class DrasylPipeline implements Pipeline {
     private final Map<String, AbstractHandlerContext> handlerNames;
     private final AbstractHandlerContext head;
     private final AbstractHandlerContext tail;
-    private final Consumer<Event> eventConsumer;
-    private final CheckedConsumer<ApplicationMessage> outboundConsumer;
     private final Scheduler scheduler;
 
     DrasylPipeline(Map<String, AbstractHandlerContext> handlerNames,
                    AbstractHandlerContext head,
                    AbstractHandlerContext tail,
-                   Consumer<Event> eventConsumer,
-                   CheckedConsumer<ApplicationMessage> outboundConsumer,
                    Scheduler scheduler) {
         this.handlerNames = handlerNames;
         this.head = head;
         this.tail = tail;
-        this.eventConsumer = eventConsumer;
-        this.outboundConsumer = outboundConsumer;
         this.scheduler = scheduler;
     }
 
-    private void initHeadAndTail() {
+    public DrasylPipeline(Consumer<Event> eventConsumer,
+                          CheckedConsumer<ApplicationMessage> outboundConsumer) {
+        this(new ConcurrentHashMap<>(), new HeadContext(outboundConsumer), new TailContext(eventConsumer), DrasylScheduler.getInstance());
+
         this.head.setPrevHandlerContext(this.head);
         this.head.setNextHandlerContext(this.tail);
         this.tail.setPrevHandlerContext(this.head);
@@ -72,18 +66,6 @@ public class DrasylPipeline implements Pipeline {
         catch (Exception e) {
             this.head.fireExceptionCaught(e);
         }
-    }
-
-    public DrasylPipeline(Consumer<Event> eventConsumer,
-                          CheckedConsumer<ApplicationMessage> outboundConsumer) {
-        this.handlerNames = new ConcurrentHashMap<>();
-        this.head = new HeadContext();
-        this.tail = new TailContext();
-        this.eventConsumer = eventConsumer;
-        this.outboundConsumer = outboundConsumer;
-        this.scheduler = DrasylScheduler.getInstance();
-
-        initHeadAndTail();
     }
 
     @Override
@@ -325,124 +307,5 @@ public class DrasylPipeline implements Pipeline {
     @Override
     public void executeOutbound(ApplicationMessage msg) {
         this.scheduler.scheduleDirect(() -> this.tail.write(msg));
-    }
-
-    final class HeadContext extends AbstractHandlerContext implements InboundHandler, OutboundHandler {
-        public static final String DRASYL_HEAD_HANDLER = "DRASYL_HEAD_HANDLER";
-
-        public HeadContext() {
-            super(DRASYL_HEAD_HANDLER);
-        }
-
-        @Override
-        public Handler handler() {
-            return this;
-        }
-
-        @Override
-        public void read(HandlerContext ctx, ApplicationMessage msg) {
-            ctx.fireRead(msg);
-        }
-
-        @Override
-        public void eventTriggered(HandlerContext ctx, Event event) {
-            ctx.fireEventTriggered(event);
-        }
-
-        @Override
-        public void exceptionCaught(HandlerContext ctx, Exception cause) throws Exception {
-            ctx.fireExceptionCaught(cause);
-        }
-
-        @Override
-        public void write(HandlerContext ctx,
-                          ApplicationMessage msg,
-                          CompletableFuture<Void> future) {
-            if (future.isDone()) {
-                if (LOG.isWarnEnabled()) {
-                    if (!future.isCancelled() && !future.isCompletedExceptionally()) {
-                        LOG.warn("Message `{}` was not written to the underlying drasyl layer, because the corresponding future was already completed.", msg);
-                    }
-                    else {
-
-                        LOG.warn("Message `{}` was not written to the underlying drasyl layer, because the corresponding future was completed exceptionally.", msg);
-                    }
-                }
-            }
-            else {
-                try {
-                    outboundConsumer.accept(msg);
-                    future.complete(null);
-                }
-                catch (Exception e) {
-                    future.completeExceptionally(e);
-                }
-            }
-        }
-
-        @Override
-        public void handlerAdded(HandlerContext ctx) throws Exception {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Pipeline head was added.");
-            }
-        }
-
-        @Override
-        public void handlerRemoved(HandlerContext ctx) throws Exception {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Pipeline head was removed.");
-            }
-        }
-    }
-
-    final class TailContext extends AbstractHandlerContext implements InboundHandler, OutboundHandler {
-        public static final String DRASYL_TAIL_HANDLER = "DRASYL_TAIL_HANDLER";
-
-        public TailContext() {
-            super(DRASYL_TAIL_HANDLER);
-        }
-
-        @Override
-        public Handler handler() {
-            return this;
-        }
-
-        @Override
-        public void read(HandlerContext ctx, ApplicationMessage msg) {
-            // Pass message to Application
-            eventConsumer.accept(new MessageEvent(Pair.of(msg.getSender(), msg.getPayload())));
-        }
-
-        @Override
-        public void eventTriggered(HandlerContext ctx, Event event) {
-            // Pass event to Application
-            eventConsumer.accept(event);
-        }
-
-        @Override
-        public void exceptionCaught(HandlerContext ctx, Exception cause) throws Exception {
-            throw new PipelineException(cause);
-        }
-
-        @Override
-        public void write(HandlerContext ctx,
-                          ApplicationMessage msg,
-                          CompletableFuture<Void> future) {
-            ctx.write(msg, future);
-        }
-
-        @Override
-        public void handlerAdded(HandlerContext ctx) throws Exception {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Pipeline tail was added.");
-            }
-        }
-
-        @Override
-        public void handlerRemoved(HandlerContext ctx) throws Exception {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Pipeline tail was removed.");
-            }
-        }
     }
 }
