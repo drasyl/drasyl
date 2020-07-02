@@ -45,6 +45,18 @@ public class DrasylPipeline implements Pipeline {
     private final Consumer<Event> eventConsumer;
     private final CheckedConsumer<ApplicationMessage> outboundConsumer;
 
+    DrasylPipeline(Map<String, AbstractHandlerContext> handlerNames,
+                   AbstractHandlerContext head,
+                   AbstractHandlerContext tail,
+                   Consumer<Event> eventConsumer,
+                   CheckedConsumer<ApplicationMessage> outboundConsumer) {
+        this.handlerNames = handlerNames;
+        this.head = head;
+        this.tail = tail;
+        this.eventConsumer = eventConsumer;
+        this.outboundConsumer = outboundConsumer;
+    }
+
     public DrasylPipeline(Consumer<Event> eventConsumer,
                           CheckedConsumer<ApplicationMessage> outboundConsumer) {
         this.eventConsumer = eventConsumer;
@@ -76,10 +88,10 @@ public class DrasylPipeline implements Pipeline {
             newCtx = new DefaultHandlerContext(name, handler);
             // Set correct pointer on new context
             newCtx.setPrevHandlerContext(this.head);
-            newCtx.setNextHandlerContext(this.head.next);
+            newCtx.setNextHandlerContext(this.head.getNext());
 
             // Set correct pointer on old context
-            this.head.next.setPrevHandlerContext(newCtx);
+            this.head.getNext().setPrevHandlerContext(newCtx);
             this.head.setNextHandlerContext(newCtx);
 
             registerNewHandler(name, newCtx);
@@ -128,11 +140,11 @@ public class DrasylPipeline implements Pipeline {
 
             newCtx = new DefaultHandlerContext(name, handler);
             // Set correct pointer on new context
-            newCtx.setPrevHandlerContext(this.tail.prev);
+            newCtx.setPrevHandlerContext(this.tail.getPrev());
             newCtx.setNextHandlerContext(this.tail);
 
             // Set correct pointer on old context
-            this.tail.prev.setNextHandlerContext(newCtx);
+            this.tail.getPrev().setNextHandlerContext(newCtx);
             this.tail.setPrevHandlerContext(newCtx);
 
             registerNewHandler(name, newCtx);
@@ -156,12 +168,12 @@ public class DrasylPipeline implements Pipeline {
 
             newCtx = new DefaultHandlerContext(name, handler);
             // Set correct pointer on new context
-            newCtx.setPrevHandlerContext(baseCtx.prev);
+            newCtx.setPrevHandlerContext(baseCtx.getPrev());
             newCtx.setNextHandlerContext(baseCtx);
 
             // Set correct pointer on old context
             baseCtx.setPrevHandlerContext(newCtx);
-            baseCtx.prev.setNextHandlerContext(newCtx);
+            baseCtx.getPrev().setNextHandlerContext(newCtx);
 
             registerNewHandler(name, newCtx);
         }
@@ -185,10 +197,10 @@ public class DrasylPipeline implements Pipeline {
             newCtx = new DefaultHandlerContext(name, handler);
             // Set correct pointer on new context
             newCtx.setPrevHandlerContext(baseCtx);
-            newCtx.setNextHandlerContext(baseCtx.next);
+            newCtx.setNextHandlerContext(baseCtx.getNext());
 
             // Set correct pointer on old context
-            baseCtx.next.setPrevHandlerContext(newCtx);
+            baseCtx.getNext().setPrevHandlerContext(newCtx);
             baseCtx.setNextHandlerContext(newCtx);
 
             registerNewHandler(name, newCtx);
@@ -210,8 +222,8 @@ public class DrasylPipeline implements Pipeline {
             // call remove action
             removeHandlerAction(ctx);
 
-            AbstractHandlerContext prev = ctx.prev;
-            AbstractHandlerContext next = ctx.next;
+            AbstractHandlerContext prev = ctx.getPrev();
+            AbstractHandlerContext next = ctx.getNext();
             prev.setNextHandlerContext(next);
             next.setPrevHandlerContext(prev);
             ctx.setPrevHandlerContext(null);
@@ -247,8 +259,8 @@ public class DrasylPipeline implements Pipeline {
             }
 
             AbstractHandlerContext oldCtx = handlerNames.remove(oldName);
-            AbstractHandlerContext prev = oldCtx.prev;
-            AbstractHandlerContext next = oldCtx.next;
+            AbstractHandlerContext prev = oldCtx.getPrev();
+            AbstractHandlerContext next = oldCtx.getNext();
 
             // call remove action
             removeHandlerAction(oldCtx);

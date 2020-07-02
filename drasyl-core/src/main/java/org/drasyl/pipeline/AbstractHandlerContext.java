@@ -29,9 +29,17 @@ public abstract class AbstractHandlerContext implements HandlerContext {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractHandlerContext.class);
     private final Object prevLock = new Object();
     private final Object nextLock = new Object();
-    volatile AbstractHandlerContext prev; // NOSONAR
-    volatile AbstractHandlerContext next; // NOSONAR
     private final String name;
+    private volatile AbstractHandlerContext prev; // NOSONAR
+    private volatile AbstractHandlerContext next; // NOSONAR
+
+    AbstractHandlerContext(AbstractHandlerContext prev,
+                           AbstractHandlerContext next,
+                           String name) {
+        this.prev = prev;
+        this.next = next;
+        this.name = name;
+    }
 
     public AbstractHandlerContext(String name) {
         this.name = name;
@@ -49,6 +57,14 @@ public abstract class AbstractHandlerContext implements HandlerContext {
         }
     }
 
+    AbstractHandlerContext getNext() {
+        return this.next;
+    }
+
+    AbstractHandlerContext getPrev() {
+        return this.prev;
+    }
+
     @Override
     public String name() {
         return this.name;
@@ -64,14 +80,12 @@ public abstract class AbstractHandlerContext implements HandlerContext {
     private void invokeExceptionCaught(Throwable cause) {
         AbstractHandlerContext inboundCtx = findNextInbound();
 
-        if (inboundCtx.handler() instanceof InboundHandler) {
-            try {
-                ((InboundHandler) inboundCtx.handler()).exceptionCaught(inboundCtx, cause);
-            }
-            catch (Exception e) {
-                if (LOG.isWarnEnabled()) {
-                    LOG.warn("Failed to invoke exceptionCaught() on next handler `{}` do to the following error: ", inboundCtx.name(), e);
-                }
+        try {
+            ((InboundHandler) inboundCtx.handler()).exceptionCaught(inboundCtx, cause);
+        }
+        catch (Exception e) {
+            if (LOG.isWarnEnabled()) {
+                LOG.warn("Failed to invoke exceptionCaught() on next handler `{}` do to the following error: ", inboundCtx.name(), e);
             }
         }
     }
@@ -79,10 +93,10 @@ public abstract class AbstractHandlerContext implements HandlerContext {
     /**
      * Finds the next {@link AbstractHandlerContext} that holds a {@link InboundHandler}.
      */
-    private AbstractHandlerContext findNextInbound() {
+    AbstractHandlerContext findNextInbound() {
         AbstractHandlerContext nextInbound = next;
-        while (!(next.handler() instanceof InboundHandler)) {
-            nextInbound = next.next;
+        while (!(nextInbound.handler() instanceof InboundHandler)) {
+            nextInbound = next.getNext();
         }
 
         return nextInbound;
@@ -91,10 +105,10 @@ public abstract class AbstractHandlerContext implements HandlerContext {
     /**
      * Finds the previous {@link AbstractHandlerContext} that holds a {@link OutboundHandler}.
      */
-    private AbstractHandlerContext findPrevOutbound() {
+    AbstractHandlerContext findPrevOutbound() {
         AbstractHandlerContext prevOutbound = prev;
-        while (!(prev.handler() instanceof OutboundHandler)) {
-            prevOutbound = prev.prev;
+        while (!(prevOutbound.handler() instanceof OutboundHandler)) {
+            prevOutbound = prev.getPrev();
         }
 
         return prevOutbound;
@@ -109,16 +123,13 @@ public abstract class AbstractHandlerContext implements HandlerContext {
 
     private void invokeRead(ApplicationMessage msg) {
         AbstractHandlerContext inboundCtx = findNextInbound();
-
-        if (inboundCtx.handler() instanceof InboundHandler) {
-            try {
-                ((InboundHandler) inboundCtx.handler()).read(inboundCtx, msg);
-            }
-            catch (Exception e) {
-                inboundCtx.fireExceptionCaught(e);
-                if (LOG.isWarnEnabled()) {
-                    LOG.warn("Failed to invoke read() on next handler `{}` do to the following error: ", inboundCtx.name(), e);
-                }
+        try {
+            ((InboundHandler) inboundCtx.handler()).read(inboundCtx, msg);
+        }
+        catch (Exception e) {
+            inboundCtx.fireExceptionCaught(e);
+            if (LOG.isWarnEnabled()) {
+                LOG.warn("Failed to invoke read() on next handler `{}` do to the following error: ", inboundCtx.name(), e);
             }
         }
     }
@@ -133,15 +144,13 @@ public abstract class AbstractHandlerContext implements HandlerContext {
     private void invokeEventTriggered(Event event) {
         AbstractHandlerContext inboundCtx = findNextInbound();
 
-        if (inboundCtx.handler() instanceof InboundHandler) {
-            try {
-                ((InboundHandler) inboundCtx.handler()).eventTriggered(inboundCtx, event);
-            }
-            catch (Exception e) {
-                inboundCtx.fireExceptionCaught(e);
-                if (LOG.isWarnEnabled()) {
-                    LOG.warn("Failed to invoke eventTriggered() on next handler `{}` do to the following error: ", inboundCtx.name(), e);
-                }
+        try {
+            ((InboundHandler) inboundCtx.handler()).eventTriggered(inboundCtx, event);
+        }
+        catch (Exception e) {
+            inboundCtx.fireExceptionCaught(e);
+            if (LOG.isWarnEnabled()) {
+                LOG.warn("Failed to invoke eventTriggered() on next handler `{}` do to the following error: ", inboundCtx.name(), e);
             }
         }
     }
@@ -161,15 +170,13 @@ public abstract class AbstractHandlerContext implements HandlerContext {
                                                 CompletableFuture<Void> future) {
         AbstractHandlerContext outboundCtx = findPrevOutbound();
 
-        if (outboundCtx.handler() instanceof OutboundHandler) {
-            try {
-                ((OutboundHandler) outboundCtx.handler()).write(outboundCtx, msg, future);
-            }
-            catch (Exception e) {
-                outboundCtx.fireExceptionCaught(e);
-                if (LOG.isWarnEnabled()) {
-                    LOG.warn("Failed to invoke write() on next handler `{}` do to the following error: ", outboundCtx.name(), e);
-                }
+        try {
+            ((OutboundHandler) outboundCtx.handler()).write(outboundCtx, msg, future);
+        }
+        catch (Exception e) {
+            outboundCtx.fireExceptionCaught(e);
+            if (LOG.isWarnEnabled()) {
+                LOG.warn("Failed to invoke write() on next handler `{}` do to the following error: ", outboundCtx.name(), e);
             }
         }
 
