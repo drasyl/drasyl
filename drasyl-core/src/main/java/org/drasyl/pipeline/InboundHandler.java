@@ -39,7 +39,7 @@ public interface InboundHandler extends Handler {
     void eventTriggered(HandlerContext ctx, Event event);
 
     /**
-     * Gets called if a {@link Throwable} was thrown.
+     * Gets called if a {@link Exception} was thrown.
      */
-    void exceptionCaught(HandlerContext ctx, Throwable cause) throws Exception;
+    void exceptionCaught(HandlerContext ctx, Exception cause) throws Exception;
 }

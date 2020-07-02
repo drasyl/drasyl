@@ -42,7 +42,7 @@ public abstract class InboundHandlerAdapter extends HandlerAdapter implements In
     }
 
     @Override
-    public void exceptionCaught(HandlerContext ctx, Throwable cause) throws Exception {
+    public void exceptionCaught(HandlerContext ctx, Exception cause) throws Exception {
         ctx.fireExceptionCaught(cause);
     }
 }

@@ -38,12 +38,12 @@ public interface HandlerContext {
      * Received an {@link Throwable} in one of the inbound operations.
      * <p>
      * This will result in having the  {@link InboundHandler#exceptionCaught(HandlerContext,
-     * Throwable)} method  called of the next  {@link InboundHandler} contained in the  {@link
+     * Exception)} method  called of the next  {@link InboundHandler} contained in the  {@link
      * Pipeline}.
      *
      * @param cause the cause
      */
-    HandlerContext fireExceptionCaught(Throwable cause);
+    HandlerContext fireExceptionCaught(Exception cause);
 
     /**
      * Received a message.

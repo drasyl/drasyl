@@ -101,7 +101,7 @@ class AbstractHandlerContextTest {
     }
 
     @Test
-    void shouldInvokeExceptionCaught() throws Exception {
+    void shouldInvokeExceptionCaught() throws Throwable {
         InboundHandler inboundHandler = mock(InboundHandler.class);
         when(next.handler()).thenReturn(inboundHandler);
 

@@ -328,8 +328,10 @@ public class DrasylPipeline implements Pipeline {
     }
 
     final class HeadContext extends AbstractHandlerContext implements InboundHandler, OutboundHandler {
+        public static final String DRASYL_HEAD_HANDLER = "DRASYL_HEAD_HANDLER";
+
         public HeadContext() {
-            super("DRASYL_HEAD_HANDLER");
+            super(DRASYL_HEAD_HANDLER);
         }
 
         @Override
@@ -348,7 +350,7 @@ public class DrasylPipeline implements Pipeline {
         }
 
         @Override
-        public void exceptionCaught(HandlerContext ctx, Throwable cause) throws Exception {
+        public void exceptionCaught(HandlerContext ctx, Exception cause) throws Exception {
             ctx.fireExceptionCaught(cause);
         }
 
@@ -356,18 +358,24 @@ public class DrasylPipeline implements Pipeline {
         public void write(HandlerContext ctx,
                           ApplicationMessage msg,
                           CompletableFuture<Void> future) {
-            if (!future.isCancelled() && !future.isCompletedExceptionally()) {
+            if (future.isDone()) {
+                if (LOG.isWarnEnabled()) {
+                    if (!future.isCancelled() && !future.isCompletedExceptionally()) {
+                        LOG.warn("Message `{}` was not written to the underlying drasyl layer, because the corresponding future was already completed.", msg);
+                    }
+                    else {
+
+                        LOG.warn("Message `{}` was not written to the underlying drasyl layer, because the corresponding future was completed exceptionally.", msg);
+                    }
+                }
+            }
+            else {
                 try {
                     outboundConsumer.accept(msg);
                     future.complete(null);
                 }
                 catch (Exception e) {
                     future.completeExceptionally(e);
-                }
-            }
-            else {
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Message `{}` was not written to the underlying drasyl layer, because the corresponding was not completed successfully", msg);
                 }
             }
         }
@@ -388,8 +396,10 @@ public class DrasylPipeline implements Pipeline {
     }
 
     final class TailContext extends AbstractHandlerContext implements InboundHandler, OutboundHandler {
+        public static final String DRASYL_TAIL_HANDLER = "DRASYL_TAIL_HANDLER";
+
         public TailContext() {
-            super("DRASYL_TAIL_HANDLER");
+            super(DRASYL_TAIL_HANDLER);
         }
 
         @Override
@@ -410,7 +420,7 @@ public class DrasylPipeline implements Pipeline {
         }
 
         @Override
-        public void exceptionCaught(HandlerContext ctx, Throwable cause) throws Exception {
+        public void exceptionCaught(HandlerContext ctx, Exception cause) throws Exception {
             throw new PipelineException(cause);
         }
 

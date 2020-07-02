@@ -71,17 +71,24 @@ public abstract class AbstractHandlerContext implements HandlerContext {
     }
 
     @Override
-    public HandlerContext fireExceptionCaught(Throwable cause) {
+    public HandlerContext fireExceptionCaught(Exception cause) {
         invokeExceptionCaught(cause);
 
         return this;
     }
 
-    private void invokeExceptionCaught(Throwable cause) {
+    private void invokeExceptionCaught(Exception cause) {
         AbstractHandlerContext inboundCtx = findNextInbound();
+
+        if (cause instanceof PipelineException) {
+            throw (PipelineException) cause;
+        }
 
         try {
             ((InboundHandler) inboundCtx.handler()).exceptionCaught(inboundCtx, cause);
+        }
+        catch (PipelineException e) {
+            throw e;
         }
         catch (Exception e) {
             if (LOG.isWarnEnabled()) {
