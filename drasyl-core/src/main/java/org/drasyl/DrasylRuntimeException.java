@@ -19,14 +19,14 @@
 package org.drasyl;
 
 /**
- * All checked exceptions in drasyl inherit from this exception class.
+ * All unchecked exceptions in drasyl inherit from this exception class.
  */
-public class DrasylException extends Exception {
-    public DrasylException(Throwable cause) {
+public class DrasylRuntimeException extends RuntimeException {
+    public DrasylRuntimeException(Throwable cause) {
         super(cause);
     }
 
-    public DrasylException(String cause) {
+    public DrasylRuntimeException(String cause) {
         super(cause);
     }
 }
