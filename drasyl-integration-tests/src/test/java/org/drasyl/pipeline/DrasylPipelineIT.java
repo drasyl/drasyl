@@ -37,7 +37,7 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
-public class DrasylPipelineIT {
+class DrasylPipelineIT {
     private PublishSubject<Event> receivedEvents;
     private PublishSubject<ApplicationMessage> outboundMessages;
     private DrasylPipeline pipeline;
