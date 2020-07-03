@@ -19,7 +19,6 @@
 package org.drasyl.peer;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
 
@@ -28,34 +27,20 @@ import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
-import static java.util.Objects.requireNonNull;
-
 /**
- * Contains information on a specific peer (e.g. identity, public key, and known endpoints).
- *
- * <p>
- * This class is optimized for concurrent access and is thread-safe.
- * </p>
+ * Contains information on a specific peer (e.g. known endpoints).
  */
 public class PeerInformation {
-    private final Set<URI> endpoints;
-    @JsonIgnore
-    private final Set<Path> paths;
+    protected final Set<URI> endpoints;
 
     @JsonCreator
-    private PeerInformation(@JsonProperty("endpoints") Set<URI> endpoints) {
-        this.endpoints = requireNonNull(endpoints);
-        this.paths = new HashSet<>();
-    }
-
-    PeerInformation(Set<URI> endpoints, Set<Path> paths) {
+    protected PeerInformation(@JsonProperty("endpoints") Set<URI> endpoints) {
         this.endpoints = new HashSet<>(endpoints);
-        this.paths = new HashSet<>(paths);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(endpoints, paths);
+        return Objects.hash(endpoints);
     }
 
     @Override
@@ -67,55 +52,25 @@ public class PeerInformation {
             return false;
         }
         PeerInformation that = (PeerInformation) o;
-        return Objects.equals(endpoints, that.endpoints) &&
-                Objects.equals(paths, that.paths);
-    }
-
-    public Set<URI> getEndpoints() {
-        return ImmutableSet.copyOf(endpoints);
+        return Objects.equals(endpoints, that.endpoints);
     }
 
     @Override
     public String toString() {
         return "PeerInformation{" +
                 "endpoints=" + endpoints +
-                ", paths=" + paths +
                 '}';
     }
 
-    public PeerInformation add(PeerInformation other) {
-        endpoints.addAll(other.getEndpoints());
-        paths.addAll(other.getPaths());
-        return this;
-    }
-
-    public Set<Path> getPaths() {
-        return paths;
-    }
-
-    public PeerInformation remove(PeerInformation other) {
-        endpoints.removeAll(other.getEndpoints());
-        paths.removeAll(other.getPaths());
-        return this;
+    public Set<URI> getEndpoints() {
+        return ImmutableSet.copyOf(endpoints);
     }
 
     public static PeerInformation of(Set<URI> endpoints) {
-        return of(endpoints, Set.of());
-    }
-
-    public static PeerInformation of(Set<URI> endpoints, Set<Path> paths) {
-        return new PeerInformation(endpoints, paths);
-    }
-
-    public static PeerInformation of(Set<URI> endpoints, Path path) {
-        return of(endpoints, new HashSet<>(Set.of(path)));
+        return new PeerInformation(endpoints);
     }
 
     public static PeerInformation of() {
-        return of(new HashSet<>(), new HashSet<>());
-    }
-
-    public static PeerInformation of(Path path) {
-        return of(new HashSet<>(), path);
+        return of(Set.of());
     }
 }
