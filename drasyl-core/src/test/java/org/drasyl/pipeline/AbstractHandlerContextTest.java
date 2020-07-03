@@ -104,6 +104,18 @@ class AbstractHandlerContextTest {
     }
 
     @Test
+    void shouldSetCorrectConfig() {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(name, config) {
+            @Override
+            public Handler handler() {
+                return handler;
+            }
+        };
+
+        assertEquals(config, ctx.config());
+    }
+
+    @Test
     void shouldInvokeExceptionCaught() throws Throwable {
         InboundHandler inboundHandler = mock(InboundHandler.class);
         when(next.handler()).thenReturn(inboundHandler);
