@@ -18,6 +18,7 @@
  */
 package org.drasyl.pipeline;
 
+import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.util.DrasylConsumer;
@@ -31,8 +32,9 @@ final class HeadContext extends AbstractHandlerContext implements InboundHandler
     private static final Logger LOG = LoggerFactory.getLogger(HeadContext.class);
     private final DrasylConsumer<ApplicationMessage> outboundConsumer;
 
-    public HeadContext(DrasylConsumer<ApplicationMessage> outboundConsumer) {
-        super(DRASYL_HEAD_HANDLER);
+    public HeadContext(DrasylConsumer<ApplicationMessage> outboundConsumer,
+                       DrasylConfig config) {
+        super(DRASYL_HEAD_HANDLER, config);
         this.outboundConsumer = outboundConsumer;
     }
 

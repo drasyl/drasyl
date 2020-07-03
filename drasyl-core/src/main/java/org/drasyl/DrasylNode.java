@@ -142,7 +142,7 @@ public abstract class DrasylNode {
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = new CompletableFuture<>();
-            this.pipeline = new DrasylPipeline(this::onEvent, messenger::send);
+            this.pipeline = new DrasylPipeline(this::onEvent, messenger::send, config);
             setLogLevel(this.config.getLoglevel());
         }
         catch (ConfigException e) {

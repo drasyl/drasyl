@@ -18,6 +18,7 @@
  */
 package org.drasyl.pipeline;
 
+import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 
@@ -79,4 +80,9 @@ public interface HandlerContext {
      * @param msg the message
      */
     CompletableFuture<Void> write(ApplicationMessage msg, CompletableFuture<Void> future);
+
+    /**
+     * Returns the {@link DrasylConfig}
+     */
+    DrasylConfig config();
 }

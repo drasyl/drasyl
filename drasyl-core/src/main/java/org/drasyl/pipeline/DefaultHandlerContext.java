@@ -18,11 +18,13 @@
  */
 package org.drasyl.pipeline;
 
+import org.drasyl.DrasylConfig;
+
 public class DefaultHandlerContext extends AbstractHandlerContext {
     private final Handler handler;
 
-    public DefaultHandlerContext(String name, Handler handler) {
-        super(name);
+    public DefaultHandlerContext(String name, Handler handler, DrasylConfig config) {
+        super(name, config);
         this.handler = handler;
     }
 

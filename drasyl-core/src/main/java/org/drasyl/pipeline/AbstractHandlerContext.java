@@ -18,6 +18,7 @@
  */
 package org.drasyl.pipeline;
 
+import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.slf4j.Logger;
@@ -27,6 +28,7 @@ import java.util.concurrent.CompletableFuture;
 
 public abstract class AbstractHandlerContext implements HandlerContext {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractHandlerContext.class);
+    private final DrasylConfig config;
     private final Object prevLock = new Object();
     private final Object nextLock = new Object();
     private final String name;
@@ -35,14 +37,17 @@ public abstract class AbstractHandlerContext implements HandlerContext {
 
     AbstractHandlerContext(AbstractHandlerContext prev,
                            AbstractHandlerContext next,
-                           String name) {
+                           String name,
+                           DrasylConfig config) {
         this.prev = prev;
         this.next = next;
         this.name = name;
+        this.config = config;
     }
 
-    public AbstractHandlerContext(String name) {
+    public AbstractHandlerContext(String name, DrasylConfig config) {
         this.name = name;
+        this.config = config;
     }
 
     void setPrevHandlerContext(AbstractHandlerContext prev) {
@@ -188,5 +193,10 @@ public abstract class AbstractHandlerContext implements HandlerContext {
         }
 
         return future;
+    }
+
+    @Override
+    public DrasylConfig config() {
+        return this.config;
     }
 }

@@ -19,6 +19,7 @@
 package org.drasyl.pipeline;
 
 import io.reactivex.rxjava3.core.Scheduler;
+import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.util.DrasylConsumer;
@@ -41,10 +42,12 @@ public class DrasylPipeline implements Pipeline {
     private final AbstractHandlerContext head;
     private final AbstractHandlerContext tail;
     private final Scheduler scheduler;
+    private final DrasylConfig config;
 
     public DrasylPipeline(Consumer<Event> eventConsumer,
-                          DrasylConsumer<ApplicationMessage> outboundConsumer) {
-        this(new ConcurrentHashMap<>(), new HeadContext(outboundConsumer), new TailContext(eventConsumer), DrasylScheduler.getInstance());
+                          DrasylConsumer<ApplicationMessage> outboundConsumer,
+                          DrasylConfig config) {
+        this(new ConcurrentHashMap<>(), new HeadContext(outboundConsumer, config), new TailContext(eventConsumer, config), DrasylScheduler.getInstance(), config);
 
         this.head.setPrevHandlerContext(this.head);
         this.head.setNextHandlerContext(this.tail);
@@ -61,11 +64,13 @@ public class DrasylPipeline implements Pipeline {
     DrasylPipeline(Map<String, AbstractHandlerContext> handlerNames,
                    AbstractHandlerContext head,
                    AbstractHandlerContext tail,
-                   Scheduler scheduler) {
+                   Scheduler scheduler,
+                   DrasylConfig config) {
         this.handlerNames = handlerNames;
         this.head = head;
         this.tail = tail;
         this.scheduler = scheduler;
+        this.config = config;
     }
 
     @Override
@@ -77,7 +82,7 @@ public class DrasylPipeline implements Pipeline {
         synchronized (this) {
             collisionCheck(name);
 
-            newCtx = new DefaultHandlerContext(name, handler);
+            newCtx = new DefaultHandlerContext(name, handler, config);
             // Set correct pointer on new context
             newCtx.setPrevHandlerContext(this.head);
             newCtx.setNextHandlerContext(this.head.getNext());
@@ -130,7 +135,7 @@ public class DrasylPipeline implements Pipeline {
         synchronized (this) {
             collisionCheck(name);
 
-            newCtx = new DefaultHandlerContext(name, handler);
+            newCtx = new DefaultHandlerContext(name, handler, config);
             // Set correct pointer on new context
             newCtx.setPrevHandlerContext(this.tail.getPrev());
             newCtx.setNextHandlerContext(this.tail);
@@ -158,7 +163,7 @@ public class DrasylPipeline implements Pipeline {
             AbstractHandlerContext baseCtx = handlerNames.get(baseName);
             Objects.requireNonNull(baseCtx);
 
-            newCtx = new DefaultHandlerContext(name, handler);
+            newCtx = new DefaultHandlerContext(name, handler, config);
             // Set correct pointer on new context
             newCtx.setPrevHandlerContext(baseCtx.getPrev());
             newCtx.setNextHandlerContext(baseCtx);
@@ -186,7 +191,7 @@ public class DrasylPipeline implements Pipeline {
             AbstractHandlerContext baseCtx = handlerNames.get(baseName);
             Objects.requireNonNull(baseCtx);
 
-            newCtx = new DefaultHandlerContext(name, handler);
+            newCtx = new DefaultHandlerContext(name, handler, config);
             // Set correct pointer on new context
             newCtx.setPrevHandlerContext(baseCtx);
             newCtx.setNextHandlerContext(baseCtx.getNext());
@@ -257,7 +262,7 @@ public class DrasylPipeline implements Pipeline {
             // call remove action
             removeHandlerAction(oldCtx);
 
-            newCtx = new DefaultHandlerContext(newName, newHandler);
+            newCtx = new DefaultHandlerContext(newName, newHandler, config);
             // Set correct pointer on new context
             newCtx.setPrevHandlerContext(prev);
             newCtx.setNextHandlerContext(next);

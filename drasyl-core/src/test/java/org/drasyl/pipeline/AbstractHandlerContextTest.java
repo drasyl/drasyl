@@ -18,6 +18,7 @@
  */
 package org.drasyl.pipeline;
 
+import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,6 +48,8 @@ class AbstractHandlerContextTest {
     private AbstractHandlerContext next;
     @Mock
     private Handler handler;
+    @Mock
+    private DrasylConfig config;
     private String name;
 
     @BeforeEach
@@ -56,7 +59,7 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldSetCorrectPrevHandlerContext() {
-        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name) {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config) {
             @Override
             public Handler handler() {
                 return handler;
@@ -73,7 +76,7 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldSetCorrectNextHandlerContext() {
-        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name) {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config) {
             @Override
             public Handler handler() {
                 return handler;
@@ -90,7 +93,7 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldSetCorrectName() {
-        AbstractHandlerContext ctx = new AbstractHandlerContext(name) {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(name, config) {
             @Override
             public Handler handler() {
                 return handler;
@@ -105,7 +108,7 @@ class AbstractHandlerContextTest {
         InboundHandler inboundHandler = mock(InboundHandler.class);
         when(next.handler()).thenReturn(inboundHandler);
 
-        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name) {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config) {
             @Override
             public Handler handler() {
                 return handler;
@@ -129,7 +132,7 @@ class AbstractHandlerContextTest {
         when(next.getNext()).thenReturn(nextCtx);
         when(nextCtx.handler()).thenReturn(inboundHandler);
 
-        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name) {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config) {
             @Override
             public Handler handler() {
                 return handler;
@@ -151,7 +154,7 @@ class AbstractHandlerContextTest {
         when(prev.getPrev()).thenReturn(prevCtx);
         when(prevCtx.handler()).thenReturn(outboundHandler);
 
-        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name) {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config) {
             @Override
             public Handler handler() {
                 return handler;
@@ -169,7 +172,7 @@ class AbstractHandlerContextTest {
         InboundHandler inboundHandler = mock(InboundHandler.class);
         when(next.handler()).thenReturn(inboundHandler);
 
-        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name) {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config) {
             @Override
             public Handler handler() {
                 return handler;
@@ -190,7 +193,7 @@ class AbstractHandlerContextTest {
         when(next.handler()).thenReturn(inboundHandler);
         doThrow(RuntimeException.class).when(inboundHandler).read(any(), any());
 
-        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name) {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config) {
             @Override
             public Handler handler() {
                 return handler;
@@ -211,7 +214,7 @@ class AbstractHandlerContextTest {
         InboundHandler inboundHandler = mock(InboundHandler.class);
         when(next.handler()).thenReturn(inboundHandler);
 
-        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name) {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config) {
             @Override
             public Handler handler() {
                 return handler;
@@ -232,7 +235,7 @@ class AbstractHandlerContextTest {
         when(next.handler()).thenReturn(inboundHandler);
         doThrow(RuntimeException.class).when(inboundHandler).eventTriggered(any(), any());
 
-        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name) {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config) {
             @Override
             public Handler handler() {
                 return handler;
@@ -253,7 +256,7 @@ class AbstractHandlerContextTest {
         OutboundHandler outboundHandler = mock(OutboundHandler.class);
         when(prev.handler()).thenReturn(outboundHandler);
 
-        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name) {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config) {
             @Override
             public Handler handler() {
                 return handler;
@@ -274,7 +277,7 @@ class AbstractHandlerContextTest {
         when(prev.handler()).thenReturn(outboundHandler);
         doThrow(RuntimeException.class).when(outboundHandler).write(any(), any(), any());
 
-        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name) {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config) {
             @Override
             public Handler handler() {
                 return handler;

@@ -18,6 +18,7 @@
  */
 package org.drasyl.pipeline;
 
+import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.CompressedPublicKey;
@@ -45,17 +46,19 @@ class TailContextTest {
     private Consumer<Event> eventConsumer;
     @Mock
     private HandlerContext ctx;
+    @Mock
+    private DrasylConfig config;
 
     @Test
     void shouldReturnSelfAsHandler() {
-        TailContext headContext = new TailContext(eventConsumer);
+        TailContext headContext = new TailContext(eventConsumer, config);
 
         assertEquals(headContext, headContext.handler());
     }
 
     @Test
     void shouldDoNothingOnHandlerAdded() throws Exception {
-        TailContext headContext = new TailContext(eventConsumer);
+        TailContext headContext = new TailContext(eventConsumer, config);
 
         headContext.handlerAdded(ctx);
 
@@ -64,7 +67,7 @@ class TailContextTest {
 
     @Test
     void shouldDoNothingOnHandlerRemoved() throws Exception {
-        TailContext headContext = new TailContext(eventConsumer);
+        TailContext headContext = new TailContext(eventConsumer, config);
 
         headContext.handlerRemoved(ctx);
 
@@ -73,7 +76,7 @@ class TailContextTest {
 
     @Test
     void shouldPassthroughsOnWrite() {
-        TailContext headContext = new TailContext(eventConsumer);
+        TailContext headContext = new TailContext(eventConsumer, config);
         ApplicationMessage msg = mock(ApplicationMessage.class);
         CompletableFuture future = mock(CompletableFuture.class);
 
@@ -84,7 +87,7 @@ class TailContextTest {
 
     @Test
     void shouldThrowException() {
-        TailContext headContext = new TailContext(eventConsumer);
+        TailContext headContext = new TailContext(eventConsumer, config);
         Exception exception = mock(Exception.class);
 
         assertThrows(Exception.class, () -> headContext.exceptionCaught(ctx, exception));
@@ -93,7 +96,7 @@ class TailContextTest {
 
     @Test
     void shouldPassEventToConsumer() {
-        TailContext headContext = new TailContext(eventConsumer);
+        TailContext headContext = new TailContext(eventConsumer, config);
         Event event = mock(Event.class);
 
         headContext.eventTriggered(ctx, event);
@@ -104,7 +107,7 @@ class TailContextTest {
 
     @Test
     void shouldPassMessageToApplication() {
-        TailContext headContext = new TailContext(eventConsumer);
+        TailContext headContext = new TailContext(eventConsumer, config);
         ApplicationMessage msg = mock(ApplicationMessage.class);
 
         when(msg.getSender()).thenReturn(mock(CompressedPublicKey.class));

@@ -18,6 +18,7 @@
  */
 package org.drasyl.pipeline;
 
+import org.drasyl.DrasylConfig;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -29,10 +30,12 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class DefaultHandlerContextTest {
     @Mock
     private Handler handler;
+    @Mock
+    private DrasylConfig config;
 
     @Test
     void shouldCreateDefaultHandler() {
-        DefaultHandlerContext ctx = new DefaultHandlerContext("ctx", handler);
+        DefaultHandlerContext ctx = new DefaultHandlerContext("ctx", handler, config);
 
         assertEquals(handler, ctx.handler());
     }

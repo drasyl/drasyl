@@ -22,6 +22,7 @@ import io.reactivex.rxjava3.exceptions.UndeliverableException;
 import io.reactivex.rxjava3.observers.TestObserver;
 import io.reactivex.rxjava3.plugins.RxJavaPlugins;
 import io.reactivex.rxjava3.subjects.PublishSubject;
+import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
@@ -59,7 +60,13 @@ class DrasylPipelineIT {
                 0x03
         };
 
-        pipeline = new DrasylPipeline(receivedEvents::onNext, outboundMessages::onNext);
+        DrasylConfig config = DrasylConfig.newBuilder()
+                .identityProofOfWork(identity1.getProofOfWork())
+                .identityPublicKey(identity1.getPublicKey())
+                .identityPrivateKey(identity1.getPrivateKey())
+                .build();
+
+        pipeline = new DrasylPipeline(receivedEvents::onNext, outboundMessages::onNext, config);
     }
 
     @Test

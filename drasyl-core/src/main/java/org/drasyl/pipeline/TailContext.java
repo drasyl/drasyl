@@ -18,6 +18,7 @@
  */
 package org.drasyl.pipeline;
 
+import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.peer.connection.message.ApplicationMessage;
@@ -33,8 +34,9 @@ final class TailContext extends AbstractHandlerContext implements InboundHandler
     private static final Logger LOG = LoggerFactory.getLogger(TailContext.class);
     private final Consumer<Event> eventConsumer;
 
-    public TailContext(Consumer<Event> eventConsumer) {
-        super(DRASYL_TAIL_HANDLER);
+    public TailContext(Consumer<Event> eventConsumer,
+                       DrasylConfig config) {
+        super(DRASYL_TAIL_HANDLER, config);
         this.eventConsumer = eventConsumer;
     }
 

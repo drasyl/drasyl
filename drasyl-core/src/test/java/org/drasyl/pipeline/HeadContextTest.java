@@ -18,6 +18,7 @@
  */
 package org.drasyl.pipeline;
 
+import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.event.Event;
 import org.drasyl.peer.connection.message.ApplicationMessage;
@@ -46,17 +47,19 @@ class HeadContextTest {
     private DrasylConsumer<ApplicationMessage> outboundConsumer;
     @Mock
     private HandlerContext ctx;
+    @Mock
+    private DrasylConfig config;
 
     @Test
     void shouldReturnSelfAsHandler() {
-        HeadContext headContext = new HeadContext(outboundConsumer);
+        HeadContext headContext = new HeadContext(outboundConsumer, config);
 
         assertEquals(headContext, headContext.handler());
     }
 
     @Test
     void shouldDoNothingOnHandlerAdded() throws Exception {
-        HeadContext headContext = new HeadContext(outboundConsumer);
+        HeadContext headContext = new HeadContext(outboundConsumer, config);
 
         headContext.handlerAdded(ctx);
 
@@ -65,7 +68,7 @@ class HeadContextTest {
 
     @Test
     void shouldDoNothingOnHandlerRemoved() throws Exception {
-        HeadContext headContext = new HeadContext(outboundConsumer);
+        HeadContext headContext = new HeadContext(outboundConsumer, config);
 
         headContext.handlerRemoved(ctx);
 
@@ -74,7 +77,7 @@ class HeadContextTest {
 
     @Test
     void shouldPassthroughsOnRead() {
-        HeadContext headContext = new HeadContext(outboundConsumer);
+        HeadContext headContext = new HeadContext(outboundConsumer, config);
         ApplicationMessage msg = mock(ApplicationMessage.class);
 
         headContext.read(ctx, msg);
@@ -84,7 +87,7 @@ class HeadContextTest {
 
     @Test
     void shouldPassthroughsOnEvent() {
-        HeadContext headContext = new HeadContext(outboundConsumer);
+        HeadContext headContext = new HeadContext(outboundConsumer, config);
         Event event = mock(Event.class);
 
         headContext.eventTriggered(ctx, event);
@@ -94,7 +97,7 @@ class HeadContextTest {
 
     @Test
     void shouldPassthroughsOnException() throws Exception {
-        HeadContext headContext = new HeadContext(outboundConsumer);
+        HeadContext headContext = new HeadContext(outboundConsumer, config);
         Exception exception = mock(Exception.class);
 
         headContext.exceptionCaught(ctx, exception);
@@ -104,7 +107,7 @@ class HeadContextTest {
 
     @Test
     void shouldWriteToConsumer() throws Exception {
-        HeadContext headContext = new HeadContext(outboundConsumer);
+        HeadContext headContext = new HeadContext(outboundConsumer, config);
         ApplicationMessage msg = mock(ApplicationMessage.class);
         CompletableFuture<Void> future = mock(CompletableFuture.class);
 
@@ -118,7 +121,7 @@ class HeadContextTest {
 
     @Test
     void shouldNotWriteToConsumerWhenFutureIsDone() throws Exception {
-        HeadContext headContext = new HeadContext(outboundConsumer);
+        HeadContext headContext = new HeadContext(outboundConsumer, config);
         ApplicationMessage msg = mock(ApplicationMessage.class);
         CompletableFuture<Void> future = mock(CompletableFuture.class);
 
@@ -132,7 +135,7 @@ class HeadContextTest {
 
     @Test
     void shouldCompleteFutureExceptionallyIfExceptionOccursOnWrite() throws Exception {
-        HeadContext headContext = new HeadContext(outboundConsumer);
+        HeadContext headContext = new HeadContext(outboundConsumer, config);
         ApplicationMessage msg = mock(ApplicationMessage.class);
         CompletableFuture<Void> future = mock(CompletableFuture.class);
 
