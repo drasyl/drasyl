@@ -122,7 +122,7 @@ class ClientConnectionHandlerTest {
             channel.writeInbound(offerMessage);
             channel.flush();
 
-            verify(peersManager).addPeerInformationAndSetSuperPeer(eq(publicKey), any());
+            verify(peersManager).setPeerInformationAndAddPathAndSetSuperPeer(eq(publicKey), any(), any());
             verify(messenger).setSuperPeerSink(any());
             verify(environment.getConnected()).onNext(true);
             verify(environment.getEventConsumer()).accept(new NodeOnlineEvent(Node.of(environment.getIdentity())));
@@ -130,7 +130,7 @@ class ClientConnectionHandlerTest {
 
             channel.close();
 
-            verify(peersManager).unsetSuperPeerAndRemovePeerInformation(any());
+            verify(peersManager).unsetSuperPeerAndRemovePath(any());
             verify(messenger).unsetSuperPeerSink();
             verify(environment.getConnected()).onNext(false);
             verify(environment.getEventConsumer()).accept(new NodeOfflineEvent(Node.of(environment.getIdentity())));
@@ -154,14 +154,14 @@ class ClientConnectionHandlerTest {
             channel.writeInbound(offerMessage);
             channel.flush();
 
-            verify(peersManager).addPeerInformation(eq(publicKey), any());
+            verify(peersManager).setPeerInformationAndAddPath(eq(publicKey), any(), any());
             verify(messenger).addClientSink(eq(publicKey), any());
             verify(environment.getConnected()).onNext(true);
 //        assertEquals(new StatusMessage(STATUS_OK, "456"), channel.readOutbound());
 
             channel.close();
 
-            verify(peersManager).removePeerInformation(eq(publicKey), any());
+            verify(peersManager).removePath(eq(publicKey), any());
             verify(messenger).removeClientSink(publicKey);
             verify(environment.getConnected()).onNext(false);
         }

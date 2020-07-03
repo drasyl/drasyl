@@ -39,7 +39,7 @@ import org.drasyl.peer.connection.message.RegisterGrandchildMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.message.UnregisterGrandchildMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
-import org.drasyl.util.Pair;
+import org.drasyl.util.Triple;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -192,8 +192,7 @@ class ServerConnectionHandlerTest {
             when(environment.getPeersManager()).thenReturn(peersManager);
             when(handshakeFuture.isDone()).thenReturn(true);
             when(registerGrandchildMessage.getGrandchildren()).thenReturn(Set.of(grandchildrenPublicKey0));
-            when(peersManager.getSuperPeer()).thenReturn(Pair.of(superPeerPublicKey, superPeerInformation));
-            when(superPeerInformation.getPaths()).thenReturn(Set.of(superPeerPath));
+            when(peersManager.getSuperPeer()).thenReturn(Triple.of(superPeerPublicKey, superPeerInformation, Set.of(superPeerPath)));
 
             ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
             EmbeddedChannel channel = new EmbeddedChannel(handler);
@@ -222,8 +221,7 @@ class ServerConnectionHandlerTest {
             when(environment.getPeersManager()).thenReturn(peersManager);
             when(handshakeFuture.isDone()).thenReturn(true);
             when(unregisterGrandchildrenMessage.getGrandchildren()).thenReturn(Set.of(grandchildrenPublicKey0));
-            when(peersManager.getSuperPeer()).thenReturn(Pair.of(superPeerPublicKey, superPeerInformation));
-            when(superPeerInformation.getPaths()).thenReturn(Set.of(superPeerPath));
+            when(peersManager.getSuperPeer()).thenReturn(Triple.of(superPeerPublicKey, superPeerInformation, Set.of(superPeerPath)));
 
             ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
             EmbeddedChannel channel = new EmbeddedChannel(handler);
@@ -249,8 +247,7 @@ class ServerConnectionHandlerTest {
             when(requestMessage.isChildrenJoin()).thenReturn(true);
             when(statusMessage.getCorrespondingId()).thenReturn("123");
             when(statusMessage.getCode()).thenReturn(STATUS_OK);
-            when(peersManager.getSuperPeer()).thenReturn(Pair.of(superPeerPublicKey, superPeerInformation));
-            when(superPeerInformation.getPaths()).thenReturn(Set.of(superPeerPath));
+            when(peersManager.getSuperPeer()).thenReturn(Triple.of(superPeerPublicKey, superPeerInformation, Set.of(superPeerPath)));
 
             ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
             EmbeddedChannel channel = new EmbeddedChannel(handler);
@@ -262,7 +259,7 @@ class ServerConnectionHandlerTest {
             Set<CompressedPublicKey> childrenAndGrandchildren = Set.of(publicKey0, grandchildrenPublicKey0);
 
             // update peers manager
-            verify(peersManager).addPeerInformationAndChildren(eq(publicKey0), any());
+            verify(peersManager).setPeerInformationAndAddPathAndChildren(eq(publicKey0), any(), any());
             verify(peersManager).addGrandchildrenRoute(grandchildrenPublicKey0, publicKey0);
 
             // inform super peer
@@ -271,7 +268,7 @@ class ServerConnectionHandlerTest {
             channel.close();
 
             // update peers manager
-            verify(peersManager).removeChildrenAndPeerInformation(eq(publicKey0), any());
+            verify(peersManager).removeChildrenAndPath(eq(publicKey0), any());
             verify(peersManager).removeGrandchildrenRoute(grandchildrenPublicKey0);
 
             // inform super peer
@@ -299,12 +296,12 @@ class ServerConnectionHandlerTest {
             channel.flush();
 
             // update peers manager
-            verify(peersManager).addPeerInformation(eq(publicKey0), any());
+            verify(peersManager).setPeerInformationAndAddPath(eq(publicKey0), any(), any());
 
             channel.close();
 
             // update peers manager
-            verify(peersManager).removePeerInformation(eq(publicKey0), any());
+            verify(peersManager).removePath(eq(publicKey0), any());
         }
     }
 }

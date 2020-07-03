@@ -472,7 +472,7 @@ public abstract class DrasylNode {
         }
         else if (message instanceof WhoisMessage) {
             WhoisMessage whoisMessage = (WhoisMessage) message;
-            peersManager.addPeerInformation(whoisMessage.getRequester(), whoisMessage.getPeerInformation());
+            peersManager.setPeerInformation(whoisMessage.getRequester(), whoisMessage.getPeerInformation());
 
             CompressedPublicKey myPublicKey = identityManager.getPublicKey();
             PeerInformation myPeerInformation = PeerInformation.of(server.getEndpoints());
@@ -487,7 +487,7 @@ public abstract class DrasylNode {
         }
         else if (message instanceof IdentityMessage) {
             IdentityMessage identityMessage = (IdentityMessage) message;
-            peersManager.addPeerInformation(identityMessage.getPublicKey(), identityMessage.getPeerInformation());
+            peersManager.setPeerInformation(identityMessage.getPublicKey(), identityMessage.getPeerInformation());
         }
         else {
             throw new IllegalArgumentException("DrasylNode.loopbackMessageSink is not able to handle messages of type " + message.getClass().getSimpleName());

@@ -28,7 +28,6 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.messenger.NoPathToIdentityException;
 import org.drasyl.peer.Path;
-import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.connection.handler.AbstractThreeWayHandshakeClientHandler;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
@@ -112,8 +111,7 @@ public class ClientConnectionHandler extends AbstractThreeWayHandshakeClientHand
                                     WelcomeMessage offerMessage) {
         CompressedPublicKey identity = ctx.channel().attr(ATTRIBUTE_PUBLIC_KEY).get();
         Channel channel = ctx.channel();
-        Path path = ctx::writeAndFlush; // We start at this point to save resources
-        PeerInformation peerInformation = PeerInformation.of(offerMessage.getPeerInformation().getEndpoints(), path);
+        Path path = ctx::writeAndFlush;
 
         if (childrenJoin) {
             // remove peer information on disconnect
@@ -123,11 +121,11 @@ public class ClientConnectionHandler extends AbstractThreeWayHandshakeClientHand
 
                 messenger.unsetSuperPeerSink();
 
-                environment.getPeersManager().unsetSuperPeerAndRemovePeerInformation(peerInformation);
+                environment.getPeersManager().unsetSuperPeerAndRemovePath(path);
             });
 
             // store peer information
-            environment.getPeersManager().addPeerInformationAndSetSuperPeer(identity, peerInformation);
+            environment.getPeersManager().setPeerInformationAndAddPathAndSetSuperPeer(identity, offerMessage.getPeerInformation(), path);
 
             messenger.setSuperPeerSink(message -> {
                 if (channel.isWritable()) {
@@ -148,11 +146,11 @@ public class ClientConnectionHandler extends AbstractThreeWayHandshakeClientHand
 
                 messenger.removeClientSink(identity);
 
-                environment.getPeersManager().removePeerInformation(identity, peerInformation);
+                environment.getPeersManager().removePath(identity, path);
             });
 
             // store peer information
-            environment.getPeersManager().addPeerInformation(identity, peerInformation);
+            environment.getPeersManager().setPeerInformationAndAddPath(identity, offerMessage.getPeerInformation(), path);
 
             messenger.addClientSink(identity, message -> {
                 if (channel.isWritable()) {

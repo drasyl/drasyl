@@ -18,20 +18,21 @@
  */
 package org.drasyl.peer;
 
+import com.google.common.collect.HashMultimap;
 import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.SetMultimap;
 import org.drasyl.event.Event;
 import org.drasyl.event.Peer;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.event.PeerUnreachableEvent;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.util.Pair;
+import org.drasyl.util.SetUtil;
+import org.drasyl.util.Triple;
 
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -54,27 +55,41 @@ import static java.util.Objects.requireNonNull;
 public class PeersManager {
     private final ReadWriteLock lock;
     private final Map<CompressedPublicKey, PeerInformation> peers;
+    private final SetMultimap<CompressedPublicKey, Path> paths;
     private final Set<CompressedPublicKey> children;
     private final Map<CompressedPublicKey, CompressedPublicKey> grandchildrenRoutes;
     private final Consumer<Event> eventConsumer;
     private CompressedPublicKey superPeer;
 
     public PeersManager(Consumer<Event> eventConsumer) {
-        this(new ReentrantReadWriteLock(true), new HashMap<>(), new HashSet<>(), new HashMap<>(), null, eventConsumer);
+        this(new ReentrantReadWriteLock(true), new HashMap<>(), HashMultimap.create(), new HashSet<>(), new HashMap<>(), null, eventConsumer);
     }
 
     PeersManager(ReadWriteLock lock,
                  Map<CompressedPublicKey, PeerInformation> peers,
+                 SetMultimap<CompressedPublicKey, Path> paths,
                  Set<CompressedPublicKey> children,
                  Map<CompressedPublicKey, CompressedPublicKey> grandchildrenRoutes,
                  CompressedPublicKey superPeer,
                  Consumer<Event> eventConsumer) {
         this.lock = lock;
         this.peers = peers;
+        this.paths = paths;
         this.children = children;
         this.grandchildrenRoutes = grandchildrenRoutes;
         this.superPeer = superPeer;
         this.eventConsumer = eventConsumer;
+    }
+
+    @Override
+    public String toString() {
+        return "PeersManager{" +
+                "peers=" + peers +
+                ", children=" + children +
+                ", grandchildrenRoutes=" + grandchildrenRoutes +
+                ", eventConsumer=" + eventConsumer +
+                ", superPeer=" + superPeer +
+                '}';
     }
 
     public Map<CompressedPublicKey, PeerInformation> getPeers() {
@@ -85,75 +100,6 @@ public class PeersManager {
         }
         finally {
             lock.readLock().unlock();
-        }
-    }
-
-    public void addPeerInformation(CompressedPublicKey publicKey,
-                                   PeerInformation peerInformation) {
-        requireNonNull(publicKey);
-        requireNonNull(peerInformation);
-
-        try {
-            lock.writeLock().lock();
-
-            handlePeerStateTransition(publicKey, peers.get(publicKey), peers.getOrDefault(publicKey, PeerInformation.of()).add(peerInformation));
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    private void handlePeerStateTransition(CompressedPublicKey publicKey,
-                                           PeerInformation existingInformation,
-                                           PeerInformation newInformation) {
-        if (existingInformation == null) {
-            peers.put(publicKey, newInformation);
-            int newPathCount = newInformation.getPaths().size();
-
-            if (newPathCount > 0) {
-                // peer with direct path discovered
-                eventConsumer.accept(new PeerDirectEvent(new Peer(publicKey)));
-            }
-            else {
-                // peer without direct path discovered
-                eventConsumer.accept(new PeerRelayEvent(new Peer(publicKey)));
-            }
-        }
-        else {
-            int existingPathCount = existingInformation.getPaths().size();
-            peers.put(publicKey, newInformation);
-            int newPathCount = newInformation.getPaths().size();
-
-            if (existingPathCount == 0 && newPathCount > 0) {
-                // direct path for already known peer added
-                eventConsumer.accept(new PeerDirectEvent(new Peer(publicKey)));
-            }
-            else if (existingPathCount > 0 && newPathCount == 0) {
-                // direct path for already known peer removed
-                if (publicKey.equals(superPeer) || superPeer == null) {
-                    // there is no super peer. every peer without direct connection is unreachable
-                    eventConsumer.accept(new PeerUnreachableEvent(new Peer(publicKey)));
-                }
-                else {
-                    // there is a super peer. every peer without direct connection can be reached via super peer
-                    eventConsumer.accept(new PeerRelayEvent(new Peer(publicKey)));
-                }
-            }
-        }
-    }
-
-    public void removePeerInformation(CompressedPublicKey publicKey,
-                                      PeerInformation peerInformation) {
-        requireNonNull(publicKey);
-        requireNonNull(peerInformation);
-
-        try {
-            lock.writeLock().lock();
-
-            handlePeerStateTransition(publicKey, peers.get(publicKey), peers.getOrDefault(publicKey, PeerInformation.of()).remove(peerInformation));
-        }
-        finally {
-            lock.writeLock().unlock();
         }
     }
 
@@ -171,45 +117,6 @@ public class PeersManager {
         }
     }
 
-    public boolean isChildren(CompressedPublicKey publicKey) {
-        requireNonNull(publicKey);
-
-        try {
-            lock.readLock().lock();
-
-            return children.contains(publicKey);
-        }
-        finally {
-            lock.readLock().unlock();
-        }
-    }
-
-    public void addChildren(CompressedPublicKey... publicKeys) {
-        requireNonNull(publicKeys);
-
-        try {
-            lock.writeLock().lock();
-
-            children.addAll(List.of(publicKeys));
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    public void removeChildren(CompressedPublicKey... publicKeys) {
-        requireNonNull(publicKeys);
-
-        try {
-            lock.writeLock().lock();
-
-            children.removeAll(List.of(publicKeys));
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-    }
-
     public Map<CompressedPublicKey, CompressedPublicKey> getGrandchildrenRoutes() {
         try {
             lock.readLock().lock();
@@ -218,6 +125,143 @@ public class PeersManager {
         }
         finally {
             lock.readLock().unlock();
+        }
+    }
+
+    /**
+     * Returns public key and information about Super Peer. If no Super Peer is defined, then
+     * <code>null</code> is returned.
+     *
+     * @return
+     */
+    public Triple<CompressedPublicKey, PeerInformation, Set<Path>> getSuperPeer() {
+        try {
+            lock.readLock().lock();
+
+            if (superPeer == null) {
+                return null;
+            }
+            else {
+                PeerInformation peerInformation = peers.getOrDefault(superPeer, PeerInformation.of());
+                return Triple.of(superPeer, peerInformation, paths.get(superPeer));
+            }
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public CompressedPublicKey getSuperPeerKey() {
+        try {
+            lock.readLock().lock();
+
+            return superPeer;
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public Set<CompressedPublicKey> getChildrenKeys() {
+        try {
+            lock.readLock().lock();
+
+            return children;
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public void setPeerInformationAndAddPath(CompressedPublicKey publicKey,
+                                             PeerInformation peerInformation,
+                                             Path path) {
+        requireNonNull(publicKey);
+        requireNonNull(peerInformation);
+
+        try {
+            lock.writeLock().lock();
+
+            handlePeerStateTransition(
+                    publicKey,
+                    peers.get(publicKey),
+                    paths.get(publicKey),
+                    peerInformation,
+                    SetUtil.merge(paths.get(publicKey), path)
+            );
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    private void handlePeerStateTransition(CompressedPublicKey publicKey,
+                                           PeerInformation existingInformation,
+                                           Set<Path> existingPaths,
+                                           PeerInformation newInformation,
+                                           Set<Path> newPaths) {
+        int existingPathCount;
+        if (existingInformation == null) {
+            existingPathCount = 0;
+        }
+        else {
+            existingPathCount = existingPaths.size();
+        }
+        int newPathCount = newPaths.size();
+        peers.put(publicKey, PeerInformation.of(newInformation.getEndpoints()));
+        paths.replaceValues(publicKey, newPaths);
+
+        if (existingPathCount == 0 && newPathCount > 0) {
+            eventConsumer.accept(new PeerDirectEvent(new Peer(publicKey)));
+        }
+        else if ((existingInformation == null || existingPathCount > 0) && newPathCount == 0) {
+            if (publicKey.equals(superPeer) || superPeer == null) {
+                eventConsumer.accept(new PeerUnreachableEvent(new Peer(publicKey)));
+            }
+            else {
+                eventConsumer.accept(new PeerRelayEvent(new Peer(publicKey)));
+            }
+        }
+    }
+
+    public void setPeerInformation(CompressedPublicKey publicKey,
+                                   PeerInformation peerInformation) {
+        requireNonNull(publicKey);
+        requireNonNull(peerInformation);
+
+        try {
+            lock.writeLock().lock();
+
+            handlePeerStateTransition(
+                    publicKey,
+                    peers.get(publicKey),
+                    paths.get(publicKey),
+                    peerInformation,
+                    paths.get(publicKey)
+            );
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public void removePath(CompressedPublicKey publicKey, Path path) {
+        requireNonNull(publicKey);
+        requireNonNull(path);
+
+        try {
+            lock.writeLock().lock();
+
+            handlePeerStateTransition(
+                    publicKey,
+                    peers.get(publicKey),
+                    paths.get(publicKey),
+                    peers.get(publicKey),
+                    SetUtil.difference(paths.get(publicKey), path)
+            );
+        }
+        finally {
+            lock.writeLock().unlock();
         }
     }
 
@@ -249,114 +293,60 @@ public class PeersManager {
         }
     }
 
-    public PeerInformation getPeerInformation(CompressedPublicKey publicKey) {
-        requireNonNull(publicKey);
-
-        try {
-            lock.readLock().lock();
-
-            PeerInformation peerInformation = peers.get(publicKey);
-            if (peerInformation != null) {
-                return peerInformation;
-            }
-            else {
-                return PeerInformation.of();
-            }
-        }
-        finally {
-            lock.readLock().unlock();
-        }
-    }
-
-    /**
-     * Returns public key and information about Super Peer. If no Super Peer is defined, then
-     * <code>null</code> is returned.
-     *
-     * @return
-     */
-    public Pair<CompressedPublicKey, PeerInformation> getSuperPeer() {
-        try {
-            lock.readLock().lock();
-
-            if (superPeer == null) {
-                return null;
-            }
-            else {
-                PeerInformation peerInformation = peers.get(superPeer);
-                if (peerInformation != null) {
-                    return Pair.of(superPeer, peerInformation);
-                }
-                else {
-                    return Pair.of(superPeer, PeerInformation.of());
-                }
-            }
-        }
-        finally {
-            lock.readLock().unlock();
-        }
-    }
-
-    public CompressedPublicKey getSuperPeerKey() {
-        try {
-            lock.readLock().lock();
-
-            return superPeer;
-        }
-        finally {
-            lock.readLock().unlock();
-        }
-    }
-
-    public void setSuperPeer(CompressedPublicKey publicKey) {
-        requireNonNull(publicKey);
-
-        try {
-            lock.writeLock().lock();
-
-            this.superPeer = publicKey;
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    public boolean isSuperPeer(CompressedPublicKey publicKey) {
-        requireNonNull(publicKey);
-
-        try {
-            lock.readLock().lock();
-
-            return Objects.equals(superPeer, publicKey);
-        }
-        finally {
-            lock.readLock().unlock();
-        }
-    }
-
     public void unsetSuperPeer() {
         try {
             lock.writeLock().lock();
 
             superPeer = null;
+
+            // FIXME: events for all peers :O
         }
         finally {
             lock.writeLock().unlock();
         }
     }
 
-    /**
-     * Shortcut for call {@link #addPeerInformation(CompressedPublicKey, PeerInformation)} and
-     * {@link #setSuperPeer(CompressedPublicKey)}.
-     */
-    public void addPeerInformationAndSetSuperPeer(CompressedPublicKey publicKey,
-                                                  PeerInformation peerInformation) {
-        requireNonNull(publicKey);
-        requireNonNull(peerInformation);
+    public void unsetSuperPeerAndRemovePath(Path path) {
+        requireNonNull(path);
 
         try {
             lock.writeLock().lock();
 
-            handlePeerStateTransition(publicKey, peers.get(publicKey), peers.getOrDefault(publicKey, PeerInformation.of()).add(peerInformation));
+            if (superPeer != null) {
+                handlePeerStateTransition(
+                        superPeer,
+                        peers.get(superPeer),
+                        paths.get(superPeer),
+                        peers.get(superPeer),
+                        SetUtil.difference(paths.get(superPeer), path)
+                );
+                superPeer = null;
+
+                // FIXME: events for all peers :O
+            }
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
+    public void setPeerInformationAndAddPathAndSetSuperPeer(CompressedPublicKey publicKey,
+                                                            PeerInformation peerInformation,
+                                                            Path path) {
+        requireNonNull(publicKey);
+        requireNonNull(peerInformation);
+        requireNonNull(path);
+
+        try {
+            lock.writeLock().lock();
+
+            handlePeerStateTransition(
+                    publicKey,
+                    peers.get(publicKey),
+                    paths.get(publicKey),
+                    peerInformation,
+                    SetUtil.merge(paths.get(publicKey), path)
+            );
             superPeer = publicKey;
         }
         finally {
@@ -364,63 +354,21 @@ public class PeersManager {
         }
     }
 
-    /**
-     * Shortcut for call {@link #addPeerInformation(CompressedPublicKey, PeerInformation)} and
-     * {@link #addChildren(CompressedPublicKey...)}.
-     */
-    public void addPeerInformationAndChildren(CompressedPublicKey publicKey,
-                                              PeerInformation peerInformation) {
+    public void removeChildrenAndPath(CompressedPublicKey publicKey,
+                                      Path path) {
         requireNonNull(publicKey);
-        requireNonNull(peerInformation);
+        requireNonNull(path);
 
         try {
             lock.writeLock().lock();
 
-            handlePeerStateTransition(publicKey, peers.get(publicKey), peers.getOrDefault(publicKey, PeerInformation.of()).add(peerInformation));
-            children.add(publicKey);
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    /**
-     * Shortcut for call {@link #unsetSuperPeer()} and {@link #removePeerInformation(CompressedPublicKey,
-     * PeerInformation)}.
-     *
-     * @return
-     */
-    public void unsetSuperPeerAndRemovePeerInformation(PeerInformation peerInformation) {
-        requireNonNull(peerInformation);
-
-        try {
-            lock.writeLock().lock();
-
-            if (superPeer != null) {
-                handlePeerStateTransition(superPeer, peers.get(superPeer), peers.getOrDefault(superPeer, PeerInformation.of()).remove(peerInformation));
-                superPeer = null;
-            }
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    /**
-     * Shortcut for call {@link #removeChildren(CompressedPublicKey...)} and {@link
-     * #removePeerInformation(CompressedPublicKey, PeerInformation)}.
-     *
-     * @return
-     */
-    public void removeChildrenAndPeerInformation(CompressedPublicKey publicKey,
-                                                 PeerInformation peerInformation) {
-        requireNonNull(publicKey);
-        requireNonNull(peerInformation);
-
-        try {
-            lock.writeLock().lock();
-
-            handlePeerStateTransition(publicKey, peers.get(publicKey), peers.getOrDefault(publicKey, PeerInformation.of()).remove(peerInformation));
+            handlePeerStateTransition(
+                    publicKey,
+                    peers.get(publicKey),
+                    paths.get(publicKey),
+                    peers.get(publicKey),
+                    SetUtil.difference(paths.get(publicKey), path)
+            );
             children.remove(publicKey);
         }
         finally {
@@ -428,39 +376,27 @@ public class PeersManager {
         }
     }
 
-    public Map<CompressedPublicKey, PeerInformation> getChildren() {
-        try {
-            lock.readLock().lock();
+    public void setPeerInformationAndAddPathAndChildren(CompressedPublicKey publicKey,
+                                                        PeerInformation peerInformation,
+                                                        Path path) {
+        requireNonNull(publicKey);
+        requireNonNull(peerInformation);
+        requireNonNull(path);
 
-            return ImmutableMap.copyOf(peers.entrySet().stream()
-                    .filter(e -> children.contains(e.getKey()))
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
+        try {
+            lock.writeLock().lock();
+
+            handlePeerStateTransition(
+                    publicKey,
+                    peers.get(publicKey),
+                    paths.get(publicKey),
+                    peerInformation,
+                    SetUtil.merge(paths.get(publicKey), path)
             );
+            children.add(publicKey);
         }
         finally {
-            lock.readLock().unlock();
+            lock.writeLock().unlock();
         }
-    }
-
-    public Set<CompressedPublicKey> getChildrenKeys() {
-        try {
-            lock.readLock().lock();
-
-            return children;
-        }
-        finally {
-            lock.readLock().unlock();
-        }
-    }
-
-    @Override
-    public String toString() {
-        return "PeersManager{" +
-                "peers=" + peers +
-                ", children=" + children +
-                ", grandchildrenRoutes=" + grandchildrenRoutes +
-                ", eventConsumer=" + eventConsumer +
-                ", superPeer=" + superPeer +
-                '}';
     }
 }
