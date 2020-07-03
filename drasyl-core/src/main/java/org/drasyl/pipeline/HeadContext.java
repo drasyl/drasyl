@@ -27,8 +27,8 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.CompletableFuture;
 
 final class HeadContext extends AbstractHandlerContext implements InboundHandler, OutboundHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(HeadContext.class);
     public static final String DRASYL_HEAD_HANDLER = "DRASYL_HEAD_HANDLER";
+    private static final Logger LOG = LoggerFactory.getLogger(HeadContext.class);
     private final CheckedConsumer<ApplicationMessage> outboundConsumer;
 
     public HeadContext(CheckedConsumer<ApplicationMessage> outboundConsumer) {
@@ -62,12 +62,7 @@ final class HeadContext extends AbstractHandlerContext implements InboundHandler
                       CompletableFuture<Void> future) {
         if (future.isDone()) {
             if (LOG.isWarnEnabled()) {
-                if (!future.isCancelled() && !future.isCompletedExceptionally()) {
-                    LOG.warn("Message `{}` was not written to the underlying drasyl layer, because the corresponding future was already completed.", msg);
-                }
-                else {
-                    LOG.warn("Message `{}` was not written to the underlying drasyl layer, because the corresponding future was completed exceptionally.", msg);
-                }
+                LOG.warn("Message `{}` was not written to the underlying drasyl layer, because the corresponding future was already completed.", msg);
             }
         }
         else {

@@ -42,16 +42,6 @@ public class DrasylPipeline implements Pipeline {
     private final AbstractHandlerContext tail;
     private final Scheduler scheduler;
 
-    DrasylPipeline(Map<String, AbstractHandlerContext> handlerNames,
-                   AbstractHandlerContext head,
-                   AbstractHandlerContext tail,
-                   Scheduler scheduler) {
-        this.handlerNames = handlerNames;
-        this.head = head;
-        this.tail = tail;
-        this.scheduler = scheduler;
-    }
-
     public DrasylPipeline(Consumer<Event> eventConsumer,
                           CheckedConsumer<ApplicationMessage> outboundConsumer) {
         this(new ConcurrentHashMap<>(), new HeadContext(outboundConsumer), new TailContext(eventConsumer), DrasylScheduler.getInstance());
@@ -66,6 +56,16 @@ public class DrasylPipeline implements Pipeline {
         catch (Exception e) {
             this.head.fireExceptionCaught(e);
         }
+    }
+
+    DrasylPipeline(Map<String, AbstractHandlerContext> handlerNames,
+                   AbstractHandlerContext head,
+                   AbstractHandlerContext tail,
+                   Scheduler scheduler) {
+        this.handlerNames = handlerNames;
+        this.head = head;
+        this.tail = tail;
+        this.scheduler = scheduler;
     }
 
     @Override

@@ -29,8 +29,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 final class TailContext extends AbstractHandlerContext implements InboundHandler, OutboundHandler {
-    private static final Logger LOG = LoggerFactory.getLogger(TailContext.class);
     public static final String DRASYL_TAIL_HANDLER = "DRASYL_TAIL_HANDLER";
+    private static final Logger LOG = LoggerFactory.getLogger(TailContext.class);
     private final Consumer<Event> eventConsumer;
 
     public TailContext(Consumer<Event> eventConsumer) {
