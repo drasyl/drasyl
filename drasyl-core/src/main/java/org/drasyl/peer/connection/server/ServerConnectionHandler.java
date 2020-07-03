@@ -25,8 +25,8 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
-import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
+import org.drasyl.peer.Path;
 import org.drasyl.peer.connection.handler.AbstractThreeWayHandshakeServerHandler;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
@@ -34,8 +34,8 @@ import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RegisterGrandchildMessage;
 import org.drasyl.peer.connection.message.UnregisterGrandchildMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
-import org.drasyl.util.Pair;
 import org.drasyl.util.SetUtil;
+import org.drasyl.util.Triple;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -108,17 +108,17 @@ public class ServerConnectionHandler extends AbstractThreeWayHandshakeServerHand
                                     JoinMessage requestMessage) {
         CompressedPublicKey clientPublicKey = requestMessage.getPublicKey();
         Channel channel = ctx.channel();
-        Path path = ctx::writeAndFlush; // We start at this point to save resources
-        PeerInformation clientInformation = PeerInformation.of(path);
+        PeerInformation clientInformation = PeerInformation.of();
+        Path path = ctx::writeAndFlush;
 
         environment.getChannelGroup().add(clientPublicKey, channel);
 
         if (requestMessage.isChildrenJoin()) {
             // remove peer information on disconnect
-            channel.closeFuture().addListener(future -> environment.getPeersManager().removeChildrenAndPeerInformation(clientPublicKey, clientInformation));
+            channel.closeFuture().addListener(future -> environment.getPeersManager().removeChildrenAndPath(clientPublicKey, path));
 
             // store peer information
-            environment.getPeersManager().addPeerInformationAndChildren(clientPublicKey, clientInformation);
+            environment.getPeersManager().setPeerInformationAndAddPathAndChildren(clientPublicKey, clientInformation, path);
 
             // inform super peer about my new children and grandchildren
             Set<CompressedPublicKey> childrenAndGrandchildren = SetUtil.merge(requestMessage.getChildrenAndGrandchildren(), clientPublicKey);
@@ -129,19 +129,19 @@ public class ServerConnectionHandler extends AbstractThreeWayHandshakeServerHand
         }
         else {
             // remove peer information on disconnect
-            channel.closeFuture().addListener(future -> environment.getPeersManager().removePeerInformation(clientPublicKey, clientInformation));
+            channel.closeFuture().addListener(future -> environment.getPeersManager().removePath(clientPublicKey, path));
 
             // store peer information
-            environment.getPeersManager().addPeerInformation(clientPublicKey, clientInformation);
+            environment.getPeersManager().setPeerInformationAndAddPath(clientPublicKey, clientInformation, path);
         }
     }
 
     private void registerGrandchildrenAtSuperPeer(ChannelHandlerContext ctx,
                                                   Set<CompressedPublicKey> grandchildren) {
-        Pair<CompressedPublicKey, PeerInformation> superPeer = environment.getPeersManager().getSuperPeer();
+        Triple<CompressedPublicKey, PeerInformation, Set<Path>> superPeer = environment.getPeersManager().getSuperPeer();
         if (superPeer != null) {
-            PeerInformation superPeerInformation = superPeer.second();
-            Path superPeerPath = superPeerInformation.getPaths().iterator().next();
+            Set<Path> paths = superPeer.third();
+            Path superPeerPath = paths.iterator().next();
             if (superPeerPath != null) {
                 Channel channel = ctx.channel();
                 if (getLogger().isDebugEnabled()) {
@@ -198,10 +198,10 @@ public class ServerConnectionHandler extends AbstractThreeWayHandshakeServerHand
 
     private void unregisterGrandchildrenAtSuperPeer(ChannelHandlerContext ctx,
                                                     Set<CompressedPublicKey> grandchildren) {
-        Pair<CompressedPublicKey, PeerInformation> superPeer = environment.getPeersManager().getSuperPeer();
+        Triple<CompressedPublicKey, PeerInformation, Set<Path>> superPeer = environment.getPeersManager().getSuperPeer();
         if (superPeer != null) {
-            PeerInformation superPeerInformation = superPeer.second();
-            Path superPeerPath = superPeerInformation.getPaths().iterator().next();
+            Set<Path> paths = superPeer.third();
+            Path superPeerPath = paths.iterator().next();
             if (superPeerPath != null) {
                 Channel channel = ctx.channel();
                 if (getLogger().isDebugEnabled()) {

@@ -85,7 +85,7 @@ public class IntraVmDiscovery implements AutoCloseable {
                             Messenger messenger,
                             PeersManager peersManager,
                             Path path) {
-        this(identitySupplier, messenger, peersManager, path, PeerInformation.of(path), new AtomicBoolean(false));
+        this(identitySupplier, messenger, peersManager, path, PeerInformation.of(), new AtomicBoolean(false));
     }
 
     IntraVmDiscovery(Supplier<CompressedPublicKey> identitySupplier,
@@ -112,8 +112,8 @@ public class IntraVmDiscovery implements AutoCloseable {
 
                 // store peer information
                 discoveries.values().forEach(d -> {
-                    d.peersManager.addPeerInformation(identitySupplier.get(), peerInformation);
-                    peersManager.addPeerInformation(d.identitySupplier.get(), d.peerInformation);
+                    d.peersManager.setPeerInformationAndAddPath(identitySupplier.get(), peerInformation, path);
+                    peersManager.setPeerInformationAndAddPath(d.identitySupplier.get(), d.peerInformation, d.path);
                 });
                 discoveries.put(identitySupplier.get(), this);
             }
@@ -135,8 +135,8 @@ public class IntraVmDiscovery implements AutoCloseable {
                 // remove peer information
                 discoveries.remove(identitySupplier.get());
                 discoveries.values().forEach(d -> {
-                    d.peersManager.removePeerInformation(identitySupplier.get(), peerInformation);
-                    peersManager.removePeerInformation(d.identitySupplier.get(), d.peerInformation);
+                    d.peersManager.removePath(identitySupplier.get(), path);
+                    peersManager.removePath(d.identitySupplier.get(), path);
                 });
             }
             finally {
