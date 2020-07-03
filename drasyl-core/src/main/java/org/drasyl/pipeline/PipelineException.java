@@ -18,7 +18,9 @@
  */
 package org.drasyl.pipeline;
 
-public class PipelineException extends RuntimeException {
+import org.drasyl.DrasylRuntimeException;
+
+public class PipelineException extends DrasylRuntimeException {
     public PipelineException(Throwable cause) {
         super(cause);
     }

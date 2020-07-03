@@ -18,9 +18,10 @@
  */
 package org.drasyl.pipeline;
 
+import org.drasyl.DrasylException;
 import org.drasyl.event.Event;
 import org.drasyl.peer.connection.message.ApplicationMessage;
-import org.drasyl.util.CheckedConsumer;
+import org.drasyl.util.DrasylConsumer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -42,7 +43,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class HeadContextTest {
     @Mock
-    private CheckedConsumer<ApplicationMessage> outboundConsumer;
+    private DrasylConsumer<ApplicationMessage> outboundConsumer;
     @Mock
     private HandlerContext ctx;
 
@@ -135,7 +136,7 @@ class HeadContextTest {
         ApplicationMessage msg = mock(ApplicationMessage.class);
         CompletableFuture<Void> future = mock(CompletableFuture.class);
 
-        doThrow(Exception.class).when(outboundConsumer).accept(any());
+        doThrow(DrasylException.class).when(outboundConsumer).accept(any());
         when(future.isDone()).thenReturn(false);
 
         headContext.write(ctx, msg, future);

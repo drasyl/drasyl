@@ -20,7 +20,7 @@ package org.drasyl.pipeline;
 
 import org.drasyl.event.Event;
 import org.drasyl.peer.connection.message.ApplicationMessage;
-import org.drasyl.util.CheckedConsumer;
+import org.drasyl.util.DrasylConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,9 +29,9 @@ import java.util.concurrent.CompletableFuture;
 final class HeadContext extends AbstractHandlerContext implements InboundHandler, OutboundHandler {
     public static final String DRASYL_HEAD_HANDLER = "DRASYL_HEAD_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(HeadContext.class);
-    private final CheckedConsumer<ApplicationMessage> outboundConsumer;
+    private final DrasylConsumer<ApplicationMessage> outboundConsumer;
 
-    public HeadContext(CheckedConsumer<ApplicationMessage> outboundConsumer) {
+    public HeadContext(DrasylConsumer<ApplicationMessage> outboundConsumer) {
         super(DRASYL_HEAD_HANDLER);
         this.outboundConsumer = outboundConsumer;
     }

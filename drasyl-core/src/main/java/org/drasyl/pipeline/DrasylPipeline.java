@@ -21,7 +21,7 @@ package org.drasyl.pipeline;
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.event.Event;
 import org.drasyl.peer.connection.message.ApplicationMessage;
-import org.drasyl.util.CheckedConsumer;
+import org.drasyl.util.DrasylConsumer;
 import org.drasyl.util.DrasylScheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -43,7 +43,7 @@ public class DrasylPipeline implements Pipeline {
     private final Scheduler scheduler;
 
     public DrasylPipeline(Consumer<Event> eventConsumer,
-                          CheckedConsumer<ApplicationMessage> outboundConsumer) {
+                          DrasylConsumer<ApplicationMessage> outboundConsumer) {
         this(new ConcurrentHashMap<>(), new HeadContext(outboundConsumer), new TailContext(eventConsumer), DrasylScheduler.getInstance());
 
         this.head.setPrevHandlerContext(this.head);
