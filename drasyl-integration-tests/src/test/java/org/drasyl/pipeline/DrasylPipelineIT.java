@@ -133,7 +133,7 @@ public class DrasylPipelineIT {
 
         pipeline.addLast("exceptionCatcher", new InboundHandlerAdapter() {
             @Override
-            public void exceptionCaught(HandlerContext ctx, Exception cause) throws Exception {
+            public void exceptionCaught(HandlerContext ctx, Exception cause) {
                 exceptions.onNext(cause);
                 super.exceptionCaught(ctx, cause);
             }

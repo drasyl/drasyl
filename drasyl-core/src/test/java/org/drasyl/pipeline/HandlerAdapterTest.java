@@ -31,15 +31,15 @@ class HandlerAdapterTest {
     private HandlerContext ctx;
 
     @Test
-    void shouldDoNothing() throws Exception {
+    void shouldDoNothing() {
         HandlerAdapter adapter = new HandlerAdapter() {
             @Override
-            public void handlerAdded(HandlerContext ctx) throws Exception {
+            public void handlerAdded(HandlerContext ctx) {
                 super.handlerAdded(ctx);
             }
 
             @Override
-            public void handlerRemoved(HandlerContext ctx) throws Exception {
+            public void handlerRemoved(HandlerContext ctx) {
                 super.handlerRemoved(ctx);
             }
         };

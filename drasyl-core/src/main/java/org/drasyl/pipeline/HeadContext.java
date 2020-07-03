@@ -52,7 +52,7 @@ final class HeadContext extends AbstractHandlerContext implements InboundHandler
     }
 
     @Override
-    public void exceptionCaught(HandlerContext ctx, Exception cause) throws Exception {
+    public void exceptionCaught(HandlerContext ctx, Exception cause) {
         ctx.fireExceptionCaught(cause);
     }
 
@@ -77,14 +77,14 @@ final class HeadContext extends AbstractHandlerContext implements InboundHandler
     }
 
     @Override
-    public void handlerAdded(HandlerContext ctx) throws Exception {
+    public void handlerAdded(HandlerContext ctx) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Pipeline head was added.");
         }
     }
 
     @Override
-    public void handlerRemoved(HandlerContext ctx) throws Exception {
+    public void handlerRemoved(HandlerContext ctx) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Pipeline head was removed.");
         }

@@ -41,5 +41,5 @@ public interface InboundHandler extends Handler {
     /**
      * Gets called if a {@link Exception} was thrown.
      */
-    void exceptionCaught(HandlerContext ctx, Exception cause) throws Exception;
+    void exceptionCaught(HandlerContext ctx, Exception cause);
 }

@@ -23,7 +23,7 @@ public abstract class HandlerAdapter implements Handler {
      * Do nothing by default, sub-classes may override this method.
      */
     @Override
-    public void handlerAdded(HandlerContext ctx) throws Exception {
+    public void handlerAdded(HandlerContext ctx) {
         // Do nothing
     }
 
@@ -31,7 +31,7 @@ public abstract class HandlerAdapter implements Handler {
      * Do nothing by default, sub-classes may override this method.
      */
     @Override
-    public void handlerRemoved(HandlerContext ctx) throws Exception {
+    public void handlerRemoved(HandlerContext ctx) {
         // Do nothing
     }
 }

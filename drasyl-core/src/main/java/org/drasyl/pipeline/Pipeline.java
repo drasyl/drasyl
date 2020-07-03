@@ -131,7 +131,7 @@ import java.util.concurrent.CompletableFuture;
  *     <ul>
  *     <li>{@link HandlerContext#fireRead(ApplicationMessage)}</li>
  *     <li>{@link HandlerContext#fireEventTriggered(Event)}</li>
- *     <li>{@link HandlerContext#fireExceptionCaught(Throwable)}</li>
+ *     <li>{@link HandlerContext#fireExceptionCaught(Exception)}</li>
  *     </ul>
  * </li>
  * <li>Outbound event propagation methods:

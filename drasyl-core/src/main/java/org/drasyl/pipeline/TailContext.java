@@ -56,7 +56,7 @@ final class TailContext extends AbstractHandlerContext implements InboundHandler
     }
 
     @Override
-    public void exceptionCaught(HandlerContext ctx, Exception cause) throws Exception {
+    public void exceptionCaught(HandlerContext ctx, Exception cause) {
         throw new PipelineException(cause);
     }
 
@@ -68,14 +68,14 @@ final class TailContext extends AbstractHandlerContext implements InboundHandler
     }
 
     @Override
-    public void handlerAdded(HandlerContext ctx) throws Exception {
+    public void handlerAdded(HandlerContext ctx) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Pipeline tail was added.");
         }
     }
 
     @Override
-    public void handlerRemoved(HandlerContext ctx) throws Exception {
+    public void handlerRemoved(HandlerContext ctx) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Pipeline tail was removed.");
         }
