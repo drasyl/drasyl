@@ -26,6 +26,7 @@ import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.event.PeerUnreachableEvent;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.util.Pair;
 import org.drasyl.util.Triple;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,7 +54,6 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -176,6 +176,19 @@ class PeersManagerTest {
         void tearDown() {
             verify(lock.readLock()).lock();
             verify(lock.readLock()).unlock();
+        }
+    }
+
+    @Nested
+    class GetPeer {
+        @Test
+        void shouldReturnPeerInformationAndPaths(@Mock CompressedPublicKey publicKey,
+                                                 @Mock PeerInformation peerInformation,
+                                                 @Mock Path path) {
+            peers.put(publicKey, peerInformation);
+            paths.put(publicKey, path);
+
+            assertEquals(Pair.of(peerInformation, Set.of(path)), underTest.getPeer(publicKey));
         }
     }
 

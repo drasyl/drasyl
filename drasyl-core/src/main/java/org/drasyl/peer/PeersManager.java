@@ -27,6 +27,7 @@ import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.event.PeerUnreachableEvent;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.util.Pair;
 import org.drasyl.util.SetUtil;
 import org.drasyl.util.Triple;
 
@@ -167,6 +168,26 @@ public class PeersManager {
             lock.readLock().lock();
 
             return children;
+        }
+        finally {
+            lock.readLock().unlock();
+        }
+    }
+
+    public Pair<PeerInformation, Set<Path>> getPeer(CompressedPublicKey publicKey) {
+        requireNonNull(publicKey);
+
+        try {
+            lock.readLock().lock();
+
+            PeerInformation peerInformation = peers.get(publicKey);
+            Set<Path> myPaths = this.paths.get(publicKey);
+            if (peerInformation != null) {
+                return Pair.of(peerInformation, myPaths);
+            }
+            else {
+                return Pair.of(PeerInformation.of(), myPaths);
+            }
         }
         finally {
             lock.readLock().unlock();
