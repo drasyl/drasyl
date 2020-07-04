@@ -43,6 +43,7 @@ import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
@@ -92,16 +93,28 @@ public class Server implements AutoCloseable {
         this.channelGroup = channelGroup;
     }
 
+    public Server(Supplier<Identity> identitySupplier,
+                  Messenger messenger,
+                  PeersManager peersManager,
+                  DrasylConfig config,
+                  EventLoopGroup workerGroup,
+                  EventLoopGroup bossGroup,
+                  Observable<Boolean> superPeerConnected,
+                  Consumer<CompressedPublicKey> peerCommunicationConsumer) throws ServerException {
+        this(identitySupplier, messenger, peersManager, config, workerGroup, bossGroup, superPeerConnected, new AtomicBoolean(false), peerCommunicationConsumer);
+    }
+
     /**
      * Node server for forwarding messages to child peers.
      *
-     * @param identitySupplier   the identity manager
-     * @param messenger          the messenger object
-     * @param peersManager       the peers manager
-     * @param config             config that should be used
-     * @param workerGroup        netty shared worker group
-     * @param bossGroup          netty shared boss group
+     * @param identitySupplier          the identity manager
+     * @param messenger                 the messenger object
+     * @param peersManager              the peers manager
+     * @param config                    config that should be used
+     * @param workerGroup               netty shared worker group
+     * @param bossGroup                 netty shared boss group
      * @param superPeerConnected
+     * @param peerCommunicationConsumer
      */
     public Server(Supplier<Identity> identitySupplier,
                   Messenger messenger,
@@ -110,7 +123,8 @@ public class Server implements AutoCloseable {
                   EventLoopGroup workerGroup,
                   EventLoopGroup bossGroup,
                   Observable<Boolean> superPeerConnected,
-                  AtomicBoolean opened) throws ServerException {
+                  AtomicBoolean opened,
+                  Consumer<CompressedPublicKey> peerCommunicationConsumer) throws ServerException {
         this.identitySupplier = identitySupplier;
         this.peersManager = peersManager;
         this.config = config;
@@ -127,24 +141,14 @@ public class Server implements AutoCloseable {
                         messenger,
                         this::getEndpoints,
                         channelGroup,
-                        () -> this.isOpen() && (!config.isSuperPeerEnabled() || superPeerConnected.blockingFirst())
-                ),
+                        () -> this.isOpen() && (!config.isSuperPeerEnabled() || superPeerConnected.blockingFirst()),
+                        peerCommunicationConsumer),
                 config.getServerChannelInitializer()
         );
         this.opened = opened;
         this.messenger = messenger;
         this.actualPort = -1;
         this.actualEndpoints = new HashSet<>();
-    }
-
-    public Server(Supplier<Identity> identitySupplier,
-                  Messenger messenger,
-                  PeersManager peersManager,
-                  DrasylConfig config,
-                  EventLoopGroup workerGroup,
-                  EventLoopGroup bossGroup,
-                  Observable<Boolean> superPeerConnected) throws ServerException {
-        this(identitySupplier, messenger, peersManager, config, workerGroup, bossGroup, superPeerConnected, new AtomicBoolean(false));
     }
 
     /**

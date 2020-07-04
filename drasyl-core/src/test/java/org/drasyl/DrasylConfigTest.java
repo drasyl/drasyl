@@ -27,8 +27,8 @@ import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
-import org.drasyl.peer.connection.server.DefaultServerChannelInitializer;
 import org.drasyl.peer.connection.client.DefaultClientChannelInitializer;
+import org.drasyl.peer.connection.server.DefaultServerChannelInitializer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -48,12 +48,14 @@ import java.util.function.Supplier;
 
 import static java.time.Duration.ofSeconds;
 import static org.drasyl.DrasylConfig.DEFAULT;
+import static org.drasyl.DrasylConfig.DIRECT_CONNECTIONS_ENABLED;
 import static org.drasyl.DrasylConfig.FLUSH_BUFFER_SIZE;
 import static org.drasyl.DrasylConfig.IDENTITY_PATH;
 import static org.drasyl.DrasylConfig.IDENTITY_PRIVATE_KEY;
 import static org.drasyl.DrasylConfig.IDENTITY_PROOF_OF_WORK;
 import static org.drasyl.DrasylConfig.IDENTITY_PUBLIC_KEY;
 import static org.drasyl.DrasylConfig.INTRA_VM_DISCOVERY_ENABLED;
+import static org.drasyl.DrasylConfig.MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT;
 import static org.drasyl.DrasylConfig.MESSAGE_HOP_LIMIT;
 import static org.drasyl.DrasylConfig.MESSAGE_MAX_CONTENT_LENGTH;
 import static org.drasyl.DrasylConfig.SERVER_BIND_HOST;
@@ -66,7 +68,6 @@ import static org.drasyl.DrasylConfig.SERVER_IDLE_RETRIES;
 import static org.drasyl.DrasylConfig.SERVER_IDLE_TIMEOUT;
 import static org.drasyl.DrasylConfig.SERVER_SSL_ENABLED;
 import static org.drasyl.DrasylConfig.SERVER_SSL_PROTOCOLS;
-import static org.drasyl.DrasylConfig.MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT;
 import static org.drasyl.DrasylConfig.SUPER_PEER_CHANNEL_INITIALIZER;
 import static org.drasyl.DrasylConfig.SUPER_PEER_ENABLED;
 import static org.drasyl.DrasylConfig.SUPER_PEER_ENDPOINTS;
@@ -92,7 +93,6 @@ class DrasylConfigTest {
     private CompressedPrivateKey identityPrivateKey;
     @Mock
     private Path identityPath;
-    private String userAgent;
     private String serverBindHost;
     private boolean serverEnabled;
     private int serverBindPort;
@@ -123,12 +123,12 @@ class DrasylConfigTest {
     private Supplier<Set<String>> networkAddressesProvider;
     private Duration superPeerHandshakeTimeout;
     private boolean intraVmDiscoveryEnabled;
+    private boolean directConnectionsEnabled;
     private Duration composedMessageTransferTimeout;
 
     @BeforeEach
     void setUp() {
         loglevel = Level.WARN;
-        userAgent = "";
         serverBindHost = "0.0.0.0";
         serverEnabled = true;
         serverBindPort = 22527;
@@ -149,6 +149,7 @@ class DrasylConfigTest {
         superPeerIdleTimeout = ofSeconds(60);
         identityPathAsString = "drasyl.identity.json";
         intraVmDiscoveryEnabled = true;
+        directConnectionsEnabled = true;
         composedMessageTransferTimeout = ofSeconds(60);
     }
 
@@ -183,6 +184,7 @@ class DrasylConfigTest {
             when(typesafeConfig.getString(SUPER_PEER_CHANNEL_INITIALIZER)).thenReturn(superPeerChannelInitializer.getCanonicalName());
             when(networkAddressesProvider.get()).thenReturn(Set.of("192.168.188.112"));
             when(typesafeConfig.getBoolean(INTRA_VM_DISCOVERY_ENABLED)).thenReturn(intraVmDiscoveryEnabled);
+            when(typesafeConfig.getBoolean(DIRECT_CONNECTIONS_ENABLED)).thenReturn(directConnectionsEnabled);
             when(typesafeConfig.getDuration(MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT)).thenReturn(composedMessageTransferTimeout);
 
             DrasylConfig config = new DrasylConfig(typesafeConfig);
@@ -211,6 +213,7 @@ class DrasylConfigTest {
             assertEquals(superPeerHandshakeTimeout, config.getSuperPeerHandshakeTimeout());
             assertEquals(superPeerChannelInitializer, config.getSuperPeerChannelInitializer());
             assertEquals(intraVmDiscoveryEnabled, config.isIntraVmDiscoveryEnabled());
+            assertEquals(directConnectionsEnabled, config.areDirectConnectionsEnabled());
             assertEquals(composedMessageTransferTimeout, config.getMessageComposedMessageTransferTimeout());
         }
     }
@@ -221,7 +224,7 @@ class DrasylConfigTest {
         void shouldMaskSecrets() throws CryptoException {
             identityPrivateKey = CompressedPrivateKey.of("07e98a2f8162a4002825f810c0fbd69b0c42bd9cb4f74a21bc7807bc5acb4f5f");
 
-            DrasylConfig config = new DrasylConfig(loglevel, proofOfWork, identityPublicKey, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, composedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled);
+            DrasylConfig config = new DrasylConfig(loglevel, proofOfWork, identityPublicKey, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, composedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled, directConnectionsEnabled);
 
             assertThat(config.toString(), not(containsString(identityPrivateKey.getCompressedKey())));
         }
@@ -259,6 +262,7 @@ class DrasylConfigTest {
                     .superPeerIdleRetries(DEFAULT.getSuperPeerIdleRetries())
                     .superPeerIdleTimeout(DEFAULT.getSuperPeerIdleTimeout())
                     .intraVmDiscoveryEnabled(DEFAULT.isIntraVmDiscoveryEnabled())
+                    .directConnectionsEnabled(DEFAULT.areDirectConnectionsEnabled())
                     .messageComposedMessageTransferTimeout(DEFAULT.getMessageComposedMessageTransferTimeout())
                     .build();
 

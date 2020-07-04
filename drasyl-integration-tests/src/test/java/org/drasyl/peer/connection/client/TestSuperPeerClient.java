@@ -76,7 +76,8 @@ public class TestSuperPeerClient extends SuperPeerClient {
                                 Subject<Boolean> connected,
                                 boolean doPingPong,
                                 boolean doJoin) {
-        super(config, workerGroup, connected, endpoint -> new TestClientChannelInitializer(new ClientEnvironment(config, identitySupplier, endpoint, messenger, peersManager, connected, receivedEvents::onNext, true, config.getSuperPeerPublicKey(), config.getSuperPeerIdleRetries(), config.getSuperPeerIdleTimeout(), config.getSuperPeerHandshakeTimeout()), doPingPong, doJoin));
+        super(config, workerGroup, connected, endpoint -> new TestClientChannelInitializer(new ClientEnvironment(config, identitySupplier, endpoint, messenger, peersManager, connected, receivedEvents::onNext, true, config.getSuperPeerPublicKey(), config.getSuperPeerIdleRetries(), config.getSuperPeerIdleTimeout(), config.getSuperPeerHandshakeTimeout(), publicKey -> {
+        }), doPingPong, doJoin));
         this.identitySupplier = identitySupplier;
         this.receivedEvents = receivedEvents;
     }
