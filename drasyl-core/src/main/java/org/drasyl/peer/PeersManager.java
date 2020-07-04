@@ -320,7 +320,7 @@ public class PeersManager {
 
             superPeer = null;
 
-            // FIXME: events for all peers :O
+            // TODO: send PeerUnreachableEvent for all peers without direct connection?
         }
         finally {
             lock.writeLock().unlock();
@@ -343,7 +343,7 @@ public class PeersManager {
                 );
                 superPeer = null;
 
-                // FIXME: events for all peers :O
+                // TODO: send PeerRelayEvent for all peers without direct connection?
             }
         }
         finally {
