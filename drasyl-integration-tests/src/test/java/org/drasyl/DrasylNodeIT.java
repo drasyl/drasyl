@@ -23,6 +23,7 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.event.AbstractPeerEvent;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeEvent;
@@ -231,33 +232,83 @@ class DrasylNodeIT {
             client1Events.awaitCount(1);
             client2Events.awaitCount(1);
         }
+    }
 
-        @Test
-        void firstContactToUpstreamPeerShouldTriggerWhoIsMessageWhichResultsInAnPeerRelayEventOnBothNodes() throws DrasylException, CryptoException {
-            TestObserver<Event> superSuperPeerRelayEvents = superSuperPeer.second().filter(e -> e instanceof PeerRelayEvent).test();
-            TestObserver<Event> client1RelayEvents = client1.second().filter(e -> e instanceof PeerRelayEvent).test();
+    /**
+     * Two clients with enabled servers and one Super Peer will be created for this test.
+     */
+    @Nested
+    class WhenIntraVmDiscoveryIsDisabled2 {
+        private Pair<DrasylNode, Observable<Event>> superPeer;
+        private Pair<DrasylNode, Observable<Event>> client1;
+        private Pair<DrasylNode, Observable<Event>> client2;
 
-            // message client1 -> ssp
-            client1.first().send("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a", "Hallo Welt");
+        @BeforeEach
+        void setUp() throws DrasylException, CryptoException {
+            //
+            // create nodes
+            //
+            DrasylConfig config;
 
-            superSuperPeerRelayEvents.awaitCount(1);
-            superSuperPeerRelayEvents.assertValueAt(0, new PeerRelayEvent(new Peer(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))));
-            client1RelayEvents.awaitCount(1);
-            client1RelayEvents.assertValueAt(0, new PeerRelayEvent(new Peer(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"))));
+            // super peer
+            config = DrasylConfig.newBuilder()
+                    .identityProofOfWork(ProofOfWork.of(6518542))
+                    .identityPublicKey(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
+                    .identityPrivateKey(CompressedPrivateKey.of("6b4df6d8b8b509cb984508a681076efce774936c17cf450819e2262a9862f8"))
+                    .serverBindHost("127.0.0.1")
+                    .serverBindPort(0)
+                    .superPeerEnabled(false)
+                    .intraVmDiscoveryEnabled(false)
+                    .build();
+            superPeer = createNode(config);
+            NodeEvent superPeerNodeUp = (NodeEvent) superPeer.second().filter(e -> e instanceof NodeUpEvent).firstElement().blockingGet();
+            int superPeerPort = superPeerNodeUp.getNode().getEndpoints().iterator().next().getPort();
+            colorizedPrintln("CREATED superPeer", COLOR_CYAN, STYLE_REVERSED);
+
+            // client1
+            config = DrasylConfig.newBuilder()
+                    .identityProofOfWork(ProofOfWork.of(12304070))
+                    .identityPublicKey(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))
+                    .identityPrivateKey(CompressedPrivateKey.of("073a34ecaff06fdf3fbe44ddf3abeace43e3547033493b1ac4c0ae3c6ecd6173"))
+                    .serverBindHost("0.0.0.0")
+                    .serverBindPort(0)
+                    .superPeerPublicKey(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
+                    .superPeerEndpoints(Set.of(URI.create("ws://127.0.0.1:" + superPeerPort)))
+                    .intraVmDiscoveryEnabled(false)
+                    .build();
+            client1 = createNode(config);
+            colorizedPrintln("CREATED client1", COLOR_CYAN, STYLE_REVERSED);
+
+            // client2
+            config = DrasylConfig.newBuilder()
+                    .identityProofOfWork(ProofOfWork.of(33957767))
+                    .identityPublicKey(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))
+                    .identityPrivateKey(CompressedPrivateKey.of("0310991def7b530fced318876ac71025ebc0449a95967a0efc2e423086198f54"))
+                    .serverBindHost("0.0.0.0")
+                    .serverBindPort(0)
+                    .superPeerPublicKey(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
+                    .superPeerEndpoints(Set.of(URI.create("ws://127.0.0.1:" + superPeerPort)))
+                    .intraVmDiscoveryEnabled(false)
+                    .build();
+            client2 = createNode(config);
+            colorizedPrintln("CREATED client2", COLOR_CYAN, STYLE_REVERSED);
+
+            superPeer.second().filter(e -> e instanceof NodeOnlineEvent || e instanceof PeerDirectEvent).test().awaitCount(3);
+            client1.second().filter(e -> e instanceof NodeOnlineEvent || e instanceof PeerDirectEvent).test().awaitCount(2);
+            client2.second().filter(e -> e instanceof NodeOnlineEvent || e instanceof PeerDirectEvent).test().awaitCount(2);
         }
 
         @Test
-        void firstContactToDownstreamPeerShouldTriggerWhoIsMessageWhichResultsInAnPeerRelayEventOnBothNodes() throws DrasylException, CryptoException {
-            TestObserver<Event> superSuperPeerRelayEvents = superSuperPeer.second().filter(e -> e instanceof PeerRelayEvent).test();
-            TestObserver<Event> client1RelayEvents = client1.second().filter(e -> e instanceof PeerRelayEvent).test();
+        void shouldRequestPeerInformationFromOtherPeer() throws DrasylException, CryptoException {
+            TestObserver<Event> client1RelayEvents = client1.second().filter(e -> e instanceof AbstractPeerEvent && ((AbstractPeerEvent) e).getPeer().getPublicKey().equals(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))).test();
+            TestObserver<Event> client2RelayEvents = client2.second().filter(e -> e instanceof AbstractPeerEvent && ((AbstractPeerEvent) e).getPeer().getPublicKey().equals(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))).test();
 
-            // message ssp -> client1
-            superSuperPeer.first().send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", "Hallo Welt");
+            client1.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", "Hallo Welt");
 
-            superSuperPeerRelayEvents.awaitCount(1);
-            superSuperPeerRelayEvents.assertValueAt(0, new PeerRelayEvent(new Peer(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))));
             client1RelayEvents.awaitCount(1);
-            client1RelayEvents.assertValueAt(0, new PeerRelayEvent(new Peer(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"))));
+            client1RelayEvents.assertValueAt(0, new PeerRelayEvent(new Peer(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))));
+            client2RelayEvents.awaitCount(1);
+            client2RelayEvents.assertValueAt(0, new PeerRelayEvent(new Peer(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))));
         }
     }
 
