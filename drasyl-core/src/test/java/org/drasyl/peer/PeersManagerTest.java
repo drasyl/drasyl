@@ -211,6 +211,30 @@ class PeersManagerTest {
         }
 
         @Test
+        void shouldEmitPeerRelayEventIfThereIsNoSuperPeerAndPeerIsChildren(@Mock CompressedPublicKey publicKey,
+                                                                           @Mock PeerInformation peerInformation) {
+            underTest = new PeersManager(lock, peers, paths, children, grandchildrenRoutes, null, eventConsumer);
+
+            children.add(publicKey);
+
+            underTest.setPeerInformation(publicKey, peerInformation);
+
+            verify(eventConsumer).accept(new PeerRelayEvent(new Peer(publicKey)));
+        }
+
+        @Test
+        void shouldEmitPeerRelayEventIfThereIsNoSuperPeerAndPeerIsGrandchildren(@Mock CompressedPublicKey publicKey,
+                                                                                @Mock PeerInformation peerInformation) {
+            underTest = new PeersManager(lock, peers, paths, children, grandchildrenRoutes, null, eventConsumer);
+
+            grandchildrenRoutes.put(publicKey, mock(CompressedPublicKey.class));
+
+            underTest.setPeerInformation(publicKey, peerInformation);
+
+            verify(eventConsumer).accept(new PeerRelayEvent(new Peer(publicKey)));
+        }
+
+        @Test
         void shouldEmitPeerUnreachableEventIfThereIsNoSuperPeer(@Mock CompressedPublicKey publicKey,
                                                                 @Mock PeerInformation peerInformation) {
             underTest = new PeersManager(lock, peers, paths, children, grandchildrenRoutes, null, eventConsumer);

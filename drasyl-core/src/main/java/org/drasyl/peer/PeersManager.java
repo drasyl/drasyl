@@ -236,7 +236,7 @@ public class PeersManager {
             eventConsumer.accept(new PeerDirectEvent(new Peer(publicKey)));
         }
         else if ((existingInformation == null || existingPathCount > 0) && newPathCount == 0) {
-            if (publicKey.equals(superPeer) || superPeer == null) {
+            if ((publicKey.equals(superPeer) || superPeer == null) && !children.contains(publicKey) && !grandchildrenRoutes.containsKey(publicKey)) {
                 eventConsumer.accept(new PeerUnreachableEvent(new Peer(publicKey)));
             }
             else {
