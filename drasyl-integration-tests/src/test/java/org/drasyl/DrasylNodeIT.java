@@ -29,6 +29,7 @@ import org.drasyl.event.NodeEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUpEvent;
+import org.drasyl.event.Peer;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.identity.CompressedPrivateKey;
@@ -229,6 +230,34 @@ class DrasylNodeIT {
             superPeerEvents.awaitCount(3);
             client1Events.awaitCount(1);
             client2Events.awaitCount(1);
+        }
+
+        @Test
+        void firstContactToUpstreamPeerShouldTriggerWhoIsMessageWhichResultsInAnPeerRelayEventOnBothNodes() throws DrasylException, CryptoException {
+            TestObserver<Event> superSuperPeerRelayEvents = superSuperPeer.second().filter(e -> e instanceof PeerRelayEvent).test();
+            TestObserver<Event> client1RelayEvents = client1.second().filter(e -> e instanceof PeerRelayEvent).test();
+
+            // message client1 -> ssp
+            client1.first().send("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a", "Hallo Welt");
+
+            superSuperPeerRelayEvents.awaitCount(1);
+            superSuperPeerRelayEvents.assertValueAt(0, new PeerRelayEvent(new Peer(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))));
+            client1RelayEvents.awaitCount(1);
+            client1RelayEvents.assertValueAt(0, new PeerRelayEvent(new Peer(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"))));
+        }
+
+        @Test
+        void firstContactToDownstreamPeerShouldTriggerWhoIsMessageWhichResultsInAnPeerRelayEventOnBothNodes() throws DrasylException, CryptoException {
+            TestObserver<Event> superSuperPeerRelayEvents = superSuperPeer.second().filter(e -> e instanceof PeerRelayEvent).test();
+            TestObserver<Event> client1RelayEvents = client1.second().filter(e -> e instanceof PeerRelayEvent).test();
+
+            // message ssp -> client1
+            superSuperPeer.first().send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", "Hallo Welt");
+
+            superSuperPeerRelayEvents.awaitCount(1);
+            superSuperPeerRelayEvents.assertValueAt(0, new PeerRelayEvent(new Peer(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))));
+            client1RelayEvents.awaitCount(1);
+            client1RelayEvents.assertValueAt(0, new PeerRelayEvent(new Peer(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"))));
         }
     }
 
