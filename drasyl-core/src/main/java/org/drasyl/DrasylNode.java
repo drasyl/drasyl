@@ -151,15 +151,15 @@ public abstract class DrasylNode {
     }
 
     /**
-     * Sends <code>event</code> to the application and tells it information about the local node,
-     * other peers, connections or incoming messages.
+     * Sends <code>event</code> to the {@link Pipeline} and tells it information about the local
+     * node, other peers, connections or incoming messages.
      * <br>
      * <b>This method should be used by all drasyl internal operations, so that the event can pass
      * the {@link org.drasyl.pipeline.Pipeline}</b>
      *
      * @param event the event
      */
-    public void onInternalEvent(Event event) {
+    void onInternalEvent(Event event) {
         pipeline.executeInbound(event);
     }
 
@@ -190,9 +190,9 @@ public abstract class DrasylNode {
                SuperPeerClient superPeerClient,
                Server server,
                AtomicBoolean started,
+               DrasylPipeline pipeline,
                CompletableFuture<Void> startSequence,
-               CompletableFuture<Void> shutdownSequence,
-               DrasylPipeline pipeline) {
+               CompletableFuture<Void> shutdownSequence) {
         this.config = config;
         this.identityManager = identityManager;
         this.peersManager = peersManager;
