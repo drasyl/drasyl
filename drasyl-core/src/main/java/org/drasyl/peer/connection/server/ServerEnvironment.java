@@ -19,6 +19,7 @@
 package org.drasyl.peer.connection.server;
 
 import org.drasyl.DrasylConfig;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
@@ -26,6 +27,7 @@ import org.drasyl.peer.PeersManager;
 import java.net.URI;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -36,6 +38,7 @@ public class ServerEnvironment {
     private final Supplier<Identity> identitySupplier;
     private final PeersManager peersManager;
     private final BooleanSupplier acceptedNewConnectionsSupplier;
+    private final Consumer<CompressedPublicKey> peerCommunicationConsumer;
     private final Messenger messenger;
     private final Supplier<Set<URI>> endpointsSupplier;
     private final ServerChannelGroup channelGroup;
@@ -46,7 +49,8 @@ public class ServerEnvironment {
                              Messenger messenger,
                              Supplier<Set<URI>> endpointsSupplier,
                              ServerChannelGroup channelGroup,
-                             BooleanSupplier acceptedNewConnectionsSupplier) {
+                             BooleanSupplier acceptedNewConnectionsSupplier,
+                             Consumer<CompressedPublicKey> peerCommunicationConsumer) {
         this.config = config;
         this.identitySupplier = identitySupplier;
         this.peersManager = peersManager;
@@ -54,6 +58,7 @@ public class ServerEnvironment {
         this.endpointsSupplier = endpointsSupplier;
         this.channelGroup = channelGroup;
         this.acceptedNewConnectionsSupplier = acceptedNewConnectionsSupplier;
+        this.peerCommunicationConsumer = peerCommunicationConsumer;
     }
 
     public Identity getIdentity() {
@@ -82,5 +87,9 @@ public class ServerEnvironment {
 
     public ServerChannelGroup getChannelGroup() {
         return channelGroup;
+    }
+
+    public Consumer<CompressedPublicKey> getPeerCommunicationConsumer() {
+        return peerCommunicationConsumer;
     }
 }

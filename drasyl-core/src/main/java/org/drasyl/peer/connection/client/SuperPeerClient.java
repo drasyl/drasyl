@@ -27,6 +27,7 @@ import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
@@ -94,7 +95,8 @@ public class SuperPeerClient extends AbstractClient {
                            PeersManager peersManager,
                            Messenger messenger,
                            EventLoopGroup workerGroup,
-                           Consumer<Event> eventConsumer) {
+                           Consumer<Event> eventConsumer,
+                           Consumer<CompressedPublicKey> peerCommunicationConsumer) {
         this(
                 config,
                 identitySupplier,
@@ -102,7 +104,8 @@ public class SuperPeerClient extends AbstractClient {
                 messenger,
                 workerGroup,
                 BehaviorSubject.createDefault(false),
-                eventConsumer
+                eventConsumer,
+                peerCommunicationConsumer
         );
     }
 
@@ -112,13 +115,14 @@ public class SuperPeerClient extends AbstractClient {
                             Messenger messenger,
                             EventLoopGroup workerGroup,
                             Subject<Boolean> connected,
-                            Consumer<Event> eventConsumer) {
+                            Consumer<Event> eventConsumer,
+                            Consumer<CompressedPublicKey> peerCommunicationConsumer) {
         super(
                 config.getSuperPeerRetryDelays(),
                 workerGroup,
                 config.getSuperPeerEndpoints(),
                 connected,
-                endpoint -> initiateChannelInitializer(new ClientEnvironment(config, identitySupplier, endpoint, messenger, peersManager, connected, eventConsumer, true, config.getSuperPeerPublicKey(), config.getSuperPeerIdleRetries(), config.getSuperPeerIdleTimeout(), config.getSuperPeerHandshakeTimeout()), config.getSuperPeerChannelInitializer())
+                endpoint -> initiateChannelInitializer(new ClientEnvironment(config, identitySupplier, endpoint, messenger, peersManager, connected, eventConsumer, true, config.getSuperPeerPublicKey(), config.getSuperPeerIdleRetries(), config.getSuperPeerIdleTimeout(), config.getSuperPeerHandshakeTimeout(), peerCommunicationConsumer), config.getSuperPeerChannelInitializer())
         );
     }
 
