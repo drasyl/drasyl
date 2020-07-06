@@ -42,6 +42,7 @@ import org.drasyl.messenger.NoPathToIdentityException;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.client.SuperPeerClient;
+import org.drasyl.peer.connection.direct.DirectConnectionsManager;
 import org.drasyl.peer.connection.intravm.IntraVmDiscovery;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.IdentityMessage;
@@ -59,6 +60,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 import java.util.Properties;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -111,6 +113,7 @@ public abstract class DrasylNode {
     private final IdentityManager identityManager;
     private final PeersManager peersManager;
     private final Messenger messenger;
+    private final DirectConnectionsManager directConnectionsManager;
     private final IntraVmDiscovery intraVmDiscovery;
     private final SuperPeerClient superPeerClient;
     private final Server server;
@@ -136,9 +139,10 @@ public abstract class DrasylNode {
             this.identityManager = new IdentityManager(this.config);
             this.peersManager = new PeersManager(this::onInternalEvent);
             this.messenger = new Messenger(this::messageSink);
+            this.directConnectionsManager = new DirectConnectionsManager(identityManager, peersManager, messenger);
             this.intraVmDiscovery = new IntraVmDiscovery(identityManager::getPublicKey, messenger, peersManager, this::onInternalEvent);
-            this.superPeerClient = new SuperPeerClient(this.config, identityManager::getIdentity, peersManager, messenger, DrasylNode.WORKER_GROUP, this::onInternalEvent);
-            this.server = new Server(identityManager::getIdentity, messenger, peersManager, this.config, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP, superPeerClient.connectionEstablished());
+            this.superPeerClient = new SuperPeerClient(this.config, identityManager::getIdentity, peersManager, messenger, DrasylNode.WORKER_GROUP, this::onInternalEvent, directConnectionsManager::communicationOccurred);
+            this.server = new Server(identityManager::getIdentity, messenger, peersManager, this.config, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP, superPeerClient.connectionEstablished(), directConnectionsManager::communicationOccurred);
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = new CompletableFuture<>();
@@ -186,6 +190,7 @@ public abstract class DrasylNode {
                IdentityManager identityManager,
                PeersManager peersManager,
                Messenger messenger,
+               DirectConnectionsManager directConnectionsManager,
                IntraVmDiscovery intraVmDiscovery,
                SuperPeerClient superPeerClient,
                Server server,
@@ -197,6 +202,7 @@ public abstract class DrasylNode {
         this.identityManager = identityManager;
         this.peersManager = peersManager;
         this.messenger = messenger;
+        this.directConnectionsManager = directConnectionsManager;
         this.intraVmDiscovery = intraVmDiscovery;
         this.superPeerClient = superPeerClient;
         this.server = server;
@@ -278,7 +284,8 @@ public abstract class DrasylNode {
             DrasylNode self = this;
             onInternalEvent(new NodeDownEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
             LOG.info("Shutdown drasyl Node with Identity '{}'...", identityManager.getIdentity());
-            shutdownSequence = runAsync(this::stopSuperPeerClient)
+            shutdownSequence = runAsync(this::stopDirectConnectionsHandler)
+                    .thenRun(this::stopSuperPeerClient)
                     .thenRun(this::stopServer)
                     .thenRun(this::stopIntraVmDiscovery)
                     .whenComplete((r, e) -> {
@@ -308,6 +315,14 @@ public abstract class DrasylNode {
         return shutdownSequence;
     }
 
+    private void stopDirectConnectionsHandler() {
+        if (config.areDirectConnectionsEnabled()) {
+            LOG.info("Stop Direct Connections Handler...");
+            directConnectionsManager.close();
+            LOG.info("Direct Connections Handler stopped");
+        }
+    }
+
     /**
      * Should unregister from the Super Peer and stop the client. Should do nothing if the client is
      * not registered or not started.
@@ -326,6 +341,7 @@ public abstract class DrasylNode {
      */
     private void stopServer() {
         if (config.isServerEnabled()) {
+            directConnectionsManager.setEndpoints(Set.of());
             LOG.info("Stop Server listening at {}:{}...", config.getServerBindHost(), server.getPort());
             server.close();
             LOG.info("Server stopped");
@@ -363,6 +379,7 @@ public abstract class DrasylNode {
                     .thenRun(this::startIntraVmDiscovery)
                     .thenRun(this::startServer)
                     .thenRun(this::startSuperPeerClient)
+                    .thenRun(this::startDirectConnectionsHandler)
                     .whenComplete((r, e) -> {
                         if (e == null) {
                             onInternalEvent(new NodeUpEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
@@ -436,6 +453,7 @@ public abstract class DrasylNode {
                 LOG.debug("Start Server...");
                 server.open();
                 LOG.debug("Server is now listening at {}:{}", config.getServerBindHost(), server.getPort());
+                directConnectionsManager.setEndpoints(server.getEndpoints());
             }
             catch (ServerException e) {
                 throw new CompletionException(e);
@@ -453,6 +471,19 @@ public abstract class DrasylNode {
                 LOG.debug("Start Super Peer Client...");
                 superPeerClient.open();
                 LOG.debug("Super Peer started");
+            }
+            catch (Exception e) {
+                throw new CompletionException(e);
+            }
+        }
+    }
+
+    private void startDirectConnectionsHandler() {
+        if (config.areDirectConnectionsEnabled()) {
+            try {
+                LOG.debug("Start Direct Connections Handler...");
+                directConnectionsManager.open();
+                LOG.debug("Direct Connections Handler started.");
             }
             catch (Exception e) {
                 throw new CompletionException(e);

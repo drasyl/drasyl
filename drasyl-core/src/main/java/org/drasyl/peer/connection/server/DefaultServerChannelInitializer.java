@@ -30,6 +30,7 @@ import io.netty.handler.ssl.util.SelfSignedCertificate;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
+import org.drasyl.peer.connection.handler.PeerCommunicationWatcher;
 import org.drasyl.peer.connection.handler.RelayableMessageGuard;
 import org.drasyl.peer.connection.handler.SignatureHandler;
 import org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler;
@@ -42,6 +43,7 @@ import java.security.cert.CertificateException;
 
 import static org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler.EXCEPTION_MESSAGE_HANDLER;
 import static org.drasyl.peer.connection.handler.ExceptionHandler.EXCEPTION_HANDLER;
+import static org.drasyl.peer.connection.handler.PeerCommunicationWatcher.PEER_COMMUNICATION_WATCHER;
 import static org.drasyl.peer.connection.handler.RelayableMessageGuard.HOP_COUNT_GUARD;
 import static org.drasyl.peer.connection.handler.SignatureHandler.SIGNATURE_HANDLER;
 import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_HANDLER;
@@ -76,6 +78,7 @@ public class DefaultServerChannelInitializer extends ServerChannelInitializer {
         pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(environment.getConfig().getMessageHopLimit()));
         pipeline.addLast(CONNECTION_GUARD, new ServerNewConnectionsGuard(environment.getAcceptNewConnectionsSupplier()));
         pipeline.addLast(WHO_AM_I, new WhoAmIHandler(environment.getIdentity().getPublicKey()));
+        pipeline.addLast(PEER_COMMUNICATION_WATCHER, new PeerCommunicationWatcher(environment.getIdentity().getPublicKey(), environment.getPeerCommunicationConsumer()));
         pipeline.addLast(CHUNKED_WRITER, new ChunkedWriteHandler());
         pipeline.addLast(CHUNK_HANDLER, new ChunkedMessageHandler(environment.getConfig().getMessageMaxContentLength(), environment.getIdentity().getPublicKey(), environment.getConfig().getMessageComposedMessageTransferTimeout()));
     }

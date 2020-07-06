@@ -45,7 +45,8 @@ public class TestServer extends Server {
                       EventLoopGroup workerGroup,
                       EventLoopGroup bossGroup,
                       Observable<Boolean> superPeerConnected) throws ServerException {
-        super(identitySupplier, messenger, peersManager, config, workerGroup, bossGroup, superPeerConnected);
+        super(identitySupplier, messenger, peersManager, config, workerGroup, bossGroup, superPeerConnected, publicKey -> {
+        });
     }
 
     public Observable<Message> receivedMessages() {

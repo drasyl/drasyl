@@ -47,6 +47,7 @@ public class ClientEnvironment {
     private final short idleRetries;
     private final Duration idleTimeout;
     private final Duration handshakeTimeout;
+    private final Consumer<CompressedPublicKey> peerCommunicationConsumer;
 
     public ClientEnvironment(DrasylConfig config,
                              Supplier<Identity> identitySupplier,
@@ -59,7 +60,8 @@ public class ClientEnvironment {
                              CompressedPublicKey serverPublicKey,
                              short idleRetries,
                              Duration idleTimeout,
-                             Duration handshakeTimeout) {
+                             Duration handshakeTimeout,
+                             Consumer<CompressedPublicKey> peerCommunicationConsumer) {
         this.config = config;
         this.identitySupplier = identitySupplier;
         this.endpoint = endpoint;
@@ -72,6 +74,7 @@ public class ClientEnvironment {
         this.idleRetries = idleRetries;
         this.idleTimeout = idleTimeout;
         this.handshakeTimeout = handshakeTimeout;
+        this.peerCommunicationConsumer = peerCommunicationConsumer;
     }
 
     public DrasylConfig getConfig() {
@@ -120,5 +123,9 @@ public class ClientEnvironment {
 
     public CompressedPublicKey getServerPublicKey() {
         return serverPublicKey;
+    }
+
+    public Consumer<CompressedPublicKey> getPeerCommunicationConsumer() {
+        return peerCommunicationConsumer;
     }
 }
