@@ -22,6 +22,9 @@ import org.drasyl.peer.connection.message.ApplicationMessage;
 
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * {@link Handler} which will get notified for IO-outbound-operations.
+ */
 public interface OutboundHandler extends Handler {
     /**
      * Gets called if a {@link ApplicationMessage} was send from the application to a recipient.

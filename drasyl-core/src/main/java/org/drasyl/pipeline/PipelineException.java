@@ -20,6 +20,9 @@ package org.drasyl.pipeline;
 
 import org.drasyl.DrasylRuntimeException;
 
+/**
+ * RuntimeException thrown by the {@link Pipeline}.
+ */
 public class PipelineException extends DrasylRuntimeException {
     public PipelineException(Throwable cause) {
         super(cause);

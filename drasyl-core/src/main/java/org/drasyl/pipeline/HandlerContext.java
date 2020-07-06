@@ -24,6 +24,11 @@ import org.drasyl.peer.connection.message.ApplicationMessage;
 
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Enables a {@link Handler} to interact with its {@link Pipeline} and other handlers. Among other
+ * things a handler can notify the next {@link Handler} in the {@link Pipeline} as well as modify
+ * the {@link Pipeline} it belongs to dynamically.
+ */
 public interface HandlerContext {
     /**
      * @return the name of the {@link Handler}

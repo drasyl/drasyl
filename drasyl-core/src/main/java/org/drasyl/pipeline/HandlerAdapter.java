@@ -18,6 +18,9 @@
  */
 package org.drasyl.pipeline;
 
+/**
+ * Skeleton implementation of a {@link Handler}.
+ */
 public abstract class HandlerAdapter implements Handler {
     /**
      * Do nothing by default, sub-classes may override this method.

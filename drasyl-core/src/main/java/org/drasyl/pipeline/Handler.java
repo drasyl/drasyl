@@ -18,6 +18,35 @@
  */
 package org.drasyl.pipeline;
 
+/**
+ * Handles an I/O event or intercepts an I/O operation, and forwards it to its next handler in its
+ * {@link Pipeline}.
+ *
+ * <h3>Sub-types</h3>
+ * <p>
+ * {@link Handler} itself does not provide many methods, but you usually have to implement one of
+ * its subtypes:
+ * <ul>
+ * <li>{@link InboundHandler} to handle inbound I/O events, and</li>
+ * <li>{@link OutboundHandler} to handle outbound I/O operations.</li>
+ * </ul>
+ * </p>
+ * <p>
+ * Alternatively, the following adapter classes are provided for your convenience:
+ * <ul>
+ * <li>{@link InboundHandlerAdapter} to handle inbound I/O events,</li>
+ * <li>{@link OutboundHandler} to handle outbound I/O operations, and</li>
+ * </ul>
+ * </p>
+ *
+ * <h3>The context object</h3>
+ * <p>
+ * A {@link Handler} is provided with a {@link HandlerContext}
+ * object.  A {@link Handler} is supposed to interact with the
+ * {@link Pipeline} it belongs to via a context object.  Using the
+ * context object, the {@link Handler} can pass events upstream or
+ * downstream or modify the pipeline dynamically.
+ */
 public interface Handler {
     /**
      * Gets called after the {@link Handler} was added to the actual context and it's ready to

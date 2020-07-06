@@ -29,6 +29,10 @@ import org.slf4j.LoggerFactory;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
+/**
+ * Special class that represents the tail of a {@link Pipeline}. This class can not be removed from
+ * the pipeline.
+ */
 final class TailContext extends AbstractHandlerContext implements InboundHandler, OutboundHandler {
     public static final String DRASYL_TAIL_HANDLER = "DRASYL_TAIL_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(TailContext.class);

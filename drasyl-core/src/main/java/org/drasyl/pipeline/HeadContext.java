@@ -27,6 +27,10 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 
+/**
+ * Special class that represents the head of a {@link Pipeline}. This class can not be removed from
+ * the pipeline.
+ */
 final class HeadContext extends AbstractHandlerContext implements InboundHandler, OutboundHandler {
     public static final String DRASYL_HEAD_HANDLER = "DRASYL_HEAD_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(HeadContext.class);

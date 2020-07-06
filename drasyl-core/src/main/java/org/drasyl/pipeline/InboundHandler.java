@@ -21,6 +21,10 @@ package org.drasyl.pipeline;
 import org.drasyl.event.Event;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 
+/**
+ * {@link Handler} which adds callbacks for state changes. This allows the user to hook in to state
+ * changes easily.
+ */
 public interface InboundHandler extends Handler {
     /**
      * Gets called if a {@link ApplicationMessage} was received.
