@@ -25,44 +25,58 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.concurrent.CompletableFuture;
+
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
-class InboundHandlerAdapterTest {
+class DuplexHandlerTest {
     @Mock
     private HandlerContext ctx;
 
     @Test
+    void shouldPassthroughsOnWrite() {
+        DuplexHandler duplexHandler = new DuplexHandler();
+
+        ApplicationMessage msg = mock(ApplicationMessage.class);
+        CompletableFuture<Void> future = mock(CompletableFuture.class);
+
+        duplexHandler.write(ctx, msg, future);
+
+        verify(ctx).write(eq(msg), eq(future));
+    }
+
+    @Test
     void shouldPassthroughsOnRead() {
-        InboundHandlerAdapter adapter = new InboundHandlerAdapter();
+        DuplexHandler duplexHandler = new DuplexHandler();
 
         ApplicationMessage msg = mock(ApplicationMessage.class);
 
-        adapter.read(ctx, msg);
+        duplexHandler.read(ctx, msg);
 
         verify(ctx).fireRead(eq(msg));
     }
 
     @Test
     void shouldPassthroughsOnEventTriggered() {
-        InboundHandlerAdapter adapter = new InboundHandlerAdapter();
+        DuplexHandler duplexHandler = new DuplexHandler();
 
         Event event = mock(Event.class);
 
-        adapter.eventTriggered(ctx, event);
+        duplexHandler.eventTriggered(ctx, event);
 
         verify(ctx).fireEventTriggered(eq(event));
     }
 
     @Test
     void shouldPassthroughsOnExceptionCaught() {
-        InboundHandlerAdapter adapter = new InboundHandlerAdapter();
+        DuplexHandler duplexHandler = new DuplexHandler();
 
         Exception exception = mock(Exception.class);
 
-        adapter.exceptionCaught(ctx, exception);
+        duplexHandler.exceptionCaught(ctx, exception);
 
         verify(ctx).fireExceptionCaught(eq(exception));
     }

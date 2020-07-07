@@ -18,6 +18,7 @@
  */
 package org.drasyl.pipeline;
 
+import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
@@ -33,14 +34,16 @@ import java.util.function.Consumer;
  * Special class that represents the tail of a {@link Pipeline}. This class can not be removed from
  * the pipeline.
  */
-final class TailContext extends AbstractHandlerContext implements InboundHandler, OutboundHandler {
+class TailContext extends AbstractHandlerContext implements InboundHandler, OutboundHandler {
     public static final String DRASYL_TAIL_HANDLER = "DRASYL_TAIL_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(TailContext.class);
     private final Consumer<Event> eventConsumer;
 
     public TailContext(Consumer<Event> eventConsumer,
-                       DrasylConfig config) {
-        super(DRASYL_TAIL_HANDLER, config);
+                       DrasylConfig config,
+                       Pipeline pipeline,
+                       Scheduler scheduler) {
+        super(DRASYL_TAIL_HANDLER, config, pipeline, scheduler);
         this.eventConsumer = eventConsumer;
     }
 

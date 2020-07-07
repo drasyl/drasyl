@@ -98,7 +98,7 @@ class DrasylPipelineTest {
     }
 
     @Test
-    void shouldAddHandlerBeforePosition() throws Exception {
+    void shouldAddHandlerBeforePosition() {
         ArgumentCaptor<AbstractHandlerContext> captor = ArgumentCaptor.forClass(AbstractHandlerContext.class);
         DrasylPipeline pipeline = new DrasylPipeline(handlerNames, head, tail, scheduler, config);
 
@@ -116,7 +116,7 @@ class DrasylPipelineTest {
     }
 
     @Test
-    void shouldAddHandlerAfterPosition() throws Exception {
+    void shouldAddHandlerAfterPosition() {
         ArgumentCaptor<AbstractHandlerContext> captor = ArgumentCaptor.forClass(AbstractHandlerContext.class);
         DrasylPipeline pipeline = new DrasylPipeline(handlerNames, head, tail, scheduler, config);
 
@@ -141,7 +141,7 @@ class DrasylPipelineTest {
     }
 
     @Test
-    void shouldRemoveHandler() throws Exception {
+    void shouldRemoveHandler() {
         DrasylPipeline pipeline = new DrasylPipeline(handlerNames, head, tail, scheduler, config);
 
         AbstractHandlerContext ctx = mock(AbstractHandlerContext.class);
@@ -155,13 +155,11 @@ class DrasylPipelineTest {
 
         verify(head).setNextHandlerContext(tail);
         verify(tail).setPrevHandlerContext(head);
-        verify(ctx).setNextHandlerContext(null);
-        verify(ctx).setPrevHandlerContext(null);
         verify(handler).handlerRemoved(ctx);
     }
 
     @Test
-    void shouldReplaceHandler() throws Exception {
+    void shouldReplaceHandler() {
         ArgumentCaptor<AbstractHandlerContext> captor1 = ArgumentCaptor.forClass(AbstractHandlerContext.class);
         ArgumentCaptor<AbstractHandlerContext> captor2 = ArgumentCaptor.forClass(AbstractHandlerContext.class);
         DrasylPipeline pipeline = new DrasylPipeline(handlerNames, head, tail, scheduler, config);
@@ -179,8 +177,6 @@ class DrasylPipelineTest {
         pipeline.replace("oldName", "newName", newHandler);
 
         verify(oldHandler).handlerRemoved(oldCtx);
-        verify(oldCtx).setPrevHandlerContext(null);
-        verify(oldCtx).setNextHandlerContext(null);
         verify(head).setNextHandlerContext(captor1.capture());
         verify(tail).setPrevHandlerContext(captor2.capture());
 

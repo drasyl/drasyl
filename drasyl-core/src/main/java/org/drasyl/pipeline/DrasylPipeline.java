@@ -24,41 +24,25 @@ import org.drasyl.event.Event;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.util.DrasylConsumer;
 import org.drasyl.util.DrasylScheduler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.Map;
-import java.util.NoSuchElementException;
-import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
 /**
  * The default {@link Pipeline} implementation. Used to implement plugins for drasyl.
  */
-public class DrasylPipeline implements Pipeline {
-    private static final Logger LOG = LoggerFactory.getLogger(DrasylPipeline.class);
-    private final Map<String, AbstractHandlerContext> handlerNames;
-    private final AbstractHandlerContext head;
-    private final AbstractHandlerContext tail;
-    private final Scheduler scheduler;
-    private final DrasylConfig config;
-
+public class DrasylPipeline extends DefaultPipeline {
     public DrasylPipeline(Consumer<Event> eventConsumer,
                           DrasylConsumer<ApplicationMessage> outboundConsumer,
                           DrasylConfig config) {
-        this(new ConcurrentHashMap<>(), new HeadContext(outboundConsumer, config), new TailContext(eventConsumer, config), DrasylScheduler.getInstance(), config);
+        this.handlerNames = new ConcurrentHashMap<>();
+        this.head = new HeadContext(outboundConsumer, config, this, DrasylScheduler.getInstanceHeavy());
+        this.tail = new TailContext(eventConsumer, config, this, DrasylScheduler.getInstanceHeavy());
+        this.scheduler = DrasylScheduler.getInstanceLight();
+        this.config = config;
 
-        this.head.setPrevHandlerContext(this.head);
-        this.head.setNextHandlerContext(this.tail);
-        this.tail.setPrevHandlerContext(this.head);
-        try {
-            this.head.handler().handlerAdded(this.head);
-            this.tail.handler().handlerAdded(this.head);
-        }
-        catch (Exception e) {
-            this.head.fireExceptionCaught(e);
-        }
+        initPointer();
     }
 
     DrasylPipeline(Map<String, AbstractHandlerContext> handlerNames,
@@ -71,246 +55,5 @@ public class DrasylPipeline implements Pipeline {
         this.tail = tail;
         this.scheduler = scheduler;
         this.config = config;
-    }
-
-    @Override
-    public Pipeline addFirst(String name, Handler handler) {
-        Objects.requireNonNull(name);
-        Objects.requireNonNull(handler);
-        final AbstractHandlerContext newCtx;
-
-        synchronized (this) {
-            collisionCheck(name);
-
-            newCtx = new DefaultHandlerContext(name, handler, config);
-            // Set correct pointer on new context
-            newCtx.setPrevHandlerContext(this.head);
-            newCtx.setNextHandlerContext(this.head.getNext());
-
-            // Set correct pointer on old context
-            this.head.getNext().setPrevHandlerContext(newCtx);
-            this.head.setNextHandlerContext(newCtx);
-
-            registerNewHandler(name, newCtx);
-        }
-
-        return this;
-    }
-
-    /**
-     * Checks if the handler is already registered, if so an {@link IllegalArgumentException} is
-     * thrown.
-     *
-     * @param name handler name
-     * @throws IllegalArgumentException if handler is already registered
-     */
-    private void collisionCheck(String name) {
-        if (handlerNames.containsKey(name)) {
-            throw new IllegalArgumentException("A handler with this name is already registered");
-        }
-    }
-
-    private void registerNewHandler(String name, AbstractHandlerContext handlerCtx) {
-        // Add to handlerName list
-        handlerNames.put(name, handlerCtx);
-
-        // Call handler added
-        try {
-            handlerCtx.handler().handlerAdded(handlerCtx);
-        }
-        catch (Exception e) {
-            handlerCtx.fireExceptionCaught(e);
-            if (LOG.isWarnEnabled()) {
-                LOG.warn("Error on adding handler `{}`: ", handlerCtx.name(), e);
-            }
-        }
-    }
-
-    @Override
-    public Pipeline addLast(String name, Handler handler) {
-        Objects.requireNonNull(name);
-        Objects.requireNonNull(handler);
-        final AbstractHandlerContext newCtx;
-
-        synchronized (this) {
-            collisionCheck(name);
-
-            newCtx = new DefaultHandlerContext(name, handler, config);
-            // Set correct pointer on new context
-            newCtx.setPrevHandlerContext(this.tail.getPrev());
-            newCtx.setNextHandlerContext(this.tail);
-
-            // Set correct pointer on old context
-            this.tail.getPrev().setNextHandlerContext(newCtx);
-            this.tail.setPrevHandlerContext(newCtx);
-
-            registerNewHandler(name, newCtx);
-        }
-
-        return this;
-    }
-
-    @Override
-    public Pipeline addBefore(String baseName, String name, Handler handler) {
-        Objects.requireNonNull(baseName);
-        Objects.requireNonNull(name);
-        Objects.requireNonNull(handler);
-        final AbstractHandlerContext newCtx;
-
-        synchronized (this) {
-            collisionCheck(name);
-
-            AbstractHandlerContext baseCtx = handlerNames.get(baseName);
-            Objects.requireNonNull(baseCtx);
-
-            newCtx = new DefaultHandlerContext(name, handler, config);
-            // Set correct pointer on new context
-            newCtx.setPrevHandlerContext(baseCtx.getPrev());
-            newCtx.setNextHandlerContext(baseCtx);
-
-            // Set correct pointer on old context
-            baseCtx.setPrevHandlerContext(newCtx);
-            baseCtx.getPrev().setNextHandlerContext(newCtx);
-
-            registerNewHandler(name, newCtx);
-        }
-
-        return this;
-    }
-
-    @Override
-    public Pipeline addAfter(String baseName, String name, Handler handler) {
-        Objects.requireNonNull(baseName);
-        Objects.requireNonNull(name);
-        Objects.requireNonNull(handler);
-        final AbstractHandlerContext newCtx;
-
-        synchronized (this) {
-            collisionCheck(name);
-
-            AbstractHandlerContext baseCtx = handlerNames.get(baseName);
-            Objects.requireNonNull(baseCtx);
-
-            newCtx = new DefaultHandlerContext(name, handler, config);
-            // Set correct pointer on new context
-            newCtx.setPrevHandlerContext(baseCtx);
-            newCtx.setNextHandlerContext(baseCtx.getNext());
-
-            // Set correct pointer on old context
-            baseCtx.getNext().setPrevHandlerContext(newCtx);
-            baseCtx.setNextHandlerContext(newCtx);
-
-            registerNewHandler(name, newCtx);
-        }
-
-        return this;
-    }
-
-    @Override
-    public Pipeline remove(String name) {
-        Objects.requireNonNull(name);
-
-        synchronized (this) {
-            AbstractHandlerContext ctx = handlerNames.remove(name);
-            if (ctx == null) {
-                throw new NoSuchElementException("There is no handler with this name in the pipeline");
-            }
-
-            // call remove action
-            removeHandlerAction(ctx);
-
-            AbstractHandlerContext prev = ctx.getPrev();
-            AbstractHandlerContext next = ctx.getNext();
-            prev.setNextHandlerContext(next);
-            next.setPrevHandlerContext(prev);
-            ctx.setPrevHandlerContext(null);
-            ctx.setNextHandlerContext(null);
-        }
-
-        return this;
-    }
-
-    private void removeHandlerAction(AbstractHandlerContext ctx) {
-        // call remove action
-        try {
-            ctx.handler().handlerRemoved(ctx);
-        }
-        catch (Exception e) {
-            ctx.fireExceptionCaught(e);
-            if (LOG.isWarnEnabled()) {
-                LOG.warn("Error on adding handler `{}`: ", ctx.name(), e);
-            }
-        }
-    }
-
-    @Override
-    public Pipeline replace(String oldName, String newName, Handler newHandler) {
-        Objects.requireNonNull(oldName);
-        Objects.requireNonNull(newName);
-        Objects.requireNonNull(newHandler);
-        final AbstractHandlerContext newCtx;
-
-        synchronized (this) {
-            if (!oldName.equals(newName)) {
-                collisionCheck(newName);
-            }
-
-            AbstractHandlerContext oldCtx = handlerNames.remove(oldName);
-            AbstractHandlerContext prev = oldCtx.getPrev();
-            AbstractHandlerContext next = oldCtx.getNext();
-
-            // call remove action
-            removeHandlerAction(oldCtx);
-
-            newCtx = new DefaultHandlerContext(newName, newHandler, config);
-            // Set correct pointer on new context
-            newCtx.setPrevHandlerContext(prev);
-            newCtx.setNextHandlerContext(next);
-
-            // Delete old pointers
-            oldCtx.setPrevHandlerContext(null);
-            oldCtx.setNextHandlerContext(null);
-
-            // Set correct pointer on old context
-            prev.setNextHandlerContext(newCtx);
-            next.setPrevHandlerContext(newCtx);
-
-            registerNewHandler(newName, newCtx);
-        }
-
-        return this;
-    }
-
-    @Override
-    public Handler get(String name) {
-        Objects.requireNonNull(name);
-
-        if (handlerNames.containsKey(name)) {
-            return handlerNames.get(name).handler();
-        }
-
-        return null;
-    }
-
-    @Override
-    public HandlerContext context(String name) {
-        Objects.requireNonNull(name);
-
-        return handlerNames.get(name);
-    }
-
-    @Override
-    public void executeInbound(ApplicationMessage msg) {
-        this.scheduler.scheduleDirect(() -> this.head.fireRead(msg));
-    }
-
-    @Override
-    public void executeInbound(Event event) {
-        this.scheduler.scheduleDirect(() -> this.head.fireEventTriggered(event));
-    }
-
-    @Override
-    public void executeOutbound(ApplicationMessage msg) {
-        this.scheduler.scheduleDirect(() -> this.tail.write(msg));
     }
 }

@@ -37,27 +37,54 @@ import java.util.concurrent.TimeUnit;
  * submitted tasks.
  */
 public class DrasylScheduler {
-    private static final Scheduler scheduler;
+    private static final Scheduler LIGHT_SCHEDULER;
+    private static final Scheduler HEAVY_SCHEDULER;
 
     static {
-        ThreadFactory threadFactory = new ThreadFactoryBuilder()
-                .setNameFormat("Drasyl-ThreadPool-%d")
+        ThreadFactory threadFactoryLightTasks = new ThreadFactoryBuilder()
+                .setNameFormat("Drasyl-Light-Task-ThreadPool-%d")
                 .build();
-        Executor executor = new ThreadPoolExecutor(
+        Executor executorLightTasks = new ThreadPoolExecutor(
                 Math.min(1, Math.max(1, Runtime.getRuntime().availableProcessors() / 3)),  //corePoolSize
                 Math.min(2, Math.max(1, Runtime.getRuntime().availableProcessors() / 3)),  //maximumPoolSize
                 60L, TimeUnit.MILLISECONDS, //keepAliveTime, unit
                 new LinkedBlockingQueue<>(1000),  //workQueue
-                threadFactory
+                threadFactoryLightTasks
         );
-        scheduler = Schedulers.from(executor);
+        LIGHT_SCHEDULER = Schedulers.from(executorLightTasks);
+
+        ThreadFactory threadFactoryHeavyTasks = new ThreadFactoryBuilder()
+                .setNameFormat("Drasyl-Light-Task-ThreadPool-%d")
+                .build();
+        Executor executorHeavyTasks = new ThreadPoolExecutor(
+                Math.min(1, Math.max(1, Runtime.getRuntime().availableProcessors() / 3)),  //corePoolSize
+                Math.min(2, Math.max(1, Runtime.getRuntime().availableProcessors() / 3)),  //maximumPoolSize
+                60L, TimeUnit.MILLISECONDS, //keepAliveTime, unit
+                new LinkedBlockingQueue<>(1000),  //workQueue
+                threadFactoryHeavyTasks
+        );
+        HEAVY_SCHEDULER = Schedulers.from(executorHeavyTasks);
     }
 
     private DrasylScheduler() {
         // util class
     }
 
-    public static Scheduler getInstance() {
-        return scheduler;
+    /**
+     * Use this {@link Scheduler} for fast and light task that does not do heavy computations.
+     *
+     * @return a {@link Scheduler} for fast and light tasks
+     */
+    public static Scheduler getInstanceLight() {
+        return LIGHT_SCHEDULER;
+    }
+
+    /**
+     * Use this {@link Scheduler} for slow and heavy task that does not do longer computations.
+     *
+     * @return a {@link Scheduler} for slow and heavy tasks
+     */
+    public static Scheduler getInstanceHeavy() {
+        return HEAVY_SCHEDULER;
     }
 }

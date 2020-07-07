@@ -18,6 +18,7 @@
  */
 package org.drasyl.pipeline;
 
+import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.peer.connection.message.ApplicationMessage;
@@ -32,22 +33,30 @@ public abstract class AbstractHandlerContext implements HandlerContext {
     private final Object prevLock = new Object();
     private final Object nextLock = new Object();
     private final String name;
+    private final Pipeline pipeline;
+    private final Scheduler scheduler;
     private volatile AbstractHandlerContext prev; // NOSONAR
     private volatile AbstractHandlerContext next; // NOSONAR
+
+    public AbstractHandlerContext(String name,
+                                  DrasylConfig config,
+                                  Pipeline pipeline,
+                                  Scheduler scheduler) {
+        this(null, null, name, config, pipeline, scheduler);
+    }
 
     AbstractHandlerContext(AbstractHandlerContext prev,
                            AbstractHandlerContext next,
                            String name,
-                           DrasylConfig config) {
+                           DrasylConfig config,
+                           Pipeline pipeline,
+                           Scheduler scheduler) {
         this.prev = prev;
         this.next = next;
         this.name = name;
         this.config = config;
-    }
-
-    public AbstractHandlerContext(String name, DrasylConfig config) {
-        this.name = name;
-        this.config = config;
+        this.pipeline = pipeline;
+        this.scheduler = scheduler;
     }
 
     void setPrevHandlerContext(AbstractHandlerContext prev) {
@@ -198,5 +207,15 @@ public abstract class AbstractHandlerContext implements HandlerContext {
     @Override
     public DrasylConfig config() {
         return this.config;
+    }
+
+    @Override
+    public Pipeline pipeline() {
+        return this.pipeline;
+    }
+
+    @Override
+    public Scheduler scheduler() {
+        return this.scheduler;
     }
 }

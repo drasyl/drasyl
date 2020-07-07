@@ -18,6 +18,7 @@
  */
 package org.drasyl.pipeline;
 
+import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.peer.connection.message.ApplicationMessage;
@@ -31,14 +32,16 @@ import java.util.concurrent.CompletableFuture;
  * Special class that represents the head of a {@link Pipeline}. This class can not be removed from
  * the pipeline.
  */
-final class HeadContext extends AbstractHandlerContext implements InboundHandler, OutboundHandler {
+class HeadContext extends AbstractHandlerContext implements InboundHandler, OutboundHandler {
     public static final String DRASYL_HEAD_HANDLER = "DRASYL_HEAD_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(HeadContext.class);
     private final DrasylConsumer<ApplicationMessage> outboundConsumer;
 
     public HeadContext(DrasylConsumer<ApplicationMessage> outboundConsumer,
-                       DrasylConfig config) {
-        super(DRASYL_HEAD_HANDLER, config);
+                       DrasylConfig config,
+                       Pipeline pipeline,
+                       Scheduler scheduler) {
+        super(DRASYL_HEAD_HANDLER, config, pipeline, scheduler);
         this.outboundConsumer = outboundConsumer;
     }
 

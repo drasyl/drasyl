@@ -23,15 +23,13 @@ import org.drasyl.peer.connection.message.ApplicationMessage;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Abstract base class for {@link OutboundHandler} implementations which provide implementations of
- * all of their methods.
- *
+ * {@link Handler} implementation which represents a combination out of a {@link InboundHandler} and
+ * the {@link OutboundHandler}.
  * <p>
- * This implementation just forward the operation to the next {@link Handler} in the {@link
- * Pipeline}. Sub-classes may override a method implementation to change this.
- * </p>
+ * It is a good starting point if your {@link Handler} implementation needs to intercept operations
+ * and also state updates.
  */
-public class OutboundHandlerAdapter extends HandlerAdapter implements OutboundHandler {
+public class DuplexHandler extends InboundHandlerAdapter implements OutboundHandler {
     @Override
     public void write(HandlerContext ctx,
                       ApplicationMessage msg,
