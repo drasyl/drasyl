@@ -18,9 +18,11 @@
  */
 package org.drasyl.pipeline;
 
+import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.util.DrasylScheduler;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -87,7 +89,20 @@ public interface HandlerContext {
     CompletableFuture<Void> write(ApplicationMessage msg, CompletableFuture<Void> future);
 
     /**
-     * Returns the {@link DrasylConfig}
+     * @return the corresponding {@link DrasylConfig}
      */
     DrasylConfig config();
+
+    /**
+     * @return the corresponding {@link Pipeline}
+     */
+    Pipeline pipeline();
+
+    /**
+     * <i>Implementation Note: This method should always return a scheduler, that differs from the
+     * normal pipeline scheduler. E.g. the {@link DrasylScheduler#getInstanceHeavy()}</i>
+     *
+     * @return the corresponding {@link Scheduler}
+     */
+    Scheduler scheduler();
 }

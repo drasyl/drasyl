@@ -196,7 +196,7 @@ public abstract class AbstractClient implements AutoCloseable {
      * @return
      */
     public Observable<Boolean> connectionEstablished() {
-        return connected.subscribeOn(DrasylScheduler.getInstance());
+        return connected.subscribeOn(DrasylScheduler.getInstanceLight());
     }
 
     /**

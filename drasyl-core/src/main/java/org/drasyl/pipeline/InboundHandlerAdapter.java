@@ -30,7 +30,7 @@ import org.drasyl.peer.connection.message.ApplicationMessage;
  * Pipeline}. Sub-classes may override a method implementation to change this.
  * </p>
  */
-public abstract class InboundHandlerAdapter extends HandlerAdapter implements InboundHandler {
+public class InboundHandlerAdapter extends HandlerAdapter implements InboundHandler {
     @Override
     public void read(HandlerContext ctx, ApplicationMessage msg) {
         ctx.fireRead(msg);

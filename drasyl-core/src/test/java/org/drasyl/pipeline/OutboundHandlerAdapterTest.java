@@ -36,12 +36,11 @@ class OutboundHandlerAdapterTest {
     private HandlerContext ctx;
 
     @Test
-    void shouldPassthrougsOnWrite() {
-        OutboundHandlerAdapter adapter = new OutboundHandlerAdapter() {
-        };
+    void shouldPassthroughsOnWrite() {
+        OutboundHandlerAdapter adapter = new OutboundHandlerAdapter();
 
         ApplicationMessage msg = mock(ApplicationMessage.class);
-        CompletableFuture future = mock(CompletableFuture.class);
+        CompletableFuture<Void> future = mock(CompletableFuture.class);
 
         adapter.write(ctx, msg, future);
 

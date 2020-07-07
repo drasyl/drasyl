@@ -18,6 +18,7 @@
  */
 package org.drasyl.pipeline;
 
+import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
@@ -48,17 +49,21 @@ class TailContextTest {
     private HandlerContext ctx;
     @Mock
     private DrasylConfig config;
+    @Mock
+    private Pipeline pipeline;
+    @Mock
+    private Scheduler scheduler;
 
     @Test
     void shouldReturnSelfAsHandler() {
-        TailContext headContext = new TailContext(eventConsumer, config);
+        TailContext headContext = new TailContext(eventConsumer, config, pipeline, scheduler);
 
         assertEquals(headContext, headContext.handler());
     }
 
     @Test
-    void shouldDoNothingOnHandlerAdded() throws Exception {
-        TailContext headContext = new TailContext(eventConsumer, config);
+    void shouldDoNothingOnHandlerAdded() {
+        TailContext headContext = new TailContext(eventConsumer, config, pipeline, scheduler);
 
         headContext.handlerAdded(ctx);
 
@@ -66,8 +71,8 @@ class TailContextTest {
     }
 
     @Test
-    void shouldDoNothingOnHandlerRemoved() throws Exception {
-        TailContext headContext = new TailContext(eventConsumer, config);
+    void shouldDoNothingOnHandlerRemoved() {
+        TailContext headContext = new TailContext(eventConsumer, config, pipeline, scheduler);
 
         headContext.handlerRemoved(ctx);
 
@@ -76,7 +81,7 @@ class TailContextTest {
 
     @Test
     void shouldPassthroughsOnWrite() {
-        TailContext headContext = new TailContext(eventConsumer, config);
+        TailContext headContext = new TailContext(eventConsumer, config, pipeline, scheduler);
         ApplicationMessage msg = mock(ApplicationMessage.class);
         CompletableFuture future = mock(CompletableFuture.class);
 
@@ -87,7 +92,7 @@ class TailContextTest {
 
     @Test
     void shouldThrowException() {
-        TailContext headContext = new TailContext(eventConsumer, config);
+        TailContext headContext = new TailContext(eventConsumer, config, pipeline, scheduler);
         Exception exception = mock(Exception.class);
 
         assertThrows(Exception.class, () -> headContext.exceptionCaught(ctx, exception));
@@ -96,7 +101,7 @@ class TailContextTest {
 
     @Test
     void shouldPassEventToConsumer() {
-        TailContext headContext = new TailContext(eventConsumer, config);
+        TailContext headContext = new TailContext(eventConsumer, config, pipeline, scheduler);
         Event event = mock(Event.class);
 
         headContext.eventTriggered(ctx, event);
@@ -107,7 +112,7 @@ class TailContextTest {
 
     @Test
     void shouldPassMessageToApplication() {
-        TailContext headContext = new TailContext(eventConsumer, config);
+        TailContext headContext = new TailContext(eventConsumer, config, pipeline, scheduler);
         ApplicationMessage msg = mock(ApplicationMessage.class);
 
         when(msg.getSender()).thenReturn(mock(CompressedPublicKey.class));

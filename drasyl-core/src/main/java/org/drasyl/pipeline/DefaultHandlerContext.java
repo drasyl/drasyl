@@ -18,13 +18,18 @@
  */
 package org.drasyl.pipeline;
 
+import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 
 public class DefaultHandlerContext extends AbstractHandlerContext {
     private final Handler handler;
 
-    public DefaultHandlerContext(String name, Handler handler, DrasylConfig config) {
-        super(name, config);
+    public DefaultHandlerContext(String name,
+                                 Handler handler,
+                                 DrasylConfig config,
+                                 Pipeline pipeline,
+                                 Scheduler scheduler) {
+        super(name, config, pipeline, scheduler);
         this.handler = handler;
     }
 

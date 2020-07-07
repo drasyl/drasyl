@@ -35,7 +35,8 @@ package org.drasyl.pipeline;
  * Alternatively, the following adapter classes are provided for your convenience:
  * <ul>
  * <li>{@link InboundHandlerAdapter} to handle inbound I/O events,</li>
- * <li>{@link OutboundHandler} to handle outbound I/O operations, and</li>
+ * <li>{@link OutboundHandlerAdapter} to handle outbound I/O operations, and</li>
+ * <li>{@link DuplexHandler} to handle both inbound and outbound events</li>
  * </ul>
  * </p>
  *

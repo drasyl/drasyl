@@ -18,6 +18,7 @@
  */
 package org.drasyl.pipeline;
 
+import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.event.Event;
@@ -49,17 +50,21 @@ class HeadContextTest {
     private HandlerContext ctx;
     @Mock
     private DrasylConfig config;
+    @Mock
+    private Pipeline pipeline;
+    @Mock
+    private Scheduler scheduler;
 
     @Test
     void shouldReturnSelfAsHandler() {
-        HeadContext headContext = new HeadContext(outboundConsumer, config);
+        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler);
 
         assertEquals(headContext, headContext.handler());
     }
 
     @Test
-    void shouldDoNothingOnHandlerAdded() throws Exception {
-        HeadContext headContext = new HeadContext(outboundConsumer, config);
+    void shouldDoNothingOnHandlerAdded() {
+        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler);
 
         headContext.handlerAdded(ctx);
 
@@ -67,8 +72,8 @@ class HeadContextTest {
     }
 
     @Test
-    void shouldDoNothingOnHandlerRemoved() throws Exception {
-        HeadContext headContext = new HeadContext(outboundConsumer, config);
+    void shouldDoNothingOnHandlerRemoved() {
+        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler);
 
         headContext.handlerRemoved(ctx);
 
@@ -77,7 +82,7 @@ class HeadContextTest {
 
     @Test
     void shouldPassthroughsOnRead() {
-        HeadContext headContext = new HeadContext(outboundConsumer, config);
+        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler);
         ApplicationMessage msg = mock(ApplicationMessage.class);
 
         headContext.read(ctx, msg);
@@ -87,7 +92,7 @@ class HeadContextTest {
 
     @Test
     void shouldPassthroughsOnEvent() {
-        HeadContext headContext = new HeadContext(outboundConsumer, config);
+        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler);
         Event event = mock(Event.class);
 
         headContext.eventTriggered(ctx, event);
@@ -97,7 +102,7 @@ class HeadContextTest {
 
     @Test
     void shouldPassthroughsOnException() throws Exception {
-        HeadContext headContext = new HeadContext(outboundConsumer, config);
+        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler);
         Exception exception = mock(Exception.class);
 
         headContext.exceptionCaught(ctx, exception);
@@ -107,7 +112,7 @@ class HeadContextTest {
 
     @Test
     void shouldWriteToConsumer() throws Exception {
-        HeadContext headContext = new HeadContext(outboundConsumer, config);
+        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler);
         ApplicationMessage msg = mock(ApplicationMessage.class);
         CompletableFuture<Void> future = mock(CompletableFuture.class);
 
@@ -121,7 +126,7 @@ class HeadContextTest {
 
     @Test
     void shouldNotWriteToConsumerWhenFutureIsDone() throws Exception {
-        HeadContext headContext = new HeadContext(outboundConsumer, config);
+        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler);
         ApplicationMessage msg = mock(ApplicationMessage.class);
         CompletableFuture<Void> future = mock(CompletableFuture.class);
 
@@ -135,7 +140,7 @@ class HeadContextTest {
 
     @Test
     void shouldCompleteFutureExceptionallyIfExceptionOccursOnWrite() throws Exception {
-        HeadContext headContext = new HeadContext(outboundConsumer, config);
+        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler);
         ApplicationMessage msg = mock(ApplicationMessage.class);
         CompletableFuture<Void> future = mock(CompletableFuture.class);
 
