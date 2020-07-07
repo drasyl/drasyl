@@ -94,7 +94,7 @@ class DrasylNodeIT {
      * Two clients, one Super Peer and one Super Super Peer will be created for this test.
      */
     @Nested
-    class WhenIntraVmDiscoveryIsDisabled {
+    class SuperSuperPeerAndSuperPeerAndTwoClientWhenIntraVmDiscoveryIsDisabled {
         private Pair<DrasylNode, Observable<Event>> superSuperPeer;
         private Pair<DrasylNode, Observable<Event>> superPeer;
         private Pair<DrasylNode, Observable<Event>> client1;
@@ -238,7 +238,7 @@ class DrasylNodeIT {
      * Two clients with enabled servers and one Super Peer will be created for this test.
      */
     @Nested
-    class WhenIntraVmDiscoveryIsDisabled2 {
+    class SuperPeerAndTwoClientWhenIntraVmDiscoveryIsDisabled {
         private Pair<DrasylNode, Observable<Event>> superPeer;
         private Pair<DrasylNode, Observable<Event>> client1;
         private Pair<DrasylNode, Observable<Event>> client2;
@@ -316,7 +316,7 @@ class DrasylNodeIT {
      * Four nodes with disabled sever and disabled super peer will be created for this test.
      */
     @Nested
-    class WhenServerAndSuperPeerAreDisabled {
+    class FourClientsWhenServerAndSuperPeerAreDisabled {
         private Pair<DrasylNode, Observable<Event>> node1;
         private Pair<DrasylNode, Observable<Event>> node2;
         private Pair<DrasylNode, Observable<Event>> node3;
@@ -443,7 +443,7 @@ class DrasylNodeIT {
      * created for this test.
      */
     @Nested
-    class WhenServerAndSuperPeerAndIntraVmDiscoveryAreDisabled {
+    class FourNodesWhenServerAndSuperPeerAndIntraVmDiscoveryAreDisabled {
         private Pair<DrasylNode, Observable<Event>> node1;
         private Pair<DrasylNode, Observable<Event>> node2;
         private Pair<DrasylNode, Observable<Event>> node3;
