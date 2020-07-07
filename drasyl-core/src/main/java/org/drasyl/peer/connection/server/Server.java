@@ -34,7 +34,6 @@ import org.drasyl.messenger.Messenger;
 import org.drasyl.messenger.NoPathToIdentityException;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.QuitMessage;
-import org.drasyl.util.NetworkUtil;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -48,6 +47,8 @@ import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
+import static org.drasyl.util.NetworkUtil.getAddresses;
+import static org.drasyl.util.NetworkUtil.isMatchAllAddress;
 import static org.drasyl.util.UriUtil.overridePort;
 
 @SuppressWarnings({ "squid:S00107" })
@@ -196,18 +197,7 @@ public class Server implements AutoCloseable {
 
                     InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
                     actualPort = socketAddress.getPort();
-
-                    actualEndpoints = config.getServerEndpoints().stream()
-                            .map(uri -> {
-                                if (uri.getPort() == 0) {
-                                    return overridePort(uri, actualPort);
-                                }
-                                return uri;
-                            }).collect(Collectors.toSet());
-                    if (actualEndpoints.isEmpty()) {
-                        String scheme = config.getServerSSLEnabled() ? "wss" : "ws";
-                        actualEndpoints = NetworkUtil.getAddresses().stream().map(a -> URI.create(scheme + "://" + a + ":" + actualPort)).collect(Collectors.toSet());
-                    }
+                    actualEndpoints = determineActualEndpoints(config, socketAddress);
 
                     messenger.setServerSink(message -> {
                         CompressedPublicKey recipient = message.getRecipient();
@@ -281,5 +271,30 @@ public class Server implements AutoCloseable {
         catch (InstantiationException e) {
             throw new ServerException("Can't instantiate the given channel initializer: '" + clazz + "'");
         }
+    }
+
+    static Set<URI> determineActualEndpoints(DrasylConfig config, InetSocketAddress listenAddress) {
+        Set<URI> configEndpoints = config.getServerEndpoints();
+        if (!configEndpoints.isEmpty()) {
+            // read endpoints from config
+            return configEndpoints.stream().map(uri -> {
+                if (uri.getPort() == 0) {
+                    return overridePort(uri, listenAddress.getPort());
+                }
+                return uri;
+            }).collect(Collectors.toSet());
+        }
+
+        Set<String> addresses;
+        if (isMatchAllAddress(listenAddress.getAddress().getHostAddress())) {
+            // use all available addresses
+            addresses = getAddresses();
+        }
+        else {
+            // use given host
+            addresses = Set.of(listenAddress.getHostName());
+        }
+        String scheme = config.getServerSSLEnabled() ? "wss" : "ws";
+        return addresses.stream().map(a -> URI.create(scheme + "://" + a + ":" + listenAddress.getPort())).collect(Collectors.toSet());
     }
 }
