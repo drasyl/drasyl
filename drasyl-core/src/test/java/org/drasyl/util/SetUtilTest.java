@@ -22,8 +22,11 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.util.Set;
+import java.util.SortedSet;
+import java.util.TreeSet;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class SetUtilTest {
     @Nested
@@ -65,6 +68,35 @@ class SetUtilTest {
 
             assertEquals(Set.of("apple", "banana"), SetUtil.difference(a, b1));
             assertEquals(Set.of("banana"), SetUtil.difference(a, b2));
+        }
+    }
+
+    @Nested
+    class NthElement {
+        @Test
+        void shouldReturnTheNthElementOfASet() {
+            SortedSet<String> set = new TreeSet<>();
+            set.add("banana");
+            set.add("cherry");
+            set.add("pear");
+
+            assertEquals("banana", SetUtil.nthElement(set, 0));
+            assertEquals("cherry", SetUtil.nthElement(set, 1));
+            assertEquals("pear", SetUtil.nthElement(set, 2));
+        }
+
+        @Test
+        void shouldThrowExceptionForNegativeN() {
+            Set<String> set = Set.of("pear", "cherry", "banana");
+
+            assertThrows(IndexOutOfBoundsException.class, () -> SetUtil.nthElement(set, -1));
+        }
+
+        @Test
+        void shouldThrowExceptionForTooLargeN() {
+            Set<String> set = Set.of("pear", "cherry", "banana");
+
+            assertThrows(IndexOutOfBoundsException.class, () -> SetUtil.nthElement(set, 3));
         }
     }
 }

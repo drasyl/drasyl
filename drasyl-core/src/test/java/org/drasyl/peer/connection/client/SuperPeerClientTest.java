@@ -102,7 +102,7 @@ class SuperPeerClientTest {
         @Test
         void shouldConnectIfClientIsNotAlreadyOpen() {
             when(bootstrapSupplier.get()).thenReturn(bootstrap);
-            when(endpoints.toArray(new URI[0])).thenReturn(new URI[]{ URI.create("ws://localhost") });
+            endpoints = Set.of(URI.create("ws://localhost"));
 
             SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, new AtomicBoolean(false), nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, connected, channelInitializerSupplier, channelInitializer, channel);
             client.open();
