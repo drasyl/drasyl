@@ -11,7 +11,6 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylException;
-import org.drasyl.crypto.Crypto;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.util.DrasylFunction;
 import org.drasyl.util.DrasylScheduler;
@@ -34,7 +33,7 @@ import static org.drasyl.util.WebSocketUtil.webSocketPort;
 
 public abstract class AbstractClient implements AutoCloseable {
     private final EventLoopGroup workerGroup;
-    private final Set<URI> endpoints;
+    private final Supplier<Set<URI>> endpointsSupplier;
     private final AtomicBoolean opened;
     private final AtomicInteger nextEndpointPointer;
     private final AtomicInteger nextRetryDelayPointer;
@@ -47,12 +46,12 @@ public abstract class AbstractClient implements AutoCloseable {
 
     protected AbstractClient(List<Duration> retryDelays,
                              EventLoopGroup workerGroup,
-                             Set<URI> endpoints,
+                             Supplier<Set<URI>> endpointsSupplier,
                              DrasylFunction<URI, ChannelInitializer<SocketChannel>> channelInitializerSupplier) {
         this(
                 retryDelays,
                 workerGroup,
-                endpoints,
+                endpointsSupplier,
                 BehaviorSubject.createDefault(false),
                 channelInitializerSupplier
         );
@@ -60,16 +59,15 @@ public abstract class AbstractClient implements AutoCloseable {
 
     protected AbstractClient(List<Duration> retryDelays,
                              EventLoopGroup workerGroup,
-                             Set<URI> endpoints,
+                             Supplier<Set<URI>> endpointsSupplier,
                              Subject<Boolean> connected,
                              DrasylFunction<URI, ChannelInitializer<SocketChannel>> channelInitializerSupplier) {
         this(
                 retryDelays,
                 workerGroup,
-                endpoints,
+                endpointsSupplier,
                 new AtomicBoolean(false),
-                // The pointer should point to a random endpoint. This creates a distribution on different server's endpoints
-                new AtomicInteger(endpoints.isEmpty() ? 0 : Crypto.randomNumber(endpoints.size())),
+                new AtomicInteger(0),
                 new AtomicInteger(0),
                 Bootstrap::new,
                 connected,
@@ -81,7 +79,7 @@ public abstract class AbstractClient implements AutoCloseable {
 
     protected AbstractClient(List<Duration> retryDelays,
                              EventLoopGroup workerGroup,
-                             Set<URI> endpoints,
+                             Supplier<Set<URI>> endpointsSupplier,
                              AtomicBoolean opened,
                              AtomicInteger nextEndpointPointer,
                              AtomicInteger nextRetryDelayPointer,
@@ -92,7 +90,7 @@ public abstract class AbstractClient implements AutoCloseable {
                              Channel channel) {
         this.retryDelays = retryDelays;
         this.workerGroup = workerGroup;
-        this.endpoints = endpoints;
+        this.endpointsSupplier = endpointsSupplier;
         this.opened = opened;
         this.nextEndpointPointer = nextEndpointPointer;
         this.nextRetryDelayPointer = nextRetryDelayPointer;
@@ -149,6 +147,7 @@ public abstract class AbstractClient implements AutoCloseable {
      */
     URI nextEndpoint() {
         try {
+            Set<URI> endpoints = endpointsSupplier.get();
             URI endpoint = SetUtil.nthElement(endpoints, nextEndpointPointer.get());
             nextEndpointPointer.updateAndGet(p -> (p + 1) % endpoints.size());
             return endpoint;

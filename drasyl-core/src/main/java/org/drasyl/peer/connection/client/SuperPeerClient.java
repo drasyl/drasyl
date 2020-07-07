@@ -65,7 +65,7 @@ public class SuperPeerClient extends AbstractClient {
         super(
                 config.getSuperPeerRetryDelays(),
                 workerGroup,
-                endpoints,
+                () -> endpoints,
                 opened,
                 nextEndpointPointer,
                 nextRetryDelayPointer,
@@ -84,7 +84,7 @@ public class SuperPeerClient extends AbstractClient {
         super(
                 config.getSuperPeerRetryDelays(),
                 workerGroup,
-                config.getSuperPeerEndpoints(),
+                () -> config.getSuperPeerEndpoints(),
                 connected,
                 channelInitializerSupplier
         );
@@ -120,7 +120,7 @@ public class SuperPeerClient extends AbstractClient {
         super(
                 config.getSuperPeerRetryDelays(),
                 workerGroup,
-                config.getSuperPeerEndpoints(),
+                () -> config.getSuperPeerEndpoints(),
                 connected,
                 endpoint -> initiateChannelInitializer(new ClientEnvironment(config, identitySupplier, endpoint, messenger, peersManager, connected, eventConsumer, true, config.getSuperPeerPublicKey(), config.getSuperPeerIdleRetries(), config.getSuperPeerIdleTimeout(), config.getSuperPeerHandshakeTimeout(), peerCommunicationConsumer), config.getSuperPeerChannelInitializer())
         );
