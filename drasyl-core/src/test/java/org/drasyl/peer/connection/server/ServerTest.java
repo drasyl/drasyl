@@ -28,20 +28,28 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.util.NetworkUtil;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
+import java.util.stream.Collectors;
 
+import static org.drasyl.peer.connection.server.Server.determineActualEndpoints;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
@@ -57,7 +65,7 @@ class ServerTest {
     private Messenger messenger;
     @Mock
     private PeersManager peersManager;
-    @Mock
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private DrasylConfig config;
     @Mock
     private Channel serverChannel;
@@ -113,6 +121,49 @@ class ServerTest {
             server.close();
 
             verify(bossGroup, times(0)).shutdownGracefully();
+        }
+    }
+
+    @Nested
+    class DetermineActualEndpoints {
+        @Test
+        void shouldReturnConfigEndpointsIfSpecified() {
+            when(config.getServerEndpoints()).thenReturn(Set.of(URI.create("ws://foo.bar:22527")));
+
+            assertEquals(
+                    Set.of(URI.create("ws://foo.bar:22527")),
+                    determineActualEndpoints(config, new InetSocketAddress(22527))
+            );
+        }
+
+        @ParameterizedTest
+        @ValueSource(strings = {
+                "0.0.0.0",
+                "::",
+                "0:0:0:0:0:0:0:0",
+                "0000:0000:0000:0000:0000:0000:0000:0000"
+        })
+        void shouldReturnEndpointsForAllAddressesIfServerIsBoundToAllInterfaces(String host) {
+            when(config.getServerEndpoints().isEmpty()).thenReturn(true);
+
+            assertEquals(
+                    NetworkUtil.getAddresses().stream().map(a -> URI.create("ws://" + a + ":" + 22527)).collect(Collectors.toSet()),
+                    determineActualEndpoints(config, new InetSocketAddress(22527))
+            );
+        }
+
+        @Test
+        void shouldReturnEndpointForSpecificAddressesIfServerIsBoundToSpecificInterfaces() throws UnknownHostException {
+            String firstAddress = NetworkUtil.getAddresses().iterator().next();
+            if (firstAddress != null) {
+                InetAddress inetAddress = InetAddress.getByName(firstAddress);
+                when(config.getServerEndpoints().isEmpty()).thenReturn(true);
+
+                assertEquals(
+                        Set.of(URI.create("ws://" + inetAddress.getHostName() + ":22527")),
+                        determineActualEndpoints(config, new InetSocketAddress(firstAddress, 22527))
+                );
+            }
         }
     }
 }
