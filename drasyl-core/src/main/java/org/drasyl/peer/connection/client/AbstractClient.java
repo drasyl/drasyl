@@ -15,6 +15,7 @@ import org.drasyl.crypto.Crypto;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.util.DrasylFunction;
 import org.drasyl.util.DrasylScheduler;
+import org.drasyl.util.SetUtil;
 import org.slf4j.Logger;
 
 import java.lang.reflect.Constructor;
@@ -147,13 +148,12 @@ public abstract class AbstractClient implements AutoCloseable {
      * @return
      */
     URI nextEndpoint() {
-        URI[] myEndpoints = endpoints.toArray(new URI[0]);
-        int index = nextEndpointPointer.get();
-        if (myEndpoints.length > index) {
+        try {
+            URI endpoint = SetUtil.nthElement(endpoints, nextEndpointPointer.get());
             nextEndpointPointer.updateAndGet(p -> (p + 1) % endpoints.size());
-            return myEndpoints[index];
+            return endpoint;
         }
-        else {
+        catch (IndexOutOfBoundsException e) {
             return null;
         }
     }
