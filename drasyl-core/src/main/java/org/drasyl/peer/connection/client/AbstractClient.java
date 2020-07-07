@@ -69,7 +69,7 @@ public abstract class AbstractClient implements AutoCloseable {
                 new AtomicBoolean(false),
                 // The pointer should point to a random endpoint. This creates a distribution on different server's endpoints
                 new AtomicInteger(endpoints.isEmpty() ? 0 : Crypto.randomNumber(endpoints.size())),
-                new AtomicInteger(0),
+                new AtomicInteger(-1),
                 Bootstrap::new,
                 connected,
                 channelInitializerSupplier,
