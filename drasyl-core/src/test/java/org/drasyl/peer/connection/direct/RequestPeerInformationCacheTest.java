@@ -35,22 +35,23 @@ class RequestPeerInformationCacheTest {
 
             assertFalse(underTest.add(publicKey));
         }
+    }
 
-        @Test
-        void shouldExpireKeysAfterSomeTime() {
-            underTest = new RequestPeerInformationCache(10, ofSeconds(1));
-            assertTrue(underTest.add(publicKey));
+    @Test
+    void shouldExpireKeysAfterSomeTime(@Mock CompressedPublicKey publicKey) {
+        underTest = new RequestPeerInformationCache(10, ofSeconds(1));
+        assertTrue(underTest.add(publicKey));
 
-            await().untilAsserted(() -> assertTrue(underTest.add(publicKey)));
-        }
+        await().untilAsserted(() -> assertTrue(underTest.add(publicKey)));
+    }
 
-        @Test
-        void shouldEvictEntriesWhenLimitIsExceeded(@Mock CompressedPublicKey publicKey1) {
-            underTest = new RequestPeerInformationCache(1, ofSeconds(1));
-            underTest.add(publicKey);
-            underTest.add(publicKey1);
+    @Test
+    void shouldEvictEntriesWhenLimitIsExceeded(@Mock CompressedPublicKey publicKey1,
+                                               @Mock CompressedPublicKey publicKey2) {
+        underTest = new RequestPeerInformationCache(1, ofSeconds(1));
+        underTest.add(publicKey1);
+        underTest.add(publicKey2);
 
-            assertTrue(underTest.add(publicKey));
-        }
+        assertTrue(underTest.add(publicKey1));
     }
 }
