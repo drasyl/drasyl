@@ -173,6 +173,9 @@ public abstract class AbstractClient implements AutoCloseable {
                 }
             }, duration.toMillis(), MILLISECONDS);
         }
+        else {
+            failed();
+        }
     }
 
     /**
