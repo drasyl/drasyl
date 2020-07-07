@@ -7,6 +7,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static java.time.Duration.ofMillis;
 import static java.time.Duration.ofSeconds;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -39,7 +40,7 @@ class RequestPeerInformationCacheTest {
 
     @Test
     void shouldExpireKeysAfterSomeTime(@Mock CompressedPublicKey publicKey) {
-        underTest = new RequestPeerInformationCache(10, ofSeconds(1));
+        underTest = new RequestPeerInformationCache(10, ofMillis(100));
         assertTrue(underTest.add(publicKey));
 
         await().untilAsserted(() -> assertTrue(underTest.add(publicKey)));
