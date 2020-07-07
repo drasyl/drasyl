@@ -69,7 +69,7 @@ public abstract class AbstractClient implements AutoCloseable {
                 new AtomicBoolean(false),
                 // The pointer should point to a random endpoint. This creates a distribution on different server's endpoints
                 new AtomicInteger(endpoints.isEmpty() ? 0 : Crypto.randomNumber(endpoints.size())),
-                new AtomicInteger(-1),
+                new AtomicInteger(0),
                 Bootstrap::new,
                 connected,
                 channelInitializerSupplier,
@@ -104,12 +104,11 @@ public abstract class AbstractClient implements AutoCloseable {
 
     public void open() {
         if (opened.compareAndSet(false, true)) {
-            connect();
+            connect(nextEndpoint());
         }
     }
 
-    void connect() {
-        URI endpoint = getCurrentEndpoint();
+    void connect(URI endpoint) {
         if (endpoint == null) {
             getLogger().debug("No endpoint present. Permanently unable to connect to Server.");
             failed();
@@ -143,14 +142,15 @@ public abstract class AbstractClient implements AutoCloseable {
     }
 
     /**
-     * Returns the current peer's endpoint. Returns <code>null</code> if no endpoint is present.
+     * Returns the next peer's endpoint. Returns <code>null</code> if no endpoint is present.
      *
      * @return
      */
-    private URI getCurrentEndpoint() {
+    URI nextEndpoint() {
         URI[] myEndpoints = endpoints.toArray(new URI[0]);
         int index = nextEndpointPointer.get();
         if (myEndpoints.length > index) {
+            nextEndpointPointer.updateAndGet(p -> (p + 1) % endpoints.size());
             return myEndpoints[index];
         }
         else {
@@ -164,12 +164,11 @@ public abstract class AbstractClient implements AutoCloseable {
      */
     void conditionalScheduledReconnect() {
         if (shouldRetry()) {
-            doRetryCycle();
-            Duration duration = retryDelay();
+            Duration duration = nextRetryDelay();
             getLogger().debug("Wait {}ms before reconnect", duration.toMillis());
             workerGroup.schedule(() -> {
                 if (opened.get()) {
-                    connect();
+                    connect(nextEndpoint());
                 }
             }, duration.toMillis(), MILLISECONDS);
         }
@@ -204,8 +203,10 @@ public abstract class AbstractClient implements AutoCloseable {
      *
      * @return
      */
-    Duration retryDelay() {
-        return retryDelays.get(nextRetryDelayPointer.get());
+    Duration nextRetryDelay() {
+        Duration retryDelay = retryDelays.get(nextRetryDelayPointer.get());
+        nextRetryDelayPointer.updateAndGet(p -> Math.min(p + 1, retryDelays.size() - 1));
+        return retryDelay;
     }
 
     /**
@@ -219,17 +220,6 @@ public abstract class AbstractClient implements AutoCloseable {
      */
     public Observable<Boolean> connectionEstablished() {
         return connected.subscribeOn(DrasylScheduler.getInstanceLight());
-    }
-
-    /**
-     * Increases the internal counters for retries. Ensures that the client iterates over the
-     * available Server endpoints and throttles the speed of attempts to reconnect.
-     *
-     * @return
-     */
-    protected void doRetryCycle() {
-        nextEndpointPointer.updateAndGet(p -> (p + 1) % endpoints.size());
-        nextRetryDelayPointer.updateAndGet(p -> Math.min(p + 1, retryDelays.size() - 1));
     }
 
     @Override
