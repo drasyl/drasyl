@@ -110,6 +110,12 @@ public abstract class AbstractClient implements AutoCloseable {
 
     void connect() {
         URI endpoint = getCurrentEndpoint();
+        if (endpoint == null) {
+            getLogger().debug("No endpoint present. Permanently unable to connect to Server.");
+            failed();
+            return;
+        }
+
         getLogger().debug("Connect to Endpoint '{}'", endpoint);
         try {
             channelInitializer = channelInitializerSupplier.apply(endpoint);
@@ -137,14 +143,19 @@ public abstract class AbstractClient implements AutoCloseable {
     }
 
     /**
-     * Returns the current peer's endpoint. Iterates over list of all endpoints specified in {@link
-     * #endpoints}. Jumps back to start when end of list is reached.
+     * Returns the current peer's endpoint. Returns <code>null</code> if no endpoint is present.
      *
      * @return
      */
     private URI getCurrentEndpoint() {
         URI[] myEndpoints = endpoints.toArray(new URI[0]);
-        return myEndpoints[nextEndpointPointer.get()];
+        int index = nextEndpointPointer.get();
+        if (myEndpoints.length > index) {
+            return myEndpoints[index];
+        }
+        else {
+            return null;
+        }
     }
 
     /**
@@ -172,6 +183,14 @@ public abstract class AbstractClient implements AutoCloseable {
      */
     private boolean shouldRetry() {
         return opened.get() && !retryDelays.isEmpty();
+    }
+
+    /**
+     * This method is called if a connection was not possible and no further connection attempts
+     * will be made.
+     */
+    protected void failed() {
+        // do nothing
     }
 
     /**
