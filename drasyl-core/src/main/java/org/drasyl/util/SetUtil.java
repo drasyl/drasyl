@@ -22,6 +22,8 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+import static java.util.Objects.requireNonNull;
+
 public final class SetUtil {
     private SetUtil() {
         // util class
@@ -83,5 +85,32 @@ public final class SetUtil {
     @SafeVarargs
     public static <E> Set<E> difference(Set<E> a, E... b) {
         return difference(a, Set.of(b));
+    }
+
+    /**
+     * Returns the <code>n</code>-th element from set <code>set</code>. Throws a {@link
+     * IndexOutOfBoundsException} if <code>n</code> is negative or greater than the set's
+     * cardinality.
+     *
+     * @param set a set
+     * @param n   specifies the element to be taken
+     * @param <E> the {@code Set}'s element type
+     * @return <code>n</code>-th element from set <code>set</code>
+     */
+    public static <E> E nthElement(Set<E> set, int n) {
+        requireNonNull(set);
+        if (n < 0 || n > set.size() - 1) {
+            throw new IndexOutOfBoundsException();
+        }
+
+        int count = 0;
+        for (E element : set) {
+            if (n == count++) {
+                return element;
+            }
+        }
+
+        // unreachable
+        return null;
     }
 }
