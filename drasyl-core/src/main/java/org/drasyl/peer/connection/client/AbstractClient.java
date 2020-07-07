@@ -130,7 +130,7 @@ public abstract class AbstractClient implements AutoCloseable {
                         });
                     }
                     else {
-                        getLogger().warn("Error while trying to connect to Endpoint '{}':", endpoint, channelFuture.cause());
+                        getLogger().debug("Error while trying to connect to Endpoint '{}': {}", endpoint, channelFuture.cause().getMessage());
                         conditionalScheduledReconnect();
                     }
                 });
