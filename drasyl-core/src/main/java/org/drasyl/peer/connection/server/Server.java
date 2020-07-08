@@ -142,7 +142,8 @@ public class Server implements AutoCloseable {
                         messenger,
                         this::getEndpoints,
                         channelGroup,
-                        () -> this.isOpen() && (!config.isSuperPeerEnabled() || superPeerConnected.blockingFirst()),
+                        this::isOpen,
+                        () -> !config.isSuperPeerEnabled() || superPeerConnected.blockingFirst(),
                         peerCommunicationConsumer),
                 config.getServerChannelInitializer()
         );

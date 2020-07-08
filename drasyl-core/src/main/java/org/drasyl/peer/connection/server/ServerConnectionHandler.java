@@ -25,8 +25,8 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.Messenger;
-import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.Path;
+import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.connection.handler.AbstractThreeWayHandshakeServerHandler;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
@@ -45,6 +45,7 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_IDENTITY_COLLISION;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_PROOF_OF_WORK_INVALID;
+import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_SUPER_PEER_DISCONNECTED;
 import static org.drasyl.peer.connection.server.ServerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
 
 /**
@@ -85,7 +86,10 @@ public class ServerConnectionHandler extends AbstractThreeWayHandshakeServerHand
     protected ConnectionExceptionMessage.Error validateSessionRequest(JoinMessage requestMessage) {
         CompressedPublicKey clientPublicKey = requestMessage.getPublicKey();
 
-        if (environment.getIdentity().getPublicKey().equals(clientPublicKey)) {
+        if (requestMessage.isChildrenJoin() && !environment.getSuperPeerConnectedSupplier().getAsBoolean()) {
+            return CONNECTION_ERROR_SUPER_PEER_DISCONNECTED;
+        }
+        else if (environment.getIdentity().getPublicKey().equals(clientPublicKey)) {
             return CONNECTION_ERROR_IDENTITY_COLLISION;
         }
         else if (!requestMessage.getProofOfWork().isValid(requestMessage.getPublicKey(),
