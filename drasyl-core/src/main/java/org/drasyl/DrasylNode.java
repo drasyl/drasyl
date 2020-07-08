@@ -516,6 +516,7 @@ public abstract class DrasylNode {
 
         if (message instanceof ApplicationMessage) {
             ApplicationMessage applicationMessage = (ApplicationMessage) message;
+            peersManager.addPeer(applicationMessage.getSender());
             pipeline.executeInbound(applicationMessage);
         }
         else if (message instanceof WhoisMessage) {

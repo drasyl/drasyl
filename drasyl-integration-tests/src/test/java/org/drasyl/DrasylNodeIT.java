@@ -301,14 +301,15 @@ class DrasylNodeIT {
         @Test
         void shouldRequestPeerInformationFromOtherPeer() throws DrasylException, CryptoException {
             TestObserver<Event> client1RelayEvents = client1.second().filter(e -> e instanceof AbstractPeerEvent && ((AbstractPeerEvent) e).getPeer().getPublicKey().equals(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))).test();
-            TestObserver<Event> client2RelayEvents = client2.second().filter(e -> e instanceof AbstractPeerEvent && ((AbstractPeerEvent) e).getPeer().getPublicKey().equals(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))).test();
+            TestObserver<Event> client2RelayEvents = client2.second().filter(e -> e instanceof AbstractPeerEvent && ((AbstractPeerEvent) e).getPeer().getPublicKey().equals(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4")) || e instanceof MessageEvent).test();
 
             client1.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", "Hallo Welt");
 
             client1RelayEvents.awaitCount(1);
             client1RelayEvents.assertValueAt(0, new PeerRelayEvent(new Peer(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))));
-            client2RelayEvents.awaitCount(1);
+            client2RelayEvents.awaitCount(2);
             client2RelayEvents.assertValueAt(0, new PeerRelayEvent(new Peer(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))));
+            client2RelayEvents.assertValueAt(1, e -> e instanceof MessageEvent);
         }
     }
 
