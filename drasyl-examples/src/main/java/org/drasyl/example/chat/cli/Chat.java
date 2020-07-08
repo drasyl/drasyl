@@ -23,13 +23,11 @@ import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
-import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeEvent;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.messenger.MessengerException;
 import org.drasyl.util.Pair;
 
 import java.io.File;
@@ -41,8 +39,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * This is an Example of a Chat Application running on the drasyl Overlay Network. It allows you to
  * send Text Messages to other drasyl Nodes running this Chat Application.
  */
-@SuppressWarnings({ "squid:S106", "java:S1141" })
+@SuppressWarnings({ "squid:S106", "java:S1141", "java:S3776" })
 public class Chat {
+    private static final Scanner scanner = new Scanner(System.in);
+    private static String prompt;
+
     public static void main(String[] args) throws DrasylException {
         DrasylConfig config;
         if (args.length == 1) {
@@ -58,25 +59,28 @@ public class Chat {
             public void onEvent(Event event) {
                 if (event instanceof MessageEvent) {
                     Pair<CompressedPublicKey, byte[]> message = ((MessageEvent) event).getMessage();
-                    System.out.println("From " + message.first() + ": " + new String(message.second()));
+                    addBeforePrompt("From " + message.first() + ": " + new String(message.second()));
                 }
                 else if (event instanceof NodeOnlineEvent) {
-                    online.complete(null);
-                    System.out.println("Online! Your Public Key (address) is: " + ((NodeEvent) event).getNode().getIdentity().getPublicKey());
+                    if (online.isDone()) {
+                        addBeforePrompt("Back online! Now messages can be sent again.");
+                    }
+                    else {
+                        addBeforePrompt("Online! Your Public Key (address) is: " + ((NodeEvent) event).getNode().getIdentity().getPublicKey());
+                        online.complete(null);
+                    }
                 }
                 else if (event instanceof NodeOfflineEvent) {
-                    System.out.println("Offline! No messages can be sent at the moment. Wait until node comes back online.");
+                    addBeforePrompt("Offline! No messages can be sent at the moment. Wait until node comes back online.");
                 }
-                else if (event instanceof NodeUpEvent || event instanceof NodeDownEvent) {
+                else if (event instanceof NodeUpEvent) {
                     // ignore
                 }
                 else {
-                    System.out.println(event);
+                    addBeforePrompt(event);
                 }
             }
         };
-        node.start().join();
-        online.join();
 
         System.out.println();
         System.out.println("****************************************************************************************");
@@ -85,40 +89,59 @@ public class Chat {
         System.out.println("****************************************************************************************");
         System.out.println();
 
+        System.out.println("Connect to drasyl Overlay Network...");
+        node.start().join();
+        online.join();
+
         String recipient = "";
-        Scanner scanner = new Scanner(System.in);
         AtomicBoolean keepRunning = new AtomicBoolean(true);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> keepRunning.set(false)));
         while (keepRunning.get()) {
-            try {
-                // prompt for recipient
-                System.out.print("Recipient [" + recipient + "]? ");
-                String newRecipient = scanner.nextLine();
-                if (!newRecipient.isBlank()) {
-                    recipient = newRecipient;
-                }
-                if (recipient.isBlank()) {
-                    System.err.println("You must specify a recipient.");
-                    continue;
-                }
-
-                // prompt for message
-                System.out.print("Message? ");
-                String message = scanner.nextLine();
-
-                try {
-                    node.send(recipient, message);
-                    System.out.println("To " + recipient + ": " + message);
-                }
-                catch (MessengerException e) {
-                    System.err.println("Unable to sent message: " + e.getMessage());
-                }
+            // prompt for recipient
+            String newRecipient = newPrompt("Recipient [" + recipient + "]?");
+            if (!newRecipient.isBlank()) {
+                recipient = newRecipient;
             }
-            catch (IllegalArgumentException e) {
-                System.err.println(e.getMessage());
+            if (recipient.isBlank()) {
+                System.out.println("\rERR: You must specify a recipient.");
+                continue;
+            }
+
+            // prompt for message
+            String message = newPrompt("Message?");
+
+            try {
+                if (message.isBlank()) {
+                    message = "(blank)";
+                }
+
+                node.send(recipient, message);
+                System.out.println("To " + recipient + ": " + message);
+            }
+            catch (DrasylException e) {
+                System.out.println("ERR: Unable to sent message: " + e.getMessage());
             }
         }
 
         node.shutdown().join();
+    }
+
+    static void addBeforePrompt(Object x) {
+        if (prompt == null) {
+            System.out.println(x);
+        }
+        else {
+            System.out.print("\r");
+            System.out.println(x);
+            System.out.print(prompt + " ");
+        }
+    }
+
+    static String newPrompt(String prompt) {
+        Chat.prompt = prompt;
+        System.out.print(prompt + " ");
+        String result = scanner.nextLine();
+        Chat.prompt = null;
+        return result;
     }
 }
