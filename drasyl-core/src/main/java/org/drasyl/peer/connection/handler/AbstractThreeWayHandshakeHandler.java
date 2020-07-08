@@ -182,8 +182,4 @@ public abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDupl
             ctx.fireExceptionCaught(cause);
         }
     }
-
-    public CompletableFuture<Void> handshakeFuture() {
-        return handshakeFuture;
-    }
 }
