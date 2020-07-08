@@ -266,6 +266,28 @@ public class PeersManager {
         }
     }
 
+    public void addPeer(CompressedPublicKey publicKey) {
+        requireNonNull(publicKey);
+
+        try {
+            lock.writeLock().lock();
+
+            PeerInformation existingInformation = peers.get(publicKey);
+            if (existingInformation == null) {
+                handlePeerStateTransition(
+                        publicKey,
+                        existingInformation,
+                        paths.get(publicKey),
+                        PeerInformation.of(),
+                        paths.get(publicKey)
+                );
+            }
+        }
+        finally {
+            lock.writeLock().unlock();
+        }
+    }
+
     public void removePath(CompressedPublicKey publicKey, Path path) {
         requireNonNull(publicKey);
         requireNonNull(path);

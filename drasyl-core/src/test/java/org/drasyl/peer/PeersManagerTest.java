@@ -252,6 +252,16 @@ class PeersManagerTest {
     }
 
     @Nested
+    class AddPeer {
+        @Test
+        void shouldAddEmptyPeerInformation(@Mock CompressedPublicKey publicKey) {
+            underTest.addPeer(publicKey);
+
+            assertEquals(PeerInformation.of(), peers.get(publicKey));
+        }
+    }
+
+    @Nested
     class RemovePath {
         @Test
         void shouldRemovePath(@Mock CompressedPublicKey publicKey,
