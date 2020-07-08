@@ -307,7 +307,8 @@ public class DrasylConfig {
                  Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer,
                  int messageMaxContentLength,
                  short messageHopLimit,
-                 Duration messageComposedMessageTransferTimeout, boolean superPeerEnabled,
+                 Duration messageComposedMessageTransferTimeout,
+                 boolean superPeerEnabled,
                  Set<URI> superPeerEndpoints,
                  CompressedPublicKey superPeerPublicKey,
                  List<Duration> superPeerRetryDelays,
@@ -315,7 +316,8 @@ public class DrasylConfig {
                  Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer,
                  short superPeerIdleRetries,
                  Duration superPeerIdleTimeout,
-                 boolean intraVmDiscoveryEnabled, boolean directConnectionsEnabled) {
+                 boolean intraVmDiscoveryEnabled,
+                 boolean directConnectionsEnabled) {
         this.loglevel = loglevel;
         this.identityProofOfWork = identityProofOfWork;
         this.identityPublicKey = identityPublicKey;
@@ -465,7 +467,7 @@ public class DrasylConfig {
 
     @Override
     public int hashCode() {
-        return Objects.hash(identityPublicKey, identityProofOfWork, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled, directConnectionsEnabled, messageComposedMessageTransferTimeout);
+        return Objects.hash(loglevel, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, messageComposedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled, directConnectionsEnabled);
     }
 
     @Override
@@ -477,8 +479,7 @@ public class DrasylConfig {
             return false;
         }
         DrasylConfig that = (DrasylConfig) o;
-        return loglevel == that.loglevel &&
-                serverEnabled == that.serverEnabled &&
+        return serverEnabled == that.serverEnabled &&
                 serverBindPort == that.serverBindPort &&
                 serverIdleRetries == that.serverIdleRetries &&
                 flushBufferSize == that.flushBufferSize &&
@@ -487,6 +488,9 @@ public class DrasylConfig {
                 messageHopLimit == that.messageHopLimit &&
                 superPeerEnabled == that.superPeerEnabled &&
                 superPeerIdleRetries == that.superPeerIdleRetries &&
+                intraVmDiscoveryEnabled == that.intraVmDiscoveryEnabled &&
+                directConnectionsEnabled == that.directConnectionsEnabled &&
+                Objects.equals(loglevel, that.loglevel) &&
                 Objects.equals(identityProofOfWork, that.identityProofOfWork) &&
                 Objects.equals(identityPublicKey, that.identityPublicKey) &&
                 Objects.equals(identityPrivateKey, that.identityPrivateKey) &&
@@ -497,24 +501,22 @@ public class DrasylConfig {
                 Objects.equals(serverHandshakeTimeout, that.serverHandshakeTimeout) &&
                 Objects.equals(serverEndpoints, that.serverEndpoints) &&
                 Objects.equals(serverChannelInitializer, that.serverChannelInitializer) &&
+                Objects.equals(messageComposedMessageTransferTimeout, that.messageComposedMessageTransferTimeout) &&
                 Objects.equals(superPeerEndpoints, that.superPeerEndpoints) &&
                 Objects.equals(superPeerPublicKey, that.superPeerPublicKey) &&
                 Objects.equals(superPeerRetryDelays, that.superPeerRetryDelays) &&
                 Objects.equals(superPeerHandshakeTimeout, that.superPeerHandshakeTimeout) &&
                 Objects.equals(superPeerChannelInitializer, that.superPeerChannelInitializer) &&
-                Objects.equals(superPeerIdleTimeout, that.superPeerIdleTimeout) &&
-                Objects.equals(messageComposedMessageTransferTimeout, that.messageComposedMessageTransferTimeout) &&
-                intraVmDiscoveryEnabled == that.intraVmDiscoveryEnabled &&
-                directConnectionsEnabled == that.directConnectionsEnabled;
+                Objects.equals(superPeerIdleTimeout, that.superPeerIdleTimeout);
     }
 
     @Override
     public String toString() {
         return "DrasylConfig{" +
-                "loglevel='" + loglevel + '\'' +
-                ", identityProofOfWork='" + identityProofOfWork + '\'' +
-                ", identityPublicKey='" + identityPublicKey + '\'' +
-                ", identityPrivateKey='" + maskSecret(identityPrivateKey) + '\'' +
+                "loglevel=" + loglevel +
+                ", identityProofOfWork=" + identityProofOfWork +
+                ", identityPublicKey=" + identityPublicKey +
+                ", identityPrivateKey=" + maskSecret(identityPrivateKey) +
                 ", identityPath=" + identityPath +
                 ", serverBindHost='" + serverBindHost + '\'' +
                 ", serverEnabled=" + serverEnabled +
@@ -526,20 +528,20 @@ public class DrasylConfig {
                 ", serverSSLProtocols=" + serverSSLProtocols +
                 ", serverHandshakeTimeout=" + serverHandshakeTimeout +
                 ", serverEndpoints=" + serverEndpoints +
-                ", serverChannelInitializer='" + serverChannelInitializer + '\'' +
-                ", messageHopLimit=" + messageHopLimit +
+                ", serverChannelInitializer=" + serverChannelInitializer +
                 ", messageMaxContentLength=" + messageMaxContentLength +
+                ", messageHopLimit=" + messageHopLimit +
+                ", messageComposedMessageTransferTimeout=" + messageComposedMessageTransferTimeout +
                 ", superPeerEnabled=" + superPeerEnabled +
                 ", superPeerEndpoints=" + superPeerEndpoints +
-                ", superPeerPublicKey='" + superPeerPublicKey + '\'' +
+                ", superPeerPublicKey=" + superPeerPublicKey +
                 ", superPeerRetryDelays=" + superPeerRetryDelays +
                 ", superPeerHandshakeTimeout=" + superPeerHandshakeTimeout +
-                ", superPeerChannelInitializer='" + superPeerChannelInitializer + '\'' +
+                ", superPeerChannelInitializer=" + superPeerChannelInitializer +
                 ", superPeerIdleRetries=" + superPeerIdleRetries +
                 ", superPeerIdleTimeout=" + superPeerIdleTimeout +
                 ", intraVmDiscoveryEnabled=" + intraVmDiscoveryEnabled +
                 ", directConnectionsEnabled=" + directConnectionsEnabled +
-                ", messageComposedMessageTransferTimeout=" + messageComposedMessageTransferTimeout +
                 '}';
     }
 
