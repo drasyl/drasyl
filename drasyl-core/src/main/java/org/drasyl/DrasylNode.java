@@ -216,8 +216,8 @@ public abstract class DrasylNode {
         try {
             send(CompressedPublicKey.of(recipient), payload);
         }
-        catch (CryptoException e) {
-            throw new DrasylException("Unable to read public key: " + e.getMessage());
+        catch (CryptoException | IllegalArgumentException e) {
+            throw new DrasylException("Unable to parse recipient's public key: " + e.getMessage());
         }
     }
 
