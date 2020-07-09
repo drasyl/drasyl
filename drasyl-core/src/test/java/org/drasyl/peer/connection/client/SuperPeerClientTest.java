@@ -27,9 +27,6 @@ import io.netty.channel.socket.SocketChannel;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
-import org.drasyl.identity.Identity;
-import org.drasyl.messenger.Messenger;
-import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.util.DrasylFunction;
 import org.junit.jupiter.api.Nested;
@@ -63,12 +60,6 @@ import static org.mockito.Mockito.when;
 class SuperPeerClientTest {
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private DrasylConfig config;
-    @Mock
-    private Supplier<Identity> identitySupplier;
-    @Mock
-    private PeersManager peersManager;
-    @Mock
-    private Messenger messenger;
     @Mock
     private EventLoopGroup workerGroup;
     @Mock

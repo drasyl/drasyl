@@ -109,10 +109,10 @@ public abstract class DrasylNode {
     }
 
     private final DrasylConfig config;
-    private final DrasylPipeline pipeline;
     private final IdentityManager identityManager;
     private final PeersManager peersManager;
     private final Messenger messenger;
+    private final DrasylPipeline pipeline;
     private final DirectConnectionsManager directConnectionsManager;
     private final IntraVmDiscovery intraVmDiscovery;
     private final SuperPeerClient superPeerClient;
@@ -139,14 +139,14 @@ public abstract class DrasylNode {
             this.identityManager = new IdentityManager(this.config);
             this.peersManager = new PeersManager(this::onInternalEvent);
             this.messenger = new Messenger(this::messageSink);
-            this.directConnectionsManager = new DirectConnectionsManager(identityManager, peersManager, messenger);
+            this.pipeline = new DrasylPipeline(this::onEvent, messenger::send, config);
+            this.directConnectionsManager = new DirectConnectionsManager(config, identityManager, peersManager, messenger, pipeline, DrasylNode.WORKER_GROUP, this::onInternalEvent);
             this.intraVmDiscovery = new IntraVmDiscovery(identityManager::getPublicKey, messenger, peersManager, this::onInternalEvent);
             this.superPeerClient = new SuperPeerClient(this.config, identityManager::getIdentity, peersManager, messenger, DrasylNode.WORKER_GROUP, this::onInternalEvent, directConnectionsManager::communicationOccurred);
             this.server = new Server(identityManager::getIdentity, messenger, peersManager, this.config, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP, superPeerClient.connectionEstablished(), directConnectionsManager::communicationOccurred);
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = new CompletableFuture<>();
-            this.pipeline = new DrasylPipeline(this::onEvent, messenger::send, config);
             setLogLevel(this.config.getLoglevel());
         }
         catch (ConfigException e) {
@@ -190,18 +190,19 @@ public abstract class DrasylNode {
                IdentityManager identityManager,
                PeersManager peersManager,
                Messenger messenger,
+               DrasylPipeline pipeline,
                DirectConnectionsManager directConnectionsManager,
                IntraVmDiscovery intraVmDiscovery,
                SuperPeerClient superPeerClient,
                Server server,
                AtomicBoolean started,
-               DrasylPipeline pipeline,
                CompletableFuture<Void> startSequence,
                CompletableFuture<Void> shutdownSequence) {
         this.config = config;
         this.identityManager = identityManager;
         this.peersManager = peersManager;
         this.messenger = messenger;
+        this.pipeline = pipeline;
         this.directConnectionsManager = directConnectionsManager;
         this.intraVmDiscovery = intraVmDiscovery;
         this.superPeerClient = superPeerClient;
@@ -209,7 +210,6 @@ public abstract class DrasylNode {
         this.started = started;
         this.startSequence = startSequence;
         this.shutdownSequence = shutdownSequence;
-        this.pipeline = pipeline;
     }
 
     public synchronized void send(String recipient, byte[] payload) throws DrasylException {
