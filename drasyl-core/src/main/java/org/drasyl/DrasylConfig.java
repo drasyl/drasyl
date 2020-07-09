@@ -79,6 +79,12 @@ public class DrasylConfig {
     static final String SUPER_PEER_IDLE_TIMEOUT = "drasyl.super-peer.idle.timeout";
     static final String INTRA_VM_DISCOVERY_ENABLED = "drasyl.intra-vm-discovery.enabled";
     static final String DIRECT_CONNECTIONS_ENABLED = "drasyl.direct-connections.enabled";
+    static final String DIRECT_CONNECTIONS_MAX_CONCURRENT_CONNECTIONS = "drasyl.direct-connections.max-concurrent-connections";
+    static final String DIRECT_CONNECTIONS_RETRY_DELAYS = "drasyl.direct-connections.retry-delays";
+    static final String DIRECT_CONNECTIONS_HANDSHAKE_TIMEOUT = "drasyl.direct-connections.handshake-timeout";
+    static final String DIRECT_CONNECTIONS_CHANNEL_INITIALIZER = "drasyl.direct-connections.channel-initializer";
+    static final String DIRECT_CONNECTIONS_IDLE_RETRIES = "drasyl.direct-connections.idle.retries";
+    static final String DIRECT_CONNECTIONS_IDLE_TIMEOUT = "drasyl.direct-connections.idle.timeout";
     //======================================= Config Values ========================================
     private final Level loglevel; // NOSONAR
     private final ProofOfWork identityProofOfWork;
@@ -109,6 +115,12 @@ public class DrasylConfig {
     private final Duration superPeerIdleTimeout;
     private final boolean intraVmDiscoveryEnabled;
     private final boolean directConnectionsEnabled;
+    private final int directConnectionsMaxConcurrentConnections;
+    private final List<Duration> directConnectionsRetryDelays;
+    private final Duration directConnectionsHandshakeTimeout;
+    private final Class<? extends ChannelInitializer<SocketChannel>> directConnectionsChannelInitializer;
+    private final short directConnectionsIdleRetries;
+    private final Duration directConnectionsIdleTimeout;
 
     public DrasylConfig() {
         this(ConfigFactory.load());
@@ -178,7 +190,15 @@ public class DrasylConfig {
         this.superPeerIdleTimeout = config.getDuration(SUPER_PEER_IDLE_TIMEOUT);
 
         this.intraVmDiscoveryEnabled = config.getBoolean(INTRA_VM_DISCOVERY_ENABLED);
+
+        // Init direct connections config
         this.directConnectionsEnabled = config.getBoolean(DIRECT_CONNECTIONS_ENABLED);
+        this.directConnectionsMaxConcurrentConnections = config.getInt(DIRECT_CONNECTIONS_MAX_CONCURRENT_CONNECTIONS);
+        this.directConnectionsRetryDelays = config.getDurationList(DIRECT_CONNECTIONS_RETRY_DELAYS);
+        this.directConnectionsHandshakeTimeout = config.getDuration(DIRECT_CONNECTIONS_HANDSHAKE_TIMEOUT);
+        this.directConnectionsChannelInitializer = getChannelInitializer(config, DIRECT_CONNECTIONS_CHANNEL_INITIALIZER);
+        this.directConnectionsIdleRetries = getShort(config, DIRECT_CONNECTIONS_IDLE_RETRIES);
+        this.directConnectionsIdleTimeout = config.getDuration(DIRECT_CONNECTIONS_IDLE_TIMEOUT);
     }
 
     private Level getLoglevel(Config config, String path) {
@@ -317,7 +337,13 @@ public class DrasylConfig {
                  short superPeerIdleRetries,
                  Duration superPeerIdleTimeout,
                  boolean intraVmDiscoveryEnabled,
-                 boolean directConnectionsEnabled) {
+                 boolean directConnectionsEnabled,
+                 int directConnectionsMaxConcurrentConnections,
+                 List<Duration> directConnectionsRetryDelays,
+                 Duration directConnectionsHandshakeTimeout,
+                 Class<? extends ChannelInitializer<SocketChannel>> directConnectionsChannelInitializer,
+                 short directConnectionsIdleRetries,
+                 Duration directConnectionsIdleTimeout) {
         this.loglevel = loglevel;
         this.identityProofOfWork = identityProofOfWork;
         this.identityPublicKey = identityPublicKey;
@@ -347,6 +373,12 @@ public class DrasylConfig {
         this.superPeerIdleTimeout = superPeerIdleTimeout;
         this.intraVmDiscoveryEnabled = intraVmDiscoveryEnabled;
         this.directConnectionsEnabled = directConnectionsEnabled;
+        this.directConnectionsMaxConcurrentConnections = directConnectionsMaxConcurrentConnections;
+        this.directConnectionsRetryDelays = directConnectionsRetryDelays;
+        this.directConnectionsHandshakeTimeout = directConnectionsHandshakeTimeout;
+        this.directConnectionsChannelInitializer = directConnectionsChannelInitializer;
+        this.directConnectionsIdleRetries = directConnectionsIdleRetries;
+        this.directConnectionsIdleTimeout = directConnectionsIdleTimeout;
     }
 
     public Level getLoglevel() {
@@ -465,9 +497,33 @@ public class DrasylConfig {
         return directConnectionsEnabled;
     }
 
+    public int getDirectConnectionsMaxConcurrentConnections() {
+        return directConnectionsMaxConcurrentConnections;
+    }
+
+    public Duration getDirectConnectionsIdleTimeout() {
+        return directConnectionsIdleTimeout;
+    }
+
+    public short getDirectConnectionsIdleRetries() {
+        return directConnectionsIdleRetries;
+    }
+
+    public Duration getDirectConnectionsHandshakeTimeout() {
+        return directConnectionsHandshakeTimeout;
+    }
+
+    public List<Duration> getDirectConnectionsRetryDelays() {
+        return directConnectionsRetryDelays;
+    }
+
+    public Class<? extends ChannelInitializer<SocketChannel>> getDirectConnectionsChannelInitializer() {
+        return getSuperPeerChannelInitializer();
+    }
+
     @Override
     public int hashCode() {
-        return Objects.hash(loglevel, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, messageComposedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled, directConnectionsEnabled);
+        return Objects.hash(loglevel, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, messageComposedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled, directConnectionsEnabled, directConnectionsMaxConcurrentConnections, directConnectionsRetryDelays, directConnectionsHandshakeTimeout, directConnectionsChannelInitializer, directConnectionsIdleRetries, directConnectionsIdleTimeout);
     }
 
     @Override
@@ -490,6 +546,8 @@ public class DrasylConfig {
                 superPeerIdleRetries == that.superPeerIdleRetries &&
                 intraVmDiscoveryEnabled == that.intraVmDiscoveryEnabled &&
                 directConnectionsEnabled == that.directConnectionsEnabled &&
+                directConnectionsMaxConcurrentConnections == that.directConnectionsMaxConcurrentConnections &&
+                directConnectionsIdleRetries == that.directConnectionsIdleRetries &&
                 Objects.equals(loglevel, that.loglevel) &&
                 Objects.equals(identityProofOfWork, that.identityProofOfWork) &&
                 Objects.equals(identityPublicKey, that.identityPublicKey) &&
@@ -507,7 +565,11 @@ public class DrasylConfig {
                 Objects.equals(superPeerRetryDelays, that.superPeerRetryDelays) &&
                 Objects.equals(superPeerHandshakeTimeout, that.superPeerHandshakeTimeout) &&
                 Objects.equals(superPeerChannelInitializer, that.superPeerChannelInitializer) &&
-                Objects.equals(superPeerIdleTimeout, that.superPeerIdleTimeout);
+                Objects.equals(superPeerIdleTimeout, that.superPeerIdleTimeout) &&
+                Objects.equals(directConnectionsRetryDelays, that.directConnectionsRetryDelays) &&
+                Objects.equals(directConnectionsHandshakeTimeout, that.directConnectionsHandshakeTimeout) &&
+                Objects.equals(directConnectionsChannelInitializer, that.directConnectionsChannelInitializer) &&
+                Objects.equals(directConnectionsIdleTimeout, that.directConnectionsIdleTimeout);
     }
 
     @Override
@@ -542,6 +604,12 @@ public class DrasylConfig {
                 ", superPeerIdleTimeout=" + superPeerIdleTimeout +
                 ", intraVmDiscoveryEnabled=" + intraVmDiscoveryEnabled +
                 ", directConnectionsEnabled=" + directConnectionsEnabled +
+                ", directConnectionsMaxConcurrentConnections=" + directConnectionsMaxConcurrentConnections +
+                ", directConnectionsRetryDelays=" + directConnectionsRetryDelays +
+                ", directConnectionsHandshakeTimeout=" + directConnectionsHandshakeTimeout +
+                ", directConnectionsChannelInitializer=" + directConnectionsChannelInitializer +
+                ", directConnectionsIdleRetries=" + directConnectionsIdleRetries +
+                ", directConnectionsIdleTimeout=" + directConnectionsIdleTimeout +
                 '}';
     }
 
@@ -583,8 +651,13 @@ public class DrasylConfig {
                 config.superPeerIdleRetries,
                 config.superPeerIdleTimeout,
                 config.intraVmDiscoveryEnabled,
-                config.directConnectionsEnabled
-        );
+                config.directConnectionsEnabled,
+                config.directConnectionsMaxConcurrentConnections,
+                config.directConnectionsRetryDelays,
+                config.directConnectionsHandshakeTimeout,
+                config.directConnectionsChannelInitializer,
+                config.directConnectionsIdleRetries,
+                config.directConnectionsIdleTimeout);
     }
 
     public static final class Builder {
@@ -618,6 +691,12 @@ public class DrasylConfig {
         private Duration superPeerIdleTimeout;
         private boolean intraVmDiscoveryEnabled;
         private boolean directConnectionsEnabled;
+        private int directConnectionsMaxConcurrentConnections;
+        private List<Duration> directConnectionsRetryDelays;
+        private Duration directConnectionsHandshakeTimeout;
+        private Class<? extends ChannelInitializer<SocketChannel>> directConnectionsChannelInitializer;
+        private short directConnectionsIdleRetries;
+        private Duration directConnectionsIdleTimeout;
 
         @SuppressWarnings({ "java:S107" })
         private Builder(Level loglevel,
@@ -648,7 +727,13 @@ public class DrasylConfig {
                         short superPeerIdleRetries,
                         Duration superPeerIdleTimeout,
                         boolean intraVmDiscoveryEnabled,
-                        boolean directConnectionsEnabled) {
+                        boolean directConnectionsEnabled,
+                        int directConnectionsMaxConcurrentConnections,
+                        List<Duration> directConnectionsRetryDelays,
+                        Duration directConnectionsHandshakeTimeout,
+                        Class<? extends ChannelInitializer<SocketChannel>> directConnectionsChannelInitializer,
+                        short directConnectionsIdleRetries,
+                        Duration directConnectionsIdleTimeout) {
             this.loglevel = loglevel;
             this.identityProofOfWork = identityProofOfWork;
             this.identityPublicKey = identityPublicKey;
@@ -678,6 +763,12 @@ public class DrasylConfig {
             this.superPeerIdleTimeout = superPeerIdleTimeout;
             this.intraVmDiscoveryEnabled = intraVmDiscoveryEnabled;
             this.directConnectionsEnabled = directConnectionsEnabled;
+            this.directConnectionsMaxConcurrentConnections = directConnectionsMaxConcurrentConnections;
+            this.directConnectionsRetryDelays = directConnectionsRetryDelays;
+            this.directConnectionsHandshakeTimeout = directConnectionsHandshakeTimeout;
+            this.directConnectionsChannelInitializer = directConnectionsChannelInitializer;
+            this.directConnectionsIdleRetries = directConnectionsIdleRetries;
+            this.directConnectionsIdleTimeout = directConnectionsIdleTimeout;
         }
 
         public Builder loglevel(Level loglevel) {
@@ -825,8 +916,38 @@ public class DrasylConfig {
             return this;
         }
 
+        public Builder directConnectionsMaxConcurrentConnections(int directConnectionsMaxConcurrentConnections) {
+            this.directConnectionsMaxConcurrentConnections = directConnectionsMaxConcurrentConnections;
+            return this;
+        }
+
+        public Builder directConnectionsRetryDelays(List<Duration> directConnectionsRetryDelays) {
+            this.directConnectionsRetryDelays = directConnectionsRetryDelays;
+            return this;
+        }
+
+        public Builder directConnectionsHandshakeTimeout(Duration directConnectionsHandshakeTimeout) {
+            this.directConnectionsHandshakeTimeout = directConnectionsHandshakeTimeout;
+            return this;
+        }
+
+        public Builder directConnectionsChannelInitializer(Class<? extends ChannelInitializer<SocketChannel>> directConnectionsChannelInitializer) {
+            this.directConnectionsChannelInitializer = directConnectionsChannelInitializer;
+            return this;
+        }
+
+        public Builder directConnectionsIdleRetries(short directConnectionsIdleRetries) {
+            this.directConnectionsIdleRetries = directConnectionsIdleRetries;
+            return this;
+        }
+
+        public Builder directConnectionsIdleTimeout(Duration directConnectionsIdleTimeout) {
+            this.directConnectionsIdleTimeout = directConnectionsIdleTimeout;
+            return this;
+        }
+
         public DrasylConfig build() {
-            return new DrasylConfig(loglevel, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, messageComposedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled, directConnectionsEnabled);
+            return new DrasylConfig(loglevel, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, messageComposedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled, directConnectionsEnabled, directConnectionsMaxConcurrentConnections, directConnectionsRetryDelays, directConnectionsHandshakeTimeout, directConnectionsChannelInitializer, directConnectionsIdleRetries, directConnectionsIdleTimeout);
         }
     }
 }

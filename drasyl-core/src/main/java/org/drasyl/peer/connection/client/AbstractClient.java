@@ -182,7 +182,7 @@ public abstract class AbstractClient implements AutoCloseable {
      *
      * @return
      */
-    private boolean shouldRetry() {
+    protected boolean shouldRetry() {
         return opened.get() && !retryDelays.isEmpty();
     }
 
