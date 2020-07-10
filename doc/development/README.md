@@ -4,7 +4,7 @@
 
 ```bash
 rm -f release.properties
-mvn clean -DskipTests -Darguments=-DskipTests release:prepare
+mvn clean release:prepare
 ```
 
 **An additional call of `mvn release:perform` is not necessary!**
