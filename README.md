@@ -43,7 +43,7 @@ Add drasyl as dependency to your `pom.xml`:
 <dependency>
     <groupId>org.drasyl</groupId>
     <artifactId>drasyl-core</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.1.0</version>
 </dependency>
 ```
 
@@ -67,7 +67,7 @@ node.start();
 // wait till EVENT_NODE_ONLINE has been received
 
 // send message to another node
-node.send("025eb0dc5d", "Hello World");
+node.send("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9", "Hello World");
 
 // shutdown node
 node.shutdown();

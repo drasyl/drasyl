@@ -87,7 +87,7 @@ Each drasyl node creates an identity at its first startup consisting of a crypto
 From the public key, a 10 hex digit address is derived, by which each node can be uniquely identified.
 Currently, addresses of recipient nodes must be known, as drasyl currently has no function for querying available addresses.
 
-The `send()` method needs the recipient as first argument and the message payload as second argument (example `node.send("774caf2c50", "Hello World")`).
+The `send()` method needs the recipient as first argument and the message payload as second argument (example `node.send("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9", "Hello World")`).
 
 The method does not give any feedback on whether the message could be delivered. However, it can throw an exception if the local node has no connection to the
 drasyl network.
@@ -100,7 +100,7 @@ Example:
 ```java
 ...
 public void onEvent(Event event) {
-    if (event.getCode() == EVENT_MESSAGE) {
+    if (event instanceof MessageEvent) {
         Pair message = event.event.getMessage();
         System.out.println("Message received from " + message.first() + " with payload " + new String(message.second()));
     }
