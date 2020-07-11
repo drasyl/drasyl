@@ -160,32 +160,24 @@ public class ServerHttpHandler extends SimpleChannelInboundHandler<FullHttpReque
     }
 
     private static class PeersStatus {
-        private final Set<CompressedPublicKey> peers;
         private final Set<CompressedPublicKey> children;
         private final Map<CompressedPublicKey, CompressedPublicKey> grandchildrenRoutes;
         private final CompressedPublicKey superPeer;
 
         public PeersStatus(PeersManager peersManager) {
             this(
-                    peersManager.getPeers().keySet(),
                     peersManager.getChildrenKeys(),
                     peersManager.getGrandchildrenRoutes(),
                     peersManager.getSuperPeerKey()
             );
         }
 
-        PeersStatus(Set<CompressedPublicKey> peers,
-                    Set<CompressedPublicKey> children,
+        PeersStatus(Set<CompressedPublicKey> children,
                     Map<CompressedPublicKey, CompressedPublicKey> grandchildrenRoutes,
                     CompressedPublicKey superPeer) {
-            this.peers = peers;
             this.children = children;
             this.grandchildrenRoutes = grandchildrenRoutes;
             this.superPeer = superPeer;
-        }
-
-        public Set<CompressedPublicKey> getPeers() {
-            return peers;
         }
 
         public Set<CompressedPublicKey> getChildren() {
