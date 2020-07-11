@@ -95,7 +95,7 @@ public class ServerHttpHandler extends SimpleChannelInboundHandler<FullHttpReque
             generateHeaders(ctx, req, publicKey, BAD_REQUEST);
         }
         else if ("/peers.json".equals(req.uri())) {
-            DefaultFullHttpResponse res = new DefaultFullHttpResponse(req.protocolVersion(), FORBIDDEN,
+            DefaultFullHttpResponse res = new DefaultFullHttpResponse(req.protocolVersion(), OK,
                     getPeers(peersManager));
             res.headers().set("x-public-key", publicKey);
             res.headers().set(CONTENT_TYPE, "application/json; charset=UTF-8");
