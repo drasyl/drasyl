@@ -117,27 +117,27 @@ public abstract class AbstractClient implements AutoCloseable {
         getLogger().debug("Connect to Endpoint '{}'", endpoint);
         try {
             channelInitializer = channelInitializerSupplier.apply(endpoint);
+
+            bootstrapSupplier.get().group(workerGroup).channel(NioSocketChannel.class).handler(channelInitializer).connect(endpoint.getHost(), webSocketPort(endpoint))
+                    .addListener((ChannelFutureListener) channelFuture -> { // NOSONAR
+                        if (channelFuture.isSuccess()) {
+                            getLogger().debug("Connection to Endpoint '{}' established", endpoint);
+                            channel = channelFuture.channel();
+                            channel.closeFuture().addListener(future -> {
+                                getLogger().debug("Connection to Endpoint '{}' closed", endpoint);
+                                conditionalScheduledReconnect();
+                            });
+                        }
+                        else {
+                            getLogger().debug("Error while trying to connect to Endpoint '{}': {}", endpoint, channelFuture.cause().getMessage());
+                            conditionalScheduledReconnect();
+                        }
+                    });
         }
-        catch (DrasylException e) {
+        catch (DrasylException | IllegalArgumentException e) {
             getLogger().warn("Unable to create channel initializer:", e);
             conditionalScheduledReconnect();
         }
-
-        bootstrapSupplier.get().group(workerGroup).channel(NioSocketChannel.class).handler(channelInitializer).connect(endpoint.getHost(), webSocketPort(endpoint))
-                .addListener((ChannelFutureListener) channelFuture -> {
-                    if (channelFuture.isSuccess()) {
-                        getLogger().debug("Connection to Endpoint '{}' established", endpoint);
-                        channel = channelFuture.channel();
-                        channel.closeFuture().addListener(future -> {
-                            getLogger().debug("Connection to Endpoint '{}' closed", endpoint);
-                            conditionalScheduledReconnect();
-                        });
-                    }
-                    else {
-                        getLogger().debug("Error while trying to connect to Endpoint '{}': {}", endpoint, channelFuture.cause().getMessage());
-                        conditionalScheduledReconnect();
-                    }
-                });
     }
 
     /**

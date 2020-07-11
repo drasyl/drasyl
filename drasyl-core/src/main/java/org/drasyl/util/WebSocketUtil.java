@@ -56,7 +56,7 @@ public class WebSocketUtil {
             }
         }
 
-        throw new IllegalArgumentException("Unable to determine websocket port.");
+        throw new IllegalArgumentException("Unable to determine websocket port for uri '" + uri + "'. Not a websocket uri?");
     }
 
     /**
