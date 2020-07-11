@@ -229,10 +229,9 @@ public abstract class DrasylNode {
      *
      * @param recipient the recipient of a message
      * @param payload   the payload of a message
-     * @throws MessengerException if an error occurs during the processing
      */
     public synchronized void send(CompressedPublicKey recipient,
-                                  byte[] payload) throws MessengerException {
+                                  byte[] payload) {
         pipeline.executeOutbound(new ApplicationMessage(identityManager.getPublicKey(), recipient, payload));
     }
 
@@ -258,10 +257,9 @@ public abstract class DrasylNode {
      *
      * @param recipient the recipient of a message
      * @param payload   the payload of a message
-     * @throws MessengerException if an error occurs during the processing
      */
     public synchronized void send(CompressedPublicKey recipient,
-                                  String payload) throws MessengerException {
+                                  String payload) {
         send(recipient, payload.getBytes());
     }
 
@@ -389,8 +387,11 @@ public abstract class DrasylNode {
                             onInternalEvent(new NodeUnrecoverableErrorEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
                             LOG.info("Could not start drasyl Node: {}", e.getMessage());
                             LOG.info("Stop all running components...");
-                            this.stopServer();
+
+                            this.stopDirectConnectionsHandler();
                             this.stopSuperPeerClient();
+                            this.stopServer();
+                            this.stopIntraVmDiscovery();
 
                             LOG.info("All components stopped");
                             started.set(false);
@@ -507,7 +508,7 @@ public abstract class DrasylNode {
         }
     }
 
-    private void messageSink(RelayableMessage message) throws MessageSinkException {
+    void messageSink(RelayableMessage message) throws MessageSinkException {
         CompressedPublicKey recipient = message.getRecipient();
 
         if (!identityManager.getPublicKey().equals(recipient)) {
