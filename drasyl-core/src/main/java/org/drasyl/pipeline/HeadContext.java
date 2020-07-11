@@ -20,6 +20,7 @@ package org.drasyl.pipeline;
 
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
+import org.drasyl.DrasylException;
 import org.drasyl.event.Event;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.util.DrasylConsumer;
@@ -35,9 +36,9 @@ import java.util.concurrent.CompletableFuture;
 class HeadContext extends AbstractHandlerContext implements InboundHandler, OutboundHandler {
     public static final String DRASYL_HEAD_HANDLER = "DRASYL_HEAD_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(HeadContext.class);
-    private final DrasylConsumer<ApplicationMessage> outboundConsumer;
+    private final DrasylConsumer<ApplicationMessage, DrasylException> outboundConsumer;
 
-    public HeadContext(DrasylConsumer<ApplicationMessage> outboundConsumer,
+    public HeadContext(DrasylConsumer<ApplicationMessage, DrasylException> outboundConsumer,
                        DrasylConfig config,
                        Pipeline pipeline,
                        Scheduler scheduler) {

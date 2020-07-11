@@ -48,7 +48,7 @@ class Cli {
     private static final String OPT_HELP = "help";
     private final HelpFormatter formatter;
     private final Supplier<String> versionSupplier;
-    private final DrasylFunction<DrasylConfig, DrasylNode> nodeSupplier;
+    private final DrasylFunction<DrasylConfig, DrasylNode, DrasylException> nodeSupplier;
     private DrasylNode node;
 
     public Cli() {
@@ -67,7 +67,7 @@ class Cli {
 
     Cli(HelpFormatter formatter,
         Supplier<String> versionSupplier,
-        DrasylFunction<DrasylConfig, DrasylNode> nodeSupplier,
+        DrasylFunction<DrasylConfig, DrasylNode, DrasylException> nodeSupplier,
         DrasylNode node) {
         this.formatter = requireNonNull(formatter);
         this.versionSupplier = requireNonNull(versionSupplier);

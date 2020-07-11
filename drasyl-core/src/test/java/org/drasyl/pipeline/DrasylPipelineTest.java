@@ -20,6 +20,7 @@ package org.drasyl.pipeline;
 
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
+import org.drasyl.DrasylException;
 import org.drasyl.event.Event;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.util.DrasylConsumer;
@@ -55,7 +56,7 @@ class DrasylPipelineTest {
     @Mock
     private Consumer<Event> eventConsumer;
     @Mock
-    private DrasylConsumer<ApplicationMessage> outboundConsumer;
+    private DrasylConsumer<ApplicationMessage, DrasylException> outboundConsumer;
     @Mock
     private Scheduler scheduler;
     @Mock

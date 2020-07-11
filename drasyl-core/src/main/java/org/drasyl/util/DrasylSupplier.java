@@ -8,11 +8,11 @@ import org.drasyl.DrasylException;
  * @param <T> the type of results supplied by this supplier
  */
 @FunctionalInterface
-public interface DrasylSupplier<T> {
+public interface DrasylSupplier<T, E extends DrasylException> {
     /**
      * Gets a result.
      *
      * @return a result
      */
-    T get() throws DrasylException;
+    T get() throws E;
 }

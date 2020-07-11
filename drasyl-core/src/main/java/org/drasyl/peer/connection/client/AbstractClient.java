@@ -39,7 +39,7 @@ public abstract class AbstractClient implements AutoCloseable {
     private final AtomicInteger nextRetryDelayPointer;
     private final Supplier<Bootstrap> bootstrapSupplier;
     private final Subject<Boolean> connected;
-    private final DrasylFunction<URI, ChannelInitializer<SocketChannel>> channelInitializerSupplier;
+    private final DrasylFunction<URI, ChannelInitializer<SocketChannel>, DrasylException> channelInitializerSupplier;
     private final List<Duration> retryDelays;
     protected ChannelInitializer<SocketChannel> channelInitializer;
     protected Channel channel;
@@ -47,7 +47,7 @@ public abstract class AbstractClient implements AutoCloseable {
     protected AbstractClient(List<Duration> retryDelays,
                              EventLoopGroup workerGroup,
                              Supplier<Set<URI>> endpointsSupplier,
-                             DrasylFunction<URI, ChannelInitializer<SocketChannel>> channelInitializerSupplier) {
+                             DrasylFunction<URI, ChannelInitializer<SocketChannel>, DrasylException> channelInitializerSupplier) {
         this(
                 retryDelays,
                 workerGroup,
@@ -61,7 +61,7 @@ public abstract class AbstractClient implements AutoCloseable {
                              EventLoopGroup workerGroup,
                              Supplier<Set<URI>> endpointsSupplier,
                              Subject<Boolean> connected,
-                             DrasylFunction<URI, ChannelInitializer<SocketChannel>> channelInitializerSupplier) {
+                             DrasylFunction<URI, ChannelInitializer<SocketChannel>, DrasylException> channelInitializerSupplier) {
         this(
                 retryDelays,
                 workerGroup,
@@ -85,7 +85,7 @@ public abstract class AbstractClient implements AutoCloseable {
                              AtomicInteger nextRetryDelayPointer,
                              Supplier<Bootstrap> bootstrapSupplier,
                              Subject<Boolean> connected,
-                             DrasylFunction<URI, ChannelInitializer<SocketChannel>> channelInitializerSupplier,
+                             DrasylFunction<URI, ChannelInitializer<SocketChannel>, DrasylException> channelInitializerSupplier,
                              ChannelInitializer<SocketChannel> channelInitializer,
                              Channel channel) {
         this.retryDelays = retryDelays;

@@ -45,7 +45,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class HeadContextTest {
     @Mock
-    private DrasylConsumer<ApplicationMessage> outboundConsumer;
+    private DrasylConsumer<ApplicationMessage, DrasylException> outboundConsumer;
     @Mock
     private HandlerContext ctx;
     @Mock

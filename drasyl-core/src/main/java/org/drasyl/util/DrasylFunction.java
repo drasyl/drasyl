@@ -27,12 +27,12 @@ import org.drasyl.DrasylException;
  * @param <R> the type of the result of the function
  */
 @FunctionalInterface
-public interface DrasylFunction<T, R> {
+public interface DrasylFunction<T, R, E extends DrasylException> {
     /**
      * Applies this function to the given argument.
      *
      * @param t the function argument
      * @return the function result
      */
-    R apply(T t) throws DrasylException;
+    R apply(T t) throws E;
 }

@@ -8,6 +8,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylConfig;
+import org.drasyl.DrasylException;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
@@ -94,7 +95,7 @@ public class DirectClient extends AbstractClient {
                  AtomicInteger nextRetryDelayPointer,
                  Supplier<Bootstrap> bootstrapSupplier,
                  Subject<Boolean> connected,
-                 DrasylFunction<URI, ChannelInitializer<SocketChannel>> channelInitializerSupplier,
+                 DrasylFunction<URI, ChannelInitializer<SocketChannel>, DrasylException> channelInitializerSupplier,
                  ChannelInitializer<SocketChannel> channelInitializer,
                  Channel channel,
                  BooleanSupplier directConnectionDemand,

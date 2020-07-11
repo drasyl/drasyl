@@ -26,11 +26,11 @@ import org.drasyl.DrasylException;
  * @param <T> the type of the input to the operation
  */
 @FunctionalInterface
-public interface DrasylConsumer<T> {
+public interface DrasylConsumer<T, E extends DrasylException> {
     /**
      * Performs this operation on the given argument.
      *
      * @param t the input argument
      */
-    void accept(T t) throws DrasylException;
+    void accept(T t) throws E;
 }

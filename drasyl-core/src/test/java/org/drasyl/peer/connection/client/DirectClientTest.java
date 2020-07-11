@@ -7,6 +7,7 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.reactivex.rxjava3.subjects.Subject;
+import org.drasyl.DrasylException;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.util.DrasylFunction;
 import org.junit.jupiter.api.Nested;
@@ -56,7 +57,7 @@ class DirectClientTest {
     @Mock
     private ChannelInitializer<SocketChannel> channelInitializer;
     @Mock
-    private DrasylFunction<URI, ChannelInitializer<SocketChannel>> channelInitializerSupplier;
+    private DrasylFunction<URI, ChannelInitializer<SocketChannel>, DrasylException> channelInitializerSupplier;
     @Mock
     private Supplier<Set<URI>> endpointsSupplier;
     @Mock

@@ -26,6 +26,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylConfig;
+import org.drasyl.DrasylException;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
@@ -59,7 +60,7 @@ public class SuperPeerClient extends AbstractClient {
                     AtomicInteger nextRetryDelayPointer,
                     Supplier<Bootstrap> bootstrapSupplier,
                     Subject<Boolean> connected,
-                    DrasylFunction<URI, ChannelInitializer<SocketChannel>> channelInitializerSupplier,
+                    DrasylFunction<URI, ChannelInitializer<SocketChannel>, DrasylException> channelInitializerSupplier,
                     ChannelInitializer<SocketChannel> channelInitializer,
                     Channel channel) {
         super(
@@ -80,7 +81,7 @@ public class SuperPeerClient extends AbstractClient {
     protected SuperPeerClient(DrasylConfig config,
                               EventLoopGroup workerGroup,
                               Subject<Boolean> connected,
-                              DrasylFunction<URI, ChannelInitializer<SocketChannel>> channelInitializerSupplier) {
+                              DrasylFunction<URI, ChannelInitializer<SocketChannel>, DrasylException> channelInitializerSupplier) {
         super(
                 config.getSuperPeerRetryDelays(),
                 workerGroup,

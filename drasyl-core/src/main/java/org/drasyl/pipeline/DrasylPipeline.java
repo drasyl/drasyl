@@ -20,6 +20,7 @@ package org.drasyl.pipeline;
 
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
+import org.drasyl.DrasylException;
 import org.drasyl.event.Event;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.util.DrasylConsumer;
@@ -34,7 +35,7 @@ import java.util.function.Consumer;
  */
 public class DrasylPipeline extends DefaultPipeline {
     public DrasylPipeline(Consumer<Event> eventConsumer,
-                          DrasylConsumer<ApplicationMessage> outboundConsumer,
+                          DrasylConsumer<ApplicationMessage, DrasylException> outboundConsumer,
                           DrasylConfig config) {
         this.handlerNames = new ConcurrentHashMap<>();
         this.head = new HeadContext(outboundConsumer, config, this, DrasylScheduler.getInstanceHeavy());

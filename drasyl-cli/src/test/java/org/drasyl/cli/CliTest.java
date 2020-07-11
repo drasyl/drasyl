@@ -44,7 +44,7 @@ class CliTest {
     @Mock
     private Supplier<String> versionSupplier;
     @Mock
-    private DrasylFunction<DrasylConfig, DrasylNode> nodeSupplier;
+    private DrasylFunction<DrasylConfig, DrasylNode, DrasylException> nodeSupplier;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private DrasylNode node;
 
