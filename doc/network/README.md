@@ -6,6 +6,34 @@ forwarded via a super peer. Each node generates an identity at the first start, 
 
 The network gives no guarantee that messages sent will arrive, arrive in the correct order or arrive exactly once.
 
+## Network Topology
+
+At startup the drasyl node connects to an always-present root node (the super peer).
+The super peer helps to discover other nodes and establish direct connections to other nodes.
+
+## Peer Discovery
+
+drasyl uses different methods to find other peers.
+Peers running within a JVM are automatically discovered via shared memory.
+In a [future release](https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/75) local peers running in other JVMs on the same computer are found via the file system.
+Remote nodes are found using the Super Peer, which acts as a rendezvous server.
+
+Nodes always try to communicate with each other via a direct connection.
+If this is not possible, messages are relayed through the super peer.
+Currently, direct connections are only possible for nodes within the same local network.
+In a [future release](https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/73), direct connections across networks are planned] using NAT traversal techniques.
+
+## Addressing
+
+Each node generates on the first start a unique identity consisting of a public/private key-pair and a proof of work (PoW).
+The public key is used to address the node.
+The PoW is required to prevent sybil attacks on the network by generating a large amount of identities.
+Currently a cpu-hard PoW is used. For the [future](https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/76) a change to a memory-hard PoW is planned.
+
+## Cryptography
+
+In a [future release](https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/60), messages wil be end-to-end encrypted.
+
 ## BPMN Diagrams
 
 We have created several BPMN diagrams for important components/processes within the overlay network
