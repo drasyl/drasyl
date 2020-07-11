@@ -195,7 +195,7 @@ public class ChatGUI extends Application {
                 node.send(recipient, JACKSON_WRITER.writeValueAsBytes(new Message(chatField.getText(), username)));
                 txtArea.appendText("[" + username + "]: " + chatField.getText() + "\n");
             }
-            catch (DrasylException | JsonProcessingException e) {
+            catch (JsonProcessingException e) {
                 e.printStackTrace(); //NOSONAR
             }
             finally {
