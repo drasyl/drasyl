@@ -40,6 +40,6 @@ class ServerHttpHandlerTest {
 
         assertEquals(OK, httpResponse.status());
         assertEquals(DrasylNode.getVersion(), httpResponse.headers().get("server"));
-        assertEquals(publicKey, httpResponse.headers().get("x-public-key"));
+        assertEquals(publicKey.toString(), httpResponse.headers().get("x-public-key"));
     }
 }
