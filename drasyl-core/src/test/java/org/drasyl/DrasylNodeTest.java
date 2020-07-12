@@ -193,7 +193,7 @@ class DrasylNodeTest {
             });
             assertThrows(ExecutionException.class, underTest.start()::get);
 
-            verify(underTest).onInternalEvent(new NodeUnrecoverableErrorEvent(Node.of(identity, server.getEndpoints())));
+            verify(underTest).onInternalEvent(new NodeUnrecoverableErrorEvent(Node.of(identity, server.getEndpoints()), new ServerException("error")));
 
             verify(directConnectionsManager).close();
             verify(superPeerClient).close();

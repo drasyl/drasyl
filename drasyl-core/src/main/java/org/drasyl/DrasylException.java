@@ -18,6 +18,8 @@
  */
 package org.drasyl;
 
+import java.util.Objects;
+
 /**
  * All checked exceptions in drasyl inherit from this exception class.
  */
@@ -28,5 +30,23 @@ public class DrasylException extends Exception {
 
     public DrasylException(String cause) {
         super(cause);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(getCause(), getMessage());
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        DrasylException that = (DrasylException) o;
+        return Objects.equals(getCause(), that.getCause()) &&
+                Objects.equals(getMessage(), that.getMessage());
     }
 }

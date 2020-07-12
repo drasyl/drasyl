@@ -384,7 +384,7 @@ public abstract class DrasylNode {
                             LOG.info("drasyl Node with Identity '{}' has started", identityManager.getIdentity());
                         }
                         else {
-                            onInternalEvent(new NodeUnrecoverableErrorEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
+                            onInternalEvent(new NodeUnrecoverableErrorEvent(Node.of(identityManager.getIdentity(), server.getEndpoints()), e.getCause()));
                             LOG.info("Could not start drasyl Node: {}", e.getMessage());
                             LOG.info("Stop all running components...");
 
