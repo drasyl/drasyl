@@ -21,8 +21,10 @@ package org.drasyl.identity;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import org.drasyl.DrasylConfig;
+import org.drasyl.DrasylException;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.util.DrasylSupplier;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -44,6 +46,7 @@ import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 public class IdentityManager {
     public static final short POW_DIFFICULTY = 6;
     private static final Logger LOG = LoggerFactory.getLogger(IdentityManager.class);
+    private final DrasylSupplier<Identity, IdentityManagerException> identityGenerator;
     private final DrasylConfig config;
     private Identity identity;
 
@@ -52,10 +55,13 @@ public class IdentityManager {
      * yet, a new one is created.
      */
     public IdentityManager(DrasylConfig config) {
-        this(config, null);
+        this(IdentityManager::generateIdentity, config, null);
     }
 
-    IdentityManager(DrasylConfig config, Identity identity) {
+    IdentityManager(DrasylSupplier<Identity, IdentityManagerException> identityGenerator,
+                    DrasylConfig config,
+                    Identity identity) {
+        this.identityGenerator = identityGenerator;
         this.config = config;
         this.identity = identity;
     }
@@ -88,7 +94,7 @@ public class IdentityManager {
             }
             else {
                 LOG.debug("No Identity present. Generate a new one and write to file '{}'.", path);
-                Identity myIdentity = generateIdentity();
+                Identity myIdentity = identityGenerator.get();
                 writeIdentityFile(path, myIdentity);
                 this.identity = myIdentity;
             }

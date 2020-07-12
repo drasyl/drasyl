@@ -24,27 +24,6 @@ public class IdentityManagerIT {
     private DrasylConfig config;
 
     @Test
-    void shouldCreateNewIdentityIfConfigContainsNoKeysAndFileIsAbsent(@TempDir Path dir) throws IdentityManagerException, IOException {
-        Path path = Paths.get(dir.toString(), "my-identity.json");
-        when(config.getIdentityPath()).thenReturn(path);
-
-        IdentityManager identityManager = new IdentityManager(config);
-        identityManager.loadOrCreateIdentity();
-
-        assertNotNull(identityManager.getProofOfWork());
-        assertNotNull(identityManager.getPublicKey());
-        assertNotNull(identityManager.getPrivateKey());
-
-        assertThatJson(Files.readString(path))
-                .when(Option.IGNORING_ARRAY_ORDER)
-                .isEqualTo("{\n" +
-                        "  \"proofOfWork\" : " + identityManager.getProofOfWork().getNonce() + ",\n" +
-                        "  \"publicKey\" : \"" + identityManager.getPublicKey() + "\",\n" +
-                        "  \"privateKey\" : \"" + identityManager.getPrivateKey() + "\"\n" +
-                        "}");
-    }
-
-    @Test
     void shouldThrowExceptionIfConfigContainsNoKeysAndPathDoesNotExist(@TempDir Path dir) {
         Path path = Paths.get(dir.toString(), "non-existing", "my-identity.json");
         when(config.getIdentityPath()).thenReturn(path);
