@@ -23,7 +23,7 @@ You can either include this implementation in your own software stack and make u
 
 Either build and install drasyl by yourself...
 ```bash
-mvn install
+./mvnw install
 ```
 
 ...or pull it from public repo:
