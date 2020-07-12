@@ -176,6 +176,38 @@
         particularly with a focus on smart city and IoT devices.
     </description>
 
+    <organization>
+        <name>The drasyl Project</name>
+        <url>https://drasyl.org/</url>
+    </organization>
+
+    <licenses>
+        <license>
+            <name>GNU Lesser General Public License, Version 3</name>
+            <url>https://www.gnu.org/licenses/lgpl-3.0.de.html</url>
+        </license>
+    </licenses>
+
+    <issueManagement>
+        <system>GitLab</system>
+        <url>https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues</url>
+    </issueManagement>
+
+    <developers>
+        <developer>
+            <id>bornholdt</id>
+            <name>Heiko Bornholdt</name>
+            <email>bornholdt@informatik.uni-hamburg.de</email>
+        </developer>
+        <developer>
+            <id>6roebert</id>
+            <name>Kevin Röbert</name>
+            <email>6roebert@informatik.uni-hamburg.de</email>
+        </developer>
+    </developers>
+
+    <inceptionYear>2020</inceptionYear>
+
     <distributionManagement>
         <repository>
             <id>gitlab-maven</id>
