@@ -34,7 +34,6 @@ public class DirectConnectionDemandsCache {
      * Adds <code>publicKey</code> to the cache.
      *
      * @param publicKey
-     * @return
      */
     public void add(CompressedPublicKey publicKey) {
         cache.put(publicKey, Boolean.TRUE);

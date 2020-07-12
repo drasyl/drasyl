@@ -84,13 +84,20 @@ public class PeersManager {
 
     @Override
     public String toString() {
-        return "PeersManager{" +
-                "peers=" + peers +
-                ", children=" + children +
-                ", grandchildrenRoutes=" + grandchildrenRoutes +
-                ", eventConsumer=" + eventConsumer +
-                ", superPeer=" + superPeer +
-                '}';
+        try {
+            lock.readLock().lock();
+
+            return "PeersManager{" +
+                    "peers=" + peers +
+                    ", children=" + children +
+                    ", grandchildrenRoutes=" + grandchildrenRoutes +
+                    ", eventConsumer=" + eventConsumer +
+                    ", superPeer=" + superPeer +
+                    '}';
+        }
+        finally {
+            lock.readLock().unlock();
+        }
     }
 
     public Map<CompressedPublicKey, PeerInformation> getPeers() {

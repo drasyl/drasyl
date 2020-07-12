@@ -92,7 +92,6 @@ class SuperPeerClientIT {
     private PeersManager peersManagerServer;
     private Subject<Event> emittedEventsSubject;
     private Observable<Boolean> superPeerConnected;
-    private SuperPeerClient client;
 
     @BeforeEach
     void setup(TestInfo info) throws DrasylException, CryptoException {
@@ -159,10 +158,6 @@ class SuperPeerClientIT {
 
     @AfterEach
     void cleanUp(TestInfo info) throws IdentityManagerException {
-        if (client != null) {
-            client.close();
-        }
-
         server.close();
 
         IdentityManager.deleteIdentityFile(config.getIdentityPath());
@@ -178,14 +173,15 @@ class SuperPeerClientIT {
         TestObserver<Message> receivedMessages = server.receivedMessages().test();
 
         // start client
-        client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, event -> {
+        try (SuperPeerClient client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, event -> {
         }, publicKey -> {
-        });
-        client.open();
+        })) {
+            client.open();
 
-        // verify received messages
-        receivedMessages.awaitCount(1);
-        receivedMessages.assertValueAt(0, new JoinMessage(identityManager.getProofOfWork(), identityManager.getPublicKey(), Set.of()));
+            // verify received messages
+            receivedMessages.awaitCount(1);
+            receivedMessages.assertValueAt(0, new JoinMessage(identityManager.getProofOfWork(), identityManager.getPublicKey(), Set.of()));
+        }
     }
 
     @Disabled("Race Condition error")
@@ -195,7 +191,7 @@ class SuperPeerClientIT {
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
-        client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext, publicKey -> {
+        SuperPeerClient client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext, publicKey -> {
         });
         client.open();
 
@@ -214,7 +210,7 @@ class SuperPeerClientIT {
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
-        client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext, publicKey -> {
+        SuperPeerClient client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext, publicKey -> {
         });
         client.open();
 
@@ -234,17 +230,18 @@ class SuperPeerClientIT {
         TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof PongMessage && ((PongMessage) m).getCorrespondingId().equals(request.getId())).test();
 
         // start client
-        client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, event -> {
+        try (SuperPeerClient client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, event -> {
         }, publicKey -> {
-        });
-        client.open();
-        server.awaitClient(identityManager.getPublicKey());
+        })) {
+            client.open();
+            server.awaitClient(identityManager.getPublicKey());
 
-        // send message
-        server.sendMessage(identityManager.getPublicKey(), request);
+            // send message
+            server.sendMessage(identityManager.getPublicKey(), request);
 
-        // verify received message
-        receivedMessages.awaitCount(1);
+            // verify received message
+            receivedMessages.awaitCount(1);
+        }
     }
 
     @Test
@@ -254,22 +251,23 @@ class SuperPeerClientIT {
         TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof StatusMessage).test();
 
         // start client
-        client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, event -> {
+        try (SuperPeerClient client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, event -> {
         }, publicKey -> {
-        });
-        client.open();
-        server.awaitClient(identityManager.getPublicKey());
+        })) {
+            client.open();
+            server.awaitClient(identityManager.getPublicKey());
 
-        // send message
-        ApplicationMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), new byte[]{
-                0x00,
-                0x01
-        });
-        server.sendMessage(identityManager.getPublicKey(), request);
+            // send message
+            ApplicationMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), new byte[]{
+                    0x00,
+                    0x01
+            });
+            server.sendMessage(identityManager.getPublicKey(), request);
 
-        // verify received message
-        receivedMessages.awaitCount(2);
-        receivedMessages.assertValueAt(1, new StatusMessage(STATUS_OK, request.getId()));
+            // verify received message
+            receivedMessages.awaitCount(2);
+            receivedMessages.assertValueAt(1, new StatusMessage(STATUS_OK, request.getId()));
+        }
     }
 
     @Test
@@ -279,17 +277,18 @@ class SuperPeerClientIT {
 
         // start client
         DrasylConfig noRetryConfig = DrasylConfig.newBuilder(config).superPeerRetryDelays(List.of()).build();
-        client = new SuperPeerClient(noRetryConfig, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext, publicKey -> {
-        });
-        client.open();
-        server.awaitClient(identityManager.getPublicKey());
+        try (SuperPeerClient client = new SuperPeerClient(noRetryConfig, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext, publicKey -> {
+        })) {
+            client.open();
+            server.awaitClient(identityManager.getPublicKey());
 
-        // send message
-        server.sendMessage(identityManager.getPublicKey(), new QuitMessage());
+            // send message
+            server.sendMessage(identityManager.getPublicKey(), new QuitMessage());
 
-        // verify emitted events
-        emittedEvents.awaitCount(2);
-        emittedEvents.assertValueAt(1, new NodeOfflineEvent(Node.of(identityManager.getIdentity())));
+            // verify emitted events
+            emittedEvents.awaitCount(2);
+            emittedEvents.assertValueAt(1, new NodeOfflineEvent(Node.of(identityManager.getIdentity())));
+        }
     }
 
     @Test
@@ -298,13 +297,14 @@ class SuperPeerClientIT {
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
-        client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext, publicKey -> {
-        });
-        client.open();
+        try (SuperPeerClient client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext, publicKey -> {
+        })) {
+            client.open();
 
-        // verify emitted events
-        emittedEvents.awaitCount(1);
-        emittedEvents.assertValue(new NodeOnlineEvent(Node.of(identityManager.getIdentity())));
+            // verify emitted events
+            emittedEvents.awaitCount(1);
+            emittedEvents.assertValue(new NodeOnlineEvent(Node.of(identityManager.getIdentity())));
+        }
     }
 
     @Test
@@ -317,13 +317,14 @@ class SuperPeerClientIT {
                 .build();
 
         // start client
-        client = new SuperPeerClient(config1, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext, publicKey -> {
-        });
-        client.open();
+        try (SuperPeerClient client = new SuperPeerClient(config1, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext, publicKey -> {
+        })) {
+            client.open();
 
-        // verify emitted events
-        emittedEvents.awaitCount(1);
-        emittedEvents.assertValue(new NodeOnlineEvent(Node.of(identityManager.getIdentity())));
+            // verify emitted events
+            emittedEvents.awaitCount(1);
+            emittedEvents.assertValue(new NodeOnlineEvent(Node.of(identityManager.getIdentity())));
+        }
     }
 
     @Test
@@ -336,19 +337,20 @@ class SuperPeerClientIT {
                 .build();
 
         // start client
-        client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext, publicKey -> {
-        });
-        client.open();
-        server.awaitClient(identityManager.getPublicKey());
+        try (SuperPeerClient client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext, publicKey -> {
+        })) {
+            client.open();
+            server.awaitClient(identityManager.getPublicKey());
 
-        // server-side disconnect
-        server.closeClient(identityManager.getPublicKey());
+            // server-side disconnect
+            server.closeClient(identityManager.getPublicKey());
 
-        // verify emitted events
-        emittedEvents.awaitCount(3); // wait for EVENT_NODE_OFFLINE and EVENT_NODE_ONLINE
-        emittedEvents.assertValueAt(0, new NodeOnlineEvent(Node.of(identityManager.getIdentity(), Set.of())));
-        emittedEvents.assertValueAt(1, new NodeOfflineEvent(Node.of(identityManager.getIdentity(), Set.of())));
-        emittedEvents.assertValueAt(2, new NodeOnlineEvent(Node.of(identityManager.getIdentity(), Set.of())));
+            // verify emitted events
+            emittedEvents.awaitCount(3); // wait for EVENT_NODE_OFFLINE and EVENT_NODE_ONLINE
+            emittedEvents.assertValueAt(0, new NodeOnlineEvent(Node.of(identityManager.getIdentity(), Set.of())));
+            emittedEvents.assertValueAt(1, new NodeOfflineEvent(Node.of(identityManager.getIdentity(), Set.of())));
+            emittedEvents.assertValueAt(2, new NodeOnlineEvent(Node.of(identityManager.getIdentity(), Set.of())));
+        }
     }
 
     @Test
@@ -358,39 +360,41 @@ class SuperPeerClientIT {
         TestObserver<Event> emittedEvents = emittedEventsSubject.filter(e -> e instanceof MessageEvent).test();
 
         // start client
-        client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext, publicKey -> {
-        });
-        client.open();
-        server.awaitClient(identityManager.getPublicKey());
+        try (SuperPeerClient client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext, publicKey -> {
+        })) {
+            client.open();
+            server.awaitClient(identityManager.getPublicKey());
 
-        // create message with exceeded payload size of the client, but not of the server
-        byte[] bigPayload = new byte[serverConfig.getMessageMaxContentLength()];
-        new Random().nextBytes(bigPayload);
+            // create message with exceeded payload size of the client, but not of the server
+            byte[] bigPayload = new byte[serverConfig.getMessageMaxContentLength()];
+            new Random().nextBytes(bigPayload);
 
-        // send message
-        RequestMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), bigPayload);
-        server.sendMessage(identityManager.getPublicKey(), request);
+            // send message
+            RequestMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), bigPayload);
+            server.sendMessage(identityManager.getPublicKey(), request);
 
-        receivedMessages.awaitCount(2);
-        emittedEvents.assertNoValues();
-        receivedMessages.assertValueAt(1, new StatusMessage(StatusMessage.Code.STATUS_PAYLOAD_TOO_LARGE, request.getId()));
+            receivedMessages.awaitCount(2);
+            emittedEvents.assertNoValues();
+            receivedMessages.assertValueAt(1, new StatusMessage(StatusMessage.Code.STATUS_PAYLOAD_TOO_LARGE, request.getId()));
+        }
     }
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void messageExceedingMaxSizeShouldOnSendShouldThrowException() throws ClientException {
         // start client
-        client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext, publicKey -> {
-        });
-        client.open();
-        server.awaitClient(identityManager.getPublicKey());
+        try (SuperPeerClient client = new SuperPeerClient(config, identityManager::getIdentity, peersManager, messenger, workerGroup, emittedEventsSubject::onNext, publicKey -> {
+        })) {
+            client.open();
+            server.awaitClient(identityManager.getPublicKey());
 
-        // create message with exceeded payload size of client and server
-        byte[] bigPayload = new byte[serverConfig.getMessageMaxContentLength() + 1];
-        new Random().nextBytes(bigPayload);
+            // create message with exceeded payload size of client and server
+            byte[] bigPayload = new byte[serverConfig.getMessageMaxContentLength() + 1];
+            new Random().nextBytes(bigPayload);
 
-        // send message
-        RequestMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), bigPayload);
-        assertThrows(RuntimeException.class, () -> server.sendMessage(identityManager.getPublicKey(), request));
+            // send message
+            RequestMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), bigPayload);
+            assertThrows(RuntimeException.class, () -> server.sendMessage(identityManager.getPublicKey(), request));
+        }
     }
 }

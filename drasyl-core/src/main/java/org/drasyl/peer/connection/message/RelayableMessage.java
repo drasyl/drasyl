@@ -29,7 +29,7 @@ import static java.util.Objects.requireNonNull;
  */
 public abstract class RelayableMessage extends AbstractMessage {
     protected final CompressedPublicKey recipient;
-    protected short hopCount = 0;
+    protected short hopCount;
 
     protected RelayableMessage(String id,
                                CompressedPublicKey recipient,
@@ -61,8 +61,6 @@ public abstract class RelayableMessage extends AbstractMessage {
 
     /**
      * Increments the hop count value of this message.
-     *
-     * @return
      */
     public void incrementHopCount() {
         hopCount++;

@@ -39,4 +39,4 @@ docker push git.informatik.uni-hamburg.de:4567/sane-public/drasyl:latest
 
 ## Code Style
 
-We use a custom Java code style for which is described in the following file (IntelliJ IDEA only) [SANE.xml](../SANE.xml).
+We use a custom Java code style for which is described in the following file [.editorconfig](../../.editorconfig).

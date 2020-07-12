@@ -18,7 +18,6 @@
  */
 package org.drasyl.identity;
 
-import net.javacrumbs.jsonunit.core.Option;
 import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.util.DrasylSupplier;
@@ -35,13 +34,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 
-import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.io.FileMatchers.anExistingFile;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 

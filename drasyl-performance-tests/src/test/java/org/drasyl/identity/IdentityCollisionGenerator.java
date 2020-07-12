@@ -18,18 +18,6 @@
  */
 package org.drasyl.identity;
 
-import org.drasyl.crypto.Crypto;
-import org.drasyl.crypto.CryptoException;
-
-import java.security.KeyPair;
-import java.time.Duration;
-import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
-
-import static java.util.concurrent.TimeUnit.DAYS;
-import static java.util.concurrent.TimeUnit.HOURS;
-import static java.util.concurrent.TimeUnit.MINUTES;
-
 /**
  * This program generates new identities until a collision happens.
  */

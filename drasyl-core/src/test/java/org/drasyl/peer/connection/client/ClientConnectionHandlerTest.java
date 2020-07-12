@@ -42,7 +42,6 @@ import java.util.concurrent.CompletableFuture;
 import static java.time.Duration.ofMillis;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_SERVICE_UNAVAILABLE;
 import static org.drasyl.peer.connection.server.ServerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;

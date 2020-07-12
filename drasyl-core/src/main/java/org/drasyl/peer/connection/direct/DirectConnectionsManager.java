@@ -146,9 +146,7 @@ public class DirectConnectionsManager implements AutoCloseable {
             pipeline.remove(DIRECT_CONNECTIONS_MANAGER);
 
             // close and remove all client connections
-            Iterator<Map.Entry<CompressedPublicKey, DirectClient>> iterator = clients.entrySet().iterator();
-            while (iterator.hasNext()) {
-                Map.Entry<CompressedPublicKey, DirectClient> entry = iterator.next();
+            for (Map.Entry<CompressedPublicKey, DirectClient> entry : clients.entrySet()) {
                 CompressedPublicKey publicKey = entry.getKey();
                 DirectClient client = entry.getValue();
 

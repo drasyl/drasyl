@@ -26,8 +26,8 @@ import java.util.Set;
 
 /**
  * Used by {@link Event} to describe an event related to the local Node (e.g. {@link
- * EventType#EVENT_NODE_UP}, {@link EventType#EVENT_NODE_ONLINE}, {@link
- * EventType#EVENT_NODE_IDENTITY_COLLISION}).
+ * NodeUpEvent}, {@link NodeOnlineEvent}, {@link
+ * NodeIdentityCollisionEvent}).
  */
 public class Node {
     private final Identity identity;

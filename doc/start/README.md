@@ -53,7 +53,7 @@ DrasylNode node = new DrasylNode() {
 
 As mentioned before, different events are received by the application.
 These provide information about the state of your node, received messages or connections to other nodes.
-It is therefore important that you become familiar with the [definitions and implications](../../drasyl-core/src/main/java/org/drasyl/event/EventCode.java) of
+It is therefore important that you become familiar with the [definitions and implications](../../drasyl-core/src/main/java/org/drasyl/event) of
 the different event types.
 
 For example, you should listen for `NodeOnlineEvent` before start sending messages, and pause when `NodeOfflineEvent` has been received.

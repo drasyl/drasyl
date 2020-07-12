@@ -35,7 +35,6 @@ import javafx.scene.layout.HBox;
 import javafx.scene.layout.Priority;
 import javafx.scene.layout.VBox;
 import javafx.stage.Stage;
-import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;

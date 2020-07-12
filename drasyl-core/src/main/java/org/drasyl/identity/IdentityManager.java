@@ -21,7 +21,6 @@ package org.drasyl.identity;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.core.util.DefaultPrettyPrinter;
 import org.drasyl.DrasylConfig;
-import org.drasyl.DrasylException;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.util.DrasylSupplier;

@@ -56,7 +56,6 @@ public class Server implements AutoCloseable {
     public final EventLoopGroup workerGroup;
     public final EventLoopGroup bossGroup;
     public final ServerBootstrap serverBootstrap;
-    private final Supplier<Identity> identitySupplier;
     private final PeersManager peersManager;
     private final DrasylConfig config;
     private final Messenger messenger;
@@ -67,8 +66,7 @@ public class Server implements AutoCloseable {
     private int actualPort;
     private Set<URI> actualEndpoints;
 
-    Server(Supplier<Identity> identitySupplier,
-           Messenger messenger,
+    Server(Messenger messenger,
            PeersManager peersManager,
            DrasylConfig config,
            ServerBootstrap serverBootstrap,
@@ -79,7 +77,6 @@ public class Server implements AutoCloseable {
            ServerChannelGroup channelGroup,
            int actualPort, Channel channel,
            Set<URI> actualEndpoints) {
-        this.identitySupplier = identitySupplier;
         this.peersManager = peersManager;
         this.config = config;
         this.channel = channel;
@@ -126,7 +123,6 @@ public class Server implements AutoCloseable {
                   Observable<Boolean> superPeerConnected,
                   AtomicBoolean opened,
                   Consumer<CompressedPublicKey> peerCommunicationConsumer) throws ServerException {
-        this.identitySupplier = identitySupplier;
         this.peersManager = peersManager;
         this.config = config;
         this.channel = null;
@@ -166,10 +162,6 @@ public class Server implements AutoCloseable {
 
     ServerChannelGroup getChannelGroup() {
         return channelGroup;
-    }
-
-    Identity getIdentity() {
-        return identitySupplier.get();
     }
 
     /**

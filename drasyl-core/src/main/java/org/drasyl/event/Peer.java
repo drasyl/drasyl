@@ -24,7 +24,7 @@ import java.util.Objects;
 
 /**
  * Used by {@link Event} to describe an event related to a Peer (e.g. {@link
- * EventType#EVENT_PEER_DIRECT}, {@link EventType#EVENT_PEER_DIRECT}).
+ * PeerRelayEvent}, {@link PeerDirectEvent}).
  */
 public class Peer {
     private final CompressedPublicKey publicKey;

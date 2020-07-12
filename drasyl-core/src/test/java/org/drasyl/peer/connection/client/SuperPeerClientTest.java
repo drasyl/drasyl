@@ -96,19 +96,24 @@ class SuperPeerClientTest {
         void shouldConnectIfClientIsNotAlreadyOpen() {
             when(bootstrapSupplier.get()).thenReturn(bootstrap);
             endpoints = Set.of(URI.create("ws://localhost"));
+            when(channel.closeFuture()).thenReturn(channelFuture);
 
-            SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, new AtomicBoolean(false), nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, connected, channelInitializerSupplier, channelInitializer, channel);
-            client.open();
+            try (SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, new AtomicBoolean(false), nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, connected, channelInitializerSupplier, channelInitializer, channel)) {
+                client.open();
 
-            verify(bootstrapSupplier).get();
+                verify(bootstrapSupplier).get();
+            }
         }
 
         @Test
         void shouldNotConnectIfClientIsAlreadyOpen() {
-            SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, new AtomicBoolean(true), nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, connected, channelInitializerSupplier, channelInitializer, channel);
-            client.open();
+            when(channel.closeFuture()).thenReturn(channelFuture);
 
-            verify(bootstrapSupplier, never()).get();
+            try (SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, new AtomicBoolean(true), nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, connected, channelInitializerSupplier, channelInitializer, channel)) {
+                client.open();
+
+                verify(bootstrapSupplier, never()).get();
+            }
         }
     }
 
@@ -117,19 +122,22 @@ class SuperPeerClientTest {
         @Test
         void shouldScheduleReconnectIfClientIsOpenAndSuperPeerRetryDelaysIsNotEmpty() {
             when(config.getSuperPeerRetryDelays()).thenReturn(List.of(ofSeconds(1)));
+            when(channel.closeFuture()).thenReturn(channelFuture);
 
-            SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, new AtomicBoolean(true), nextEndpointPointer, new AtomicInteger(), bootstrapSupplier, connected, channelInitializerSupplier, channelInitializer, channel);
-            client.conditionalScheduledReconnect();
+            try (SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, new AtomicBoolean(true), nextEndpointPointer, new AtomicInteger(), bootstrapSupplier, connected, channelInitializerSupplier, channelInitializer, channel)) {
+                client.conditionalScheduledReconnect();
 
-            verify(workerGroup).schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
+                verify(workerGroup).schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
+            }
         }
 
         @Test
         void shouldNotScheduleReconnectIfClientIsNotOpen() {
-            SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, new AtomicBoolean(false), nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, connected, channelInitializerSupplier, channelInitializer, channel);
-            client.conditionalScheduledReconnect();
+            try (SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, new AtomicBoolean(false), nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, connected, channelInitializerSupplier, channelInitializer, channel)) {
+                client.conditionalScheduledReconnect();
 
-            verify(workerGroup, never()).schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
+                verify(workerGroup, never()).schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
+            }
         }
     }
 
@@ -141,11 +149,11 @@ class SuperPeerClientTest {
             endpoints.add(URI.create("ws://node1.org"));
             endpoints.add(URI.create("ws://node2.org"));
 
-            SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, opened, new AtomicInteger(0), nextRetryDelayPointer, bootstrapSupplier, connected, channelInitializerSupplier, channelInitializer, channel);
-
-            assertEquals(URI.create("ws://node1.org"), client.nextEndpoint());
-            assertEquals(URI.create("ws://node2.org"), client.nextEndpoint());
-            assertEquals(URI.create("ws://node1.org"), client.nextEndpoint());
+            try (SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, opened, new AtomicInteger(0), nextRetryDelayPointer, bootstrapSupplier, connected, channelInitializerSupplier, channelInitializer, channel)) {
+                assertEquals(URI.create("ws://node1.org"), client.nextEndpoint());
+                assertEquals(URI.create("ws://node2.org"), client.nextEndpoint());
+                assertEquals(URI.create("ws://node1.org"), client.nextEndpoint());
+            }
         }
     }
 
@@ -156,11 +164,11 @@ class SuperPeerClientTest {
             when(config.getSuperPeerRetryDelays()).thenReturn(superPeerRetryDelays);
             when(config.getSuperPeerRetryDelays()).thenReturn(List.of(ofSeconds(3), ofSeconds(6)));
 
-            SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, opened, nextEndpointPointer, new AtomicInteger(0), bootstrapSupplier, connected, channelInitializerSupplier, channelInitializer, channel);
-
-            assertEquals(ofSeconds(3), client.nextRetryDelay());
-            assertEquals(ofSeconds(6), client.nextRetryDelay());
-            assertEquals(ofSeconds(6), client.nextRetryDelay());
+            try (SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, opened, nextEndpointPointer, new AtomicInteger(0), bootstrapSupplier, connected, channelInitializerSupplier, channelInitializer, channel)) {
+                assertEquals(ofSeconds(3), client.nextRetryDelay());
+                assertEquals(ofSeconds(6), client.nextRetryDelay());
+                assertEquals(ofSeconds(6), client.nextRetryDelay());
+            }
         }
     }
 
