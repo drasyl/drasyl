@@ -2,7 +2,7 @@
     <configuration default="false" name="Cli" type="Application" factoryName="Application" nameIsGenerated="true">
         <option name="MAIN_CLASS_NAME" value="org.drasyl.cli.Cli"/>
         <module name="drasyl-cli"/>
-        <option name="PROGRAM_PARAMETERS" value="--loglevel debug"/>
+        <option name="PROGRAM_PARAMETERS" value="node --verbose debug"/>
         <extension name="coverage">
             <pattern>
                 <option name="PATTERN" value="org.drasyl.cli.*"/>

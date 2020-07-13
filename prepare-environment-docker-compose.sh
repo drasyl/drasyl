@@ -13,6 +13,7 @@ services:
     restart: always
     container_name: "${CI_PROJECT_NAME}-${CI_PROJECT_ID}-${CI_ENVIRONMENT_SLUG}"
     hostname: ${APP_DEPLOY_HOST}
+    command: node
     environment:
       CONFIG_FORCE_drasyl_loglevel: DEBUG
       CONFIG_FORCE_drasyl_identity_proof__of__work: $DRASYL_PROOF_OF_WORK

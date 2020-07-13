@@ -18,61 +18,51 @@
  */
 package org.drasyl.cli;
 
-import org.apache.commons.cli.HelpFormatter;
-import org.drasyl.DrasylConfig;
-import org.drasyl.DrasylException;
-import org.drasyl.DrasylNode;
-import org.drasyl.util.DrasylFunction;
+import org.drasyl.cli.command.Command;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Answers;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.function.Supplier;
+import java.util.Map;
 
-import static org.mockito.Mockito.any;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class CliTest {
-    @Mock
-    private HelpFormatter formatter;
-    @Mock
-    private Supplier<String> versionSupplier;
-    @Mock
-    private DrasylFunction<DrasylConfig, DrasylNode, DrasylException> nodeSupplier;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-    private DrasylNode node;
+    private Map<String, Command> commands;
+    @Mock
+    private Command command;
+    @InjectMocks
+    private Cli underTest;
 
-    @ParameterizedTest
-    @ValueSource(strings = { "-h", "--help" })
-    void runShouldDisplayHelpIfRequested(String argument) throws CliException {
-        Cli cli = new Cli(formatter, versionSupplier, nodeSupplier, node);
-        cli.run(new String[]{ argument });
+    @Test
+    void runShouldExecuteHelpCommandIfNothingIsGiven() throws CliException {
+        when(commands.get("help")).thenReturn(command);
 
-        verify(formatter).printHelp(any(), any(), any(), any());
-    }
+        underTest.run(new String[]{});
 
-    @ParameterizedTest
-    @ValueSource(strings = { "-v", "--version" })
-    void runShouldDisplayVersionIfRequested(String argument) throws CliException {
-        Cli cli = new Cli(formatter, versionSupplier, nodeSupplier, node);
-        cli.run(new String[]{ argument });
-
-        verify(versionSupplier).get();
+        verify(commands.get("help")).execute(new String[]{});
     }
 
     @Test
-    void runShouldStartNode() throws CliException, DrasylException {
-        when(nodeSupplier.apply(any())).thenReturn(node);
+    void runShouldExecuteGivenCommand() throws CliException {
+        when(commands.get("version")).thenReturn(command);
 
-        Cli cli = new Cli(formatter, versionSupplier, nodeSupplier, node);
-        cli.run(new String[]{});
+        underTest.run(new String[]{ "version" });
 
-        verify(nodeSupplier).apply(any());
+        verify(commands.get("version")).execute(new String[]{ "version" });
+    }
+
+    @Test
+    void runShouldThrowExceptionForUnknownCommand() {
+        assertThrows(CommandNotFoundCliException.class, () -> {
+            underTest.run(new String[]{ "sadassdaashdaskj" });
+        });
     }
 }
