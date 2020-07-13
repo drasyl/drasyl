@@ -51,6 +51,11 @@
         </profile>
         <profile>
             <id>central-repo</id>
+            <activation>
+                <property>
+                    <name>central-repo</name>
+                </property>
+            </activation>
             <distributionManagement>
                 <repository>
                     <id>ossrh</id>
@@ -97,6 +102,11 @@
         </profile>
         <profile>
             <id>gitlab-repo</id>
+            <activation>
+                <property>
+                    <name>gitlab-repo</name>
+                </property>
+            </activation>
             <distributionManagement>
                 <repository>
                     <id>gitlab-maven</id>
