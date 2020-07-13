@@ -37,7 +37,8 @@ maven-deploy:
   <<: *maven-base
   stage: deploy
   script:
-    - 'mvn $MAVEN_CLI_OPTS deploy -P gitlab-repo,central-repo sonar:sonar'
+    - 'mvn $MAVEN_CLI_OPTS deploy -P gitlab-repo sonar:sonar'
+    - 'mvn $MAVEN_CLI_OPTS deploy -DskipTests -P central-repo'
   only:
     - master
     - /^\d+\.\d+/
