@@ -56,18 +56,6 @@
                     <name>central-repo</name>
                 </property>
             </activation>
-            <distributionManagement>
-                <repository>
-                    <id>ossrh</id>
-                    <name>OSSRH Repo</name>
-                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-                </repository>
-                <snapshotRepository>
-                    <id>ossrh</id>
-                    <name>OSSRH Snapshot Repo</name>
-                    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-                </snapshotRepository>
-            </distributionManagement>
             <build>
                 <plugins>
                     <plugin>
@@ -99,24 +87,6 @@
                     </plugin>
                 </plugins>
             </build>
-        </profile>
-        <profile>
-            <id>gitlab-repo</id>
-            <activation>
-                <property>
-                    <name>gitlab-repo</name>
-                </property>
-            </activation>
-            <distributionManagement>
-                <repository>
-                    <id>gitlab-maven</id>
-                    <url>https://git.informatik.uni-hamburg.de/api/v4/projects/${env.CI_PROJECT_ID}/packages/maven</url>
-                </repository>
-                <snapshotRepository>
-                    <id>gitlab-maven</id>
-                    <url>https://git.informatik.uni-hamburg.de/api/v4/projects/${env.CI_PROJECT_ID}/packages/maven</url>
-                </snapshotRepository>
-            </distributionManagement>
         </profile>
     </profiles>
 </settings>
