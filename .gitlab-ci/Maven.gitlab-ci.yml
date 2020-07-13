@@ -9,6 +9,9 @@ cache:
     - .m2/repository
 
 .maven-base: &maven-base
+  before_script:
+    - echo $GPG_SECRET_KEYS | base64 --decode | $GPG_EXECUTABLE --import
+    - echo $GPG_OWNERTRUST | base64 --decode | $GPG_EXECUTABLE --import-ownertrust
   after_script:
     - '/bin/bash coverage-jacoco.sh'
   coverage: '/\d+.\d+ \% covered/'
@@ -25,7 +28,7 @@ maven-verify:
   <<: *maven-base
   stage: test
   script:
-    - 'mvn $MAVEN_CLI_OPTS verify sonar:sonar'
+    - 'mvn $MAVEN_CLI_OPTS verify -P gitlab-repo sonar:sonar'
   except:
     - master
     - /^\d+\.\d+/
@@ -34,7 +37,7 @@ maven-deploy:
   <<: *maven-base
   stage: deploy
   script:
-    - 'mvn $MAVEN_CLI_OPTS deploy sonar:sonar'
+    - 'mvn $MAVEN_CLI_OPTS deploy -P gitlab-repo,central-repo sonar:sonar'
   only:
     - master
     - /^\d+\.\d+/

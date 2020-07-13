@@ -218,38 +218,6 @@
 
     <inceptionYear>2020</inceptionYear>
 
-    <profiles>
-        <profile>
-            <id>central-repo</id>
-            <distributionManagement>
-                <repository>
-                    <id>ossrh</id>
-                    <name>OSSRH Repo</name>
-                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-                </repository>
-                <snapshotRepository>
-                    <id>ossrh</id>
-                    <name>OSSRH Snapshot Repo</name>
-                    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-                </snapshotRepository>
-            </distributionManagement>
-        </profile>
-        <profile>
-            <id>gitlab-repo</id>
-            <distributionManagement>
-                <repository>
-                    <id>gitlab-maven</id>
-                    <url>https://git.informatik.uni-hamburg.de/api/v4/projects/${env.CI_PROJECT_ID}/packages/maven</url>
-                </repository>
-                <snapshotRepository>
-                    <id>gitlab-maven</id>
-                    <url>https://git.informatik.uni-hamburg.de/api/v4/projects/${env.CI_PROJECT_ID}/packages/maven</url>
-                </snapshotRepository>
-
-            </distributionManagement>
-        </profile>
-    </profiles>
-
     <scm>
         <connection>scm:git:git://git@git.informatik.uni-hamburg.de/sane-public/drasyl.git</connection>
         <developerConnection>scm:git:ssh://git@git.informatik.uni-hamburg.de/sane-public/drasyl.git</developerConnection>
@@ -447,7 +415,7 @@
                     <execution>
                         <id>attach-sources</id>
                         <goals>
-                            <goal>jar</goal>
+                            <goal>jar-no-fork</goal>
                         </goals>
                     </execution>
                 </executions>
@@ -457,24 +425,6 @@
                 <artifactId>maven-release-plugin</artifactId>
                 <configuration>
                     <tagNameFormat>@{project.version}</tagNameFormat>
-                </configuration>
-                <dependencies>
-                    <dependency>
-                        <groupId>org.apache.maven.scm</groupId>
-                        <artifactId>maven-scm-provider-gitexe</artifactId>
-                        <version>${maven.scm}</version>
-                    </dependency>
-                </dependencies>
-            </plugin>
-            <plugin>
-                <groupId>org.sonatype.plugins</groupId>
-                <artifactId>nexus-staging-maven-plugin</artifactId>
-                <version>${nexus.stating}</version>
-                <extensions>true</extensions>
-                <configuration>
-                    <serverId>ossrh</serverId>
-                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
-                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
                 </configuration>
             </plugin>
         </plugins>
