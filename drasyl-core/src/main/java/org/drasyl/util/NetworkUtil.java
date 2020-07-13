@@ -30,6 +30,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -261,5 +262,20 @@ public final class NetworkUtil {
      */
     public static boolean isMatchAllAddress(String address) {
         return MATCH_ALL_IP_ADDRESSES.contains(address);
+    }
+
+    /**
+     * Returns the local host name. If no host name can be determined, <code>null</code> is
+     * returned.
+     *
+     * @return
+     */
+    public static String getLocalHostName() {
+        try {
+            return InetAddress.getLocalHost().getHostName();
+        }
+        catch (UnknownHostException e) {
+            return null;
+        }
     }
 }

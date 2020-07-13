@@ -20,6 +20,11 @@ services:
       CONFIG_FORCE_drasyl_identity_private__key: $DRASYL_PRIVATE_KEY
       CONFIG_FORCE_drasyl_server_endpoints_0: wss://${APP_DEPLOY_HOST}
       CONFIG_FORCE_drasyl_super__peer_enabled: "false"
+      CONFIG_FORCE_drasyl_monitoring_enabled: "true"
+      CONFIG_FORCE_drasyl_monitoring_influx_uri: https://influxdb.incorum.org
+      CONFIG_FORCE_drasyl_monitoring_influx_user: drasyl
+      CONFIG_FORCE_drasyl_monitoring_influx_password: $DRASYL_MONITORING_PASSWORD
+      CONFIG_FORCE_drasyl_monitoring_influx_reporting__frequency: 10s
       SENTRY_DNS: ${SENTRY_DNS}
       SENTRY_ENVIRONMENT: ${SENTRY_ENVIRONMENT}
       JAVA_OPTS: ${JAVA_OPTS}

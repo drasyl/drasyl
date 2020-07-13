@@ -166,6 +166,11 @@
                 <artifactId>config</artifactId>
                 <version>1.4.0</version>
             </dependency>
+            <dependency>
+                <groupId>io.micrometer</groupId>
+                <artifactId>micrometer-registry-influx</artifactId>
+                <version>${micrometer.version}</version>
+            </dependency>
         </dependencies>
     </dependencyManagement>
 
@@ -250,6 +255,7 @@
         <rxjava.version>3.0.4</rxjava.version>
         <sentry.version>1.7.30</sentry.version>
         <commons.version>4.4</commons.version>
+        <micrometer.version>1.5.2</micrometer.version>
     </properties>
 
     <build>
