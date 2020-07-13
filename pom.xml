@@ -18,7 +18,8 @@
   ~ along with drasyl.  If not, see <http://www.gnu.org/licenses />.
   -->
 
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>org.drasyl</groupId>
@@ -203,28 +204,54 @@
             <id>bornholdt</id>
             <name>Heiko Bornholdt</name>
             <email>bornholdt@informatik.uni-hamburg.de</email>
+            <organization>The drasyl Project</organization>
+            <organizationUrl>https://drasyl.org/</organizationUrl>
         </developer>
         <developer>
             <id>6roebert</id>
             <name>Kevin Röbert</name>
             <email>6roebert@informatik.uni-hamburg.de</email>
+            <organization>The drasyl Project</organization>
+            <organizationUrl>https://drasyl.org/</organizationUrl>
         </developer>
     </developers>
 
     <inceptionYear>2020</inceptionYear>
 
-    <distributionManagement>
-        <repository>
-            <id>gitlab-maven</id>
-            <url>https://git.informatik.uni-hamburg.de/api/v4/projects/${env.CI_PROJECT_ID}/packages/maven</url>
-        </repository>
-        <snapshotRepository>
-            <id>gitlab-maven</id>
-            <url>https://git.informatik.uni-hamburg.de/api/v4/projects/${env.CI_PROJECT_ID}/packages/maven</url>
-        </snapshotRepository>
-    </distributionManagement>
+    <profiles>
+        <profile>
+            <id>central-repo</id>
+            <distributionManagement>
+                <repository>
+                    <id>ossrh</id>
+                    <name>OSSRH Repo</name>
+                    <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+                </repository>
+                <snapshotRepository>
+                    <id>ossrh</id>
+                    <name>OSSRH Snapshot Repo</name>
+                    <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+                </snapshotRepository>
+            </distributionManagement>
+        </profile>
+        <profile>
+            <id>gitlab-repo</id>
+            <distributionManagement>
+                <repository>
+                    <id>gitlab-maven</id>
+                    <url>https://git.informatik.uni-hamburg.de/api/v4/projects/${env.CI_PROJECT_ID}/packages/maven</url>
+                </repository>
+                <snapshotRepository>
+                    <id>gitlab-maven</id>
+                    <url>https://git.informatik.uni-hamburg.de/api/v4/projects/${env.CI_PROJECT_ID}/packages/maven</url>
+                </snapshotRepository>
+
+            </distributionManagement>
+        </profile>
+    </profiles>
 
     <scm>
+        <connection>scm:git:git://git@git.informatik.uni-hamburg.de/sane-public/drasyl.git</connection>
         <developerConnection>scm:git:ssh://git@git.informatik.uni-hamburg.de/sane-public/drasyl.git</developerConnection>
         <tag>HEAD</tag>
     </scm>
@@ -256,6 +283,8 @@
         <sentry.version>1.7.30</sentry.version>
         <commons.version>4.4</commons.version>
         <micrometer.version>1.5.2</micrometer.version>
+        <maven.scm>1.11.2</maven.scm>
+        <nexus.stating>1.6.8</nexus.stating>
     </properties>
 
     <build>
@@ -375,6 +404,18 @@
                 </executions>
             </plugin>
             <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-deploy</id>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>deploy</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
@@ -416,6 +457,24 @@
                 <artifactId>maven-release-plugin</artifactId>
                 <configuration>
                     <tagNameFormat>@{project.version}</tagNameFormat>
+                </configuration>
+                <dependencies>
+                    <dependency>
+                        <groupId>org.apache.maven.scm</groupId>
+                        <artifactId>maven-scm-provider-gitexe</artifactId>
+                        <version>${maven.scm}</version>
+                    </dependency>
+                </dependencies>
+            </plugin>
+            <plugin>
+                <groupId>org.sonatype.plugins</groupId>
+                <artifactId>nexus-staging-maven-plugin</artifactId>
+                <version>${nexus.stating}</version>
+                <extensions>true</extensions>
+                <configuration>
+                    <serverId>ossrh</serverId>
+                    <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                    <autoReleaseAfterClose>true</autoReleaseAfterClose>
                 </configuration>
             </plugin>
         </plugins>
