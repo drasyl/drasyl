@@ -27,7 +27,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 
-public abstract class AbstractHandlerContext implements HandlerContext {
+abstract class AbstractHandlerContext implements HandlerContext {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractHandlerContext.class);
     private final DrasylConfig config;
     private final Object prevLock = new Object();

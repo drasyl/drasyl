@@ -21,6 +21,9 @@ package org.drasyl.util;
 
 import java.net.URI;
 
+/**
+ * Utility class for operations on websocket {@link URI}s (e.g. ws://foo.bar).
+ */
 public class WebSocketUtil {
     public static final int WS_PORT = 80;
     public static final int WSS_PORT = 443;

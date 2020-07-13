@@ -24,6 +24,9 @@ import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 
+/**
+ * Utility class for operations on {@link Set}s.
+ */
 public final class SetUtil {
     private SetUtil() {
         // util class

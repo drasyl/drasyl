@@ -4,7 +4,7 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
-public abstract class AbstractNodeEvent implements NodeEvent {
+abstract class AbstractNodeEvent implements NodeEvent {
     protected final Node node;
 
     protected AbstractNodeEvent(Node node) {

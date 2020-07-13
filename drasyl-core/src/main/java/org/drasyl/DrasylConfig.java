@@ -735,6 +735,9 @@ public class DrasylConfig {
         );
     }
 
+    /**
+     * Builder class to create a {@link DrasylConfig} with custom values.
+     */
     public static final class Builder {
         //======================================= Config Values ========================================
         private Level loglevel; // NOSONAR

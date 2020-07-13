@@ -28,7 +28,7 @@ import static java.util.Objects.requireNonNull;
  * Represents a message that contains the user agent.
  */
 @SuppressWarnings({ "squid:S1444", "squid:ClassVariableVisibilityCheck" })
-public abstract class AbstractMessageWithUserAgent extends AbstractMessage {
+abstract class AbstractMessageWithUserAgent extends AbstractMessage {
     public static final Supplier<String> defaultUserAgentGenerator = () -> "drasyl/" + DrasylNode.getVersion() + " (" + System.getProperty("os.name") + "; "
             + System.getProperty("os.arch") + "; Java/"
             + System.getProperty("java.vm.specification.version") + ":" + System.getProperty("java.version.date")

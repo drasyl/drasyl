@@ -32,7 +32,7 @@ import java.net.URI;
 import java.time.Duration;
 
 /**
- * Creates a newly configured {@link ChannelPipeline} for a ClientConnection to a node server.
+ * Creates a newly configured {@link ChannelPipeline} for a connection to a node server.
  */
 @SuppressWarnings("java:S4818")
 public abstract class ClientChannelInitializer extends DefaultSessionInitializer {

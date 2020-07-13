@@ -21,6 +21,9 @@ package org.drasyl.util;
 import java.net.URI;
 import java.net.URISyntaxException;
 
+/**
+ * Utility class for operations on {@link URI}s.
+ */
 public class UriUtil {
     private UriUtil() {
         // util class

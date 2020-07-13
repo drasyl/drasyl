@@ -24,6 +24,9 @@ import org.drasyl.identity.CompressedPublicKey;
 
 import java.util.Set;
 
+/**
+ * Used to unregister grandchildren at a super peer.
+ */
 public class UnregisterGrandchildMessage extends AbstractGrandchildMessage {
     @JsonCreator
     private UnregisterGrandchildMessage(@JsonProperty("id") String id,

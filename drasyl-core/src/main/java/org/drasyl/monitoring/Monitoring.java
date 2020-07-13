@@ -25,6 +25,9 @@ import java.util.function.Supplier;
 
 import static java.util.Optional.ofNullable;
 
+/**
+ * Monitors various states or events in the drasyl Node.
+ */
 public class Monitoring implements AutoCloseable {
     static final String MONITORING_HANDLER = "MONITORING_HANDLER";
     private final PeersManager peersManager;

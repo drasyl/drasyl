@@ -37,6 +37,9 @@ import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
 
+/**
+ * Utility class for network-related operations.
+ */
 public final class NetworkUtil {
     /**
      * The minimum server port number.

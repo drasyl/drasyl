@@ -4,7 +4,7 @@ import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 
-public class AbstractPeerEvent implements PeerEvent {
+class AbstractPeerEvent implements PeerEvent {
     protected final Peer peer;
 
     public AbstractPeerEvent(Peer peer) {

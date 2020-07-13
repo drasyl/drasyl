@@ -31,7 +31,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 import static org.drasyl.util.WebSocketUtil.webSocketPort;
 
-public abstract class AbstractClient implements AutoCloseable {
+abstract class AbstractClient implements AutoCloseable {
     private final EventLoopGroup workerGroup;
     private final Supplier<Set<URI>> endpointsSupplier;
     private final AtomicBoolean opened;

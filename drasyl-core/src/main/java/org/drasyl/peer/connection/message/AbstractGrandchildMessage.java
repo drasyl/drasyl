@@ -26,7 +26,7 @@ import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 
-public abstract class AbstractGrandchildMessage extends AbstractMessage implements RequestMessage {
+abstract class AbstractGrandchildMessage extends AbstractMessage implements RequestMessage {
     protected Set<CompressedPublicKey> grandchildren;
 
     protected AbstractGrandchildMessage(String id, Set<CompressedPublicKey> grandchildren) {

@@ -51,6 +51,10 @@ import static org.drasyl.util.NetworkUtil.getAddresses;
 import static org.drasyl.util.NetworkUtil.isMatchAllAddress;
 import static org.drasyl.util.UriUtil.overridePort;
 
+/**
+ * The server binds to a defined port and thus allows the node to be discovered and contacted by
+ * other peers.
+ */
 @SuppressWarnings({ "squid:S00107" })
 public class Server implements AutoCloseable {
     public final EventLoopGroup workerGroup;

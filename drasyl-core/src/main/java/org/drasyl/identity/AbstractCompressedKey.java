@@ -25,7 +25,7 @@ import org.drasyl.crypto.CryptoException;
 
 import java.util.Objects;
 
-public abstract class AbstractCompressedKey<K> {
+abstract class AbstractCompressedKey<K> {
     @JsonValue
     protected final String compressedKey;
     @JsonIgnore

@@ -23,6 +23,9 @@ import com.fasterxml.jackson.databind.ObjectReader;
 import com.fasterxml.jackson.databind.ObjectWriter;
 import com.fasterxml.jackson.module.afterburner.AfterburnerModule;
 
+/**
+ * Holder for the JSON serializer and JSON deserializer.
+ */
 public final class JSONUtil {
     public static final ObjectMapper JACKSON_MAPPER;
     public static final ObjectWriter JACKSON_WRITER;
@@ -37,5 +40,6 @@ public final class JSONUtil {
     }
 
     private JSONUtil() {
+        // util class
     }
 }

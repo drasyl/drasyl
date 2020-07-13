@@ -23,7 +23,6 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.event.AbstractPeerEvent;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeEvent;
@@ -32,6 +31,7 @@ import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.event.Peer;
 import org.drasyl.event.PeerDirectEvent;
+import org.drasyl.event.PeerEvent;
 import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
@@ -300,8 +300,8 @@ class DrasylNodeIT {
 
         @Test
         void shouldEstablishDirectConnectionToOtherPeer() throws DrasylException, CryptoException {
-            TestObserver<Event> client1RelayEvents = client1.second().filter(e -> e instanceof AbstractPeerEvent && ((AbstractPeerEvent) e).getPeer().getPublicKey().equals(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))).test();
-            TestObserver<Event> client2RelayEvents = client2.second().filter(e -> e instanceof AbstractPeerEvent && ((AbstractPeerEvent) e).getPeer().getPublicKey().equals(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4")) || e instanceof MessageEvent).test();
+            TestObserver<Event> client1RelayEvents = client1.second().filter(e -> e instanceof PeerEvent && ((PeerEvent) e).getPeer().getPublicKey().equals(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))).test();
+            TestObserver<Event> client2RelayEvents = client2.second().filter(e -> e instanceof PeerEvent && ((PeerEvent) e).getPeer().getPublicKey().equals(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4")) || e instanceof MessageEvent).test();
 
             client1.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", "Hallo Welt");
 
