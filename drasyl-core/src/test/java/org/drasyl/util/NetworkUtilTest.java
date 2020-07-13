@@ -22,8 +22,11 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.ServerSocket;
+import java.net.UnknownHostException;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -77,6 +80,17 @@ class NetworkUtilTest {
         void shouldRejectInvalidPort() {
             assertThrows(IllegalArgumentException.class, () -> NetworkUtil.alive("127.0.0.1", NetworkUtil.MIN_PORT_NUMBER - 1));
             assertThrows(IllegalArgumentException.class, () -> NetworkUtil.alive("127.0.0.1", NetworkUtil.MAX_PORT_NUMBER + 1));
+        }
+    }
+
+    @Nested
+    class GetLocalHostName {
+        @Test
+        void shouldReturnHostName() throws UnknownHostException {
+            assertEquals(
+                    InetAddress.getLocalHost().getHostName(),
+                    NetworkUtil.getLocalHostName()
+            );
         }
     }
 }

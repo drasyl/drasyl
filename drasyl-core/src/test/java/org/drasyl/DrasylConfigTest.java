@@ -61,6 +61,12 @@ import static org.drasyl.DrasylConfig.INTRA_VM_DISCOVERY_ENABLED;
 import static org.drasyl.DrasylConfig.MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT;
 import static org.drasyl.DrasylConfig.MESSAGE_HOP_LIMIT;
 import static org.drasyl.DrasylConfig.MESSAGE_MAX_CONTENT_LENGTH;
+import static org.drasyl.DrasylConfig.MONITORING_ENABLED;
+import static org.drasyl.DrasylConfig.MONITORING_INFLUX_DATABASE;
+import static org.drasyl.DrasylConfig.MONITORING_INFLUX_PASSWORD;
+import static org.drasyl.DrasylConfig.MONITORING_INFLUX_REPORTING_FREQUENCY;
+import static org.drasyl.DrasylConfig.MONITORING_INFLUX_URI;
+import static org.drasyl.DrasylConfig.MONITORING_INFLUX_USER;
 import static org.drasyl.DrasylConfig.SERVER_BIND_HOST;
 import static org.drasyl.DrasylConfig.SERVER_BIND_PORT;
 import static org.drasyl.DrasylConfig.SERVER_CHANNEL_INITIALIZER;
@@ -135,6 +141,12 @@ class DrasylConfigTest {
     private short directConnectionsIdleRetries;
     private Duration directConnectionsIdleTimeout;
     private Duration composedMessageTransferTimeout;
+    private boolean monitoringEnabled;
+    private String monitoringInfluxUri;
+    private String monitoringInfluxUser;
+    private String monitoringInfluxPassword;
+    private String monitoringInfluxDatabase;
+    private Duration monitoringInfluxReportingFrequency;
 
     @BeforeEach
     void setUp() {
@@ -166,6 +178,12 @@ class DrasylConfigTest {
         directConnectionsIdleTimeout = ofSeconds(60);
         directConnectionsChannelInitializer = DefaultClientChannelInitializer.class;
         composedMessageTransferTimeout = ofSeconds(60);
+        monitoringEnabled = true;
+        monitoringInfluxUri = "http://localhost:8086";
+        monitoringInfluxUser = "";
+        monitoringInfluxPassword = "";
+        monitoringInfluxDatabase = "drasyl";
+        monitoringInfluxReportingFrequency = ofSeconds(60);
     }
 
     @Nested
@@ -203,6 +221,12 @@ class DrasylConfigTest {
             when(typesafeConfig.getDuration(DIRECT_CONNECTIONS_HANDSHAKE_TIMEOUT)).thenReturn(directConnectionsHandshakeTimeout);
             when(typesafeConfig.getString(DIRECT_CONNECTIONS_CHANNEL_INITIALIZER)).thenReturn(directConnectionsChannelInitializer.getCanonicalName());
             when(typesafeConfig.getDuration(MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT)).thenReturn(composedMessageTransferTimeout);
+            when(typesafeConfig.getBoolean(MONITORING_ENABLED)).thenReturn(monitoringEnabled);
+            when(typesafeConfig.getString(MONITORING_INFLUX_URI)).thenReturn(monitoringInfluxUri);
+            when(typesafeConfig.getString(MONITORING_INFLUX_USER)).thenReturn(monitoringInfluxUser);
+            when(typesafeConfig.getString(MONITORING_INFLUX_PASSWORD)).thenReturn(monitoringInfluxPassword);
+            when(typesafeConfig.getString(MONITORING_INFLUX_DATABASE)).thenReturn(monitoringInfluxDatabase);
+            when(typesafeConfig.getDuration(MONITORING_INFLUX_REPORTING_FREQUENCY)).thenReturn(monitoringInfluxReportingFrequency);
 
             DrasylConfig config = new DrasylConfig(typesafeConfig);
 
@@ -235,6 +259,12 @@ class DrasylConfigTest {
             assertEquals(directConnectionsHandshakeTimeout, config.getDirectConnectionsHandshakeTimeout());
             assertEquals(directConnectionsChannelInitializer, config.getDirectConnectionsChannelInitializer());
             assertEquals(composedMessageTransferTimeout, config.getMessageComposedMessageTransferTimeout());
+            assertEquals(monitoringEnabled, config.isMonitoringEnabled());
+            assertEquals(monitoringInfluxUri, config.getMonitoringInfluxUri());
+            assertEquals(monitoringInfluxUser, config.getMonitoringInfluxUser());
+            assertEquals(monitoringInfluxPassword, config.getMonitoringInfluxPassword());
+            assertEquals(monitoringInfluxDatabase, config.getMonitoringInfluxDatabase());
+            assertEquals(monitoringInfluxReportingFrequency, config.getMonitoringInfluxReportingFrequency());
         }
     }
 
@@ -244,9 +274,31 @@ class DrasylConfigTest {
         void shouldMaskSecrets() throws CryptoException {
             identityPrivateKey = CompressedPrivateKey.of("07e98a2f8162a4002825f810c0fbd69b0c42bd9cb4f74a21bc7807bc5acb4f5f");
 
-            DrasylConfig config = new DrasylConfig(loglevel, proofOfWork, identityPublicKey, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, composedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled, directConnectionsEnabled, directConnectionsMaxConcurrentConnections, directConnectionsRetryDelays, directConnectionsHandshakeTimeout, directConnectionsChannelInitializer, directConnectionsIdleRetries, directConnectionsIdleTimeout);
+            DrasylConfig config = new DrasylConfig(loglevel, proofOfWork, identityPublicKey, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, composedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled, directConnectionsEnabled, directConnectionsMaxConcurrentConnections, directConnectionsRetryDelays, directConnectionsHandshakeTimeout, directConnectionsChannelInitializer, directConnectionsIdleRetries, directConnectionsIdleTimeout, monitoringEnabled, monitoringInfluxUri, monitoringInfluxUser, monitoringInfluxPassword, monitoringInfluxDatabase, monitoringInfluxReportingFrequency);
 
             assertThat(config.toString(), not(containsString(identityPrivateKey.getCompressedKey())));
+        }
+    }
+
+    @Nested
+    class Equals {
+        @Test
+        void shouldReturnTrue() {
+            DrasylConfig config1 = DrasylConfig.newBuilder().build();
+            DrasylConfig config2 = DrasylConfig.newBuilder().build();
+
+            assertEquals(config1, config2);
+        }
+    }
+
+    @Nested
+    class HashCode {
+        @Test
+        void shouldReturnTrue() {
+            DrasylConfig config1 = DrasylConfig.newBuilder().build();
+            DrasylConfig config2 = DrasylConfig.newBuilder().build();
+
+            assertEquals(config1.hashCode(), config2.hashCode());
         }
     }
 
@@ -289,6 +341,12 @@ class DrasylConfigTest {
                     .directConnectionsIdleRetries(DEFAULT.getDirectConnectionsIdleRetries())
                     .directConnectionsIdleTimeout(DEFAULT.getDirectConnectionsIdleTimeout())
                     .messageComposedMessageTransferTimeout(DEFAULT.getMessageComposedMessageTransferTimeout())
+                    .monitoringEnabled(DEFAULT.isMonitoringEnabled())
+                    .monitoringInfluxUri(DEFAULT.getMonitoringInfluxUri())
+                    .monitoringInfluxUser(DEFAULT.getMonitoringInfluxUser())
+                    .monitoringInfluxPassword(DEFAULT.getMonitoringInfluxPassword())
+                    .monitoringInfluxDatabase(DEFAULT.getMonitoringInfluxDatabase())
+                    .monitoringInfluxReportingFrequency(DEFAULT.getMonitoringInfluxReportingFrequency())
                     .build();
 
             assertEquals(DEFAULT, config);

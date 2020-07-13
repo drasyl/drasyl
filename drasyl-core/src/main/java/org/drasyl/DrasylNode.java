@@ -39,6 +39,7 @@ import org.drasyl.messenger.MessageSinkException;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.messenger.MessengerException;
 import org.drasyl.messenger.NoPathToIdentityException;
+import org.drasyl.monitoring.Monitoring;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.client.SuperPeerClient;
@@ -117,6 +118,7 @@ public abstract class DrasylNode {
     private final IntraVmDiscovery intraVmDiscovery;
     private final SuperPeerClient superPeerClient;
     private final Server server;
+    private final Monitoring monitoring;
     private final AtomicBoolean started;
     private CompletableFuture<Void> startSequence;
     private CompletableFuture<Void> shutdownSequence;
@@ -144,6 +146,7 @@ public abstract class DrasylNode {
             this.intraVmDiscovery = new IntraVmDiscovery(identityManager::getPublicKey, messenger, peersManager, this::onInternalEvent);
             this.superPeerClient = new SuperPeerClient(this.config, identityManager::getIdentity, peersManager, messenger, DrasylNode.WORKER_GROUP, this::onInternalEvent, directConnectionsManager::communicationOccurred);
             this.server = new Server(identityManager::getIdentity, messenger, peersManager, this.config, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP, superPeerClient.connectionEstablished(), directConnectionsManager::communicationOccurred);
+            this.monitoring = new Monitoring(config, peersManager, identityManager::getPublicKey, pipeline);
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = new CompletableFuture<>();
@@ -195,6 +198,7 @@ public abstract class DrasylNode {
                IntraVmDiscovery intraVmDiscovery,
                SuperPeerClient superPeerClient,
                Server server,
+               Monitoring monitoring,
                AtomicBoolean started,
                CompletableFuture<Void> startSequence,
                CompletableFuture<Void> shutdownSequence) {
@@ -207,6 +211,7 @@ public abstract class DrasylNode {
         this.intraVmDiscovery = intraVmDiscovery;
         this.superPeerClient = superPeerClient;
         this.server = server;
+        this.monitoring = monitoring;
         this.started = started;
         this.startSequence = startSequence;
         this.shutdownSequence = shutdownSequence;
@@ -282,7 +287,8 @@ public abstract class DrasylNode {
             DrasylNode self = this;
             onInternalEvent(new NodeDownEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
             LOG.info("Shutdown drasyl Node with Identity '{}'...", identityManager.getIdentity());
-            shutdownSequence = runAsync(this::stopDirectConnectionsHandler)
+            shutdownSequence = runAsync(this::stopMonitoring)
+                    .thenRun(this::stopDirectConnectionsHandler)
                     .thenRun(this::stopSuperPeerClient)
                     .thenRun(this::stopServer)
                     .thenRun(this::stopIntraVmDiscovery)
@@ -311,6 +317,14 @@ public abstract class DrasylNode {
         }
 
         return shutdownSequence;
+    }
+
+    private void stopMonitoring() {
+        if (config.isMonitoringEnabled()) {
+            LOG.info("Stop Monitoring...");
+            monitoring.close();
+            LOG.info("Monitoring stopped.");
+        }
     }
 
     private void stopDirectConnectionsHandler() {
@@ -378,6 +392,7 @@ public abstract class DrasylNode {
                     .thenRun(this::startServer)
                     .thenRun(this::startSuperPeerClient)
                     .thenRun(this::startDirectConnectionsHandler)
+                    .thenRun(this::startMonitoring)
                     .whenComplete((r, e) -> {
                         if (e == null) {
                             onInternalEvent(new NodeUpEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
@@ -489,6 +504,14 @@ public abstract class DrasylNode {
             catch (Exception e) {
                 throw new CompletionException(e);
             }
+        }
+    }
+
+    private void startMonitoring() {
+        if (config.isMonitoringEnabled()) {
+            LOG.debug("Start Monitoring...");
+            monitoring.open();
+            LOG.debug("Monitoring started.");
         }
     }
 

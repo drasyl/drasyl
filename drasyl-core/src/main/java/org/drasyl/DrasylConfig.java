@@ -85,6 +85,12 @@ public class DrasylConfig {
     static final String DIRECT_CONNECTIONS_CHANNEL_INITIALIZER = "drasyl.direct-connections.channel-initializer";
     static final String DIRECT_CONNECTIONS_IDLE_RETRIES = "drasyl.direct-connections.idle.retries";
     static final String DIRECT_CONNECTIONS_IDLE_TIMEOUT = "drasyl.direct-connections.idle.timeout";
+    static final String MONITORING_ENABLED = "drasyl.monitoring.enabled";
+    static final String MONITORING_INFLUX_URI = "drasyl.monitoring.influx.uri";
+    static final String MONITORING_INFLUX_USER = "drasyl.monitoring.influx.user";
+    static final String MONITORING_INFLUX_PASSWORD = "drasyl.monitoring.influx.password";
+    static final String MONITORING_INFLUX_DATABASE = "drasyl.monitoring.influx.database";
+    static final String MONITORING_INFLUX_REPORTING_FREQUENCY = "drasyl.monitoring.influx.reporting-frequency";
     //======================================= Config Values ========================================
     private final Level loglevel; // NOSONAR
     private final ProofOfWork identityProofOfWork;
@@ -121,6 +127,12 @@ public class DrasylConfig {
     private final Class<? extends ChannelInitializer<SocketChannel>> directConnectionsChannelInitializer;
     private final short directConnectionsIdleRetries;
     private final Duration directConnectionsIdleTimeout;
+    private final boolean monitoringEnabled;
+    private final String monitoringInfluxUri;
+    private final String monitoringInfluxUser;
+    private final String monitoringInfluxPassword;
+    private final String monitoringInfluxDatabase;
+    private final Duration monitoringInfluxReportingFrequency;
 
     public DrasylConfig() {
         this(ConfigFactory.load());
@@ -199,6 +211,14 @@ public class DrasylConfig {
         this.directConnectionsChannelInitializer = getChannelInitializer(config, DIRECT_CONNECTIONS_CHANNEL_INITIALIZER);
         this.directConnectionsIdleRetries = getShort(config, DIRECT_CONNECTIONS_IDLE_RETRIES);
         this.directConnectionsIdleTimeout = config.getDuration(DIRECT_CONNECTIONS_IDLE_TIMEOUT);
+
+        // Init monitoring config
+        monitoringEnabled = config.getBoolean(MONITORING_ENABLED);
+        monitoringInfluxUri = config.getString(MONITORING_INFLUX_URI);
+        monitoringInfluxUser = config.getString(MONITORING_INFLUX_USER);
+        monitoringInfluxPassword = config.getString(MONITORING_INFLUX_PASSWORD);
+        monitoringInfluxDatabase = config.getString(MONITORING_INFLUX_DATABASE);
+        monitoringInfluxReportingFrequency = config.getDuration(MONITORING_INFLUX_REPORTING_FREQUENCY);
     }
 
     private Level getLoglevel(Config config, String path) {
@@ -343,7 +363,13 @@ public class DrasylConfig {
                  Duration directConnectionsHandshakeTimeout,
                  Class<? extends ChannelInitializer<SocketChannel>> directConnectionsChannelInitializer,
                  short directConnectionsIdleRetries,
-                 Duration directConnectionsIdleTimeout) {
+                 Duration directConnectionsIdleTimeout,
+                 boolean monitoringEnabled,
+                 String monitoringInfluxUri,
+                 String monitoringInfluxUser,
+                 String monitoringInfluxPassword,
+                 String monitoringInfluxDatabase,
+                 Duration monitoringInfluxReportingFrequency) {
         this.loglevel = loglevel;
         this.identityProofOfWork = identityProofOfWork;
         this.identityPublicKey = identityPublicKey;
@@ -379,6 +405,36 @@ public class DrasylConfig {
         this.directConnectionsChannelInitializer = directConnectionsChannelInitializer;
         this.directConnectionsIdleRetries = directConnectionsIdleRetries;
         this.directConnectionsIdleTimeout = directConnectionsIdleTimeout;
+        this.monitoringEnabled = monitoringEnabled;
+        this.monitoringInfluxUri = monitoringInfluxUri;
+        this.monitoringInfluxUser = monitoringInfluxUser;
+        this.monitoringInfluxPassword = monitoringInfluxPassword;
+        this.monitoringInfluxDatabase = monitoringInfluxDatabase;
+        this.monitoringInfluxReportingFrequency = monitoringInfluxReportingFrequency;
+    }
+
+    public boolean isMonitoringEnabled() {
+        return monitoringEnabled;
+    }
+
+    public String getMonitoringInfluxUri() {
+        return monitoringInfluxUri;
+    }
+
+    public String getMonitoringInfluxUser() {
+        return monitoringInfluxUser;
+    }
+
+    public String getMonitoringInfluxPassword() {
+        return monitoringInfluxPassword;
+    }
+
+    public String getMonitoringInfluxDatabase() {
+        return monitoringInfluxDatabase;
+    }
+
+    public Duration getMonitoringInfluxReportingFrequency() {
+        return monitoringInfluxReportingFrequency;
     }
 
     public Level getLoglevel() {
@@ -523,7 +579,7 @@ public class DrasylConfig {
 
     @Override
     public int hashCode() {
-        return Objects.hash(loglevel, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, messageComposedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled, directConnectionsEnabled, directConnectionsMaxConcurrentConnections, directConnectionsRetryDelays, directConnectionsHandshakeTimeout, directConnectionsChannelInitializer, directConnectionsIdleRetries, directConnectionsIdleTimeout);
+        return Objects.hash(loglevel, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, messageComposedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled, directConnectionsEnabled, directConnectionsMaxConcurrentConnections, directConnectionsRetryDelays, directConnectionsHandshakeTimeout, directConnectionsChannelInitializer, directConnectionsIdleRetries, directConnectionsIdleTimeout, monitoringEnabled, monitoringInfluxUri, monitoringInfluxUser, monitoringInfluxPassword, monitoringInfluxDatabase, monitoringInfluxReportingFrequency);
     }
 
     @Override
@@ -548,6 +604,7 @@ public class DrasylConfig {
                 directConnectionsEnabled == that.directConnectionsEnabled &&
                 directConnectionsMaxConcurrentConnections == that.directConnectionsMaxConcurrentConnections &&
                 directConnectionsIdleRetries == that.directConnectionsIdleRetries &&
+                monitoringEnabled == that.monitoringEnabled &&
                 Objects.equals(loglevel, that.loglevel) &&
                 Objects.equals(identityProofOfWork, that.identityProofOfWork) &&
                 Objects.equals(identityPublicKey, that.identityPublicKey) &&
@@ -569,7 +626,12 @@ public class DrasylConfig {
                 Objects.equals(directConnectionsRetryDelays, that.directConnectionsRetryDelays) &&
                 Objects.equals(directConnectionsHandshakeTimeout, that.directConnectionsHandshakeTimeout) &&
                 Objects.equals(directConnectionsChannelInitializer, that.directConnectionsChannelInitializer) &&
-                Objects.equals(directConnectionsIdleTimeout, that.directConnectionsIdleTimeout);
+                Objects.equals(directConnectionsIdleTimeout, that.directConnectionsIdleTimeout) &&
+                Objects.equals(monitoringInfluxUri, that.monitoringInfluxUri) &&
+                Objects.equals(monitoringInfluxUser, that.monitoringInfluxUser) &&
+                Objects.equals(monitoringInfluxPassword, that.monitoringInfluxPassword) &&
+                Objects.equals(monitoringInfluxDatabase, that.monitoringInfluxDatabase) &&
+                Objects.equals(monitoringInfluxReportingFrequency, that.monitoringInfluxReportingFrequency);
     }
 
     @Override
@@ -610,6 +672,12 @@ public class DrasylConfig {
                 ", directConnectionsChannelInitializer=" + directConnectionsChannelInitializer +
                 ", directConnectionsIdleRetries=" + directConnectionsIdleRetries +
                 ", directConnectionsIdleTimeout=" + directConnectionsIdleTimeout +
+                ", monitoringEnabled=" + monitoringEnabled +
+                ", monitoringInfluxUri='" + monitoringInfluxUri + '\'' +
+                ", monitoringInfluxUser='" + monitoringInfluxUser + '\'' +
+                ", monitoringInfluxPassword='" + maskSecret(identityPrivateKey) + '\'' +
+                ", monitoringInfluxDatabase='" + monitoringInfluxDatabase + '\'' +
+                ", monitoringInfluxReportingFrequency=" + monitoringInfluxReportingFrequency +
                 '}';
     }
 
@@ -657,7 +725,14 @@ public class DrasylConfig {
                 config.directConnectionsHandshakeTimeout,
                 config.directConnectionsChannelInitializer,
                 config.directConnectionsIdleRetries,
-                config.directConnectionsIdleTimeout);
+                config.directConnectionsIdleTimeout,
+                config.monitoringEnabled,
+                config.monitoringInfluxUri,
+                config.monitoringInfluxUser,
+                config.monitoringInfluxPassword,
+                config.monitoringInfluxDatabase,
+                config.monitoringInfluxReportingFrequency
+        );
     }
 
     public static final class Builder {
@@ -697,6 +772,12 @@ public class DrasylConfig {
         private Class<? extends ChannelInitializer<SocketChannel>> directConnectionsChannelInitializer;
         private short directConnectionsIdleRetries;
         private Duration directConnectionsIdleTimeout;
+        private boolean monitoringEnabled;
+        private String monitoringInfluxUri;
+        private String monitoringInfluxUser;
+        private String monitoringInfluxPassword;
+        private String monitoringInfluxDatabase;
+        private Duration monitoringInfluxReportingFrequency;
 
         @SuppressWarnings({ "java:S107" })
         private Builder(Level loglevel,
@@ -733,7 +814,13 @@ public class DrasylConfig {
                         Duration directConnectionsHandshakeTimeout,
                         Class<? extends ChannelInitializer<SocketChannel>> directConnectionsChannelInitializer,
                         short directConnectionsIdleRetries,
-                        Duration directConnectionsIdleTimeout) {
+                        Duration directConnectionsIdleTimeout,
+                        boolean monitoringEnabled,
+                        String monitoringInfluxUri,
+                        String monitoringInfluxUser,
+                        String monitoringInfluxPassword,
+                        String monitoringInfluxDatabase,
+                        Duration monitoringInfluxReportingFrequency) {
             this.loglevel = loglevel;
             this.identityProofOfWork = identityProofOfWork;
             this.identityPublicKey = identityPublicKey;
@@ -769,6 +856,12 @@ public class DrasylConfig {
             this.directConnectionsChannelInitializer = directConnectionsChannelInitializer;
             this.directConnectionsIdleRetries = directConnectionsIdleRetries;
             this.directConnectionsIdleTimeout = directConnectionsIdleTimeout;
+            this.monitoringEnabled = monitoringEnabled;
+            this.monitoringInfluxUri = monitoringInfluxUri;
+            this.monitoringInfluxUser = monitoringInfluxUser;
+            this.monitoringInfluxPassword = monitoringInfluxPassword;
+            this.monitoringInfluxDatabase = monitoringInfluxDatabase;
+            this.monitoringInfluxReportingFrequency = monitoringInfluxReportingFrequency;
         }
 
         public Builder loglevel(Level loglevel) {
@@ -946,8 +1039,38 @@ public class DrasylConfig {
             return this;
         }
 
+        public Builder monitoringEnabled(boolean monitoringEnabled) {
+            this.monitoringEnabled = monitoringEnabled;
+            return this;
+        }
+
+        public Builder monitoringInfluxUri(String monitoringInfluxUri) {
+            this.monitoringInfluxUri = monitoringInfluxUri;
+            return this;
+        }
+
+        public Builder monitoringInfluxUser(String monitoringInfluxUser) {
+            this.monitoringInfluxUser = monitoringInfluxUser;
+            return this;
+        }
+
+        public Builder monitoringInfluxPassword(String monitoringInfluxPassword) {
+            this.monitoringInfluxPassword = monitoringInfluxPassword;
+            return this;
+        }
+
+        public Builder monitoringInfluxDatabase(String monitoringInfluxDatabase) {
+            this.monitoringInfluxDatabase = monitoringInfluxDatabase;
+            return this;
+        }
+
+        public Builder monitoringInfluxReportingFrequency(Duration monitoringInfluxReportingFrequency) {
+            this.monitoringInfluxReportingFrequency = monitoringInfluxReportingFrequency;
+            return this;
+        }
+
         public DrasylConfig build() {
-            return new DrasylConfig(loglevel, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, messageComposedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled, directConnectionsEnabled, directConnectionsMaxConcurrentConnections, directConnectionsRetryDelays, directConnectionsHandshakeTimeout, directConnectionsChannelInitializer, directConnectionsIdleRetries, directConnectionsIdleTimeout);
+            return new DrasylConfig(loglevel, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, messageComposedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled, directConnectionsEnabled, directConnectionsMaxConcurrentConnections, directConnectionsRetryDelays, directConnectionsHandshakeTimeout, directConnectionsChannelInitializer, directConnectionsIdleRetries, directConnectionsIdleTimeout, monitoringEnabled, monitoringInfluxUri, monitoringInfluxUser, monitoringInfluxPassword, monitoringInfluxDatabase, monitoringInfluxReportingFrequency);
         }
     }
 }

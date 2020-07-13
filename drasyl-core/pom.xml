@@ -133,5 +133,11 @@
             <groupId>io.sentry</groupId>
             <artifactId>sentry-logback</artifactId>
         </dependency>
+
+        <!-- Monitoring -->
+        <dependency>
+            <groupId>io.micrometer</groupId>
+            <artifactId>micrometer-registry-influx</artifactId>
+        </dependency>
     </dependencies>
 </project>
