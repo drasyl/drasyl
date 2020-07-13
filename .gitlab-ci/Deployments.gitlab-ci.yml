@@ -4,8 +4,8 @@ variables:
 .deploy-base: &deploy-base
   image: git.informatik.uni-hamburg.de:4567/sane/sane-build-images:docker-18.02-docker-compose-1.19-git-2.15.4
   before_script:
-    - echo $GPG_SECRET_KEYS | base64 --decode | $GPG_EXECUTABLE --import
-    - echo $GPG_OWNERTRUST | base64 --decode | $GPG_EXECUTABLE --import-ownertrust
+    - echo $GPG_SECRET_KEYS | base64 --decode | $GPG_EXECUTABLE --import --no-tty --batch --yes
+    - echo $GPG_OWNERTRUST | base64 --decode | $GPG_EXECUTABLE --import-ownertrust --no-tty --batch --yes
   script:
     - sh ./prepare-environment-docker-compose.sh > docker-compose.yml
     - docker login -u "$CI_REGISTRY_USER" -p "$CI_REGISTRY_PASSWORD" $CI_REGISTRY
