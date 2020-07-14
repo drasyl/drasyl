@@ -24,7 +24,7 @@
     <groupId>org.drasyl</groupId>
     <artifactId>parent</artifactId>
     <packaging>pom</packaging>
-    <version>0.1.3-SNAPSHOT</version>
+    <version>0.1.2</version>
     <dependencyManagement>
         <dependencies>
             <!-- Mockito -->
@@ -221,7 +221,7 @@
         <connection>scm:git:git://github.com/drasyl-overlay/drasyl.git</connection>
         <developerConnection>scm:git:ssh://github.com/drasyl-overlay/drasyl.git</developerConnection>
         <url>https://github.com/drasyl-overlay/drasyl</url>
-        <tag>HEAD</tag>
+        <tag>0.1.2</tag>
     </scm>
 
     <modules>
