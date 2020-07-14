@@ -1,4 +1,4 @@
-image: maven:3.6.1-jdk-11
+image: git.informatik.uni-hamburg.de:4567/sane/sane-build-images:jdk-11-maven-3.6.3-gpg-pinentry-tty
 
 variables:
   MAVEN_OPTS: "-Dhttps.protocols=TLSv1.2 -Dmaven.repo.local=$CI_PROJECT_DIR/.m2/repository -Dorg.slf4j.simpleLogger.log.org.apache.maven.cli.transfer.Slf4jMavenTransferListener=WARN -Dorg.slf4j.simpleLogger.showDateTime=true -Djava.awt.headless=true"

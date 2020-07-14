@@ -531,6 +531,8 @@
                                     <gpgArguments>
                                         <arg>--pinentry-mode</arg>
                                         <arg>loopback</arg>
+                                        <arg>--passphrase-fd</arg>
+                                        <arg>0</arg>
                                     </gpgArguments>
                                 </configuration>
                             </execution>
