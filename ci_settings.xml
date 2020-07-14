@@ -50,10 +50,10 @@
             </properties>
         </profile>
         <profile>
-            <id>central-repo</id>
+            <id>release</id>
             <activation>
                 <property>
-                    <name>central-repo</name>
+                    <name>release</name>
                 </property>
             </activation>
             <build>

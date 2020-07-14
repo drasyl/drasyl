@@ -28,7 +28,7 @@ maven-verify:
   <<: *maven-base
   stage: test
   script:
-    - 'mvn $MAVEN_CLI_OPTS verify -P gitlab-repo sonar:sonar'
+    - 'mvn $MAVEN_CLI_OPTS verify sonar:sonar'
   except:
     - master
     - /^\d+\.\d+/
@@ -37,7 +37,8 @@ maven-deploy:
   <<: *maven-base
   stage: deploy
   script:
-    - 'mvn $MAVEN_CLI_OPTS deploy -P central-repo sonar:sonar'
+    - 'mvn $MAVEN_CLI_OPTS clean install sonar:sonar'
+    - 'mvn $MAVEN_CLI_OPTS clean deploy -DskipTests -Darguments=-DskipTests -P release'
   only:
     - master
     - /^\d+\.\d+/
