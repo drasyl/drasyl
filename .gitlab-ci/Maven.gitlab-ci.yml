@@ -10,6 +10,7 @@ cache:
 
 .maven-base: &maven-base
   before_script:
+    - export GPG_TTY=$(tty)
     - echo $GPG_SECRET_KEYS | base64 --decode | $GPG_EXECUTABLE --import --no-tty --batch --yes
     - echo $GPG_OWNERTRUST | base64 --decode | $GPG_EXECUTABLE --import-ownertrust --no-tty --batch --yes
   after_script:
