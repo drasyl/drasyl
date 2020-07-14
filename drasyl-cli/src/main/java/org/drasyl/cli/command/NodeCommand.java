@@ -92,7 +92,7 @@ public class NodeCommand extends AbstractCommand {
             node = nodeSupplier.apply(config);
             node.start();
             node.shutdownFuture().join();
-            DrasylNode.irrevocablyTerminate();
+            System.exit(0);
         }
         catch (DrasylException e) {
             throw new CliException(e);

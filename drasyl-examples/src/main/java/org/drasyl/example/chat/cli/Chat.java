@@ -124,6 +124,7 @@ public class Chat {
         }
 
         node.shutdown().join();
+        System.exit(0);
     }
 
     static void addBeforePrompt(Object x) {
