@@ -403,6 +403,7 @@ public abstract class DrasylNode {
                             LOG.info("Could not start drasyl Node: {}", e.getMessage());
                             LOG.info("Stop all running components...");
 
+                            this.stopMonitoring();
                             this.stopDirectConnectionsHandler();
                             this.stopSuperPeerClient();
                             this.stopServer();
