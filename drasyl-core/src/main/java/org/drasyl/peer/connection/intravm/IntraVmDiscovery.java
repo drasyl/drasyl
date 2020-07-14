@@ -42,7 +42,6 @@ import java.util.function.Supplier;
  * Uses shared memory to discover other drasyl nodes running on same JVM.
  */
 public class IntraVmDiscovery implements AutoCloseable {
-    private static final ReadWriteLock lock = new ReentrantReadWriteLock(true);
     static final Map<CompressedPublicKey, IntraVmDiscovery> discoveries = new HashMap<>();
     static final MessageSink MESSAGE_SINK = message -> {
         CompressedPublicKey recipient = message.getRecipient();
@@ -54,6 +53,7 @@ public class IntraVmDiscovery implements AutoCloseable {
 
         discoveree.path.send(message);
     };
+    private static final ReadWriteLock lock = new ReentrantReadWriteLock(true);
     private final Path path;
     private final Supplier<CompressedPublicKey> identitySupplier;
     private final PeersManager peersManager;
@@ -103,10 +103,10 @@ public class IntraVmDiscovery implements AutoCloseable {
     }
 
     public void open() {
-        if (opened.compareAndSet(false, true)) {
-            try {
-                lock.writeLock().lock();
+        try {
+            lock.writeLock().lock();
 
+            if (opened.compareAndSet(false, true)) {
                 // add message sink
                 messenger.setIntraVmSink(MESSAGE_SINK);
 
@@ -117,18 +117,18 @@ public class IntraVmDiscovery implements AutoCloseable {
                 });
                 discoveries.put(identitySupplier.get(), this);
             }
-            finally {
-                lock.writeLock().unlock();
-            }
+        }
+        finally {
+            lock.writeLock().unlock();
         }
     }
 
     @Override
     public void close() {
-        if (opened.compareAndSet(true, false)) {
-            try {
-                lock.writeLock().lock();
+        try {
+            lock.writeLock().lock();
 
+            if (opened.compareAndSet(true, false)) {
                 // remove message sink
                 messenger.unsetIntraVmSink();
 
@@ -139,9 +139,9 @@ public class IntraVmDiscovery implements AutoCloseable {
                     peersManager.removePath(d.identitySupplier.get(), path);
                 });
             }
-            finally {
-                lock.writeLock().unlock();
-            }
+        }
+        finally {
+            lock.writeLock().unlock();
         }
     }
 }
