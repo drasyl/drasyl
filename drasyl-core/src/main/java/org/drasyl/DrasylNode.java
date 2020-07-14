@@ -286,7 +286,6 @@ public abstract class DrasylNode {
             DrasylNode self = this;
             onInternalEvent(new NodeDownEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
             LOG.info("Shutdown drasyl Node with Identity '{}'...", identityManager.getIdentity());
-            shutdownSequence = new CompletableFuture<>();
             getInstanceHeavy().scheduleDirect(() -> {
                 this.stopMonitoring();
                 this.stopDirectConnectionsHandler();
@@ -297,10 +296,20 @@ public abstract class DrasylNode {
                 onInternalEvent(new NodeNormalTerminationEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
                 LOG.info("drasyl Node with Identity '{}' has shut down", identityManager.getIdentity());
                 shutdownSequence.complete(null);
+                startSequence = new CompletableFuture<>();
                 INSTANCES.remove(self);
             });
         }
 
+        return shutdownSequence;
+    }
+
+    /**
+     * This method returns a future, which complements if all shutdown steps have been completed.
+     *
+     * @return this method returns a future, which complements if all shutdown steps have been
+     */
+    public CompletableFuture<Void> shutdownFuture() {
         return shutdownSequence;
     }
 
@@ -372,7 +381,6 @@ public abstract class DrasylNode {
             INSTANCES.add(this);
             LOG.info("Start drasyl Node v{}...", DrasylNode.getVersion());
             LOG.debug("The following configuration will be used: {}", config);
-            startSequence = new CompletableFuture<>();
             getInstanceHeavy().scheduleDirect(() -> {
                 try {
                     loadIdentity();
@@ -400,6 +408,9 @@ public abstract class DrasylNode {
                     LOG.info("All components stopped");
                     started.set(false);
                     startSequence.completeExceptionally(e);
+                }
+                finally {
+                    shutdownSequence = new CompletableFuture<>();
                 }
             });
         }

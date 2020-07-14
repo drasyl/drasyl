@@ -83,10 +83,8 @@ class DrasylNodeTest {
     private Identity identity;
     @Mock
     private AtomicBoolean started;
-    @Mock
-    private CompletableFuture<Void> startSequence;
-    @Mock
-    private CompletableFuture<Void> shutdownSequence;
+    private CompletableFuture<Void> startSequence = new CompletableFuture<>();
+    private CompletableFuture<Void> shutdownSequence = new CompletableFuture<>();
     @Mock
     private SuperPeerClient superPeerClient;
     @Mock

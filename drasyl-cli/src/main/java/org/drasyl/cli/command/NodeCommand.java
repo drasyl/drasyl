@@ -81,8 +81,7 @@ public class NodeCommand extends AbstractCommand {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (node != null) {
                 log.info("Shutdown Drasyl Node");
-                node.shutdown().join();
-                DrasylNode.irrevocablyTerminate();
+                node.shutdown();
             }
         }));
 
@@ -91,7 +90,9 @@ public class NodeCommand extends AbstractCommand {
             config = getDrasylConfig(cmd);
 
             node = nodeSupplier.apply(config);
-            node.start().join();
+            node.start();
+            node.shutdownFuture().join();
+            DrasylNode.irrevocablyTerminate();
         }
         catch (DrasylException e) {
             throw new CliException(e);
