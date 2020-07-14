@@ -75,7 +75,7 @@
         <connection>scm:git:git://github.com/drasyl-overlay/drasyl.git</connection>
         <developerConnection>scm:git:ssh://github.com/drasyl-overlay/drasyl.git</developerConnection>
         <url>https://github.com/drasyl-overlay/drasyl</url>
-        <tag>0.1.2</tag>
+        <tag>HEAD</tag>
     </scm>
 
     <modules>
