@@ -1,0 +1,102 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  ~ Copyright (c) 2020.
+  ~
+  ~ This file is part of drasyl.
+  ~
+  ~  drasyl is free software: you can redistribute it and/or modify
+  ~  it under the terms of the GNU Lesser General Public License as published by
+  ~  the Free Software Foundation, either version 3 of the License, or
+  ~  (at your option) any later version.
+  ~
+  ~  drasyl is distributed in the hope that it will be useful,
+  ~  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  ~  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+  ~  GNU Lesser General Public License for more details.
+  ~
+  ~  You should have received a copy of the GNU Lesser General Public License
+  ~  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
+  -->
+
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
+    <parent>
+        <groupId>org.sonatype.oss</groupId>
+        <artifactId>oss-parent</artifactId>
+        <version>7</version>
+        <relativePath/>
+    </parent>
+    <modelVersion>4.0.0</modelVersion>
+
+    <artifactId>drasyl-bom</artifactId>
+    <groupId>org.drasyl</groupId>
+    <packaging>pom</packaging>
+    <version>0.1.2</version>
+
+    <name>drasyl/BOM</name>
+    <description>drasyl (Bill of Materials)</description>
+    <url>https://drasyl.org/</url>
+
+    <organization>
+        <name>The drasyl Project</name>
+        <url>https://drasyl.org/</url>
+    </organization>
+
+    <licenses>
+        <license>
+            <name>GNU Lesser General Public License, Version 3</name>
+            <url>https://www.gnu.org/licenses/lgpl-3.0.de.html</url>
+        </license>
+    </licenses>
+
+    <issueManagement>
+        <system>GitLab</system>
+        <url>https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues</url>
+    </issueManagement>
+
+    <developers>
+        <developer>
+            <id>bornholdt</id>
+            <name>Heiko Bornholdt</name>
+            <email>bornholdt@informatik.uni-hamburg.de</email>
+            <organization>The drasyl Project</organization>
+            <organizationUrl>https://drasyl.org/</organizationUrl>
+        </developer>
+        <developer>
+            <id>6roebert</id>
+            <name>Kevin Röbert</name>
+            <email>6roebert@informatik.uni-hamburg.de</email>
+            <organization>The drasyl Project</organization>
+            <organizationUrl>https://drasyl.org/</organizationUrl>
+        </developer>
+    </developers>
+
+    <inceptionYear>2020</inceptionYear>
+
+    <dependencyManagement>
+        <dependencies>
+            <!-- All release modules -->
+            <dependency>
+                <groupId>org.drasyl</groupId>
+                <artifactId>drasyl-parent</artifactId>
+                <version>0.1.2</version>
+            </dependency>
+            <dependency>
+                <groupId>org.drasyl</groupId>
+                <artifactId>drasyl-core</artifactId>
+                <version>0.1.2</version>
+            </dependency>
+            <dependency>
+                <groupId>org.drasyl</groupId>
+                <artifactId>drasyl-cli</artifactId>
+                <version>0.1.2</version>
+            </dependency>
+            <dependency>
+                <groupId>org.drasyl</groupId>
+                <artifactId>drasyl-examples</artifactId>
+                <version>0.1.2</version>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+</project>

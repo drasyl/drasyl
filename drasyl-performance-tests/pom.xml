@@ -32,6 +32,19 @@
     <description>
         This package contains performance tests for drasyl.
     </description>
+    <url>https://drasyl.org/</url>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.drasyl</groupId>
+                <artifactId>drasyl-bom</artifactId>
+                <version>${project.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <properties>
         <jmh.version>1.23</jmh.version>
@@ -51,7 +64,6 @@
         <dependency>
             <groupId>org.drasyl</groupId>
             <artifactId>drasyl-core</artifactId>
-            <version>0.1.2</version>
             <scope>test</scope>
         </dependency>
     </dependencies>

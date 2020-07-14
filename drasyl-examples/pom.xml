@@ -30,8 +30,21 @@
     <description>
         This package contains examples of how to use drasyl.
     </description>
+    <url>https://drasyl.org/</url>
 
     <artifactId>drasyl-examples</artifactId>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.drasyl</groupId>
+                <artifactId>drasyl-bom</artifactId>
+                <version>${project.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <plugins>
@@ -61,9 +74,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.drasyl</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>drasyl-core</artifactId>
-            <version>0.1.2</version>
             <scope>compile</scope>
         </dependency>
         <dependency>

@@ -32,6 +32,19 @@
     <description>
         This package contains a pre-packed drasyl Node. It can be run via the command line interface. This allows you to easily create new (root) super peers.
     </description>
+    <url>https://drasyl.org/</url>
+
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.drasyl</groupId>
+                <artifactId>drasyl-bom</artifactId>
+                <version>${project.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
 
     <build>
         <plugins>
@@ -94,9 +107,8 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.drasyl</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>drasyl-core</artifactId>
-            <version>${project.version}</version>
             <scope>compile</scope>
         </dependency>
 

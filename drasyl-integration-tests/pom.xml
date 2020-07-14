@@ -32,6 +32,7 @@
     <description>
         This package contains integration tests for drasyl.
     </description>
+    <url>https://drasyl.org/</url>
 
     <build>
         <plugins>
@@ -49,17 +50,27 @@
         </plugins>
     </build>
 
+    <dependencyManagement>
+        <dependencies>
+            <dependency>
+                <groupId>org.drasyl</groupId>
+                <artifactId>drasyl-bom</artifactId>
+                <version>${project.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+        </dependencies>
+    </dependencyManagement>
+
     <dependencies>
         <dependency>
-            <groupId>org.drasyl</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>drasyl-cli</artifactId>
-            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
-            <groupId>org.drasyl</groupId>
+            <groupId>${project.groupId}</groupId>
             <artifactId>drasyl-core</artifactId>
-            <version>${project.version}</version>
             <scope>test</scope>
         </dependency>
         <dependency>
