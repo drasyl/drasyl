@@ -63,10 +63,9 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static java.util.concurrent.CompletableFuture.runAsync;
+import static org.drasyl.util.DrasylScheduler.getInstanceHeavy;
 
 /**
  * Represents a node in the drasyl Overlay Network. Applications that want to run on drasyl must
@@ -287,33 +286,19 @@ public abstract class DrasylNode {
             DrasylNode self = this;
             onInternalEvent(new NodeDownEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
             LOG.info("Shutdown drasyl Node with Identity '{}'...", identityManager.getIdentity());
-            shutdownSequence = runAsync(this::stopMonitoring)
-                    .thenRun(this::stopDirectConnectionsHandler)
-                    .thenRun(this::stopSuperPeerClient)
-                    .thenRun(this::stopServer)
-                    .thenRun(this::stopIntraVmDiscovery)
-                    .whenComplete((r, e) -> {
-                        try {
-                            if (e == null) {
-                                onInternalEvent(new NodeNormalTerminationEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
-                                LOG.info("drasyl Node with Identity '{}' has shut down", identityManager.getIdentity());
-                            }
-                            else {
-                                started.set(false);
+            shutdownSequence = new CompletableFuture<>();
+            getInstanceHeavy().scheduleDirect(() -> {
+                this.stopMonitoring();
+                this.stopDirectConnectionsHandler();
+                this.stopSuperPeerClient();
+                this.stopServer();
+                this.stopIntraVmDiscovery();
 
-                                // passthrough exception
-                                if (e instanceof CompletionException) {
-                                    throw (CompletionException) e;
-                                }
-                                else {
-                                    throw new CompletionException(e);
-                                }
-                            }
-                        }
-                        finally {
-                            INSTANCES.remove(self);
-                        }
-                    });
+                onInternalEvent(new NodeNormalTerminationEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
+                LOG.info("drasyl Node with Identity '{}' has shut down", identityManager.getIdentity());
+                shutdownSequence.complete(null);
+                INSTANCES.remove(self);
+            });
         }
 
         return shutdownSequence;
@@ -387,40 +372,36 @@ public abstract class DrasylNode {
             INSTANCES.add(this);
             LOG.info("Start drasyl Node v{}...", DrasylNode.getVersion());
             LOG.debug("The following configuration will be used: {}", config);
-            startSequence = runAsync(this::loadIdentity)
-                    .thenRun(this::startIntraVmDiscovery)
-                    .thenRun(this::startServer)
-                    .thenRun(this::startSuperPeerClient)
-                    .thenRun(this::startDirectConnectionsHandler)
-                    .thenRun(this::startMonitoring)
-                    .whenComplete((r, e) -> {
-                        if (e == null) {
-                            onInternalEvent(new NodeUpEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
-                            LOG.info("drasyl Node with Identity '{}' has started", identityManager.getIdentity());
-                        }
-                        else {
-                            onInternalEvent(new NodeUnrecoverableErrorEvent(Node.of(identityManager.getIdentity(), server.getEndpoints()), e.getCause()));
-                            LOG.info("Could not start drasyl Node: {}", e.getMessage());
-                            LOG.info("Stop all running components...");
+            startSequence = new CompletableFuture<>();
+            getInstanceHeavy().scheduleDirect(() -> {
+                try {
+                    loadIdentity();
+                    startIntraVmDiscovery();
+                    startServer();
+                    startSuperPeerClient();
+                    startDirectConnectionsHandler();
+                    startMonitoring();
 
-                            this.stopMonitoring();
-                            this.stopDirectConnectionsHandler();
-                            this.stopSuperPeerClient();
-                            this.stopServer();
-                            this.stopIntraVmDiscovery();
+                    onInternalEvent(new NodeUpEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
+                    LOG.info("drasyl Node with Identity '{}' has started", identityManager.getIdentity());
+                    startSequence.complete(null);
+                }
+                catch (DrasylException e) {
+                    onInternalEvent(new NodeUnrecoverableErrorEvent(Node.of(identityManager.getIdentity(), server.getEndpoints()), e));
+                    LOG.info("Could not start drasyl Node: {}", e.getMessage());
+                    LOG.info("Stop all running components...");
 
-                            LOG.info("All components stopped");
-                            started.set(false);
+                    this.stopMonitoring();
+                    this.stopDirectConnectionsHandler();
+                    this.stopSuperPeerClient();
+                    this.stopServer();
+                    this.stopIntraVmDiscovery();
 
-                            // passthrough exception
-                            if (e instanceof CompletionException) {
-                                throw (CompletionException) e;
-                            }
-                            else {
-                                throw new CompletionException(e);
-                            }
-                        }
-                    });
+                    LOG.info("All components stopped");
+                    started.set(false);
+                    startSequence.completeExceptionally(e);
+                }
+            });
         }
 
         return startSequence;
@@ -441,15 +422,10 @@ public abstract class DrasylNode {
         }
     }
 
-    private void loadIdentity() {
-        try {
-            identityManager.loadOrCreateIdentity();
-            LOG.debug("Using Identity '{}'", identityManager.getIdentity());
-            Sentry.getContext().setUser(new User(identityManager.getPublicKey().toString(), null, null, null));
-        }
-        catch (IdentityManagerException e) {
-            throw new CompletionException(e);
-        }
+    private void loadIdentity() throws IdentityManagerException {
+        identityManager.loadOrCreateIdentity();
+        LOG.debug("Using Identity '{}'", identityManager.getIdentity());
+        Sentry.getContext().setUser(new User(identityManager.getPublicKey().toString(), null, null, null));
     }
 
     private void startIntraVmDiscovery() {
@@ -464,17 +440,12 @@ public abstract class DrasylNode {
      * If activated, the local server should be started in this method. Method should block and wait
      * until the server is running.
      */
-    private void startServer() {
+    private void startServer() throws ServerException {
         if (config.isServerEnabled()) {
-            try {
-                LOG.debug("Start Server...");
-                server.open();
-                LOG.debug("Server is now listening at {}:{}", config.getServerBindHost(), server.getPort());
-                directConnectionsManager.setEndpoints(server.getEndpoints());
-            }
-            catch (ServerException e) {
-                throw new CompletionException(e);
-            }
+            LOG.debug("Start Server...");
+            server.open();
+            LOG.debug("Server is now listening at {}:{}", config.getServerBindHost(), server.getPort());
+            directConnectionsManager.setEndpoints(server.getEndpoints());
         }
     }
 
@@ -484,27 +455,17 @@ public abstract class DrasylNode {
      */
     private void startSuperPeerClient() {
         if (config.isSuperPeerEnabled()) {
-            try {
-                LOG.debug("Start Super Peer Client...");
-                superPeerClient.open();
-                LOG.debug("Super Peer started");
-            }
-            catch (Exception e) {
-                throw new CompletionException(e);
-            }
+            LOG.debug("Start Super Peer Client...");
+            superPeerClient.open();
+            LOG.debug("Super Peer started");
         }
     }
 
     private void startDirectConnectionsHandler() {
         if (config.areDirectConnectionsEnabled()) {
-            try {
-                LOG.debug("Start Direct Connections Handler...");
-                directConnectionsManager.open();
-                LOG.debug("Direct Connections Handler started.");
-            }
-            catch (Exception e) {
-                throw new CompletionException(e);
-            }
+            LOG.debug("Start Direct Connections Handler...");
+            directConnectionsManager.open();
+            LOG.debug("Direct Connections Handler started.");
         }
     }
 
