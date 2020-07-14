@@ -22,7 +22,7 @@
     <parent>
         <artifactId>parent</artifactId>
         <groupId>org.drasyl</groupId>
-        <version>0.1.2-SNAPSHOT</version>
+        <version>0.1.1</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
@@ -63,7 +63,7 @@
         <dependency>
             <groupId>org.drasyl</groupId>
             <artifactId>drasyl-core</artifactId>
-            <version>0.1.2-SNAPSHOT</version>
+            <version>0.1.1</version>
             <scope>compile</scope>
         </dependency>
         <dependency>
