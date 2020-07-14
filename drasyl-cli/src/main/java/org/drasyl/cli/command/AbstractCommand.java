@@ -11,6 +11,7 @@ import org.drasyl.cli.CliException;
 
 import java.io.PrintStream;
 import java.io.PrintWriter;
+import java.util.Map;
 
 public abstract class AbstractCommand implements Command {
     private static final String OPT_HELP = "help";
@@ -40,14 +41,35 @@ public abstract class AbstractCommand implements Command {
     }
 
     protected void helpTemplate(String name, String header, String footer) {
+        helpTemplate(name, header, footer, Map.of());
+    }
+
+    protected void helpTemplate(String name,
+                                String header,
+                                String footer,
+                                Map<String, String> commands) {
         if (!header.isEmpty()) {
             printStream.println(header);
             printStream.println();
         }
 
         printStream.println("Usage:");
-        printStream.println("  drasyl " + name + " [flags]");
+        printStream.println("  drasyl" + (!name.isEmpty() ? " " + name : "") + " [flags]");
+        if (!commands.isEmpty()) {
+            printStream.println("  drasyl" + (!name.isEmpty() ? " " + name : "") + " [command]");
+        }
         printStream.println();
+
+        if (!commands.isEmpty()) {
+            printStream.println("Available Commands:");
+            for (Map.Entry<String, String> entry : commands.entrySet()) {
+                String command = entry.getKey();
+                String description = entry.getValue();
+                printStream.print(String.format("%-15s", command));
+                printStream.println(String.format("%-15s", description));
+            }
+            printStream.println();
+        }
 
         printStream.println("Flags:");
         HelpFormatter formatter = new HelpFormatter();
