@@ -28,7 +28,7 @@ maven-verify:
   <<: *maven-base
   stage: test
   script:
-    - 'mvn $MAVEN_CLI_OPTS verify -P release sonar:sonar'
+    - 'mvn $MAVEN_CLI_OPTS verify -Prelease,ossrh sonar:sonar'
   except:
     - master
     - /^\d+\.\d+/
@@ -37,7 +37,7 @@ maven-deploy:
   <<: *maven-base
   stage: deploy
   script:
-    - 'mvn $MAVEN_CLI_OPTS deploy -P release sonar:sonar'
+    - 'mvn $MAVEN_CLI_OPTS -Prelease,ossrh clean package source:jar gpg:sign install:install deploy:deploy sonar:sonar'
   only:
     - master
     - /^\d+\.\d+/

@@ -26,6 +26,102 @@
     <artifactId>parent</artifactId>
     <packaging>pom</packaging>
     <version>0.1.2</version>
+
+    <name>drasyl: Next Generation Overlay Network - Parent Package</name>
+    <description>
+        drasyl is a general purpose overlay network that is concurrent, resilient, flexible, automated and
+        presents itself to the user as a transparent system which offers suitable discovery and awareness methods,
+        particularly with a focus on smart city and IoT devices.
+    </description>
+    <url>https://drasyl.org/</url>
+
+    <organization>
+        <name>The drasyl Project</name>
+        <url>https://drasyl.org/</url>
+    </organization>
+
+    <licenses>
+        <license>
+            <name>GNU Lesser General Public License, Version 3</name>
+            <url>https://www.gnu.org/licenses/lgpl-3.0.de.html</url>
+        </license>
+    </licenses>
+
+    <issueManagement>
+        <system>GitLab</system>
+        <url>https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues</url>
+    </issueManagement>
+
+    <developers>
+        <developer>
+            <id>bornholdt</id>
+            <name>Heiko Bornholdt</name>
+            <email>bornholdt@informatik.uni-hamburg.de</email>
+            <organization>The drasyl Project</organization>
+            <organizationUrl>https://drasyl.org/</organizationUrl>
+        </developer>
+        <developer>
+            <id>6roebert</id>
+            <name>Kevin Röbert</name>
+            <email>6roebert@informatik.uni-hamburg.de</email>
+            <organization>The drasyl Project</organization>
+            <organizationUrl>https://drasyl.org/</organizationUrl>
+        </developer>
+    </developers>
+
+    <inceptionYear>2020</inceptionYear>
+
+    <scm>
+        <connection>scm:git:git://github.com/drasyl-overlay/drasyl.git</connection>
+        <developerConnection>scm:git:ssh://github.com/drasyl-overlay/drasyl.git</developerConnection>
+        <url>https://github.com/drasyl-overlay/drasyl</url>
+        <tag>0.1.2</tag>
+    </scm>
+
+    <modules>
+        <module>drasyl-cli</module>
+        <module>drasyl-core</module>
+        <module>drasyl-integration-tests</module>
+        <module>drasyl-examples</module>
+        <module>drasyl-performance-tests</module>
+    </modules>
+
+    <distributionManagement>
+        <repository>
+            <id>ossrh</id>
+            <name>OSSRH Repo</name>
+            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
+        </repository>
+        <snapshotRepository>
+            <id>ossrh</id>
+            <name>OSSRH Snapshot Repo</name>
+            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
+        </snapshotRepository>
+    </distributionManagement>
+
+    <properties>
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+        <jdk.version>11</jdk.version>
+        <java.version>11</java.version>
+        <maven.compiler.source>11</maven.compiler.source>
+        <maven.compiler.target>11</maven.compiler.target>
+        <logback.version>1.2.3</logback.version>
+        <junit.version>5.6.2</junit.version>
+        <mockito.version>3.2.4</mockito.version>
+        <jackson.version>2.11.0</jackson.version>
+        <hamcrest.version>2.2</hamcrest.version>
+        <bouncycastle.version>1.65.01</bouncycastle.version>
+        <awaitility.version>4.0.3</awaitility.version>
+        <netty.version>4.1.50.Final</netty.version>
+        <guava.version>29.0-jre</guava.version>
+        <rxjava.version>3.0.4</rxjava.version>
+        <sentry.version>1.7.30</sentry.version>
+        <commons.version>4.4</commons.version>
+        <micrometer.version>1.5.2</micrometer.version>
+        <maven.scm>1.11.2</maven.scm>
+        <nexus.staging>1.6.8</nexus.staging>
+    </properties>
+
     <dependencyManagement>
         <dependencies>
             <!-- Mockito -->
@@ -175,101 +271,6 @@
         </dependencies>
     </dependencyManagement>
 
-    <name>drasyl: Next Generation Overlay Network - Parent Package</name>
-    <description>
-        drasyl is a general purpose overlay network that is concurrent, resilient, flexible, automated and
-        presents itself to the user as a transparent system which offers suitable discovery and awareness methods,
-        particularly with a focus on smart city and IoT devices.
-    </description>
-    <url>https://drasyl.org/</url>
-
-    <organization>
-        <name>The drasyl Project</name>
-        <url>https://drasyl.org/</url>
-    </organization>
-
-    <licenses>
-        <license>
-            <name>GNU Lesser General Public License, Version 3</name>
-            <url>https://www.gnu.org/licenses/lgpl-3.0.de.html</url>
-        </license>
-    </licenses>
-
-    <issueManagement>
-        <system>GitLab</system>
-        <url>https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues</url>
-    </issueManagement>
-
-    <developers>
-        <developer>
-            <id>bornholdt</id>
-            <name>Heiko Bornholdt</name>
-            <email>bornholdt@informatik.uni-hamburg.de</email>
-            <organization>The drasyl Project</organization>
-            <organizationUrl>https://drasyl.org/</organizationUrl>
-        </developer>
-        <developer>
-            <id>6roebert</id>
-            <name>Kevin Röbert</name>
-            <email>6roebert@informatik.uni-hamburg.de</email>
-            <organization>The drasyl Project</organization>
-            <organizationUrl>https://drasyl.org/</organizationUrl>
-        </developer>
-    </developers>
-
-    <inceptionYear>2020</inceptionYear>
-
-    <scm>
-        <connection>scm:git:git://github.com/drasyl-overlay/drasyl.git</connection>
-        <developerConnection>scm:git:ssh://github.com/drasyl-overlay/drasyl.git</developerConnection>
-        <url>https://github.com/drasyl-overlay/drasyl</url>
-        <tag>0.1.2</tag>
-    </scm>
-
-    <modules>
-        <module>drasyl-cli</module>
-        <module>drasyl-core</module>
-        <module>drasyl-integration-tests</module>
-        <module>drasyl-examples</module>
-        <module>drasyl-performance-tests</module>
-    </modules>
-
-    <distributionManagement>
-        <repository>
-            <id>ossrh</id>
-            <name>OSSRH Repo</name>
-            <url>https://oss.sonatype.org/service/local/staging/deploy/maven2/</url>
-        </repository>
-        <snapshotRepository>
-            <id>ossrh</id>
-            <name>OSSRH Snapshot Repo</name>
-            <url>https://oss.sonatype.org/content/repositories/snapshots</url>
-        </snapshotRepository>
-    </distributionManagement>
-
-    <properties>
-        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-        <jdk.version>11</jdk.version>
-        <java.version>11</java.version>
-        <maven.compiler.source>11</maven.compiler.source>
-        <maven.compiler.target>11</maven.compiler.target>
-        <logback.version>1.2.3</logback.version>
-        <junit.version>5.6.2</junit.version>
-        <mockito.version>3.2.4</mockito.version>
-        <jackson.version>2.11.0</jackson.version>
-        <hamcrest.version>2.2</hamcrest.version>
-        <bouncycastle.version>1.65.01</bouncycastle.version>
-        <awaitility.version>4.0.3</awaitility.version>
-        <netty.version>4.1.50.Final</netty.version>
-        <guava.version>29.0-jre</guava.version>
-        <rxjava.version>3.0.4</rxjava.version>
-        <sentry.version>1.7.30</sentry.version>
-        <commons.version>4.4</commons.version>
-        <micrometer.version>1.5.2</micrometer.version>
-        <maven.scm>1.11.2</maven.scm>
-        <nexus.staging>1.6.8</nexus.staging>
-    </properties>
-
     <build>
         <pluginManagement>
             <plugins>
@@ -339,6 +340,106 @@
                 </plugin>
             </plugins>
         </pluginManagement>
+        <plugins>
+            <plugin>
+                <groupId>org.sonarsource.scanner.maven</groupId>
+                <artifactId>sonar-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-site-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-compiler-plugin</artifactId>
+                <configuration>
+                    <source>${maven.compiler.source}</source>
+                    <target>${maven.compiler.source}</target>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>com.github.spotbugs</groupId>
+                <artifactId>spotbugs-maven-plugin</artifactId>
+            </plugin>
+            <plugin>
+                <groupId>org.jacoco</groupId>
+                <artifactId>jacoco-maven-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>prepare-agent</goal>
+                        </goals>
+                        <configuration>
+                            <propertyName>surefireArgLine</propertyName>
+                        </configuration>
+                    </execution>
+                    <execution>
+                        <id>report</id>
+                        <phase>prepare-package</phase>
+                        <goals>
+                            <goal>report</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <artifactId>maven-deploy-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>default-deploy</id>
+                        <phase>deploy</phase>
+                        <goals>
+                            <goal>deploy</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <parallel>all</parallel>
+                    <!-- Sets the VM argument line used when unit tests are run. -->
+                    <argLine>-Dio.netty.leakDetectionLevel=PARANOID ${surefireArgLine}</argLine>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-javadoc-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-javadocs</id>
+                        <goals>
+                            <goal>jar</goal>
+                        </goals>
+                    </execution>
+                </executions>
+                <configuration>
+                    <doclint>none</doclint>
+                    <source>11</source>
+                </configuration>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-source-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>attach-sources</id>
+                        <goals>
+                            <goal>jar-no-fork</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>2.5.3</version>
+                <configuration>
+                    <tagNameFormat>@{project.version}</tagNameFormat>
+                </configuration>
+            </plugin>
+        </plugins>
     </build>
 
     <reporting>
@@ -397,4 +498,72 @@
             <artifactId>logback-core</artifactId>
         </dependency>
     </dependencies>
+
+    <profiles>
+        <profile>
+            <id>ossrh</id>
+            <activation>
+                <activeByDefault>true</activeByDefault>
+            </activation>
+            <properties>
+                <gpg.keyname>${env.GPG_KEYNAME}</gpg.keyname>
+                <gpg.executable>${env.GPG_EXECUTABLE}</gpg.executable>
+                <gpg.passphrase>${env.GPG_PASSPHRASE}</gpg.passphrase>
+            </properties>
+        </profile>
+        <profile>
+            <id>release</id>
+            <build>
+                <plugins>
+                    <!-- To sign the artifacts -->
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-gpg-plugin</artifactId>
+                        <version>1.6</version>
+                        <executions>
+                            <execution>
+                                <id>sign-artifacts</id>
+                                <phase>verify</phase>
+                                <goals>
+                                    <goal>sign</goal>
+                                </goals>
+                            </execution>
+                        </executions>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-release-plugin</artifactId>
+                        <version>2.5.3</version>
+                        <configuration>
+                            <tagNameFormat>@{project.version}</tagNameFormat>
+                            <localCheckout>true</localCheckout>
+                            <pushChanges>false</pushChanges>
+                            <mavenExecutorId>forked-path</mavenExecutorId>
+                            <useReleaseProfile>false</useReleaseProfile>
+                            <releaseProfiles>release</releaseProfiles>
+                            <goals>deploy</goals>
+                        </configuration>
+                        <dependencies>
+                            <dependency>
+                                <groupId>org.apache.maven.scm</groupId>
+                                <artifactId>maven-scm-provider-gitexe</artifactId>
+                                <version>1.9.5</version>
+                            </dependency>
+                        </dependencies>
+                    </plugin>
+                    <plugin>
+                        <groupId>org.sonatype.plugins</groupId>
+                        <artifactId>nexus-staging-maven-plugin</artifactId>
+                        <version>${nexus.staging}</version>
+                        <extensions>true</extensions>
+                        <configuration>
+                            <serverId>ossrh</serverId>
+                            <nexusUrl>https://oss.sonatype.org/</nexusUrl>
+                            <autoReleaseAfterClose>true</autoReleaseAfterClose>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
 </project>
