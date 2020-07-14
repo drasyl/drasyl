@@ -41,9 +41,9 @@ class HelpCommandTest {
 
             String output = outputStream.toString();
             assertThat(output, containsString("drasyl is an general purpose transport overlay network."));
-            assertThat(output, containsString("Usage:\n"));
-            assertThat(output, containsString("drasyl help [flags]\n"));
-            assertThat(output, containsString("Flags:\n"));
+            assertThat(output, containsString("Usage:" + System.lineSeparator()));
+            assertThat(output, containsString("drasyl help [flags]" + System.lineSeparator()));
+            assertThat(output, containsString("Flags:" + System.lineSeparator()));
         }
     }
 
@@ -57,11 +57,11 @@ class HelpCommandTest {
             underTest.execute(cmd);
 
             String output = outputStream.toString();
-            assertThat(output, containsString("Usage:\n"));
-            assertThat(output, containsString("drasyl [flags]\n"));
-            assertThat(output, containsString("drasyl [command]\n"));
-            assertThat(output, containsString("Available Commands:\n"));
-            assertThat(output, containsString("Flags:\n"));
+            assertThat(output, containsString("Usage:" + System.lineSeparator()));
+            assertThat(output, containsString("drasyl [flags]" + System.lineSeparator()));
+            assertThat(output, containsString("drasyl [command]" + System.lineSeparator()));
+            assertThat(output, containsString("Available Commands:" + System.lineSeparator()));
+            assertThat(output, containsString("Flags:" + System.lineSeparator()));
         }
     }
 }

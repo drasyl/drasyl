@@ -54,10 +54,10 @@ public class NodeCommandTest {
 
             String output = outputStream.toString();
             assertThat(output, containsString("Run a drasyl node in the current directory."));
-            assertThat(output, containsString("Usage:\n"));
-            assertThat(output, containsString("drasyl node [flags]\n"));
-            assertThat(output, containsString("Flags:\n"));
-            assertThat(output, containsString("syntax:\n"));
+            assertThat(output, containsString("Usage:" + System.lineSeparator()));
+            assertThat(output, containsString("drasyl node [flags]" + System.lineSeparator()));
+            assertThat(output, containsString("Flags:" + System.lineSeparator()));
+            assertThat(output, containsString("syntax:" + System.lineSeparator()));
         }
     }
 

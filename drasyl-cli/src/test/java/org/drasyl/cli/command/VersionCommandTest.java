@@ -41,9 +41,9 @@ class VersionCommandTest {
 
             String output = outputStream.toString();
             assertThat(output, containsString("Show the drasyl, os and java version number."));
-            assertThat(output, containsString("Usage:\n"));
-            assertThat(output, containsString("drasyl version [flags]\n"));
-            assertThat(output, containsString("Flags:\n"));
+            assertThat(output, containsString("Usage:" + System.lineSeparator()));
+            assertThat(output, containsString("drasyl version [flags]" + System.lineSeparator()));
+            assertThat(output, containsString("Flags:" + System.lineSeparator()));
         }
     }
 
