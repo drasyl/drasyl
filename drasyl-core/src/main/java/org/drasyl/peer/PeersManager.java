@@ -34,6 +34,7 @@ import org.drasyl.util.Triple;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -115,7 +116,10 @@ public class PeersManager {
         try {
             lock.readLock().lock();
 
-            return ImmutableMap.copyOf(peers.entrySet().stream()
+            // It is nessary to create a new HashMap, because otherwise this can raise a
+            // ConcurrentModificationException.
+            // See: https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/77
+            return ImmutableMap.copyOf(new HashMap<>(peers).entrySet().stream()
                     .filter(e -> children.contains(e.getKey()) || grandchildrenRoutes.containsKey(e.getKey()))
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
             );
@@ -189,12 +193,8 @@ public class PeersManager {
 
             PeerInformation peerInformation = peers.get(publicKey);
             Set<Path> myPaths = this.paths.get(publicKey);
-            if (peerInformation != null) {
-                return Pair.of(peerInformation, myPaths);
-            }
-            else {
-                return Pair.of(PeerInformation.of(), myPaths);
-            }
+            
+            return Pair.of(Objects.requireNonNullElseGet(peerInformation, PeerInformation::of), myPaths);
         }
         finally {
             lock.readLock().unlock();
@@ -283,7 +283,7 @@ public class PeersManager {
             if (existingInformation == null) {
                 handlePeerStateTransition(
                         publicKey,
-                        existingInformation,
+                        null,
                         paths.get(publicKey),
                         PeerInformation.of(),
                         paths.get(publicKey)
