@@ -20,6 +20,7 @@ package org.drasyl;
 
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.LoggerContext;
+import com.google.common.annotations.Beta;
 import com.typesafe.config.ConfigException;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
@@ -92,6 +93,7 @@ import static org.drasyl.util.DrasylScheduler.getInstanceHeavy;
  * </code></pre>
  */
 @SuppressWarnings({ "java:S107" })
+@Beta
 public abstract class DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);
     private static final List<DrasylNode> INSTANCES;
