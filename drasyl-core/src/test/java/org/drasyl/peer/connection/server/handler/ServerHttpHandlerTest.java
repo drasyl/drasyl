@@ -34,7 +34,7 @@ class ServerHttpHandlerTest {
     @Mock
     private CompressedPublicKey publicKey;
     @Mock
-    private PeersManager peersManager;
+    private PeersManager peersManager; // Do not remove, it is auto injected into the underTest object
     @InjectMocks
     private ServerHttpHandler underTest;
 
@@ -62,6 +62,9 @@ class ServerHttpHandlerTest {
         assertEquals(OK, httpResponse.status());
         assertEquals("drasyl/" + DrasylNode.getVersion(), httpResponse.headers().get("server"));
         assertEquals(publicKey.toString(), httpResponse.headers().get("x-public-key"));
+
+        // Important: release the ByteBuf after testing, otherwise the ResourceLeakDetector raises alarms for tests
+        httpResponse.release();
     }
 
     @Test
@@ -74,6 +77,9 @@ class ServerHttpHandlerTest {
         FullHttpResponse httpResponse = channel.readOutbound();
 
         assertEquals(FORBIDDEN, httpResponse.status());
+
+        // Important: release the ByteBuf after testing, otherwise the ResourceLeakDetector raises alarms for tests
+        httpResponse.release();
     }
 
     @Test
@@ -88,6 +94,9 @@ class ServerHttpHandlerTest {
 
         assertEquals(BAD_REQUEST, httpResponse.status());
         assertThat(content, containsString("Bad Request"));
+
+        // Important: release the ByteBuf after testing, otherwise the ResourceLeakDetector raises alarms for tests
+        httpResponse.release();
     }
 
     @Test
@@ -104,6 +113,9 @@ class ServerHttpHandlerTest {
         assertThatJson(content)
                 .isObject()
                 .containsKeys("children", "grandchildrenRoutes", "superPeer");
+
+        // Important: release the ByteBuf after testing, otherwise the ResourceLeakDetector raises alarms for tests
+        httpResponse.release();
     }
 
     @Test
@@ -114,8 +126,10 @@ class ServerHttpHandlerTest {
         channel.writeInbound(httpRequest);
 
         FullHttpResponse httpResponse = channel.readOutbound();
-        String content = httpResponse.content().toString(CharsetUtil.UTF_8);
 
         assertEquals(NOT_FOUND, httpResponse.status());
+
+        // Important: release the ByteBuf after testing, otherwise the ResourceLeakDetector raises alarms for tests
+        httpResponse.release();
     }
 }
