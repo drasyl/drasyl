@@ -91,7 +91,9 @@ public class DefaultClientChannelInitializer extends ClientChannelInitializer {
                         if (LOG.isTraceEnabled()) {
                             LOG.trace("[{}]: WebSocket Handshake completed. Now adding {}.", ctx.channel().id().asShortText(), PublicKeyExchangeHandler.class.getSimpleName());
                         }
-                        pipeline.addLast(PUBLIC_KEY_EXCHANGE_HANDLER, new PublicKeyExchangeHandler(environment.getServerPublicKey(), environment.getConfig().getServerHandshakeTimeout()));
+                        // Must be added before the exception handler otherwise exceptions are not captured anymore and raising an error
+                        // See: https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/77
+                        pipeline.addBefore(EXCEPTION_HANDLER, PUBLIC_KEY_EXCHANGE_HANDLER, new PublicKeyExchangeHandler(environment.getServerPublicKey(), environment.getConfig().getServerHandshakeTimeout()));
                     }
                     else if (e == HANDSHAKE_TIMEOUT) {
                         if (LOG.isTraceEnabled()) {
@@ -107,7 +109,9 @@ public class DefaultClientChannelInitializer extends ClientChannelInitializer {
                             LOG.trace("[{}]: Public key available. Now adding {}.", ctx.channel().id().asShortText(), ClientConnectionHandler.class.getSimpleName());
                         }
 
-                        pipeline.addLast(CLIENT_CONNECTION_HANDLER, new ClientConnectionHandler(environment));
+                        // Must be added before the exception handler otherwise exceptions are not captured anymore and raising an error
+                        // See: https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/77
+                        pipeline.addBefore(EXCEPTION_HANDLER, CLIENT_CONNECTION_HANDLER, new ClientConnectionHandler(environment));
                         pipeline.remove(this);
                     }
                 }
