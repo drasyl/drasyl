@@ -72,9 +72,9 @@ import static org.drasyl.util.DrasylScheduler.getInstanceHeavy;
  * implement this class.
  * <p>
  * Example usage:
- * <pre> {@code
+ * <pre><code>
  * DrasylNode node = new DrasylNode() {
- *   @Override
+ *   &#64;Override
  *   public void onEvent(Event event) {
  *     // handle incoming events (messages) here
  *     System.out.println("Event received: " + event);
@@ -82,14 +82,14 @@ import static org.drasyl.util.DrasylScheduler.getInstanceHeavy;
  * };
  * node.start();
  *
- * // wait till EVENT_NODE_ONLINE has been received
+ * // wait till NodeOnlineEvent has been received
  *
  * // send message to another node
- * node.send("025eb0dc5d", "Hello World");
+ * node.send("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9", "Hello World");
  *
  * // shutdown node
  * node.shutdown();
- * </pre>
+ * </code></pre>
  */
 @SuppressWarnings({ "java:S107" })
 public abstract class DrasylNode {
