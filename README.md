@@ -1,5 +1,10 @@
 # drasyl
 
+[![Build Status](https://git.informatik.uni-hamburg.de/sane-public/drasyl/badges/master/pipeline.svg)](https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/pipelines)
+[![LGPL v3](https://img.shields.io/badge/license-LGPL%20v3-blue)](https://www.gnu.org/licenses/lgpl-3.0.de.html)
+[![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.drasyl/drasyl-core/badge.svg)](https://mvnrepository.com/artifact/org.drasyl/drasyl-core)
+[![Javadocs](https://javadoc.io/badge2/org.drasyl/drasyl-core/javadoc.svg)](https://www.javadoc.io/doc/org.drasyl/drasyl-core)
+
 drasyl is an open source, general purpose overlay network that is concurrent, resilient, flexible, automated and presents itself to the user as a transparent
 system which offers suitable discovery and awareness methods, particularly with a focus on smart city and IoT devices. Nevertheless, drasyl is not limited to
 smart city and IoT, but is intended for universal use in all decentralized Java-based projects.
@@ -95,6 +100,5 @@ node.shutdown();
 
 More information can be found in the (still very short) [documentation](doc/README.md).
 
-## License
-
-This project is licensed under the [GNU Lesser General Public License v3.0](LICENSE).
+-------------------------------------
+_Licensed under [GNU Lesser General Public License v3.0](LICENSE)_
