@@ -91,7 +91,7 @@ public class DefaultClientChannelInitializer extends ClientChannelInitializer {
                         if (LOG.isTraceEnabled()) {
                             LOG.trace("[{}]: WebSocket Handshake completed. Now adding {}.", ctx.channel().id().asShortText(), PublicKeyExchangeHandler.class.getSimpleName());
                         }
-                        // Must be added before the exception handler, otherwise exception are not captured anymore and raising an error
+                        // Must be added before the exception handler otherwise exceptions are not captured anymore and raising an error
                         // See: https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/77
                         pipeline.addBefore(EXCEPTION_HANDLER, PUBLIC_KEY_EXCHANGE_HANDLER, new PublicKeyExchangeHandler(environment.getServerPublicKey(), environment.getConfig().getServerHandshakeTimeout()));
                     }
@@ -109,7 +109,7 @@ public class DefaultClientChannelInitializer extends ClientChannelInitializer {
                             LOG.trace("[{}]: Public key available. Now adding {}.", ctx.channel().id().asShortText(), ClientConnectionHandler.class.getSimpleName());
                         }
 
-                        // Must be added before the exception handler, otherwise exception are not captured anymore and raising an error
+                        // Must be added before the exception handler otherwise exceptions are not captured anymore and raising an error
                         // See: https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/77
                         pipeline.addBefore(EXCEPTION_HANDLER, CLIENT_CONNECTION_HANDLER, new ClientConnectionHandler(environment));
                         pipeline.remove(this);
