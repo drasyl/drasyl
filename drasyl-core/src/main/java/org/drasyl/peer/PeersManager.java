@@ -193,7 +193,7 @@ public class PeersManager {
 
             PeerInformation peerInformation = peers.get(publicKey);
             Set<Path> myPaths = this.paths.get(publicKey);
-            
+
             return Pair.of(Objects.requireNonNullElseGet(peerInformation, PeerInformation::of), myPaths);
         }
         finally {
