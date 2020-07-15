@@ -102,5 +102,8 @@ class MessageEncoderTest {
         frame.content().readBytes(actual);
 
         assertArrayEquals(binary, actual);
+
+        // Important: release the ByteBuf after testing, otherwise the ResourceLeakDetector raises alarms for tests
+        frame.release();
     }
 }
