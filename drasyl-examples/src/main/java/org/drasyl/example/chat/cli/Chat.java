@@ -28,6 +28,7 @@ import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.util.DrasylScheduler;
 import org.drasyl.util.Pair;
 
 import java.io.File;
@@ -124,7 +125,7 @@ public class Chat {
         }
 
         node.shutdown().join();
-        System.exit(0);
+        DrasylScheduler.shutdown();
     }
 
     static void addBeforePrompt(Object x) {

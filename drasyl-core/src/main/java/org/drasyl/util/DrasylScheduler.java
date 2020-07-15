@@ -87,4 +87,20 @@ public class DrasylScheduler {
     public static Scheduler getInstanceHeavy() {
         return HEAVY_SCHEDULER;
     }
+
+    /**
+     * Shutdown the two schedulers.
+     */
+    public static void shutdown() {
+        LIGHT_SCHEDULER.shutdown();
+        HEAVY_SCHEDULER.shutdown();
+    }
+
+    /**
+     * Starts the two schedulers.
+     */
+    public static void start() {
+        LIGHT_SCHEDULER.start();
+        HEAVY_SCHEDULER.start();
+    }
 }

@@ -10,6 +10,7 @@ import org.drasyl.DrasylNode;
 import org.drasyl.cli.CliException;
 import org.drasyl.event.Event;
 import org.drasyl.util.DrasylFunction;
+import org.drasyl.util.DrasylScheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,7 +93,7 @@ public class NodeCommand extends AbstractCommand {
             node = nodeSupplier.apply(config);
             node.start();
             node.shutdownFuture().join();
-            System.exit(0);
+            DrasylScheduler.shutdown();
         }
         catch (DrasylException e) {
             throw new CliException(e);
