@@ -2,6 +2,8 @@
 
 ## Release new version
 
+Ensure [CHANGELOG](CHANGELOG.md) is up-to-date.
+
 ```bash
 rm -f release.properties
 mvn clean release:prepare
@@ -14,14 +16,6 @@ Wait for GitLab CI to finish build tasks and select "Keep" on job artifact.
 Add Release Notes to git Tag on [GitLab](https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/tags).
 
 Add Asset to Release 
-
-```bash
-curl --request POST \
-     --header "PRIVATE-TOKEN: s3cr3tPassw0rd" \
-     --data name="drasyl-1.2.zip" \
-     --data url="https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/jobs/artifacts/1.2/raw/drasyl-1.2.zip?job=maven-deploy" \
-     "https://git.informatik.uni-hamburg.de/api/v4/projects/3070/releases/1.2/assets/links"
-```
 
 ## Build dist
 
