@@ -160,7 +160,7 @@ public class ServerConnectionHandler extends AbstractThreeWayHandshakeServerHand
     private void registerGrandchildrenLocally(ChannelHandlerContext ctx,
                                               Set<CompressedPublicKey> grandchildren) {
         Channel channel = ctx.channel();
-        if (getLogger().isDebugEnabled()) {
+        if (!grandchildren.isEmpty() && getLogger().isDebugEnabled()) {
             getLogger().debug("[{}]: Client want to register Grandchildren {}", channel.id().asShortText(), grandchildren);
         }
 
