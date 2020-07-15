@@ -26,26 +26,44 @@ Either build and install drasyl by yourself...
 ./mvnw install
 ```
 
-...or pull it from public repo:
-
-Add GitLab Maven Repository to `pom.xml`:
-```xml
-<repositories>
-    <repository>
-        <id>gitlab-maven</id>
-        <url>https://git.informatik.uni-hamburg.de/api/v4/groups/sane-public/-/packages/maven</url>
-    </repository>
-</repositories>
-```
+...or pull it from the maven central repository:
 
 Add drasyl as dependency to your `pom.xml`:
 ```xml
 <dependency>
     <groupId>org.drasyl</groupId>
     <artifactId>drasyl-core</artifactId>
-    <version>0.1.0</version>
+    <version>0.1.2</version>
 </dependency>
 ```
+
+#### Using SNAPSHOTS
+If you want to use a SNAPSHOT add the Sonatype OSS SNAPSHOT repository to your `pom.xml`:
+
+```xml
+<repositories>
+    <repository>
+        <id>oss.sonatype.org-snapshot</id>
+        <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+        <releases>
+            <enabled>false</enabled>
+        </releases>
+        <snapshots>
+            <enabled>true</enabled>
+        </snapshots>
+    </repository>
+</repositories>
+```
+
+... and add a drasyl SNAPSHOT version as dependency to your `pom.xml`:
+```xml
+<dependency>
+    <groupId>org.drasyl</groupId>
+    <artifactId>drasyl-core</artifactId>
+    <version>0.1.3-SNAPSHOT</version>
+</dependency>
+```
+
 
 ### Official Builds
 
