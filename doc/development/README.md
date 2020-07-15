@@ -11,11 +11,11 @@ mvn clean release:prepare
 
 **An additional call of `mvn release:perform` is not necessary!**
 
-Wait for GitLab CI to finish build tasks and select "Keep" on job artifact.
+Wait for GitLab CI to finish build tasks and select "Keep" on maven-deploy job artifact.
 
-Add Release Notes to git Tag on [GitLab](https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/tags).
+Add Release Notes `[CHANGELOG.md](CHANGELOG.md)` to git Tag on [GitLab](https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/tags).
 
-Add Asset to Release 
+Add `https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/jobs/artifacts/0.1.0/raw/drasyl-0.1.0.zip?job=maven-deploy` / `drasyl-0.1.0-zip` release asset.
 
 ## Build dist
 
