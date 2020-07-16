@@ -38,8 +38,8 @@ import static org.drasyl.peer.connection.handler.MessageDecoder.MESSAGE_DECODER;
 import static org.drasyl.peer.connection.handler.MessageEncoder.MESSAGE_ENCODER;
 
 /**
- * Creates a newly configured {@link ChannelPipeline} for a new channel for a ClientConnection to or
- * from a relay server.
+ * Creates a newly configured {@link ChannelPipeline} for a new channel for a connection to or
+ * from a the {@link org.drasyl.peer.connection.server.Server}.
  *
  * <p>
  * <b>Note: You have to add a websocket handler by yourself to the {@link
@@ -220,10 +220,6 @@ public abstract class DefaultSessionInitializer extends ChannelInitializer<Socke
     /**
      * Adds {@link ChannelHandler} to the {@link ChannelPipeline}, after the default {@link
      * ExceptionHandler} has taken place.
-     *
-     * <p>If you want to handle an exception at this place, you have to set {@link
-     * #rethrowExceptions} to {@code true}.
-     * </p>
      *
      * @param pipeline the {@link ChannelPipeline}
      */

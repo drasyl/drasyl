@@ -76,8 +76,8 @@ public interface Signable {
 
     /**
      * Signs the object with the specified signature. After this method was invoked subsequent calls
-     * to {@link #getSignature()} should return a <code>Signature</code> object that is {@link
-     * #equals(Object) equal} to the specified <code>signature</code>.
+     * to {@link #getSignature()} should return a <code>Signature</code> object that is equal to the
+     * specified <code>signature</code>.
      */
     void setSignature(Signature signature);
 }

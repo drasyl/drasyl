@@ -45,7 +45,7 @@ public abstract class ClientChannelInitializer extends DefaultSessionInitializer
      *                        good for throughput. A low value is good for latency.
      * @param readIdleTimeout The maximum time that an active connection can spend in idle before
      *                        the client checks with a PING request whether the remote station is
-     *                        still alive. Note: every long value <= 0 s deactivates the idle
+     *                        still alive. Note: every long value &lt;= 0 s deactivates the idle
      *                        function.
      * @param pingPongRetries The maximum amount that a remote station cannot reply to a PING
      *                        request in succession in the interval {@code readIdleTimeout}. Min
