@@ -22,12 +22,15 @@ import ch.qos.logback.classic.Level;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
+import com.typesafe.config.ConfigValue;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.plugins.AutoloadablePlugin;
+import org.drasyl.plugins.PluginEnvironment;
 
 import java.io.File;
 import java.net.URI;
@@ -91,6 +94,7 @@ public class DrasylConfig {
     static final String MONITORING_INFLUX_PASSWORD = "drasyl.monitoring.influx.password";
     static final String MONITORING_INFLUX_DATABASE = "drasyl.monitoring.influx.database";
     static final String MONITORING_INFLUX_REPORTING_FREQUENCY = "drasyl.monitoring.influx.reporting-frequency";
+    static final String PLUGINS = "drasyl.plugins";
     //======================================= Config Values ========================================
     private final Level loglevel; // NOSONAR
     private final ProofOfWork identityProofOfWork;
@@ -133,6 +137,7 @@ public class DrasylConfig {
     private final String monitoringInfluxPassword;
     private final String monitoringInfluxDatabase;
     private final Duration monitoringInfluxReportingFrequency;
+    private final List<PluginEnvironment> pluginEnvironments;
 
     public DrasylConfig() {
         this(ConfigFactory.load());
@@ -219,6 +224,9 @@ public class DrasylConfig {
         monitoringInfluxPassword = config.getString(MONITORING_INFLUX_PASSWORD);
         monitoringInfluxDatabase = config.getString(MONITORING_INFLUX_DATABASE);
         monitoringInfluxReportingFrequency = config.getDuration(MONITORING_INFLUX_REPORTING_FREQUENCY);
+
+        // Load plugins
+        this.pluginEnvironments = getPluginEnvironmentList(config, PLUGINS);
     }
 
     private Level getLoglevel(Config config, String path) {
@@ -328,6 +336,24 @@ public class DrasylConfig {
         }
     }
 
+    private List<PluginEnvironment> getPluginEnvironmentList(Config config, String path) {
+        List<PluginEnvironment> environments = new ArrayList<>();
+        for (ConfigValue value : config.getObject(path).values()) {
+            Config plugin = value.atKey("plugin");
+
+            if (plugin.getBoolean("plugin.enabled")) {
+                try {
+                    Class<? extends AutoloadablePlugin> clazz = (Class<? extends AutoloadablePlugin>) Class.forName(plugin.getString("plugin.class"));
+                    environments.add(new PluginEnvironment(plugin.getObject("plugin.options"), clazz));
+                }
+                catch (ClassNotFoundException e) {
+                    throw new ConfigException.WrongType(plugin.origin(), "class", "autoloadable plugin", "class-not-found: " + e.getMessage());
+                }
+            }
+        }
+        return environments;
+    }
+
     @SuppressWarnings({ "java:S107" })
     DrasylConfig(Level loglevel,
                  ProofOfWork identityProofOfWork,
@@ -369,7 +395,8 @@ public class DrasylConfig {
                  String monitoringInfluxUser,
                  String monitoringInfluxPassword,
                  String monitoringInfluxDatabase,
-                 Duration monitoringInfluxReportingFrequency) {
+                 Duration monitoringInfluxReportingFrequency,
+                 List<PluginEnvironment> pluginEnvironments) {
         this.loglevel = loglevel;
         this.identityProofOfWork = identityProofOfWork;
         this.identityPublicKey = identityPublicKey;
@@ -411,6 +438,7 @@ public class DrasylConfig {
         this.monitoringInfluxPassword = monitoringInfluxPassword;
         this.monitoringInfluxDatabase = monitoringInfluxDatabase;
         this.monitoringInfluxReportingFrequency = monitoringInfluxReportingFrequency;
+        this.pluginEnvironments = pluginEnvironments;
     }
 
     public boolean isMonitoringEnabled() {
@@ -573,13 +601,31 @@ public class DrasylConfig {
         return directConnectionsRetryDelays;
     }
 
-    public Class<? extends ChannelInitializer<SocketChannel>> getDirectConnectionsChannelInitializer() {
+    public List<PluginEnvironment> getPluginEnvironments() {
+        return pluginEnvironments;
+    }
+
+    public Class<? extends ChannelInitializer<SocketChannel>> getDirectConnectionsChannelInitializer
+            () {
         return getSuperPeerChannelInitializer();
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(loglevel, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, messageComposedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled, directConnectionsEnabled, directConnectionsMaxConcurrentConnections, directConnectionsRetryDelays, directConnectionsHandshakeTimeout, directConnectionsChannelInitializer, directConnectionsIdleRetries, directConnectionsIdleTimeout, monitoringEnabled, monitoringInfluxUri, monitoringInfluxUser, monitoringInfluxPassword, monitoringInfluxDatabase, monitoringInfluxReportingFrequency);
+        return Objects.hash(loglevel, identityProofOfWork, identityPublicKey, identityPrivateKey,
+                identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries,
+                serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols,
+                serverHandshakeTimeout, serverEndpoints, serverChannelInitializer,
+                messageMaxContentLength, messageHopLimit, messageComposedMessageTransferTimeout,
+                superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays,
+                superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries,
+                superPeerIdleTimeout, intraVmDiscoveryEnabled, directConnectionsEnabled,
+                directConnectionsMaxConcurrentConnections, directConnectionsRetryDelays,
+                directConnectionsHandshakeTimeout, directConnectionsChannelInitializer,
+                directConnectionsIdleRetries, directConnectionsIdleTimeout, monitoringEnabled,
+                monitoringInfluxUri, monitoringInfluxUser, monitoringInfluxPassword,
+                monitoringInfluxDatabase, monitoringInfluxReportingFrequency,
+                pluginEnvironments);
     }
 
     @Override
@@ -631,7 +677,8 @@ public class DrasylConfig {
                 Objects.equals(monitoringInfluxUser, that.monitoringInfluxUser) &&
                 Objects.equals(monitoringInfluxPassword, that.monitoringInfluxPassword) &&
                 Objects.equals(monitoringInfluxDatabase, that.monitoringInfluxDatabase) &&
-                Objects.equals(monitoringInfluxReportingFrequency, that.monitoringInfluxReportingFrequency);
+                Objects.equals(monitoringInfluxReportingFrequency, that.monitoringInfluxReportingFrequency) &&
+                Objects.equals(pluginEnvironments, that.pluginEnvironments);
     }
 
     @Override
@@ -678,6 +725,7 @@ public class DrasylConfig {
                 ", monitoringInfluxPassword='" + maskSecret(identityPrivateKey) + '\'' +
                 ", monitoringInfluxDatabase='" + monitoringInfluxDatabase + '\'' +
                 ", monitoringInfluxReportingFrequency=" + monitoringInfluxReportingFrequency +
+                ", pluginEnvironments=" + pluginEnvironments +
                 '}';
     }
 
@@ -731,7 +779,8 @@ public class DrasylConfig {
                 config.monitoringInfluxUser,
                 config.monitoringInfluxPassword,
                 config.monitoringInfluxDatabase,
-                config.monitoringInfluxReportingFrequency
+                config.monitoringInfluxReportingFrequency,
+                config.pluginEnvironments
         );
     }
 
@@ -781,6 +830,7 @@ public class DrasylConfig {
         private String monitoringInfluxPassword;
         private String monitoringInfluxDatabase;
         private Duration monitoringInfluxReportingFrequency;
+        private List<PluginEnvironment> pluginEnvironments;
 
         @SuppressWarnings({ "java:S107" })
         private Builder(Level loglevel,
@@ -823,7 +873,8 @@ public class DrasylConfig {
                         String monitoringInfluxUser,
                         String monitoringInfluxPassword,
                         String monitoringInfluxDatabase,
-                        Duration monitoringInfluxReportingFrequency) {
+                        Duration monitoringInfluxReportingFrequency,
+                        List<PluginEnvironment> pluginEnvironments) {
             this.loglevel = loglevel;
             this.identityProofOfWork = identityProofOfWork;
             this.identityPublicKey = identityPublicKey;
@@ -865,6 +916,7 @@ public class DrasylConfig {
             this.monitoringInfluxPassword = monitoringInfluxPassword;
             this.monitoringInfluxDatabase = monitoringInfluxDatabase;
             this.monitoringInfluxReportingFrequency = monitoringInfluxReportingFrequency;
+            this.pluginEnvironments = pluginEnvironments;
         }
 
         public Builder loglevel(Level loglevel) {
@@ -1072,8 +1124,27 @@ public class DrasylConfig {
             return this;
         }
 
+        public Builder pluginEnvironments(List<PluginEnvironment> pluginEnvironments) {
+            this.pluginEnvironments = pluginEnvironments;
+            return this;
+        }
+
         public DrasylConfig build() {
-            return new DrasylConfig(loglevel, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, messageComposedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled, directConnectionsEnabled, directConnectionsMaxConcurrentConnections, directConnectionsRetryDelays, directConnectionsHandshakeTimeout, directConnectionsChannelInitializer, directConnectionsIdleRetries, directConnectionsIdleTimeout, monitoringEnabled, monitoringInfluxUri, monitoringInfluxUser, monitoringInfluxPassword, monitoringInfluxDatabase, monitoringInfluxReportingFrequency);
+            return new DrasylConfig(loglevel, identityProofOfWork, identityPublicKey,
+                    identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort,
+                    serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled,
+                    serverSSLProtocols, serverHandshakeTimeout, serverEndpoints,
+                    serverChannelInitializer, messageMaxContentLength, messageHopLimit,
+                    messageComposedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints,
+                    superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout,
+                    superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout,
+                    intraVmDiscoveryEnabled, directConnectionsEnabled,
+                    directConnectionsMaxConcurrentConnections, directConnectionsRetryDelays,
+                    directConnectionsHandshakeTimeout, directConnectionsChannelInitializer,
+                    directConnectionsIdleRetries, directConnectionsIdleTimeout, monitoringEnabled,
+                    monitoringInfluxUri, monitoringInfluxUser, monitoringInfluxPassword,
+                    monitoringInfluxDatabase, monitoringInfluxReportingFrequency,
+                    pluginEnvironments);
         }
     }
 }

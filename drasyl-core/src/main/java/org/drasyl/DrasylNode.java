@@ -54,6 +54,7 @@ import org.drasyl.peer.connection.server.Server;
 import org.drasyl.peer.connection.server.ServerException;
 import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.Pipeline;
+import org.drasyl.plugins.PluginManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -113,6 +114,7 @@ public abstract class DrasylNode {
     private final DrasylConfig config;
     private final IdentityManager identityManager;
     private final PeersManager peersManager;
+    private final PluginManager pluginManager;
     private final Messenger messenger;
     private final DrasylPipeline pipeline;
     private final DirectConnectionsManager directConnectionsManager;
@@ -143,6 +145,7 @@ public abstract class DrasylNode {
             this.peersManager = new PeersManager(this::onInternalEvent);
             this.messenger = new Messenger(this::messageSink);
             this.pipeline = new DrasylPipeline(this::onEvent, messenger::send, config);
+            this.pluginManager = new PluginManager(pipeline, config);
             this.directConnectionsManager = new DirectConnectionsManager(config, identityManager, peersManager, messenger, pipeline, DrasylNode.WORKER_GROUP, this::onInternalEvent);
             this.intraVmDiscovery = new IntraVmDiscovery(identityManager::getPublicKey, messenger, peersManager, this::onInternalEvent);
             this.superPeerClient = new SuperPeerClient(this.config, identityManager::getIdentity, peersManager, messenger, DrasylNode.WORKER_GROUP, this::onInternalEvent, directConnectionsManager::communicationOccurred);
@@ -200,6 +203,7 @@ public abstract class DrasylNode {
                SuperPeerClient superPeerClient,
                Server server,
                Monitoring monitoring,
+               PluginManager pluginManager,
                AtomicBoolean started,
                CompletableFuture<Void> startSequence,
                CompletableFuture<Void> shutdownSequence) {
@@ -208,6 +212,7 @@ public abstract class DrasylNode {
         this.peersManager = peersManager;
         this.messenger = messenger;
         this.pipeline = pipeline;
+        this.pluginManager = pluginManager;
         this.directConnectionsManager = directConnectionsManager;
         this.intraVmDiscovery = intraVmDiscovery;
         this.superPeerClient = superPeerClient;
@@ -218,7 +223,7 @@ public abstract class DrasylNode {
         this.shutdownSequence = shutdownSequence;
     }
 
-    public synchronized void send(String recipient, byte[] payload) throws DrasylException {
+    public void send(String recipient, byte[] payload) throws DrasylException {
         try {
             send(CompressedPublicKey.of(recipient), payload);
         }
@@ -236,8 +241,8 @@ public abstract class DrasylNode {
      * @param recipient the recipient of a message
      * @param payload   the payload of a message
      */
-    public synchronized void send(CompressedPublicKey recipient,
-                                  byte[] payload) {
+    public void send(CompressedPublicKey recipient,
+                     byte[] payload) {
         pipeline.executeOutbound(new ApplicationMessage(identityManager.getPublicKey(), recipient, payload));
     }
 
@@ -251,7 +256,7 @@ public abstract class DrasylNode {
      * @param payload   the payload of a message
      * @throws MessengerException if an error occurs during the processing
      */
-    public synchronized void send(String recipient, String payload) throws DrasylException {
+    public void send(String recipient, String payload) throws DrasylException {
         send(recipient, payload.getBytes());
     }
 
@@ -264,8 +269,8 @@ public abstract class DrasylNode {
      * @param recipient the recipient of a message
      * @param payload   the payload of a message
      */
-    public synchronized void send(CompressedPublicKey recipient,
-                                  String payload) {
+    public void send(CompressedPublicKey recipient,
+                     String payload) {
         send(recipient, payload.getBytes());
     }
 
@@ -291,6 +296,7 @@ public abstract class DrasylNode {
             startSequence = new CompletableFuture<>();
             getInstanceHeavy().scheduleDirect(() -> {
                 this.stopMonitoring();
+                this.stopPluginManager();
                 this.stopDirectConnectionsHandler();
                 this.stopSuperPeerClient();
                 this.stopServer();
@@ -391,6 +397,7 @@ public abstract class DrasylNode {
                     startServer();
                     startSuperPeerClient();
                     startDirectConnectionsHandler();
+                    startPluginManager();
                     startMonitoring();
 
                     onInternalEvent(new NodeUpEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
@@ -403,6 +410,7 @@ public abstract class DrasylNode {
                     LOG.info("Stop all running components...");
 
                     this.stopMonitoring();
+                    this.stopPluginManager();
                     this.stopDirectConnectionsHandler();
                     this.stopSuperPeerClient();
                     this.stopServer();
@@ -486,6 +494,18 @@ public abstract class DrasylNode {
             monitoring.open();
             LOG.debug("Monitoring started.");
         }
+    }
+
+    private void startPluginManager() throws DrasylException {
+        LOG.debug("Start Plugins...");
+        pluginManager.start();
+        LOG.debug("Plugins started.");
+    }
+
+    private void stopPluginManager() {
+        LOG.info("Stop Plugins...");
+        pluginManager.stop();
+        LOG.info("Plugins stopped");
     }
 
     /**

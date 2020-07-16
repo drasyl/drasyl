@@ -16,21 +16,24 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.util;
+package org.drasyl.plugins;
+
+import org.drasyl.DrasylConfig;
+import org.drasyl.pipeline.Pipeline;
 
 /**
- * {@link java.util.function.Function} that can throw a {@link Exception}.
- *
- * @param <T> the type of the input to the function
- * @param <R> the type of the result of the function
+ * This class must be extended by all {@link DrasylPlugin}s that should be auto-loaded by drasyl.
  */
-@FunctionalInterface
-public interface DrasylFunction<T, R, E extends Exception> {
-    /**
-     * Applies this function to the given argument.
-     *
-     * @param t the function argument
-     * @return the function result
-     */
-    R apply(T t) throws E;
+public abstract class AutoloadablePlugin implements DrasylPlugin {
+    protected final Pipeline pipeline;
+    protected final DrasylConfig config;
+    protected final PluginEnvironment environment;
+
+    public AutoloadablePlugin(Pipeline pipeline,
+                              DrasylConfig config,
+                              PluginEnvironment environment) {
+        this.pipeline = pipeline;
+        this.config = config;
+        this.environment = environment;
+    }
 }

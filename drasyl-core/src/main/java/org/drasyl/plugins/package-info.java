@@ -16,21 +16,9 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.util;
 
 /**
- * {@link java.util.function.Function} that can throw a {@link Exception}.
- *
- * @param <T> the type of the input to the function
- * @param <R> the type of the result of the function
+ * Flexible extensions of drasyl via plugins that can be loaded into the pipeline together with
+ * user-defined settings.
  */
-@FunctionalInterface
-public interface DrasylFunction<T, R, E extends Exception> {
-    /**
-     * Applies this function to the given argument.
-     *
-     * @param t the function argument
-     * @return the function result
-     */
-    R apply(T t) throws E;
-}
+package org.drasyl.plugins;
