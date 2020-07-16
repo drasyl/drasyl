@@ -21,8 +21,9 @@ package org.drasyl.util;
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.schedulers.Schedulers;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
-import java.util.concurrent.Executor;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
@@ -37,33 +38,15 @@ import java.util.concurrent.TimeUnit;
  * submitted tasks.
  */
 public class DrasylScheduler {
-    private static final Scheduler LIGHT_SCHEDULER;
-    private static final Scheduler HEAVY_SCHEDULER;
+    public static final long SHUTDOWN_TIMEOUT = 10_000L; // 10s until the schedulers are stopped immediately
+    private static final Logger LOG = LoggerFactory.getLogger(DrasylScheduler.class);
+    private static Scheduler lightScheduler;
+    private static Scheduler heavyScheduler;
+    private static ThreadPoolExecutor lightExecutor;
+    private static ThreadPoolExecutor heavyExecutor;
 
     static {
-        ThreadFactory threadFactoryLightTasks = new ThreadFactoryBuilder()
-                .setNameFormat("Drasyl-Light-Task-ThreadPool-%d")
-                .build();
-        Executor executorLightTasks = new ThreadPoolExecutor(
-                Math.min(1, Math.max(1, Runtime.getRuntime().availableProcessors() / 3)),  //corePoolSize
-                Math.min(2, Math.max(1, Runtime.getRuntime().availableProcessors() / 3)),  //maximumPoolSize
-                60L, TimeUnit.MILLISECONDS, //keepAliveTime, unit
-                new LinkedBlockingQueue<>(1000),  //workQueue
-                threadFactoryLightTasks
-        );
-        LIGHT_SCHEDULER = Schedulers.from(executorLightTasks);
-
-        ThreadFactory threadFactoryHeavyTasks = new ThreadFactoryBuilder()
-                .setNameFormat("Drasyl-Light-Task-ThreadPool-%d")
-                .build();
-        Executor executorHeavyTasks = new ThreadPoolExecutor(
-                Math.min(1, Math.max(1, Runtime.getRuntime().availableProcessors() / 3)),  //corePoolSize
-                Math.min(2, Math.max(1, Runtime.getRuntime().availableProcessors() / 3)),  //maximumPoolSize
-                60L, TimeUnit.MILLISECONDS, //keepAliveTime, unit
-                new LinkedBlockingQueue<>(1000),  //workQueue
-                threadFactoryHeavyTasks
-        );
-        HEAVY_SCHEDULER = Schedulers.from(executorHeavyTasks);
+        start();
     }
 
     private DrasylScheduler() {
@@ -76,7 +59,7 @@ public class DrasylScheduler {
      * @return a {@link Scheduler} for fast and light tasks
      */
     public static Scheduler getInstanceLight() {
-        return LIGHT_SCHEDULER;
+        return lightScheduler;
     }
 
     /**
@@ -85,22 +68,64 @@ public class DrasylScheduler {
      * @return a {@link Scheduler} for slow and heavy tasks
      */
     public static Scheduler getInstanceHeavy() {
-        return HEAVY_SCHEDULER;
+        return heavyScheduler;
     }
 
     /**
      * Shutdown the two schedulers.
      */
     public static void shutdown() {
-        LIGHT_SCHEDULER.shutdown();
-        HEAVY_SCHEDULER.shutdown();
+        shutdownThreadPoolExecutor(lightExecutor);
+        shutdownThreadPoolExecutor(heavyExecutor);
+    }
+
+    private static void shutdownThreadPoolExecutor(ThreadPoolExecutor executor) {
+        executor.shutdown();
+
+        try {
+            if (!executor.awaitTermination(SHUTDOWN_TIMEOUT, TimeUnit.MILLISECONDS)) {
+                executor.shutdownNow();
+            }
+        }
+        catch (InterruptedException e) {
+            executor.shutdownNow();
+            LOG.debug("", e);
+            Thread.currentThread().interrupt();
+        }
     }
 
     /**
      * Starts the two schedulers.
      */
     public static void start() {
-        LIGHT_SCHEDULER.start();
-        HEAVY_SCHEDULER.start();
+        Pair<ThreadPoolExecutor, Scheduler> light = generate("Drasyl-Light-Task-ThreadPool-%d");
+        lightExecutor = light.first();
+        lightScheduler = light.second();
+
+        Pair<ThreadPoolExecutor, Scheduler> heavy = generate("Drasyl-Heavy-Task-ThreadPool-%d");
+        heavyExecutor = heavy.first();
+        heavyScheduler = heavy.second();
+    }
+
+    /**
+     * Generates an executor and scheduler.
+     *
+     * @param name the name format for the created threads
+     * @return an executor and the corresponding scheduler
+     */
+    private static Pair<ThreadPoolExecutor, Scheduler> generate(String name) {
+        ThreadFactory threadFactory = new ThreadFactoryBuilder()
+                .setNameFormat(name)
+                .build();
+        ThreadPoolExecutor executor = new ThreadPoolExecutor(
+                Math.min(1, Math.max(1, Runtime.getRuntime().availableProcessors() / 3)),  //corePoolSize
+                Math.min(2, Math.max(1, Runtime.getRuntime().availableProcessors() / 3)),  //maximumPoolSize
+                60L, TimeUnit.MILLISECONDS, //keepAliveTime, unit
+                new LinkedBlockingQueue<>(1000),  //workQueue
+                threadFactory
+        );
+        Scheduler scheduler = Schedulers.from(executor);
+
+        return Pair.of(executor, scheduler);
     }
 }
