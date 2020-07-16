@@ -17,6 +17,10 @@ public class MessageEvent implements Event {
         this.message = requireNonNull(message);
     }
 
+    /**
+     * @return a pair containing the sender's public key as first element and the message payload as
+     * second element.
+     */
     public Pair<CompressedPublicKey, byte[]> getMessage() {
         return message;
     }

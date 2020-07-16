@@ -1,6 +1,6 @@
-# Drasyl Documentation
+# drasyl Documentation
 
-Welcome to [Drasyl](https://github.com/sane-city/drasyl) Documentation.
+Welcome to [drasyl](https://github.com/drasyl-overlay/drasyl) Documentation.
 
 ## Overview
 

@@ -1,39 +1,26 @@
 # drasyl
 
 [![Build Status](https://git.informatik.uni-hamburg.de/sane-public/drasyl/badges/master/pipeline.svg)](https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/pipelines)
-[![LGPL v3](https://img.shields.io/badge/license-LGPL%20v3-blue)](https://www.gnu.org/licenses/lgpl-3.0.de.html)
-[![Maven Central](https://maven-badges.herokuapp.com/maven-central/org.drasyl/drasyl-core/badge.svg)](https://mvnrepository.com/artifact/org.drasyl/drasyl-core)
+[![LGPL v3](https://img.shields.io/badge/license-LGPL%20v3-blue)](https://www.gnu.org/licenses/lgpl-3.0)
+[![Maven Central](https://img.shields.io/maven-central/v/org.drasyl/drasyl-core.svg)](https://mvnrepository.com/artifact/org.drasyl/drasyl-core)
 [![Javadocs](https://javadoc.io/badge2/org.drasyl/drasyl-core/javadoc.svg)](https://www.javadoc.io/doc/org.drasyl/drasyl-core)
 
-drasyl is an open source, general purpose overlay network that is concurrent, resilient, flexible, automated and presents itself to the user as a transparent
-system which offers suitable discovery and awareness methods, particularly with a focus on smart city and IoT devices. Nevertheless, drasyl is not limited to
-smart city and IoT, but is intended for universal use in all decentralized Java-based projects.
+drasyl is a general-purpose overlay network framework for rapid development of distributed P2P applications.
 
-As this overlay network is primarily developed for the research project
-[Smart Networks for Urban Participation (SANE)](https://sane.city/), it primarily covers the functionalities necessary for the project. However, we are open to
-contributions.
+By using drasyl developers can fully concentrate on creating distributed applications.
+With drasyl boundaries between layer-2 networks will be eliminated and secure communication channels between any peers will be provided.
+Zero-configuration is required to use drasyl.
+Developers can run a new drasyl node without having to write configuration files or provide IP addresses of peers.
 
-drasyl was inspired by [ZeroTier's Peer to Peer Network](https://www.zerotier.com/manual/#2_1).
+![drasyl architecture](drasyl-architecture.png)
 
-You can either include this implementation in your own software stack and make use of the overlay network as a transport medium, or use the
-[command line interface](drasyl-cli) to run self hosted (root) super peer nodes.
+_As drasyl is primarily developed for the research project
+[Smart Networks for Urban Participation (SANE)](https://sane.city/) and focuses on functionalities necessary for the project. However, drasyl is open to
+contributions made by the community._
 
-## Requirements
+## Maven/Gradle Dependencies
 
-* Java 11
-
-## Installation
-
-### Maven
-
-Either build and install drasyl by yourself...
-```bash
-./mvnw install
-```
-
-...or pull it from the maven central repository:
-
-Add drasyl as dependency to your `pom.xml`:
+Maven:
 ```xml
 <dependency>
     <groupId>org.drasyl</groupId>
@@ -42,42 +29,21 @@ Add drasyl as dependency to your `pom.xml`:
 </dependency>
 ```
 
-#### Using SNAPSHOTS
-If you want to use a SNAPSHOT add the Sonatype OSS SNAPSHOT repository to your `pom.xml`:
+Gradle:
 
-```xml
-<repositories>
-    <repository>
-        <id>oss.sonatype.org-snapshot</id>
-        <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
-        <releases>
-            <enabled>false</enabled>
-        </releases>
-        <snapshots>
-            <enabled>true</enabled>
-        </snapshots>
-    </repository>
-</repositories>
-```
+```compile group: 'org.drasyl', name: 'drasyl-core', version: '0.1.2'```
 
-... and add a drasyl SNAPSHOT version as dependency to your `pom.xml`:
-```xml
-<dependency>
-    <groupId>org.drasyl</groupId>
-    <artifactId>drasyl-core</artifactId>
-    <version>0.1.3-SNAPSHOT</version>
-</dependency>
-```
+## Standalone Command Line Interface
 
+There is a drasyl command line interface with some utilities that can be found on the releases page: https://github.com/drasyl-overlay/drasyl/releases
 
-### Official Builds
+It is also available in docker:
 
-https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/releases
+```docker run drasyl/drasyl help```
 
-### Usage
+## Create and Start drasyl Node
 
 ```java
-// create and start node
 DrasylNode node = new DrasylNode() {
     @Override
     public void onEvent(Event event) {
@@ -96,9 +62,11 @@ node.send("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9", 
 node.shutdown();
 ```
 
-### Documentation
+## Documentation
 
 More information can be found in the (still very short) [documentation](doc/README.md).
 
 -------------------------------------
 _Licensed under [GNU Lesser General Public License v3.0](LICENSE)_
+
+_Inspired by [ZeroTier's Peer to Peer Network](https://www.zerotier.com/manual/#2_1)_

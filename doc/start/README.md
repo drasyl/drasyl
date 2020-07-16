@@ -4,29 +4,20 @@ This guide describes the necessary steps to create your first drasyl node and ho
 
 Once the node is set up, it and therefore your application can participate in the drasyl Overlay Network and communicate with other nodes and applications.
 
-## Add drasyl to your software
+## Add Dependency
 
-First, you have to add drasyl to your software. The easiest way to accomplish this is by using [Maven](https://maven.apache.org/).
-To do this, add the Maven Repository from drasyl to your application's `pom.xml`:
-
-```xml
-<repositories>
-    <repository>
-        <id>gitlab-maven</id>
-        <url>https://git.informatik.uni-hamburg.de/api/v4/groups/sane-public/-/packages/maven</url>
-    </repository>
-</repositories>
-```
-
-Now you can add drasyl as a dependency:
-
+Maven:
 ```xml
 <dependency>
     <groupId>org.drasyl</groupId>
     <artifactId>drasyl-core</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.1.2</version>
 </dependency>
 ```
+
+Gradle:
+
+```compile group: 'org.drasyl', name: 'drasyl-core', version: '0.1.2'```
 
 ## Implementing `DrasylNode`
 
@@ -94,14 +85,14 @@ drasyl network.
 
 ## Receiving Messages
 
-Each received message is announced as an `EVENT_MESSAGE` to the application. The event contains a pair with sender and payload of the message.
+Each received message is announced as an [`MessageEvent`](../../drasyl-core/src/main/java/org/drasyl/event/MessageEvent.java) to the application. The event contains a pair with sender and payload of the message.
 
 Example:
 ```java
 ...
 public void onEvent(Event event) {
     if (event instanceof MessageEvent) {
-        Pair message = event.event.getMessage();
+        Pair message = event.getMessage();
         System.out.println("Message received from " + message.first() + " with payload " + new String(message.second()));
     }
 }

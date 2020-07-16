@@ -107,7 +107,7 @@ public class Server implements AutoCloseable {
     }
 
     /**
-     * Node server for forwarding messages to child peers.
+     * Server for accepting connections from child peers and non-child peers.
      *
      * @param identitySupplier          the identity manager
      * @param messenger                 the messenger object
@@ -169,7 +169,7 @@ public class Server implements AutoCloseable {
     }
 
     /**
-     * Starts the relay server.
+     * Starts the server.
      */
     @SuppressWarnings({ "java:S3776" })
     public void open() throws ServerException {

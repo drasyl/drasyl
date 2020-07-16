@@ -6,6 +6,12 @@ import org.drasyl.peer.connection.message.RelayableMessage;
 import java.util.HashMap;
 import java.util.Map;
 
+/**
+ * Container for an arbitrary amount of {@link MessageSink}s which can be linked to a public key.
+ * <p>
+ * Used by {@link org.drasyl.peer.connection.direct.DirectConnectionsManager} to provide one {@link
+ * MessageSink} per direct connection to a peer.
+ */
 public class MultiMessageSink implements MessageSink {
     private final Map<CompressedPublicKey, MessageSink> messageSinks;
 
