@@ -27,11 +27,14 @@
     <packaging>pom</packaging>
     <version>0.1.3-SNAPSHOT</version>
 
-    <name>drasyl: Next Generation Overlay Network - Parent Package</name>
+    <name>drasyl: General-Purpose Overlay Network Framework - Parent Package</name>
     <description>
-        drasyl is a general purpose overlay network that is concurrent, resilient, flexible, automated and
-        presents itself to the user as a transparent system which offers suitable discovery and awareness methods,
-        particularly with a focus on smart city and IoT devices.
+        drasyl is a general-purpose overlay network framework for rapid development of distributed P2P applications.
+
+        By using drasyl developers can fully concentrate on creating distributed applications.
+        With drasyl boundaries between layer-2 networks will be eliminated and secure communication channels between any peers will be provided.
+        Zero-configuration is required to use drasyl.
+        Developers can run a new drasyl node without having to write configuration files or provide IP addresses of peers.
     </description>
     <url>https://drasyl.org/</url>
 

@@ -29,7 +29,7 @@
 
     <artifactId>drasyl-performance-tests</artifactId>
 
-    <name>drasyl: Next Generation Overlay Network - Performance Tests Package</name>
+    <name>drasyl: General-Purpose Overlay Network Framework - Performance Tests Package</name>
     <description>
         This package contains performance tests for drasyl.
     </description>

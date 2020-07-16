@@ -28,7 +28,7 @@
 
     <artifactId>drasyl-core</artifactId>
 
-    <name>drasyl: Next Generation Overlay Network - Core Package</name>
+    <name>drasyl: General-Purpose Overlay Network Framework - Core Package</name>
     <description>
         This package provides all necessary files to integrate your application into a drasyl overlay network.
     </description>

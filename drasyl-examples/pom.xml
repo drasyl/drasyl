@@ -27,7 +27,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <name>drasyl: Next Generation Overlay Network - Examples Package</name>
+    <name>drasyl: General-Purpose Overlay Network Framework - Examples Package</name>
     <description>
         This package contains examples of how to use drasyl.
     </description>
