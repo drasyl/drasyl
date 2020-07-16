@@ -44,6 +44,7 @@ import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.function.Supplier;
@@ -113,8 +114,7 @@ class DrasylConfigTest {
     private Duration serverIdleTimeout;
     private int flushBufferSize;
     private boolean serverSSLEnabled;
-    @Mock
-    private List<String> serverSSLProtocols;
+    private final Set<String> serverSSLProtocols = Set.of("TLSv1.3", "TLSv1.2");
     private Duration serverHandshakeTimeout;
     private Set<URI> serverEndpoints;
     private Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer;
@@ -124,8 +124,7 @@ class DrasylConfigTest {
     private Set<URI> superPeerEndpoints;
     @Mock
     private CompressedPublicKey superPeerPublicKey;
-    @Mock
-    private List<Duration> superPeerRetryDelays;
+    private final List<Duration> superPeerRetryDelays = List.of(ofSeconds(0), ofSeconds(1), ofSeconds(2), ofSeconds(4), ofSeconds(8));
     private Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer;
     private short superPeerIdleRetries;
     private Duration superPeerIdleTimeout;
@@ -138,8 +137,7 @@ class DrasylConfigTest {
     private boolean intraVmDiscoveryEnabled;
     private boolean directConnectionsEnabled;
     private int directConnectionsMaxConcurrentConnections;
-    @Mock
-    private List<Duration> directConnectionsRetryDelays;
+    private final List<Duration> directConnectionsRetryDelays = List.of(ofSeconds(0), ofSeconds(1), ofSeconds(2), ofSeconds(4), ofSeconds(8));
     private Duration directConnectionsHandshakeTimeout;
     private Class<? extends ChannelInitializer<SocketChannel>> directConnectionsChannelInitializer;
     private short directConnectionsIdleRetries;
@@ -213,7 +211,7 @@ class DrasylConfigTest {
             when(typesafeConfig.getMemorySize(MESSAGE_MAX_CONTENT_LENGTH)).thenReturn(ConfigMemorySize.ofBytes(messageMaxContentLength));
             when(typesafeConfig.getInt(MESSAGE_HOP_LIMIT)).thenReturn((int) messageHopLimit);
             when(typesafeConfig.getBoolean(SERVER_SSL_ENABLED)).thenReturn(serverSSLEnabled);
-            when(typesafeConfig.getStringList(SERVER_SSL_PROTOCOLS)).thenReturn(serverSSLProtocols);
+            when(typesafeConfig.getStringList(SERVER_SSL_PROTOCOLS)).thenReturn(new ArrayList<>(serverSSLProtocols));
             when(typesafeConfig.getStringList(SERVER_ENDPOINTS)).thenReturn(List.of());
             when(typesafeConfig.getBoolean(SUPER_PEER_ENABLED)).thenReturn(superPeerEnabled);
             when(typesafeConfig.getStringList(SUPER_PEER_ENDPOINTS)).thenReturn(List.of("ws://foo.bar:123", "wss://example.com"));

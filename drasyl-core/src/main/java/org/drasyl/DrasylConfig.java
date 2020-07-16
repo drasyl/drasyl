@@ -19,6 +19,8 @@
 package org.drasyl;
 
 import ch.qos.logback.classic.Level;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableSet;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
@@ -39,7 +41,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Set;
@@ -108,7 +109,7 @@ public class DrasylConfig {
     private final Duration serverIdleTimeout;
     private final int flushBufferSize;
     private final boolean serverSSLEnabled;
-    private final List<String> serverSSLProtocols;
+    private final Set<String> serverSSLProtocols;
     private final Duration serverHandshakeTimeout;
     private final Set<URI> serverEndpoints;
     private final Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer;
@@ -188,19 +189,19 @@ public class DrasylConfig {
         this.messageComposedMessageTransferTimeout = config.getDuration(MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT);
         this.messageHopLimit = getShort(config, MESSAGE_HOP_LIMIT);
         this.serverSSLEnabled = config.getBoolean(SERVER_SSL_ENABLED);
-        this.serverSSLProtocols = config.getStringList(SERVER_SSL_PROTOCOLS);
-        this.serverEndpoints = new HashSet<>(getUriList(config, SERVER_ENDPOINTS));
+        this.serverSSLProtocols = ImmutableSet.copyOf(config.getStringList(SERVER_SSL_PROTOCOLS));
+        this.serverEndpoints = ImmutableSet.copyOf(getUriList(config, SERVER_ENDPOINTS));
 
         // Init super peer config
         this.superPeerEnabled = config.getBoolean(SUPER_PEER_ENABLED);
-        this.superPeerEndpoints = new HashSet<>(getUriList(config, SUPER_PEER_ENDPOINTS));
+        this.superPeerEndpoints = ImmutableSet.copyOf(getUriList(config, SUPER_PEER_ENDPOINTS));
         if (!config.getString(SUPER_PEER_PUBLIC_KEY).equals("")) {
             this.superPeerPublicKey = getPublicKey(config, SUPER_PEER_PUBLIC_KEY);
         }
         else {
             this.superPeerPublicKey = null;
         }
-        this.superPeerRetryDelays = config.getDurationList(SUPER_PEER_RETRY_DELAYS);
+        this.superPeerRetryDelays = ImmutableList.copyOf(config.getDurationList(SUPER_PEER_RETRY_DELAYS));
         this.superPeerHandshakeTimeout = config.getDuration(SUPER_PEER_HANDSHAKE_TIMEOUT);
         this.superPeerChannelInitializer = getChannelInitializer(config, SUPER_PEER_CHANNEL_INITIALIZER);
         this.superPeerIdleRetries = getShort(config, SUPER_PEER_IDLE_RETRIES);
@@ -211,7 +212,7 @@ public class DrasylConfig {
         // Init direct connections config
         this.directConnectionsEnabled = config.getBoolean(DIRECT_CONNECTIONS_ENABLED);
         this.directConnectionsMaxConcurrentConnections = config.getInt(DIRECT_CONNECTIONS_MAX_CONCURRENT_CONNECTIONS);
-        this.directConnectionsRetryDelays = config.getDurationList(DIRECT_CONNECTIONS_RETRY_DELAYS);
+        this.directConnectionsRetryDelays = ImmutableList.copyOf(config.getDurationList(DIRECT_CONNECTIONS_RETRY_DELAYS));
         this.directConnectionsHandshakeTimeout = config.getDuration(DIRECT_CONNECTIONS_HANDSHAKE_TIMEOUT);
         this.directConnectionsChannelInitializer = getChannelInitializer(config, DIRECT_CONNECTIONS_CHANNEL_INITIALIZER);
         this.directConnectionsIdleRetries = getShort(config, DIRECT_CONNECTIONS_IDLE_RETRIES);
@@ -226,7 +227,7 @@ public class DrasylConfig {
         monitoringInfluxReportingFrequency = config.getDuration(MONITORING_INFLUX_REPORTING_FREQUENCY);
 
         // Load plugins
-        this.pluginEnvironments = getPluginEnvironmentList(config, PLUGINS);
+        this.pluginEnvironments = ImmutableList.copyOf(getPluginEnvironmentList(config, PLUGINS));
     }
 
     private Level getLoglevel(Config config, String path) {
@@ -367,7 +368,7 @@ public class DrasylConfig {
                  Duration serverIdleTimeout,
                  int flushBufferSize,
                  boolean serverSSLEnabled,
-                 List<String> serverSSLProtocols,
+                 Set<String> serverSSLProtocols,
                  Duration serverHandshakeTimeout,
                  Set<URI> serverEndpoints,
                  Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer,
@@ -517,7 +518,7 @@ public class DrasylConfig {
         return flushBufferSize;
     }
 
-    public List<String> getServerSSLProtocols() {
+    public Set<String> getServerSSLProtocols() {
         return serverSSLProtocols;
     }
 
@@ -801,7 +802,7 @@ public class DrasylConfig {
         private Duration serverIdleTimeout;
         private int flushBufferSize;
         private boolean serverSSLEnabled;
-        private List<String> serverSSLProtocols;
+        private Set<String> serverSSLProtocols;
         private Duration serverHandshakeTimeout;
         private Set<URI> serverEndpoints;
         private Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer;
@@ -845,7 +846,7 @@ public class DrasylConfig {
                         Duration serverIdleTimeout,
                         int flushBufferSize,
                         boolean serverSSLEnabled,
-                        List<String> serverSSLProtocols,
+                        Set<String> serverSSLProtocols,
                         Duration serverHandshakeTimeout,
                         Set<URI> serverEndpoints,
                         Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer,
@@ -979,7 +980,7 @@ public class DrasylConfig {
             return this;
         }
 
-        public Builder serverSSLProtocols(List<String> serverSSLProtocols) {
+        public Builder serverSSLProtocols(Set<String> serverSSLProtocols) {
             this.serverSSLProtocols = serverSSLProtocols;
             return this;
         }
