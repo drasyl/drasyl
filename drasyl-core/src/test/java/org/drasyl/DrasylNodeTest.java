@@ -21,8 +21,6 @@ package org.drasyl;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.Node;
-import org.drasyl.event.NodeDownEvent;
-import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
@@ -31,9 +29,9 @@ import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.messenger.MessageSinkException;
 import org.drasyl.messenger.Messenger;
-import org.drasyl.monitoring.Monitoring;
 import org.drasyl.messenger.MessengerException;
 import org.drasyl.messenger.NoPathToIdentityException;
+import org.drasyl.monitoring.Monitoring;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.client.SuperPeerClient;
 import org.drasyl.peer.connection.direct.DirectConnectionsManager;
@@ -45,6 +43,7 @@ import org.drasyl.peer.connection.message.WhoisMessage;
 import org.drasyl.peer.connection.server.Server;
 import org.drasyl.peer.connection.server.ServerException;
 import org.drasyl.pipeline.DrasylPipeline;
+import org.drasyl.plugins.PluginManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -97,12 +96,14 @@ class DrasylNodeTest {
     private DrasylPipeline pipeline;
     @Mock
     private Monitoring monitoring;
+    @Mock
+    private PluginManager pluginManager;
 
     @Nested
     class Start {
         @Test
         void shouldLoadIdentity() throws IdentityManagerException {
-            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, messenger, pipeline, directConnectionsManager, intraVmDiscovery, superPeerClient, server, monitoring, new AtomicBoolean(false), startSequence, shutdownSequence) {
+            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, messenger, pipeline, directConnectionsManager, intraVmDiscovery, superPeerClient, server, monitoring, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(Event event) {
                 }
@@ -120,7 +121,7 @@ class DrasylNodeTest {
             when(config.areDirectConnectionsEnabled()).thenReturn(true);
             when(config.isMonitoringEnabled()).thenReturn(true);
 
-            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, messenger, pipeline, directConnectionsManager, intraVmDiscovery, superPeerClient, server, monitoring, new AtomicBoolean(false), startSequence, shutdownSequence) {
+            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, messenger, pipeline, directConnectionsManager, intraVmDiscovery, superPeerClient, server, monitoring, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(Event event) {
                 }
@@ -141,7 +142,7 @@ class DrasylNodeTest {
             when(config.isSuperPeerEnabled()).thenReturn(false);
             when(config.isMonitoringEnabled()).thenReturn(false);
 
-            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, messenger, pipeline, directConnectionsManager, intraVmDiscovery, superPeerClient, server, monitoring, new AtomicBoolean(false), startSequence, shutdownSequence) {
+            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, messenger, pipeline, directConnectionsManager, intraVmDiscovery, superPeerClient, server, monitoring, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(Event event) {
                 }
@@ -160,7 +161,7 @@ class DrasylNodeTest {
             when(identityManager.getPublicKey()).thenReturn(publicKey);
             when(identityManager.getIdentity()).thenReturn(identity);
 
-            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, messenger, pipeline, directConnectionsManager, intraVmDiscovery, superPeerClient, server, monitoring, new AtomicBoolean(false), startSequence, shutdownSequence) {
+            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, messenger, pipeline, directConnectionsManager, intraVmDiscovery, superPeerClient, server, monitoring, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(Event event) {
                 }
@@ -180,7 +181,7 @@ class DrasylNodeTest {
             when(identityManager.getIdentity()).thenReturn(identity);
             doThrow(new ServerException("error")).when(server).open();
 
-            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, messenger, pipeline, directConnectionsManager, intraVmDiscovery, superPeerClient, server, monitoring, started, startSequence, shutdownSequence) {
+            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, messenger, pipeline, directConnectionsManager, intraVmDiscovery, superPeerClient, server, monitoring, pluginManager, started, startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(Event event) {
                 }
@@ -206,7 +207,7 @@ class DrasylNodeTest {
             when(config.areDirectConnectionsEnabled()).thenReturn(true);
             when(config.isMonitoringEnabled()).thenReturn(true);
 
-            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, messenger, pipeline, directConnectionsManager, intraVmDiscovery, superPeerClient, server, monitoring, new AtomicBoolean(true), startSequence, shutdownSequence) {
+            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, messenger, pipeline, directConnectionsManager, intraVmDiscovery, superPeerClient, server, monitoring, pluginManager, new AtomicBoolean(true), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(Event event) {
                 }
@@ -228,7 +229,7 @@ class DrasylNodeTest {
             when(config.areDirectConnectionsEnabled()).thenReturn(false);
             when(config.isMonitoringEnabled()).thenReturn(false);
 
-            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, messenger, pipeline, directConnectionsManager, intraVmDiscovery, superPeerClient, server, monitoring, new AtomicBoolean(true), startSequence, shutdownSequence) {
+            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, messenger, pipeline, directConnectionsManager, intraVmDiscovery, superPeerClient, server, monitoring, pluginManager, new AtomicBoolean(true), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(Event event) {
                 }
@@ -244,7 +245,7 @@ class DrasylNodeTest {
 
         @Test
         void shouldReturnSameFutureIfShutdownHasAlreadyBeenTriggered() {
-            DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, pipeline, directConnectionsManager, intraVmDiscovery, superPeerClient, server, monitoring, new AtomicBoolean(false), startSequence, shutdownSequence) {
+            DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, messenger, pipeline, directConnectionsManager, intraVmDiscovery, superPeerClient, server, monitoring, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(Event event) {
                 }
@@ -259,7 +260,7 @@ class DrasylNodeTest {
 
         @BeforeEach
         void setUp() {
-            underTest = spy(new DrasylNode(config, identityManager, peersManager, messenger, pipeline, directConnectionsManager, intraVmDiscovery, superPeerClient, server, monitoring, new AtomicBoolean(false), startSequence, shutdownSequence) {
+            underTest = spy(new DrasylNode(config, identityManager, peersManager, messenger, pipeline, directConnectionsManager, intraVmDiscovery, superPeerClient, server, monitoring, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(Event event) {
                 }
@@ -285,7 +286,7 @@ class DrasylNodeTest {
         }
 
         @Test
-        void payloadAsStringShouldPassMessageToPipeline(@Mock CompressedPublicKey myRecipient) throws DrasylException {
+        void payloadAsStringShouldPassMessageToPipeline(@Mock CompressedPublicKey myRecipient) {
             underTest.send(myRecipient, "Hallo Welt");
 
             verify(pipeline).executeOutbound(new ApplicationMessage(
@@ -311,7 +312,7 @@ class DrasylNodeTest {
     class Pipeline {
         @Test
         void shouldReturnPipeline() {
-            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, messenger, pipeline, directConnectionsManager, intraVmDiscovery, superPeerClient, server, monitoring, new AtomicBoolean(false), startSequence, shutdownSequence) {
+            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, messenger, pipeline, directConnectionsManager, intraVmDiscovery, superPeerClient, server, monitoring, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(Event event) {
                 }
@@ -325,7 +326,7 @@ class DrasylNodeTest {
     class MessageSink {
         @Test
         void shouldThrowExceptionIfNotRecipient(@Mock RelayableMessage message) {
-            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, messenger, pipeline, directConnectionsManager, intraVmDiscovery, superPeerClient, server, monitoring, new AtomicBoolean(true), startSequence, shutdownSequence) {
+            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, messenger, pipeline, directConnectionsManager, intraVmDiscovery, superPeerClient, server, monitoring, pluginManager, new AtomicBoolean(true), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(Event event) {
                 }
@@ -340,7 +341,7 @@ class DrasylNodeTest {
             when(identityManager.getPublicKey()).thenReturn(publicKey);
             when(message.getRecipient()).thenReturn(publicKey);
 
-            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, messenger, pipeline, directConnectionsManager, intraVmDiscovery, superPeerClient, server, monitoring, new AtomicBoolean(true), startSequence, shutdownSequence) {
+            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, messenger, pipeline, directConnectionsManager, intraVmDiscovery, superPeerClient, server, monitoring, pluginManager, new AtomicBoolean(true), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(Event event) {
                 }
@@ -357,7 +358,7 @@ class DrasylNodeTest {
             when(message.getId()).thenReturn("123");
             when(message.getRecipient()).thenReturn(publicKey);
 
-            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, messenger, pipeline, directConnectionsManager, intraVmDiscovery, superPeerClient, server, monitoring, new AtomicBoolean(true), startSequence, shutdownSequence) {
+            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, messenger, pipeline, directConnectionsManager, intraVmDiscovery, superPeerClient, server, monitoring, pluginManager, new AtomicBoolean(true), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(Event event) {
                 }
@@ -372,7 +373,7 @@ class DrasylNodeTest {
             when(identityManager.getPublicKey()).thenReturn(publicKey);
             when(message.getRecipient()).thenReturn(publicKey);
 
-            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, messenger, pipeline, directConnectionsManager, intraVmDiscovery, superPeerClient, server, monitoring, new AtomicBoolean(true), startSequence, shutdownSequence) {
+            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, messenger, pipeline, directConnectionsManager, intraVmDiscovery, superPeerClient, server, monitoring, pluginManager, new AtomicBoolean(true), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(Event event) {
                 }

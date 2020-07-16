@@ -21,6 +21,7 @@ package org.drasyl;
 import ch.qos.logback.classic.Level;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigMemorySize;
+import com.typesafe.config.ConfigObject;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.socket.SocketChannel;
 import org.drasyl.crypto.CryptoException;
@@ -29,6 +30,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.connection.client.DefaultClientChannelInitializer;
 import org.drasyl.peer.connection.server.DefaultServerChannelInitializer;
+import org.drasyl.plugins.PluginEnvironment;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -67,6 +69,7 @@ import static org.drasyl.DrasylConfig.MONITORING_INFLUX_PASSWORD;
 import static org.drasyl.DrasylConfig.MONITORING_INFLUX_REPORTING_FREQUENCY;
 import static org.drasyl.DrasylConfig.MONITORING_INFLUX_URI;
 import static org.drasyl.DrasylConfig.MONITORING_INFLUX_USER;
+import static org.drasyl.DrasylConfig.PLUGINS;
 import static org.drasyl.DrasylConfig.SERVER_BIND_HOST;
 import static org.drasyl.DrasylConfig.SERVER_BIND_PORT;
 import static org.drasyl.DrasylConfig.SERVER_CHANNEL_INITIALIZER;
@@ -88,6 +91,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -147,6 +151,7 @@ class DrasylConfigTest {
     private String monitoringInfluxPassword;
     private String monitoringInfluxDatabase;
     private Duration monitoringInfluxReportingFrequency;
+    private List<PluginEnvironment> pluginEnvironments;
 
     @BeforeEach
     void setUp() {
@@ -184,6 +189,7 @@ class DrasylConfigTest {
         monitoringInfluxPassword = "";
         monitoringInfluxDatabase = "drasyl";
         monitoringInfluxReportingFrequency = ofSeconds(60);
+        pluginEnvironments = List.of();
     }
 
     @Nested
@@ -227,6 +233,7 @@ class DrasylConfigTest {
             when(typesafeConfig.getString(MONITORING_INFLUX_PASSWORD)).thenReturn(monitoringInfluxPassword);
             when(typesafeConfig.getString(MONITORING_INFLUX_DATABASE)).thenReturn(monitoringInfluxDatabase);
             when(typesafeConfig.getDuration(MONITORING_INFLUX_REPORTING_FREQUENCY)).thenReturn(monitoringInfluxReportingFrequency);
+            when(typesafeConfig.getObject(PLUGINS)).thenReturn(mock(ConfigObject.class));
 
             DrasylConfig config = new DrasylConfig(typesafeConfig);
 
@@ -274,7 +281,15 @@ class DrasylConfigTest {
         void shouldMaskSecrets() throws CryptoException {
             identityPrivateKey = CompressedPrivateKey.of("07e98a2f8162a4002825f810c0fbd69b0c42bd9cb4f74a21bc7807bc5acb4f5f");
 
-            DrasylConfig config = new DrasylConfig(loglevel, proofOfWork, identityPublicKey, identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer, messageMaxContentLength, messageHopLimit, composedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled, directConnectionsEnabled, directConnectionsMaxConcurrentConnections, directConnectionsRetryDelays, directConnectionsHandshakeTimeout, directConnectionsChannelInitializer, directConnectionsIdleRetries, directConnectionsIdleTimeout, monitoringEnabled, monitoringInfluxUri, monitoringInfluxUser, monitoringInfluxPassword, monitoringInfluxDatabase, monitoringInfluxReportingFrequency);
+            DrasylConfig config = new DrasylConfig(loglevel, proofOfWork, identityPublicKey, identityPrivateKey, identityPath,
+                    serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize,
+                    serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer,
+                    messageMaxContentLength, messageHopLimit, composedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints,
+                    superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries,
+                    superPeerIdleTimeout, intraVmDiscoveryEnabled, directConnectionsEnabled, directConnectionsMaxConcurrentConnections,
+                    directConnectionsRetryDelays, directConnectionsHandshakeTimeout, directConnectionsChannelInitializer,
+                    directConnectionsIdleRetries, directConnectionsIdleTimeout, monitoringEnabled, monitoringInfluxUri, monitoringInfluxUser,
+                    monitoringInfluxPassword, monitoringInfluxDatabase, monitoringInfluxReportingFrequency, pluginEnvironments);
 
             assertThat(config.toString(), not(containsString(identityPrivateKey.getCompressedKey())));
         }
@@ -347,6 +362,7 @@ class DrasylConfigTest {
                     .monitoringInfluxPassword(DEFAULT.getMonitoringInfluxPassword())
                     .monitoringInfluxDatabase(DEFAULT.getMonitoringInfluxDatabase())
                     .monitoringInfluxReportingFrequency(DEFAULT.getMonitoringInfluxReportingFrequency())
+                    .pluginEnvironments(DEFAULT.getPluginEnvironments())
                     .build();
 
             assertEquals(DEFAULT, config);
