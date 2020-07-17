@@ -1,8 +1,12 @@
 # Development
 
-## Release new version
+## Release 
 
-Ensure [CHANGELOG](CHANGELOG.md) is up-to-date.
+### 1. Ensure Changelog is up-to-date 
+
+[CHANGELOG](CHANGELOG.md)
+
+### 2. Bump Maven Version
 
 ```bash
 rm -f release.properties
@@ -11,11 +15,35 @@ mvn clean release:prepare
 
 **An additional call of `mvn release:perform` is not necessary!**
 
+### 3. Preservate Builds
+
 Wait for GitLab CI to finish build tasks and select "Keep" on maven-deploy job artifact.
 
-Add Release Notes `[CHANGELOG.md](CHANGELOG.md)` to git Tag on [GitLab](https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/tags).
+### 4. Create Release on GitHub
 
-Add `https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/jobs/artifacts/0.1.0/raw/drasyl-0.1.0.zip?job=maven-deploy` / `drasyl-0.1.0-zip` release asset.
+Go to https://github.com/drasyl-overlay/drasyl/releases.
+
+**Tag:** `v1.2.0`
+
+**Title:** `v1.2.0`
+
+**Description:** `[CHANGELOG.md](CHANGELOG.md)`
+
+Attach `drasyl-1.2.0.zip` generated from GitLab CI.
+
+### 5. Release Container Image on Docker Hub
+
+```
+docker pull docker tag git.informatik.uni-hamburg.de:4567/sane-public/drasyl:1-2-0
+docker tag git.informatik.uni-hamburg.de:4567/sane-public/drasyl:1-2-0 drasy/drasyl:1.2.0
+docker tag git.informatik.uni-hamburg.de:4567/sane-public/drasyl:1-2-0 drasy/drasyl:1.2
+docker tag git.informatik.uni-hamburg.de:4567/sane-public/drasyl:1-2-0 drasy/drasyl:1
+docker tag git.informatik.uni-hamburg.de:4567/sane-public/drasyl:1-2-0 drasy/drasyl:latest
+docker push drasy/drasyl:1.2.0
+docker push drasy/drasyl:1.2
+docker push drasyl:1
+docker push drasyl:latest
+```
 
 ## Build dist
 
