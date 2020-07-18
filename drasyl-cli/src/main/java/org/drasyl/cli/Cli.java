@@ -18,11 +18,13 @@
  */
 package org.drasyl.cli;
 
+import org.drasyl.DrasylNode;
 import org.drasyl.cli.command.Command;
 import org.drasyl.cli.command.GenerateIdentityCommand;
 import org.drasyl.cli.command.HelpCommand;
 import org.drasyl.cli.command.NodeCommand;
 import org.drasyl.cli.command.VersionCommand;
+import org.drasyl.util.DrasylScheduler;
 
 import java.util.Map;
 
@@ -52,6 +54,8 @@ public class Cli {
         Cli cli = new Cli();
         try {
             cli.run(args);
+            DrasylNode.irrevocablyTerminate();
+            DrasylScheduler.shutdown();
         }
         catch (CommandNotFoundCliException e) {
             System.out.println("Error: " + e.getMessage()); // NOSONAR
