@@ -67,6 +67,7 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.drasyl.util.DrasylScheduler.getInstanceHeavy;
 
 /**
@@ -153,7 +154,7 @@ public abstract class DrasylNode {
             this.monitoring = new Monitoring(config, peersManager, identityManager::getPublicKey, pipeline);
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
-            this.shutdownSequence = new CompletableFuture<>();
+            this.shutdownSequence = completedFuture(null);
             setLogLevel(this.config.getLoglevel());
         }
         catch (ConfigException e) {
@@ -293,7 +294,7 @@ public abstract class DrasylNode {
             DrasylNode self = this;
             onInternalEvent(new NodeDownEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
             LOG.info("Shutdown drasyl Node with Identity '{}'...", identityManager.getIdentity());
-            startSequence = new CompletableFuture<>();
+            shutdownSequence = new CompletableFuture<>();
             getInstanceHeavy().scheduleDirect(() -> {
                 this.stopMonitoring();
                 this.stopPluginManager();
@@ -309,15 +310,6 @@ public abstract class DrasylNode {
             });
         }
 
-        return shutdownSequence;
-    }
-
-    /**
-     * This method returns a future, which complements if all shutdown steps have been completed.
-     *
-     * @return this method returns a future, which complements if all shutdown steps have been
-     */
-    public CompletableFuture<Void> shutdownFuture() {
         return shutdownSequence;
     }
 
@@ -389,7 +381,7 @@ public abstract class DrasylNode {
             INSTANCES.add(this);
             LOG.info("Start drasyl Node v{}...", DrasylNode.getVersion());
             LOG.debug("The following configuration will be used: {}", config);
-            shutdownSequence = new CompletableFuture<>();
+            startSequence = new CompletableFuture<>();
             getInstanceHeavy().scheduleDirect(() -> {
                 try {
                     loadIdentity();

@@ -2,10 +2,9 @@ package org.drasyl.cli.command;
 
 import org.apache.commons.cli.CommandLine;
 import org.drasyl.DrasylConfig;
-import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.cli.CliException;
-import org.drasyl.util.DrasylFunction;
+import org.drasyl.util.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -17,10 +16,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
+import java.util.concurrent.CompletableFuture;
+import java.util.function.Function;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -29,7 +32,7 @@ public class NodeCommandTest {
     @Mock
     private PrintStream printStream;
     @Mock
-    private DrasylFunction<DrasylConfig, DrasylNode, DrasylException> nodeSupplier;
+    private Function<DrasylConfig, Pair<DrasylNode, CompletableFuture<Void>>> nodeSupplier;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private DrasylNode node;
     @InjectMocks
@@ -67,12 +70,13 @@ public class NodeCommandTest {
         private CommandLine cmd;
 
         @Test
-        void shouldRunANode() throws CliException, DrasylException {
-            when(nodeSupplier.apply(any())).thenReturn(node);
+        void shouldRunANode(@Mock  Pair pair) throws CliException {
+            when(nodeSupplier.apply(any())).thenReturn(pair);
+            when(pair.second()).thenReturn(completedFuture(null));
 
             underTest.execute(cmd);
 
-            verify(nodeSupplier.apply(any())).start();
+            verify(nodeSupplier).apply(any());
         }
     }
 }

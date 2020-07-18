@@ -9,12 +9,19 @@ import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.cli.CliException;
 import org.drasyl.event.Event;
-import org.drasyl.util.DrasylFunction;
+import org.drasyl.event.NodeNormalTerminationEvent;
+import org.drasyl.event.NodeUnrecoverableErrorEvent;
+import org.drasyl.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.PrintStream;
+import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ExecutionException;
+import java.util.function.Function;
+
+import static java.util.concurrent.CompletableFuture.failedFuture;
 
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class NodeCommand extends AbstractCommand {
@@ -22,16 +29,32 @@ public class NodeCommand extends AbstractCommand {
     private static final String DEFAULT_CONF = "drasyl.conf";
     private static final String OPT_VERBOSE = "verbose";
     private static final String OPT_CONFIG = "config";
-    private final DrasylFunction<DrasylConfig, DrasylNode, DrasylException> nodeSupplier;
+    private final Function<DrasylConfig, Pair<DrasylNode, CompletableFuture<Void>>> nodeSupplier;
     private DrasylNode node;
 
     public NodeCommand() {
         this(
                 System.out, // NOSONAR
-                config -> new DrasylNode(config) {
-                    @Override
-                    public void onEvent(Event event) {
-                        log.info("Event received: {}", event);
+                config -> {
+                    try {
+                        CompletableFuture<Void> running = new CompletableFuture<>();
+                        DrasylNode myNode = new DrasylNode(config) {
+                            @Override
+                            public void onEvent(Event event) {
+                                log.info("Event received: {}", event);
+                                if (event instanceof NodeNormalTerminationEvent) {
+                                    running.complete(null);
+                                }
+                                else if (event instanceof NodeUnrecoverableErrorEvent) {
+                                    running.completeExceptionally(((NodeUnrecoverableErrorEvent) event).getError());
+                                }
+                            }
+                        };
+                        myNode.start();
+                        return Pair.of(myNode, running);
+                    }
+                    catch (DrasylException e) {
+                        return Pair.of(null, failedFuture(e));
                     }
                 },
                 null
@@ -39,7 +62,7 @@ public class NodeCommand extends AbstractCommand {
     }
 
     NodeCommand(PrintStream printStream,
-                DrasylFunction<DrasylConfig, DrasylNode, DrasylException> nodeSupplier,
+                Function<DrasylConfig, Pair<DrasylNode, CompletableFuture<Void>>> nodeSupplier,
                 DrasylNode node) {
         super(printStream);
         this.nodeSupplier = nodeSupplier;
@@ -77,11 +100,24 @@ public class NodeCommand extends AbstractCommand {
     }
 
     @Override
+    protected Options getOptions() {
+        Options options = super.getOptions();
+
+        Option loglevel = Option.builder("v").longOpt(OPT_VERBOSE).hasArg().argName("level").desc("Sets the log level (off, error, warn, info, debug, trace; default: warn)").build();
+        options.addOption(loglevel);
+
+        Option configfile = Option.builder("c").longOpt(OPT_CONFIG).hasArg().argName("file").desc("Load configuration from specified file.").build();
+        options.addOption(configfile);
+
+        return options;
+    }
+
+    @Override
     public void execute(CommandLine cmd) throws CliException {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (node != null) {
                 log.info("Shutdown Drasyl Node");
-                node.shutdown();
+                node.shutdown().join();
             }
         }));
 
@@ -89,11 +125,15 @@ public class NodeCommand extends AbstractCommand {
             DrasylConfig config;
             config = getDrasylConfig(cmd);
 
-            node = nodeSupplier.apply(config);
-            node.start();
-            node.shutdownFuture().join();
+            Pair<DrasylNode, CompletableFuture<Void>> pair = nodeSupplier.apply(config);
+            node = pair.first();
+            CompletableFuture<Void> running = pair.second();
+            running.get(); // block while node is running
         }
-        catch (DrasylException e) {
+        catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+        }
+        catch (ExecutionException e) {
             throw new CliException(e);
         }
     }
@@ -123,19 +163,6 @@ public class NodeCommand extends AbstractCommand {
             config = DrasylConfig.newBuilder(config).loglevel(Level.valueOf(level)).build();
         }
         return config;
-    }
-
-    @Override
-    protected Options getOptions() {
-        Options options = super.getOptions();
-
-        Option loglevel = Option.builder("v").longOpt(OPT_VERBOSE).hasArg().argName("level").desc("Sets the log level (off, error, warn, info, debug, trace; default: warn)").build();
-        options.addOption(loglevel);
-
-        Option configfile = Option.builder("c").longOpt(OPT_CONFIG).hasArg().argName("file").desc("Load configuration from specified file.").build();
-        options.addOption(configfile);
-
-        return options;
     }
 
     @Override
