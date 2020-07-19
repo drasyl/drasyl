@@ -33,13 +33,14 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.ResponseMessage;
-import org.drasyl.peer.connection.server.Server;
-import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.superpeer.TestClientChannelInitializer;
 
+import java.net.URI;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Supplier;
 
@@ -50,12 +51,12 @@ public class TestSuperPeerClient extends SuperPeerClient {
     private final Subject<Event> receivedEvents;
 
     public TestSuperPeerClient(DrasylConfig config,
-                               Server server,
                                Identity identity,
                                EventLoopGroup workerGroup,
                                boolean doPingPong,
-                               boolean doJoin) {
-        this(DrasylConfig.newBuilder(config).superPeerEnabled(true).superPeerEndpoints(server.getEndpoints()).build(), () -> identity, new PeerChannelGroup(), workerGroup, ReplaySubject.create(), doPingPong, doJoin);
+                               boolean doJoin,
+                               Set<URI> endpoints) {
+        this(DrasylConfig.newBuilder(config).superPeerEnabled(true).superPeerEndpoints(endpoints).build(), () -> identity, new PeerChannelGroup(), workerGroup, ReplaySubject.create(), doPingPong, doJoin);
     }
 
     private TestSuperPeerClient(DrasylConfig config,

@@ -182,17 +182,6 @@ public class Server implements AutoCloseable {
     }
 
     /**
-     * @return the endpoints
-     */
-    public Set<URI> getEndpoints() {
-        return actualEndpoints;
-    }
-
-    PeerChannelGroup getChannelGroup() {
-        return channelGroup;
-    }
-
-    /**
      * Starts the server.
      */
     @SuppressWarnings({ "java:S3776" })

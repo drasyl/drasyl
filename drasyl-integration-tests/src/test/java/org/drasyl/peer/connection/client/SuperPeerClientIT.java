@@ -61,6 +61,7 @@ import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.net.URI;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
@@ -94,6 +95,7 @@ class SuperPeerClientIT {
     private Observable<Boolean> superPeerConnected;
     private PeerChannelGroup channelGroup;
     private PeerChannelGroup channelGroupServer;
+    private Set<URI> endpoints;
 
     @BeforeEach
     void setup(TestInfo info) throws DrasylException, CryptoException {
@@ -152,8 +154,9 @@ class SuperPeerClientIT {
         }, peersManager, channelGroup);
         messengerServer = new Messenger(message -> {
         }, peersManager, channelGroup);
+        endpoints = new HashSet<>();
 
-        server = new TestServer(identityManagerServer::getIdentity, messengerServer, peersManagerServer, serverConfig, channelGroupServer, serverWorkerGroup, bossGroup, superPeerConnected);
+        server = new TestServer(identityManagerServer::getIdentity, messengerServer, peersManagerServer, serverConfig, channelGroupServer, serverWorkerGroup, bossGroup, superPeerConnected, endpoints);
         server.open();
         emittedEventsSubject = ReplaySubject.<Event>create().toSerialized();
         superPeerConnected = BehaviorSubject.createDefault(false).toSerialized();

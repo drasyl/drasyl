@@ -29,9 +29,9 @@ import org.drasyl.messenger.MessengerException;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.client.DirectClient;
 import org.drasyl.peer.connection.message.WhoisMessage;
-import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.InboundHandlerAdapter;
@@ -72,7 +72,7 @@ public class DirectConnectionsManager implements AutoCloseable {
     private final Consumer<Event> eventConsumer;
     private final ConcurrentMap<CompressedPublicKey, DirectClient> clients;
     private final BooleanSupplier acceptNewConnectionsSupplier;
-    private Set<URI> endpoints;
+    private final Set<URI> endpoints;
 
     public DirectConnectionsManager(DrasylConfig config,
                                     IdentityManager identityManager,
@@ -82,7 +82,8 @@ public class DirectConnectionsManager implements AutoCloseable {
                                     PeerChannelGroup channelGroup,
                                     EventLoopGroup workerGroup,
                                     Consumer<Event> eventConsumer,
-                                    BooleanSupplier acceptNewConnectionsSupplier) {
+                                    BooleanSupplier acceptNewConnectionsSupplier,
+                                    Set<URI> nodeEndpoints) {
         this(
                 config,
                 identityManager,
@@ -93,7 +94,7 @@ public class DirectConnectionsManager implements AutoCloseable {
                 channelGroup,
                 workerGroup,
                 eventConsumer,
-                Set.of(),
+                nodeEndpoints,
                 new DirectConnectionDemandsCache(config.getDirectConnectionsMaxConcurrentConnections(), ofSeconds(60)),
                 new RequestPeerInformationCache(1_000, ofSeconds(60)),
                 new ConcurrentHashMap<>(),
@@ -110,7 +111,7 @@ public class DirectConnectionsManager implements AutoCloseable {
                              PeerChannelGroup channelGroup,
                              EventLoopGroup workerGroup,
                              Consumer<Event> eventConsumer,
-                             Set<URI> endpoints,
+                             Set<URI> nodeEndpoints,
                              DirectConnectionDemandsCache directConnectionDemandsCache,
                              RequestPeerInformationCache requestPeerInformationCache,
                              ConcurrentMap<CompressedPublicKey, DirectClient> clients,
@@ -123,7 +124,7 @@ public class DirectConnectionsManager implements AutoCloseable {
         this.channelGroup = channelGroup;
         this.workerGroup = workerGroup;
         this.eventConsumer = eventConsumer;
-        this.endpoints = endpoints;
+        this.endpoints = nodeEndpoints;
         this.directConnectionDemandsCache = directConnectionDemandsCache;
         this.requestPeerInformationCache = requestPeerInformationCache;
         this.pipeline = pipeline;
@@ -169,16 +170,6 @@ public class DirectConnectionsManager implements AutoCloseable {
             }
             LOG.info("Direct Connections Handler stopped");
         }
-    }
-
-    /**
-     * Defines the endpoints that the local node sends to other peers when initializing direct
-     * connections.
-     *
-     * @param endpoints
-     */
-    public void setEndpoints(Set<URI> endpoints) {
-        this.endpoints = endpoints;
     }
 
     /**

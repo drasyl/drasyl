@@ -32,7 +32,9 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.Message;
 
+import java.net.URI;
 import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
@@ -52,13 +54,14 @@ public class TestServer extends Server {
                       PeerChannelGroup channelGroup,
                       EventLoopGroup workerGroup,
                       EventLoopGroup bossGroup,
-                      Observable<Boolean> superPeerConnected) {
+                      Observable<Boolean> superPeerConnected,
+                      Set<URI> endpoints) {
         this(config, channelGroup, workerGroup, bossGroup, new TestServerChannelInitializer(new ServerEnvironment(
                 config,
                 identitySupplier,
                 peersManager,
                 messenger,
-                new HashSet<>(),
+                endpoints,
                 channelGroup,
                 () -> true,
                 () -> !config.isSuperPeerEnabled() || superPeerConnected.blockingFirst(),

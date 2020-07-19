@@ -32,13 +32,12 @@ import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.client.ClientException;
 import org.drasyl.peer.connection.client.TestSuperPeerClient;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
-import org.drasyl.peer.connection.server.Server;
-import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.server.ServerException;
 import org.drasyl.peer.connection.server.TestServer;
 import org.drasyl.peer.connection.superpeer.TestClientChannelInitializer;
@@ -52,6 +51,7 @@ import org.junit.jupiter.api.TestInfo;
 import testutils.AnsiColor;
 
 import java.net.URI;
+import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
 
@@ -72,6 +72,7 @@ class ChunkedMessageIT {
     private static TestSuperPeerClient session2;
     private static byte[] bigPayload;
     private static PeerChannelGroup channelGroup;
+    private static Set<URI> endpoints;
 
     @BeforeEach
     void setup(TestInfo info) {
@@ -130,8 +131,9 @@ class ChunkedMessageIT {
         }, peersManager, channelGroup);
         Observable<Boolean> serverSuperPeerConnected = Observable.just(false);
         channelGroup = new PeerChannelGroup();
+        endpoints = new HashSet<>();
 
-        server = new TestServer(serverIdentityManager::getIdentity, serverMessenger, peersManager, serverConfig, channelGroup, workerGroup, bossGroup, serverSuperPeerConnected);
+        server = new TestServer(serverIdentityManager::getIdentity, serverMessenger, peersManager, serverConfig, channelGroup, workerGroup, bossGroup, serverSuperPeerConnected, endpoints);
         server.open();
 
         config = DrasylConfig.newBuilder()
@@ -139,13 +141,13 @@ class ChunkedMessageIT {
                 .messageMaxContentLength(1024 * 1024 * 100)
                 .serverEnabled(false)
                 .serverSSLEnabled(true)
-                .superPeerEndpoints(server.getEndpoints())
+                .superPeerEndpoints(endpoints)
                 .superPeerPublicKey(CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"))
                 .superPeerChannelInitializer(TestClientChannelInitializer.class)
                 .build();
 
-        session1 = clientSessionAfterJoin(config, server, identitySession1);
-        session2 = clientSessionAfterJoin(config, server, identitySession2);
+        session1 = clientSessionAfterJoin(config, identitySession1);
+        session2 = clientSessionAfterJoin(config, identitySession2);
 
         // create message with max allowed payload size
         bigPayload = new byte[serverConfig.getMessageMaxContentLength()];
@@ -167,9 +169,8 @@ class ChunkedMessageIT {
     }
 
     private static TestSuperPeerClient clientSessionAfterJoin(DrasylConfig config,
-                                                              Server server,
-                                                              Identity identity) throws ClientException {
-        TestSuperPeerClient client = new TestSuperPeerClient(config, server, identity, workerGroup, true, true);
+                                                              Identity identity) {
+        TestSuperPeerClient client = new TestSuperPeerClient(config, identity, workerGroup, true, true, endpoints);
         client.open();
         awaitClientJoin(identity);
         return client;

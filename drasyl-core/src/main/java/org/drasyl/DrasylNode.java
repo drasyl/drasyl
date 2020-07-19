@@ -44,6 +44,7 @@ import org.drasyl.messenger.NoPathToIdentityException;
 import org.drasyl.monitoring.Monitoring;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.client.SuperPeerClient;
 import org.drasyl.peer.connection.direct.DirectConnectionsManager;
 import org.drasyl.peer.connection.intravm.IntraVmDiscovery;
@@ -53,7 +54,6 @@ import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.RelayableMessage;
 import org.drasyl.peer.connection.message.WhoisMessage;
 import org.drasyl.peer.connection.server.Server;
-import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.server.ServerException;
 import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.Pipeline;
@@ -159,7 +159,7 @@ public abstract class DrasylNode {
             this.acceptNewConnections = new AtomicBoolean();
             this.pipeline = new DrasylPipeline(this::onEvent, messenger::send, config);
             this.pluginManager = new PluginManager(pipeline, config);
-            this.directConnectionsManager = new DirectConnectionsManager(config, identityManager, peersManager, messenger, pipeline, channelGroup, DrasylNode.WORKER_GROUP, this::onInternalEvent, acceptNewConnections::get);
+            this.directConnectionsManager = new DirectConnectionsManager(config, identityManager, peersManager, messenger, pipeline, channelGroup, DrasylNode.WORKER_GROUP, this::onInternalEvent, acceptNewConnections::get, endpoints);
             this.intraVmDiscovery = new IntraVmDiscovery(identityManager::getPublicKey, messenger, peersManager, this::onInternalEvent);
             this.superPeerClient = new SuperPeerClient(this.config, identityManager::getIdentity, peersManager, messenger, channelGroup, DrasylNode.WORKER_GROUP, this::onInternalEvent, directConnectionsManager::communicationOccurred, acceptNewConnections::get);
             this.server = new Server(identityManager::getIdentity, messenger, peersManager, this.config, channelGroup, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP, superPeerClient.connectionEstablished(), directConnectionsManager::communicationOccurred, endpoints, acceptNewConnections::get);
@@ -368,7 +368,6 @@ public abstract class DrasylNode {
      */
     private void stopServer() {
         if (config.isServerEnabled()) {
-            directConnectionsManager.setEndpoints(Set.of());
             server.close();
         }
     }
@@ -472,7 +471,6 @@ public abstract class DrasylNode {
     private void startServer() throws ServerException {
         if (config.isServerEnabled()) {
             server.open();
-            directConnectionsManager.setEndpoints(server.getEndpoints());
         }
     }
 
@@ -539,7 +537,7 @@ public abstract class DrasylNode {
             peersManager.setPeerInformation(whoisMessage.getRequester(), whoisMessage.getPeerInformation());
 
             CompressedPublicKey myPublicKey = identityManager.getPublicKey();
-            PeerInformation myPeerInformation = PeerInformation.of(server.getEndpoints());
+            PeerInformation myPeerInformation = PeerInformation.of(endpoints);
             IdentityMessage identityMessage = new IdentityMessage(whoisMessage.getRequester(), myPublicKey, myPeerInformation, whoisMessage.getId());
 
             try {
