@@ -29,6 +29,7 @@ import java.util.function.Supplier;
 
 import static java.time.Duration.ofSeconds;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
 import static org.mockito.Mockito.anyLong;
@@ -48,8 +49,6 @@ class DirectClientTest {
     private Supplier<Bootstrap> bootstrapSupplier;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private Channel channel;
-    @Mock
-    private ChannelFuture channelFuture;
     @Mock
     private Subject<Boolean> connected;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
@@ -74,7 +73,7 @@ class DirectClientTest {
             when(bootstrapSupplier.get()).thenReturn(bootstrap);
             when(endpointsSupplier.get()).thenReturn(Set.of(URI.create("ws://localhost")));
 
-            try (DirectClient client = new DirectClient(retryDelays, workerGroup, endpointsSupplier, new AtomicBoolean(), nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, connected, channelInitializerSupplier, channelInitializer, channel, directConnectionDemand, onFailure)) {
+            try (DirectClient client = new DirectClient(retryDelays, workerGroup, endpointsSupplier, new AtomicBoolean(), () -> false, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, connected, channelInitializerSupplier, channelInitializer, channel, directConnectionDemand, onFailure)) {
                 client.open();
 
                 verify(bootstrapSupplier).get();
@@ -83,7 +82,7 @@ class DirectClientTest {
 
         @Test
         void shouldNotConnectIfClientIsAlreadyOpen() {
-            try (DirectClient client = new DirectClient(retryDelays, workerGroup, endpointsSupplier, new AtomicBoolean(true), nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, connected, channelInitializerSupplier, channelInitializer, channel, directConnectionDemand, onFailure)) {
+            try (DirectClient client = new DirectClient(retryDelays, workerGroup, endpointsSupplier, new AtomicBoolean(true), () -> true, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, connected, channelInitializerSupplier, channelInitializer, channel, directConnectionDemand, onFailure)) {
                 client.open();
 
                 verify(bootstrapSupplier, never()).get();
@@ -98,7 +97,7 @@ class DirectClientTest {
             when(directConnectionDemand.getAsBoolean()).thenReturn(true);
             when(retryDelays.get(anyInt())).thenReturn(ofSeconds(1));
 
-            try (DirectClient client = new DirectClient(retryDelays, workerGroup, endpointsSupplier, new AtomicBoolean(true), nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, connected, channelInitializerSupplier, channelInitializer, channel, directConnectionDemand, onFailure)) {
+            try (DirectClient client = new DirectClient(retryDelays, workerGroup, endpointsSupplier, new AtomicBoolean(true), () -> true, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, connected, channelInitializerSupplier, channelInitializer, channel, directConnectionDemand, onFailure)) {
                 client.conditionalScheduledReconnect();
 
                 verify(workerGroup).schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
@@ -109,7 +108,7 @@ class DirectClientTest {
         void shouldNotReconnectIfClientIsOpenAndSuperPeerRetryDelaysIsNotEmptyAndNoDemandExists() {
             when(directConnectionDemand.getAsBoolean()).thenReturn(false);
 
-            try (DirectClient client = new DirectClient(retryDelays, workerGroup, endpointsSupplier, new AtomicBoolean(true), nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, connected, channelInitializerSupplier, channelInitializer, channel, directConnectionDemand, onFailure)) {
+            try (DirectClient client = new DirectClient(retryDelays, workerGroup, endpointsSupplier, new AtomicBoolean(true), () -> true, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, connected, channelInitializerSupplier, channelInitializer, channel, directConnectionDemand, onFailure)) {
                 client.conditionalScheduledReconnect();
 
                 verify(workerGroup, never()).schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
@@ -120,22 +119,18 @@ class DirectClientTest {
     @Nested
     class Close {
         @Test
-        void shouldCloseConnectionIfClientIsOpen() {
-            when(channel.isOpen()).thenReturn(true);
-            when(channel.closeFuture()).thenReturn(channelFuture);
-            when(channel.writeAndFlush(any())).thenReturn(channelFuture);
-
-            DirectClient client = new DirectClient(retryDelays, workerGroup, endpointsSupplier, new AtomicBoolean(true), nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, connected, channelInitializerSupplier, channelInitializer, channel, directConnectionDemand, onFailure);
+        void shouldSetOpenedToFalseIfClientIsOpen() {
+            AtomicBoolean opened = new AtomicBoolean(true);
+            DirectClient client = new DirectClient(retryDelays, workerGroup, endpointsSupplier, opened, () -> true, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, connected, channelInitializerSupplier, channelInitializer, channel, directConnectionDemand, onFailure);
 
             client.close();
 
-            verify(channel).writeAndFlush(new QuitMessage(REASON_SHUTTING_DOWN));
-            verify(channel).closeFuture();
+            assertFalse(opened.get());
         }
 
         @Test
         void shouldNotCloseConnectionIfClientIsNotOpen() {
-            DirectClient client = new DirectClient(retryDelays, workerGroup, endpointsSupplier, new AtomicBoolean(false), nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, connected, channelInitializerSupplier, channelInitializer, channel, directConnectionDemand, onFailure);
+            DirectClient client = new DirectClient(retryDelays, workerGroup, endpointsSupplier, new AtomicBoolean(false), () -> false, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, connected, channelInitializerSupplier, channelInitializer, channel, directConnectionDemand, onFailure);
 
             client.close();
 

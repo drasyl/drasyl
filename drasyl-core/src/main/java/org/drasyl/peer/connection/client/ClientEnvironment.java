@@ -25,6 +25,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.PeerChannelGroup;
 
 import java.net.URI;
 import java.time.Duration;
@@ -39,6 +40,8 @@ public class ClientEnvironment {
     private final Supplier<Identity> identitySupplier;
     private final URI endpoint;
     private final Messenger messenger;
+
+    private final PeerChannelGroup channelGroup;
     private final PeersManager peersManager;
     private final Subject<Boolean> connected;
     private final Consumer<Event> eventConsumer;
@@ -53,6 +56,7 @@ public class ClientEnvironment {
                              Supplier<Identity> identitySupplier,
                              URI endpoint,
                              Messenger messenger,
+                             PeerChannelGroup channelGroup,
                              PeersManager peersManager,
                              Subject<Boolean> connected,
                              Consumer<Event> eventConsumer,
@@ -66,6 +70,7 @@ public class ClientEnvironment {
         this.identitySupplier = identitySupplier;
         this.endpoint = endpoint;
         this.messenger = messenger;
+        this.channelGroup = channelGroup;
         this.peersManager = peersManager;
         this.connected = connected;
         this.eventConsumer = eventConsumer;
@@ -127,5 +132,9 @@ public class ClientEnvironment {
 
     public Consumer<CompressedPublicKey> getPeerCommunicationConsumer() {
         return peerCommunicationConsumer;
+    }
+
+    public PeerChannelGroup getChannelGroup() {
+        return channelGroup;
     }
 }

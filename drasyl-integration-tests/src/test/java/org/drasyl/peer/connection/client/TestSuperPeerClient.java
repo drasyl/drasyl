@@ -37,6 +37,7 @@ import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.ResponseMessage;
 import org.drasyl.peer.connection.server.Server;
+import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.superpeer.TestClientChannelInitializer;
 
 import java.util.concurrent.CompletableFuture;
@@ -54,17 +55,17 @@ public class TestSuperPeerClient extends SuperPeerClient {
                                EventLoopGroup workerGroup,
                                boolean doPingPong,
                                boolean doJoin) {
-        this(DrasylConfig.newBuilder(config).superPeerEnabled(true).superPeerEndpoints(server.getEndpoints()).build(), () -> identity, workerGroup, ReplaySubject.create(), doPingPong, doJoin);
+        this(DrasylConfig.newBuilder(config).superPeerEnabled(true).superPeerEndpoints(server.getEndpoints()).build(), () -> identity, new PeerChannelGroup(), workerGroup, ReplaySubject.create(), doPingPong, doJoin);
     }
 
     private TestSuperPeerClient(DrasylConfig config,
                                 Supplier<Identity> identitySupplier,
+                                PeerChannelGroup channelGroup,
                                 EventLoopGroup workerGroup,
                                 Subject<Event> receivedEvents,
                                 boolean doPingPong,
                                 boolean doJoin) {
-        this(config, identitySupplier, workerGroup, receivedEvents, new PeersManager(receivedEvents::onNext), new Messenger((message -> {
-        })), BehaviorSubject.createDefault(false), doPingPong, doJoin);
+        this(config, identitySupplier, workerGroup, receivedEvents, new PeersManager(receivedEvents::onNext), channelGroup, BehaviorSubject.createDefault(false), doPingPong, doJoin);
     }
 
     private TestSuperPeerClient(DrasylConfig config,
@@ -72,12 +73,13 @@ public class TestSuperPeerClient extends SuperPeerClient {
                                 EventLoopGroup workerGroup,
                                 Subject<Event> receivedEvents,
                                 PeersManager peersManager,
-                                Messenger messenger,
+                                PeerChannelGroup channelGroup,
                                 Subject<Boolean> connected,
                                 boolean doPingPong,
                                 boolean doJoin) {
-        super(config, workerGroup, connected, endpoint -> new TestClientChannelInitializer(new ClientEnvironment(config, identitySupplier, endpoint, messenger, peersManager, connected, receivedEvents::onNext, true, config.getSuperPeerPublicKey(), config.getSuperPeerIdleRetries(), config.getSuperPeerIdleTimeout(), config.getSuperPeerHandshakeTimeout(), publicKey -> {
-        }), doPingPong, doJoin));
+        super(config, workerGroup, connected, endpoint -> new TestClientChannelInitializer(new ClientEnvironment(config, identitySupplier, endpoint, new Messenger((message -> {
+        }), peersManager, channelGroup), channelGroup, peersManager, connected, receivedEvents::onNext, true, config.getSuperPeerPublicKey(), config.getSuperPeerIdleRetries(), config.getSuperPeerIdleTimeout(), config.getSuperPeerHandshakeTimeout(), publicKey -> {
+        }), doPingPong, doJoin), () -> true);
         this.identitySupplier = identitySupplier;
         this.receivedEvents = receivedEvents;
     }

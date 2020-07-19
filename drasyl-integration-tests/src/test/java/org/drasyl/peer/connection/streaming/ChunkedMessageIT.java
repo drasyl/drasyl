@@ -32,14 +32,15 @@ import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.client.ClientException;
 import org.drasyl.peer.connection.client.TestSuperPeerClient;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.server.Server;
+import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.server.ServerException;
 import org.drasyl.peer.connection.server.TestServer;
-import org.drasyl.peer.connection.client.ClientException;
 import org.drasyl.peer.connection.superpeer.TestClientChannelInitializer;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -70,6 +71,7 @@ class ChunkedMessageIT {
     private static TestSuperPeerClient session1;
     private static TestSuperPeerClient session2;
     private static byte[] bigPayload;
+    private static PeerChannelGroup channelGroup;
 
     @BeforeEach
     void setup(TestInfo info) {
@@ -125,10 +127,11 @@ class ChunkedMessageIT {
         PeersManager peersManager = new PeersManager(event -> {
         });
         Messenger serverMessenger = new Messenger(message -> {
-        });
+        }, peersManager, channelGroup);
         Observable<Boolean> serverSuperPeerConnected = Observable.just(false);
+        channelGroup = new PeerChannelGroup();
 
-        server = new TestServer(serverIdentityManager::getIdentity, serverMessenger, peersManager, serverConfig, workerGroup, bossGroup, serverSuperPeerConnected);
+        server = new TestServer(serverIdentityManager::getIdentity, serverMessenger, peersManager, serverConfig, channelGroup, workerGroup, bossGroup, serverSuperPeerConnected);
         server.open();
 
         config = DrasylConfig.newBuilder()

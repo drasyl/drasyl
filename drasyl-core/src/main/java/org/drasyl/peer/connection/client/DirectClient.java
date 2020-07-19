@@ -14,6 +14,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.util.DrasylFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,18 +43,21 @@ public class DirectClient extends AbstractClient {
                         Supplier<Identity> identitySupplier,
                         PeersManager peersManager,
                         Messenger messenger,
+                        PeerChannelGroup channelGroup,
                         EventLoopGroup workerGroup,
                         Consumer<Event> eventConsumer,
                         Consumer<CompressedPublicKey> peerCommunicationConsumer,
                         CompressedPublicKey serverPublicKey,
                         Supplier<Set<URI>> endpointsSupplier,
                         BooleanSupplier directConnectionDemand,
-                        Runnable onFailure) {
+                        Runnable onFailure,
+                        BooleanSupplier acceptNewConnectionsSupplier) {
         this(
                 config,
                 identitySupplier,
                 peersManager,
                 messenger,
+                channelGroup,
                 workerGroup,
                 BehaviorSubject.createDefault(false),
                 eventConsumer,
@@ -61,13 +65,16 @@ public class DirectClient extends AbstractClient {
                 serverPublicKey,
                 endpointsSupplier,
                 directConnectionDemand,
-                onFailure);
+                onFailure,
+                acceptNewConnectionsSupplier
+        );
     }
 
     private DirectClient(DrasylConfig config,
                          Supplier<Identity> identitySupplier,
                          PeersManager peersManager,
                          Messenger messenger,
+                         PeerChannelGroup channelGroup,
                          EventLoopGroup workerGroup,
                          Subject<Boolean> connected,
                          Consumer<Event> eventConsumer,
@@ -75,14 +82,15 @@ public class DirectClient extends AbstractClient {
                          CompressedPublicKey serverPublicKey,
                          Supplier<Set<URI>> endpointsSupplier,
                          BooleanSupplier directConnectionDemand,
-                         Runnable onFailure) {
+                         Runnable onFailure,
+                         BooleanSupplier acceptNewConnectionsSupplier) {
         super(
                 config.getDirectConnectionsRetryDelays(),
                 workerGroup,
                 endpointsSupplier,
                 connected,
-                endpoint -> initiateChannelInitializer(new ClientEnvironment(config, identitySupplier, endpoint, messenger, peersManager, connected, eventConsumer, false, serverPublicKey, config.getDirectConnectionsIdleRetries(), config.getDirectConnectionsIdleTimeout(), config.getDirectConnectionsHandshakeTimeout(), peerCommunicationConsumer), config.getDirectConnectionsChannelInitializer())
-        );
+                endpoint -> initiateChannelInitializer(new ClientEnvironment(config, identitySupplier, endpoint, messenger, channelGroup, peersManager, connected, eventConsumer, false, serverPublicKey, config.getDirectConnectionsIdleRetries(), config.getDirectConnectionsIdleTimeout(), config.getDirectConnectionsHandshakeTimeout(), peerCommunicationConsumer), config.getDirectConnectionsChannelInitializer()),
+                acceptNewConnectionsSupplier);
         this.directConnectionDemand = directConnectionDemand;
         this.onFailure = onFailure;
     }
@@ -91,6 +99,7 @@ public class DirectClient extends AbstractClient {
                  EventLoopGroup workerGroup,
                  Supplier<Set<URI>> endpointsSupplier,
                  AtomicBoolean opened,
+                 BooleanSupplier acceptNewConnectionsSupplier,
                  AtomicInteger nextEndpointPointer,
                  AtomicInteger nextRetryDelayPointer,
                  Supplier<Bootstrap> bootstrapSupplier,
@@ -100,7 +109,7 @@ public class DirectClient extends AbstractClient {
                  Channel channel,
                  BooleanSupplier directConnectionDemand,
                  Runnable onFailure) {
-        super(retryDelays, workerGroup, endpointsSupplier, opened, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, connected, channelInitializerSupplier, channelInitializer, channel);
+        super(retryDelays, workerGroup, endpointsSupplier, opened, acceptNewConnectionsSupplier, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, connected, channelInitializerSupplier, channelInitializer, channel);
         this.directConnectionDemand = directConnectionDemand;
         this.onFailure = onFailure;
     }

@@ -46,7 +46,7 @@ import java.util.concurrent.CompletableFuture;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_IDENTITY_COLLISION;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_PROOF_OF_WORK_INVALID;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_SUPER_PEER_DISCONNECTED;
-import static org.drasyl.peer.connection.server.ServerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
+import static org.drasyl.peer.connection.PeerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
 
 /**
  * Acts as a guard for in- and outbound connections. A channel is only created, when a {@link

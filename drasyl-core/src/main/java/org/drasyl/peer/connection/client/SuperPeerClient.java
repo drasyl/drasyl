@@ -32,6 +32,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.util.DrasylFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +41,7 @@ import java.net.URI;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -56,6 +58,7 @@ public class SuperPeerClient extends AbstractClient {
                     EventLoopGroup workerGroup,
                     Set<URI> endpoints,
                     AtomicBoolean opened,
+                    BooleanSupplier acceptedNewConnections,
                     AtomicInteger nextEndpointPointer,
                     AtomicInteger nextRetryDelayPointer,
                     Supplier<Bootstrap> bootstrapSupplier,
@@ -68,6 +71,7 @@ public class SuperPeerClient extends AbstractClient {
                 workerGroup,
                 () -> endpoints,
                 opened,
+                acceptedNewConnections,
                 nextEndpointPointer,
                 nextRetryDelayPointer,
                 bootstrapSupplier,
@@ -81,32 +85,37 @@ public class SuperPeerClient extends AbstractClient {
     protected SuperPeerClient(DrasylConfig config,
                               EventLoopGroup workerGroup,
                               Subject<Boolean> connected,
-                              DrasylFunction<URI, ChannelInitializer<SocketChannel>, DrasylException> channelInitializerSupplier) {
+                              DrasylFunction<URI, ChannelInitializer<SocketChannel>, DrasylException> channelInitializerSupplier,
+                              BooleanSupplier acceptNewConnectionsSupplier) {
         super(
                 config.getSuperPeerRetryDelays(),
                 workerGroup,
                 config::getSuperPeerEndpoints,
                 connected,
-                channelInitializerSupplier
-        );
+                channelInitializerSupplier,
+                acceptNewConnectionsSupplier);
     }
 
     public SuperPeerClient(DrasylConfig config,
                            Supplier<Identity> identitySupplier,
                            PeersManager peersManager,
                            Messenger messenger,
+                           PeerChannelGroup channelGroup,
                            EventLoopGroup workerGroup,
                            Consumer<Event> eventConsumer,
-                           Consumer<CompressedPublicKey> peerCommunicationConsumer) {
+                           Consumer<CompressedPublicKey> peerCommunicationConsumer,
+                           BooleanSupplier acceptNewConnectionsSupplier) {
         this(
                 config,
                 identitySupplier,
                 peersManager,
                 messenger,
+                channelGroup,
                 workerGroup,
                 BehaviorSubject.createDefault(false),
                 eventConsumer,
-                peerCommunicationConsumer
+                peerCommunicationConsumer,
+                acceptNewConnectionsSupplier
         );
     }
 
@@ -114,16 +123,19 @@ public class SuperPeerClient extends AbstractClient {
                             Supplier<Identity> identitySupplier,
                             PeersManager peersManager,
                             Messenger messenger,
+                            PeerChannelGroup channelGroup,
                             EventLoopGroup workerGroup,
                             Subject<Boolean> connected,
                             Consumer<Event> eventConsumer,
-                            Consumer<CompressedPublicKey> peerCommunicationConsumer) {
+                            Consumer<CompressedPublicKey> peerCommunicationConsumer,
+                            BooleanSupplier acceptNewConnectionsSupplier) {
         super(
                 config.getSuperPeerRetryDelays(),
                 workerGroup,
                 config::getSuperPeerEndpoints,
                 connected,
-                endpoint -> initiateChannelInitializer(new ClientEnvironment(config, identitySupplier, endpoint, messenger, peersManager, connected, eventConsumer, true, config.getSuperPeerPublicKey(), config.getSuperPeerIdleRetries(), config.getSuperPeerIdleTimeout(), config.getSuperPeerHandshakeTimeout(), peerCommunicationConsumer), config.getSuperPeerChannelInitializer())
+                endpoint -> initiateChannelInitializer(new ClientEnvironment(config, identitySupplier, endpoint, messenger, channelGroup, peersManager, connected, eventConsumer, true, config.getSuperPeerPublicKey(), config.getSuperPeerIdleRetries(), config.getSuperPeerIdleTimeout(), config.getSuperPeerHandshakeTimeout(), peerCommunicationConsumer), config.getSuperPeerChannelInitializer()),
+                acceptNewConnectionsSupplier
         );
     }
 

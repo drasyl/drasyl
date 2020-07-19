@@ -33,6 +33,7 @@ import org.drasyl.event.Peer;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerEvent;
 import org.drasyl.event.PeerRelayEvent;
+import org.drasyl.event.PeerUnreachableEvent;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -229,6 +230,23 @@ class DrasylNodeIT {
 
             superSuperPeerEvents.awaitCount(3);
             superPeerEvents.awaitCount(3);
+            client1Events.awaitCount(1);
+            client2Events.awaitCount(1);
+        }
+
+        @Test
+        @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+        void shuttingDownNodeShouldCloseConnections() {
+            //
+            // send messages
+            //
+            TestObserver<Event> superSuperPeerEvents = superSuperPeer.second().filter(e -> e instanceof PeerRelayEvent).test();
+            TestObserver<Event> client1Events = client1.second().filter(e -> e instanceof PeerUnreachableEvent).test();
+            TestObserver<Event> client2Events = client2.second().filter(e -> e instanceof PeerUnreachableEvent).test();
+
+            superPeer.first().shutdown().join();
+
+            superSuperPeerEvents.awaitCount(1);
             client1Events.awaitCount(1);
             client2Events.awaitCount(1);
         }

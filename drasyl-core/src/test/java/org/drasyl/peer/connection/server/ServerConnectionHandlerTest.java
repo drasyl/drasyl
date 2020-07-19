@@ -30,6 +30,7 @@ import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
@@ -55,7 +56,7 @@ import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Erro
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_IDENTITY_COLLISION;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
-import static org.drasyl.peer.connection.server.ServerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
+import static org.drasyl.peer.connection.PeerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -95,7 +96,7 @@ class ServerConnectionHandlerTest {
     @Mock
     private Channel nettyChannel;
     @Mock
-    private ServerChannelGroup channelGroup;
+    private PeerChannelGroup channelGroup;
     @Mock
     private RegisterGrandchildMessage registerGrandchildMessage;
     @Mock
