@@ -103,7 +103,9 @@ abstract class AbstractClient implements AutoCloseable {
 
     public void open() {
         if (opened.compareAndSet(false, true)) {
+            getLogger().debug("Start Super Peer Client...");
             connect(nextEndpoint());
+            getLogger().debug("Super Peer started");
         }
     }
 
@@ -224,6 +226,7 @@ abstract class AbstractClient implements AutoCloseable {
     @Override
     public void close() {
         if (opened.compareAndSet(true, false) && channel != null) {
+            getLogger().info("Stop Super Peer Client...");
             // send quit message and close connections
             if (channel.isOpen()) {
                 channel.writeAndFlush(new QuitMessage(REASON_SHUTTING_DOWN)).addListener(ChannelFutureListener.CLOSE);
@@ -231,6 +234,7 @@ abstract class AbstractClient implements AutoCloseable {
 
             channel.closeFuture().syncUninterruptibly();
             channel = null;
+            getLogger().info("Super Peer Client stopped");
         }
     }
 

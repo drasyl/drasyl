@@ -122,6 +122,7 @@ public class DirectConnectionsManager implements AutoCloseable {
 
     public void open() {
         if (opened.compareAndSet(false, true)) {
+            LOG.debug("Start Direct Connections Manager...");
             // add handler to the pipeline that listens for {@link PeerRelayEvent}s.
             pipeline.addLast(DIRECT_CONNECTIONS_MANAGER, new InboundHandlerAdapter() {
                 @Override
@@ -136,12 +137,14 @@ public class DirectConnectionsManager implements AutoCloseable {
                     }
                 }
             });
+            LOG.debug("Direct Connections Manager started.");
         }
     }
 
     @Override
     public void close() {
         if (opened.compareAndSet(true, false)) {
+            LOG.info("Stop Direct Connections Handler...");
             // remove handler that has been added in {@link #open()}
             pipeline.remove(DIRECT_CONNECTIONS_MANAGER);
 
@@ -153,6 +156,7 @@ public class DirectConnectionsManager implements AutoCloseable {
                 clients.remove(publicKey);
                 client.close();
             }
+            LOG.info("Direct Connections Handler stopped");
         }
     }
 

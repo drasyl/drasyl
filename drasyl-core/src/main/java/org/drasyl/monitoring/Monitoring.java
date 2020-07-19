@@ -7,6 +7,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.influx.InfluxConfig;
 import io.micrometer.influx.InfluxMeterRegistry;
 import org.drasyl.DrasylConfig;
+import org.drasyl.DrasylNode;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.PeersManager;
@@ -15,6 +16,8 @@ import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.SimplexDuplexHandler;
 import org.drasyl.util.NetworkUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.HashMap;
@@ -29,6 +32,7 @@ import static java.util.Optional.ofNullable;
  * Monitors various states or events in the drasyl Node.
  */
 public class Monitoring implements AutoCloseable {
+    private static final Logger LOG = LoggerFactory.getLogger(Monitoring.class);
     static final String MONITORING_HANDLER = "MONITORING_HANDLER";
     private final PeersManager peersManager;
     private final Supplier<CompressedPublicKey> publicKeySupplier;
@@ -101,6 +105,7 @@ public class Monitoring implements AutoCloseable {
 
     public void open() {
         if (opened.compareAndSet(false, true)) {
+            LOG.debug("Start Monitoring...");
             registry = registrySupplier.get();
 
             // add common tags
@@ -144,15 +149,18 @@ public class Monitoring implements AutoCloseable {
                     counter.increment();
                 }
             });
+            LOG.debug("Monitoring started.");
         }
     }
 
     @Override
     public void close() {
         if (opened.compareAndSet(true, false)) {
+            LOG.info("Stop Monitoring...");
             pipeline.remove(MONITORING_HANDLER);
             registry.close();
             registry = null;
+            LOG.info("Monitoring stopped.");
         }
     }
 }

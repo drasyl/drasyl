@@ -28,7 +28,10 @@ import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.peer.connection.server.Server;
 import org.drasyl.util.Pair;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -42,6 +45,7 @@ import java.util.function.Supplier;
  * Uses shared memory to discover other drasyl nodes running on same JVM.
  */
 public class IntraVmDiscovery implements AutoCloseable {
+    private static final Logger LOG = LoggerFactory.getLogger(IntraVmDiscovery.class);
     static final Map<CompressedPublicKey, IntraVmDiscovery> discoveries = new HashMap<>();
     static final MessageSink MESSAGE_SINK = message -> {
         CompressedPublicKey recipient = message.getRecipient();
@@ -105,6 +109,7 @@ public class IntraVmDiscovery implements AutoCloseable {
     public void open() {
         try {
             lock.writeLock().lock();
+            LOG.debug("Start Intra VM Discovery...");
 
             if (opened.compareAndSet(false, true)) {
                 // add message sink
@@ -117,6 +122,7 @@ public class IntraVmDiscovery implements AutoCloseable {
                 });
                 discoveries.put(identitySupplier.get(), this);
             }
+            LOG.debug("Intra VM Discovery started.");
         }
         finally {
             lock.writeLock().unlock();
@@ -127,6 +133,7 @@ public class IntraVmDiscovery implements AutoCloseable {
     public void close() {
         try {
             lock.writeLock().lock();
+            LOG.info("Stop Intra VM Discovery...");
 
             if (opened.compareAndSet(true, false)) {
                 // remove message sink
@@ -139,6 +146,7 @@ public class IntraVmDiscovery implements AutoCloseable {
                     peersManager.removePath(d.identitySupplier.get(), path);
                 });
             }
+            LOG.info("Intra VM Discovery stopped.");
         }
         finally {
             lock.writeLock().unlock();

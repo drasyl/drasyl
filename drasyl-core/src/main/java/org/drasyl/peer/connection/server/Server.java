@@ -33,7 +33,10 @@ import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.messenger.NoPathToIdentityException;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.direct.DirectConnectionsManager;
 import org.drasyl.peer.connection.message.QuitMessage;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
@@ -57,6 +60,7 @@ import static org.drasyl.util.UriUtil.overridePort;
  */
 @SuppressWarnings({ "squid:S00107" })
 public class Server implements AutoCloseable {
+    private static final Logger LOG = LoggerFactory.getLogger(Server.class);
     public final EventLoopGroup workerGroup;
     public final EventLoopGroup bossGroup;
     public final ServerBootstrap serverBootstrap;
@@ -176,6 +180,7 @@ public class Server implements AutoCloseable {
     @SuppressWarnings({ "java:S3776" })
     public void open() throws ServerException {
         if (opened.compareAndSet(false, true)) {
+            LOG.debug("Start Server...");
             try {
                 ChannelFuture channelFuture = serverBootstrap
                         .bind(config.getServerBindHost(), config.getServerBindPort());
@@ -210,6 +215,7 @@ public class Server implements AutoCloseable {
                             throw new NoPathToIdentityException(recipient);
                         }
                     });
+                    LOG.debug("Server is now listening at {}:{}", config.getServerBindHost(), getPort());
                 }
                 else {
                     throw new ServerException("Unable to start server: " + channelFuture.cause().getMessage());
@@ -235,6 +241,7 @@ public class Server implements AutoCloseable {
     @SuppressWarnings({ "java:S1905" })
     public void close() {
         if (opened.compareAndSet(true, false) && channel != null && channel.isOpen()) {
+            LOG.info("Stop Server listening at {}:{}...", config.getServerBindHost(), getPort());
             // send quit message to all clients and close connections
             channelGroup.writeAndFlush(new QuitMessage(REASON_SHUTTING_DOWN))
                     .addListener((ChannelGroupFutureListener) future -> {
@@ -244,6 +251,7 @@ public class Server implements AutoCloseable {
                         channel.close();
                         channel = null;
                     });
+            LOG.info("Server stopped");
         }
     }
 

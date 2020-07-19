@@ -56,12 +56,14 @@ public class PluginManager {
      * Automatically loads all plugins that are defined in the corresponding {@link DrasylConfig}.
      */
     public synchronized void start() throws DrasylException {
+        LOG.debug("Start Plugins...");
         for (PluginEnvironment pluginEnvironment : config.getPluginEnvironments()) {
             AutoloadablePlugin plugin = loadPlugin(pluginEnvironment);
             plugins.put(plugin.name(), plugin);
             addHandlerToPipeline(plugin);
             plugin.onAdded();
         }
+        LOG.debug("Plugins started.");
     }
 
     AutoloadablePlugin loadPlugin(PluginEnvironment pluginEnvironment) throws DrasylException {
@@ -97,12 +99,14 @@ public class PluginManager {
      * Stops all plugins and removes them from the plugin list.
      */
     public synchronized void stop() {
+        LOG.info("Stop Plugins...");
         for (DrasylPlugin plugin : plugins.values()) {
             removeHandlerFromPipeline(plugin);
             plugin.onRemove();
         }
 
         plugins.clear();
+        LOG.info("Plugins stopped");
     }
 
     private void removeHandlerFromPipeline(DrasylPlugin plugin) {

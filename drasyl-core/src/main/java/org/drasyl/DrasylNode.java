@@ -315,17 +315,13 @@ public abstract class DrasylNode {
 
     private void stopMonitoring() {
         if (config.isMonitoringEnabled()) {
-            LOG.info("Stop Monitoring...");
             monitoring.close();
-            LOG.info("Monitoring stopped.");
         }
     }
 
     private void stopDirectConnectionsHandler() {
         if (config.areDirectConnectionsEnabled()) {
-            LOG.info("Stop Direct Connections Handler...");
             directConnectionsManager.close();
-            LOG.info("Direct Connections Handler stopped");
         }
     }
 
@@ -335,9 +331,7 @@ public abstract class DrasylNode {
      */
     private void stopSuperPeerClient() {
         if (config.isSuperPeerEnabled()) {
-            LOG.info("Stop Super Peer Client...");
             superPeerClient.close();
-            LOG.info("Super Peer Client stopped");
         }
     }
 
@@ -348,17 +342,13 @@ public abstract class DrasylNode {
     private void stopServer() {
         if (config.isServerEnabled()) {
             directConnectionsManager.setEndpoints(Set.of());
-            LOG.info("Stop Server listening at {}:{}...", config.getServerBindHost(), server.getPort());
             server.close();
-            LOG.info("Server stopped");
         }
     }
 
     private void stopIntraVmDiscovery() {
         if (config.isIntraVmDiscoveryEnabled()) {
-            LOG.info("Stop Intra VM Discovery...");
             intraVmDiscovery.close();
-            LOG.info("Intra VM Discovery stopped.");
         }
     }
 
@@ -441,9 +431,7 @@ public abstract class DrasylNode {
 
     private void startIntraVmDiscovery() {
         if (config.isIntraVmDiscoveryEnabled()) {
-            LOG.debug("Start Intra VM Discovery...");
             intraVmDiscovery.open();
-            LOG.debug("Intra VM Discovery started.");
         }
     }
 
@@ -453,9 +441,7 @@ public abstract class DrasylNode {
      */
     private void startServer() throws ServerException {
         if (config.isServerEnabled()) {
-            LOG.debug("Start Server...");
             server.open();
-            LOG.debug("Server is now listening at {}:{}", config.getServerBindHost(), server.getPort());
             directConnectionsManager.setEndpoints(server.getEndpoints());
         }
     }
@@ -466,38 +452,28 @@ public abstract class DrasylNode {
      */
     private void startSuperPeerClient() {
         if (config.isSuperPeerEnabled()) {
-            LOG.debug("Start Super Peer Client...");
             superPeerClient.open();
-            LOG.debug("Super Peer started");
         }
     }
 
     private void startDirectConnectionsHandler() {
         if (config.areDirectConnectionsEnabled()) {
-            LOG.debug("Start Direct Connections Handler...");
             directConnectionsManager.open();
-            LOG.debug("Direct Connections Handler started.");
         }
     }
 
     private void startMonitoring() {
         if (config.isMonitoringEnabled()) {
-            LOG.debug("Start Monitoring...");
             monitoring.open();
-            LOG.debug("Monitoring started.");
         }
     }
 
     private void startPluginManager() throws DrasylException {
-        LOG.debug("Start Plugins...");
         pluginManager.start();
-        LOG.debug("Plugins started.");
     }
 
     private void stopPluginManager() {
-        LOG.info("Stop Plugins...");
         pluginManager.stop();
-        LOG.info("Plugins stopped");
     }
 
     /**
