@@ -130,7 +130,6 @@ public class Server implements AutoCloseable {
         this.peersManager = peersManager;
         this.config = config;
         this.channel = null;
-        this.serverBootstrap = new ServerBootstrap();
         this.workerGroup = workerGroup;
         this.bossGroup = bossGroup;
         this.channelGroup = new ServerChannelGroup();
@@ -147,6 +146,9 @@ public class Server implements AutoCloseable {
                         peerCommunicationConsumer),
                 config.getServerChannelInitializer()
         );
+        this.serverBootstrap = new ServerBootstrap().group(bossGroup, workerGroup)
+                .channel(NioServerSocketChannel.class)
+                .childHandler(channelInitializer);
         this.opened = opened;
         this.messenger = messenger;
         this.actualPort = -1;
@@ -176,10 +178,6 @@ public class Server implements AutoCloseable {
         if (opened.compareAndSet(false, true)) {
             try {
                 ChannelFuture channelFuture = serverBootstrap
-                        .group(bossGroup, workerGroup)
-                        .channel(NioServerSocketChannel.class)
-//                    .handler(new LoggingHandler(LogLevel.INFO))
-                        .childHandler(channelInitializer)
                         .bind(config.getServerBindHost(), config.getServerBindPort());
                 channelFuture.awaitUninterruptibly();
 

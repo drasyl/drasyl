@@ -87,8 +87,8 @@ class ServerTest {
         @Test
         void shouldSetOpenToTrue() throws ServerException {
             when(config.getServerEndpoints()).thenReturn(Set.of(URI.create("ws://localhost:22527/")));
-            when(serverBootstrap.group(any(), any()).channel(any()).childHandler(any()).bind((String) null, 0).isSuccess()).thenReturn(true);
-            when(serverBootstrap.group(any(), any()).channel(any()).childHandler(any()).bind((String) null, 0).channel().localAddress()).thenReturn(new InetSocketAddress(22527));
+            when(serverBootstrap.bind((String) null, 0).isSuccess()).thenReturn(true);
+            when(serverBootstrap.bind((String) null, 0).channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
             try (Server server = new Server(messenger, peersManager,
                     config, serverBootstrap, workerGroup, bossGroup, channelInitializer, new AtomicBoolean(false), channelGroup, -1, serverChannel,
