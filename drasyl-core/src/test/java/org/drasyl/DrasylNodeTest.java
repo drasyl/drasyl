@@ -271,7 +271,7 @@ class DrasylNodeTest {
                 public void onEvent(Event event) {
                 }
             });
-            drasylNode.shutdown();
+            drasylNode.shutdown().join();
 
             verify(channelGroup).writeAndFlush(new QuitMessage(REASON_SHUTTING_DOWN));
         }
