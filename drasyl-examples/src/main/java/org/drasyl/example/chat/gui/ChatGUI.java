@@ -95,9 +95,6 @@ public class ChatGUI extends Application {
                     else if (event instanceof NodeOfflineEvent) {
                         txtArea.appendText("[~System~]: The node is offline. No messages can be sent at the moment. Wait until node comes back online.\n");
                     }
-                    else {
-                        // ignore
-                    }
                 }
             };
             node.start().join();
@@ -191,7 +188,12 @@ public class ChatGUI extends Application {
     private void newInputAction(ActionEvent actionEvent) {
         if (validateInput(chatField, s -> !s.isEmpty())) {
             try {
-                node.send(recipient, JACKSON_WRITER.writeValueAsBytes(new Message(chatField.getText(), username)));
+                final String msg = chatField.getText();
+                node.send(recipient, JACKSON_WRITER.writeValueAsBytes(new Message(msg, username)))
+                        .exceptionally(e -> {
+                            txtArea.appendText("Message `" + msg + "` cloud not be sent.");
+                            return null;
+                        });
                 txtArea.appendText("[" + username + "]: " + chatField.getText() + "\n");
             }
             catch (JsonProcessingException e) {

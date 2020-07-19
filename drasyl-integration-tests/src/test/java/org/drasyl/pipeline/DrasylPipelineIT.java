@@ -37,6 +37,8 @@ import java.util.concurrent.CompletableFuture;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DrasylPipelineIT {
     private PublishSubject<Event> receivedEvents;
@@ -87,7 +89,7 @@ class DrasylPipelineIT {
 
         ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), payload);
 
-        pipeline.executeInbound(msg);
+        pipeline.processInbound(msg);
 
         events.awaitCount(1);
         events.assertValue(new MessageEvent(Pair.of(identity2.getPublicKey(), newPayload)));
@@ -110,7 +112,7 @@ class DrasylPipelineIT {
 
         ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), payload);
 
-        pipeline.executeInbound(msg);
+        pipeline.processInbound(msg);
 
         events.awaitCount(2);
         events.assertValueAt(0, new MessageEvent(Pair.of(msg.getSender(), msg.getPayload())));
@@ -148,7 +150,7 @@ class DrasylPipelineIT {
 
         ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), payload);
 
-        pipeline.executeInbound(msg);
+        pipeline.processInbound(msg);
 
         exceptions.awaitCount(1);
         exceptions.assertValue(exception);
@@ -174,10 +176,13 @@ class DrasylPipelineIT {
             }
         });
 
-        pipeline.executeOutbound(msg);
+        CompletableFuture<Void> future = pipeline.processOutbound(msg);
 
         outbounds.awaitCount(1);
         outbounds.assertValue(newMsg);
+        assertTrue(future.isDone());
+        assertFalse(future.isCancelled());
+        assertFalse(future.isCompletedExceptionally());
     }
 
     @Test
@@ -190,14 +195,18 @@ class DrasylPipelineIT {
             public void write(HandlerContext ctx,
                               ApplicationMessage msg,
                               CompletableFuture<Void> future) {
-                super.write(ctx, msg, CompletableFuture.completedFuture(null));
+                future.complete(null);
+                super.write(ctx, msg, future);
             }
         });
 
-        pipeline.executeOutbound(msg);
+        CompletableFuture<Void> future = pipeline.processOutbound(msg);
 
         outbounds.awaitCount(1);
         outbounds.assertNoValues();
+        assertTrue(future.isDone());
+        assertFalse(future.isCancelled());
+        assertFalse(future.isCompletedExceptionally());
     }
 
     @Test
@@ -210,13 +219,17 @@ class DrasylPipelineIT {
             public void write(HandlerContext ctx,
                               ApplicationMessage msg,
                               CompletableFuture<Void> future) {
-                super.write(ctx, msg, CompletableFuture.failedFuture(new Exception("Error!")));
+                future.completeExceptionally(new Exception("Error!"));
+                super.write(ctx, msg, future);
             }
         });
 
-        pipeline.executeOutbound(msg);
+        CompletableFuture<Void> future = pipeline.processOutbound(msg);
 
         outbounds.awaitCount(1);
         outbounds.assertNoValues();
+        assertTrue(future.isDone());
+        assertFalse(future.isCancelled());
+        assertTrue(future.isCompletedExceptionally());
     }
 }

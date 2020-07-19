@@ -294,14 +294,14 @@ class DrasylNodeTest {
         void shouldPassMessageToPipeline(@Mock CompressedPublicKey myRecipient) {
             underTest.send(myRecipient, new byte[]{ 0x4f });
 
-            verify(pipeline).executeOutbound(new ApplicationMessage(identityManager.getPublicKey(), myRecipient, payload));
+            verify(pipeline).processOutbound(new ApplicationMessage(identityManager.getPublicKey(), myRecipient, payload));
         }
 
         @Test
         void recipientAsStringShouldPassMessageToPipeline() throws DrasylException, CryptoException {
             underTest.send("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458", payload);
 
-            verify(pipeline).executeOutbound(new ApplicationMessage(
+            verify(pipeline).processOutbound(new ApplicationMessage(
                     identityManager.getPublicKey(),
                     CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458"),
                     payload
@@ -312,7 +312,7 @@ class DrasylNodeTest {
         void payloadAsStringShouldPassMessageToPipeline(@Mock CompressedPublicKey myRecipient) {
             underTest.send(myRecipient, "Hallo Welt");
 
-            verify(pipeline).executeOutbound(new ApplicationMessage(
+            verify(pipeline).processOutbound(new ApplicationMessage(
                     identityManager.getPublicKey(),
                     myRecipient,
                     "Hallo Welt".getBytes()
@@ -323,7 +323,7 @@ class DrasylNodeTest {
         void recipientAndPayloadAsStringShouldPassMessageToPipeline() throws DrasylException, CryptoException {
             underTest.send("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458", "Hallo Welt");
 
-            verify(pipeline).executeOutbound(new ApplicationMessage(
+            verify(pipeline).processOutbound(new ApplicationMessage(
                     identityManager.getPublicKey(),
                     CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458"),
                     "Hallo Welt".getBytes()
@@ -371,7 +371,7 @@ class DrasylNodeTest {
             });
             underTest.messageSink(message);
 
-            verify(pipeline).executeInbound(message);
+            verify(pipeline).processInbound(message);
             verify(peersManager).addPeer(message.getSender());
         }
 

@@ -39,7 +39,7 @@ class SimpleOutboundHandlerTest {
                                         ChunkedMessage msg,
                                         CompletableFuture<Void> future) {
                 // Emit this message as inbound message to test
-                ctx.pipeline().executeInbound(msg);
+                ctx.pipeline().processInbound(msg);
             }
         };
 
@@ -48,7 +48,7 @@ class SimpleOutboundHandlerTest {
         TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
 
         ChunkedMessage msg = mock(ChunkedMessage.class);
-        pipeline.executeOutbound(msg);
+        pipeline.processOutbound(msg);
 
         inboundMessageTestObserver.awaitCount(1);
         inboundMessageTestObserver.assertValue(msg);
@@ -63,7 +63,7 @@ class SimpleOutboundHandlerTest {
                                         ChunkedMessage msg,
                                         CompletableFuture<Void> future) {
                 // Emit this message as inbound message to test
-                ctx.pipeline().executeInbound(msg);
+                ctx.pipeline().processInbound(msg);
             }
         };
 
@@ -72,7 +72,7 @@ class SimpleOutboundHandlerTest {
         TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
 
         ApplicationMessage msg = mock(ApplicationMessage.class);
-        pipeline.executeOutbound(msg);
+        pipeline.processOutbound(msg);
 
         outboundMessageTestObserver.awaitCount(1);
         outboundMessageTestObserver.assertValue(msg);
