@@ -40,6 +40,7 @@ import org.drasyl.messenger.Messenger;
 import org.drasyl.messenger.NoPathToIdentityException;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.client.ClientException;
 import org.drasyl.peer.connection.client.TestSuperPeerClient;
 import org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler;
@@ -84,7 +85,6 @@ import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Erro
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_PING_PONG;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_PROOF_OF_WORK_INVALID;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_NEW_SESSION;
-import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_SERVICE_UNAVAILABLE;
@@ -119,6 +119,8 @@ class ServerIT {
     private Identity identitySession2;
     private AtomicBoolean opened;
     private Set<URI> endpoints;
+    private AtomicBoolean acceptNewConnections;
+    private PeerChannelGroup channelGroup;
 
     @BeforeEach
     void setup(TestInfo info) throws DrasylException, CryptoException {
@@ -150,17 +152,19 @@ class ServerIT {
         serverIdentityManager.loadOrCreateIdentity();
         peersManager = new PeersManager(event -> {
         });
+        channelGroup = new PeerChannelGroup();
         serverMessenger = new Messenger(message -> {
             CompressedPublicKey recipient = message.getRecipient();
             if (!recipient.equals(serverIdentityManager.getPublicKey())) {
                 throw new NoPathToIdentityException(recipient);
             }
-        });
+        }, peersManager, channelGroup);
         serverSuperPeerConnected = Observable.just(false);
         opened = new AtomicBoolean(false);
         endpoints = new HashSet<>();
+        acceptNewConnections = new AtomicBoolean(true);
 
-        server = new Server(serverIdentityManager::getIdentity, serverMessenger, peersManager, serverConfig, workerGroup, bossGroup, serverSuperPeerConnected, opened, publicKey -> {
+        server = new Server(serverIdentityManager::getIdentity, serverMessenger, peersManager, serverConfig, channelGroup, workerGroup, bossGroup, serverSuperPeerConnected, opened, acceptNewConnections::get, publicKey -> {
         }, endpoints);
         server.open();
 
@@ -511,8 +515,8 @@ class ServerIT {
 
     @Test
     void shouldOpenAndCloseGracefully() throws DrasylException {
-        try (Server myServer = new Server(serverIdentityManager::getIdentity, serverMessenger, peersManager, new DrasylConfig(), workerGroup, bossGroup, serverSuperPeerConnected, publicKey -> {
-        }, endpoints)) {
+        try (Server myServer = new Server(serverIdentityManager::getIdentity, serverMessenger, peersManager, new DrasylConfig(), channelGroup, workerGroup, bossGroup, serverSuperPeerConnected, publicKey -> {
+        }, endpoints, acceptNewConnections::get)) {
             myServer.open();
         }
 
@@ -522,29 +526,17 @@ class ServerIT {
     @Test
     void openShouldFailIfInvalidPortIsGiven() throws DrasylException {
         DrasylConfig config = DrasylConfig.newBuilder().serverBindPort(72722).build();
-        try (Server myServer = new Server(serverIdentityManager::getIdentity, serverMessenger, peersManager, config, workerGroup, bossGroup, serverSuperPeerConnected, publicKey -> {
-        }, endpoints)) {
+        try (Server myServer = new Server(serverIdentityManager::getIdentity, serverMessenger, peersManager, config, channelGroup, workerGroup, bossGroup, serverSuperPeerConnected, publicKey -> {
+        }, endpoints, acceptNewConnections::get)) {
             assertThrows(ServerException.class, myServer::open);
         }
-    }
-
-    @Test
-    void shuttingDownServerShouldSendLeaveMessage() throws ClientException {
-        TestSuperPeerClient session = clientSessionAfterJoin(configClient1, server, identitySession1);
-
-        TestObserver<Message> receivedMessages = session.receivedMessages().test();
-        server.close();
-
-        // verify responses
-        receivedMessages.awaitCount(1);
-        receivedMessages.assertValueAt(0, val -> ((QuitMessage) val).getReason() == REASON_SHUTTING_DOWN);
     }
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void shuttingDownServerShouldRejectNewConnections() throws ExecutionException, InterruptedException, ClientException {
         try (TestSuperPeerClient session = clientSession(configClient1, server, identitySession1)) {
-            opened.set(false);
+            acceptNewConnections.set(false);
 
             // send message
             RequestMessage request = new JoinMessage(session.getIdentity().getProofOfWork(), session.getIdentity().getPublicKey(), Set.of());

@@ -11,7 +11,6 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylException;
-import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.util.DrasylFunction;
 import org.drasyl.util.DrasylScheduler;
 import org.drasyl.util.SetUtil;
@@ -25,10 +24,10 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 import static org.drasyl.util.WebSocketUtil.webSocketPort;
 
 abstract class AbstractClient implements AutoCloseable {
@@ -43,17 +42,20 @@ abstract class AbstractClient implements AutoCloseable {
     private final List<Duration> retryDelays;
     protected ChannelInitializer<SocketChannel> channelInitializer;
     protected Channel channel;
+    protected BooleanSupplier acceptNewConnectionsSupplier;
 
     protected AbstractClient(List<Duration> retryDelays,
                              EventLoopGroup workerGroup,
                              Supplier<Set<URI>> endpointsSupplier,
-                             DrasylFunction<URI, ChannelInitializer<SocketChannel>, DrasylException> channelInitializerSupplier) {
+                             DrasylFunction<URI, ChannelInitializer<SocketChannel>, DrasylException> channelInitializerSupplier,
+                             BooleanSupplier acceptNewConnectionsSupplier) {
         this(
                 retryDelays,
                 workerGroup,
                 endpointsSupplier,
                 BehaviorSubject.createDefault(false),
-                channelInitializerSupplier
+                channelInitializerSupplier,
+                acceptNewConnectionsSupplier
         );
     }
 
@@ -61,12 +63,14 @@ abstract class AbstractClient implements AutoCloseable {
                              EventLoopGroup workerGroup,
                              Supplier<Set<URI>> endpointsSupplier,
                              Subject<Boolean> connected,
-                             DrasylFunction<URI, ChannelInitializer<SocketChannel>, DrasylException> channelInitializerSupplier) {
+                             DrasylFunction<URI, ChannelInitializer<SocketChannel>, DrasylException> channelInitializerSupplier,
+                             BooleanSupplier acceptNewConnectionsSupplier) {
         this(
                 retryDelays,
                 workerGroup,
                 endpointsSupplier,
                 new AtomicBoolean(false),
+                acceptNewConnectionsSupplier,
                 new AtomicInteger(0),
                 new AtomicInteger(0),
                 Bootstrap::new,
@@ -81,6 +85,7 @@ abstract class AbstractClient implements AutoCloseable {
                              EventLoopGroup workerGroup,
                              Supplier<Set<URI>> endpointsSupplier,
                              AtomicBoolean opened,
+                             BooleanSupplier acceptNewConnectionsSupplier,
                              AtomicInteger nextEndpointPointer,
                              AtomicInteger nextRetryDelayPointer,
                              Supplier<Bootstrap> bootstrapSupplier,
@@ -92,6 +97,7 @@ abstract class AbstractClient implements AutoCloseable {
         this.workerGroup = workerGroup;
         this.endpointsSupplier = endpointsSupplier;
         this.opened = opened;
+        this.acceptNewConnectionsSupplier = acceptNewConnectionsSupplier;
         this.nextEndpointPointer = nextEndpointPointer;
         this.nextRetryDelayPointer = nextRetryDelayPointer;
         this.bootstrapSupplier = bootstrapSupplier;
@@ -185,7 +191,7 @@ abstract class AbstractClient implements AutoCloseable {
      * @return
      */
     protected boolean shouldRetry() {
-        return opened.get() && !retryDelays.isEmpty();
+        return opened.get() && acceptNewConnectionsSupplier.getAsBoolean() && !retryDelays.isEmpty();
     }
 
     /**
@@ -226,13 +232,9 @@ abstract class AbstractClient implements AutoCloseable {
     @Override
     public void close() {
         if (opened.compareAndSet(true, false) && channel != null) {
+            // close connection
             getLogger().info("Stop Super Peer Client...");
-            // send quit message and close connections
-            if (channel.isOpen()) {
-                channel.writeAndFlush(new QuitMessage(REASON_SHUTTING_DOWN)).addListener(ChannelFutureListener.CLOSE);
-            }
-
-            channel.closeFuture().syncUninterruptibly();
+            channel.close().syncUninterruptibly();
             channel = null;
             getLogger().info("Super Peer Client stopped");
         }

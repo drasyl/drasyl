@@ -23,6 +23,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.PeerChannelGroup;
 
 import java.net.URI;
 import java.util.Set;
@@ -42,14 +43,14 @@ public class ServerEnvironment {
     private final Consumer<CompressedPublicKey> peerCommunicationConsumer;
     private final Messenger messenger;
     private final Set<URI> endpoints;
-    private final ServerChannelGroup channelGroup;
+    private final PeerChannelGroup channelGroup;
 
     public ServerEnvironment(DrasylConfig config,
                              Supplier<Identity> identitySupplier,
                              PeersManager peersManager,
                              Messenger messenger,
                              Set<URI> endpoints,
-                             ServerChannelGroup channelGroup,
+                             PeerChannelGroup channelGroup,
                              BooleanSupplier acceptedNewConnectionsSupplier,
                              BooleanSupplier superPeerConnectedSupplier,
                              Consumer<CompressedPublicKey> peerCommunicationConsumer) {
@@ -92,7 +93,7 @@ public class ServerEnvironment {
         return endpoints;
     }
 
-    public ServerChannelGroup getChannelGroup() {
+    public PeerChannelGroup getChannelGroup() {
         return channelGroup;
     }
 

@@ -23,11 +23,9 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
-import io.reactivex.rxjava3.core.Observable;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
-import org.drasyl.messenger.Messenger;
-import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.util.NetworkUtil;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -61,10 +59,6 @@ import static org.mockito.Mockito.when;
 class ServerTest {
     @Mock
     private Supplier<Identity> identitySupplier;
-    @Mock
-    private Messenger messenger;
-    @Mock
-    private PeersManager peersManager;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private DrasylConfig config;
     @Mock
@@ -78,9 +72,7 @@ class ServerTest {
     @Mock
     private ChannelInitializer<SocketChannel> channelInitializer;
     @Mock
-    private ServerChannelGroup channelGroup;
-    @Mock
-    private Observable<Boolean> superPeerConnected;
+    private PeerChannelGroup channelGroup;
 
     @Nested
     class Open {
@@ -91,8 +83,8 @@ class ServerTest {
             when(serverBootstrap.bind((String) null, 0).channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
             AtomicBoolean opened = new AtomicBoolean(false);
-            try (Server server = new Server(messenger, peersManager,
-                    config, serverBootstrap, workerGroup, bossGroup, channelInitializer, opened, channelGroup, -1, serverChannel,
+            try (Server server = new Server(
+                    config, serverBootstrap, opened, channelGroup, -1, serverChannel,
                     new HashSet<>(), new HashSet<>())) {
                 server.open();
 
@@ -102,8 +94,8 @@ class ServerTest {
 
         @Test
         void shouldDoNothingIfServerHasAlreadyBeenStarted() throws ServerException {
-            try (Server server = new Server(messenger, peersManager,
-                    config, serverBootstrap, workerGroup, bossGroup, channelInitializer, new AtomicBoolean(true), channelGroup, -1, serverChannel,
+            try (Server server = new Server(
+                    config, serverBootstrap, new AtomicBoolean(true), channelGroup, -1, serverChannel,
                     new HashSet<>(), new HashSet<>())) {
                 server.open();
 
@@ -116,8 +108,8 @@ class ServerTest {
     class Close {
         @Test
         void shouldDoNothingIfServerHasAlreadyBeenShutDown() {
-            Server server = new Server(messenger, peersManager,
-                    config, serverBootstrap, workerGroup, bossGroup, channelInitializer, new AtomicBoolean(false), channelGroup, -1, serverChannel,
+            Server server = new Server(
+                    config, serverBootstrap, new AtomicBoolean(false), channelGroup, -1, serverChannel,
                     new HashSet<>(), new HashSet<>());
 
             server.close();

@@ -18,18 +18,22 @@
  */
 package org.drasyl.peer.connection.server;
 
+import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.reactivex.rxjava3.core.Observable;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.Message;
 
 import java.util.HashSet;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Supplier;
 
 import static org.awaitility.Awaitility.await;
@@ -39,23 +43,51 @@ import static org.awaitility.Awaitility.await;
  * interfaces for reading internal states and for injecting messages.
  */
 public class TestServer extends Server {
+    private final TestServerChannelInitializer channelInitializer;
+
     public TestServer(Supplier<Identity> identitySupplier,
                       Messenger messenger,
                       PeersManager peersManager,
                       DrasylConfig config,
+                      PeerChannelGroup channelGroup,
                       EventLoopGroup workerGroup,
                       EventLoopGroup bossGroup,
-                      Observable<Boolean> superPeerConnected) throws ServerException {
-        super(identitySupplier, messenger, peersManager, config, workerGroup, bossGroup, superPeerConnected, publicKey -> {
-        }, new HashSet<>());
+                      Observable<Boolean> superPeerConnected) {
+        this(config, channelGroup, workerGroup, bossGroup, new TestServerChannelInitializer(new ServerEnvironment(
+                config,
+                identitySupplier,
+                peersManager,
+                messenger,
+                new HashSet<>(),
+                channelGroup,
+                () -> true,
+                () -> !config.isSuperPeerEnabled() || superPeerConnected.blockingFirst(),
+                publicKey -> {
+                })));
+    }
+
+    TestServer(DrasylConfig config,
+               PeerChannelGroup channelGroup,
+               EventLoopGroup workerGroup,
+               EventLoopGroup bossGroup,
+               TestServerChannelInitializer channelInitializer) {
+        super(
+                config,
+                channelGroup,
+                new AtomicBoolean(),
+                new HashSet<>(),
+                new ServerBootstrap().group(bossGroup, workerGroup)
+                        .channel(NioServerSocketChannel.class)
+                        .childHandler(channelInitializer));
+        this.channelInitializer = channelInitializer;
     }
 
     public Observable<Message> receivedMessages() {
-        return ((TestServerChannelInitializer) channelInitializer).receivedMessages();
+        return channelInitializer.receivedMessages();
     }
 
     public Observable<Message> sentMessages() {
-        return ((TestServerChannelInitializer) channelInitializer).sentMessages();
+        return channelInitializer.sentMessages();
     }
 
     public void sendMessage(CompressedPublicKey recipient, Message message) {
@@ -82,7 +114,7 @@ public class TestServer extends Server {
         await().until(() -> channelGroup.find(client) != null);
     }
 
-    public ServerChannelGroup getChannelGroup() {
+    public PeerChannelGroup getChannelGroup() {
         return channelGroup;
     }
 }

@@ -31,6 +31,7 @@ import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.client.DirectClient;
 import org.drasyl.peer.connection.message.WhoisMessage;
+import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.InboundHandlerAdapter;
@@ -39,12 +40,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
 import java.util.function.Supplier;
 
@@ -66,9 +67,11 @@ public class DirectConnectionsManager implements AutoCloseable {
     private final DirectConnectionDemandsCache directConnectionDemandsCache;
     private final RequestPeerInformationCache requestPeerInformationCache;
     private final DrasylPipeline pipeline;
+    private final PeerChannelGroup channelGroup;
     private final EventLoopGroup workerGroup;
     private final Consumer<Event> eventConsumer;
     private final ConcurrentMap<CompressedPublicKey, DirectClient> clients;
+    private final BooleanSupplier acceptNewConnectionsSupplier;
     private Set<URI> endpoints;
 
     public DirectConnectionsManager(DrasylConfig config,
@@ -76,8 +79,10 @@ public class DirectConnectionsManager implements AutoCloseable {
                                     PeersManager peersManager,
                                     Messenger messenger,
                                     DrasylPipeline pipeline,
+                                    PeerChannelGroup channelGroup,
                                     EventLoopGroup workerGroup,
-                                    Consumer<Event> eventConsumer) {
+                                    Consumer<Event> eventConsumer,
+                                    BooleanSupplier acceptNewConnectionsSupplier) {
         this(
                 config,
                 identityManager,
@@ -85,12 +90,14 @@ public class DirectConnectionsManager implements AutoCloseable {
                 new AtomicBoolean(false),
                 messenger,
                 pipeline,
+                channelGroup,
                 workerGroup,
                 eventConsumer,
                 Set.of(),
                 new DirectConnectionDemandsCache(config.getDirectConnectionsMaxConcurrentConnections(), ofSeconds(60)),
                 new RequestPeerInformationCache(1_000, ofSeconds(60)),
-                new ConcurrentHashMap<>()
+                new ConcurrentHashMap<>(),
+                acceptNewConnectionsSupplier
         );
     }
 
@@ -100,17 +107,20 @@ public class DirectConnectionsManager implements AutoCloseable {
                              AtomicBoolean opened,
                              Messenger messenger,
                              DrasylPipeline pipeline,
+                             PeerChannelGroup channelGroup,
                              EventLoopGroup workerGroup,
                              Consumer<Event> eventConsumer,
                              Set<URI> endpoints,
                              DirectConnectionDemandsCache directConnectionDemandsCache,
                              RequestPeerInformationCache requestPeerInformationCache,
-                             ConcurrentMap<CompressedPublicKey, DirectClient> clients) {
+                             ConcurrentMap<CompressedPublicKey, DirectClient> clients,
+                             BooleanSupplier acceptNewConnectionsSupplier) {
         this.config = config;
         this.identityManager = identityManager;
         this.peersManager = peersManager;
         this.opened = opened;
         this.messenger = messenger;
+        this.channelGroup = channelGroup;
         this.workerGroup = workerGroup;
         this.eventConsumer = eventConsumer;
         this.endpoints = endpoints;
@@ -118,6 +128,7 @@ public class DirectConnectionsManager implements AutoCloseable {
         this.requestPeerInformationCache = requestPeerInformationCache;
         this.pipeline = pipeline;
         this.clients = clients;
+        this.acceptNewConnectionsSupplier = acceptNewConnectionsSupplier;
     }
 
     public void open() {
@@ -237,14 +248,15 @@ public class DirectConnectionsManager implements AutoCloseable {
                                 identityManager::getIdentity,
                                 peersManager,
                                 messenger,
+                                channelGroup,
                                 workerGroup,
                                 eventConsumer,
                                 this::communicationOccurred,
                                 myPublicKey,
                                 endpointsSupplier,
                                 () -> directConnectionDemandsCache.contains(publicKey),
-                                () -> clients.remove(publicKey)
-                        );
+                                () -> clients.remove(publicKey),
+                                acceptNewConnectionsSupplier);
                         LOG.debug("Initiate direct connection to Peer '{}'", publicKey);
                         client.open();
                         return client;

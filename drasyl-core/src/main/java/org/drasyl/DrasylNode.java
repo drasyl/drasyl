@@ -23,6 +23,7 @@ import ch.qos.logback.classic.LoggerContext;
 import com.google.common.annotations.Beta;
 import com.typesafe.config.ConfigException;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.group.ChannelGroupFutureListener;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.sentry.Sentry;
 import io.sentry.event.User;
@@ -48,9 +49,11 @@ import org.drasyl.peer.connection.direct.DirectConnectionsManager;
 import org.drasyl.peer.connection.intravm.IntraVmDiscovery;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.IdentityMessage;
+import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.RelayableMessage;
 import org.drasyl.peer.connection.message.WhoisMessage;
 import org.drasyl.peer.connection.server.Server;
+import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.server.ServerException;
 import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.Pipeline;
@@ -70,6 +73,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 import static org.drasyl.util.DrasylScheduler.getInstanceHeavy;
 
 /**
@@ -118,8 +122,10 @@ public abstract class DrasylNode {
     private final IdentityManager identityManager;
     private final PeersManager peersManager;
     private final PluginManager pluginManager;
+    private final PeerChannelGroup channelGroup;
     private final Messenger messenger;
     private final Set<URI> endpoints;
+    private final AtomicBoolean acceptNewConnections;
     private final DrasylPipeline pipeline;
     private final DirectConnectionsManager directConnectionsManager;
     private final IntraVmDiscovery intraVmDiscovery;
@@ -147,14 +153,16 @@ public abstract class DrasylNode {
             this.config = config;
             this.identityManager = new IdentityManager(this.config);
             this.peersManager = new PeersManager(this::onInternalEvent);
-            this.messenger = new Messenger(this::messageSink);
+            this.channelGroup = new PeerChannelGroup();
+            this.messenger = new Messenger(this::messageSink, peersManager, channelGroup);
             this.endpoints = new HashSet<>();
+            this.acceptNewConnections = new AtomicBoolean();
             this.pipeline = new DrasylPipeline(this::onEvent, messenger::send, config);
             this.pluginManager = new PluginManager(pipeline, config);
-            this.directConnectionsManager = new DirectConnectionsManager(config, identityManager, peersManager, messenger, pipeline, DrasylNode.WORKER_GROUP, this::onInternalEvent);
+            this.directConnectionsManager = new DirectConnectionsManager(config, identityManager, peersManager, messenger, pipeline, channelGroup, DrasylNode.WORKER_GROUP, this::onInternalEvent, acceptNewConnections::get);
             this.intraVmDiscovery = new IntraVmDiscovery(identityManager::getPublicKey, messenger, peersManager, this::onInternalEvent);
-            this.superPeerClient = new SuperPeerClient(this.config, identityManager::getIdentity, peersManager, messenger, DrasylNode.WORKER_GROUP, this::onInternalEvent, directConnectionsManager::communicationOccurred);
-            this.server = new Server(identityManager::getIdentity, messenger, peersManager, this.config, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP, superPeerClient.connectionEstablished(), directConnectionsManager::communicationOccurred, endpoints);
+            this.superPeerClient = new SuperPeerClient(this.config, identityManager::getIdentity, peersManager, messenger, channelGroup, DrasylNode.WORKER_GROUP, this::onInternalEvent, directConnectionsManager::communicationOccurred, acceptNewConnections::get);
+            this.server = new Server(identityManager::getIdentity, messenger, peersManager, this.config, channelGroup, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP, superPeerClient.connectionEstablished(), directConnectionsManager::communicationOccurred, endpoints, acceptNewConnections::get);
             this.monitoring = new Monitoring(config, peersManager, identityManager::getPublicKey, pipeline);
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
@@ -201,8 +209,10 @@ public abstract class DrasylNode {
     DrasylNode(DrasylConfig config,
                IdentityManager identityManager,
                PeersManager peersManager,
+               PeerChannelGroup channelGroup,
                Messenger messenger,
                Set<URI> endpoints,
+               AtomicBoolean acceptNewConnections,
                DrasylPipeline pipeline,
                DirectConnectionsManager directConnectionsManager,
                IntraVmDiscovery intraVmDiscovery,
@@ -218,7 +228,9 @@ public abstract class DrasylNode {
         this.peersManager = peersManager;
         this.messenger = messenger;
         this.endpoints = endpoints;
+        this.acceptNewConnections = acceptNewConnections;
         this.pipeline = pipeline;
+        this.channelGroup = channelGroup;
         this.pluginManager = pluginManager;
         this.directConnectionsManager = directConnectionsManager;
         this.intraVmDiscovery = intraVmDiscovery;
@@ -302,12 +314,14 @@ public abstract class DrasylNode {
             LOG.info("Shutdown drasyl Node with Identity '{}'...", identityManager.getIdentity());
             shutdownSequence = new CompletableFuture<>();
             getInstanceHeavy().scheduleDirect(() -> {
-                this.stopMonitoring();
-                this.stopPluginManager();
-                this.stopDirectConnectionsHandler();
-                this.stopSuperPeerClient();
-                this.stopServer();
-                this.stopIntraVmDiscovery();
+                acceptNewConnections.set(false);
+                closeConnections();
+                stopMonitoring();
+                stopPluginManager();
+                stopDirectConnectionsHandler();
+                stopSuperPeerClient();
+                stopServer();
+                stopIntraVmDiscovery();
 
                 onInternalEvent(new NodeNormalTerminationEvent(Node.of(identityManager.getIdentity(), endpoints)));
                 LOG.info("drasyl Node with Identity '{}' has shut down", identityManager.getIdentity());
@@ -317,6 +331,13 @@ public abstract class DrasylNode {
         }
 
         return shutdownSequence;
+    }
+
+    @SuppressWarnings({ "java:S1905" })
+    private void closeConnections() {
+        // send quit message to all peers and close connections
+        channelGroup.writeAndFlush(new QuitMessage(REASON_SHUTTING_DOWN))
+                .addListener((ChannelGroupFutureListener) future -> future.group().close());
     }
 
     private void stopMonitoring() {
@@ -387,6 +408,7 @@ public abstract class DrasylNode {
                     startDirectConnectionsHandler();
                     startPluginManager();
                     startMonitoring();
+                    acceptNewConnections.set(true);
 
                     onInternalEvent(new NodeUpEvent(Node.of(identityManager.getIdentity(), endpoints)));
                     LOG.info("drasyl Node with Identity '{}' has started", identityManager.getIdentity());
@@ -397,12 +419,14 @@ public abstract class DrasylNode {
                     LOG.info("Could not start drasyl Node: {}", e.getMessage());
                     LOG.info("Stop all running components...");
 
-                    this.stopMonitoring();
-                    this.stopPluginManager();
-                    this.stopDirectConnectionsHandler();
-                    this.stopSuperPeerClient();
-                    this.stopServer();
-                    this.stopIntraVmDiscovery();
+                    acceptNewConnections.set(false);
+                    closeConnections();
+                    stopMonitoring();
+                    stopPluginManager();
+                    stopDirectConnectionsHandler();
+                    stopSuperPeerClient();
+                    stopServer();
+                    stopIntraVmDiscovery();
 
                     LOG.info("All components stopped");
                     started.set(false);

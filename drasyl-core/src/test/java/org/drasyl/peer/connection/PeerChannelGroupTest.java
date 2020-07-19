@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection.server;
+package org.drasyl.peer.connection;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -24,6 +24,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelId;
 import io.netty.util.Attribute;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -44,11 +45,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class ServerChannelGroupTest {
+class PeerChannelGroupTest {
     @Mock
     private Map<CompressedPublicKey, ChannelId> identity2channelId;
     @InjectMocks
-    private ServerChannelGroup underTest;
+    private PeerChannelGroup underTest;
 
     @Nested
     class WriteAndFlush {

@@ -20,7 +20,9 @@ package org.drasyl.messenger;
 
 import com.google.common.collect.Lists;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.RelayableMessage;
+import org.drasyl.peer.connection.PeerChannelGroup;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -38,24 +40,47 @@ public class Messenger {
     private static final Logger LOG = LoggerFactory.getLogger(Messenger.class);
     private final MessageSink loopbackSink;
     private MessageSink intraVmSink;
-    private final MultiMessageSink clientSink;
-    private MessageSink serverSink;
-    private MessageSink superPeerSink;
+    private final MessageSink channelGroupSink;
 
-    public Messenger(MessageSink loopbackSink) {
-        this(loopbackSink, null, new MultiMessageSink(), null, null);
+    public Messenger(MessageSink loopbackSink,
+                     PeersManager peersManager,
+                     PeerChannelGroup channelGroup) {
+        this(loopbackSink, null, message -> {
+            CompressedPublicKey recipient = message.getRecipient();
+
+            // if recipient is a grandchild, we must send message to appropriate child
+            CompressedPublicKey grandchildrenPath = peersManager.getGrandchildrenRoutes().get(recipient);
+            if (grandchildrenPath != null) {
+                recipient = grandchildrenPath;
+            }
+
+            try {
+                channelGroup.writeAndFlush(recipient, message);
+            }
+            catch (IllegalArgumentException e) {
+                CompressedPublicKey superPeer = peersManager.getSuperPeerKey();
+                if (superPeer != null && recipient != superPeer) {
+                    // no direct connection, send message to super peer
+                    try {
+                        channelGroup.writeAndFlush(superPeer, message);
+                    }
+                    catch (IllegalArgumentException e2) {
+                        throw new NoPathToIdentityException(recipient);
+                    }
+                }
+                else {
+                    throw new NoPathToIdentityException(recipient);
+                }
+            }
+        });
     }
 
     Messenger(MessageSink loopbackSink,
               MessageSink intraVmSink,
-              MultiMessageSink clientSink,
-              MessageSink serverSink,
-              MessageSink superPeerSink) {
+              MessageSink channelGroupSink) {
         this.loopbackSink = requireNonNull(loopbackSink);
         this.intraVmSink = intraVmSink;
-        this.clientSink = requireNonNull(clientSink);
-        this.serverSink = serverSink;
-        this.superPeerSink = superPeerSink;
+        this.channelGroupSink = channelGroupSink;
     }
 
     /**
@@ -74,7 +99,7 @@ public class Messenger {
     public void send(RelayableMessage message) throws MessengerException {
         LOG.trace("Send Message: {}", message);
 
-        List<MessageSink> messageSinks = Lists.newArrayList(loopbackSink, intraVmSink, clientSink, serverSink, superPeerSink)
+        List<MessageSink> messageSinks = Lists.newArrayList(loopbackSink, intraVmSink, channelGroupSink)
                 .stream().filter(Objects::nonNull).collect(Collectors.toList());
         for (MessageSink messageSink : messageSinks) {
             try {
@@ -96,29 +121,5 @@ public class Messenger {
 
     public void unsetIntraVmSink() {
         this.intraVmSink = null;
-    }
-
-    public void addClientSink(CompressedPublicKey publicKey, MessageSink messageSink) {
-        clientSink.add(publicKey, messageSink);
-    }
-
-    public void removeClientSink(CompressedPublicKey publicKey) {
-        clientSink.remove(publicKey);
-    }
-
-    public void setServerSink(MessageSink serverSink) {
-        this.serverSink = serverSink;
-    }
-
-    public void unsetServerSink() {
-        this.serverSink = null;
-    }
-
-    public void setSuperPeerSink(MessageSink superPeerSink) {
-        this.superPeerSink = superPeerSink;
-    }
-
-    public void unsetSuperPeerSink() {
-        this.superPeerSink = null;
     }
 }

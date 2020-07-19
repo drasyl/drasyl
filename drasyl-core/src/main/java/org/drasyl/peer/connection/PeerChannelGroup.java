@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection.server;
+package org.drasyl.peer.connection;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
@@ -40,22 +40,22 @@ import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_
  * Special type of {@link ChannelGroup}, which has a lookup complexity of O(1) instead of O(n) for
  * lookups by {@link CompressedPublicKey}.
  */
-public class ServerChannelGroup extends DefaultChannelGroup {
+public class PeerChannelGroup extends DefaultChannelGroup {
     public static final AttributeKey<CompressedPublicKey> ATTRIBUTE_PUBLIC_KEY = AttributeKey.valueOf("publicKey");
     private final Map<CompressedPublicKey, ChannelId> identity2channelId;
     private final ChannelFutureListener remover = future -> remove(future.channel());
 
-    public ServerChannelGroup() {
+    public PeerChannelGroup() {
         this(new HashMap<>(), GlobalEventExecutor.INSTANCE);
     }
 
-    ServerChannelGroup(Map<CompressedPublicKey, ChannelId> identity2channelId,
-                       EventExecutor executor) {
+    PeerChannelGroup(Map<CompressedPublicKey, ChannelId> identity2channelId,
+                     EventExecutor executor) {
         super(executor);
         this.identity2channelId = identity2channelId;
     }
 
-    public ServerChannelGroup(EventExecutor executor) {
+    public PeerChannelGroup(EventExecutor executor) {
         this(new HashMap<>(), executor);
     }
 

@@ -26,7 +26,6 @@ import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.messenger.Messenger;
-import org.drasyl.messenger.NoPathToIdentityException;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.connection.handler.AbstractThreeWayHandshakeClientHandler;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
@@ -40,7 +39,7 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_WRONG_PUBLIC_KEY;
-import static org.drasyl.peer.connection.server.ServerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
+import static org.drasyl.peer.connection.PeerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
 
 /**
  * This handler performs the handshake with the server and processes incoming messages during the
@@ -113,28 +112,19 @@ public class ClientConnectionHandler extends AbstractThreeWayHandshakeClientHand
         Channel channel = ctx.channel();
         Path path = ctx::writeAndFlush;
 
+        environment.getChannelGroup().add(identity, channel);
+
         if (childrenJoin) {
             // remove peer information on disconnect
             channel.closeFuture().addListener(future -> {
                 environment.getEventConsumer().accept(new NodeOfflineEvent(Node.of(environment.getIdentity())));
+
                 environment.getConnected().onNext(false);
-
-                messenger.unsetSuperPeerSink();
-
                 environment.getPeersManager().unsetSuperPeerAndRemovePath(path);
             });
 
             // store peer information
             environment.getPeersManager().setPeerInformationAndAddPathAndSetSuperPeer(identity, offerMessage.getPeerInformation(), path);
-
-            messenger.setSuperPeerSink(message -> {
-                if (channel.isWritable()) {
-                    ctx.writeAndFlush(message);
-                }
-                else {
-                    throw new NoPathToIdentityException(message.getRecipient());
-                }
-            });
 
             environment.getConnected().onNext(true);
             environment.getEventConsumer().accept(new NodeOnlineEvent(Node.of(environment.getIdentity())));
@@ -144,22 +134,11 @@ public class ClientConnectionHandler extends AbstractThreeWayHandshakeClientHand
             channel.closeFuture().addListener(future -> {
                 environment.getConnected().onNext(false);
 
-                messenger.removeClientSink(identity);
-
                 environment.getPeersManager().removePath(identity, path);
             });
 
             // store peer information
             environment.getPeersManager().setPeerInformationAndAddPath(identity, offerMessage.getPeerInformation(), path);
-
-            messenger.addClientSink(identity, message -> {
-                if (channel.isWritable()) {
-                    ctx.writeAndFlush(message);
-                }
-                else {
-                    throw new NoPathToIdentityException(message.getRecipient());
-                }
-            });
 
             environment.getConnected().onNext(true);
         }
