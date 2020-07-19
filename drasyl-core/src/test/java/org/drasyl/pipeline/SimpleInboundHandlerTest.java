@@ -46,7 +46,7 @@ class SimpleInboundHandlerTest {
             @Override
             protected void matchedRead(HandlerContext ctx, ChunkedMessage msg) {
                 // Emit this message as outbound message to test
-                ctx.pipeline().executeOutbound(msg);
+                ctx.pipeline().processOutbound(msg);
             }
         };
 
@@ -56,7 +56,7 @@ class SimpleInboundHandlerTest {
         TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
         ChunkedMessage msg = mock(ChunkedMessage.class);
-        pipeline.executeInbound(msg);
+        pipeline.processInbound(msg);
 
         outboundMessageTestObserver.awaitCount(1);
         outboundMessageTestObserver.assertValue(msg);
@@ -75,7 +75,7 @@ class SimpleInboundHandlerTest {
             @Override
             protected void matchedRead(HandlerContext ctx, ChunkedMessage msg) {
                 // Emit this message as outbound message to test
-                ctx.pipeline().executeOutbound(msg);
+                ctx.pipeline().processOutbound(msg);
             }
         };
 
@@ -85,7 +85,7 @@ class SimpleInboundHandlerTest {
         TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
         ApplicationMessage msg = mock(ApplicationMessage.class);
-        pipeline.executeInbound(msg);
+        pipeline.processInbound(msg);
 
         inboundMessageTestObserver.awaitCount(1);
         inboundMessageTestObserver.assertValue(msg);
@@ -112,7 +112,7 @@ class SimpleInboundHandlerTest {
         TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
         NodeUpEvent event = mock(NodeUpEvent.class);
-        pipeline.executeInbound(event);
+        pipeline.processInbound(event);
 
         eventTestObserver.await(1, TimeUnit.SECONDS);
         eventTestObserver.assertNoValues();
@@ -136,7 +136,7 @@ class SimpleInboundHandlerTest {
         TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
         Event event = mock(Event.class);
-        pipeline.executeInbound(event);
+        pipeline.processInbound(event);
 
         eventTestObserver.awaitCount(1);
         eventTestObserver.assertValue(event);

@@ -32,13 +32,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
 
 import static org.drasyl.pipeline.HeadContext.DRASYL_HEAD_HANDLER;
 import static org.drasyl.pipeline.TailContext.DRASYL_TAIL_HANDLER;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.mock;
@@ -219,7 +218,7 @@ class DrasylPipelineTest {
 
         ApplicationMessage msg = mock(ApplicationMessage.class);
 
-        pipeline.executeInbound(msg);
+        pipeline.processInbound(msg);
 
         verify(scheduler).scheduleDirect(captor.capture());
         captor.getValue().run();
@@ -233,7 +232,7 @@ class DrasylPipelineTest {
 
         Event event = mock(Event.class);
 
-        pipeline.executeInbound(event);
+        pipeline.processInbound(event);
 
         verify(scheduler).scheduleDirect(captor.capture());
         captor.getValue().run();
@@ -247,10 +246,10 @@ class DrasylPipelineTest {
 
         ApplicationMessage msg = mock(ApplicationMessage.class);
 
-        pipeline.executeOutbound(msg);
+        CompletableFuture<Void> future = pipeline.processOutbound(msg);
 
         verify(scheduler).scheduleDirect(captor.capture());
         captor.getValue().run();
-        verify(tail).write(eq(msg));
+        verify(tail).write(eq(msg), eq(future));
     }
 }

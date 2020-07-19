@@ -28,6 +28,7 @@ import org.slf4j.LoggerFactory;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 
 /**
  * Abstract {@link Pipeline} implementation, that needs head and tail.
@@ -274,17 +275,21 @@ public abstract class DefaultPipeline implements Pipeline {
     }
 
     @Override
-    public void executeInbound(ApplicationMessage msg) {
+    public void processInbound(ApplicationMessage msg) {
         this.scheduler.scheduleDirect(() -> this.head.fireRead(msg));
     }
 
     @Override
-    public void executeInbound(Event event) {
+    public void processInbound(Event event) {
         this.scheduler.scheduleDirect(() -> this.head.fireEventTriggered(event));
     }
 
     @Override
-    public void executeOutbound(ApplicationMessage msg) {
-        this.scheduler.scheduleDirect(() -> this.tail.write(msg));
+    public CompletableFuture<Void> processOutbound(ApplicationMessage msg) {
+        CompletableFuture<Void> rtn = new CompletableFuture<>();
+
+        this.scheduler.scheduleDirect(() -> this.tail.write(msg, rtn));
+
+        return rtn;
     }
 }

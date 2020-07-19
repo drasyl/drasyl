@@ -184,7 +184,7 @@ public abstract class DrasylNode {
      * @param event the event
      */
     void onInternalEvent(Event event) {
-        pipeline.executeInbound(event);
+        pipeline.processInbound(event);
     }
 
     /**
@@ -242,9 +242,9 @@ public abstract class DrasylNode {
         this.shutdownSequence = shutdownSequence;
     }
 
-    public void send(String recipient, byte[] payload) throws DrasylException {
+    public CompletableFuture<Void> send(String recipient, byte[] payload) throws DrasylException {
         try {
-            send(CompressedPublicKey.of(recipient), payload);
+            return send(CompressedPublicKey.of(recipient), payload);
         }
         catch (CryptoException | IllegalArgumentException e) {
             throw new DrasylException("Unable to parse recipient's public key: " + e.getMessage());
@@ -259,10 +259,13 @@ public abstract class DrasylNode {
      *
      * @param recipient the recipient of a message
      * @param payload   the payload of a message
+     * @return a completed future if the message was successfully processed, otherwise an
+     * exceptionally future
+     * @since 0.1.3-SNAPSHOT
      */
-    public void send(CompressedPublicKey recipient,
-                     byte[] payload) {
-        pipeline.executeOutbound(new ApplicationMessage(identityManager.getPublicKey(), recipient, payload));
+    public CompletableFuture<Void> send(CompressedPublicKey recipient,
+                                        byte[] payload) {
+        return pipeline.processOutbound(new ApplicationMessage(identityManager.getPublicKey(), recipient, payload));
     }
 
     /**
@@ -273,10 +276,13 @@ public abstract class DrasylNode {
      *
      * @param recipient the recipient of a message
      * @param payload   the payload of a message
+     * @return a completed future if the message was successfully processed, otherwise an
+     * exceptionally future
      * @throws MessengerException if an error occurs during the processing
+     * @since 0.1.3-SNAPSHOT
      */
-    public void send(String recipient, String payload) throws DrasylException {
-        send(recipient, payload.getBytes());
+    public CompletableFuture<Void> send(String recipient, String payload) throws DrasylException {
+        return send(recipient, payload.getBytes());
     }
 
     /**
@@ -287,14 +293,17 @@ public abstract class DrasylNode {
      *
      * @param recipient the recipient of a message
      * @param payload   the payload of a message
+     * @return a completed future if the message was successfully processed, otherwise an
+     * exceptionally future
+     * @since 0.1.3-SNAPSHOT
      */
-    public void send(CompressedPublicKey recipient,
-                     String payload) {
-        send(recipient, payload.getBytes());
+    public CompletableFuture<Void> send(CompressedPublicKey recipient,
+                                        String payload) {
+        return send(recipient, payload.getBytes());
     }
 
     /**
-     * Shut the Drasyl node down.
+     * Shut the drasyl node down.
      * <p>
      * If there is a connection to a Super Peer, our node will deregister from that Super Peer.
      * <p>
@@ -379,7 +388,7 @@ public abstract class DrasylNode {
     }
 
     /**
-     * Start the Drasyl node.
+     * Start the drasyl node.
      * <p>
      * First, the identity of the node is loaded. If none exists, a new one is generated.
      * <p>
@@ -530,7 +539,7 @@ public abstract class DrasylNode {
         if (message instanceof ApplicationMessage) {
             ApplicationMessage applicationMessage = (ApplicationMessage) message;
             peersManager.addPeer(applicationMessage.getSender());
-            pipeline.executeInbound(applicationMessage);
+            pipeline.processInbound(applicationMessage);
         }
         else if (message instanceof WhoisMessage) {
             WhoisMessage whoisMessage = (WhoisMessage) message;

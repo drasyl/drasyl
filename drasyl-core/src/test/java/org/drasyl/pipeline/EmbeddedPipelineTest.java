@@ -39,7 +39,7 @@ class EmbeddedPipelineTest {
         TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
         ApplicationMessage msg = mock(ApplicationMessage.class);
-        pipeline.executeInbound(msg);
+        pipeline.processInbound(msg);
 
         inboundMessageTestObserver.awaitCount(1);
         inboundMessageTestObserver.assertValue(msg);
@@ -56,7 +56,7 @@ class EmbeddedPipelineTest {
         TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
         ApplicationMessage msg = mock(ApplicationMessage.class);
-        pipeline.executeOutbound(msg);
+        pipeline.processOutbound(msg);
 
         outboundMessageTestObserver.awaitCount(1);
         outboundMessageTestObserver.assertValue(msg);

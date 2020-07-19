@@ -148,9 +148,9 @@ import java.util.concurrent.CompletableFuture;
  *
  * <li>But for every invocation of:
  *       <ul>
- *       <li>{@link Pipeline#executeInbound(ApplicationMessage)}</li>
- *       <li>{@link Pipeline#executeInbound(Event)}</li>
- *       <li>{@link Pipeline#executeOutbound(ApplicationMessage)}</li>
+ *       <li>{@link Pipeline#processInbound(ApplicationMessage)}</li>
+ *       <li>{@link Pipeline#processInbound(Event)}</li>
+ *       <li>{@link Pipeline#processOutbound(ApplicationMessage)}</li>
  *       </ul>
  * </li>
  * the invocation is scheduled in the {@link org.drasyl.util.DrasylScheduler}, therefore the order of
@@ -248,9 +248,26 @@ public interface Pipeline {
      */
     HandlerContext context(String name);
 
-    void executeInbound(ApplicationMessage msg);
+    /**
+     * Processes an inbound message by the pipeline.
+     *
+     * @param msg the inbound message
+     */
+    void processInbound(ApplicationMessage msg);
 
-    void executeInbound(Event event);
+    /**
+     * Processes an inbound event by the pipeline.
+     *
+     * @param event the inbound event
+     */
+    void processInbound(Event event);
 
-    void executeOutbound(ApplicationMessage msg);
+    /**
+     * Processes an outbound message by the pipeline.
+     *
+     * @param msg the outbound message
+     * @return a completed future if the message was successfully processed, otherwise an
+     * exceptionally future
+     */
+    CompletableFuture<Void> processOutbound(ApplicationMessage msg);
 }

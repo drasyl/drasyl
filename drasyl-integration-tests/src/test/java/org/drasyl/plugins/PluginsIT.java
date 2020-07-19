@@ -131,7 +131,7 @@ class PluginsIT {
 
         @Override
         public void onAdded() {
-            pipeline.executeInbound(event2);
+            pipeline.processInbound(event2);
         }
     }
 }
