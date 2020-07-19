@@ -90,12 +90,13 @@ class ServerTest {
             when(serverBootstrap.bind((String) null, 0).isSuccess()).thenReturn(true);
             when(serverBootstrap.bind((String) null, 0).channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
+            AtomicBoolean opened = new AtomicBoolean(false);
             try (Server server = new Server(messenger, peersManager,
-                    config, serverBootstrap, workerGroup, bossGroup, channelInitializer, new AtomicBoolean(false), channelGroup, -1, serverChannel,
-                    new HashSet<>())) {
+                    config, serverBootstrap, workerGroup, bossGroup, channelInitializer, opened, channelGroup, -1, serverChannel,
+                    new HashSet<>(), new HashSet<>())) {
                 server.open();
 
-                assertTrue(server.isOpen());
+                assertTrue(opened.get());
             }
         }
 
@@ -103,7 +104,7 @@ class ServerTest {
         void shouldDoNothingIfServerHasAlreadyBeenStarted() throws ServerException {
             try (Server server = new Server(messenger, peersManager,
                     config, serverBootstrap, workerGroup, bossGroup, channelInitializer, new AtomicBoolean(true), channelGroup, -1, serverChannel,
-                    new HashSet<>())) {
+                    new HashSet<>(), new HashSet<>())) {
                 server.open();
 
                 verify(serverBootstrap, never()).group(any(), any());
@@ -117,7 +118,7 @@ class ServerTest {
         void shouldDoNothingIfServerHasAlreadyBeenShutDown() {
             Server server = new Server(messenger, peersManager,
                     config, serverBootstrap, workerGroup, bossGroup, channelInitializer, new AtomicBoolean(false), channelGroup, -1, serverChannel,
-                    new HashSet<>());
+                    new HashSet<>(), new HashSet<>());
 
             server.close();
 

@@ -29,6 +29,7 @@ import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.Message;
 
+import java.util.HashSet;
 import java.util.function.Supplier;
 
 import static org.awaitility.Awaitility.await;
@@ -46,7 +47,7 @@ public class TestServer extends Server {
                       EventLoopGroup bossGroup,
                       Observable<Boolean> superPeerConnected) throws ServerException {
         super(identitySupplier, messenger, peersManager, config, workerGroup, bossGroup, superPeerConnected, publicKey -> {
-        });
+        }, new HashSet<>());
     }
 
     public Observable<Message> receivedMessages() {

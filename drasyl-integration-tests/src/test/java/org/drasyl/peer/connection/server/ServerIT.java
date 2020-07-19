@@ -67,6 +67,7 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.net.URI;
 import java.util.Arrays;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
 import java.util.Random;
@@ -117,6 +118,7 @@ class ServerIT {
     private Identity identitySession1;
     private Identity identitySession2;
     private AtomicBoolean opened;
+    private Set<URI> endpoints;
 
     @BeforeEach
     void setup(TestInfo info) throws DrasylException, CryptoException {
@@ -156,9 +158,10 @@ class ServerIT {
         });
         serverSuperPeerConnected = Observable.just(false);
         opened = new AtomicBoolean(false);
+        endpoints = new HashSet<>();
 
         server = new Server(serverIdentityManager::getIdentity, serverMessenger, peersManager, serverConfig, workerGroup, bossGroup, serverSuperPeerConnected, opened, publicKey -> {
-        });
+        }, endpoints);
         server.open();
 
         configClient1 = DrasylConfig.newBuilder()
@@ -509,7 +512,7 @@ class ServerIT {
     @Test
     void shouldOpenAndCloseGracefully() throws DrasylException {
         try (Server myServer = new Server(serverIdentityManager::getIdentity, serverMessenger, peersManager, new DrasylConfig(), workerGroup, bossGroup, serverSuperPeerConnected, publicKey -> {
-        })) {
+        }, endpoints)) {
             myServer.open();
         }
 
@@ -520,7 +523,7 @@ class ServerIT {
     void openShouldFailIfInvalidPortIsGiven() throws DrasylException {
         DrasylConfig config = DrasylConfig.newBuilder().serverBindPort(72722).build();
         try (Server myServer = new Server(serverIdentityManager::getIdentity, serverMessenger, peersManager, config, workerGroup, bossGroup, serverSuperPeerConnected, publicKey -> {
-        })) {
+        }, endpoints)) {
             assertThrows(ServerException.class, myServer::open);
         }
     }

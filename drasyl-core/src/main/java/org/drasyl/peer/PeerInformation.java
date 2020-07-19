@@ -23,7 +23,6 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import com.google.common.collect.ImmutableSet;
 
 import java.net.URI;
-import java.util.HashSet;
 import java.util.Objects;
 import java.util.Set;
 
@@ -35,7 +34,7 @@ public class PeerInformation {
 
     @JsonCreator
     protected PeerInformation(@JsonProperty("endpoints") Set<URI> endpoints) {
-        this.endpoints = new HashSet<>(endpoints);
+        this.endpoints = endpoints;
     }
 
     @Override

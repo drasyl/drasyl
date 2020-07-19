@@ -33,7 +33,6 @@ import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.messenger.NoPathToIdentityException;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.direct.DirectConnectionsManager;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -73,6 +72,7 @@ public class Server implements AutoCloseable {
     private Channel channel;
     private int actualPort;
     private Set<URI> actualEndpoints;
+    private final Set<URI> nodeEndpoints;
 
     Server(Messenger messenger,
            PeersManager peersManager,
@@ -84,7 +84,8 @@ public class Server implements AutoCloseable {
            AtomicBoolean opened,
            ServerChannelGroup channelGroup,
            int actualPort, Channel channel,
-           Set<URI> actualEndpoints) {
+           Set<URI> actualEndpoints,
+           Set<URI> nodeEndpoints) {
         this.peersManager = peersManager;
         this.config = config;
         this.channel = channel;
@@ -97,6 +98,7 @@ public class Server implements AutoCloseable {
         this.actualPort = actualPort;
         this.actualEndpoints = actualEndpoints;
         this.channelGroup = channelGroup;
+        this.nodeEndpoints = nodeEndpoints;
     }
 
     public Server(Supplier<Identity> identitySupplier,
@@ -106,8 +108,9 @@ public class Server implements AutoCloseable {
                   EventLoopGroup workerGroup,
                   EventLoopGroup bossGroup,
                   Observable<Boolean> superPeerConnected,
-                  Consumer<CompressedPublicKey> peerCommunicationConsumer) throws ServerException {
-        this(identitySupplier, messenger, peersManager, config, workerGroup, bossGroup, superPeerConnected, new AtomicBoolean(false), peerCommunicationConsumer);
+                  Consumer<CompressedPublicKey> peerCommunicationConsumer,
+                  Set<URI> nodeEndpoints) throws ServerException {
+        this(identitySupplier, messenger, peersManager, config, workerGroup, bossGroup, superPeerConnected, new AtomicBoolean(false), peerCommunicationConsumer, nodeEndpoints);
     }
 
     /**
@@ -121,6 +124,7 @@ public class Server implements AutoCloseable {
      * @param bossGroup                 netty shared boss group
      * @param superPeerConnected
      * @param peerCommunicationConsumer
+     * @param nodeEndpoints
      */
     public Server(Supplier<Identity> identitySupplier,
                   Messenger messenger,
@@ -130,7 +134,8 @@ public class Server implements AutoCloseable {
                   EventLoopGroup bossGroup,
                   Observable<Boolean> superPeerConnected,
                   AtomicBoolean opened,
-                  Consumer<CompressedPublicKey> peerCommunicationConsumer) throws ServerException {
+                  Consumer<CompressedPublicKey> peerCommunicationConsumer,
+                  Set<URI> nodeEndpoints) throws ServerException {
         this.peersManager = peersManager;
         this.config = config;
         this.channel = null;
@@ -143,9 +148,9 @@ public class Server implements AutoCloseable {
                         identitySupplier,
                         peersManager,
                         messenger,
-                        this::getEndpoints,
+                        nodeEndpoints,
                         channelGroup,
-                        this::isOpen,
+                        opened::get,
                         () -> !config.isSuperPeerEnabled() || superPeerConnected.blockingFirst(),
                         peerCommunicationConsumer),
                 config.getServerChannelInitializer()
@@ -157,6 +162,7 @@ public class Server implements AutoCloseable {
         this.messenger = messenger;
         this.actualPort = -1;
         this.actualEndpoints = new HashSet<>();
+        this.nodeEndpoints = nodeEndpoints;
     }
 
     /**
@@ -164,10 +170,6 @@ public class Server implements AutoCloseable {
      */
     public Set<URI> getEndpoints() {
         return actualEndpoints;
-    }
-
-    public boolean isOpen() {
-        return opened.get();
     }
 
     ServerChannelGroup getChannelGroup() {
@@ -190,6 +192,7 @@ public class Server implements AutoCloseable {
                     channel = channelFuture.channel();
 
                     channel.closeFuture().addListener(future -> {
+                        nodeEndpoints.removeAll(actualEndpoints);
                         actualPort = -1;
                         actualEndpoints = Set.of();
                         messenger.unsetServerSink();
@@ -198,6 +201,7 @@ public class Server implements AutoCloseable {
                     InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
                     actualPort = socketAddress.getPort();
                     actualEndpoints = determineActualEndpoints(config, socketAddress);
+                    nodeEndpoints.addAll(actualEndpoints);
 
                     messenger.setServerSink(message -> {
                         CompressedPublicKey recipient = message.getRecipient();
@@ -215,7 +219,7 @@ public class Server implements AutoCloseable {
                             throw new NoPathToIdentityException(recipient);
                         }
                     });
-                    LOG.debug("Server is now listening at {}:{}", config.getServerBindHost(), getPort());
+                    LOG.debug("Server is now listening at {}:{}", config.getServerBindHost(), actualPort);
                 }
                 else {
                     throw new ServerException("Unable to start server: " + channelFuture.cause().getMessage());
@@ -228,20 +232,13 @@ public class Server implements AutoCloseable {
     }
 
     /**
-     * Returns the actual bind port used by this server.
-     */
-    public int getPort() {
-        return actualPort;
-    }
-
-    /**
      * Closes the server socket and all open client sockets.
      */
     @Override
     @SuppressWarnings({ "java:S1905" })
     public void close() {
         if (opened.compareAndSet(true, false) && channel != null && channel.isOpen()) {
-            LOG.info("Stop Server listening at {}:{}...", config.getServerBindHost(), getPort());
+            LOG.info("Stop Server listening at {}:{}...", config.getServerBindHost(), actualPort);
             // send quit message to all clients and close connections
             channelGroup.writeAndFlush(new QuitMessage(REASON_SHUTTING_DOWN))
                     .addListener((ChannelGroupFutureListener) future -> {

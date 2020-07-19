@@ -41,14 +41,14 @@ public class ServerEnvironment {
     private final BooleanSupplier superPeerConnectedSupplier;
     private final Consumer<CompressedPublicKey> peerCommunicationConsumer;
     private final Messenger messenger;
-    private final Supplier<Set<URI>> endpointsSupplier;
+    private final Set<URI> endpoints;
     private final ServerChannelGroup channelGroup;
 
     public ServerEnvironment(DrasylConfig config,
                              Supplier<Identity> identitySupplier,
                              PeersManager peersManager,
                              Messenger messenger,
-                             Supplier<Set<URI>> endpointsSupplier,
+                             Set<URI> endpoints,
                              ServerChannelGroup channelGroup,
                              BooleanSupplier acceptedNewConnectionsSupplier,
                              BooleanSupplier superPeerConnectedSupplier,
@@ -57,7 +57,7 @@ public class ServerEnvironment {
         this.identitySupplier = identitySupplier;
         this.peersManager = peersManager;
         this.messenger = messenger;
-        this.endpointsSupplier = endpointsSupplier;
+        this.endpoints = endpoints;
         this.channelGroup = channelGroup;
         this.acceptedNewConnectionsSupplier = acceptedNewConnectionsSupplier;
         this.superPeerConnectedSupplier = superPeerConnectedSupplier;
@@ -89,7 +89,7 @@ public class ServerEnvironment {
     }
 
     public Set<URI> getEndpoints() {
-        return endpointsSupplier.get();
+        return endpoints;
     }
 
     public ServerChannelGroup getChannelGroup() {

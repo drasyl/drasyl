@@ -59,8 +59,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Properties;
 import java.util.Set;
@@ -117,6 +119,7 @@ public abstract class DrasylNode {
     private final PeersManager peersManager;
     private final PluginManager pluginManager;
     private final Messenger messenger;
+    private final Set<URI> endpoints;
     private final DrasylPipeline pipeline;
     private final DirectConnectionsManager directConnectionsManager;
     private final IntraVmDiscovery intraVmDiscovery;
@@ -145,12 +148,13 @@ public abstract class DrasylNode {
             this.identityManager = new IdentityManager(this.config);
             this.peersManager = new PeersManager(this::onInternalEvent);
             this.messenger = new Messenger(this::messageSink);
+            this.endpoints = new HashSet<>();
             this.pipeline = new DrasylPipeline(this::onEvent, messenger::send, config);
             this.pluginManager = new PluginManager(pipeline, config);
             this.directConnectionsManager = new DirectConnectionsManager(config, identityManager, peersManager, messenger, pipeline, DrasylNode.WORKER_GROUP, this::onInternalEvent);
             this.intraVmDiscovery = new IntraVmDiscovery(identityManager::getPublicKey, messenger, peersManager, this::onInternalEvent);
             this.superPeerClient = new SuperPeerClient(this.config, identityManager::getIdentity, peersManager, messenger, DrasylNode.WORKER_GROUP, this::onInternalEvent, directConnectionsManager::communicationOccurred);
-            this.server = new Server(identityManager::getIdentity, messenger, peersManager, this.config, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP, superPeerClient.connectionEstablished(), directConnectionsManager::communicationOccurred);
+            this.server = new Server(identityManager::getIdentity, messenger, peersManager, this.config, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP, superPeerClient.connectionEstablished(), directConnectionsManager::communicationOccurred, endpoints);
             this.monitoring = new Monitoring(config, peersManager, identityManager::getPublicKey, pipeline);
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
@@ -194,34 +198,40 @@ public abstract class DrasylNode {
         context.getLoggerList().stream().filter(l -> l.getName().startsWith("org.drasyl")).forEach(l -> l.setLevel(level));
     }
 
-    DrasylNode(DrasylConfig config,
-               IdentityManager identityManager,
-               PeersManager peersManager,
-               Messenger messenger,
-               DrasylPipeline pipeline,
-               DirectConnectionsManager directConnectionsManager,
-               IntraVmDiscovery intraVmDiscovery,
-               SuperPeerClient superPeerClient,
-               Server server,
-               Monitoring monitoring,
-               PluginManager pluginManager,
-               AtomicBoolean started,
-               CompletableFuture<Void> startSequence,
-               CompletableFuture<Void> shutdownSequence) {
-        this.config = config;
-        this.identityManager = identityManager;
-        this.peersManager = peersManager;
-        this.messenger = messenger;
-        this.pipeline = pipeline;
-        this.pluginManager = pluginManager;
-        this.directConnectionsManager = directConnectionsManager;
-        this.intraVmDiscovery = intraVmDiscovery;
-        this.superPeerClient = superPeerClient;
-        this.server = server;
-        this.monitoring = monitoring;
-        this.started = started;
-        this.startSequence = startSequence;
-        this.shutdownSequence = shutdownSequence;
+    void messageSink(RelayableMessage message) throws MessageSinkException {
+        CompressedPublicKey recipient = message.getRecipient();
+
+        if (!identityManager.getPublicKey().equals(recipient)) {
+            throw new NoPathToIdentityException(recipient);
+        }
+
+        if (message instanceof ApplicationMessage) {
+            ApplicationMessage applicationMessage = (ApplicationMessage) message;
+            peersManager.addPeer(applicationMessage.getSender());
+            pipeline.executeInbound(applicationMessage);
+        }
+        else if (message instanceof WhoisMessage) {
+            WhoisMessage whoisMessage = (WhoisMessage) message;
+            peersManager.setPeerInformation(whoisMessage.getRequester(), whoisMessage.getPeerInformation());
+
+            CompressedPublicKey myPublicKey = identityManager.getPublicKey();
+            PeerInformation myPeerInformation = PeerInformation.of(endpoints);
+            IdentityMessage identityMessage = new IdentityMessage(whoisMessage.getRequester(), myPublicKey, myPeerInformation, whoisMessage.getId());
+
+            try {
+                messenger.send(identityMessage);
+            }
+            catch (MessengerException e) {
+                LOG.info("Unable to reply to {}: {}", whoisMessage, e.getMessage());
+            }
+        }
+        else if (message instanceof IdentityMessage) {
+            IdentityMessage identityMessage = (IdentityMessage) message;
+            peersManager.setPeerInformation(identityMessage.getPublicKey(), identityMessage.getPeerInformation());
+        }
+        else {
+            throw new IllegalArgumentException("DrasylNode.loopbackMessageSink is not able to handle messages of type " + message.getClass().getSimpleName());
+        }
     }
 
     public void send(String recipient, byte[] payload) throws DrasylException {
@@ -275,42 +285,36 @@ public abstract class DrasylNode {
         send(recipient, payload.getBytes());
     }
 
-    /**
-     * Shut the Drasyl node down.
-     * <p>
-     * If there is a connection to a Super Peer, our node will deregister from that Super Peer.
-     * <p>
-     * If the local server has been started, it will now be stopped.
-     * <p>
-     * This method does not stop the shared threads. To kill the shared threads, you have to call
-     * the {@link #irrevocablyTerminate()} method.
-     * <p>
-     *
-     * @return this method returns a future, which complements if all shutdown steps have been
-     * completed.
-     */
-    public CompletableFuture<Void> shutdown() {
-        if (started.compareAndSet(true, false)) {
-            DrasylNode self = this;
-            onInternalEvent(new NodeDownEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
-            LOG.info("Shutdown drasyl Node with Identity '{}'...", identityManager.getIdentity());
-            shutdownSequence = new CompletableFuture<>();
-            getInstanceHeavy().scheduleDirect(() -> {
-                this.stopMonitoring();
-                this.stopPluginManager();
-                this.stopDirectConnectionsHandler();
-                this.stopSuperPeerClient();
-                this.stopServer();
-                this.stopIntraVmDiscovery();
-
-                onInternalEvent(new NodeNormalTerminationEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
-                LOG.info("drasyl Node with Identity '{}' has shut down", identityManager.getIdentity());
-                shutdownSequence.complete(null);
-                INSTANCES.remove(self);
-            });
-        }
-
-        return shutdownSequence;
+    DrasylNode(DrasylConfig config,
+               IdentityManager identityManager,
+               PeersManager peersManager,
+               Messenger messenger,
+               Set<URI> endpoints,
+               DrasylPipeline pipeline,
+               DirectConnectionsManager directConnectionsManager,
+               IntraVmDiscovery intraVmDiscovery,
+               SuperPeerClient superPeerClient,
+               Server server,
+               Monitoring monitoring,
+               PluginManager pluginManager,
+               AtomicBoolean started,
+               CompletableFuture<Void> startSequence,
+               CompletableFuture<Void> shutdownSequence) {
+        this.config = config;
+        this.identityManager = identityManager;
+        this.peersManager = peersManager;
+        this.messenger = messenger;
+        this.endpoints = endpoints;
+        this.pipeline = pipeline;
+        this.pluginManager = pluginManager;
+        this.directConnectionsManager = directConnectionsManager;
+        this.intraVmDiscovery = intraVmDiscovery;
+        this.superPeerClient = superPeerClient;
+        this.server = server;
+        this.monitoring = monitoring;
+        this.started = started;
+        this.startSequence = startSequence;
+        this.shutdownSequence = shutdownSequence;
     }
 
     private void stopMonitoring() {
@@ -353,59 +357,41 @@ public abstract class DrasylNode {
     }
 
     /**
-     * Start the Drasyl node.
+     * Shut the Drasyl node down.
      * <p>
-     * First, the identity of the node is loaded. If none exists, a new one is generated.
+     * If there is a connection to a Super Peer, our node will deregister from that Super Peer.
      * <p>
-     * If activated, a local server is started. This allows other nodes to discover our node.
+     * If the local server has been started, it will now be stopped.
      * <p>
-     * If a super peer has been configured, a client is started which connects to this super peer.
-     * Our node uses the Super Peer to discover and communicate with other nodes.
+     * This method does not stop the shared threads. To kill the shared threads, you have to call
+     * the {@link #irrevocablyTerminate()} method.
      * <p>
      *
-     * @return this method returns a future, which complements if all components necessary for the
-     * operation have been started.
+     * @return this method returns a future, which complements if all shutdown steps have been
+     * completed.
      */
-    public CompletableFuture<Void> start() {
-        if (started.compareAndSet(false, true)) {
-            INSTANCES.add(this);
-            LOG.info("Start drasyl Node v{}...", DrasylNode.getVersion());
-            LOG.debug("The following configuration will be used: {}", config);
-            startSequence = new CompletableFuture<>();
+    public CompletableFuture<Void> shutdown() {
+        if (started.compareAndSet(true, false)) {
+            DrasylNode self = this;
+            onInternalEvent(new NodeDownEvent(Node.of(identityManager.getIdentity(), endpoints)));
+            LOG.info("Shutdown drasyl Node with Identity '{}'...", identityManager.getIdentity());
+            shutdownSequence = new CompletableFuture<>();
             getInstanceHeavy().scheduleDirect(() -> {
-                try {
-                    loadIdentity();
-                    startIntraVmDiscovery();
-                    startServer();
-                    startSuperPeerClient();
-                    startDirectConnectionsHandler();
-                    startPluginManager();
-                    startMonitoring();
+                this.stopMonitoring();
+                this.stopPluginManager();
+                this.stopDirectConnectionsHandler();
+                this.stopSuperPeerClient();
+                this.stopServer();
+                this.stopIntraVmDiscovery();
 
-                    onInternalEvent(new NodeUpEvent(Node.of(identityManager.getIdentity(), server.getEndpoints())));
-                    LOG.info("drasyl Node with Identity '{}' has started", identityManager.getIdentity());
-                    startSequence.complete(null);
-                }
-                catch (DrasylException e) {
-                    onInternalEvent(new NodeUnrecoverableErrorEvent(Node.of(identityManager.getIdentity(), server.getEndpoints()), e));
-                    LOG.info("Could not start drasyl Node: {}", e.getMessage());
-                    LOG.info("Stop all running components...");
-
-                    this.stopMonitoring();
-                    this.stopPluginManager();
-                    this.stopDirectConnectionsHandler();
-                    this.stopSuperPeerClient();
-                    this.stopServer();
-                    this.stopIntraVmDiscovery();
-
-                    LOG.info("All components stopped");
-                    started.set(false);
-                    startSequence.completeExceptionally(e);
-                }
+                onInternalEvent(new NodeNormalTerminationEvent(Node.of(identityManager.getIdentity(), endpoints)));
+                LOG.info("drasyl Node with Identity '{}' has shut down", identityManager.getIdentity());
+                shutdownSequence.complete(null);
+                INSTANCES.remove(self);
             });
         }
 
-        return startSequence;
+        return shutdownSequence;
     }
 
     /**
@@ -436,14 +422,59 @@ public abstract class DrasylNode {
     }
 
     /**
-     * If activated, the local server should be started in this method. Method should block and wait
-     * until the server is running.
+     * Start the Drasyl node.
+     * <p>
+     * First, the identity of the node is loaded. If none exists, a new one is generated.
+     * <p>
+     * If activated, a local server is started. This allows other nodes to discover our node.
+     * <p>
+     * If a super peer has been configured, a client is started which connects to this super peer.
+     * Our node uses the Super Peer to discover and communicate with other nodes.
+     * <p>
+     *
+     * @return this method returns a future, which complements if all components necessary for the
+     * operation have been started.
      */
-    private void startServer() throws ServerException {
-        if (config.isServerEnabled()) {
-            server.open();
-            directConnectionsManager.setEndpoints(server.getEndpoints());
+    public CompletableFuture<Void> start() {
+        if (started.compareAndSet(false, true)) {
+            INSTANCES.add(this);
+            LOG.info("Start drasyl Node v{}...", DrasylNode.getVersion());
+            LOG.debug("The following configuration will be used: {}", config);
+            startSequence = new CompletableFuture<>();
+            getInstanceHeavy().scheduleDirect(() -> {
+                try {
+                    loadIdentity();
+                    startIntraVmDiscovery();
+                    startServer();
+                    startSuperPeerClient();
+                    startDirectConnectionsHandler();
+                    startPluginManager();
+                    startMonitoring();
+
+                    onInternalEvent(new NodeUpEvent(Node.of(identityManager.getIdentity(), endpoints)));
+                    LOG.info("drasyl Node with Identity '{}' has started", identityManager.getIdentity());
+                    startSequence.complete(null);
+                }
+                catch (DrasylException e) {
+                    onInternalEvent(new NodeUnrecoverableErrorEvent(Node.of(identityManager.getIdentity(), endpoints), e));
+                    LOG.info("Could not start drasyl Node: {}", e.getMessage());
+                    LOG.info("Stop all running components...");
+
+                    this.stopMonitoring();
+                    this.stopPluginManager();
+                    this.stopDirectConnectionsHandler();
+                    this.stopSuperPeerClient();
+                    this.stopServer();
+                    this.stopIntraVmDiscovery();
+
+                    LOG.info("All components stopped");
+                    started.set(false);
+                    startSequence.completeExceptionally(e);
+                }
+            });
         }
+
+        return startSequence;
     }
 
     /**
@@ -492,39 +523,14 @@ public abstract class DrasylNode {
         }
     }
 
-    void messageSink(RelayableMessage message) throws MessageSinkException {
-        CompressedPublicKey recipient = message.getRecipient();
-
-        if (!identityManager.getPublicKey().equals(recipient)) {
-            throw new NoPathToIdentityException(recipient);
-        }
-
-        if (message instanceof ApplicationMessage) {
-            ApplicationMessage applicationMessage = (ApplicationMessage) message;
-            peersManager.addPeer(applicationMessage.getSender());
-            pipeline.executeInbound(applicationMessage);
-        }
-        else if (message instanceof WhoisMessage) {
-            WhoisMessage whoisMessage = (WhoisMessage) message;
-            peersManager.setPeerInformation(whoisMessage.getRequester(), whoisMessage.getPeerInformation());
-
-            CompressedPublicKey myPublicKey = identityManager.getPublicKey();
-            PeerInformation myPeerInformation = PeerInformation.of(server.getEndpoints());
-            IdentityMessage identityMessage = new IdentityMessage(whoisMessage.getRequester(), myPublicKey, myPeerInformation, whoisMessage.getId());
-
-            try {
-                messenger.send(identityMessage);
-            }
-            catch (MessengerException e) {
-                LOG.info("Unable to reply to {}: {}", whoisMessage, e.getMessage());
-            }
-        }
-        else if (message instanceof IdentityMessage) {
-            IdentityMessage identityMessage = (IdentityMessage) message;
-            peersManager.setPeerInformation(identityMessage.getPublicKey(), identityMessage.getPeerInformation());
-        }
-        else {
-            throw new IllegalArgumentException("DrasylNode.loopbackMessageSink is not able to handle messages of type " + message.getClass().getSimpleName());
+    /**
+     * If activated, the local server should be started in this method. Method should block and wait
+     * until the server is running.
+     */
+    private void startServer() throws ServerException {
+        if (config.isServerEnabled()) {
+            server.open();
+            directConnectionsManager.setEndpoints(endpoints);
         }
     }
 
