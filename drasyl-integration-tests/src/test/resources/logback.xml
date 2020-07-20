@@ -29,6 +29,13 @@
         </encoder>
     </appender>
 
+    <appender name="ASYNC"
+              class="ch.qos.logback.classic.AsyncAppender">
+        <queueSize>8192</queueSize>
+        <neverBlock>true</neverBlock>
+        <appender-ref ref="STDOUT"/>
+    </appender>
+
     <logger name="org.drasyl.core" level="debug">
     </logger>
 
