@@ -19,7 +19,6 @@
 package org.drasyl;
 
 import ch.qos.logback.classic.Level;
-import ch.qos.logback.classic.LoggerContext;
 import com.google.common.annotations.Beta;
 import com.typesafe.config.ConfigException;
 import io.netty.channel.EventLoopGroup;
@@ -196,14 +195,21 @@ public abstract class DrasylNode {
     public abstract void onEvent(Event event);
 
     /**
+     * @return return log level of loggers in org.drasyl package namespace
+     */
+    public static Level getLogLevel() {
+        ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.drasyl");
+        return root.getLevel();
+    }
+
+    /**
      * Set log level of all drasyl loggers in org.drasyl package namespace.
      *
      * @param level
      */
     public static void setLogLevel(Level level) {
-        // set config level of all drasyl loggers
-        LoggerContext context = (LoggerContext) LoggerFactory.getILoggerFactory();
-        context.getLoggerList().stream().filter(l -> l.getName().startsWith("org.drasyl")).forEach(l -> l.setLevel(level));
+        ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.drasyl");
+        root.setLevel(level);
     }
 
     DrasylNode(DrasylConfig config,

@@ -18,6 +18,7 @@
  */
 package org.drasyl;
 
+import ch.qos.logback.classic.Level;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.Node;
@@ -33,6 +34,7 @@ import org.drasyl.messenger.MessengerException;
 import org.drasyl.messenger.NoPathToIdentityException;
 import org.drasyl.monitoring.Monitoring;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.client.SuperPeerClient;
 import org.drasyl.peer.connection.direct.DirectConnectionsManager;
 import org.drasyl.peer.connection.intravm.IntraVmDiscovery;
@@ -42,10 +44,10 @@ import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.RelayableMessage;
 import org.drasyl.peer.connection.message.WhoisMessage;
 import org.drasyl.peer.connection.server.Server;
-import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.server.ServerException;
 import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.plugins.PluginManager;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -53,6 +55,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.Set;
@@ -60,9 +63,12 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static ch.qos.logback.classic.Level.TRACE;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -72,17 +78,17 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class DrasylNodeTest {
+    private final CompletableFuture<Void> startSequence = new CompletableFuture<>();
+    private final CompletableFuture<Void> shutdownSequence = new CompletableFuture<>();
+    private final byte[] payload = new byte[]{ 0x4f };
     @Mock
     private DrasylConfig config;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private IdentityManager identityManager;
     @Mock
     private Messenger messenger;
-    private final CompletableFuture<Void> startSequence = new CompletableFuture<>();
-    private final CompletableFuture<Void> shutdownSequence = new CompletableFuture<>();
     @Mock
     private PeersManager peersManager;
-    private final byte[] payload = new byte[]{ 0x4f };
     @Mock
     private Identity identity;
     @Mock
@@ -404,6 +410,38 @@ class DrasylNodeTest {
             underTest.messageSink(message);
 
             verify(peersManager).setPeerInformation(message.getPublicKey(), message.getPeerInformation());
+        }
+    }
+
+    @Nested
+    class SetLogLevel {
+        private Level logLevel;
+
+        @Test
+        void shouldSetLogLevel() {
+            DrasylNode.setLogLevel(TRACE);
+
+            assertTrue(LoggerFactory.getLogger(DrasylNode.class).isTraceEnabled());
+            assertTrue(LoggerFactory.getLogger(Server.class).isTraceEnabled());
+        }
+
+        @BeforeEach
+        void setUp() {
+            logLevel = DrasylNode.getLogLevel();
+        }
+
+        @AfterEach
+        void tearDown() {
+            // restore default log level
+            DrasylNode.setLogLevel(logLevel);
+        }
+    }
+
+    @Nested
+    class GetLogLevel {
+        @Test
+        void shouldReturnLogLevel() {
+            assertNull(DrasylNode.getLogLevel());
         }
     }
 }
