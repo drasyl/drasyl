@@ -98,6 +98,10 @@ public class IdentityManager {
                 this.identity = myIdentity;
             }
         }
+
+        if (!this.identity.isValid()) {
+            throw new IdentityManagerException("Loaded or Created Identity is invalid.");
+        }
     }
 
     /**
