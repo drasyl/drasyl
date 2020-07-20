@@ -24,6 +24,8 @@ import org.drasyl.crypto.CryptoException;
 
 import java.util.Objects;
 
+import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
+
 /**
  * Represents the private identity of a peer (includes the proof of work, the public and private
  * key). Should be kept secret!.
@@ -83,6 +85,15 @@ public class Identity {
 
     public ProofOfWork getProofOfWork() {
         return proofOfWork;
+    }
+
+    /**
+     * Validates the identity by checking whether the proof of work matches the public key.
+     *
+     * @return <code>true</code> if this identity is valid. Otherwise <code>false</code>
+     */
+    public boolean isValid() {
+        return proofOfWork.isValid(keyPair.getPublicKey(), POW_DIFFICULTY);
     }
 
     public static Identity of(ProofOfWork proofOfWork,
