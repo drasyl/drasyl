@@ -39,6 +39,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.io.FileMatchers.anExistingFile;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -89,15 +90,46 @@ class IdentityManagerTest {
         }
 
         @Test
-        void shouldCreateNewIdentityIfConfigContainsNoKeysAndFileIsAbsent(@TempDir Path dir) throws IdentityManagerException {
+        void shouldCreateNewIdentityIfConfigContainsNoKeysAndFileIsAbsent(@TempDir Path dir) throws IdentityManagerException, CryptoException {
             Path path = Paths.get(dir.toString(), "my-identity.json");
             when(config.getIdentityPath()).thenReturn(path);
+            when(identityGenerator.get()).thenReturn(Identity.of(
+                    ProofOfWork.of(15405649),
+                    "0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9",
+                    "0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d"
+            ));
 
             IdentityManager identityManager = new IdentityManager(identityGenerator, config, null);
             identityManager.loadOrCreateIdentity();
 
             verify(identityGenerator).get();
             assertThat(path.toFile(), anExistingFile());
+        }
+
+        @Test
+        void shouldThrowExceptionIfIdentityFromConfigIsInvalid() throws CryptoException {
+            when(config.getIdentityPublicKey()).thenReturn(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"));
+            when(config.getIdentityProofOfWork()).thenReturn(ProofOfWork.of(42));
+            when(config.getIdentityPrivateKey()).thenReturn(CompressedPrivateKey.of("0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d"));
+
+            IdentityManager identityManager = new IdentityManager(identityGenerator, config, null);
+            assertThrows(IdentityManagerException.class, identityManager::loadOrCreateIdentity);
+        }
+
+        @Test
+        void shouldThrowExceptionIfIdentityFromFileIsInvalid(@TempDir Path dir) throws IOException {
+            Path path = Paths.get(dir.toString(), "my-identity.json");
+            when(config.getIdentityPath()).thenReturn(path);
+
+            // create existing file with invalid identity
+            Files.writeString(path, "{\n" +
+                    "  \"proofOfWork\" : 42,\n" +
+                    "  \"publicKey\" : \"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\n" +
+                    "  \"privateKey\" : \"0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d\"\n" +
+                    "}", StandardOpenOption.CREATE);
+
+            IdentityManager identityManager = new IdentityManager(identityGenerator, config, null);
+            assertThrows(IdentityManagerException.class, identityManager::loadOrCreateIdentity);
         }
     }
 
