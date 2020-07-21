@@ -19,7 +19,7 @@
 package org.drasyl.pipeline;
 
 import io.netty.util.internal.TypeParameterMatcher;
-import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.ChunkedMessage;
 
 import java.util.concurrent.CompletableFuture;
@@ -62,15 +62,16 @@ public abstract class SimpleOutboundHandler<O> extends OutboundHandlerAdapter {
 
     @Override
     public void write(HandlerContext ctx,
-                      ApplicationMessage msg,
+                      CompressedPublicKey recipient,
+                      Object msg,
                       CompletableFuture<Void> future) {
         if (acceptOutbound(msg)) {
             @SuppressWarnings("unchecked")
             O castedMsg = (O) msg;
-            matchedWrite(ctx, castedMsg, future);
+            matchedWrite(ctx, recipient, castedMsg, future);
         }
         else {
-            ctx.write(msg, future);
+            ctx.write(recipient, msg, future);
         }
     }
 
@@ -78,18 +79,20 @@ public abstract class SimpleOutboundHandler<O> extends OutboundHandlerAdapter {
      * Returns {@code true} if the given message should be handled. If {@code false} it will be
      * passed to the next {@link InboundHandler} in the {@link Pipeline}.
      */
-    protected boolean acceptOutbound(ApplicationMessage msg) {
+    protected boolean acceptOutbound(Object msg) {
         return matcherMessage.match(msg);
     }
 
     /**
      * Is called for each message of type {@link O}.
      *
-     * @param ctx    handler context
-     * @param msg    the message
-     * @param future a future for the message
+     * @param ctx       handler context
+     * @param recipient the recipient of the message
+     * @param msg       the message
+     * @param future    a future for the message
      */
     protected abstract void matchedWrite(HandlerContext ctx,
+                                         CompressedPublicKey recipient,
                                          O msg,
                                          CompletableFuture<Void> future);
 }

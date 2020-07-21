@@ -18,79 +18,107 @@
  */
 package org.drasyl.pipeline;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import io.reactivex.rxjava3.observers.TestObserver;
+import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeUpEvent;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ChunkedMessage;
+import org.drasyl.pipeline.codec.DefaultCodec;
+import org.drasyl.pipeline.codec.TypeValidator;
+import org.drasyl.util.JSONUtil;
 import org.drasyl.util.Pair;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.concurrent.TimeUnit;
 
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SimpleInboundHandlerTest {
+    @Mock
+    private Identity identity;
+    private DrasylConfig config;
+
+    @BeforeEach
+    void setUp() {
+        config = DrasylConfig.newBuilder().build();
+    }
+
     @Test
-    void shouldTriggerOnMatchedMessage() {
-        SimpleInboundHandler<ChunkedMessage, Event> handler = new SimpleInboundHandler<>() {
+    void shouldTriggerOnMatchedMessage() throws JsonProcessingException {
+        SimpleInboundHandler<byte[], Event> handler = new SimpleInboundHandler<>() {
             @Override
             protected void matchedEventTriggered(HandlerContext ctx, Event event) {
                 super.eventTriggered(ctx, event);
             }
 
             @Override
-            protected void matchedRead(HandlerContext ctx, ChunkedMessage msg) {
+            protected void matchedRead(HandlerContext ctx, CompressedPublicKey sender, byte[] msg) {
                 // Emit this message as outbound message to test
-                ctx.pipeline().processOutbound(msg);
+                ctx.pipeline().processOutbound(sender, msg);
             }
         };
 
-        EmbeddedPipeline pipeline = new EmbeddedPipeline(handler);
-        TestObserver<ApplicationMessage> inboundMessageTestObserver = pipeline.inboundMessages().test();
+        EmbeddedPipeline pipeline = new EmbeddedPipeline(() -> identity, TypeValidator.of(config), DefaultCodec.INSTANCE, handler);
+        TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
         TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
         TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-        ChunkedMessage msg = mock(ChunkedMessage.class);
-        pipeline.processInbound(msg);
+        CompressedPublicKey sender = mock(CompressedPublicKey.class);
+        when(identity.getPublicKey()).thenReturn(sender);
+        byte[] msg = JSONUtil.JACKSON_WRITER.writeValueAsBytes(new byte[]{});
+        pipeline.processInbound(new ApplicationMessage(sender, sender, msg, byte[].class));
 
         outboundMessageTestObserver.awaitCount(1);
-        outboundMessageTestObserver.assertValue(msg);
+        outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, sender, msg, byte[].class));
         inboundMessageTestObserver.assertNoValues();
         eventTestObserver.assertNoValues();
     }
 
     @Test
     void shouldPassthroughsNotMatchingMessage() {
-        SimpleInboundHandler<ChunkedMessage, Event> handler = new SimpleInboundHandler<>() {
+        SimpleInboundHandler<List, Event> handler = new SimpleInboundHandler<>() {
             @Override
             protected void matchedEventTriggered(HandlerContext ctx, Event event) {
                 ctx.fireEventTriggered(event);
             }
 
             @Override
-            protected void matchedRead(HandlerContext ctx, ChunkedMessage msg) {
+            protected void matchedRead(HandlerContext ctx, CompressedPublicKey sender, List msg) {
                 // Emit this message as outbound message to test
-                ctx.pipeline().processOutbound(msg);
+                ctx.pipeline().processOutbound(sender, msg);
             }
         };
 
-        EmbeddedPipeline pipeline = new EmbeddedPipeline(handler);
-        TestObserver<ApplicationMessage> inboundMessageTestObserver = pipeline.inboundMessages().test();
+        EmbeddedPipeline pipeline = new EmbeddedPipeline(() -> identity, TypeValidator.of(config), DefaultCodec.INSTANCE, handler);
+        TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
         TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
         TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
+        byte[] payload = new byte[]{ 0x01 };
         ApplicationMessage msg = mock(ApplicationMessage.class);
+
+        when(msg.getPayload()).thenReturn(payload);
+        doReturn(payload.getClass()).when(msg).getPayloadClazz();
+
         pipeline.processInbound(msg);
 
         inboundMessageTestObserver.awaitCount(1);
-        inboundMessageTestObserver.assertValue(msg);
+        inboundMessageTestObserver.assertValue(Pair.of(msg.getSender(), payload));
         eventTestObserver.awaitCount(1);
-        eventTestObserver.assertValue(new MessageEvent(Pair.of(msg.getSender(), msg.getPayload())));
+        eventTestObserver.assertValue(new MessageEvent(Pair.of(msg.getSender(), payload)));
         outboundMessageTestObserver.assertNoValues();
     }
 
@@ -103,12 +131,14 @@ class SimpleInboundHandlerTest {
             }
 
             @Override
-            protected void matchedRead(HandlerContext ctx, ApplicationMessage msg) {
-                ctx.fireRead(msg);
+            protected void matchedRead(HandlerContext ctx,
+                                       CompressedPublicKey sender,
+                                       ApplicationMessage msg) {
+                ctx.fireRead(sender, msg);
             }
         };
 
-        EmbeddedPipeline pipeline = new EmbeddedPipeline(handler);
+        EmbeddedPipeline pipeline = new EmbeddedPipeline(() -> identity, mock(TypeValidator.class), handler);
         TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
         NodeUpEvent event = mock(NodeUpEvent.class);
@@ -127,12 +157,14 @@ class SimpleInboundHandlerTest {
             }
 
             @Override
-            protected void matchedRead(HandlerContext ctx, ChunkedMessage msg) {
-                ctx.fireRead(msg);
+            protected void matchedRead(HandlerContext ctx,
+                                       CompressedPublicKey sender,
+                                       ChunkedMessage msg) {
+                ctx.fireRead(sender, msg);
             }
         };
 
-        EmbeddedPipeline pipeline = new EmbeddedPipeline(handler);
+        EmbeddedPipeline pipeline = new EmbeddedPipeline(() -> identity, mock(TypeValidator.class), handler);
         TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
         Event event = mock(Event.class);

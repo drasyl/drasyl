@@ -32,12 +32,11 @@ import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.client.ClientException;
+import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.client.TestSuperPeerClient;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
-import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.server.ServerException;
 import org.drasyl.peer.connection.server.TestServer;
 import org.drasyl.peer.connection.superpeer.TestClientChannelInitializer;
@@ -89,7 +88,7 @@ class ChunkedMessageIT {
         Observable<Message> receivedMessages = session2.receivedMessages().filter(msg -> msg instanceof ApplicationMessage);
 
         // send message
-        RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session2.getPublicKey(), bigPayload);
+        RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session2.getPublicKey(), bigPayload, bigPayload.getClass());
         session2.send(request);
 
         // verify response
@@ -97,7 +96,7 @@ class ChunkedMessageIT {
     }
 
     @BeforeAll
-    static void beforeAll() throws IdentityManagerException, ServerException, CryptoException, ClientException {
+    static void beforeAll() throws IdentityManagerException, ServerException, CryptoException {
         workerGroup = new NioEventLoopGroup();
         bossGroup = new NioEventLoopGroup(1);
 

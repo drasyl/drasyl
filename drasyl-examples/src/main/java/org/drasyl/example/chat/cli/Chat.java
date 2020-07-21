@@ -59,8 +59,10 @@ public class Chat {
             @Override
             public void onEvent(Event event) {
                 if (event instanceof MessageEvent) {
-                    Pair<CompressedPublicKey, byte[]> message = ((MessageEvent) event).getMessage();
-                    addBeforePrompt("From " + message.first() + ": " + new String(message.second()));
+                    Pair<CompressedPublicKey, Object> message = ((MessageEvent) event).getMessage();
+                    if (message.second() instanceof String) {
+                        addBeforePrompt("From " + message.first() + ": " + message.second());
+                    }
                 }
                 else if (event instanceof NodeOnlineEvent) {
                     if (online.isDone()) {

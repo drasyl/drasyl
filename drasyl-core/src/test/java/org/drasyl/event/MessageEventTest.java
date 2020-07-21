@@ -16,7 +16,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 @ExtendWith(MockitoExtension.class)
 class MessageEventTest {
     @Mock
-    private Pair<CompressedPublicKey, byte[]> message;
+    private Pair<CompressedPublicKey, Object> message;
 
     @Nested
     class GetMessage {
@@ -31,7 +31,7 @@ class MessageEventTest {
     @Nested
     class Equals {
         @Mock
-        private Pair<CompressedPublicKey, byte[]> message2;
+        private Pair<CompressedPublicKey, Object> message2;
 
         @Test
         void notSameBecauseOfDifferentMessage() {
@@ -49,7 +49,7 @@ class MessageEventTest {
     @Nested
     class HashCode {
         @Mock
-        private Pair<CompressedPublicKey, byte[]> message2;
+        private Pair<CompressedPublicKey, Object> message2;
 
         @Test
         void notSameBecauseOfDifferentMessage() {

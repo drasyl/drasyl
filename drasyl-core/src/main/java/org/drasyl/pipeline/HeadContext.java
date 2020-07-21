@@ -22,12 +22,17 @@ import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.event.Event;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.pipeline.codec.ObjectHolder;
+import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.DrasylConsumer;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 /**
  * Special class that represents the head of a {@link Pipeline}. This class can not be removed from
@@ -41,8 +46,10 @@ class HeadContext extends AbstractHandlerContext implements InboundHandler, Outb
     public HeadContext(DrasylConsumer<ApplicationMessage, DrasylException> outboundConsumer,
                        DrasylConfig config,
                        Pipeline pipeline,
-                       Scheduler scheduler) {
-        super(DRASYL_HEAD_HANDLER, config, pipeline, scheduler);
+                       Scheduler scheduler,
+                       Supplier<Identity> identity,
+                       TypeValidator validator) {
+        super(DRASYL_HEAD_HANDLER, config, pipeline, scheduler, identity, validator);
         this.outboundConsumer = outboundConsumer;
     }
 
@@ -52,8 +59,8 @@ class HeadContext extends AbstractHandlerContext implements InboundHandler, Outb
     }
 
     @Override
-    public void read(HandlerContext ctx, ApplicationMessage msg) {
-        ctx.fireRead(msg);
+    public void read(HandlerContext ctx, CompressedPublicKey sender, Object msg) {
+        ctx.fireRead(sender, msg);
     }
 
     @Override
@@ -68,7 +75,8 @@ class HeadContext extends AbstractHandlerContext implements InboundHandler, Outb
 
     @Override
     public void write(HandlerContext ctx,
-                      ApplicationMessage msg,
+                      CompressedPublicKey recipient,
+                      Object msg,
                       CompletableFuture<Void> future) {
         if (future.isDone()) {
             if (LOG.isWarnEnabled()) {
@@ -77,8 +85,19 @@ class HeadContext extends AbstractHandlerContext implements InboundHandler, Outb
         }
         else {
             try {
-                outboundConsumer.accept(msg);
-                future.complete(null);
+                // Here we want to combine the input into an ApplicationMessage,
+                // therefore the msg must be a ObjectHolder at this point
+                if (msg instanceof ObjectHolder) {
+                    ObjectHolder oh = (ObjectHolder) msg;
+                    outboundConsumer.accept(new ApplicationMessage(identity().getPublicKey(), recipient, oh.getObject(), oh.getClazz()));
+                    future.complete(null);
+                }
+                else {
+                    future.completeExceptionally(new IllegalArgumentException("Message must be a ObjectHolder at the end of the pipeline."));
+                    if (LOG.isWarnEnabled()) {
+                        LOG.warn("Message `{}` was not written to the underlying drasyl layer, because the message was not of type ObjectHolder at the end of the pipeline.", msg);
+                    }
+                }
             }
             catch (Exception e) {
                 future.completeExceptionally(e);

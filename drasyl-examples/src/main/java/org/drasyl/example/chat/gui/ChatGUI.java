@@ -18,7 +18,6 @@
  */
 package org.drasyl.example.chat.gui;
 
-import com.fasterxml.jackson.core.JsonProcessingException;
 import javafx.application.Application;
 import javafx.event.ActionEvent;
 import javafx.geometry.Insets;
@@ -45,12 +44,8 @@ import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.util.Pair;
 
-import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
-
-import static org.drasyl.util.JSONUtil.JACKSON_READER;
-import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 
 /**
  * A simple JavaFX Chat that uses drasyl as backend overlay network.
@@ -143,14 +138,11 @@ public class ChatGUI extends Application {
         return new Scene(vBox, 800, 600);
     }
 
-    private void parseMessage(Pair<CompressedPublicKey, byte[]> payload) {
-        try {
-            Message msg = JACKSON_READER.readValue(new String(payload.second()), Message.class);
+    private void parseMessage(Pair<CompressedPublicKey, Object> payload) {
+        if (payload.second() instanceof Message) {
+            Message msg = (Message) payload.second();
 
             txtArea.appendText("[" + msg.getUsername() + "]: " + msg.getMsg() + "\n");
-        }
-        catch (IOException e) {
-            e.printStackTrace(); //NOSONAR
         }
     }
 
@@ -189,15 +181,13 @@ public class ChatGUI extends Application {
         if (validateInput(chatField, s -> !s.isEmpty())) {
             try {
                 final String msg = chatField.getText();
-                node.send(recipient, JACKSON_WRITER.writeValueAsBytes(new Message(msg, username)))
+
+                node.send(recipient, new Message(msg, username))
                         .exceptionally(e -> {
                             txtArea.appendText("Message `" + msg + "` cloud not be sent.");
                             return null;
                         });
                 txtArea.appendText("[" + username + "]: " + chatField.getText() + "\n");
-            }
-            catch (JsonProcessingException e) {
-                e.printStackTrace(); //NOSONAR
             }
             finally {
                 chatField.clear();

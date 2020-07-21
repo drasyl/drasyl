@@ -18,7 +18,7 @@
  */
 package org.drasyl.pipeline;
 
-import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.identity.CompressedPublicKey;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -34,8 +34,9 @@ import java.util.concurrent.CompletableFuture;
 public class OutboundHandlerAdapter extends HandlerAdapter implements OutboundHandler {
     @Override
     public void write(HandlerContext ctx,
-                      ApplicationMessage msg,
+                      CompressedPublicKey recipient,
+                      Object msg,
                       CompletableFuture<Void> future) {
-        ctx.write(msg, future);
+        ctx.write(recipient, msg, future);
     }
 }

@@ -63,6 +63,7 @@ public class ChunkedMessage extends ApplicationMessage {
      * @param recipient     the recipient of the message
      * @param id            the id of this message (must be the same as the initial chunk)
      * @param payload       the chunk
+     * @param payloadClazz  the class of the payload
      * @param contentLength the final content length
      * @param checksum      the final checksum
      */
@@ -70,20 +71,22 @@ public class ChunkedMessage extends ApplicationMessage {
                    CompressedPublicKey recipient,
                    String id,
                    byte[] payload,
+                   Class<?> payloadClazz,
                    int contentLength,
                    String checksum) {
-        this(sender, recipient, payload, id, contentLength, checksum, (short) 0);
+        this(sender, recipient, payload, payloadClazz, id, contentLength, checksum, (short) 0);
     }
 
     @JsonCreator
     private ChunkedMessage(@JsonProperty("sender") CompressedPublicKey sender,
                            @JsonProperty("recipient") CompressedPublicKey recipient,
                            @JsonProperty("payload") byte[] payload,
+                           @JsonProperty("payloadClazz") Class<?> payloadClazz,
                            @JsonProperty("id") String id,
                            @JsonProperty("contentLength") int contentLength,
                            @JsonProperty("checksum") String checksum,
                            @JsonProperty("hopCount") short hopCount) {
-        super(id, sender, recipient, payload, hopCount);
+        super(id, sender, recipient, payload, payloadClazz, hopCount);
         this.contentLength = contentLength;
         this.checksum = checksum;
     }
@@ -126,6 +129,7 @@ public class ChunkedMessage extends ApplicationMessage {
         return "ChunkedMessage{" +
                 "contentLength=" + contentLength +
                 ", payload=byte[" + Optional.ofNullable(payload).orElse(new byte[]{}).length + "] { ... }" +
+                ", payloadClazz=" + payloadClazz +
                 ", sender=" + sender +
                 ", checksum='" + checksum + '\'' +
                 ", recipient=" + recipient +
@@ -145,6 +149,7 @@ public class ChunkedMessage extends ApplicationMessage {
      * @param recipient     the recipient of the message
      * @param msgID         the id of this message (must be the same as composed message)
      * @param payload       the chunk
+     * @param payloadClazz  the class of the payload
      * @param contentLength the final content length
      * @param checksum      the final checksum
      */
@@ -152,9 +157,10 @@ public class ChunkedMessage extends ApplicationMessage {
                                                   CompressedPublicKey recipient,
                                                   String msgID,
                                                   byte[] payload,
+                                                  Class<?> payloadClazz,
                                                   int contentLength,
                                                   String checksum) {
-        return new ChunkedMessage(sender, recipient, msgID, payload, contentLength, checksum);
+        return new ChunkedMessage(sender, recipient, msgID, payload, payloadClazz, contentLength, checksum);
     }
 
     /**
@@ -169,7 +175,7 @@ public class ChunkedMessage extends ApplicationMessage {
                                                    CompressedPublicKey recipient,
                                                    String msgID,
                                                    byte[] payload) {
-        return new ChunkedMessage(sender, recipient, msgID, payload, 0, null);
+        return new ChunkedMessage(sender, recipient, msgID, payload, null, 0, null);
     }
 
     /**
@@ -182,6 +188,6 @@ public class ChunkedMessage extends ApplicationMessage {
     public static ChunkedMessage createLastChunk(CompressedPublicKey sender,
                                                  CompressedPublicKey recipient,
                                                  String msgID) {
-        return new ChunkedMessage(sender, recipient, msgID, new byte[]{}, 0, null);
+        return new ChunkedMessage(sender, recipient, msgID, new byte[]{}, null, 0, null);
     }
 }

@@ -16,25 +16,8 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.pipeline;
-
-import org.drasyl.identity.CompressedPublicKey;
-
-import java.util.concurrent.CompletableFuture;
 
 /**
- * {@link Handler} implementation which represents a combination out of a {@link InboundHandler} and
- * the {@link OutboundHandler}.
- * <p>
- * It is a good starting point if your {@link Handler} implementation needs to intercept operations
- * and also state updates.
+ * Package contains classes that are used for encoding/decoding objects.
  */
-public class DuplexHandler extends InboundHandlerAdapter implements OutboundHandler {
-    @Override
-    public void write(HandlerContext ctx,
-                      CompressedPublicKey recipient,
-                      Object msg,
-                      CompletableFuture<Void> future) {
-        ctx.write(recipient, msg, future);
-    }
-}
+package org.drasyl.pipeline.codec;

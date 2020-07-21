@@ -217,40 +217,37 @@ class DrasylNodeTest {
         void shouldPassMessageToPipeline(@Mock CompressedPublicKey myRecipient) {
             underTest.send(myRecipient, new byte[]{ 0x4f });
 
-            verify(pipeline).processOutbound(new ApplicationMessage(identityManager.getPublicKey(), myRecipient, payload));
+            verify(pipeline).processOutbound(myRecipient, payload);
         }
 
         @Test
         void recipientAsStringShouldPassMessageToPipeline() throws DrasylException, CryptoException {
             underTest.send("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458", payload);
 
-            verify(pipeline).processOutbound(new ApplicationMessage(
-                    identityManager.getPublicKey(),
+            verify(pipeline).processOutbound(
                     CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458"),
                     payload
-            ));
+            );
         }
 
         @Test
         void payloadAsStringShouldPassMessageToPipeline(@Mock CompressedPublicKey myRecipient) {
             underTest.send(myRecipient, "Hallo Welt");
 
-            verify(pipeline).processOutbound(new ApplicationMessage(
-                    identityManager.getPublicKey(),
+            verify(pipeline).processOutbound(
                     myRecipient,
-                    "Hallo Welt".getBytes()
-            ));
+                    "Hallo Welt"
+            );
         }
 
         @Test
         void recipientAndPayloadAsStringShouldPassMessageToPipeline() throws DrasylException, CryptoException {
             underTest.send("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458", "Hallo Welt");
 
-            verify(pipeline).processOutbound(new ApplicationMessage(
-                    identityManager.getPublicKey(),
+            verify(pipeline).processOutbound(
                     CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458"),
-                    "Hallo Welt".getBytes()
-            ));
+                    "Hallo Welt"
+            );
         }
     }
 

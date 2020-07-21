@@ -18,7 +18,7 @@
  */
 package org.drasyl.pipeline;
 
-import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.identity.CompressedPublicKey;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -39,11 +39,12 @@ class OutboundHandlerAdapterTest {
     void shouldPassthroughsOnWrite() {
         OutboundHandlerAdapter adapter = new OutboundHandlerAdapter();
 
-        ApplicationMessage msg = mock(ApplicationMessage.class);
+        CompressedPublicKey recipient = mock(CompressedPublicKey.class);
+        Object msg = mock(Object.class);
         CompletableFuture<Void> future = mock(CompletableFuture.class);
 
-        adapter.write(ctx, msg, future);
+        adapter.write(ctx, recipient, msg, future);
 
-        verify(ctx).write(eq(msg), eq(future));
+        verify(ctx).write(eq(recipient), eq(msg), eq(future));
     }
 }

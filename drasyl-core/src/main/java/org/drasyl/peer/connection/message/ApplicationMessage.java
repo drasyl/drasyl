@@ -36,16 +36,24 @@ import static java.util.Objects.requireNonNull;
 public class ApplicationMessage extends RelayableMessage implements RequestMessage {
     protected final CompressedPublicKey sender;
     protected final byte[] payload;
+    protected final Class<?> payloadClazz;
 
     @JsonCreator
     public ApplicationMessage(@JsonProperty("id") String id,
                               @JsonProperty("sender") CompressedPublicKey sender,
                               @JsonProperty("recipient") CompressedPublicKey recipient,
                               @JsonProperty("payload") byte[] payload,
+                              @JsonProperty("payloadClazz") Class<?> payloadClazz,
                               @JsonProperty("hopCount") short hopCount) {
         super(id, recipient, hopCount);
         this.sender = requireNonNull(sender);
         this.payload = requireNonNull(payload);
+
+        /*
+         * Needed for backwards compatible with {@link ApplicationMessage} of versions lower
+         * than 0.1.3-SNAPSHOT and returns on empty {@link #payloadClazz} the {@code byte[].class}.
+         */
+        this.payloadClazz = Objects.requireNonNullElse(payloadClazz, byte[].class);
     }
 
     /**
@@ -57,17 +65,33 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
      */
     public ApplicationMessage(CompressedPublicKey sender,
                               CompressedPublicKey recipient,
-                              byte[] payload) {
-        this(sender, recipient, payload, (short) 0);
+                              byte[] payload,
+                              Class<?> payloadClazz) {
+        this(sender, recipient, payload, payloadClazz, (short) 0);
     }
 
     ApplicationMessage(CompressedPublicKey sender,
                        CompressedPublicKey recipient,
                        byte[] payload,
+                       Class<?> payloadClazz,
                        short hopCount) {
         super(recipient, hopCount);
         this.sender = requireNonNull(sender);
         this.payload = requireNonNull(payload);
+
+        /*
+         * Needed for backwards compatible with {@link ApplicationMessage} of versions lower
+         * than 0.1.3-SNAPSHOT and returns on empty {@link #payloadClazz} the {@code byte[].class}.
+         */
+        this.payloadClazz = Objects.requireNonNullElse(payloadClazz, byte[].class);
+    }
+
+    /**
+     * @return the class of the encoded payload
+     * @since 0.1.3-SNAPSHOT
+     */
+    public Class<?> getPayloadClazz() {
+        return payloadClazz;
     }
 
     public CompressedPublicKey getSender() {
@@ -113,6 +137,7 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
         return "ApplicationMessage{" +
                 "sender=" + sender +
                 ", payload=byte[" + Optional.ofNullable(payload).orElse(new byte[]{}).length + "] { ... }" +
+                ", payloadClazz=" + payloadClazz +
                 ", recipient=" + recipient +
                 ", hopCount=" + hopCount +
                 ", id='" + id + '\'' +

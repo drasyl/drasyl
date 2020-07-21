@@ -96,6 +96,10 @@ public class DrasylConfig {
     static final String MONITORING_INFLUX_DATABASE = "drasyl.monitoring.influx.database";
     static final String MONITORING_INFLUX_REPORTING_FREQUENCY = "drasyl.monitoring.influx.reporting-frequency";
     static final String PLUGINS = "drasyl.plugins";
+    static final String MARSHALLING_ALLOWED_TYPES = "drasyl.marshalling.allowed-types";
+    static final String MARSHALLING_ALLOW_ALL_PRIMITIVES = "drasyl.marshalling.allow-all-primitives";
+    static final String MARSHALLING_ALLOW_ARRAY_OF_DEFINED_TYPES = "drasyl.marshalling.allow-array-of-defined-types";
+    static final String MARSHALLING_ALLOWED_PACKAGES = "drasyl.marshalling.allowed-packages";
     //======================================= Config Values ========================================
     private final Level loglevel; // NOSONAR
     private final ProofOfWork identityProofOfWork;
@@ -139,6 +143,10 @@ public class DrasylConfig {
     private final String monitoringInfluxDatabase;
     private final Duration monitoringInfluxReportingFrequency;
     private final List<PluginEnvironment> pluginEnvironments;
+    private final List<String> marshallingAllowedTypes;
+    private final boolean marshallingAllowAllPrimitives;
+    private final boolean marshallingAllowArrayOfDefinedTypes;
+    private final List<String> marshallingAllowedPackages;
 
     public DrasylConfig() {
         this(ConfigFactory.load());
@@ -228,6 +236,12 @@ public class DrasylConfig {
 
         // Load plugins
         this.pluginEnvironments = ImmutableList.copyOf(getPluginEnvironmentList(config, PLUGINS));
+
+        // Load marshalling config
+        this.marshallingAllowedTypes = config.getStringList(MARSHALLING_ALLOWED_TYPES);
+        this.marshallingAllowAllPrimitives = config.getBoolean(MARSHALLING_ALLOW_ALL_PRIMITIVES);
+        this.marshallingAllowArrayOfDefinedTypes = config.getBoolean(MARSHALLING_ALLOW_ARRAY_OF_DEFINED_TYPES);
+        this.marshallingAllowedPackages = config.getStringList(MARSHALLING_ALLOWED_PACKAGES);
     }
 
     private Level getLoglevel(Config config, String path) {
@@ -397,7 +411,11 @@ public class DrasylConfig {
                  String monitoringInfluxPassword,
                  String monitoringInfluxDatabase,
                  Duration monitoringInfluxReportingFrequency,
-                 List<PluginEnvironment> pluginEnvironments) {
+                 List<PluginEnvironment> pluginEnvironments,
+                 List<String> marshallingAllowedTypes,
+                 boolean marshallingAllowAllPrimitives,
+                 boolean marshallingAllowArrayOfDefinedTypes,
+                 List<String> marshallingAllowedPackages) {
         this.loglevel = loglevel;
         this.identityProofOfWork = identityProofOfWork;
         this.identityPublicKey = identityPublicKey;
@@ -440,6 +458,10 @@ public class DrasylConfig {
         this.monitoringInfluxDatabase = monitoringInfluxDatabase;
         this.monitoringInfluxReportingFrequency = monitoringInfluxReportingFrequency;
         this.pluginEnvironments = pluginEnvironments;
+        this.marshallingAllowedTypes = marshallingAllowedTypes;
+        this.marshallingAllowAllPrimitives = marshallingAllowAllPrimitives;
+        this.marshallingAllowArrayOfDefinedTypes = marshallingAllowArrayOfDefinedTypes;
+        this.marshallingAllowedPackages = marshallingAllowedPackages;
     }
 
     public boolean isMonitoringEnabled() {
@@ -611,6 +633,22 @@ public class DrasylConfig {
         return getSuperPeerChannelInitializer();
     }
 
+    public List<String> getMarshallingAllowedTypes() {
+        return marshallingAllowedTypes;
+    }
+
+    public boolean isMarshallingAllowAllPrimitives() {
+        return marshallingAllowAllPrimitives;
+    }
+
+    public boolean isMarshallingAllowArrayOfDefinedTypes() {
+        return marshallingAllowArrayOfDefinedTypes;
+    }
+
+    public List<String> getMarshallingAllowedPackages() {
+        return marshallingAllowedPackages;
+    }
+
     @Override
     public int hashCode() {
         return Objects.hash(loglevel, identityProofOfWork, identityPublicKey, identityPrivateKey,
@@ -626,7 +664,8 @@ public class DrasylConfig {
                 directConnectionsIdleRetries, directConnectionsIdleTimeout, monitoringEnabled,
                 monitoringInfluxUri, monitoringInfluxUser, monitoringInfluxPassword,
                 monitoringInfluxDatabase, monitoringInfluxReportingFrequency,
-                pluginEnvironments);
+                pluginEnvironments, marshallingAllowedTypes, marshallingAllowAllPrimitives,
+                marshallingAllowArrayOfDefinedTypes, marshallingAllowedPackages);
     }
 
     @Override
@@ -679,7 +718,11 @@ public class DrasylConfig {
                 Objects.equals(monitoringInfluxPassword, that.monitoringInfluxPassword) &&
                 Objects.equals(monitoringInfluxDatabase, that.monitoringInfluxDatabase) &&
                 Objects.equals(monitoringInfluxReportingFrequency, that.monitoringInfluxReportingFrequency) &&
-                Objects.equals(pluginEnvironments, that.pluginEnvironments);
+                Objects.equals(pluginEnvironments, that.pluginEnvironments) &&
+                Objects.equals(marshallingAllowedTypes, that.marshallingAllowedTypes) &&
+                Objects.equals(marshallingAllowAllPrimitives, that.marshallingAllowAllPrimitives) &&
+                Objects.equals(marshallingAllowArrayOfDefinedTypes, that.marshallingAllowArrayOfDefinedTypes) &&
+                Objects.equals(marshallingAllowedPackages, that.marshallingAllowedPackages);
     }
 
     @Override
@@ -727,6 +770,10 @@ public class DrasylConfig {
                 ", monitoringInfluxDatabase='" + monitoringInfluxDatabase + '\'' +
                 ", monitoringInfluxReportingFrequency=" + monitoringInfluxReportingFrequency +
                 ", pluginEnvironments=" + pluginEnvironments +
+                ", marshallingAllowedTypes=" + marshallingAllowedTypes +
+                ", marshallingAllowAllPrimitives=" + marshallingAllowAllPrimitives +
+                ", marshallingAllowArrayOfDefinedTypes=" + marshallingAllowArrayOfDefinedTypes +
+                ", marshallingAllowedPackages=" + marshallingAllowedPackages +
                 '}';
     }
 
@@ -781,7 +828,11 @@ public class DrasylConfig {
                 config.monitoringInfluxPassword,
                 config.monitoringInfluxDatabase,
                 config.monitoringInfluxReportingFrequency,
-                config.pluginEnvironments
+                config.pluginEnvironments,
+                config.marshallingAllowedTypes,
+                config.marshallingAllowAllPrimitives,
+                config.marshallingAllowArrayOfDefinedTypes,
+                config.marshallingAllowedPackages
         );
     }
 
@@ -832,6 +883,10 @@ public class DrasylConfig {
         private String monitoringInfluxDatabase;
         private Duration monitoringInfluxReportingFrequency;
         private List<PluginEnvironment> pluginEnvironments;
+        private List<String> marshallingAllowedTypes;
+        private boolean marshallingAllowAllPrimitives;
+        private boolean marshallingAllowArrayOfDefinedTypes;
+        private List<String> marshallingAllowedPackages;
 
         @SuppressWarnings({ "java:S107" })
         private Builder(Level loglevel,
@@ -875,7 +930,11 @@ public class DrasylConfig {
                         String monitoringInfluxPassword,
                         String monitoringInfluxDatabase,
                         Duration monitoringInfluxReportingFrequency,
-                        List<PluginEnvironment> pluginEnvironments) {
+                        List<PluginEnvironment> pluginEnvironments,
+                        List<String> marshallingAllowedTypes,
+                        boolean marshallingAllowAllPrimitives,
+                        boolean marshallingAllowArrayOfDefinedTypes,
+                        List<String> marshallingAllowedPackages) {
             this.loglevel = loglevel;
             this.identityProofOfWork = identityProofOfWork;
             this.identityPublicKey = identityPublicKey;
@@ -918,6 +977,10 @@ public class DrasylConfig {
             this.monitoringInfluxDatabase = monitoringInfluxDatabase;
             this.monitoringInfluxReportingFrequency = monitoringInfluxReportingFrequency;
             this.pluginEnvironments = pluginEnvironments;
+            this.marshallingAllowedTypes = marshallingAllowedTypes;
+            this.marshallingAllowAllPrimitives = marshallingAllowAllPrimitives;
+            this.marshallingAllowArrayOfDefinedTypes = marshallingAllowArrayOfDefinedTypes;
+            this.marshallingAllowedPackages = marshallingAllowedPackages;
         }
 
         public Builder loglevel(Level loglevel) {
@@ -1130,6 +1193,30 @@ public class DrasylConfig {
             return this;
         }
 
+        public Builder marshallingAllowedTypes(List<String> marshallingAllowedTypes) {
+            this.marshallingAllowedTypes = marshallingAllowedTypes;
+
+            return this;
+        }
+
+        public Builder marshallingAllowAllPrimitives(boolean marshallingAllowAllPrimitives) {
+            this.marshallingAllowAllPrimitives = marshallingAllowAllPrimitives;
+
+            return this;
+        }
+
+        public Builder marshallingAllowArrayOfDefinedTypes(boolean marshallingAllowArrayOfDefinedTypes) {
+            this.marshallingAllowArrayOfDefinedTypes = marshallingAllowArrayOfDefinedTypes;
+
+            return this;
+        }
+
+        public Builder marshallingAllowedPackages(List<String> marshallingAllowedPackages) {
+            this.marshallingAllowedPackages = marshallingAllowedPackages;
+
+            return this;
+        }
+
         public DrasylConfig build() {
             return new DrasylConfig(loglevel, identityProofOfWork, identityPublicKey,
                     identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort,
@@ -1145,7 +1232,8 @@ public class DrasylConfig {
                     directConnectionsIdleRetries, directConnectionsIdleTimeout, monitoringEnabled,
                     monitoringInfluxUri, monitoringInfluxUser, monitoringInfluxPassword,
                     monitoringInfluxDatabase, monitoringInfluxReportingFrequency,
-                    pluginEnvironments);
+                    pluginEnvironments, marshallingAllowedTypes, marshallingAllowAllPrimitives,
+                    marshallingAllowArrayOfDefinedTypes, marshallingAllowedPackages);
         }
     }
 }

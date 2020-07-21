@@ -18,6 +18,7 @@
  */
 package org.drasyl.pipeline;
 
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 
 import java.util.concurrent.CompletableFuture;
@@ -29,9 +30,13 @@ public interface OutboundHandler extends Handler {
     /**
      * Gets called if a {@link ApplicationMessage} was send from the application to a recipient.
      *
-     * @param ctx    handler context
-     * @param msg    the message
-     * @param future a future for the message
+     * @param ctx       handler context
+     * @param recipient the recipient of the message
+     * @param msg       the message
+     * @param future    a future for the message
      */
-    void write(HandlerContext ctx, ApplicationMessage msg, CompletableFuture<Void> future);
+    void write(HandlerContext ctx,
+               CompressedPublicKey recipient,
+               Object msg,
+               CompletableFuture<Void> future);
 }

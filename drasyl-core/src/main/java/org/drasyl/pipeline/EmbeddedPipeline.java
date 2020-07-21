@@ -23,19 +23,23 @@ import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.DrasylScheduler;
 import org.drasyl.util.Pair;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.function.Supplier;
 
 /**
  * Embedded {@link Pipeline} implementation, that allows easy testing of {@link Handler}s.
  */
 @SuppressWarnings({ "java:S107" })
 public class EmbeddedPipeline extends DefaultPipeline {
-    private final Subject<ApplicationMessage> inboundMessages;
+    private final Subject<Pair<CompressedPublicKey, Object>> inboundMessages;
     private final Subject<Event> inboundEvents;
     private final Subject<ApplicationMessage> outboundMessages;
 
@@ -45,27 +49,31 @@ public class EmbeddedPipeline extends DefaultPipeline {
      *
      * @param handlers the handlers
      */
-    public EmbeddedPipeline(Handler... handlers) {
-        this();
+    public EmbeddedPipeline(Supplier<Identity> identity,
+                            TypeValidator validator,
+                            Handler... handlers) {
+        this(identity, validator);
         List.of(handlers).forEach(handler -> addLast(handler.getClass().getSimpleName(), handler));
     }
 
-    public EmbeddedPipeline() {
+    public EmbeddedPipeline(Supplier<Identity> identity, TypeValidator validator) {
         inboundMessages = ReplaySubject.create();
         inboundEvents = ReplaySubject.create();
         outboundMessages = ReplaySubject.create();
 
         this.handlerNames = new ConcurrentHashMap<>();
-        this.head = new HeadContext(outboundMessages::onNext, config, this, DrasylScheduler.getInstanceHeavy());
-        this.tail = new TailContext(inboundEvents::onNext, config, this, DrasylScheduler.getInstanceHeavy()) {
+        this.head = new HeadContext(outboundMessages::onNext, config, this, DrasylScheduler.getInstanceHeavy(), identity, validator);
+        this.tail = new TailContext(inboundEvents::onNext, config, this, DrasylScheduler.getInstanceHeavy(), identity, validator) {
             @Override
-            public void read(HandlerContext ctx, ApplicationMessage msg) {
+            public void read(HandlerContext ctx, CompressedPublicKey sender, Object msg) {
                 // Pass message to Application
-                inboundEvents.onNext(new MessageEvent(Pair.of(msg.getSender(), msg.getPayload())));
-                inboundMessages.onNext(msg);
+                inboundEvents.onNext(new MessageEvent(Pair.of(sender, msg)));
+                inboundMessages.onNext(Pair.of(sender, msg));
             }
         };
         this.scheduler = DrasylScheduler.getInstanceLight();
+        this.identity = identity;
+        this.validator = validator;
 
         initPointer();
     }
@@ -73,7 +81,7 @@ public class EmbeddedPipeline extends DefaultPipeline {
     /**
      * @return all messages that passes the pipeline until the end
      */
-    public Observable<ApplicationMessage> inboundMessages() {
+    public Observable<Pair<CompressedPublicKey, Object>> inboundMessages() {
         return inboundMessages;
     }
 

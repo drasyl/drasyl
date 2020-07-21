@@ -57,6 +57,7 @@ import org.drasyl.peer.connection.message.WhoisMessage;
 import org.drasyl.peer.connection.server.Server;
 import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.Pipeline;
+import org.drasyl.pipeline.codec.Codec;
 import org.drasyl.plugins.PluginManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,6 +68,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -154,7 +156,7 @@ public abstract class DrasylNode {
             this.messenger = new Messenger(this::messageSink, peersManager, channelGroup);
             this.endpoints = new HashSet<>();
             this.acceptNewConnections = new AtomicBoolean();
-            this.pipeline = new DrasylPipeline(this::onEvent, messenger::send, config);
+            this.pipeline = new DrasylPipeline(this::onEvent, messenger::send, config, identityManager::getIdentity);
             this.components = new ArrayList<>();
             this.components.add(new PluginManager(pipeline, config));
             Consumer<CompressedPublicKey> communicationOccurredConsumer;
@@ -298,7 +300,33 @@ public abstract class DrasylNode {
         this.shutdownSequence = shutdownSequence;
     }
 
-    public CompletableFuture<Void> send(String recipient, byte[] payload) throws DrasylException {
+    /**
+     * Sends the content of <code>payload</code> to the identity <code>recipient</code>. Throws a
+     * {@link MessengerException} if the message could not be sent to the recipient or a super peer.
+     * Important: Just because no exception was thrown does not automatically mean that the message
+     * could be delivered. Delivery confirmations must be implemented by the application.
+     *
+     * <p>
+     * <b>Note</b>: It is possible that the passed object cannot be serialized. In this case it is
+     * not sent and the future is fulfilled with an exception. By default, drasyl allows the
+     * serialization of Java's primitive types, as well as {@link String}, {@link Collections},
+     * {@link Map}, {@link Number}, {@link URI} and all classes in the {@code org.drasyl} package.
+     * Further objects can be added on start via the {@link DrasylConfig} or on demand via {@link
+     * org.drasyl.pipeline.HandlerContext#validator}. If the {@link org.drasyl.pipeline.codec.DefaultCodec}
+     * does not support these objects, a custom {@link Codec} can be added to the beginning of the
+     * {@link Pipeline}.
+     * </p>
+     *
+     * @param recipient the recipient of a message
+     * @param payload   the payload of a message
+     * @return a completed future if the message was successfully processed, otherwise an
+     * exceptionally future
+     * @see org.drasyl.pipeline.codec.Codec
+     * @see org.drasyl.pipeline.codec.DefaultCodec
+     * @see org.drasyl.pipeline.codec.TypeValidator
+     * @since 0.1.3-SNAPSHOT
+     */
+    public CompletableFuture<Void> send(String recipient, Object payload) throws DrasylException {
         try {
             return send(CompressedPublicKey.of(recipient), payload);
         }
@@ -313,49 +341,29 @@ public abstract class DrasylNode {
      * Important: Just because no exception was thrown does not automatically mean that the message
      * could be delivered. Delivery confirmations must be implemented by the application.
      *
-     * @param recipient the recipient of a message
-     * @param payload   the payload of a message
-     * @return a completed future if the message was successfully processed, otherwise an
-     * exceptionally future
-     * @since 0.1.3-SNAPSHOT
-     */
-    public CompletableFuture<Void> send(CompressedPublicKey recipient,
-                                        byte[] payload) {
-        return pipeline.processOutbound(new ApplicationMessage(identityManager.getPublicKey(), recipient, payload));
-    }
-
-    /**
-     * Sends the content of <code>payload</code> to the identity <code>recipient</code>. Throws a
-     * {@link MessengerException} if the message could not be sent to the recipient or a super peer.
-     * Important: Just because no exception was thrown does not automatically mean that the message
-     * could be delivered. Delivery confirmations must be implemented by the application.
+     * <p>
+     * <b>Note</b>: It is possible that the passed object cannot be serialized. In this case it is
+     * not sent and the future is fulfilled with an exception. By default, drasyl allows the
+     * serialization of Java's primitive types, as well as {@link String}, {@link Collections},
+     * {@link Map}, {@link Number}, {@link URI} and all classes in the {@code org.drasyl} package.
+     * Further objects can be added on start via the {@link DrasylConfig} or on demand via {@link
+     * org.drasyl.pipeline.HandlerContext#validator}. If the {@link org.drasyl.pipeline.codec.DefaultCodec}
+     * does not support these objects, a custom {@link Codec} can be added to the beginning of the
+     * {@link Pipeline}.
+     * </p>
      *
      * @param recipient the recipient of a message
      * @param payload   the payload of a message
      * @return a completed future if the message was successfully processed, otherwise an
      * exceptionally future
-     * @throws MessengerException if an error occurs during the processing
-     * @since 0.1.3-SNAPSHOT
-     */
-    public CompletableFuture<Void> send(String recipient, String payload) throws DrasylException {
-        return send(recipient, payload.getBytes());
-    }
-
-    /**
-     * Sends the content of <code>payload</code> to the identity <code>recipient</code>. Throws a
-     * {@link MessengerException} if the message could not be sent to the recipient or a super peer.
-     * Important: Just because no exception was thrown does not automatically mean that the message
-     * could be delivered. Delivery confirmations must be implemented by the application.
-     *
-     * @param recipient the recipient of a message
-     * @param payload   the payload of a message
-     * @return a completed future if the message was successfully processed, otherwise an
-     * exceptionally future
+     * @see org.drasyl.pipeline.codec.Codec
+     * @see org.drasyl.pipeline.codec.DefaultCodec
+     * @see org.drasyl.pipeline.codec.TypeValidator
      * @since 0.1.3-SNAPSHOT
      */
     public CompletableFuture<Void> send(CompressedPublicKey recipient,
-                                        String payload) {
-        return send(recipient, payload.getBytes());
+                                        Object payload) {
+        return pipeline.processOutbound(recipient, payload);
     }
 
     /**
@@ -397,6 +405,13 @@ public abstract class DrasylNode {
 
     private void rejectNewConnections() {
         acceptNewConnections.set(false);
+    }
+
+    @SuppressWarnings({ "java:S1905" })
+    private void closeConnections() {
+        // send quit message to all peers and close connections
+        channelGroup.writeAndFlush(new QuitMessage(REASON_SHUTTING_DOWN))
+                .addListener((ChannelGroupFutureListener) future -> future.group().close());
     }
 
     /**
@@ -450,13 +465,6 @@ public abstract class DrasylNode {
         }
 
         return startSequence;
-    }
-
-    @SuppressWarnings({ "java:S1905" })
-    private void closeConnections() {
-        // send quit message to all peers and close connections
-        channelGroup.writeAndFlush(new QuitMessage(REASON_SHUTTING_DOWN))
-                .addListener((ChannelGroupFutureListener) future -> future.group().close());
     }
 
     private void acceptNewConnections() {

@@ -61,7 +61,7 @@ class ApplicationMessageTest {
                     0x00,
                     0x01,
                     0x02
-            }), JACKSON_READER.readValue(json, ApplicationMessage.class));
+            }, byte[].class), JACKSON_READER.readValue(json, ApplicationMessage.class));
         }
 
         @Test
@@ -80,12 +80,12 @@ class ApplicationMessageTest {
                     0x00,
                     0x01,
                     0x02
-            }, (short) 64);
+            }, byte[].class, (short) 64);
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", ApplicationMessage.class.getSimpleName())
-                    .containsKeys("id", "recipient", "hopCount", "sender", "payload");
+                    .containsKeys("id", "recipient", "hopCount", "sender", "payload", "payloadClazz");
         }
     }
 
@@ -93,13 +93,13 @@ class ApplicationMessageTest {
     class Constructor {
         @Test
         void shouldRejectNullValues() {
-            assertThrows(NullPointerException.class, () -> new ApplicationMessage(null, recipient, new byte[]{}), "Message requires a sender");
+            assertThrows(NullPointerException.class, () -> new ApplicationMessage(null, recipient, new byte[]{}, byte[].class), "Message requires a sender");
 
-            assertThrows(NullPointerException.class, () -> new ApplicationMessage(sender, null, new byte[]{}), "Message requires a recipient");
+            assertThrows(NullPointerException.class, () -> new ApplicationMessage(sender, null, new byte[]{}, byte[].class), "Message requires a recipient");
 
-            assertThrows(NullPointerException.class, () -> new ApplicationMessage(sender, recipient, null), "Message requires a payload");
+            assertThrows(NullPointerException.class, () -> new ApplicationMessage(sender, recipient, null, byte[].class), "Message requires a payload");
 
-            assertThrows(NullPointerException.class, () -> new ApplicationMessage(null, null, null), "Message requires a sender, a recipient and a payload");
+            assertThrows(NullPointerException.class, () -> new ApplicationMessage(null, null, null, byte[].class), "Message requires a sender, a recipient and a payload");
         }
     }
 
@@ -111,17 +111,17 @@ class ApplicationMessageTest {
                     0x00,
                     0x01,
                     0x02
-            });
+            }, byte[].class);
             ApplicationMessage message2 = new ApplicationMessage(sender, recipient, new byte[]{
                     0x00,
                     0x01,
                     0x02
-            });
+            }, byte[].class);
             ApplicationMessage message3 = new ApplicationMessage(sender, recipient, new byte[]{
                     0x03,
                     0x02,
                     0x01
-            });
+            }, byte[].class);
 
             assertEquals(message1, message2);
             assertNotEquals(message2, message3);
@@ -136,17 +136,17 @@ class ApplicationMessageTest {
                     0x00,
                     0x01,
                     0x02
-            }, hopCount);
+            }, byte[].class, hopCount);
             ApplicationMessage message2 = new ApplicationMessage(id, sender, recipient, new byte[]{
                     0x00,
                     0x01,
                     0x02
-            }, hopCount);
+            }, byte[].class, hopCount);
             ApplicationMessage message3 = new ApplicationMessage(id, sender, recipient, new byte[]{
                     0x03,
                     0x02,
                     0x01
-            }, hopCount);
+            }, byte[].class, hopCount);
 
             assertEquals(message1.hashCode(), message2.hashCode());
             assertEquals(message1.hashCode(), message2.hashCode());
@@ -158,7 +158,7 @@ class ApplicationMessageTest {
     class IncrementHopCount {
         @Test
         void shouldIncrementHopCountByOne() {
-            ApplicationMessage message = new ApplicationMessage(sender, recipient, new byte[]{});
+            ApplicationMessage message = new ApplicationMessage(sender, recipient, new byte[]{}, byte[].class);
 
             message.incrementHopCount();
 

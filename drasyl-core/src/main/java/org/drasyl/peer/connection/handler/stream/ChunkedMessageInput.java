@@ -40,6 +40,7 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
     private final String checksum;
     private final Queue<ByteBuf> chunks;
     private final ByteBuf sourcePayload;
+    private final Class<?> clazz;
     private final String msgID;
     private long progress;
     private boolean sentLastChuck;
@@ -50,6 +51,7 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
                         String checksum,
                         Queue<ByteBuf> chunks,
                         ByteBuf sourcePayload,
+                        Class<?> clazz,
                         String msgID,
                         long progress,
                         boolean sentLastChuck) {
@@ -59,6 +61,7 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
         this.checksum = checksum;
         this.chunks = chunks;
         this.sourcePayload = sourcePayload;
+        this.clazz = clazz;
         this.msgID = msgID;
         this.progress = progress;
         this.sentLastChuck = sentLastChuck;
@@ -73,7 +76,8 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
     public ChunkedMessageInput(ApplicationMessage msg, int chunkSize) {
         this(msg.getSender(), msg.getRecipient(), msg.payloadAsByteBuf().readableBytes(),
                 Hashing.murmur3x64Hex(msg.getPayload()), new LinkedList<>(),
-                msg.payloadAsByteBuf(), msg.getId(), 0, false);
+                msg.payloadAsByteBuf(), msg.getPayloadClazz(),
+                msg.getId(), 0, false);
         chunkedArray(this.chunks, sourcePayload, chunkSize);
     }
 
@@ -114,7 +118,7 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
 
                 if (progress == 0) {
                     // Send first chunk for this input
-                    chunkedMessage = ChunkedMessage.createFirstChunk(sender, recipient, msgID, new byte[readableBytes], contentLength, checksum);
+                    chunkedMessage = ChunkedMessage.createFirstChunk(sender, recipient, msgID, new byte[readableBytes], clazz, contentLength, checksum);
                 }
                 else {
                     // Send follow chunk for this input
