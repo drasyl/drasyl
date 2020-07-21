@@ -20,6 +20,7 @@ package org.drasyl.peer.connection.direct;
 
 import io.netty.channel.EventLoopGroup;
 import org.drasyl.DrasylConfig;
+import org.drasyl.DrasylNodeComponent;
 import org.drasyl.event.Event;
 import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.identity.CompressedPublicKey;
@@ -56,7 +57,7 @@ import static java.time.Duration.ofSeconds;
  * nodes.
  */
 @SuppressWarnings({ "java:S107" })
-public class DirectConnectionsManager implements AutoCloseable {
+public class DirectConnectionsManager implements DrasylNodeComponent {
     static final String DIRECT_CONNECTIONS_MANAGER = "DIRECT_CONNECTIONS_MANAGER";
     private static final Logger LOG = LoggerFactory.getLogger(DirectConnectionsManager.class);
     private final DrasylConfig config;
@@ -132,6 +133,7 @@ public class DirectConnectionsManager implements AutoCloseable {
         this.acceptNewConnectionsSupplier = acceptNewConnectionsSupplier;
     }
 
+    @Override
     public void open() {
         if (opened.compareAndSet(false, true)) {
             LOG.debug("Start Direct Connections Manager...");

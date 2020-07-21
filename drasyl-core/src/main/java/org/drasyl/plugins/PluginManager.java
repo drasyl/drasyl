@@ -20,6 +20,7 @@ package org.drasyl.plugins;
 
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
+import org.drasyl.DrasylNodeComponent;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.util.DrasylFunction;
@@ -30,7 +31,7 @@ import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Map;
 
-public class PluginManager {
+public class PluginManager implements DrasylNodeComponent {
     private static final Logger LOG = LoggerFactory.getLogger(PluginManager.class);
     private final Map<String, DrasylPlugin> plugins;
     private final Pipeline pipeline;
@@ -55,7 +56,8 @@ public class PluginManager {
     /**
      * Automatically loads all plugins that are defined in the corresponding {@link DrasylConfig}.
      */
-    public synchronized void start() throws DrasylException {
+    @Override
+    public synchronized void open() throws DrasylException {
         LOG.debug("Start Plugins...");
         for (PluginEnvironment pluginEnvironment : config.getPluginEnvironments()) {
             AutoloadablePlugin plugin = loadPlugin(pluginEnvironment);
@@ -98,7 +100,8 @@ public class PluginManager {
     /**
      * Stops all plugins and removes them from the plugin list.
      */
-    public synchronized void stop() {
+    @Override
+    public synchronized void close() {
         LOG.info("Stop Plugins...");
         for (DrasylPlugin plugin : plugins.values()) {
             removeHandlerFromPipeline(plugin);

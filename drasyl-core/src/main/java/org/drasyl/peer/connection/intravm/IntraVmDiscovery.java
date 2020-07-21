@@ -18,6 +18,7 @@
  */
 package org.drasyl.peer.connection.intravm;
 
+import org.drasyl.DrasylNodeComponent;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.CompressedPublicKey;
@@ -28,7 +29,6 @@ import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.ApplicationMessage;
-import org.drasyl.peer.connection.server.Server;
 import org.drasyl.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -44,7 +44,7 @@ import java.util.function.Supplier;
 /**
  * Uses shared memory to discover other drasyl nodes running on same JVM.
  */
-public class IntraVmDiscovery implements AutoCloseable {
+public class IntraVmDiscovery implements DrasylNodeComponent {
     private static final Logger LOG = LoggerFactory.getLogger(IntraVmDiscovery.class);
     static final Map<CompressedPublicKey, IntraVmDiscovery> discoveries = new HashMap<>();
     static final MessageSink MESSAGE_SINK = message -> {
@@ -106,6 +106,7 @@ public class IntraVmDiscovery implements AutoCloseable {
         this.messenger = messenger;
     }
 
+    @Override
     public void open() {
         try {
             lock.writeLock().lock();
