@@ -11,6 +11,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylException;
+import org.drasyl.DrasylNodeComponent;
 import org.drasyl.util.DrasylFunction;
 import org.drasyl.util.DrasylScheduler;
 import org.drasyl.util.SetUtil;
@@ -30,7 +31,7 @@ import java.util.function.Supplier;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.util.WebSocketUtil.webSocketPort;
 
-abstract class AbstractClient implements AutoCloseable {
+abstract class AbstractClient implements DrasylNodeComponent {
     private final EventLoopGroup workerGroup;
     private final Supplier<Set<URI>> endpointsSupplier;
     private final AtomicBoolean opened;
@@ -107,6 +108,7 @@ abstract class AbstractClient implements AutoCloseable {
         this.channel = channel;
     }
 
+    @Override
     public void open() {
         if (opened.compareAndSet(false, true)) {
             getLogger().debug("Start Super Peer Client...");

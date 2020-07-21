@@ -27,6 +27,7 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.reactivex.rxjava3.core.Observable;
 import org.drasyl.DrasylConfig;
+import org.drasyl.DrasylNodeComponent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
@@ -56,7 +57,7 @@ import static org.drasyl.util.UriUtil.overridePort;
  * other peers.
  */
 @SuppressWarnings({ "squid:S00107" })
-public class Server implements AutoCloseable {
+public class Server implements DrasylNodeComponent {
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
     protected final PeerChannelGroup channelGroup;
     private final ServerBootstrap serverBootstrap;
@@ -185,6 +186,7 @@ public class Server implements AutoCloseable {
      * Starts the server.
      */
     @SuppressWarnings({ "java:S3776" })
+    @Override
     public void open() throws ServerException {
         if (opened.compareAndSet(false, true)) {
             LOG.debug("Start Server...");

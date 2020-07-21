@@ -20,7 +20,6 @@ package org.drasyl.plugins;
 
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
-import org.drasyl.DrasylNode;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.InboundHandlerAdapter;
 import org.drasyl.pipeline.Pipeline;
@@ -61,7 +60,7 @@ class PluginManagerTest {
     @Test
     void shouldNotLoadAnyPluginOnEmptyList() throws DrasylException {
         PluginManager manager = new PluginManager(pipeline, config, plugins, constructorFunction);
-        manager.start();
+        manager.open();
 
         verifyNoInteractions(plugins);
     }
@@ -108,7 +107,7 @@ class PluginManagerTest {
 
         PluginManager manager = new PluginManager(pipeline, config, plugins, constructorFunction);
 
-        manager.stop();
+        manager.close();
 
         verify(pipeline).remove(eq(handler.getClass().getSimpleName()));
         verify(plugin).onRemove();
@@ -125,7 +124,7 @@ class PluginManagerTest {
         constructorFunction = clazz -> clazz.getConstructor(Pipeline.class, DrasylConfig.class, PluginEnvironment.class);
 
         PluginManager manager = new PluginManager(pipeline, config, plugins, constructorFunction);
-        manager.start();
+        manager.open();
 
         verify(plugins).put(isA(String.class), isA(TestPlugin.class));
         verify(pipeline).addLast(handler.getClass().getSimpleName(), handler);

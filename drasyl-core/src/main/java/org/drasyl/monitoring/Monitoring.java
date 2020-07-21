@@ -7,7 +7,7 @@ import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.influx.InfluxConfig;
 import io.micrometer.influx.InfluxMeterRegistry;
 import org.drasyl.DrasylConfig;
-import org.drasyl.DrasylNode;
+import org.drasyl.DrasylNodeComponent;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.PeersManager;
@@ -31,7 +31,7 @@ import static java.util.Optional.ofNullable;
 /**
  * Monitors various states or events in the drasyl Node.
  */
-public class Monitoring implements AutoCloseable {
+public class Monitoring implements DrasylNodeComponent {
     private static final Logger LOG = LoggerFactory.getLogger(Monitoring.class);
     static final String MONITORING_HANDLER = "MONITORING_HANDLER";
     private final PeersManager peersManager;
@@ -103,6 +103,7 @@ public class Monitoring implements AutoCloseable {
         this.registry = registry;
     }
 
+    @Override
     public void open() {
         if (opened.compareAndSet(false, true)) {
             LOG.debug("Start Monitoring...");
