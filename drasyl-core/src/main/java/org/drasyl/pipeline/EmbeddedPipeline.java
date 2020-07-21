@@ -32,7 +32,6 @@ import org.drasyl.util.Pair;
 
 import java.util.List;
 import java.util.concurrent.ConcurrentHashMap;
-import java.util.function.Supplier;
 
 /**
  * Embedded {@link Pipeline} implementation, that allows easy testing of {@link Handler}s.
@@ -49,14 +48,14 @@ public class EmbeddedPipeline extends DefaultPipeline {
      *
      * @param handlers the handlers
      */
-    public EmbeddedPipeline(Supplier<Identity> identity,
+    public EmbeddedPipeline(Identity identity,
                             TypeValidator validator,
                             Handler... handlers) {
         this(identity, validator);
         List.of(handlers).forEach(handler -> addLast(handler.getClass().getSimpleName(), handler));
     }
 
-    public EmbeddedPipeline(Supplier<Identity> identity, TypeValidator validator) {
+    public EmbeddedPipeline(Identity identity, TypeValidator validator) {
         inboundMessages = ReplaySubject.create();
         inboundEvents = ReplaySubject.create();
         outboundMessages = ReplaySubject.create();

@@ -31,7 +31,6 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 /**
  * Special class that represents the tail of a {@link Pipeline}. This class can not be removed from
@@ -46,7 +45,7 @@ class TailContext extends AbstractHandlerContext implements InboundHandler, Outb
                        DrasylConfig config,
                        Pipeline pipeline,
                        Scheduler scheduler,
-                       Supplier<Identity> identity,
+                       Identity identity,
                        TypeValidator validator) {
         super(DRASYL_TAIL_HANDLER, config, pipeline, scheduler, identity, validator);
         this.eventConsumer = eventConsumer;

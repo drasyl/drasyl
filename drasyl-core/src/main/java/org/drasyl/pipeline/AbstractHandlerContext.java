@@ -28,7 +28,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 
 @SuppressWarnings({ "java:S107", "java:S3077" })
 abstract class AbstractHandlerContext implements HandlerContext {
@@ -39,7 +38,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
     private final String name;
     private final Pipeline pipeline;
     private final Scheduler scheduler;
-    private final Supplier<Identity> identity;
+    private final Identity identity;
     private final TypeValidator validator;
     private volatile AbstractHandlerContext prev;
     private volatile AbstractHandlerContext next;
@@ -48,7 +47,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
                                   DrasylConfig config,
                                   Pipeline pipeline,
                                   Scheduler scheduler,
-                                  Supplier<Identity> identity,
+                                  Identity identity,
                                   TypeValidator validator) {
         this(null, null, name, config, pipeline, scheduler, identity, validator);
     }
@@ -59,7 +58,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
                            DrasylConfig config,
                            Pipeline pipeline,
                            Scheduler scheduler,
-                           Supplier<Identity> identity,
+                           Identity identity,
                            TypeValidator validator) {
         this.prev = prev;
         this.next = next;
@@ -235,7 +234,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
 
     @Override
     public Identity identity() {
-        return this.identity.get();
+        return this.identity;
     }
 
     @Override

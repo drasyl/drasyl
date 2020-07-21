@@ -46,7 +46,7 @@ class DefaultHandlerContextTest {
 
     @Test
     void shouldCreateDefaultHandler() {
-        DefaultHandlerContext ctx = new DefaultHandlerContext("ctx", handler, config, pipeline, scheduler, () -> identity, validator);
+        DefaultHandlerContext ctx = new DefaultHandlerContext("ctx", handler, config, pipeline, scheduler, identity, validator);
 
         assertEquals(handler, ctx.handler());
     }

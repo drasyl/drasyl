@@ -34,8 +34,6 @@ class MonitoringTest {
     @Mock
     private PeersManager peersManager;
     @Mock
-    private Supplier<CompressedPublicKey> publicKeySupplier;
-    @Mock
     private CompressedPublicKey publicKey;
     @Mock
     private DrasylPipeline pipeline;
@@ -54,8 +52,7 @@ class MonitoringTest {
         void shouldSetOpenToTrue() {
             opened = new AtomicBoolean();
             when(registrySupplier.get()).thenReturn(registry);
-            when(publicKeySupplier.get()).thenReturn(publicKey);
-            underTest = new Monitoring(peersManager, publicKeySupplier, pipeline, registrySupplier, opened, registry);
+            underTest = new Monitoring(peersManager, publicKey, pipeline, registrySupplier, opened, registry);
             underTest.open();
 
             assertTrue(opened.get());
@@ -64,7 +61,6 @@ class MonitoringTest {
         @Test
         void shouldAddHandlerToPipelineAndListenOnPeerRelayEvents(@Mock(answer = Answers.RETURNS_DEEP_STUBS) HandlerContext ctx) {
             when(registrySupplier.get()).thenReturn(registry);
-            when(publicKeySupplier.get()).thenReturn(publicKey);
             when(pipeline.addFirst(eq(MONITORING_HANDLER), any())).then(invocation -> {
                 SimpleDuplexHandler handler = invocation.getArgument(1);
                 handler.eventTriggered(ctx, mock(Event.class));
@@ -73,7 +69,7 @@ class MonitoringTest {
                 return invocation.getMock();
             });
 
-            underTest = new Monitoring(peersManager, publicKeySupplier, pipeline, registrySupplier, new AtomicBoolean(), registry);
+            underTest = new Monitoring(peersManager, publicKey, pipeline, registrySupplier, new AtomicBoolean(), registry);
             underTest.open();
 
             verify(pipeline).addFirst(eq(MONITORING_HANDLER), any());
@@ -85,7 +81,7 @@ class MonitoringTest {
     class Close {
         @Test
         void shouldSetOpenToFalse() {
-            underTest = new Monitoring(peersManager, publicKeySupplier, pipeline, registrySupplier, new AtomicBoolean(true), registry);
+            underTest = new Monitoring(peersManager, publicKey, pipeline, registrySupplier, new AtomicBoolean(true), registry);
 
             underTest.close();
 
@@ -94,7 +90,7 @@ class MonitoringTest {
 
         @Test
         void shouldRemoveHandlerFromPipeline() {
-            underTest = new Monitoring(peersManager, publicKeySupplier, pipeline, registrySupplier, new AtomicBoolean(true), registry);
+            underTest = new Monitoring(peersManager, publicKey, pipeline, registrySupplier, new AtomicBoolean(true), registry);
 
             underTest.close();
 

@@ -69,7 +69,7 @@ class DefaultCodecTest {
         @Test
         void shouldSkippByteArrays() {
             byte[] msg = new byte[]{};
-            EmbeddedPipeline pipeline = new EmbeddedPipeline(() -> identity, TypeValidator.of(config), DefaultCodec.INSTANCE);
+            EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), DefaultCodec.INSTANCE);
             TestObserver<ApplicationMessage> testObserver = pipeline.outboundMessages().test();
 
             when(identity.getPublicKey()).thenReturn(sender);
@@ -108,7 +108,7 @@ class DefaultCodecTest {
         @Test
         void shouldEncodePOJOs() throws JsonProcessingException {
             QuitMessage msg = new QuitMessage();
-            EmbeddedPipeline pipeline = new EmbeddedPipeline(() -> identity, TypeValidator.of(config), DefaultCodec.INSTANCE);
+            EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), DefaultCodec.INSTANCE);
             TestObserver<ApplicationMessage> testObserver = pipeline.outboundMessages().test();
 
             when(identity.getPublicKey()).thenReturn(sender);
@@ -126,7 +126,7 @@ class DefaultCodecTest {
         @Test
         void shouldSkippByteArrays() {
             ApplicationMessage msg = new ApplicationMessage(sender, recipient, new byte[]{}, byte[].class);
-            EmbeddedPipeline pipeline = new EmbeddedPipeline(() -> identity, TypeValidator.of(config), DefaultCodec.INSTANCE);
+            EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), DefaultCodec.INSTANCE);
             TestObserver<Pair<CompressedPublicKey, Object>> testObserver = pipeline.inboundMessages().test();
 
             pipeline.processInbound(msg);
@@ -165,7 +165,7 @@ class DefaultCodecTest {
         void shouldDecodePOJOs() throws JsonProcessingException {
             QuitMessage quitMessage = new QuitMessage();
             ApplicationMessage msg = new ApplicationMessage(sender, recipient, JSONUtil.JACKSON_WRITER.writeValueAsBytes(quitMessage), QuitMessage.class);
-            EmbeddedPipeline pipeline = new EmbeddedPipeline(() -> identity, TypeValidator.of(config), DefaultCodec.INSTANCE);
+            EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), DefaultCodec.INSTANCE);
             TestObserver<Pair<CompressedPublicKey, Object>> testObserver = pipeline.inboundMessages().test();
 
             pipeline.processInbound(msg);
@@ -180,7 +180,7 @@ class DefaultCodecTest {
         @Test
         void shouldPassEvents() {
             Event event = mock(Event.class);
-            EmbeddedPipeline pipeline = new EmbeddedPipeline(() -> identity, TypeValidator.of(config), DefaultCodec.INSTANCE);
+            EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), DefaultCodec.INSTANCE);
             TestObserver<Event> testObserver = pipeline.inboundEvents().test();
 
             pipeline.processInbound(event);

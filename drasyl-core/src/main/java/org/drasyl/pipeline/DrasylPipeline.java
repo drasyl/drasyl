@@ -32,7 +32,6 @@ import org.drasyl.util.DrasylScheduler;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 /**
  * The default {@link Pipeline} implementation. Used to implement plugins for drasyl.
@@ -41,7 +40,7 @@ public class DrasylPipeline extends DefaultPipeline {
     public DrasylPipeline(Consumer<Event> eventConsumer,
                           DrasylConsumer<ApplicationMessage, DrasylException> outboundConsumer,
                           DrasylConfig config,
-                          Supplier<Identity> identity) {
+                          Identity identity) {
         this.handlerNames = new ConcurrentHashMap<>();
         this.validator = TypeValidator.of(config);
         this.head = new HeadContext(outboundConsumer, config, this, DrasylScheduler.getInstanceHeavy(), identity, validator);
@@ -61,7 +60,7 @@ public class DrasylPipeline extends DefaultPipeline {
                    AbstractHandlerContext tail,
                    Scheduler scheduler,
                    DrasylConfig config,
-                   Supplier<Identity> identity) {
+                   Identity identity) {
         this.handlerNames = handlerNames;
         this.head = head;
         this.tail = tail;

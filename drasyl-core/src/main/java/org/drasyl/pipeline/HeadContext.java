@@ -32,7 +32,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 
 /**
  * Special class that represents the head of a {@link Pipeline}. This class can not be removed from
@@ -47,7 +46,7 @@ class HeadContext extends AbstractHandlerContext implements InboundHandler, Outb
                        DrasylConfig config,
                        Pipeline pipeline,
                        Scheduler scheduler,
-                       Supplier<Identity> identity,
+                       Identity identity,
                        TypeValidator validator) {
         super(DRASYL_HEAD_HANDLER, config, pipeline, scheduler, identity, validator);
         this.outboundConsumer = outboundConsumer;

@@ -26,8 +26,6 @@ import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.IdentityManager;
-import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.messenger.MessageSinkException;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.messenger.MessengerException;
@@ -78,13 +76,11 @@ class DrasylNodeTest {
     @Mock
     private DrasylConfig config;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
-    private IdentityManager identityManager;
+    private Identity identity;
     @Mock
     private Messenger messenger;
     @Mock
     private PeersManager peersManager;
-    @Mock
-    private Identity identity;
     @Mock
     private AtomicBoolean started;
     @Mock
@@ -103,21 +99,9 @@ class DrasylNodeTest {
     @Nested
     class Start {
         @Test
-        void shouldLoadIdentity() throws IdentityManagerException {
-            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, drasylNodeComponents, new AtomicBoolean(false), startSequence, shutdownSequence) {
-                @Override
-                public void onEvent(Event event) {
-                }
-            });
-            underTest.start().join();
-
-            verify(identityManager).loadOrCreateIdentity();
-        }
-
-        @Test
         void shouldStartEnabledComponents(@Mock DrasylNodeComponent drasylNodeComponent) throws DrasylException {
             drasylNodeComponents = List.of(drasylNodeComponent);
-            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, drasylNodeComponents, new AtomicBoolean(false), startSequence, shutdownSequence) {
+            DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, drasylNodeComponents, new AtomicBoolean(false), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(Event event) {
                 }
@@ -129,10 +113,7 @@ class DrasylNodeTest {
 
         @Test
         void shouldEmitUpEventOnSuccessfulStart() {
-            when(identityManager.getPublicKey()).thenReturn(publicKey);
-            when(identityManager.getIdentity()).thenReturn(identity);
-
-            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, drasylNodeComponents, new AtomicBoolean(false), startSequence, shutdownSequence) {
+            DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, drasylNodeComponents, new AtomicBoolean(false), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(Event event) {
                 }
@@ -145,11 +126,9 @@ class DrasylNodeTest {
         @Test
         void shouldEmitNodeUnrecoverableErrorEventOnFailedStart(@Mock DrasylNodeComponent drasylNodeComponent) throws DrasylException {
             drasylNodeComponents = List.of(drasylNodeComponent);
-            when(identityManager.getPublicKey()).thenReturn(publicKey);
-            when(identityManager.getIdentity()).thenReturn(identity);
             doThrow(new DrasylException("error")).when(drasylNodeComponent).open();
 
-            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, drasylNodeComponents, started, startSequence, shutdownSequence) {
+            DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, drasylNodeComponents, started, startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(Event event) {
                 }
@@ -167,7 +146,7 @@ class DrasylNodeTest {
         @Test
         void shouldStopEnabledComponents(@Mock DrasylNodeComponent drasylNodeComponent) {
             drasylNodeComponents = List.of(drasylNodeComponent);
-            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, drasylNodeComponents, new AtomicBoolean(true), startSequence, shutdownSequence) {
+            DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, drasylNodeComponents, new AtomicBoolean(true), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(Event event) {
                 }
@@ -179,7 +158,7 @@ class DrasylNodeTest {
 
         @Test
         void shouldReturnSameFutureIfShutdownHasAlreadyBeenTriggered() {
-            DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, drasylNodeComponents, new AtomicBoolean(false), startSequence, shutdownSequence) {
+            DrasylNode drasylNode = spy(new DrasylNode(config, identity, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, drasylNodeComponents, new AtomicBoolean(false), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(Event event) {
                 }
@@ -189,7 +168,7 @@ class DrasylNodeTest {
 
         @Test
         void shouldSendQuitMessageToAllPeers() {
-            DrasylNode drasylNode = spy(new DrasylNode(config, identityManager, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, drasylNodeComponents, new AtomicBoolean(true), startSequence, shutdownSequence) {
+            DrasylNode drasylNode = spy(new DrasylNode(config, identity, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, drasylNodeComponents, new AtomicBoolean(true), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(Event event) {
                 }
@@ -206,7 +185,7 @@ class DrasylNodeTest {
 
         @BeforeEach
         void setUp() {
-            underTest = spy(new DrasylNode(config, identityManager, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, drasylNodeComponents, new AtomicBoolean(false), startSequence, shutdownSequence) {
+            underTest = spy(new DrasylNode(config, identity, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, drasylNodeComponents, new AtomicBoolean(false), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(Event event) {
                 }
@@ -255,7 +234,7 @@ class DrasylNodeTest {
     class Pipeline {
         @Test
         void shouldReturnPipeline() {
-            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, drasylNodeComponents, new AtomicBoolean(false), startSequence, shutdownSequence) {
+            DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, drasylNodeComponents, new AtomicBoolean(false), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(Event event) {
                 }
@@ -266,10 +245,24 @@ class DrasylNodeTest {
     }
 
     @Nested
+    class IdentityMethod {
+        @Test
+        void shouldReturnIdentity() {
+            DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, drasylNodeComponents, new AtomicBoolean(false), startSequence, shutdownSequence) {
+                @Override
+                public void onEvent(Event event) {
+                }
+            });
+
+            assertEquals(identity, underTest.identity());
+        }
+    }
+
+    @Nested
     class MessageSink {
         @Test
         void shouldThrowExceptionIfNotRecipient(@Mock RelayableMessage message) {
-            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, drasylNodeComponents, new AtomicBoolean(true), startSequence, shutdownSequence) {
+            DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, drasylNodeComponents, new AtomicBoolean(true), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(Event event) {
                 }
@@ -281,10 +274,10 @@ class DrasylNodeTest {
 
         @Test
         void shouldPassApplicationMessageToPipeline(@Mock ApplicationMessage message) throws MessageSinkException {
-            when(identityManager.getPublicKey()).thenReturn(publicKey);
+            when(identity.getPublicKey()).thenReturn(publicKey);
             when(message.getRecipient()).thenReturn(publicKey);
 
-            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, drasylNodeComponents, new AtomicBoolean(true), startSequence, shutdownSequence) {
+            DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, drasylNodeComponents, new AtomicBoolean(true), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(Event event) {
                 }
@@ -297,11 +290,11 @@ class DrasylNodeTest {
 
         @Test
         void shouldReplyToWhoisMessage(@Mock(answer = Answers.RETURNS_DEEP_STUBS) WhoisMessage message) throws MessengerException {
-            when(identityManager.getPublicKey()).thenReturn(publicKey);
+            when(identity.getPublicKey()).thenReturn(publicKey);
             when(message.getId()).thenReturn("123");
             when(message.getRecipient()).thenReturn(publicKey);
 
-            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, drasylNodeComponents, new AtomicBoolean(true), startSequence, shutdownSequence) {
+            DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, drasylNodeComponents, new AtomicBoolean(true), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(Event event) {
                 }
@@ -313,10 +306,10 @@ class DrasylNodeTest {
 
         @Test
         void shouldPassIdentityMessageToPeersManager(@Mock(answer = Answers.RETURNS_DEEP_STUBS) IdentityMessage message) throws MessengerException {
-            when(identityManager.getPublicKey()).thenReturn(publicKey);
+            when(identity.getPublicKey()).thenReturn(publicKey);
             when(message.getRecipient()).thenReturn(publicKey);
 
-            DrasylNode underTest = spy(new DrasylNode(config, identityManager, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, drasylNodeComponents, new AtomicBoolean(true), startSequence, shutdownSequence) {
+            DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, drasylNodeComponents, new AtomicBoolean(true), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(Event event) {
                 }

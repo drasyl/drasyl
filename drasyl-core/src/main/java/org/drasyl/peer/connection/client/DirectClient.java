@@ -40,7 +40,7 @@ public class DirectClient extends AbstractClient {
     private final Runnable onFailure;
 
     public DirectClient(DrasylConfig config,
-                        Supplier<Identity> identitySupplier,
+                        Identity identitySupplier,
                         PeersManager peersManager,
                         Messenger messenger,
                         PeerChannelGroup channelGroup,
@@ -71,7 +71,7 @@ public class DirectClient extends AbstractClient {
     }
 
     private DirectClient(DrasylConfig config,
-                         Supplier<Identity> identitySupplier,
+                         Identity identity,
                          PeersManager peersManager,
                          Messenger messenger,
                          PeerChannelGroup channelGroup,
@@ -89,7 +89,7 @@ public class DirectClient extends AbstractClient {
                 workerGroup,
                 endpointsSupplier,
                 connected,
-                endpoint -> initiateChannelInitializer(new ClientEnvironment(config, identitySupplier, endpoint, messenger, channelGroup, peersManager, connected, eventConsumer, false, serverPublicKey, config.getDirectConnectionsIdleRetries(), config.getDirectConnectionsIdleTimeout(), config.getDirectConnectionsHandshakeTimeout(), peerCommunicationConsumer), config.getDirectConnectionsChannelInitializer()),
+                endpoint -> initiateChannelInitializer(new ClientEnvironment(config, identity, endpoint, messenger, channelGroup, peersManager, connected, eventConsumer, false, serverPublicKey, config.getDirectConnectionsIdleRetries(), config.getDirectConnectionsIdleTimeout(), config.getDirectConnectionsHandshakeTimeout(), peerCommunicationConsumer), config.getDirectConnectionsChannelInitializer()),
                 acceptNewConnectionsSupplier);
         this.directConnectionDemand = directConnectionDemand;
         this.onFailure = onFailure;

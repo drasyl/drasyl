@@ -24,7 +24,7 @@ import org.drasyl.DrasylNodeComponent;
 import org.drasyl.event.Event;
 import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.identity.IdentityManager;
+import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.messenger.MessengerException;
 import org.drasyl.peer.Path;
@@ -61,7 +61,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
     static final String DIRECT_CONNECTIONS_MANAGER = "DIRECT_CONNECTIONS_MANAGER";
     private static final Logger LOG = LoggerFactory.getLogger(DirectConnectionsManager.class);
     private final DrasylConfig config;
-    private final IdentityManager identityManager;
+    private final Identity identity;
     private final PeersManager peersManager;
     private final AtomicBoolean opened;
     private final Messenger messenger;
@@ -76,7 +76,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
     private final Set<URI> endpoints;
 
     public DirectConnectionsManager(DrasylConfig config,
-                                    IdentityManager identityManager,
+                                    Identity identity,
                                     PeersManager peersManager,
                                     Messenger messenger,
                                     DrasylPipeline pipeline,
@@ -87,7 +87,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
                                     Set<URI> nodeEndpoints) {
         this(
                 config,
-                identityManager,
+                identity,
                 peersManager,
                 new AtomicBoolean(false),
                 messenger,
@@ -104,7 +104,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
     }
 
     DirectConnectionsManager(DrasylConfig config,
-                             IdentityManager identityManager,
+                             Identity identity,
                              PeersManager peersManager,
                              AtomicBoolean opened,
                              Messenger messenger,
@@ -118,7 +118,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
                              ConcurrentMap<CompressedPublicKey, DirectClient> clients,
                              BooleanSupplier acceptNewConnectionsSupplier) {
         this.config = config;
-        this.identityManager = identityManager;
+        this.identity = identity;
         this.peersManager = peersManager;
         this.opened = opened;
         this.messenger = messenger;
@@ -205,7 +205,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
         if (requestPeerInformationCache.add(publicKey)) {
             LOG.debug("Request information for Peer '{}'", publicKey);
             try {
-                messenger.send(new WhoisMessage(publicKey, identityManager.getPublicKey(), PeerInformation.of(endpoints)));
+                messenger.send(new WhoisMessage(publicKey, identity.getPublicKey(), PeerInformation.of(endpoints)));
             }
             catch (MessengerException e) {
                 LOG.debug("Unable to request information for Peer '{}': {}", publicKey, e.getMessage());
@@ -238,7 +238,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
                     clients.computeIfAbsent(publicKey, myPublicKey -> {
                         DirectClient client = new DirectClient(
                                 config,
-                                identityManager::getIdentity,
+                                identity,
                                 peersManager,
                                 messenger,
                                 channelGroup,

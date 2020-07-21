@@ -71,7 +71,7 @@ class DrasylPipelineIT {
                 .identityPrivateKey(identity1.getPrivateKey())
                 .build();
 
-        pipeline = new DrasylPipeline(receivedEvents::onNext, outboundMessages::onNext, config, () -> identity1);
+        pipeline = new DrasylPipeline(receivedEvents::onNext, outboundMessages::onNext, config, identity1);
     }
 
     @Test
