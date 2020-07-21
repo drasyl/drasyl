@@ -19,7 +19,7 @@
 package org.drasyl.pipeline;
 
 import io.netty.util.internal.TypeParameterMatcher;
-import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.identity.CompressedPublicKey;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -28,31 +28,32 @@ import java.util.concurrent.CompletableFuture;
  * events.
  */
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public abstract class SimplexDuplexHandler<I, E, O> extends SimpleInboundHandler<I, E> implements OutboundHandler {
+public abstract class SimpleDuplexHandler<I, E, O> extends SimpleInboundHandler<I, E> implements OutboundHandler {
     private final TypeParameterMatcher outboundMessageMatcher;
 
-    protected SimplexDuplexHandler() {
-        outboundMessageMatcher = TypeParameterMatcher.find(this, SimplexDuplexHandler.class, "O");
+    protected SimpleDuplexHandler() {
+        outboundMessageMatcher = TypeParameterMatcher.find(this, SimpleDuplexHandler.class, "O");
     }
 
-    protected SimplexDuplexHandler(Class<? extends I> inboundMessageType,
-                                   Class<? extends E> inboundEventType,
-                                   Class<? extends O> outboundMessageType) {
+    protected SimpleDuplexHandler(Class<? extends I> inboundMessageType,
+                                  Class<? extends E> inboundEventType,
+                                  Class<? extends O> outboundMessageType) {
         super(inboundMessageType, inboundEventType);
         outboundMessageMatcher = TypeParameterMatcher.get(outboundMessageType);
     }
 
     @Override
     public void write(HandlerContext ctx,
-                      ApplicationMessage msg,
+                      CompressedPublicKey recipient,
+                      Object msg,
                       CompletableFuture<Void> future) {
         if (acceptOutbound(msg)) {
             @SuppressWarnings("unchecked")
             O castedMsg = (O) msg;
-            matchedWrite(ctx, castedMsg, future);
+            matchedWrite(ctx, recipient, castedMsg, future);
         }
         else {
-            ctx.write(msg, future);
+            ctx.write(recipient, msg, future);
         }
     }
 
@@ -60,18 +61,20 @@ public abstract class SimplexDuplexHandler<I, E, O> extends SimpleInboundHandler
      * Returns {@code true} if the given message should be handled. If {@code false} it will be
      * passed to the next {@link InboundHandler} in the {@link Pipeline}.
      */
-    protected boolean acceptOutbound(ApplicationMessage msg) {
+    protected boolean acceptOutbound(Object msg) {
         return outboundMessageMatcher.match(msg);
     }
 
     /**
      * Is called for each message of type {@link O}.
      *
-     * @param ctx    handler context
-     * @param msg    the message
-     * @param future a future for the message
+     * @param ctx       handler context
+     * @param recipient the recipient of the message
+     * @param msg       the message
+     * @param future    a future for the message
      */
     protected abstract void matchedWrite(HandlerContext ctx,
+                                         CompressedPublicKey recipient,
                                          O msg,
                                          CompletableFuture<Void> future);
 }

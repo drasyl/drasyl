@@ -19,39 +19,62 @@
 package org.drasyl.pipeline;
 
 import io.reactivex.rxjava3.observers.TestObserver;
+import org.drasyl.DrasylConfig;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ChunkedMessage;
+import org.drasyl.pipeline.codec.DefaultCodec;
+import org.drasyl.pipeline.codec.TypeValidator;
+import org.drasyl.util.Pair;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SimpleOutboundHandlerTest {
+    @Mock
+    private Identity identity;
+    private DrasylConfig config;
+
+    @BeforeEach
+    void setUp() {
+        config = DrasylConfig.newBuilder().build();
+    }
+
     @Test
     void shouldTriggerOnMatchedMessage() {
-        SimpleOutboundHandler<ChunkedMessage> handler = new SimpleOutboundHandler<>() {
+        CompressedPublicKey sender = mock(CompressedPublicKey.class);
+        when(identity.getPublicKey()).thenReturn(sender);
+        byte[] payload = new byte[]{};
+        CompressedPublicKey recipient = mock(CompressedPublicKey.class);
+
+        SimpleOutboundHandler<byte[]> handler = new SimpleOutboundHandler<>() {
             @Override
             protected void matchedWrite(HandlerContext ctx,
-                                        ChunkedMessage msg,
+                                        CompressedPublicKey recipient,
+                                        byte[] msg,
                                         CompletableFuture<Void> future) {
                 // Emit this message as inbound message to test
-                ctx.pipeline().processInbound(msg);
+                ctx.pipeline().processInbound(new ApplicationMessage(identity.getPublicKey(), recipient, msg, msg.getClass()));
             }
         };
 
-        EmbeddedPipeline pipeline = new EmbeddedPipeline(handler);
-        TestObserver<ApplicationMessage> inboundMessageTestObserver = pipeline.inboundMessages().test();
+        EmbeddedPipeline pipeline = new EmbeddedPipeline(() -> identity, TypeValidator.of(config), DefaultCodec.INSTANCE, handler);
+        TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
         TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
 
-        ChunkedMessage msg = mock(ChunkedMessage.class);
-        pipeline.processOutbound(msg);
+        pipeline.processOutbound(recipient, payload);
 
         inboundMessageTestObserver.awaitCount(1);
-        inboundMessageTestObserver.assertValue(msg);
+        inboundMessageTestObserver.assertValue(Pair.of(sender, payload));
         outboundMessageTestObserver.assertNoValues();
     }
 
@@ -60,6 +83,7 @@ class SimpleOutboundHandlerTest {
         SimpleOutboundHandler<ChunkedMessage> handler = new SimpleOutboundHandler<>(ChunkedMessage.class) {
             @Override
             protected void matchedWrite(HandlerContext ctx,
+                                        CompressedPublicKey recipient,
                                         ChunkedMessage msg,
                                         CompletableFuture<Void> future) {
                 // Emit this message as inbound message to test
@@ -67,15 +91,18 @@ class SimpleOutboundHandlerTest {
             }
         };
 
-        EmbeddedPipeline pipeline = new EmbeddedPipeline(handler);
-        TestObserver<ApplicationMessage> inboundMessageTestObserver = pipeline.inboundMessages().test();
+        EmbeddedPipeline pipeline = new EmbeddedPipeline(() -> identity, TypeValidator.of(config), DefaultCodec.INSTANCE, handler);
+        TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
         TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
 
-        ApplicationMessage msg = mock(ApplicationMessage.class);
-        pipeline.processOutbound(msg);
+        CompressedPublicKey sender = mock(CompressedPublicKey.class);
+        CompressedPublicKey recipient = mock(CompressedPublicKey.class);
+        when(identity.getPublicKey()).thenReturn(sender);
+        byte[] payload = new byte[]{};
+        pipeline.processOutbound(recipient, payload);
 
         outboundMessageTestObserver.awaitCount(1);
-        outboundMessageTestObserver.assertValue(msg);
+        outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, recipient, payload, byte[].class));
         inboundMessageTestObserver.assertNoValues();
     }
 }

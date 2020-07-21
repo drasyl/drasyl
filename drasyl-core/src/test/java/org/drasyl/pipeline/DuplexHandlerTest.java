@@ -19,7 +19,7 @@
 package org.drasyl.pipeline;
 
 import org.drasyl.event.Event;
-import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.identity.CompressedPublicKey;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -40,23 +40,25 @@ class DuplexHandlerTest {
     void shouldPassthroughsOnWrite() {
         DuplexHandler duplexHandler = new DuplexHandler();
 
-        ApplicationMessage msg = mock(ApplicationMessage.class);
+        CompressedPublicKey recipient = mock(CompressedPublicKey.class);
+        Object msg = mock(Object.class);
         CompletableFuture<Void> future = mock(CompletableFuture.class);
 
-        duplexHandler.write(ctx, msg, future);
+        duplexHandler.write(ctx, recipient, msg, future);
 
-        verify(ctx).write(eq(msg), eq(future));
+        verify(ctx).write(eq(recipient), eq(msg), eq(future));
     }
 
     @Test
     void shouldPassthroughsOnRead() {
         DuplexHandler duplexHandler = new DuplexHandler();
 
-        ApplicationMessage msg = mock(ApplicationMessage.class);
+        CompressedPublicKey sender = mock(CompressedPublicKey.class);
+        Object msg = mock(Object.class);
 
-        duplexHandler.read(ctx, msg);
+        duplexHandler.read(ctx, sender, msg);
 
-        verify(ctx).fireRead(eq(msg));
+        verify(ctx).fireRead(eq(sender), eq(msg));
     }
 
     @Test

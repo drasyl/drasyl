@@ -26,6 +26,7 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.util.Pair;
@@ -33,11 +34,13 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.CompletionException;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DrasylPipelineIT {
@@ -68,7 +71,7 @@ class DrasylPipelineIT {
                 .identityPrivateKey(identity1.getPrivateKey())
                 .build();
 
-        pipeline = new DrasylPipeline(receivedEvents::onNext, outboundMessages::onNext, config);
+        pipeline = new DrasylPipeline(receivedEvents::onNext, outboundMessages::onNext, config, () -> identity1);
     }
 
     @Test
@@ -81,13 +84,12 @@ class DrasylPipelineIT {
 
         pipeline.addLast("msgChanger", new InboundHandlerAdapter() {
             @Override
-            public void read(HandlerContext ctx, ApplicationMessage msg) {
-                ApplicationMessage newMsg = new ApplicationMessage(identity2.getPublicKey(), msg.getRecipient(), newPayload);
-                super.read(ctx, newMsg);
+            public void read(HandlerContext ctx, CompressedPublicKey sender, Object msg) {
+                super.read(ctx, identity2.getPublicKey(), newPayload);
             }
         });
 
-        ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), payload);
+        ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), payload, payload.getClass());
 
         pipeline.processInbound(msg);
 
@@ -104,18 +106,18 @@ class DrasylPipelineIT {
 
         pipeline.addLast("eventProducer", new InboundHandlerAdapter() {
             @Override
-            public void read(HandlerContext ctx, ApplicationMessage msg) {
-                super.read(ctx, msg);
+            public void read(HandlerContext ctx, CompressedPublicKey sender, Object msg) {
+                super.read(ctx, sender, msg);
                 ctx.fireEventTriggered(testEvent);
             }
         });
 
-        ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), payload);
+        ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), payload, payload.getClass());
 
         pipeline.processInbound(msg);
 
         events.awaitCount(2);
-        events.assertValueAt(0, new MessageEvent(Pair.of(msg.getSender(), msg.getPayload())));
+        events.assertValueAt(0, new MessageEvent(Pair.of(msg.getSender(), payload)));
         events.assertValueAt(1, testEvent);
     }
 
@@ -134,8 +136,8 @@ class DrasylPipelineIT {
 
         pipeline.addLast("exceptionProducer", new InboundHandlerAdapter() {
             @Override
-            public void read(HandlerContext ctx, ApplicationMessage msg) {
-                super.read(ctx, msg);
+            public void read(HandlerContext ctx, CompressedPublicKey sender, Object msg) {
+                super.read(ctx, sender, msg);
                 throw exception;
             }
         });
@@ -148,7 +150,7 @@ class DrasylPipelineIT {
             }
         });
 
-        ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), payload);
+        ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), payload, payload.getClass());
 
         pipeline.processInbound(msg);
 
@@ -164,22 +166,23 @@ class DrasylPipelineIT {
                 0x05
         };
 
-        ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), payload);
-        ApplicationMessage newMsg = new ApplicationMessage(identity2.getPublicKey(), msg.getRecipient(), newPayload);
+        ApplicationMessage newMsg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), newPayload, newPayload.getClass());
 
         pipeline.addLast("outboundChanger", new OutboundHandlerAdapter() {
             @Override
             public void write(HandlerContext ctx,
-                              ApplicationMessage msg,
+                              CompressedPublicKey recipient,
+                              Object msg,
                               CompletableFuture<Void> future) {
-                super.write(ctx, newMsg, future);
+                super.write(ctx, identity2.getPublicKey(), newPayload, future);
             }
         });
 
-        CompletableFuture<Void> future = pipeline.processOutbound(msg);
+        CompletableFuture<Void> future = pipeline.processOutbound(identity1.getPublicKey(), payload);
 
         outbounds.awaitCount(1);
         outbounds.assertValue(newMsg);
+        future.join();
         assertTrue(future.isDone());
         assertFalse(future.isCancelled());
         assertFalse(future.isCompletedExceptionally());
@@ -188,19 +191,20 @@ class DrasylPipelineIT {
     @Test
     void shouldNotPassthroughsMessagesWithDoneFuture() {
         TestObserver<ApplicationMessage> outbounds = outboundMessages.test();
-        ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), payload);
+        ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), payload, payload.getClass());
 
         pipeline.addLast("outbound", new OutboundHandlerAdapter() {
             @Override
             public void write(HandlerContext ctx,
-                              ApplicationMessage msg,
+                              CompressedPublicKey recipient,
+                              Object msg,
                               CompletableFuture<Void> future) {
                 future.complete(null);
-                super.write(ctx, msg, future);
+                super.write(ctx, recipient, msg, future);
             }
         });
 
-        CompletableFuture<Void> future = pipeline.processOutbound(msg);
+        CompletableFuture<Void> future = pipeline.processOutbound(identity2.getPublicKey(), msg);
 
         outbounds.awaitCount(1);
         outbounds.assertNoValues();
@@ -212,24 +216,50 @@ class DrasylPipelineIT {
     @Test
     void shouldNotPassthroughsMessagesWithExceptionallyFuture() {
         TestObserver<ApplicationMessage> outbounds = outboundMessages.test();
-        ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), payload);
+        ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), payload, payload.getClass());
 
         pipeline.addLast("outbound", new OutboundHandlerAdapter() {
             @Override
             public void write(HandlerContext ctx,
-                              ApplicationMessage msg,
+                              CompressedPublicKey recipient,
+                              Object msg,
                               CompletableFuture<Void> future) {
                 future.completeExceptionally(new Exception("Error!"));
-                super.write(ctx, msg, future);
+                super.write(ctx, recipient, msg, future);
             }
         });
 
-        CompletableFuture<Void> future = pipeline.processOutbound(msg);
+        CompletableFuture<Void> future = pipeline.processOutbound(identity2.getPublicKey(), msg);
 
         outbounds.awaitCount(1);
         outbounds.assertNoValues();
         assertTrue(future.isDone());
         assertFalse(future.isCancelled());
         assertTrue(future.isCompletedExceptionally());
+    }
+
+    @Test
+    void shouldNotPassthroughsMessagesWithNotAllowedType() {
+        TestObserver<ApplicationMessage> outbounds = outboundMessages.test();
+        StringBuilder msg = new StringBuilder();
+
+        pipeline.addLast("outbound", new OutboundHandlerAdapter() {
+            @Override
+            public void write(HandlerContext ctx,
+                              CompressedPublicKey recipient,
+                              Object msg,
+                              CompletableFuture<Void> future) {
+                super.write(ctx, recipient, msg, future);
+            }
+        });
+
+        CompletableFuture<Void> future = pipeline.processOutbound(identity2.getPublicKey(), msg);
+
+        outbounds.awaitCount(1);
+        outbounds.assertNoValues();
+        assertTrue(future.isDone());
+        assertFalse(future.isCancelled());
+        assertTrue(future.isCompletedExceptionally());
+        assertThrows(CompletionException.class, future::join);
     }
 }

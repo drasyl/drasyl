@@ -61,6 +61,10 @@ import static org.drasyl.DrasylConfig.IDENTITY_PRIVATE_KEY;
 import static org.drasyl.DrasylConfig.IDENTITY_PROOF_OF_WORK;
 import static org.drasyl.DrasylConfig.IDENTITY_PUBLIC_KEY;
 import static org.drasyl.DrasylConfig.INTRA_VM_DISCOVERY_ENABLED;
+import static org.drasyl.DrasylConfig.MARSHALLING_ALLOWED_PACKAGES;
+import static org.drasyl.DrasylConfig.MARSHALLING_ALLOWED_TYPES;
+import static org.drasyl.DrasylConfig.MARSHALLING_ALLOW_ALL_PRIMITIVES;
+import static org.drasyl.DrasylConfig.MARSHALLING_ALLOW_ARRAY_OF_DEFINED_TYPES;
 import static org.drasyl.DrasylConfig.MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT;
 import static org.drasyl.DrasylConfig.MESSAGE_HOP_LIMIT;
 import static org.drasyl.DrasylConfig.MESSAGE_MAX_CONTENT_LENGTH;
@@ -150,6 +154,10 @@ class DrasylConfigTest {
     private String monitoringInfluxDatabase;
     private Duration monitoringInfluxReportingFrequency;
     private List<PluginEnvironment> pluginEnvironments;
+    private List<String> marshallingAllowedTypes;
+    private boolean marshallingAllowAllPrimitives;
+    private boolean marshallingAllowArrayOfDefinedTypes;
+    private List<String> marshallingAllowedPackages;
 
     @BeforeEach
     void setUp() {
@@ -188,6 +196,10 @@ class DrasylConfigTest {
         monitoringInfluxDatabase = "drasyl";
         monitoringInfluxReportingFrequency = ofSeconds(60);
         pluginEnvironments = List.of();
+        marshallingAllowedTypes = List.of();
+        marshallingAllowAllPrimitives = true;
+        marshallingAllowArrayOfDefinedTypes = true;
+        marshallingAllowedPackages = List.of();
     }
 
     @Nested
@@ -232,6 +244,10 @@ class DrasylConfigTest {
             when(typesafeConfig.getString(MONITORING_INFLUX_DATABASE)).thenReturn(monitoringInfluxDatabase);
             when(typesafeConfig.getDuration(MONITORING_INFLUX_REPORTING_FREQUENCY)).thenReturn(monitoringInfluxReportingFrequency);
             when(typesafeConfig.getObject(PLUGINS)).thenReturn(mock(ConfigObject.class));
+            when(typesafeConfig.getStringList(MARSHALLING_ALLOWED_TYPES)).thenReturn(marshallingAllowedTypes);
+            when(typesafeConfig.getBoolean(MARSHALLING_ALLOW_ALL_PRIMITIVES)).thenReturn(marshallingAllowAllPrimitives);
+            when(typesafeConfig.getBoolean(MARSHALLING_ALLOW_ARRAY_OF_DEFINED_TYPES)).thenReturn(marshallingAllowArrayOfDefinedTypes);
+            when(typesafeConfig.getStringList(MARSHALLING_ALLOWED_PACKAGES)).thenReturn(marshallingAllowedPackages);
 
             DrasylConfig config = new DrasylConfig(typesafeConfig);
 
@@ -270,6 +286,10 @@ class DrasylConfigTest {
             assertEquals(monitoringInfluxPassword, config.getMonitoringInfluxPassword());
             assertEquals(monitoringInfluxDatabase, config.getMonitoringInfluxDatabase());
             assertEquals(monitoringInfluxReportingFrequency, config.getMonitoringInfluxReportingFrequency());
+            assertEquals(marshallingAllowedTypes, config.getMarshallingAllowedTypes());
+            assertEquals(marshallingAllowAllPrimitives, config.isMarshallingAllowAllPrimitives());
+            assertEquals(marshallingAllowArrayOfDefinedTypes, config.isMarshallingAllowArrayOfDefinedTypes());
+            assertEquals(marshallingAllowedPackages, config.getMarshallingAllowedPackages());
         }
     }
 
@@ -287,7 +307,8 @@ class DrasylConfigTest {
                     superPeerIdleTimeout, intraVmDiscoveryEnabled, directConnectionsEnabled, directConnectionsMaxConcurrentConnections,
                     directConnectionsRetryDelays, directConnectionsHandshakeTimeout, directConnectionsChannelInitializer,
                     directConnectionsIdleRetries, directConnectionsIdleTimeout, monitoringEnabled, monitoringInfluxUri, monitoringInfluxUser,
-                    monitoringInfluxPassword, monitoringInfluxDatabase, monitoringInfluxReportingFrequency, pluginEnvironments);
+                    monitoringInfluxPassword, monitoringInfluxDatabase, monitoringInfluxReportingFrequency, pluginEnvironments,
+                    marshallingAllowedTypes, marshallingAllowAllPrimitives, marshallingAllowArrayOfDefinedTypes, marshallingAllowedPackages);
 
             assertThat(config.toString(), not(containsString(identityPrivateKey.getCompressedKey())));
         }
@@ -361,6 +382,10 @@ class DrasylConfigTest {
                     .monitoringInfluxDatabase(DEFAULT.getMonitoringInfluxDatabase())
                     .monitoringInfluxReportingFrequency(DEFAULT.getMonitoringInfluxReportingFrequency())
                     .pluginEnvironments(DEFAULT.getPluginEnvironments())
+                    .marshallingAllowedTypes(DEFAULT.getMarshallingAllowedTypes())
+                    .marshallingAllowAllPrimitives(DEFAULT.isMarshallingAllowAllPrimitives())
+                    .marshallingAllowArrayOfDefinedTypes(DEFAULT.isMarshallingAllowArrayOfDefinedTypes())
+                    .marshallingAllowedPackages(DEFAULT.getMarshallingAllowedPackages())
                     .build();
 
             assertEquals(DEFAULT, config);

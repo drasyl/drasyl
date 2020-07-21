@@ -63,8 +63,9 @@ public class Pair<A, B> implements Serializable {
             return false;
         }
         Pair<?, ?> pair = (Pair<?, ?>) o;
-        return Objects.equals(first, pair.first) &&
-                Objects.equals(second, pair.second);
+
+        return Objects.deepEquals(first, pair.first) &&
+                Objects.deepEquals(second, pair.second);
     }
 
     @Override

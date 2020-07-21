@@ -231,7 +231,7 @@ class ServerIT {
                 };
 
                 // send message
-                RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session2.getPublicKey(), payload);
+                RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session2.getPublicKey(), payload, payload.getClass());
                 session1.send(request);
                 receivedMessages2.awaitCount(1);
                 receivedMessages2.assertValueAt(0, val -> {
@@ -447,7 +447,7 @@ class ServerIT {
             RequestMessage request = new ApplicationMessage(sender, recipient, new byte[]{
                     0x00,
                     0x01
-            });
+            }, byte[].class);
             CompletableFuture<ResponseMessage<?>> send = session.sendRequest(request);
 
             // verify response
@@ -473,7 +473,7 @@ class ServerIT {
                 new Random().nextBytes(bigPayload);
 
                 // send message
-                RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session2.getPublicKey(), bigPayload);
+                RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session2.getPublicKey(), bigPayload, bigPayload.getClass());
                 session2.send(request);
 
                 // verify response
@@ -489,7 +489,6 @@ class ServerIT {
         // create connections
         try (TestSuperPeerClient session1 = clientSessionAfterJoin(configClient1, identitySession1)) {
             try (TestSuperPeerClient session2 = clientSessionAfterJoin(configClient2, identitySession2)) {
-
                 TestObserver<Message> receivedMessages2 = session2.receivedMessages().test();
 
                 // create message with exceeded chunk size
@@ -497,7 +496,8 @@ class ServerIT {
                 new Random().nextBytes(bigPayload);
 
                 // send message
-                RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session2.getPublicKey(), bigPayload);
+                RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session2.getPublicKey(), bigPayload, bigPayload.getClass());
+
                 session1.send(request);
                 receivedMessages2.awaitCount(1);
                 receivedMessages2.assertValueAt(0, val -> {
@@ -508,7 +508,8 @@ class ServerIT {
 
                     return Objects.equals(session1.getPublicKey(), msg.getSender()) && Objects.equals(session2.getPublicKey(), msg.getRecipient()) && Arrays.equals(bigPayload, msg.getPayload());
                 });
-            }}
+            }
+        }
     }
 
     @Test

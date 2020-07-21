@@ -21,12 +21,16 @@ package org.drasyl.pipeline;
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
-import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
+import org.drasyl.pipeline.codec.TypeValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
+@SuppressWarnings({ "java:S107", "java:S3077" })
 abstract class AbstractHandlerContext implements HandlerContext {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractHandlerContext.class);
     private final DrasylConfig config;
@@ -35,14 +39,18 @@ abstract class AbstractHandlerContext implements HandlerContext {
     private final String name;
     private final Pipeline pipeline;
     private final Scheduler scheduler;
-    private volatile AbstractHandlerContext prev; // NOSONAR
-    private volatile AbstractHandlerContext next; // NOSONAR
+    private final Supplier<Identity> identity;
+    private final TypeValidator validator;
+    private volatile AbstractHandlerContext prev;
+    private volatile AbstractHandlerContext next;
 
     public AbstractHandlerContext(String name,
                                   DrasylConfig config,
                                   Pipeline pipeline,
-                                  Scheduler scheduler) {
-        this(null, null, name, config, pipeline, scheduler);
+                                  Scheduler scheduler,
+                                  Supplier<Identity> identity,
+                                  TypeValidator validator) {
+        this(null, null, name, config, pipeline, scheduler, identity, validator);
     }
 
     AbstractHandlerContext(AbstractHandlerContext prev,
@@ -50,13 +58,17 @@ abstract class AbstractHandlerContext implements HandlerContext {
                            String name,
                            DrasylConfig config,
                            Pipeline pipeline,
-                           Scheduler scheduler) {
+                           Scheduler scheduler,
+                           Supplier<Identity> identity,
+                           TypeValidator validator) {
         this.prev = prev;
         this.next = next;
         this.name = name;
         this.config = config;
         this.pipeline = pipeline;
         this.scheduler = scheduler;
+        this.identity = identity;
+        this.validator = validator;
     }
 
     void setPrevHandlerContext(AbstractHandlerContext prev) {
@@ -136,16 +148,16 @@ abstract class AbstractHandlerContext implements HandlerContext {
     }
 
     @Override
-    public HandlerContext fireRead(ApplicationMessage msg) {
-        invokeRead(msg);
+    public HandlerContext fireRead(CompressedPublicKey sender, Object msg) {
+        invokeRead(sender, msg);
 
         return this;
     }
 
-    private void invokeRead(ApplicationMessage msg) {
+    private void invokeRead(CompressedPublicKey sender, Object msg) {
         AbstractHandlerContext inboundCtx = findNextInbound();
         try {
-            ((InboundHandler) inboundCtx.handler()).read(inboundCtx, msg);
+            ((InboundHandler) inboundCtx.handler()).read(inboundCtx, sender, msg);
         }
         catch (Exception e) {
             inboundCtx.fireExceptionCaught(e);
@@ -177,22 +189,24 @@ abstract class AbstractHandlerContext implements HandlerContext {
     }
 
     @Override
-    public CompletableFuture<Void> write(ApplicationMessage msg) {
-        return write(msg, new CompletableFuture<>());
+    public CompletableFuture<Void> write(CompressedPublicKey recipient, Object msg) {
+        return write(recipient, msg, new CompletableFuture<>());
     }
 
     @Override
-    public CompletableFuture<Void> write(ApplicationMessage msg,
+    public CompletableFuture<Void> write(CompressedPublicKey recipient,
+                                         Object msg,
                                          CompletableFuture<Void> future) {
-        return invokeWrite(msg, future);
+        return invokeWrite(recipient, msg, future);
     }
 
-    private CompletableFuture<Void> invokeWrite(ApplicationMessage msg,
+    private CompletableFuture<Void> invokeWrite(CompressedPublicKey recipient,
+                                                Object msg,
                                                 CompletableFuture<Void> future) {
         AbstractHandlerContext outboundCtx = findPrevOutbound();
 
         try {
-            ((OutboundHandler) outboundCtx.handler()).write(outboundCtx, msg, future);
+            ((OutboundHandler) outboundCtx.handler()).write(outboundCtx, recipient, msg, future);
         }
         catch (Exception e) {
             outboundCtx.fireExceptionCaught(e);
@@ -217,5 +231,15 @@ abstract class AbstractHandlerContext implements HandlerContext {
     @Override
     public Scheduler scheduler() {
         return this.scheduler;
+    }
+
+    @Override
+    public Identity identity() {
+        return this.identity.get();
+    }
+
+    @Override
+    public TypeValidator validator() {
+        return this.validator;
     }
 }

@@ -11,10 +11,9 @@ import org.drasyl.DrasylNodeComponent;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.SimplexDuplexHandler;
+import org.drasyl.pipeline.SimpleDuplexHandler;
 import org.drasyl.util.NetworkUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -122,7 +121,7 @@ public class Monitoring implements DrasylNodeComponent {
             Gauge.builder("peersManager.grandchildrenRoutes", peersManager, pm -> pm.getGrandchildrenRoutes().size()).register(registry);
 
             // monitor Pipeline
-            pipeline.addFirst(MONITORING_HANDLER, new SimplexDuplexHandler<ApplicationMessage, Event, ApplicationMessage>() {
+            pipeline.addFirst(MONITORING_HANDLER, new SimpleDuplexHandler<Object, Event, Object>() {
                 private final Map<String, Counter> counters = new HashMap<>();
 
                 @Override
@@ -132,17 +131,20 @@ public class Monitoring implements DrasylNodeComponent {
                 }
 
                 @Override
-                protected void matchedRead(HandlerContext ctx, ApplicationMessage msg) {
+                protected void matchedRead(HandlerContext ctx,
+                                           CompressedPublicKey sender,
+                                           Object msg) {
                     ctx.scheduler().scheduleDirect(() -> incrementObjectTypeCounter("pipeline.inbound_messages", msg));
-                    ctx.fireRead(msg);
+                    ctx.fireRead(sender, msg);
                 }
 
                 @Override
                 protected void matchedWrite(HandlerContext ctx,
-                                            ApplicationMessage msg,
+                                            CompressedPublicKey recipient,
+                                            Object msg,
                                             CompletableFuture<Void> future) {
                     ctx.scheduler().scheduleDirect(() -> incrementObjectTypeCounter("pipeline.outbound_messages", msg));
-                    ctx.write(msg, future);
+                    ctx.write(recipient, msg, future);
                 }
 
                 private void incrementObjectTypeCounter(String metric, Object o) {

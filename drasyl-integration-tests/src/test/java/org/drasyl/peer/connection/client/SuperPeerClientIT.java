@@ -267,7 +267,7 @@ class SuperPeerClientIT {
             ApplicationMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), new byte[]{
                     0x00,
                     0x01
-            });
+            }, byte[].class);
             server.sendMessage(identityManager.getPublicKey(), request);
 
             // verify received message
@@ -376,7 +376,7 @@ class SuperPeerClientIT {
             new Random().nextBytes(bigPayload);
 
             // send message
-            RequestMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), bigPayload);
+            RequestMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), bigPayload, bigPayload.getClass());
             server.sendMessage(identityManager.getPublicKey(), request);
 
             receivedMessages.awaitCount(2);
@@ -399,7 +399,7 @@ class SuperPeerClientIT {
             new Random().nextBytes(bigPayload);
 
             // send message
-            RequestMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), bigPayload);
+            RequestMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), bigPayload, bigPayload.getClass());
             assertThrows(RuntimeException.class, () -> server.sendMessage(identityManager.getPublicKey(), request));
         }
     }

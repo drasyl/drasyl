@@ -19,7 +19,7 @@
 package org.drasyl.pipeline;
 
 import org.drasyl.event.Event;
-import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.identity.CompressedPublicKey;
 
 /**
  * Abstract base class for {@link InboundHandler} implementations which provide implementations of
@@ -32,8 +32,8 @@ import org.drasyl.peer.connection.message.ApplicationMessage;
  */
 public class InboundHandlerAdapter extends HandlerAdapter implements InboundHandler {
     @Override
-    public void read(HandlerContext ctx, ApplicationMessage msg) {
-        ctx.fireRead(msg);
+    public void read(HandlerContext ctx, CompressedPublicKey sender, Object msg) {
+        ctx.fireRead(sender, msg);
     }
 
     @Override

@@ -4,10 +4,9 @@ import io.micrometer.core.instrument.MeterRegistry;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.SimplexDuplexHandler;
+import org.drasyl.pipeline.SimpleDuplexHandler;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -67,10 +66,10 @@ class MonitoringTest {
             when(registrySupplier.get()).thenReturn(registry);
             when(publicKeySupplier.get()).thenReturn(publicKey);
             when(pipeline.addFirst(eq(MONITORING_HANDLER), any())).then(invocation -> {
-                SimplexDuplexHandler handler = invocation.getArgument(1);
+                SimpleDuplexHandler handler = invocation.getArgument(1);
                 handler.eventTriggered(ctx, mock(Event.class));
-                handler.read(ctx, mock(ApplicationMessage.class));
-                handler.write(ctx, mock(ApplicationMessage.class), new CompletableFuture<>());
+                handler.read(ctx, mock(CompressedPublicKey.class), mock(Object.class));
+                handler.write(ctx, mock(CompressedPublicKey.class), mock(Object.class), new CompletableFuture<>());
                 return invocation.getMock();
             });
 

@@ -19,47 +19,88 @@
 package org.drasyl.pipeline;
 
 import io.reactivex.rxjava3.observers.TestObserver;
+import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.pipeline.codec.DefaultCodec;
+import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.Pair;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class EmbeddedPipelineTest {
+    @Mock
+    private Identity identity;
+    private DrasylConfig config;
+
+    @BeforeEach
+    void setUp() {
+        config = DrasylConfig.newBuilder().build();
+    }
+
     @Test
     void shouldReturnInboundMessagesAndEvents() {
-        EmbeddedPipeline pipeline = new EmbeddedPipeline(new InboundHandlerAdapter(), new OutboundHandlerAdapter());
-        TestObserver<ApplicationMessage> inboundMessageTestObserver = pipeline.inboundMessages().test();
+        EmbeddedPipeline pipeline = new EmbeddedPipeline(() -> identity, TypeValidator.of(config), DefaultCodec.INSTANCE, new InboundHandlerAdapter(), new OutboundHandlerAdapter());
+        TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
         TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
         TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
+        CompressedPublicKey sender = mock(CompressedPublicKey.class);
         ApplicationMessage msg = mock(ApplicationMessage.class);
+
+        when(msg.getSender()).thenReturn(sender);
+        doReturn(String.class).when(msg).getPayloadClazz();
+        when(msg.getPayload()).thenReturn(new byte[]{
+                34,
+                72,
+                101,
+                108,
+                108,
+                111,
+                32,
+                87,
+                111,
+                114,
+                108,
+                100,
+                34
+        });
+
         pipeline.processInbound(msg);
 
         inboundMessageTestObserver.awaitCount(1);
-        inboundMessageTestObserver.assertValue(msg);
+        inboundMessageTestObserver.assertValue(Pair.of(sender, "Hello World"));
         eventTestObserver.awaitCount(1);
-        eventTestObserver.assertValue(new MessageEvent(Pair.of(msg.getSender(), msg.getPayload())));
+        eventTestObserver.assertValue(new MessageEvent(Pair.of(sender, "Hello World")));
         outboundMessageTestObserver.assertNoValues();
     }
 
     @Test
     void shouldReturnOutboundMessages() {
-        EmbeddedPipeline pipeline = new EmbeddedPipeline(new InboundHandlerAdapter(), new OutboundHandlerAdapter());
-        TestObserver<ApplicationMessage> inboundMessageTestObserver = pipeline.inboundMessages().test();
+        EmbeddedPipeline pipeline = new EmbeddedPipeline(() -> identity, TypeValidator.of(config), DefaultCodec.INSTANCE, new InboundHandlerAdapter(), new OutboundHandlerAdapter());
+        TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
         TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
         TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-        ApplicationMessage msg = mock(ApplicationMessage.class);
-        pipeline.processOutbound(msg);
+        CompressedPublicKey sender = mock(CompressedPublicKey.class);
+        CompressedPublicKey recipient = mock(CompressedPublicKey.class);
+        when(identity.getPublicKey()).thenReturn(sender);
+        byte[] msg = new byte[]{};
+        pipeline.processOutbound(recipient, msg);
 
         outboundMessageTestObserver.awaitCount(1);
-        outboundMessageTestObserver.assertValue(msg);
+        outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, recipient, msg, byte[].class));
         inboundMessageTestObserver.assertNoValues();
         eventTestObserver.assertNoValues();
     }

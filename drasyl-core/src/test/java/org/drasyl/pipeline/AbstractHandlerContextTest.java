@@ -21,7 +21,10 @@ package org.drasyl.pipeline;
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.pipeline.codec.TypeValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -55,6 +58,10 @@ class AbstractHandlerContextTest {
     private Pipeline pipeline;
     @Mock
     private Scheduler scheduler;
+    @Mock
+    private Identity identity;
+    @Mock
+    private TypeValidator validator;
     private String name;
 
     @BeforeEach
@@ -64,7 +71,7 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldSetCorrectPrevHandlerContext() {
-        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler) {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, () -> identity, validator) {
             @Override
             public Handler handler() {
                 return handler;
@@ -81,7 +88,7 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldSetCorrectNextHandlerContext() {
-        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler) {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, () -> identity, validator) {
             @Override
             public Handler handler() {
                 return handler;
@@ -98,7 +105,7 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldSetCorrectName() {
-        AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, scheduler) {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, scheduler, () -> identity, validator) {
             @Override
             public Handler handler() {
                 return handler;
@@ -110,7 +117,7 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldSetCorrectConfig() {
-        AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, scheduler) {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, scheduler, () -> identity, validator) {
             @Override
             public Handler handler() {
                 return handler;
@@ -122,7 +129,7 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldSetPipeline() {
-        AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, scheduler) {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, scheduler, () -> identity, validator) {
             @Override
             public Handler handler() {
                 return handler;
@@ -134,7 +141,7 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldSetScheduler() {
-        AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, scheduler) {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, scheduler, () -> identity, validator) {
             @Override
             public Handler handler() {
                 return handler;
@@ -145,11 +152,35 @@ class AbstractHandlerContextTest {
     }
 
     @Test
+    void shouldSetIdentity() {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, scheduler, () -> identity, validator) {
+            @Override
+            public Handler handler() {
+                return handler;
+            }
+        };
+
+        assertEquals(identity, ctx.identity());
+    }
+
+    @Test
+    void shouldSetValidator() {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, scheduler, () -> identity, validator) {
+            @Override
+            public Handler handler() {
+                return handler;
+            }
+        };
+
+        assertEquals(validator, ctx.validator());
+    }
+
+    @Test
     void shouldInvokeExceptionCaught() {
         InboundHandler inboundHandler = mock(InboundHandler.class);
         when(next.handler()).thenReturn(inboundHandler);
 
-        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler) {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, () -> identity, validator) {
             @Override
             public Handler handler() {
                 return handler;
@@ -173,7 +204,7 @@ class AbstractHandlerContextTest {
         when(next.getNext()).thenReturn(nextCtx);
         when(nextCtx.handler()).thenReturn(inboundHandler);
 
-        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler) {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, () -> identity, validator) {
             @Override
             public Handler handler() {
                 return handler;
@@ -195,7 +226,7 @@ class AbstractHandlerContextTest {
         when(prev.getPrev()).thenReturn(prevCtx);
         when(prevCtx.handler()).thenReturn(outboundHandler);
 
-        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler) {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, () -> identity, validator) {
             @Override
             public Handler handler() {
                 return handler;
@@ -213,40 +244,42 @@ class AbstractHandlerContextTest {
         InboundHandler inboundHandler = mock(InboundHandler.class);
         when(next.handler()).thenReturn(inboundHandler);
 
-        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler) {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, () -> identity, validator) {
             @Override
             public Handler handler() {
                 return handler;
             }
         };
 
+        CompressedPublicKey sender = mock(CompressedPublicKey.class);
         ApplicationMessage msg = mock(ApplicationMessage.class);
 
-        ctx.fireRead(msg);
+        ctx.fireRead(sender, msg);
 
         verify(next, times(2)).handler();
-        verify(inboundHandler).read(eq(next), eq(msg));
+        verify(inboundHandler).read(eq(next), eq(sender), eq(msg));
     }
 
     @Test
     void shouldRethrowIfExceptionOccursDuringInvokeRead() {
         InboundHandler inboundHandler = mock(InboundHandler.class);
         when(next.handler()).thenReturn(inboundHandler);
-        doThrow(RuntimeException.class).when(inboundHandler).read(any(), any());
+        doThrow(RuntimeException.class).when(inboundHandler).read(any(), any(), any());
 
-        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler) {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, () -> identity, validator) {
             @Override
             public Handler handler() {
                 return handler;
             }
         };
 
+        CompressedPublicKey sender = mock(CompressedPublicKey.class);
         ApplicationMessage msg = mock(ApplicationMessage.class);
 
-        ctx.fireRead(msg);
+        ctx.fireRead(sender, msg);
 
         verify(next, times(2)).handler();
-        verify(inboundHandler).read(eq(next), eq(msg));
+        verify(inboundHandler).read(eq(next), eq(sender), eq(msg));
         verify(next).fireExceptionCaught(isA(RuntimeException.class));
     }
 
@@ -255,7 +288,7 @@ class AbstractHandlerContextTest {
         InboundHandler inboundHandler = mock(InboundHandler.class);
         when(next.handler()).thenReturn(inboundHandler);
 
-        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler) {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, () -> identity, validator) {
             @Override
             public Handler handler() {
                 return handler;
@@ -276,7 +309,7 @@ class AbstractHandlerContextTest {
         when(next.handler()).thenReturn(inboundHandler);
         doThrow(RuntimeException.class).when(inboundHandler).eventTriggered(any(), any());
 
-        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler) {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, () -> identity, validator) {
             @Override
             public Handler handler() {
                 return handler;
@@ -297,40 +330,42 @@ class AbstractHandlerContextTest {
         OutboundHandler outboundHandler = mock(OutboundHandler.class);
         when(prev.handler()).thenReturn(outboundHandler);
 
-        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler) {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, () -> identity, validator) {
             @Override
             public Handler handler() {
                 return handler;
             }
         };
 
+        CompressedPublicKey recipient = mock(CompressedPublicKey.class);
         ApplicationMessage msg = mock(ApplicationMessage.class);
 
-        ctx.write(msg);
+        ctx.write(recipient, msg);
 
         verify(prev, times(2)).handler();
-        verify(outboundHandler).write(eq(prev), eq(msg), isA(CompletableFuture.class));
+        verify(outboundHandler).write(eq(prev), eq(recipient), eq(msg), isA(CompletableFuture.class));
     }
 
     @Test
     void shouldRethrowIfExceptionOccursDuringWrite() {
         OutboundHandler outboundHandler = mock(OutboundHandler.class);
         when(prev.handler()).thenReturn(outboundHandler);
-        doThrow(RuntimeException.class).when(outboundHandler).write(any(), any(), any());
+        doThrow(RuntimeException.class).when(outboundHandler).write(any(), any(), any(), any());
 
-        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler) {
+        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, () -> identity, validator) {
             @Override
             public Handler handler() {
                 return handler;
             }
         };
 
+        CompressedPublicKey recipient = mock(CompressedPublicKey.class);
         ApplicationMessage msg = mock(ApplicationMessage.class);
 
-        ctx.write(msg);
+        ctx.write(recipient, msg);
 
         verify(prev, times(2)).handler();
-        verify(outboundHandler).write(eq(prev), eq(msg), isA(CompletableFuture.class));
+        verify(outboundHandler).write(eq(prev), eq(recipient), eq(msg), isA(CompletableFuture.class));
         verify(prev).fireExceptionCaught(isA(RuntimeException.class));
     }
 }

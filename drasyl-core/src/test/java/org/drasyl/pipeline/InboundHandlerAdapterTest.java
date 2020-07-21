@@ -19,6 +19,7 @@
 package org.drasyl.pipeline;
 
 import org.drasyl.event.Event;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -38,11 +39,12 @@ class InboundHandlerAdapterTest {
     void shouldPassthroughsOnRead() {
         InboundHandlerAdapter adapter = new InboundHandlerAdapter();
 
-        ApplicationMessage msg = mock(ApplicationMessage.class);
+        CompressedPublicKey sender = mock(CompressedPublicKey.class);
+        Object msg = mock(Object.class);
 
-        adapter.read(ctx, msg);
+        adapter.read(ctx, sender, msg);
 
-        verify(ctx).fireRead(eq(msg));
+        verify(ctx).fireRead(eq(sender), eq(msg));
     }
 
     @Test

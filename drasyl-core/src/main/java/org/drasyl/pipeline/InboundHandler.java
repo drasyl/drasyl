@@ -19,7 +19,7 @@
 package org.drasyl.pipeline;
 
 import org.drasyl.event.Event;
-import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.identity.CompressedPublicKey;
 
 /**
  * {@link Handler} which adds callbacks for state changes. This allows the user to hook in to state
@@ -27,12 +27,13 @@ import org.drasyl.peer.connection.message.ApplicationMessage;
  */
 public interface InboundHandler extends Handler {
     /**
-     * Gets called if a {@link ApplicationMessage} was received.
+     * Gets called if a {@link Object} was received.
      *
-     * @param ctx handler context
-     * @param msg the message
+     * @param ctx    handler context
+     * @param sender the sender of the message
+     * @param msg    the message
      */
-    void read(HandlerContext ctx, ApplicationMessage msg);
+    void read(HandlerContext ctx, CompressedPublicKey sender, Object msg);
 
     /**
      * Gets called if a {@link Event} was emitted.

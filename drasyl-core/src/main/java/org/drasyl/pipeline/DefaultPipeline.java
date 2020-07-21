@@ -21,7 +21,11 @@ package org.drasyl.pipeline;
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.pipeline.codec.ObjectHolder;
+import org.drasyl.pipeline.codec.TypeValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -29,6 +33,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Supplier;
 
 /**
  * Abstract {@link Pipeline} implementation, that needs head and tail.
@@ -40,6 +45,8 @@ public abstract class DefaultPipeline implements Pipeline {
     protected AbstractHandlerContext tail;
     protected Scheduler scheduler;
     protected DrasylConfig config;
+    protected Supplier<Identity> identity;
+    protected TypeValidator validator;
 
     protected void initPointer() {
         this.head.setPrevHandlerContext(this.head);
@@ -63,7 +70,7 @@ public abstract class DefaultPipeline implements Pipeline {
         synchronized (this) {
             collisionCheck(name);
 
-            newCtx = new DefaultHandlerContext(name, handler, config, this, scheduler);
+            newCtx = new DefaultHandlerContext(name, handler, config, this, scheduler, identity, validator);
             // Set correct pointer on new context
             newCtx.setPrevHandlerContext(this.head);
             newCtx.setNextHandlerContext(this.head.getNext());
@@ -116,7 +123,7 @@ public abstract class DefaultPipeline implements Pipeline {
         synchronized (this) {
             collisionCheck(name);
 
-            newCtx = new DefaultHandlerContext(name, handler, config, this, scheduler);
+            newCtx = new DefaultHandlerContext(name, handler, config, this, scheduler, identity, validator);
             // Set correct pointer on new context
             newCtx.setPrevHandlerContext(this.tail.getPrev());
             newCtx.setNextHandlerContext(this.tail);
@@ -144,7 +151,7 @@ public abstract class DefaultPipeline implements Pipeline {
             AbstractHandlerContext baseCtx = handlerNames.get(baseName);
             Objects.requireNonNull(baseCtx);
 
-            newCtx = new DefaultHandlerContext(name, handler, config, this, scheduler);
+            newCtx = new DefaultHandlerContext(name, handler, config, this, scheduler, identity, validator);
             // Set correct pointer on new context
             newCtx.setPrevHandlerContext(baseCtx.getPrev());
             newCtx.setNextHandlerContext(baseCtx);
@@ -172,7 +179,7 @@ public abstract class DefaultPipeline implements Pipeline {
             AbstractHandlerContext baseCtx = handlerNames.get(baseName);
             Objects.requireNonNull(baseCtx);
 
-            newCtx = new DefaultHandlerContext(name, handler, config, this, scheduler);
+            newCtx = new DefaultHandlerContext(name, handler, config, this, scheduler, identity, validator);
             // Set correct pointer on new context
             newCtx.setPrevHandlerContext(baseCtx);
             newCtx.setNextHandlerContext(baseCtx.getNext());
@@ -241,7 +248,7 @@ public abstract class DefaultPipeline implements Pipeline {
             // call remove action
             removeHandlerAction(oldCtx);
 
-            newCtx = new DefaultHandlerContext(newName, newHandler, config, this, scheduler);
+            newCtx = new DefaultHandlerContext(newName, newHandler, config, this, scheduler, identity, validator);
             // Set correct pointer on new context
             newCtx.setPrevHandlerContext(prev);
             newCtx.setNextHandlerContext(next);
@@ -276,7 +283,7 @@ public abstract class DefaultPipeline implements Pipeline {
 
     @Override
     public void processInbound(ApplicationMessage msg) {
-        this.scheduler.scheduleDirect(() -> this.head.fireRead(msg));
+        this.scheduler.scheduleDirect(() -> this.head.fireRead(msg.getSender(), ObjectHolder.of(msg.getPayloadClazz(), msg.getPayload())));
     }
 
     @Override
@@ -285,10 +292,10 @@ public abstract class DefaultPipeline implements Pipeline {
     }
 
     @Override
-    public CompletableFuture<Void> processOutbound(ApplicationMessage msg) {
+    public CompletableFuture<Void> processOutbound(CompressedPublicKey recipient, Object msg) {
         CompletableFuture<Void> rtn = new CompletableFuture<>();
 
-        this.scheduler.scheduleDirect(() -> this.tail.write(msg, rtn));
+        this.scheduler.scheduleDirect(() -> this.tail.write(recipient, msg, rtn));
 
         return rtn;
     }

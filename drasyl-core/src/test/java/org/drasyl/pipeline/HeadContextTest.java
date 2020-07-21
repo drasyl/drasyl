@@ -22,7 +22,11 @@ import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.event.Event;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.pipeline.codec.ObjectHolder;
+import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.DrasylConsumer;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -54,17 +58,21 @@ class HeadContextTest {
     private Pipeline pipeline;
     @Mock
     private Scheduler scheduler;
+    @Mock
+    private Identity identity;
+    @Mock
+    private TypeValidator validator;
 
     @Test
     void shouldReturnSelfAsHandler() {
-        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler);
+        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, () -> identity, validator);
 
         assertEquals(headContext, headContext.handler());
     }
 
     @Test
     void shouldDoNothingOnHandlerAdded() {
-        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler);
+        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, () -> identity, validator);
 
         headContext.handlerAdded(ctx);
 
@@ -73,7 +81,7 @@ class HeadContextTest {
 
     @Test
     void shouldDoNothingOnHandlerRemoved() {
-        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler);
+        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, () -> identity, validator);
 
         headContext.handlerRemoved(ctx);
 
@@ -82,17 +90,18 @@ class HeadContextTest {
 
     @Test
     void shouldPassthroughsOnRead() {
-        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler);
-        ApplicationMessage msg = mock(ApplicationMessage.class);
+        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, () -> identity, validator);
+        CompressedPublicKey sender = mock(CompressedPublicKey.class);
+        Object msg = mock(Object.class);
 
-        headContext.read(ctx, msg);
+        headContext.read(ctx, sender, msg);
 
-        verify(ctx).fireRead(eq(msg));
+        verify(ctx).fireRead(eq(sender), eq(msg));
     }
 
     @Test
     void shouldPassthroughsOnEvent() {
-        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler);
+        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, () -> identity, validator);
         Event event = mock(Event.class);
 
         headContext.eventTriggered(ctx, event);
@@ -102,7 +111,7 @@ class HeadContextTest {
 
     @Test
     void shouldPassthroughsOnException() throws Exception {
-        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler);
+        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, () -> identity, validator);
         Exception exception = mock(Exception.class);
 
         headContext.exceptionCaught(ctx, exception);
@@ -112,27 +121,46 @@ class HeadContextTest {
 
     @Test
     void shouldWriteToConsumer() throws Exception {
-        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler);
-        ApplicationMessage msg = mock(ApplicationMessage.class);
+        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, () -> identity, validator);
+        CompressedPublicKey sender = mock(CompressedPublicKey.class);
+        CompressedPublicKey recipient = mock(CompressedPublicKey.class);
+        when(identity.getPublicKey()).thenReturn(sender);
+        ObjectHolder msg = ObjectHolder.of(byte[].class, new byte[]{});
         CompletableFuture<Void> future = mock(CompletableFuture.class);
 
         when(future.isDone()).thenReturn(false);
 
-        headContext.write(ctx, msg, future);
+        headContext.write(ctx, recipient, msg, future);
 
-        verify(outboundConsumer).accept(eq(msg));
+        verify(outboundConsumer).accept(eq(new ApplicationMessage(sender, recipient, msg.getObject(), msg.getClazz())));
         verify(future).complete(null);
     }
 
     @Test
-    void shouldNotWriteToConsumerWhenFutureIsDone() throws Exception {
-        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler);
+    void shouldNotWriteToConsumerIfTypeIsNotByteArray() {
+        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, () -> identity, validator);
+        CompressedPublicKey recipient = mock(CompressedPublicKey.class);
+        Object msg = mock(Object.class);
+        CompletableFuture<Void> future = mock(CompletableFuture.class);
+
+        when(future.isDone()).thenReturn(false);
+
+        headContext.write(ctx, recipient, msg, future);
+
+        verifyNoInteractions(outboundConsumer);
+        verify(future).completeExceptionally(isA(IllegalArgumentException.class));
+    }
+
+    @Test
+    void shouldNotWriteToConsumerWhenFutureIsDone() {
+        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, () -> identity, validator);
+        CompressedPublicKey recipient = mock(CompressedPublicKey.class);
         ApplicationMessage msg = mock(ApplicationMessage.class);
         CompletableFuture<Void> future = mock(CompletableFuture.class);
 
         when(future.isDone()).thenReturn(true);
 
-        headContext.write(ctx, msg, future);
+        headContext.write(ctx, recipient, msg, future);
 
         verifyNoInteractions(outboundConsumer);
         verify(future, never()).complete(null);
@@ -140,16 +168,19 @@ class HeadContextTest {
 
     @Test
     void shouldCompleteFutureExceptionallyIfExceptionOccursOnWrite() throws Exception {
-        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler);
-        ApplicationMessage msg = mock(ApplicationMessage.class);
+        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, () -> identity, validator);
+        CompressedPublicKey sender = mock(CompressedPublicKey.class);
+        CompressedPublicKey recipient = mock(CompressedPublicKey.class);
+        when(identity.getPublicKey()).thenReturn(sender);
+        ObjectHolder msg = ObjectHolder.of(byte[].class, new byte[]{});
         CompletableFuture<Void> future = mock(CompletableFuture.class);
 
         doThrow(DrasylException.class).when(outboundConsumer).accept(any());
         when(future.isDone()).thenReturn(false);
 
-        headContext.write(ctx, msg, future);
+        headContext.write(ctx, recipient, msg, future);
 
-        verify(outboundConsumer).accept(eq(msg));
+        verify(outboundConsumer).accept(eq(new ApplicationMessage(sender, recipient, msg.getObject(), msg.getClazz())));
         verify(future, never()).complete(null);
         verify(future).completeExceptionally(isA(Exception.class));
     }

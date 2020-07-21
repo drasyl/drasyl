@@ -21,7 +21,9 @@ package org.drasyl.pipeline;
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
-import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
+import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.DrasylScheduler;
 
 import java.util.concurrent.CompletableFuture;
@@ -56,13 +58,13 @@ public interface HandlerContext {
     /**
      * Received a message.
      * <p>
-     * This will result in having the {@link InboundHandler#read(HandlerContext,
-     * ApplicationMessage)} method  called of the next {@link InboundHandler} contained in the
-     * {@link Pipeline}.
+     * This will result in having the {@link InboundHandler#read(HandlerContext, Object)} method
+     * called of the next {@link InboundHandler} contained in the {@link Pipeline}.
      *
-     * @param msg the message
+     * @param sender the sender of the message
+     * @param msg    the message
      */
-    HandlerContext fireRead(ApplicationMessage msg);
+    HandlerContext fireRead(CompressedPublicKey sender, Object msg);
 
     /**
      * Received an event.
@@ -77,16 +79,20 @@ public interface HandlerContext {
     /**
      * Request to write a message via this {@link HandlerContext} through the {@link Pipeline}.
      *
-     * @param msg the message
+     * @param recipient the recipient of the message
+     * @param msg       the message
      */
-    CompletableFuture<Void> write(ApplicationMessage msg);
+    CompletableFuture<Void> write(CompressedPublicKey recipient, Object msg);
 
     /**
      * Request to write a message via this {@link HandlerContext} through the {@link Pipeline}.
      *
-     * @param msg the message
+     * @param recipient the recipient of the message
+     * @param msg       the message
      */
-    CompletableFuture<Void> write(ApplicationMessage msg, CompletableFuture<Void> future);
+    CompletableFuture<Void> write(CompressedPublicKey recipient,
+                                  Object msg,
+                                  CompletableFuture<Void> future);
 
     /**
      * @return the corresponding {@link DrasylConfig}
@@ -105,4 +111,14 @@ public interface HandlerContext {
      * @return the corresponding {@link Scheduler}
      */
     Scheduler scheduler();
+
+    /**
+     * @return the identity of this node
+     */
+    Identity identity();
+
+    /**
+     * @return the type validator
+     */
+    TypeValidator validator();
 }

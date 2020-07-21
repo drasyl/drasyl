@@ -11,9 +11,9 @@ import static java.util.Objects.requireNonNull;
  * This event signals that the node has received a message addressed to it.
  */
 public class MessageEvent implements Event {
-    private final Pair<CompressedPublicKey, byte[]> message;
+    private final Pair<CompressedPublicKey, Object> message;
 
-    public MessageEvent(Pair<CompressedPublicKey, byte[]> message) {
+    public MessageEvent(Pair<CompressedPublicKey, Object> message) {
         this.message = requireNonNull(message);
     }
 
@@ -21,7 +21,7 @@ public class MessageEvent implements Event {
      * @return a pair containing the sender's public key as first element and the message payload as
      * second element.
      */
-    public Pair<CompressedPublicKey, byte[]> getMessage() {
+    public Pair<CompressedPublicKey, Object> getMessage() {
         return message;
     }
 

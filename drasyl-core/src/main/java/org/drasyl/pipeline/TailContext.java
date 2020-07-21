@@ -22,13 +22,16 @@ import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
-import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
+import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
+import java.util.function.Supplier;
 
 /**
  * Special class that represents the tail of a {@link Pipeline}. This class can not be removed from
@@ -42,8 +45,10 @@ class TailContext extends AbstractHandlerContext implements InboundHandler, Outb
     public TailContext(Consumer<Event> eventConsumer,
                        DrasylConfig config,
                        Pipeline pipeline,
-                       Scheduler scheduler) {
-        super(DRASYL_TAIL_HANDLER, config, pipeline, scheduler);
+                       Scheduler scheduler,
+                       Supplier<Identity> identity,
+                       TypeValidator validator) {
+        super(DRASYL_TAIL_HANDLER, config, pipeline, scheduler, identity, validator);
         this.eventConsumer = eventConsumer;
     }
 
@@ -53,9 +58,9 @@ class TailContext extends AbstractHandlerContext implements InboundHandler, Outb
     }
 
     @Override
-    public void read(HandlerContext ctx, ApplicationMessage msg) {
+    public void read(HandlerContext ctx, CompressedPublicKey sender, Object msg) {
         // Pass message to Application
-        eventConsumer.accept(new MessageEvent(Pair.of(msg.getSender(), msg.getPayload())));
+        eventConsumer.accept(new MessageEvent(Pair.of(sender, msg)));
     }
 
     @Override
@@ -71,9 +76,10 @@ class TailContext extends AbstractHandlerContext implements InboundHandler, Outb
 
     @Override
     public void write(HandlerContext ctx,
-                      ApplicationMessage msg,
+                      CompressedPublicKey recipient,
+                      Object msg,
                       CompletableFuture<Void> future) {
-        ctx.write(msg, future);
+        ctx.write(recipient, msg, future);
     }
 
     @Override

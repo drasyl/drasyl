@@ -21,6 +21,7 @@ package org.drasyl.pipeline;
 import io.netty.util.internal.TypeParameterMatcher;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 
 /**
@@ -66,14 +67,14 @@ public abstract class SimpleInboundHandler<I, E> extends InboundHandlerAdapter {
     }
 
     @Override
-    public void read(HandlerContext ctx, ApplicationMessage msg) {
+    public void read(HandlerContext ctx, CompressedPublicKey sender, Object msg) {
         if (acceptInbound(msg)) {
             @SuppressWarnings("unchecked")
             I castedMsg = (I) msg;
-            matchedRead(ctx, castedMsg);
+            matchedRead(ctx, sender, castedMsg);
         }
         else {
-            ctx.fireRead(msg);
+            ctx.fireRead(sender, msg);
         }
     }
 
@@ -109,15 +110,16 @@ public abstract class SimpleInboundHandler<I, E> extends InboundHandlerAdapter {
      * Returns {@code true} if the given message should be handled. If {@code false} it will be
      * passed to the next {@link InboundHandler} in the {@link Pipeline}.
      */
-    protected boolean acceptInbound(ApplicationMessage msg) {
+    protected boolean acceptInbound(Object msg) {
         return matcherMessage.match(msg);
     }
 
     /**
      * Is called for each message of type {@link I}.
      *
-     * @param ctx handler context
-     * @param msg the message
+     * @param ctx    handler context
+     * @param sender the sender of the message
+     * @param msg    the message
      */
-    protected abstract void matchedRead(HandlerContext ctx, I msg);
+    protected abstract void matchedRead(HandlerContext ctx, CompressedPublicKey sender, I msg);
 }
