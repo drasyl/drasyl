@@ -30,14 +30,13 @@ import org.drasyl.peer.connection.PeerChannelGroup;
 import java.net.URI;
 import java.time.Duration;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 /**
  * This class encapsulates all information needed by a {@link ClientChannelInitializer}.
  */
 public class ClientEnvironment {
     private final DrasylConfig config;
-    private final Supplier<Identity> identitySupplier;
+    private final Identity identity;
     private final URI endpoint;
     private final Messenger messenger;
 
@@ -53,7 +52,7 @@ public class ClientEnvironment {
     private final Consumer<CompressedPublicKey> peerCommunicationConsumer;
 
     public ClientEnvironment(DrasylConfig config,
-                             Supplier<Identity> identitySupplier,
+                             Identity identity,
                              URI endpoint,
                              Messenger messenger,
                              PeerChannelGroup channelGroup,
@@ -67,7 +66,7 @@ public class ClientEnvironment {
                              Duration handshakeTimeout,
                              Consumer<CompressedPublicKey> peerCommunicationConsumer) {
         this.config = config;
-        this.identitySupplier = identitySupplier;
+        this.identity = identity;
         this.endpoint = endpoint;
         this.messenger = messenger;
         this.channelGroup = channelGroup;
@@ -91,7 +90,7 @@ public class ClientEnvironment {
     }
 
     public Identity getIdentity() {
-        return identitySupplier.get();
+        return identity;
     }
 
     public Messenger getMessenger() {

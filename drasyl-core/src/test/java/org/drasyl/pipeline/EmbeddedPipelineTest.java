@@ -51,7 +51,7 @@ class EmbeddedPipelineTest {
 
     @Test
     void shouldReturnInboundMessagesAndEvents() {
-        EmbeddedPipeline pipeline = new EmbeddedPipeline(() -> identity, TypeValidator.of(config), DefaultCodec.INSTANCE, new InboundHandlerAdapter(), new OutboundHandlerAdapter());
+        EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), DefaultCodec.INSTANCE, new InboundHandlerAdapter(), new OutboundHandlerAdapter());
         TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
         TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
         TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
@@ -88,7 +88,7 @@ class EmbeddedPipelineTest {
 
     @Test
     void shouldReturnOutboundMessages() {
-        EmbeddedPipeline pipeline = new EmbeddedPipeline(() -> identity, TypeValidator.of(config), DefaultCodec.INSTANCE, new InboundHandlerAdapter(), new OutboundHandlerAdapter());
+        EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), DefaultCodec.INSTANCE, new InboundHandlerAdapter(), new OutboundHandlerAdapter());
         TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
         TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
         TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();

@@ -15,7 +15,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.aMapWithSize;
@@ -27,7 +26,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class IntraVmDiscoveryTest {
     @Mock
-    private Supplier<CompressedPublicKey> identitySupplier;
+    private CompressedPublicKey publicKey;
     @Mock
     private Messenger messenger;
     @Mock
@@ -41,7 +40,7 @@ class IntraVmDiscoveryTest {
     class Open {
         @Test
         void shouldSetMessageSink() {
-            try (IntraVmDiscovery underTest = new IntraVmDiscovery(identitySupplier, messenger, peersManager, path, peerInformation, new AtomicBoolean(false))) {
+            try (IntraVmDiscovery underTest = new IntraVmDiscovery(publicKey, messenger, peersManager, path, peerInformation, new AtomicBoolean(false))) {
                 underTest.open();
 
                 verify(messenger).setIntraVmSink(any());
@@ -50,7 +49,7 @@ class IntraVmDiscoveryTest {
 
         @Test
         void shouldAddToDiscoveries() {
-            try (IntraVmDiscovery underTest = new IntraVmDiscovery(identitySupplier, messenger, peersManager, path, peerInformation, new AtomicBoolean(false))) {
+            try (IntraVmDiscovery underTest = new IntraVmDiscovery(publicKey, messenger, peersManager, path, peerInformation, new AtomicBoolean(false))) {
                 underTest.open();
 
                 assertThat(IntraVmDiscovery.discoveries, aMapWithSize(1));
@@ -62,7 +61,7 @@ class IntraVmDiscoveryTest {
     class Close {
         @Test
         void shouldRemoveMessageSink() {
-            try (IntraVmDiscovery underTest = new IntraVmDiscovery(identitySupplier, messenger, peersManager, path, peerInformation, new AtomicBoolean(true))) {
+            try (IntraVmDiscovery underTest = new IntraVmDiscovery(publicKey, messenger, peersManager, path, peerInformation, new AtomicBoolean(true))) {
                 underTest.close();
 
                 verify(messenger).unsetIntraVmSink();
@@ -71,7 +70,7 @@ class IntraVmDiscoveryTest {
 
         @Test
         void shouldRemovePeerInformation() {
-            try (IntraVmDiscovery underTest = new IntraVmDiscovery(identitySupplier, messenger, peersManager, path, peerInformation, new AtomicBoolean(true))) {
+            try (IntraVmDiscovery underTest = new IntraVmDiscovery(publicKey, messenger, peersManager, path, peerInformation, new AtomicBoolean(true))) {
                 underTest.close();
 
                 assertThat(IntraVmDiscovery.discoveries, aMapWithSize(0));
@@ -87,12 +86,10 @@ class IntraVmDiscoveryTest {
         }
 
         @Test
-        void shouldPassMessageToPathForKnownRecipient(@Mock RelayableMessage message,
-                                                     @Mock CompressedPublicKey publicKey) throws MessageSinkException {
+        void shouldPassMessageToPathForKnownRecipient(@Mock RelayableMessage message) throws MessageSinkException {
             when(message.getRecipient()).thenReturn(publicKey);
-            when(identitySupplier.get()).thenReturn(publicKey);
 
-            try (IntraVmDiscovery underTest = new IntraVmDiscovery(identitySupplier, messenger, peersManager, path, peerInformation, new AtomicBoolean(false))) {
+            try (IntraVmDiscovery underTest = new IntraVmDiscovery(publicKey, messenger, peersManager, path, peerInformation, new AtomicBoolean(false))) {
                 underTest.open();
                 IntraVmDiscovery.MESSAGE_SINK.send(message);
 

@@ -42,12 +42,11 @@ import org.drasyl.peer.connection.superpeer.TestClientChannelInitializer;
 import java.net.URI;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 
 import static org.awaitility.Awaitility.await;
 
 public class TestSuperPeerClient extends SuperPeerClient {
-    private final Supplier<Identity> identitySupplier;
+    private final Identity identity;
     private final Subject<Event> receivedEvents;
 
     public TestSuperPeerClient(DrasylConfig config,
@@ -56,21 +55,21 @@ public class TestSuperPeerClient extends SuperPeerClient {
                                boolean doPingPong,
                                boolean doJoin,
                                Set<URI> endpoints) {
-        this(DrasylConfig.newBuilder(config).superPeerEnabled(true).superPeerEndpoints(endpoints).build(), () -> identity, new PeerChannelGroup(), workerGroup, ReplaySubject.create(), doPingPong, doJoin);
+        this(DrasylConfig.newBuilder(config).superPeerEnabled(true).superPeerEndpoints(endpoints).build(), identity, new PeerChannelGroup(), workerGroup, ReplaySubject.create(), doPingPong, doJoin);
     }
 
     private TestSuperPeerClient(DrasylConfig config,
-                                Supplier<Identity> identitySupplier,
+                                Identity identity,
                                 PeerChannelGroup channelGroup,
                                 EventLoopGroup workerGroup,
                                 Subject<Event> receivedEvents,
                                 boolean doPingPong,
                                 boolean doJoin) {
-        this(config, identitySupplier, workerGroup, receivedEvents, new PeersManager(receivedEvents::onNext), channelGroup, BehaviorSubject.createDefault(false), doPingPong, doJoin);
+        this(config, identity, workerGroup, receivedEvents, new PeersManager(receivedEvents::onNext), channelGroup, BehaviorSubject.createDefault(false), doPingPong, doJoin);
     }
 
     private TestSuperPeerClient(DrasylConfig config,
-                                Supplier<Identity> identitySupplier,
+                                Identity identity,
                                 EventLoopGroup workerGroup,
                                 Subject<Event> receivedEvents,
                                 PeersManager peersManager,
@@ -78,10 +77,10 @@ public class TestSuperPeerClient extends SuperPeerClient {
                                 Subject<Boolean> connected,
                                 boolean doPingPong,
                                 boolean doJoin) {
-        super(config, workerGroup, connected, endpoint -> new TestClientChannelInitializer(new ClientEnvironment(config, identitySupplier, endpoint, new Messenger((message -> {
+        super(config, workerGroup, connected, endpoint -> new TestClientChannelInitializer(new ClientEnvironment(config, identity, endpoint, new Messenger((message -> {
         }), peersManager, channelGroup), channelGroup, peersManager, connected, receivedEvents::onNext, true, config.getSuperPeerPublicKey(), config.getSuperPeerIdleRetries(), config.getSuperPeerIdleTimeout(), config.getSuperPeerHandshakeTimeout(), publicKey -> {
         }), doPingPong, doJoin), () -> true);
-        this.identitySupplier = identitySupplier;
+        this.identity = identity;
         this.receivedEvents = receivedEvents;
     }
 
@@ -112,7 +111,7 @@ public class TestSuperPeerClient extends SuperPeerClient {
     }
 
     public Identity getIdentity() {
-        return identitySupplier.get();
+        return identity;
     }
 
     public CompletableFuture<ResponseMessage<?>> sendRequest(RequestMessage request) {

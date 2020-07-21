@@ -27,7 +27,6 @@ import io.netty.channel.nio.NioEventLoopGroup;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.sentry.Sentry;
-import io.sentry.event.User;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.Node;
@@ -36,8 +35,8 @@ import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
-import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.messenger.MessageSinkException;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.messenger.MessengerException;
@@ -122,7 +121,7 @@ public abstract class DrasylNode {
     }
 
     private final DrasylConfig config;
-    private final IdentityManager identityManager;
+    private final Identity identity;
     private final PeersManager peersManager;
     private final PeerChannelGroup channelGroup;
     private final Messenger messenger;
@@ -150,18 +149,20 @@ public abstract class DrasylNode {
     public DrasylNode(DrasylConfig config) throws DrasylException {
         try {
             this.config = config;
-            this.identityManager = new IdentityManager(this.config);
+            IdentityManager identityManager = new IdentityManager(this.config);
+            identityManager.loadOrCreateIdentity();
+            this.identity = identityManager.getIdentity();
             this.peersManager = new PeersManager(this::onInternalEvent);
             this.channelGroup = new PeerChannelGroup();
             this.messenger = new Messenger(this::messageSink, peersManager, channelGroup);
             this.endpoints = new HashSet<>();
             this.acceptNewConnections = new AtomicBoolean();
-            this.pipeline = new DrasylPipeline(this::onEvent, messenger::send, config, identityManager::getIdentity);
+            this.pipeline = new DrasylPipeline(this::onEvent, messenger::send, config, identity);
             this.components = new ArrayList<>();
             this.components.add(new PluginManager(pipeline, config));
             Consumer<CompressedPublicKey> communicationOccurredConsumer;
             if (config.areDirectConnectionsEnabled()) {
-                DirectConnectionsManager directConnectionsManager = new DirectConnectionsManager(config, identityManager, peersManager, messenger, pipeline, channelGroup, DrasylNode.WORKER_GROUP, this::onInternalEvent, acceptNewConnections::get, endpoints);
+                DirectConnectionsManager directConnectionsManager = new DirectConnectionsManager(config, identity, peersManager, messenger, pipeline, channelGroup, DrasylNode.WORKER_GROUP, this::onInternalEvent, acceptNewConnections::get, endpoints);
                 communicationOccurredConsumer = directConnectionsManager::communicationOccurred;
                 this.components.add(directConnectionsManager);
             }
@@ -170,12 +171,12 @@ public abstract class DrasylNode {
                 };
             }
             if (config.isIntraVmDiscoveryEnabled()) {
-                IntraVmDiscovery intraVmDiscovery = new IntraVmDiscovery(identityManager::getPublicKey, messenger, peersManager, this::onInternalEvent);
+                IntraVmDiscovery intraVmDiscovery = new IntraVmDiscovery(identity.getPublicKey(), messenger, peersManager, this::onInternalEvent);
                 this.components.add(intraVmDiscovery);
             }
             Observable<Boolean> superPeerConnected;
             if (config.isSuperPeerEnabled()) {
-                SuperPeerClient superPeerClient = new SuperPeerClient(this.config, identityManager::getIdentity, peersManager, messenger, channelGroup, DrasylNode.WORKER_GROUP, this::onInternalEvent, communicationOccurredConsumer, acceptNewConnections::get);
+                SuperPeerClient superPeerClient = new SuperPeerClient(this.config, identity, peersManager, messenger, channelGroup, DrasylNode.WORKER_GROUP, this::onInternalEvent, communicationOccurredConsumer, acceptNewConnections::get);
                 superPeerConnected = superPeerClient.connectionEstablished();
                 this.components.add(superPeerClient);
             }
@@ -187,7 +188,7 @@ public abstract class DrasylNode {
                 this.components.add(server);
             }
             if (config.isMonitoringEnabled()) {
-                this.components.add(new Monitoring(config, peersManager, identityManager::getPublicKey, pipeline));
+                this.components.add(new Monitoring(config, peersManager, identity.getPublicKey(), pipeline));
             }
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
@@ -215,7 +216,7 @@ public abstract class DrasylNode {
     void messageSink(RelayableMessage message) throws MessageSinkException {
         CompressedPublicKey recipient = message.getRecipient();
 
-        if (!identityManager.getPublicKey().equals(recipient)) {
+        if (!identity.getPublicKey().equals(recipient)) {
             throw new NoPathToIdentityException(recipient);
         }
 
@@ -228,7 +229,7 @@ public abstract class DrasylNode {
             WhoisMessage whoisMessage = (WhoisMessage) message;
             peersManager.setPeerInformation(whoisMessage.getRequester(), whoisMessage.getPeerInformation());
 
-            CompressedPublicKey myPublicKey = identityManager.getPublicKey();
+            CompressedPublicKey myPublicKey = identity.getPublicKey();
             PeerInformation myPeerInformation = PeerInformation.of(endpoints);
             IdentityMessage identityMessage = new IdentityMessage(whoisMessage.getRequester(), myPublicKey, myPeerInformation, whoisMessage.getId());
 
@@ -275,7 +276,7 @@ public abstract class DrasylNode {
     }
 
     DrasylNode(DrasylConfig config,
-               IdentityManager identityManager,
+               Identity identity,
                PeersManager peersManager,
                PeerChannelGroup channelGroup,
                Messenger messenger,
@@ -287,7 +288,7 @@ public abstract class DrasylNode {
                CompletableFuture<Void> startSequence,
                CompletableFuture<Void> shutdownSequence) {
         this.config = config;
-        this.identityManager = identityManager;
+        this.identity = identity;
         this.peersManager = peersManager;
         this.messenger = messenger;
         this.endpoints = endpoints;
@@ -383,8 +384,8 @@ public abstract class DrasylNode {
     public CompletableFuture<Void> shutdown() {
         if (started.compareAndSet(true, false)) {
             DrasylNode self = this;
-            onInternalEvent(new NodeDownEvent(Node.of(identityManager.getIdentity(), endpoints)));
-            LOG.info("Shutdown drasyl Node with Identity '{}'...", identityManager.getIdentity());
+            onInternalEvent(new NodeDownEvent(Node.of(identity, endpoints)));
+            LOG.info("Shutdown drasyl Node with Identity '{}'...", identity);
             shutdownSequence = new CompletableFuture<>();
             getInstanceHeavy().scheduleDirect(() -> {
                 rejectNewConnections();
@@ -393,8 +394,8 @@ public abstract class DrasylNode {
                     components.get(i).close();
                 }
 
-                onInternalEvent(new NodeNormalTerminationEvent(Node.of(identityManager.getIdentity(), endpoints)));
-                LOG.info("drasyl Node with Identity '{}' has shut down", identityManager.getIdentity());
+                onInternalEvent(new NodeNormalTerminationEvent(Node.of(identity, endpoints)));
+                LOG.info("drasyl Node with Identity '{}' has shut down", identity);
                 shutdownSequence.complete(null);
                 INSTANCES.remove(self);
             });
@@ -436,18 +437,17 @@ public abstract class DrasylNode {
             startSequence = new CompletableFuture<>();
             getInstanceHeavy().scheduleDirect(() -> {
                 try {
-                    loadIdentity();
                     for (int i = 0; i < components.size(); i++) {
                         components.get(i).open();
                     }
                     acceptNewConnections();
 
-                    onInternalEvent(new NodeUpEvent(Node.of(identityManager.getIdentity(), endpoints)));
-                    LOG.info("drasyl Node with Identity '{}' has started", identityManager.getIdentity());
+                    onInternalEvent(new NodeUpEvent(Node.of(identity, endpoints)));
+                    LOG.info("drasyl Node with Identity '{}' has started", identity);
                     startSequence.complete(null);
                 }
                 catch (DrasylException e) {
-                    onInternalEvent(new NodeUnrecoverableErrorEvent(Node.of(identityManager.getIdentity(), endpoints), e));
+                    onInternalEvent(new NodeUnrecoverableErrorEvent(Node.of(identity, endpoints), e));
                     LOG.info("Could not start drasyl Node: {}", e.getMessage());
                     LOG.info("Stop all running components...");
 
@@ -486,12 +486,6 @@ public abstract class DrasylNode {
         }
     }
 
-    private void loadIdentity() throws IdentityManagerException {
-        identityManager.loadOrCreateIdentity();
-        LOG.debug("Using Identity '{}'", identityManager.getIdentity());
-        Sentry.getContext().setUser(new User(identityManager.getPublicKey().toString(), null, null, null));
-    }
-
     /**
      * Returns the {@link Pipeline} to allow users to add own handlers.
      *
@@ -499,6 +493,13 @@ public abstract class DrasylNode {
      */
     public Pipeline pipeline() {
         return this.pipeline;
+    }
+
+    /**
+     * @return the {@link Identity} of this node
+     */
+    public Identity identity() {
+        return identity;
     }
 
     /**

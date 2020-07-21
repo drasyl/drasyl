@@ -65,14 +65,14 @@ class HeadContextTest {
 
     @Test
     void shouldReturnSelfAsHandler() {
-        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, () -> identity, validator);
+        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, identity, validator);
 
         assertEquals(headContext, headContext.handler());
     }
 
     @Test
     void shouldDoNothingOnHandlerAdded() {
-        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, () -> identity, validator);
+        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, identity, validator);
 
         headContext.handlerAdded(ctx);
 
@@ -81,7 +81,7 @@ class HeadContextTest {
 
     @Test
     void shouldDoNothingOnHandlerRemoved() {
-        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, () -> identity, validator);
+        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, identity, validator);
 
         headContext.handlerRemoved(ctx);
 
@@ -90,7 +90,7 @@ class HeadContextTest {
 
     @Test
     void shouldPassthroughsOnRead() {
-        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, () -> identity, validator);
+        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, identity, validator);
         CompressedPublicKey sender = mock(CompressedPublicKey.class);
         Object msg = mock(Object.class);
 
@@ -101,7 +101,7 @@ class HeadContextTest {
 
     @Test
     void shouldPassthroughsOnEvent() {
-        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, () -> identity, validator);
+        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, identity, validator);
         Event event = mock(Event.class);
 
         headContext.eventTriggered(ctx, event);
@@ -111,7 +111,7 @@ class HeadContextTest {
 
     @Test
     void shouldPassthroughsOnException() throws Exception {
-        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, () -> identity, validator);
+        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, identity, validator);
         Exception exception = mock(Exception.class);
 
         headContext.exceptionCaught(ctx, exception);
@@ -121,7 +121,7 @@ class HeadContextTest {
 
     @Test
     void shouldWriteToConsumer() throws Exception {
-        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, () -> identity, validator);
+        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, identity, validator);
         CompressedPublicKey sender = mock(CompressedPublicKey.class);
         CompressedPublicKey recipient = mock(CompressedPublicKey.class);
         when(identity.getPublicKey()).thenReturn(sender);
@@ -138,7 +138,7 @@ class HeadContextTest {
 
     @Test
     void shouldNotWriteToConsumerIfTypeIsNotByteArray() {
-        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, () -> identity, validator);
+        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, identity, validator);
         CompressedPublicKey recipient = mock(CompressedPublicKey.class);
         Object msg = mock(Object.class);
         CompletableFuture<Void> future = mock(CompletableFuture.class);
@@ -153,7 +153,7 @@ class HeadContextTest {
 
     @Test
     void shouldNotWriteToConsumerWhenFutureIsDone() {
-        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, () -> identity, validator);
+        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, identity, validator);
         CompressedPublicKey recipient = mock(CompressedPublicKey.class);
         ApplicationMessage msg = mock(ApplicationMessage.class);
         CompletableFuture<Void> future = mock(CompletableFuture.class);
@@ -168,7 +168,7 @@ class HeadContextTest {
 
     @Test
     void shouldCompleteFutureExceptionallyIfExceptionOccursOnWrite() throws Exception {
-        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, () -> identity, validator);
+        HeadContext headContext = new HeadContext(outboundConsumer, config, pipeline, scheduler, identity, validator);
         CompressedPublicKey sender = mock(CompressedPublicKey.class);
         CompressedPublicKey recipient = mock(CompressedPublicKey.class);
         when(identity.getPublicKey()).thenReturn(sender);

@@ -39,7 +39,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 /**
  * Uses shared memory to discover other drasyl nodes running on same JVM.
@@ -59,19 +58,19 @@ public class IntraVmDiscovery implements DrasylNodeComponent {
     };
     private static final ReadWriteLock lock = new ReentrantReadWriteLock(true);
     private final Path path;
-    private final Supplier<CompressedPublicKey> identitySupplier;
+    private final CompressedPublicKey publicKey;
     private final PeersManager peersManager;
     private final PeerInformation peerInformation;
     private final Messenger messenger;
     private final AtomicBoolean opened;
 
     @SuppressWarnings({ "java:S1905" })
-    public IntraVmDiscovery(Supplier<CompressedPublicKey> identitySupplier,
+    public IntraVmDiscovery(CompressedPublicKey publicKey,
                             Messenger messenger,
                             PeersManager peersManager,
                             Consumer<Event> eventConsumer) {
         this(
-                identitySupplier,
+                publicKey,
                 messenger,
                 peersManager,
                 (Path) message -> {
@@ -85,20 +84,20 @@ public class IntraVmDiscovery implements DrasylNodeComponent {
         );
     }
 
-    public IntraVmDiscovery(Supplier<CompressedPublicKey> identitySupplier,
+    public IntraVmDiscovery(CompressedPublicKey publicKey,
                             Messenger messenger,
                             PeersManager peersManager,
                             Path path) {
-        this(identitySupplier, messenger, peersManager, path, PeerInformation.of(), new AtomicBoolean(false));
+        this(publicKey, messenger, peersManager, path, PeerInformation.of(), new AtomicBoolean(false));
     }
 
-    IntraVmDiscovery(Supplier<CompressedPublicKey> identitySupplier,
+    IntraVmDiscovery(CompressedPublicKey publicKey,
                      Messenger messenger,
                      PeersManager peersManager,
                      Path path,
                      PeerInformation peerInformation,
                      AtomicBoolean opened) {
-        this.identitySupplier = identitySupplier;
+        this.publicKey = publicKey;
         this.peersManager = peersManager;
         this.opened = opened;
         this.peerInformation = peerInformation;
@@ -118,10 +117,10 @@ public class IntraVmDiscovery implements DrasylNodeComponent {
 
                 // store peer information
                 discoveries.values().forEach(d -> {
-                    d.peersManager.setPeerInformationAndAddPath(identitySupplier.get(), peerInformation, path);
-                    peersManager.setPeerInformationAndAddPath(d.identitySupplier.get(), d.peerInformation, d.path);
+                    d.peersManager.setPeerInformationAndAddPath(publicKey, peerInformation, path);
+                    peersManager.setPeerInformationAndAddPath(d.publicKey, d.peerInformation, d.path);
                 });
-                discoveries.put(identitySupplier.get(), this);
+                discoveries.put(publicKey, this);
             }
             LOG.debug("Intra VM Discovery started.");
         }
@@ -141,10 +140,10 @@ public class IntraVmDiscovery implements DrasylNodeComponent {
                 messenger.unsetIntraVmSink();
 
                 // remove peer information
-                discoveries.remove(identitySupplier.get());
+                discoveries.remove(publicKey);
                 discoveries.values().forEach(d -> {
-                    d.peersManager.removePath(identitySupplier.get(), path);
-                    peersManager.removePath(d.identitySupplier.get(), path);
+                    d.peersManager.removePath(publicKey, path);
+                    peersManager.removePath(d.publicKey, path);
                 });
             }
             LOG.info("Intra VM Discovery stopped.");

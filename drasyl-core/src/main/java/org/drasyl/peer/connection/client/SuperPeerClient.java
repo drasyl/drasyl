@@ -97,7 +97,7 @@ public class SuperPeerClient extends AbstractClient {
     }
 
     public SuperPeerClient(DrasylConfig config,
-                           Supplier<Identity> identitySupplier,
+                           Identity identity,
                            PeersManager peersManager,
                            Messenger messenger,
                            PeerChannelGroup channelGroup,
@@ -107,7 +107,7 @@ public class SuperPeerClient extends AbstractClient {
                            BooleanSupplier acceptNewConnectionsSupplier) {
         this(
                 config,
-                identitySupplier,
+                identity,
                 peersManager,
                 messenger,
                 channelGroup,
@@ -120,7 +120,7 @@ public class SuperPeerClient extends AbstractClient {
     }
 
     private SuperPeerClient(DrasylConfig config,
-                            Supplier<Identity> identitySupplier,
+                            Identity identity,
                             PeersManager peersManager,
                             Messenger messenger,
                             PeerChannelGroup channelGroup,
@@ -134,7 +134,7 @@ public class SuperPeerClient extends AbstractClient {
                 workerGroup,
                 config::getSuperPeerEndpoints,
                 connected,
-                endpoint -> initiateChannelInitializer(new ClientEnvironment(config, identitySupplier, endpoint, messenger, channelGroup, peersManager, connected, eventConsumer, true, config.getSuperPeerPublicKey(), config.getSuperPeerIdleRetries(), config.getSuperPeerIdleTimeout(), config.getSuperPeerHandshakeTimeout(), peerCommunicationConsumer), config.getSuperPeerChannelInitializer()),
+                endpoint -> initiateChannelInitializer(new ClientEnvironment(config, identity, endpoint, messenger, channelGroup, peersManager, connected, eventConsumer, true, config.getSuperPeerPublicKey(), config.getSuperPeerIdleRetries(), config.getSuperPeerIdleTimeout(), config.getSuperPeerHandshakeTimeout(), peerCommunicationConsumer), config.getSuperPeerChannelInitializer()),
                 acceptNewConnectionsSupplier
         );
     }

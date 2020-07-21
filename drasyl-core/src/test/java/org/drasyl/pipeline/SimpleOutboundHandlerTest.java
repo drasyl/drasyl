@@ -67,7 +67,7 @@ class SimpleOutboundHandlerTest {
             }
         };
 
-        EmbeddedPipeline pipeline = new EmbeddedPipeline(() -> identity, TypeValidator.of(config), DefaultCodec.INSTANCE, handler);
+        EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), DefaultCodec.INSTANCE, handler);
         TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
         TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
 
@@ -91,7 +91,7 @@ class SimpleOutboundHandlerTest {
             }
         };
 
-        EmbeddedPipeline pipeline = new EmbeddedPipeline(() -> identity, TypeValidator.of(config), DefaultCodec.INSTANCE, handler);
+        EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), DefaultCodec.INSTANCE, handler);
         TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
         TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
 

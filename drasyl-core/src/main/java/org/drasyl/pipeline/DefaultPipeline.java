@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.concurrent.CompletableFuture;
-import java.util.function.Supplier;
 
 /**
  * Abstract {@link Pipeline} implementation, that needs head and tail.
@@ -45,7 +44,7 @@ public abstract class DefaultPipeline implements Pipeline {
     protected AbstractHandlerContext tail;
     protected Scheduler scheduler;
     protected DrasylConfig config;
-    protected Supplier<Identity> identity;
+    protected Identity identity;
     protected TypeValidator validator;
 
     protected void initPointer() {

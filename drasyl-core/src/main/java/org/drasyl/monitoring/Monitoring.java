@@ -34,7 +34,7 @@ public class Monitoring implements DrasylNodeComponent {
     private static final Logger LOG = LoggerFactory.getLogger(Monitoring.class);
     static final String MONITORING_HANDLER = "MONITORING_HANDLER";
     private final PeersManager peersManager;
-    private final Supplier<CompressedPublicKey> publicKeySupplier;
+    private final CompressedPublicKey publicKey;
     private final DrasylPipeline pipeline;
     private final AtomicBoolean opened;
     private final Supplier<MeterRegistry> registrySupplier;
@@ -42,11 +42,11 @@ public class Monitoring implements DrasylNodeComponent {
 
     public Monitoring(DrasylConfig config,
                       PeersManager peersManager,
-                      Supplier<CompressedPublicKey> publicKeySupplier,
+                      CompressedPublicKey publicKey,
                       DrasylPipeline pipeline) {
         this(
                 peersManager,
-                publicKeySupplier,
+                publicKey,
                 pipeline,
                 () -> new InfluxMeterRegistry(new InfluxConfig() {
                     @Override
@@ -89,13 +89,13 @@ public class Monitoring implements DrasylNodeComponent {
     }
 
     Monitoring(PeersManager peersManager,
-               Supplier<CompressedPublicKey> publicKeySupplier,
+               CompressedPublicKey publicKey,
                DrasylPipeline pipeline,
                Supplier<MeterRegistry> registrySupplier,
                AtomicBoolean opened,
                MeterRegistry registry) {
         this.peersManager = peersManager;
-        this.publicKeySupplier = publicKeySupplier;
+        this.publicKey = publicKey;
         this.pipeline = pipeline;
         this.opened = opened;
         this.registrySupplier = registrySupplier;
@@ -110,7 +110,7 @@ public class Monitoring implements DrasylNodeComponent {
 
             // add common tags
             registry.config().commonTags(
-                    "public_key", publicKeySupplier.get().toString(),
+                    "public_key", publicKey.toString(),
                     "host", ofNullable(NetworkUtil.getLocalHostName()).orElse("")
             ).commonTags();
 

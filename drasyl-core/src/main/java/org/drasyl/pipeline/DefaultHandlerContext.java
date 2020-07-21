@@ -23,8 +23,6 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.pipeline.codec.TypeValidator;
 
-import java.util.function.Supplier;
-
 public class DefaultHandlerContext extends AbstractHandlerContext {
     private final Handler handler;
 
@@ -33,7 +31,7 @@ public class DefaultHandlerContext extends AbstractHandlerContext {
                                  DrasylConfig config,
                                  Pipeline pipeline,
                                  Scheduler scheduler,
-                                 Supplier<Identity> identity,
+                                 Identity identity,
                                  TypeValidator validator) {
         super(name, config, pipeline, scheduler, identity, validator);
         this.handler = handler;

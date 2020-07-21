@@ -60,14 +60,14 @@ class TailContextTest {
 
     @Test
     void shouldReturnSelfAsHandler() {
-        TailContext headContext = new TailContext(eventConsumer, config, pipeline, scheduler, () -> identity, validator);
+        TailContext headContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
 
         assertEquals(headContext, headContext.handler());
     }
 
     @Test
     void shouldDoNothingOnHandlerAdded() {
-        TailContext headContext = new TailContext(eventConsumer, config, pipeline, scheduler, () -> identity, validator);
+        TailContext headContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
 
         headContext.handlerAdded(ctx);
 
@@ -76,7 +76,7 @@ class TailContextTest {
 
     @Test
     void shouldDoNothingOnHandlerRemoved() {
-        TailContext headContext = new TailContext(eventConsumer, config, pipeline, scheduler, () -> identity, validator);
+        TailContext headContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
 
         headContext.handlerRemoved(ctx);
 
@@ -85,7 +85,7 @@ class TailContextTest {
 
     @Test
     void shouldPassthroughsOnWrite() {
-        TailContext headContext = new TailContext(eventConsumer, config, pipeline, scheduler, () -> identity, validator);
+        TailContext headContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
         CompressedPublicKey recipient = mock(CompressedPublicKey.class);
         Object msg = mock(Object.class);
         CompletableFuture future = mock(CompletableFuture.class);
@@ -97,7 +97,7 @@ class TailContextTest {
 
     @Test
     void shouldThrowException() {
-        TailContext headContext = new TailContext(eventConsumer, config, pipeline, scheduler, () -> identity, validator);
+        TailContext headContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
         Exception exception = mock(Exception.class);
 
         assertThrows(Exception.class, () -> headContext.exceptionCaught(ctx, exception));
@@ -106,7 +106,7 @@ class TailContextTest {
 
     @Test
     void shouldPassEventToConsumer() {
-        TailContext headContext = new TailContext(eventConsumer, config, pipeline, scheduler, () -> identity, validator);
+        TailContext headContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
         Event event = mock(Event.class);
 
         headContext.eventTriggered(ctx, event);
@@ -117,7 +117,7 @@ class TailContextTest {
 
     @Test
     void shouldPassMessageToApplication() {
-        TailContext headContext = new TailContext(eventConsumer, config, pipeline, scheduler, () -> identity, validator);
+        TailContext headContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
         CompressedPublicKey sender = mock(CompressedPublicKey.class);
         Object msg = mock(Object.class);
 

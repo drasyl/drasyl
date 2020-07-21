@@ -90,7 +90,7 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            EmbeddedPipeline pipeline = new EmbeddedPipeline(() -> identity, TypeValidator.of(config), DefaultCodec.INSTANCE, handler);
+            EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), DefaultCodec.INSTANCE, handler);
             TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
             TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
             pipeline.processOutbound(recipient, payload);
@@ -125,7 +125,7 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            EmbeddedPipeline pipeline = new EmbeddedPipeline(() -> identity, TypeValidator.of(config), DefaultCodec.INSTANCE, handler);
+            EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), DefaultCodec.INSTANCE, handler);
             TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
             TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
 
@@ -168,7 +168,7 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            EmbeddedPipeline pipeline = new EmbeddedPipeline(() -> identity, TypeValidator.of(config), DefaultCodec.INSTANCE, handler);
+            EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), DefaultCodec.INSTANCE, handler);
             TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
             TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
             TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
@@ -209,7 +209,7 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            EmbeddedPipeline pipeline = new EmbeddedPipeline(() -> identity, TypeValidator.of(config), DefaultCodec.INSTANCE, handler);
+            EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), DefaultCodec.INSTANCE, handler);
             TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
             TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
             TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
@@ -253,7 +253,7 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            EmbeddedPipeline pipeline = new EmbeddedPipeline(() -> identity, mock(TypeValidator.class), handler);
+            EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, mock(TypeValidator.class), handler);
             TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
             NodeUpEvent event = mock(NodeUpEvent.class);
@@ -287,7 +287,7 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            EmbeddedPipeline pipeline = new EmbeddedPipeline(() -> identity, mock(TypeValidator.class), handler);
+            EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, mock(TypeValidator.class), handler);
             TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
             Event event = mock(Event.class);
