@@ -78,6 +78,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.time.Duration.ofSeconds;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.awaitility.Awaitility.await;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_HANDSHAKE_TIMEOUT;
@@ -158,6 +159,7 @@ class ServerIT {
             if (!recipient.equals(serverIdentityManager.getPublicKey())) {
                 throw new NoPathToIdentityException(recipient);
             }
+            return completedFuture(null);
         }, peersManager, channelGroup);
         serverSuperPeerConnected = Observable.just(false);
         opened = new AtomicBoolean(false);

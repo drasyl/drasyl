@@ -43,6 +43,7 @@ import java.net.URI;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.awaitility.Awaitility.await;
 
 public class TestSuperPeerClient extends SuperPeerClient {
@@ -77,8 +78,9 @@ public class TestSuperPeerClient extends SuperPeerClient {
                                 Subject<Boolean> connected,
                                 boolean doPingPong,
                                 boolean doJoin) {
-        super(config, workerGroup, connected, endpoint -> new TestClientChannelInitializer(new ClientEnvironment(config, identity, endpoint, new Messenger((message -> {
-        }), peersManager, channelGroup), channelGroup, peersManager, connected, receivedEvents::onNext, true, config.getSuperPeerPublicKey(), config.getSuperPeerIdleRetries(), config.getSuperPeerIdleTimeout(), config.getSuperPeerHandshakeTimeout(), publicKey -> {
+        super(config, workerGroup, connected, endpoint -> new TestClientChannelInitializer(new ClientEnvironment(config, identity, endpoint, new Messenger((message ->
+                completedFuture(null)), peersManager, channelGroup), channelGroup, peersManager, connected, receivedEvents::onNext, true,
+                config.getSuperPeerPublicKey(), config.getSuperPeerIdleRetries(), config.getSuperPeerIdleTimeout(), config.getSuperPeerHandshakeTimeout(), publicKey -> {
         }), doPingPong, doJoin), () -> true);
         this.identity = identity;
         this.receivedEvents = receivedEvents;

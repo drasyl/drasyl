@@ -38,8 +38,9 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
-import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_WRONG_PUBLIC_KEY;
 import static org.drasyl.peer.connection.PeerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
+import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_WRONG_PUBLIC_KEY;
+import static org.drasyl.util.FutureUtil.toFuture;
 
 /**
  * This handler performs the handshake with the server and processes incoming messages during the
@@ -110,7 +111,7 @@ public class ClientConnectionHandler extends AbstractThreeWayHandshakeClientHand
                                     WelcomeMessage offerMessage) {
         CompressedPublicKey identity = ctx.channel().attr(ATTRIBUTE_PUBLIC_KEY).get();
         Channel channel = ctx.channel();
-        Path path = ctx::writeAndFlush;
+        Path path = msg -> toFuture(ctx.writeAndFlush(msg));
 
         environment.getChannelGroup().add(identity, channel);
 

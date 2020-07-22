@@ -55,6 +55,7 @@ import java.util.Random;
 import java.util.Set;
 
 import static java.time.Duration.ofSeconds;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.awaitility.Awaitility.await;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static testutils.AnsiColor.COLOR_CYAN;
@@ -126,8 +127,7 @@ class ChunkedMessageIT {
         serverIdentityManager.loadOrCreateIdentity();
         PeersManager peersManager = new PeersManager(event -> {
         });
-        Messenger serverMessenger = new Messenger(message -> {
-        }, peersManager, channelGroup);
+        Messenger serverMessenger = new Messenger(message -> completedFuture(null), peersManager, channelGroup);
         Observable<Boolean> serverSuperPeerConnected = Observable.just(false);
         channelGroup = new PeerChannelGroup();
         endpoints = new HashSet<>();

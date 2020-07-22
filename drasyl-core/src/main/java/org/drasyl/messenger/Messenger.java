@@ -21,16 +21,18 @@ package org.drasyl.messenger;
 import com.google.common.collect.Lists;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.message.RelayableMessage;
 import org.drasyl.peer.connection.PeerChannelGroup;
+import org.drasyl.peer.connection.message.RelayableMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.List;
 import java.util.Objects;
+import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.util.FutureUtil.toFuture;
 
 /**
  * The Messenger is responsible for handling the outgoing message flow and sending messages to the
@@ -39,8 +41,8 @@ import static java.util.Objects.requireNonNull;
 public class Messenger {
     private static final Logger LOG = LoggerFactory.getLogger(Messenger.class);
     private final MessageSink loopbackSink;
-    private MessageSink intraVmSink;
     private final MessageSink channelGroupSink;
+    private MessageSink intraVmSink;
 
     public Messenger(MessageSink loopbackSink,
                      PeersManager peersManager,
@@ -55,14 +57,14 @@ public class Messenger {
             }
 
             try {
-                channelGroup.writeAndFlush(recipient, message);
+                return toFuture(channelGroup.writeAndFlush(recipient, message));
             }
             catch (IllegalArgumentException e) {
                 CompressedPublicKey superPeer = peersManager.getSuperPeerKey();
                 if (superPeer != null && recipient != superPeer) {
                     // no direct connection, send message to super peer
                     try {
-                        channelGroup.writeAndFlush(superPeer, message);
+                        return toFuture(channelGroup.writeAndFlush(superPeer, message));
                     }
                     catch (IllegalArgumentException e2) {
                         throw new NoPathToIdentityException(recipient);
@@ -93,19 +95,21 @@ public class Messenger {
      * Peer.
      *
      * @param message message to be sent
+     * @return a completed future if the message was successfully processed, otherwise an
+     * exceptionally future
      * @throws MessengerException if sending is not possible (e.g. because no path to the peer
      *                            exists)
      */
-    public void send(RelayableMessage message) throws MessengerException {
+    public CompletableFuture<Void> send(RelayableMessage message) throws MessengerException {
         LOG.trace("Send Message: {}", message);
 
         List<MessageSink> messageSinks = Lists.newArrayList(loopbackSink, intraVmSink, channelGroupSink)
                 .stream().filter(Objects::nonNull).collect(Collectors.toList());
         for (MessageSink messageSink : messageSinks) {
             try {
-                messageSink.send(message);
-                LOG.trace("Message was sent with Message Sink '{}'", messageSink);
-                return;
+                CompletableFuture<Void> future = messageSink.send(message);
+                LOG.trace("Message was processed with Message Sink '{}'", messageSink);
+                return future;
             }
             catch (NoPathToIdentityException e) {
                 // do nothing (continue with next MessageSink)
