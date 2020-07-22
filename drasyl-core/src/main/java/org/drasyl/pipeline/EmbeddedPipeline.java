@@ -21,6 +21,7 @@ package org.drasyl.pipeline;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
+import org.drasyl.crypto.Crypto;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.CompressedPublicKey;
@@ -52,7 +53,7 @@ public class EmbeddedPipeline extends DefaultPipeline {
                             TypeValidator validator,
                             Handler... handlers) {
         this(identity, validator);
-        List.of(handlers).forEach(handler -> addLast(handler.getClass().getSimpleName(), handler));
+        List.of(handlers).forEach(handler -> addLast(handler.getClass().getSimpleName() + Crypto.randomString(8), handler));
     }
 
     public EmbeddedPipeline(Identity identity, TypeValidator validator) {

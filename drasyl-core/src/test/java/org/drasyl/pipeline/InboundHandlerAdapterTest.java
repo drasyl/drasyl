@@ -18,22 +18,34 @@
  */
 package org.drasyl.pipeline;
 
+import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.pipeline.codec.ObjectHolder;
+import org.drasyl.pipeline.codec.TypeValidator;
+import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.stream.IntStream;
+
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class InboundHandlerAdapterTest {
     @Mock
     private HandlerContext ctx;
+    @Mock
+    private Identity identity;
+    @Mock
+    private TypeValidator validator;
 
     @Test
     void shouldPassthroughsOnRead() {
@@ -67,5 +79,33 @@ class InboundHandlerAdapterTest {
         adapter.exceptionCaught(ctx, exception);
 
         verify(ctx).fireExceptionCaught(eq(exception));
+    }
+
+    @Test
+    void shouldPassthroughsOnEventTriggeredWithMultipleHandler() {
+        EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, validator, IntStream.rangeClosed(1, 10).mapToObj(i -> new InboundHandlerAdapter()).toArray(InboundHandlerAdapter[]::new));
+        TestObserver<Event> events = pipeline.inboundEvents().test();
+
+        Event event = mock(Event.class);
+        pipeline.processInbound(event);
+
+        events.awaitCount(1);
+        events.assertValue(event);
+    }
+
+    @Test
+    void shouldPassthroughsOnReadWithMultipleHandler() {
+        EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, validator, IntStream.rangeClosed(1, 10).mapToObj(i -> new InboundHandlerAdapter()).toArray(InboundHandlerAdapter[]::new));
+        TestObserver<Pair<CompressedPublicKey, Object>> events = pipeline.inboundMessages().test();
+
+        CompressedPublicKey sender = mock(CompressedPublicKey.class);
+        ApplicationMessage msg = mock(ApplicationMessage.class);
+        when(msg.getSender()).thenReturn(sender);
+        when(msg.getPayload()).thenReturn(new byte[]{});
+
+        pipeline.processInbound(msg);
+
+        events.awaitCount(1);
+        events.assertValue(Pair.of(sender, ObjectHolder.of(null, new byte[]{})));
     }
 }

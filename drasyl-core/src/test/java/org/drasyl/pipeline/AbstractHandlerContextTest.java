@@ -33,8 +33,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.CompletableFuture;
 
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
@@ -367,5 +369,125 @@ class AbstractHandlerContextTest {
         verify(prev, times(2)).handler();
         verify(outboundHandler).write(eq(prev), eq(recipient), eq(msg), isA(CompletableFuture.class));
         verify(prev).fireExceptionCaught(isA(RuntimeException.class));
+    }
+
+    @Test
+    void shouldReturnNewHandlerOnFindNextInbound() {
+        AbstractHandlerContext context1 = mock(AbstractHandlerContext.class);
+        AbstractHandlerContext context2 = mock(AbstractHandlerContext.class);
+        AbstractHandlerContext context3 = mock(AbstractHandlerContext.class);
+
+        InboundHandler myHandler = mock(InboundHandler.class);
+        InboundHandler handlerToFind = mock(InboundHandler.class);
+
+        when(context1.handler()).thenReturn(mock(OutboundHandler.class));
+        when(context2.handler()).thenReturn(mock(OutboundHandler.class));
+        when(context3.handler()).thenReturn(handlerToFind);
+
+        when(context1.getNext()).thenReturn(context2);
+        when(context2.getNext()).thenReturn(context3);
+
+        AbstractHandlerContext context = new AbstractHandlerContext("test", config, pipeline, scheduler, identity, validator) {
+            @Override
+            public Handler handler() {
+                return myHandler;
+            }
+        };
+
+        context.setNextHandlerContext(context1);
+
+        assertEquals(context3, context.findNextInbound());
+        assertEquals(handlerToFind, context.findNextInbound().handler());
+        assertNotEquals(context, context.findNextInbound());
+        assertNotEquals(context1, context.findNextInbound());
+        assertNotEquals(context2, context.findNextInbound());
+        assertNotEquals(myHandler, context.findNextInbound().handler());
+    }
+
+    @Test
+    void shouldReturnNewHandlerOnFindNextOutbound() {
+        AbstractHandlerContext context1 = mock(AbstractHandlerContext.class);
+        AbstractHandlerContext context2 = mock(AbstractHandlerContext.class);
+        AbstractHandlerContext context3 = mock(AbstractHandlerContext.class);
+
+        OutboundHandler myHandler = mock(OutboundHandler.class);
+        OutboundHandler handlerToFind = mock(OutboundHandler.class);
+
+        when(context1.handler()).thenReturn(mock(InboundHandler.class));
+        when(context2.handler()).thenReturn(mock(InboundHandler.class));
+        when(context3.handler()).thenReturn(handlerToFind);
+
+        when(context1.getPrev()).thenReturn(context2);
+        when(context2.getPrev()).thenReturn(context3);
+
+        AbstractHandlerContext context = new AbstractHandlerContext("test", config, pipeline, scheduler, identity, validator) {
+            @Override
+            public Handler handler() {
+                return myHandler;
+            }
+        };
+
+        context.setPrevHandlerContext(context1);
+
+        assertEquals(context3, context.findPrevOutbound());
+        assertEquals(handlerToFind, context.findPrevOutbound().handler());
+        assertNotEquals(context, context.findPrevOutbound());
+        assertNotEquals(context1, context.findPrevOutbound());
+        assertNotEquals(context2, context.findPrevOutbound());
+        assertNotEquals(myHandler, context.findPrevOutbound().handler());
+    }
+
+    @Test
+    void shouldThrowExceptionOnPipelineException() {
+        AbstractHandlerContext context = new AbstractHandlerContext("test", config, pipeline, scheduler, identity, validator) {
+            @Override
+            public Handler handler() {
+                return null;
+            }
+        };
+
+        PipelineException exception = mock(PipelineException.class);
+
+        assertThrows(PipelineException.class, () -> context.fireExceptionCaught(exception));
+    }
+
+    @Test
+    void shouldThrowExceptionOnPipelineExceptionOnNextHandler() {
+        AbstractHandlerContext context = new AbstractHandlerContext("test", config, pipeline, scheduler, identity, validator) {
+            @Override
+            public Handler handler() {
+                return null;
+            }
+        };
+
+        InboundHandler inboundHandler = mock(InboundHandler.class);
+        AbstractHandlerContext context1 = mock(AbstractHandlerContext.class);
+        context.setNextHandlerContext(context1);
+        when(context1.handler()).thenReturn(inboundHandler);
+        doThrow(PipelineException.class).when(inboundHandler).exceptionCaught(any(), any());
+
+        Exception exception = mock(Exception.class);
+
+        assertThrows(PipelineException.class, () -> context.fireExceptionCaught(exception));
+    }
+
+    @Test
+    void shouldNotThrowExceptionOnNextHandler() {
+        AbstractHandlerContext context = new AbstractHandlerContext("test", config, pipeline, scheduler, identity, validator) {
+            @Override
+            public Handler handler() {
+                return null;
+            }
+        };
+
+        InboundHandler inboundHandler = mock(InboundHandler.class);
+        AbstractHandlerContext context1 = mock(AbstractHandlerContext.class);
+        context.setNextHandlerContext(context1);
+        when(context1.handler()).thenReturn(inboundHandler);
+        doThrow(IllegalArgumentException.class).when(inboundHandler).exceptionCaught(any(), any());
+
+        Exception exception = mock(Exception.class);
+
+        assertDoesNotThrow(() -> context.fireExceptionCaught(exception));
     }
 }
