@@ -135,6 +135,9 @@ public abstract class DrasylNode {
 
     /**
      * Creates a new drasyl Node.
+     * <p>
+     * Note: This is a blocking method, because when a node is started for the first time, its
+     * identity must be created. This can take up to a minute because of the proof of work.
      */
     public DrasylNode() throws DrasylException {
         this(new DrasylConfig());
@@ -142,6 +145,9 @@ public abstract class DrasylNode {
 
     /**
      * Creates a new drasyl Node with the given <code>config</code>.
+     * <p>
+     * Note: This is a blocking method, because when a node is started for the first time, its
+     * identity must be created. This can take up to a minute because of the proof of work.
      *
      * @param config
      */
