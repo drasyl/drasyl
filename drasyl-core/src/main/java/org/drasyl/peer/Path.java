@@ -20,9 +20,18 @@ package org.drasyl.peer;
 
 import org.drasyl.peer.connection.message.Message;
 
+import java.util.concurrent.CompletableFuture;
+
 /**
  * Represents a path for sending messages to a specific Peer.
  */
 public interface Path {
-    void send(Message message);
+    /**
+     * Sends <code>message</code> via the defined path.
+     *
+     * @param message the message to be sent
+     * @return a completed future if the message was successfully processed, otherwise an
+     * exceptionally future
+     */
+    CompletableFuture<Void> send(Message message);
 }

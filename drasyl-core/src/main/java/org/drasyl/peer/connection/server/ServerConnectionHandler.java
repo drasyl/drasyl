@@ -34,6 +34,7 @@ import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RegisterGrandchildMessage;
 import org.drasyl.peer.connection.message.UnregisterGrandchildMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
+import org.drasyl.util.FutureUtil;
 import org.drasyl.util.SetUtil;
 import org.drasyl.util.Triple;
 import org.slf4j.Logger;
@@ -43,10 +44,10 @@ import java.time.Duration;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
+import static org.drasyl.peer.connection.PeerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_IDENTITY_COLLISION;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_PROOF_OF_WORK_INVALID;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_SUPER_PEER_DISCONNECTED;
-import static org.drasyl.peer.connection.PeerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
 
 /**
  * Acts as a guard for in- and outbound connections. A channel is only created, when a {@link
@@ -113,7 +114,7 @@ public class ServerConnectionHandler extends AbstractThreeWayHandshakeServerHand
         CompressedPublicKey clientPublicKey = requestMessage.getPublicKey();
         Channel channel = ctx.channel();
         PeerInformation clientInformation = PeerInformation.of();
-        Path path = ctx::writeAndFlush;
+        Path path = msg -> FutureUtil.toFuture(ctx.writeAndFlush(msg));
 
         environment.getChannelGroup().add(clientPublicKey, channel);
 

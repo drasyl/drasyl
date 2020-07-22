@@ -213,7 +213,7 @@ public abstract class DrasylNode {
         pipeline.processInbound(event);
     }
 
-    void messageSink(RelayableMessage message) throws MessageSinkException {
+    CompletableFuture<Void> messageSink(RelayableMessage message) throws MessageSinkException {
         CompressedPublicKey recipient = message.getRecipient();
 
         if (!identity.getPublicKey().equals(recipient)) {
@@ -224,6 +224,8 @@ public abstract class DrasylNode {
             ApplicationMessage applicationMessage = (ApplicationMessage) message;
             peersManager.addPeer(applicationMessage.getSender());
             pipeline.processInbound(applicationMessage);
+            // TODO: use future returned by pipeline.processInbound(applicationMessage)
+            return completedFuture(null);
         }
         else if (message instanceof WhoisMessage) {
             WhoisMessage whoisMessage = (WhoisMessage) message;
@@ -234,15 +236,17 @@ public abstract class DrasylNode {
             IdentityMessage identityMessage = new IdentityMessage(whoisMessage.getRequester(), myPublicKey, myPeerInformation, whoisMessage.getId());
 
             try {
-                messenger.send(identityMessage);
+                return messenger.send(identityMessage);
             }
             catch (MessengerException e) {
                 LOG.info("Unable to reply to {}: {}", whoisMessage, e.getMessage());
+                return completedFuture(null);
             }
         }
         else if (message instanceof IdentityMessage) {
             IdentityMessage identityMessage = (IdentityMessage) message;
             peersManager.setPeerInformation(identityMessage.getPublicKey(), identityMessage.getPeerInformation());
+            return completedFuture(null);
         }
         else {
             throw new IllegalArgumentException("DrasylNode.loopbackMessageSink is not able to handle messages of type " + message.getClass().getSimpleName());

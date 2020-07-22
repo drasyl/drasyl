@@ -20,6 +20,8 @@ package org.drasyl.messenger;
 
 import org.drasyl.peer.connection.message.RelayableMessage;
 
+import java.util.concurrent.CompletableFuture;
+
 /**
  * Implement this interface and add the object to the {@link org.drasyl.messenger.Messenger} to
  * provide new communication paths for the node
@@ -29,8 +31,10 @@ public interface MessageSink {
      * Sends <code>message</code> to <code>recipient</code>.
      *
      * @param message message to be sent
+     * @return a completed future if the message was successfully processed, otherwise an
+     * exceptionally future
      * @throws MessageSinkException if sending is not possible (e.g. because no path to the peer
      *                              exists)
      */
-    void send(RelayableMessage message) throws MessageSinkException;
+    CompletableFuture<Void> send(RelayableMessage message) throws MessageSinkException;
 }

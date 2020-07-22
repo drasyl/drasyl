@@ -67,6 +67,7 @@ import java.util.Random;
 import java.util.Set;
 
 import static java.time.Duration.ofSeconds;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_SIZE;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
@@ -150,10 +151,8 @@ class SuperPeerClientIT {
         peersManagerServer = new PeersManager(event -> {
         });
         channelGroupServer = new PeerChannelGroup();
-        messenger = new Messenger(message -> {
-        }, peersManager, channelGroup);
-        messengerServer = new Messenger(message -> {
-        }, peersManager, channelGroup);
+        messenger = new Messenger(message -> completedFuture(null), peersManager, channelGroup);
+        messengerServer = new Messenger(message -> completedFuture(null), peersManager, channelGroup);
         endpoints = new HashSet<>();
 
         server = new TestServer(identityManagerServer::getIdentity, messengerServer, peersManagerServer, serverConfig, channelGroupServer, serverWorkerGroup, bossGroup, superPeerConnected, endpoints);

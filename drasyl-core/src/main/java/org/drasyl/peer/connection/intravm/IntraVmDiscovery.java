@@ -40,6 +40,8 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 
+import static java.util.concurrent.CompletableFuture.completedFuture;
+
 /**
  * Uses shared memory to discover other drasyl nodes running on same JVM.
  */
@@ -54,7 +56,7 @@ public class IntraVmDiscovery implements DrasylNodeComponent {
             throw new NoPathToIdentityException(recipient);
         }
 
-        discoveree.path.send(message);
+        return discoveree.path.send(message);
     };
     private static final ReadWriteLock lock = new ReentrantReadWriteLock(true);
     private final Path path;
@@ -73,13 +75,15 @@ public class IntraVmDiscovery implements DrasylNodeComponent {
                 publicKey,
                 messenger,
                 peersManager,
-                (Path) message -> {
+                message -> {
                     if (!(message instanceof ApplicationMessage)) {
                         throw new IllegalArgumentException("IntraVmDiscovery.messageSink can only handle messages of type " + ApplicationMessage.class.getSimpleName());
                     }
 
                     ApplicationMessage applicationMessage = (ApplicationMessage) message;
                     eventConsumer.accept(new MessageEvent(Pair.of(applicationMessage.getSender(), applicationMessage.getPayload())));
+
+                    return completedFuture(null);
                 }
         );
     }
