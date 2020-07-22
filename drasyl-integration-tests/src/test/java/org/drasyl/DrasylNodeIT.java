@@ -40,6 +40,7 @@ import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -49,8 +50,10 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static testutils.AnsiColor.COLOR_CYAN;
 import static testutils.AnsiColor.STYLE_REVERSED;
 import static testutils.TestHelper.colorizedPrintln;
@@ -562,6 +565,45 @@ class DrasylNodeIT {
             superPeerMessages.awaitCount(1);
             client1Messages.awaitCount(1);
             client2Messages.awaitCount(1);
+        }
+    }
+
+    /**
+     * Single non-started node.
+     */
+    @Nested
+    class SingleNonStartedNode {
+        private Pair<DrasylNode, Observable<Event>> node;
+
+        @BeforeEach
+        void setUp() throws DrasylException, CryptoException {
+            //
+            // create nodes
+            //
+            DrasylConfig config = DrasylConfig.newBuilder()
+                    .identityProofOfWork(ProofOfWork.of(33957767))
+                    .identityPublicKey(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))
+                    .identityPrivateKey(CompressedPrivateKey.of("0310991def7b530fced318876ac71025ebc0449a95967a0efc2e423086198f54"))
+                    .serverEnabled(false)
+                    .superPeerEnabled(false)
+                    .build();
+            node = createNode(config);
+            colorizedPrintln("CREATED node", COLOR_CYAN, STYLE_REVERSED);
+        }
+
+
+        @Test
+        @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+        @Disabled("needs fixing")
+        void sendToSelfShouldThrowException() throws DrasylException, ExecutionException, InterruptedException {
+            assertThrows(ExecutionException.class, () -> node.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", "Hallo Welt").get());
+        }
+
+
+        @Test
+        @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+        void sendToAnOtherPeerShouldThrowException() throws DrasylException, ExecutionException, InterruptedException {
+            assertThrows(ExecutionException.class, () -> node.first().send("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22", "Hallo Welt").get());
         }
     }
 }
