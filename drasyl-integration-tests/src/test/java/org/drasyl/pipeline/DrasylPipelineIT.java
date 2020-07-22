@@ -35,6 +35,7 @@ import org.junit.jupiter.api.Test;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.stream.IntStream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
@@ -82,6 +83,9 @@ class DrasylPipelineIT {
                 0x05
         };
 
+        IntStream.range(0, 10).forEach(i -> pipeline.addLast("inboundHandler" + i, new InboundHandlerAdapter()));
+        IntStream.range(0, 10).forEach(i -> pipeline.addLast("outboundHandler" + i, new OutboundHandlerAdapter()));
+
         pipeline.addLast("msgChanger", new InboundHandlerAdapter() {
             @Override
             public void read(HandlerContext ctx, CompressedPublicKey sender, Object msg) {
@@ -103,6 +107,9 @@ class DrasylPipelineIT {
 
         Event testEvent = new Event() {
         };
+
+        IntStream.range(0, 10).forEach(i -> pipeline.addLast("inboundHandler" + i, new InboundHandlerAdapter()));
+        IntStream.range(0, 10).forEach(i -> pipeline.addLast("outboundHandler" + i, new OutboundHandlerAdapter()));
 
         pipeline.addLast("eventProducer", new InboundHandlerAdapter() {
             @Override
@@ -133,6 +140,9 @@ class DrasylPipelineIT {
             assertThat(e.getCause().getCause(), instanceOf(RuntimeException.class));
             assertEquals(exception.getMessage(), e.getCause().getCause().getMessage());
         });
+
+        IntStream.range(0, 10).forEach(i -> pipeline.addLast("inboundHandler" + i, new InboundHandlerAdapter()));
+        IntStream.range(0, 10).forEach(i -> pipeline.addLast("outboundHandler" + i, new OutboundHandlerAdapter()));
 
         pipeline.addLast("exceptionProducer", new InboundHandlerAdapter() {
             @Override
@@ -168,6 +178,9 @@ class DrasylPipelineIT {
 
         ApplicationMessage newMsg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), newPayload, newPayload.getClass());
 
+        IntStream.range(0, 10).forEach(i -> pipeline.addLast("inboundHandler" + i, new InboundHandlerAdapter()));
+        IntStream.range(0, 10).forEach(i -> pipeline.addLast("outboundHandler" + i, new OutboundHandlerAdapter()));
+
         pipeline.addLast("outboundChanger", new OutboundHandlerAdapter() {
             @Override
             public void write(HandlerContext ctx,
@@ -192,6 +205,9 @@ class DrasylPipelineIT {
     void shouldNotPassthroughsMessagesWithDoneFuture() {
         TestObserver<ApplicationMessage> outbounds = outboundMessages.test();
         ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), payload, payload.getClass());
+
+        IntStream.range(0, 10).forEach(i -> pipeline.addLast("inboundHandler" + i, new InboundHandlerAdapter()));
+        IntStream.range(0, 10).forEach(i -> pipeline.addLast("outboundHandler" + i, new OutboundHandlerAdapter()));
 
         pipeline.addLast("outbound", new OutboundHandlerAdapter() {
             @Override
@@ -218,6 +234,9 @@ class DrasylPipelineIT {
         TestObserver<ApplicationMessage> outbounds = outboundMessages.test();
         ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), payload, payload.getClass());
 
+        IntStream.range(0, 10).forEach(i -> pipeline.addLast("inboundHandler" + i, new InboundHandlerAdapter()));
+        IntStream.range(0, 10).forEach(i -> pipeline.addLast("outboundHandler" + i, new OutboundHandlerAdapter()));
+
         pipeline.addLast("outbound", new OutboundHandlerAdapter() {
             @Override
             public void write(HandlerContext ctx,
@@ -242,6 +261,9 @@ class DrasylPipelineIT {
     void shouldNotPassthroughsMessagesWithNotAllowedType() {
         TestObserver<ApplicationMessage> outbounds = outboundMessages.test();
         StringBuilder msg = new StringBuilder();
+
+        IntStream.range(0, 10).forEach(i -> pipeline.addLast("inboundHandler" + i, new InboundHandlerAdapter()));
+        IntStream.range(0, 10).forEach(i -> pipeline.addLast("outboundHandler" + i, new OutboundHandlerAdapter()));
 
         pipeline.addLast("outbound", new OutboundHandlerAdapter() {
             @Override

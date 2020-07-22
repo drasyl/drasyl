@@ -103,11 +103,11 @@ abstract class AbstractHandlerContext implements HandlerContext {
     }
 
     private void invokeExceptionCaught(Exception cause) {
-        AbstractHandlerContext inboundCtx = findNextInbound();
-
         if (cause instanceof PipelineException) {
             throw (PipelineException) cause;
         }
+
+        AbstractHandlerContext inboundCtx = findNextInbound();
 
         try {
             ((InboundHandler) inboundCtx.handler()).exceptionCaught(inboundCtx, cause);
@@ -128,7 +128,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
     AbstractHandlerContext findNextInbound() {
         AbstractHandlerContext nextInbound = next;
         while (!(nextInbound.handler() instanceof InboundHandler)) {
-            nextInbound = next.getNext();
+            nextInbound = nextInbound.getNext();
         }
 
         return nextInbound;
@@ -140,7 +140,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
     AbstractHandlerContext findPrevOutbound() {
         AbstractHandlerContext prevOutbound = prev;
         while (!(prevOutbound.handler() instanceof OutboundHandler)) {
-            prevOutbound = prev.getPrev();
+            prevOutbound = prevOutbound.getPrev();
         }
 
         return prevOutbound;
