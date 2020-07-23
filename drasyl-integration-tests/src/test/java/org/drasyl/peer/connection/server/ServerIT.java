@@ -37,7 +37,7 @@ import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.messenger.Messenger;
-import org.drasyl.messenger.NoPathToIdentityException;
+import org.drasyl.messenger.NoPathToPublicKeyException;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
@@ -157,7 +157,7 @@ class ServerIT {
         serverMessenger = new Messenger(message -> {
             CompressedPublicKey recipient = message.getRecipient();
             if (!recipient.equals(serverIdentityManager.getPublicKey())) {
-                throw new NoPathToIdentityException(recipient);
+                throw new NoPathToPublicKeyException(recipient);
             }
             return completedFuture(null);
         }, peersManager, channelGroup);

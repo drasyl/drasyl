@@ -29,7 +29,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.messenger.MessageSinkException;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.messenger.MessengerException;
-import org.drasyl.messenger.NoPathToIdentityException;
+import org.drasyl.messenger.NoPathToPublicKeyException;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.ApplicationMessage;
@@ -269,7 +269,7 @@ class DrasylNodeTest {
             });
             underTest.shutdown().join();
 
-            assertThrows(NoPathToIdentityException.class, () -> underTest.messageSink(message));
+            assertThrows(NoPathToPublicKeyException.class, () -> underTest.messageSink(message));
         }
 
         @Test

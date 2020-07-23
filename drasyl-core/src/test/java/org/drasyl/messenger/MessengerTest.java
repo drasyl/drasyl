@@ -47,7 +47,7 @@ class MessengerTest {
     @Mock
     private CompressedPublicKey address;
     @Mock
-    private NoPathToIdentityException noPathToIdentityException;
+    private NoPathToPublicKeyException noPathToPublicKeyException;
 
     @Nested
     class Send {
@@ -62,7 +62,7 @@ class MessengerTest {
 
         @Test
         void shouldSendMessageToIntraVmSinkIfLoopbackSinkCanNotSendMessage() throws DrasylException {
-            doThrow(noPathToIdentityException).when(loopbackSink).send(any());
+            doThrow(noPathToPublicKeyException).when(loopbackSink).send(any());
 
             Messenger messenger = new Messenger(loopbackSink, intraVmSink, channelGroupSink);
             messenger.send(applicationMessage);
@@ -74,23 +74,23 @@ class MessengerTest {
         @Test
         void shouldThrowExceptionIfAllSinksCanNotSendMessage() throws DrasylException {
             when(applicationMessage.getRecipient()).thenReturn(address);
-            doThrow(noPathToIdentityException).when(loopbackSink).send(any());
-            doThrow(noPathToIdentityException).when(intraVmSink).send(any());
-            doThrow(noPathToIdentityException).when(channelGroupSink).send(any());
+            doThrow(noPathToPublicKeyException).when(loopbackSink).send(any());
+            doThrow(noPathToPublicKeyException).when(intraVmSink).send(any());
+            doThrow(noPathToPublicKeyException).when(channelGroupSink).send(any());
 
             Messenger messenger = new Messenger(loopbackSink, intraVmSink, channelGroupSink);
 
-            assertThrows(NoPathToIdentityException.class, () -> messenger.send(applicationMessage));
+            assertThrows(NoPathToPublicKeyException.class, () -> messenger.send(applicationMessage));
         }
 
         @Test
         void shouldThrowExceptionIfNoSinkCanProcessMessage() throws MessageSinkException {
             when(applicationMessage.getRecipient()).thenReturn(address);
-            doThrow(NoPathToIdentityException.class).when(loopbackSink).send(any());
+            doThrow(NoPathToPublicKeyException.class).when(loopbackSink).send(any());
 
             Messenger messenger = new Messenger(loopbackSink, (MessageSink) null, null);
 
-            assertThrows(NoPathToIdentityException.class, () -> messenger.send(applicationMessage));
+            assertThrows(NoPathToPublicKeyException.class, () -> messenger.send(applicationMessage));
         }
     }
 }

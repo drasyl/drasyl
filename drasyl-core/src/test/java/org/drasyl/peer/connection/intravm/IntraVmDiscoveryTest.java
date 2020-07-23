@@ -3,7 +3,7 @@ package org.drasyl.peer.connection.intravm;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.messenger.MessageSinkException;
 import org.drasyl.messenger.Messenger;
-import org.drasyl.messenger.NoPathToIdentityException;
+import org.drasyl.messenger.NoPathToPublicKeyException;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
@@ -82,7 +82,7 @@ class IntraVmDiscoveryTest {
     class MessageSink {
         @Test
         void shouldThrowExceptionForUnknownRecipient(@Mock RelayableMessage message) {
-            assertThrows(NoPathToIdentityException.class, () -> IntraVmDiscovery.MESSAGE_SINK.send(message));
+            assertThrows(NoPathToPublicKeyException.class, () -> IntraVmDiscovery.MESSAGE_SINK.send(message));
         }
 
         @Test

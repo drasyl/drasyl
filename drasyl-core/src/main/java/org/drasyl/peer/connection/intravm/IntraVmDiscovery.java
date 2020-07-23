@@ -24,7 +24,7 @@ import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.messenger.MessageSink;
 import org.drasyl.messenger.Messenger;
-import org.drasyl.messenger.NoPathToIdentityException;
+import org.drasyl.messenger.NoPathToPublicKeyException;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
@@ -53,7 +53,7 @@ public class IntraVmDiscovery implements DrasylNodeComponent {
         IntraVmDiscovery discoveree = discoveries.get(recipient);
 
         if (discoveree == null) {
-            throw new NoPathToIdentityException(recipient);
+            throw new NoPathToPublicKeyException(recipient);
         }
 
         return discoveree.path.send(message);

@@ -40,7 +40,7 @@ import org.drasyl.identity.IdentityManager;
 import org.drasyl.messenger.MessageSinkException;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.messenger.MessengerException;
-import org.drasyl.messenger.NoPathToIdentityException;
+import org.drasyl.messenger.NoPathToPublicKeyException;
 import org.drasyl.monitoring.Monitoring;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
@@ -227,7 +227,7 @@ public abstract class DrasylNode {
         CompressedPublicKey recipient = message.getRecipient();
 
         if (!identity.getPublicKey().equals(recipient)) {
-            throw new NoPathToIdentityException(recipient);
+            throw new NoPathToPublicKeyException(recipient);
         }
 
         if (message instanceof ApplicationMessage) {

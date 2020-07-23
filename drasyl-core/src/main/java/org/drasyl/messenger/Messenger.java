@@ -67,11 +67,11 @@ public class Messenger {
                         return toFuture(channelGroup.writeAndFlush(superPeer, message));
                     }
                     catch (IllegalArgumentException e2) {
-                        throw new NoPathToIdentityException(recipient);
+                        throw new NoPathToPublicKeyException(recipient);
                     }
                 }
                 else {
-                    throw new NoPathToIdentityException(recipient);
+                    throw new NoPathToPublicKeyException(recipient);
                 }
             }
         });
@@ -111,12 +111,12 @@ public class Messenger {
                 LOG.trace("Message was processed with Message Sink '{}'", messageSink);
                 return future;
             }
-            catch (NoPathToIdentityException e) {
+            catch (NoPathToPublicKeyException e) {
                 // do nothing (continue with next MessageSink)
             }
         }
 
-        throw new NoPathToIdentityException(message.getRecipient());
+        throw new NoPathToPublicKeyException(message.getRecipient());
     }
 
     public void setIntraVmSink(MessageSink intraVmSink) {

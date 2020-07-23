@@ -21,12 +21,12 @@ package org.drasyl.messenger;
 import org.drasyl.identity.CompressedPublicKey;
 
 /**
- * Is thrown by {@link MessageSink} if it can be excluded that no path to the specified identity
+ * Is thrown by {@link MessageSink} if it can be excluded that no path to the specified public key
  * exists.
  */
 @SuppressWarnings({ "java:S110" })
-public class NoPathToIdentityException extends MessageSinkException {
-    public NoPathToIdentityException(CompressedPublicKey identity) {
+public class NoPathToPublicKeyException extends MessageSinkException {
+    public NoPathToPublicKeyException(CompressedPublicKey identity) {
         super("No Path to " + identity);
     }
 }
