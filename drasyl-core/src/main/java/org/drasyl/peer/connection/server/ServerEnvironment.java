@@ -29,14 +29,13 @@ import java.net.URI;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 /**
  * This class encapsulates all information needed by a {@link ServerChannelInitializer}.
  */
 public class ServerEnvironment {
     private final DrasylConfig config;
-    private final Supplier<Identity> identitySupplier;
+    private final Identity identity;
     private final PeersManager peersManager;
     private final BooleanSupplier acceptedNewConnectionsSupplier;
     private final BooleanSupplier superPeerConnectedSupplier;
@@ -46,7 +45,7 @@ public class ServerEnvironment {
     private final PeerChannelGroup channelGroup;
 
     public ServerEnvironment(DrasylConfig config,
-                             Supplier<Identity> identitySupplier,
+                             Identity identity,
                              PeersManager peersManager,
                              Messenger messenger,
                              Set<URI> endpoints,
@@ -55,7 +54,7 @@ public class ServerEnvironment {
                              BooleanSupplier superPeerConnectedSupplier,
                              Consumer<CompressedPublicKey> peerCommunicationConsumer) {
         this.config = config;
-        this.identitySupplier = identitySupplier;
+        this.identity = identity;
         this.peersManager = peersManager;
         this.messenger = messenger;
         this.endpoints = endpoints;
@@ -66,7 +65,7 @@ public class ServerEnvironment {
     }
 
     public Identity getIdentity() {
-        return identitySupplier.get();
+        return identity;
     }
 
     public PeersManager getPeersManager() {

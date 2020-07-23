@@ -43,7 +43,6 @@ import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.drasyl.peer.connection.server.Server.determineActualEndpoints;
@@ -58,7 +57,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class ServerTest {
     @Mock
-    private Supplier<Identity> identitySupplier;
+    private Identity identity;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private DrasylConfig config;
     @Mock

@@ -45,7 +45,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 import java.util.stream.Collectors;
 
 import static org.drasyl.util.NetworkUtil.getAddresses;
@@ -85,7 +84,7 @@ public class Server implements DrasylNodeComponent {
         this.nodeEndpoints = nodeEndpoints;
     }
 
-    public Server(Supplier<Identity> identitySupplier,
+    public Server(Identity identity,
                   Messenger messenger,
                   PeersManager peersManager,
                   DrasylConfig config,
@@ -96,13 +95,13 @@ public class Server implements DrasylNodeComponent {
                   Consumer<CompressedPublicKey> peerCommunicationConsumer,
                   Set<URI> nodeEndpoints,
                   BooleanSupplier acceptNewConnectionsSupplier) throws ServerException {
-        this(identitySupplier, messenger, peersManager, config, channelGroup, workerGroup, bossGroup, superPeerConnected, new AtomicBoolean(false), acceptNewConnectionsSupplier, peerCommunicationConsumer, nodeEndpoints);
+        this(identity, messenger, peersManager, config, channelGroup, workerGroup, bossGroup, superPeerConnected, new AtomicBoolean(false), acceptNewConnectionsSupplier, peerCommunicationConsumer, nodeEndpoints);
     }
 
     /**
      * Server for accepting connections from child peers and non-child peers.
      *
-     * @param identitySupplier             the identity manager
+     * @param identity                     the identity manager
      * @param messenger                    the messenger object
      * @param peersManager                 the peers manager
      * @param config                       config that should be used
@@ -114,7 +113,7 @@ public class Server implements DrasylNodeComponent {
      * @param peerCommunicationConsumer
      * @param nodeEndpoints
      */
-    public Server(Supplier<Identity> identitySupplier,
+    public Server(Identity identity,
                   Messenger messenger,
                   PeersManager peersManager,
                   DrasylConfig config,
@@ -135,7 +134,7 @@ public class Server implements DrasylNodeComponent {
                         .channel(NioServerSocketChannel.class)
                         .childHandler(initiateChannelInitializer(new ServerEnvironment(
                                         config,
-                                        identitySupplier,
+                                        identity,
                                         peersManager,
                                         messenger,
                                         nodeEndpoints,

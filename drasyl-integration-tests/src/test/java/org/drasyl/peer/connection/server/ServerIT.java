@@ -166,7 +166,7 @@ class ServerIT {
         endpoints = new HashSet<>();
         acceptNewConnections = new AtomicBoolean(true);
 
-        server = new Server(serverIdentityManager::getIdentity, serverMessenger, peersManager, serverConfig, channelGroup, workerGroup, bossGroup, serverSuperPeerConnected, opened, acceptNewConnections::get, publicKey -> {
+        server = new Server(serverIdentityManager.getIdentity(), serverMessenger, peersManager, serverConfig, channelGroup, workerGroup, bossGroup, serverSuperPeerConnected, opened, acceptNewConnections::get, publicKey -> {
         }, endpoints);
         server.open();
 
@@ -516,7 +516,7 @@ class ServerIT {
 
     @Test
     void shouldOpenAndCloseGracefully() throws DrasylException {
-        try (Server myServer = new Server(serverIdentityManager::getIdentity, serverMessenger, peersManager, new DrasylConfig(), channelGroup, workerGroup, bossGroup, serverSuperPeerConnected, publicKey -> {
+        try (Server myServer = new Server(serverIdentityManager.getIdentity(), serverMessenger, peersManager, new DrasylConfig(), channelGroup, workerGroup, bossGroup, serverSuperPeerConnected, publicKey -> {
         }, endpoints, acceptNewConnections::get)) {
             myServer.open();
         }
@@ -527,7 +527,7 @@ class ServerIT {
     @Test
     void openShouldFailIfInvalidPortIsGiven() throws DrasylException {
         DrasylConfig config = DrasylConfig.newBuilder().serverBindPort(72722).build();
-        try (Server myServer = new Server(serverIdentityManager::getIdentity, serverMessenger, peersManager, config, channelGroup, workerGroup, bossGroup, serverSuperPeerConnected, publicKey -> {
+        try (Server myServer = new Server(serverIdentityManager.getIdentity(), serverMessenger, peersManager, config, channelGroup, workerGroup, bossGroup, serverSuperPeerConnected, publicKey -> {
         }, endpoints, acceptNewConnections::get)) {
             assertThrows(ServerException.class, myServer::open);
         }

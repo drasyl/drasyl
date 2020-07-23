@@ -132,7 +132,7 @@ class ChunkedMessageIT {
         channelGroup = new PeerChannelGroup();
         endpoints = new HashSet<>();
 
-        server = new TestServer(serverIdentityManager::getIdentity, serverMessenger, peersManager, serverConfig, channelGroup, workerGroup, bossGroup, serverSuperPeerConnected, endpoints);
+        server = new TestServer(serverIdentityManager.getIdentity(), serverMessenger, peersManager, serverConfig, channelGroup, workerGroup, bossGroup, serverSuperPeerConnected, endpoints);
         server.open();
 
         config = DrasylConfig.newBuilder()

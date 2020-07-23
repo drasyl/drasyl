@@ -194,7 +194,7 @@ public abstract class DrasylNode {
                 superPeerConnected = BehaviorSubject.createDefault(false);
             }
             if (config.isServerEnabled()) {
-                Server server = new Server(identityManager::getIdentity, messenger, peersManager, this.config, channelGroup, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP, superPeerConnected, communicationOccurredConsumer, endpoints, acceptNewConnections::get);
+                Server server = new Server(identity, messenger, peersManager, this.config, channelGroup, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP, superPeerConnected, communicationOccurredConsumer, endpoints, acceptNewConnections::get);
                 this.components.add(server);
             }
             if (config.isMonitoringEnabled()) {

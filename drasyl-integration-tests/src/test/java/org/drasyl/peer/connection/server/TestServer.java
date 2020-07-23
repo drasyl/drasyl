@@ -36,7 +36,6 @@ import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
 
 import static org.awaitility.Awaitility.await;
 
@@ -47,7 +46,7 @@ import static org.awaitility.Awaitility.await;
 public class TestServer extends Server {
     private final TestServerChannelInitializer channelInitializer;
 
-    public TestServer(Supplier<Identity> identitySupplier,
+    public TestServer(Identity identity,
                       Messenger messenger,
                       PeersManager peersManager,
                       DrasylConfig config,
@@ -58,7 +57,7 @@ public class TestServer extends Server {
                       Set<URI> endpoints) {
         this(config, channelGroup, workerGroup, bossGroup, new TestServerChannelInitializer(new ServerEnvironment(
                 config,
-                identitySupplier,
+                identity,
                 peersManager,
                 messenger,
                 endpoints,

@@ -40,7 +40,7 @@ public class DirectClient extends AbstractClient {
     private final Runnable onFailure;
 
     public DirectClient(DrasylConfig config,
-                        Identity identitySupplier,
+                        Identity identity,
                         PeersManager peersManager,
                         Messenger messenger,
                         PeerChannelGroup channelGroup,
@@ -54,7 +54,7 @@ public class DirectClient extends AbstractClient {
                         BooleanSupplier acceptNewConnectionsSupplier) {
         this(
                 config,
-                identitySupplier,
+                identity,
                 peersManager,
                 messenger,
                 channelGroup,
