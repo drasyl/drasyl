@@ -58,7 +58,6 @@ import static org.drasyl.util.UriUtil.overridePort;
 @SuppressWarnings({ "squid:S00107" })
 public class Server implements DrasylNodeComponent {
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
-    protected final PeerChannelGroup channelGroup;
     private final ServerBootstrap serverBootstrap;
     private final DrasylConfig config;
     private final AtomicBoolean opened;
@@ -70,7 +69,6 @@ public class Server implements DrasylNodeComponent {
     Server(DrasylConfig config,
            ServerBootstrap serverBootstrap,
            AtomicBoolean opened,
-           PeerChannelGroup channelGroup,
            int actualPort, Channel channel,
            Set<URI> actualEndpoints,
            Set<URI> nodeEndpoints) {
@@ -80,7 +78,6 @@ public class Server implements DrasylNodeComponent {
         this.opened = opened;
         this.actualPort = actualPort;
         this.actualEndpoints = actualEndpoints;
-        this.channelGroup = channelGroup;
         this.nodeEndpoints = nodeEndpoints;
     }
 
@@ -127,7 +124,6 @@ public class Server implements DrasylNodeComponent {
                   Set<URI> nodeEndpoints) throws ServerException {
         this(
                 config,
-                channelGroup,
                 opened,
                 nodeEndpoints,
                 new ServerBootstrap().group(bossGroup, workerGroup)
@@ -146,13 +142,11 @@ public class Server implements DrasylNodeComponent {
     }
 
     public Server(DrasylConfig config,
-                  PeerChannelGroup channelGroup,
                   AtomicBoolean opened,
                   Set<URI> nodeEndpoints,
                   ServerBootstrap serverBootstrap) {
         this.config = config;
         this.channel = null;
-        this.channelGroup = channelGroup;
         this.serverBootstrap = serverBootstrap;
         this.opened = opened;
         this.actualPort = -1;

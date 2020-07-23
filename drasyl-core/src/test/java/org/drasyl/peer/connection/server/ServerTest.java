@@ -83,7 +83,7 @@ class ServerTest {
 
             AtomicBoolean opened = new AtomicBoolean(false);
             try (Server server = new Server(
-                    config, serverBootstrap, opened, channelGroup, -1, serverChannel,
+                    config, serverBootstrap, opened, -1, serverChannel,
                     new HashSet<>(), new HashSet<>())) {
                 server.open();
 
@@ -94,7 +94,7 @@ class ServerTest {
         @Test
         void shouldDoNothingIfServerHasAlreadyBeenStarted() throws ServerException {
             try (Server server = new Server(
-                    config, serverBootstrap, new AtomicBoolean(true), channelGroup, -1, serverChannel,
+                    config, serverBootstrap, new AtomicBoolean(true), -1, serverChannel,
                     new HashSet<>(), new HashSet<>())) {
                 server.open();
 
@@ -108,7 +108,7 @@ class ServerTest {
         @Test
         void shouldDoNothingIfServerHasAlreadyBeenShutDown() {
             Server server = new Server(
-                    config, serverBootstrap, new AtomicBoolean(false), channelGroup, -1, serverChannel,
+                    config, serverBootstrap, new AtomicBoolean(false), -1, serverChannel,
                     new HashSet<>(), new HashSet<>());
 
             server.close();

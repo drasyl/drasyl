@@ -75,7 +75,6 @@ public class TestServer extends Server {
                TestServerChannelInitializer channelInitializer) {
         super(
                 config,
-                channelGroup,
                 new AtomicBoolean(),
                 new HashSet<>(),
                 new ServerBootstrap().group(bossGroup, workerGroup)
