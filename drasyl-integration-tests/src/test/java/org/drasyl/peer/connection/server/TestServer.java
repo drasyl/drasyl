@@ -44,6 +44,7 @@ import static org.awaitility.Awaitility.await;
  * interfaces for reading internal states and for injecting messages.
  */
 public class TestServer extends Server {
+    private final PeerChannelGroup channelGroup;
     private final TestServerChannelInitializer channelInitializer;
 
     public TestServer(Identity identity,
@@ -80,6 +81,7 @@ public class TestServer extends Server {
                 new ServerBootstrap().group(bossGroup, workerGroup)
                         .channel(NioServerSocketChannel.class)
                         .childHandler(channelInitializer));
+        this.channelGroup = channelGroup;
         this.channelInitializer = channelInitializer;
     }
 
