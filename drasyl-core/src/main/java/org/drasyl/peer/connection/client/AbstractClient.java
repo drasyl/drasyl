@@ -7,8 +7,6 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
-import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeComponent;
@@ -19,7 +17,6 @@ import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.util.DrasylFunction;
-import org.drasyl.util.DrasylScheduler;
 import org.drasyl.util.SetUtil;
 import org.slf4j.Logger;
 
@@ -45,7 +42,6 @@ abstract class AbstractClient implements DrasylNodeComponent {
     private final AtomicInteger nextEndpointPointer;
     private final AtomicInteger nextRetryDelayPointer;
     private final DrasylFunction<URI, Bootstrap, ClientException> bootstrapSupplier;
-    private final Subject<Boolean> connected;
     private final List<Duration> retryDelays;
     protected Channel channel;
     protected BooleanSupplier acceptNewConnectionsSupplier;
@@ -53,7 +49,6 @@ abstract class AbstractClient implements DrasylNodeComponent {
     protected AbstractClient(List<Duration> retryDelays,
                              EventLoopGroup workerGroup,
                              Supplier<Set<URI>> endpointsSupplier,
-                             Subject<Boolean> connected,
                              BooleanSupplier acceptNewConnectionsSupplier,
                              Identity identity,
                              Messenger messenger,
@@ -72,7 +67,6 @@ abstract class AbstractClient implements DrasylNodeComponent {
                 retryDelays,
                 workerGroup,
                 endpointsSupplier,
-                connected,
                 acceptNewConnectionsSupplier,
                 endpoint -> new Bootstrap()
                         .group(workerGroup)
@@ -84,7 +78,6 @@ abstract class AbstractClient implements DrasylNodeComponent {
                                         messenger,
                                         channelGroup,
                                         peersManager,
-                                        connected,
                                         eventConsumer,
                                         joinsAsChildren,
                                         serverPublicKey,
@@ -100,7 +93,6 @@ abstract class AbstractClient implements DrasylNodeComponent {
     protected AbstractClient(List<Duration> retryDelays,
                              EventLoopGroup workerGroup,
                              Supplier<Set<URI>> endpointsSupplier,
-                             Subject<Boolean> connected,
                              BooleanSupplier acceptNewConnectionsSupplier,
                              DrasylFunction<URI, Bootstrap, ClientException> bootstrapSupplier) {
         this(
@@ -112,7 +104,6 @@ abstract class AbstractClient implements DrasylNodeComponent {
                 new AtomicInteger(0),
                 new AtomicInteger(0),
                 bootstrapSupplier,
-                connected,
                 null
         );
     }
@@ -125,7 +116,6 @@ abstract class AbstractClient implements DrasylNodeComponent {
                              AtomicInteger nextEndpointPointer,
                              AtomicInteger nextRetryDelayPointer,
                              DrasylFunction<URI, Bootstrap, ClientException> bootstrapSupplier,
-                             Subject<Boolean> connected,
                              Channel channel) {
         this.retryDelays = retryDelays;
         this.workerGroup = workerGroup;
@@ -135,7 +125,6 @@ abstract class AbstractClient implements DrasylNodeComponent {
         this.nextEndpointPointer = nextEndpointPointer;
         this.nextRetryDelayPointer = nextRetryDelayPointer;
         this.bootstrapSupplier = bootstrapSupplier;
-        this.connected = connected;
         this.channel = channel;
     }
 
@@ -245,19 +234,6 @@ abstract class AbstractClient implements DrasylNodeComponent {
         Duration retryDelay = retryDelays.get(nextRetryDelayPointer.get());
         nextRetryDelayPointer.updateAndGet(p -> Math.min(p + 1, retryDelays.size() - 1));
         return retryDelay;
-    }
-
-    /**
-     * Returns an observable which emits the value <code>true</code> if a connection with the Server
-     * including handshake could be established. Otherwise <code>false</code> is returned.
-     * <p>
-     * The Observable immediately returns an item with the current state of the connection on a new
-     * subscription.
-     *
-     * @return
-     */
-    public Observable<Boolean> connectionEstablished() {
-        return connected.subscribeOn(DrasylScheduler.getInstanceLight());
     }
 
     @Override

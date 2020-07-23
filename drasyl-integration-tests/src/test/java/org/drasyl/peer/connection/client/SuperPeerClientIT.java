@@ -20,9 +20,7 @@ package org.drasyl.peer.connection.client;
 
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
-import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylConfig;
@@ -93,7 +91,6 @@ class SuperPeerClientIT {
     private PeersManager peersManager;
     private PeersManager peersManagerServer;
     private Subject<Event> emittedEventsSubject;
-    private Observable<Boolean> superPeerConnected;
     private PeerChannelGroup channelGroup;
     private PeerChannelGroup channelGroupServer;
     private Set<URI> endpoints;
@@ -155,10 +152,9 @@ class SuperPeerClientIT {
         messengerServer = new Messenger(message -> completedFuture(null), peersManager, channelGroup);
         endpoints = new HashSet<>();
 
-        server = new TestServer(identityManagerServer.getIdentity(), messengerServer, peersManagerServer, serverConfig, channelGroupServer, serverWorkerGroup, bossGroup, superPeerConnected, endpoints);
+        server = new TestServer(identityManagerServer.getIdentity(), messengerServer, peersManagerServer, serverConfig, channelGroupServer, serverWorkerGroup, bossGroup, endpoints);
         server.open();
         emittedEventsSubject = ReplaySubject.<Event>create().toSerialized();
-        superPeerConnected = BehaviorSubject.createDefault(false).toSerialized();
     }
 
     @AfterEach

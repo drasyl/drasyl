@@ -87,7 +87,7 @@ public class ServerConnectionHandler extends AbstractThreeWayHandshakeServerHand
     protected ConnectionExceptionMessage.Error validateSessionRequest(JoinMessage requestMessage) {
         CompressedPublicKey clientPublicKey = requestMessage.getPublicKey();
 
-        if (requestMessage.isChildrenJoin() && !environment.getSuperPeerConnectedSupplier().getAsBoolean()) {
+        if (requestMessage.isChildrenJoin() && !environment.isDisconnectedFromSuperPeer()) {
             return CONNECTION_ERROR_SUPER_PEER_DISCONNECTED;
         }
         else if (environment.getIdentity().getPublicKey().equals(clientPublicKey)) {

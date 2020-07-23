@@ -40,8 +40,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.concurrent.CompletableFuture;
 
 import static java.time.Duration.ofMillis;
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_SERVICE_UNAVAILABLE;
 import static org.drasyl.peer.connection.PeerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
+import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_SERVICE_UNAVAILABLE;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -122,14 +122,12 @@ class ClientConnectionHandlerTest {
             channel.flush();
 
             verify(peersManager).setPeerInformationAndAddPathAndSetSuperPeer(eq(publicKey), any(), any());
-            verify(environment.getConnected()).onNext(true);
             verify(environment.getEventConsumer()).accept(new NodeOnlineEvent(Node.of(environment.getIdentity())));
 //        assertEquals(new StatusMessage(STATUS_OK, "456"), channel.readOutbound());
 
             channel.close();
 
             verify(peersManager).unsetSuperPeerAndRemovePath(any());
-            verify(environment.getConnected()).onNext(false);
             verify(environment.getEventConsumer()).accept(new NodeOfflineEvent(Node.of(environment.getIdentity())));
         }
     }
@@ -152,13 +150,11 @@ class ClientConnectionHandlerTest {
             channel.flush();
 
             verify(peersManager).setPeerInformationAndAddPath(eq(publicKey), any(), any());
-            verify(environment.getConnected()).onNext(true);
 //        assertEquals(new StatusMessage(STATUS_OK, "456"), channel.readOutbound());
 
             channel.close();
 
             verify(peersManager).removePath(eq(publicKey), any());
-            verify(environment.getConnected()).onNext(false);
         }
     }
 }

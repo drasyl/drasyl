@@ -128,11 +128,10 @@ class ChunkedMessageIT {
         PeersManager peersManager = new PeersManager(event -> {
         });
         Messenger serverMessenger = new Messenger(message -> completedFuture(null), peersManager, channelGroup);
-        Observable<Boolean> serverSuperPeerConnected = Observable.just(false);
         channelGroup = new PeerChannelGroup();
         endpoints = new HashSet<>();
 
-        server = new TestServer(serverIdentityManager.getIdentity(), serverMessenger, peersManager, serverConfig, channelGroup, workerGroup, bossGroup, serverSuperPeerConnected, endpoints);
+        server = new TestServer(serverIdentityManager.getIdentity(), serverMessenger, peersManager, serverConfig, channelGroup, workerGroup, bossGroup, endpoints);
         server.open();
 
         config = DrasylConfig.newBuilder()

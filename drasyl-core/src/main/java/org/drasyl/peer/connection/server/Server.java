@@ -25,7 +25,6 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
-import io.reactivex.rxjava3.core.Observable;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylNodeComponent;
 import org.drasyl.identity.CompressedPublicKey;
@@ -88,11 +87,10 @@ public class Server implements DrasylNodeComponent {
                   PeerChannelGroup channelGroup,
                   EventLoopGroup workerGroup,
                   EventLoopGroup bossGroup,
-                  Observable<Boolean> superPeerConnected,
                   Consumer<CompressedPublicKey> peerCommunicationConsumer,
                   Set<URI> nodeEndpoints,
                   BooleanSupplier acceptNewConnectionsSupplier) throws ServerException {
-        this(identity, messenger, peersManager, config, channelGroup, workerGroup, bossGroup, superPeerConnected, new AtomicBoolean(false), acceptNewConnectionsSupplier, peerCommunicationConsumer, nodeEndpoints);
+        this(identity, messenger, peersManager, config, channelGroup, workerGroup, bossGroup, new AtomicBoolean(false), acceptNewConnectionsSupplier, peerCommunicationConsumer, nodeEndpoints);
     }
 
     /**
@@ -105,7 +103,6 @@ public class Server implements DrasylNodeComponent {
      * @param channelGroup
      * @param workerGroup                  netty shared worker group
      * @param bossGroup                    netty shared boss group
-     * @param superPeerConnected
      * @param acceptNewConnectionsSupplier
      * @param peerCommunicationConsumer
      * @param nodeEndpoints
@@ -117,7 +114,6 @@ public class Server implements DrasylNodeComponent {
                   PeerChannelGroup channelGroup,
                   EventLoopGroup workerGroup,
                   EventLoopGroup bossGroup,
-                  Observable<Boolean> superPeerConnected,
                   AtomicBoolean opened,
                   BooleanSupplier acceptNewConnectionsSupplier,
                   Consumer<CompressedPublicKey> peerCommunicationConsumer,
@@ -136,7 +132,6 @@ public class Server implements DrasylNodeComponent {
                                         nodeEndpoints,
                                         channelGroup,
                                         acceptNewConnectionsSupplier,
-                                        () -> !config.isSuperPeerEnabled() || superPeerConnected.blockingFirst(),
                                         peerCommunicationConsumer),
                                 config.getServerChannelInitializer())));
     }

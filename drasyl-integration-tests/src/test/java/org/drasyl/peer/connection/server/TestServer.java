@@ -54,7 +54,6 @@ public class TestServer extends Server {
                       PeerChannelGroup channelGroup,
                       EventLoopGroup workerGroup,
                       EventLoopGroup bossGroup,
-                      Observable<Boolean> superPeerConnected,
                       Set<URI> endpoints) {
         this(config, channelGroup, workerGroup, bossGroup, new TestServerChannelInitializer(new ServerEnvironment(
                 config,
@@ -64,7 +63,6 @@ public class TestServer extends Server {
                 endpoints,
                 channelGroup,
                 () -> true,
-                () -> !config.isSuperPeerEnabled() || superPeerConnected.blockingFirst(),
                 publicKey -> {
                 })));
     }

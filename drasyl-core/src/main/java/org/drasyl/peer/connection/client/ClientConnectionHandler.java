@@ -120,28 +120,20 @@ public class ClientConnectionHandler extends AbstractThreeWayHandshakeClientHand
             channel.closeFuture().addListener(future -> {
                 environment.getEventConsumer().accept(new NodeOfflineEvent(Node.of(environment.getIdentity())));
 
-                environment.getConnected().onNext(false);
                 environment.getPeersManager().unsetSuperPeerAndRemovePath(path);
             });
 
             // store peer information
             environment.getPeersManager().setPeerInformationAndAddPathAndSetSuperPeer(identity, offerMessage.getPeerInformation(), path);
 
-            environment.getConnected().onNext(true);
             environment.getEventConsumer().accept(new NodeOnlineEvent(Node.of(environment.getIdentity())));
         }
         else {
             // remove peer information on disconnect
-            channel.closeFuture().addListener(future -> {
-                environment.getConnected().onNext(false);
-
-                environment.getPeersManager().removePath(identity, path);
-            });
+            channel.closeFuture().addListener(future -> environment.getPeersManager().removePath(identity, path));
 
             // store peer information
             environment.getPeersManager().setPeerInformationAndAddPath(identity, offerMessage.getPeerInformation(), path);
-
-            environment.getConnected().onNext(true);
         }
     }
 }

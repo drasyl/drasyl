@@ -24,8 +24,6 @@ import com.typesafe.config.ConfigException;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.group.ChannelGroupFutureListener;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.sentry.Sentry;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
@@ -184,17 +182,12 @@ public abstract class DrasylNode {
                 IntraVmDiscovery intraVmDiscovery = new IntraVmDiscovery(identity.getPublicKey(), messenger, peersManager, this::onInternalEvent);
                 this.components.add(intraVmDiscovery);
             }
-            Observable<Boolean> superPeerConnected;
             if (config.isSuperPeerEnabled()) {
                 SuperPeerClient superPeerClient = new SuperPeerClient(this.config, identity, peersManager, messenger, channelGroup, DrasylNode.WORKER_GROUP, this::onInternalEvent, communicationOccurredConsumer, acceptNewConnections::get);
-                superPeerConnected = superPeerClient.connectionEstablished();
                 this.components.add(superPeerClient);
             }
-            else {
-                superPeerConnected = BehaviorSubject.createDefault(false);
-            }
             if (config.isServerEnabled()) {
-                Server server = new Server(identity, messenger, peersManager, this.config, channelGroup, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP, superPeerConnected, communicationOccurredConsumer, endpoints, acceptNewConnections::get);
+                Server server = new Server(identity, messenger, peersManager, this.config, channelGroup, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP, communicationOccurredConsumer, endpoints, acceptNewConnections::get);
                 this.components.add(server);
             }
             if (config.isMonitoringEnabled()) {
