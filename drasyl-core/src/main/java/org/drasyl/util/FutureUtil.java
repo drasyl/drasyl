@@ -2,6 +2,7 @@ package org.drasyl.util;
 
 import io.netty.util.concurrent.Future;
 
+import java.util.Collection;
 import java.util.concurrent.CompletableFuture;
 
 import static java.util.Objects.requireNonNull;
@@ -46,5 +47,87 @@ public class FutureUtil {
         });
 
         return completableFuture;
+    }
+
+    /**
+     * Completes {@code future} exceptionally if one of the given {@code futures} are completed
+     * exceptionally. If the given array of {@code futures} is empty, nothing happens.
+     *
+     * @param future  future that should be completed
+     * @param futures futures that should be waited for
+     * @throws NullPointerException if {@code future} or {@code futures} is null
+     */
+    public static void completeOnAnyOfExceptionally(CompletableFuture<?> future,
+                                                    Collection<CompletableFuture<?>> futures) {
+        completeOnAnyOfExceptionally(future, futures.toArray(CompletableFuture[]::new));
+    }
+
+    /**
+     * Completes {@code future} exceptionally if one of the given {@code futures} are completed
+     * exceptionally. If the given array of {@code futures} is empty, nothing happens.
+     *
+     * @param future  future that should be completed
+     * @param futures futures that should be waited for
+     * @throws NullPointerException if {@code future} or {@code futures} is null
+     */
+    public static void completeOnAnyOfExceptionally(CompletableFuture<?> future,
+                                                    CompletableFuture<?>... futures) {
+        requireNonNull(future);
+        requireNonNull(futures);
+
+        if (futures.length == 0) {
+            return;
+        }
+
+        CompletableFuture.allOf(futures).exceptionally(e -> {
+            future.completeExceptionally(e);
+
+            return null;
+        });
+    }
+
+    /**
+     * Completes {@code future} if all of the given {@code futures} are completed. When one of the
+     * given {@code futures} completes exceptionally, the given {@code future} will also complete
+     * exceptionally. If the given collection of {@code futures} is empty, the {@code future} is
+     * completed immediately.
+     *
+     * @param future  future that should be completed
+     * @param futures futures that should be waited for
+     * @throws NullPointerException if {@code future} or {@code futures} is null
+     */
+    public static void completeOnAllOf(CompletableFuture<Void> future,
+                                       Collection<CompletableFuture<?>> futures) {
+        completeOnAllOf(future, futures.toArray(CompletableFuture[]::new));
+    }
+
+    /**
+     * Completes {@code future} if all of the given {@code futures} are completed. When one of the
+     * given {@code futures} completes exceptionally, the given {@code future} will also complete
+     * exceptionally. If the given array of {@code futures} is empty, the {@code future} is
+     * completed immediately.
+     *
+     * @param future  future that should be completed
+     * @param futures futures that should be waited for
+     * @throws NullPointerException if {@code future} or {@code futures} is null
+     */
+    public static void completeOnAllOf(CompletableFuture<Void> future,
+                                       CompletableFuture<?>... futures) {
+        requireNonNull(future);
+        requireNonNull(futures);
+
+        if (futures.length == 0) {
+            future.complete(null);
+        }
+        else {
+            CompletableFuture.allOf(futures).whenComplete((t, e) -> {
+                if (e != null) {
+                    future.completeExceptionally(e);
+                }
+                else {
+                    future.complete(null);
+                }
+            });
+        }
     }
 }
