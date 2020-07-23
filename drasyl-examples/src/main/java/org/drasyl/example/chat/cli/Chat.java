@@ -113,17 +113,15 @@ public class Chat {
             // prompt for message
             String message = newPrompt("Message?");
 
-            try {
-                if (message.isBlank()) {
-                    message = "(blank)";
-                }
+            if (message.isBlank()) {
+                message = "(blank)";
+            }
 
-                node.send(recipient, message);
-                System.out.println("To " + recipient + ": " + message);
-            }
-            catch (DrasylException e) {
+            node.send(recipient, message).exceptionally(e -> {
                 System.out.println("ERR: Unable to sent message: " + e.getMessage());
-            }
+                return null;
+            });
+            System.out.println("To " + recipient + ": " + message);
         }
 
         node.shutdown().join();

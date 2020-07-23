@@ -75,6 +75,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 import static org.drasyl.util.DrasylScheduler.getInstanceHeavy;
 
@@ -342,12 +343,12 @@ public abstract class DrasylNode {
      * @see org.drasyl.pipeline.codec.TypeValidator
      * @since 0.1.3-SNAPSHOT
      */
-    public CompletableFuture<Void> send(String recipient, Object payload) throws DrasylException {
+    public CompletableFuture<Void> send(String recipient, Object payload) {
         try {
             return send(CompressedPublicKey.of(recipient), payload);
         }
         catch (CryptoException | IllegalArgumentException e) {
-            throw new DrasylException("Unable to parse recipient's public key: " + e.getMessage());
+            return failedFuture(new DrasylException("Unable to parse recipient's public key: " + e.getMessage()));
         }
     }
 
