@@ -134,7 +134,8 @@ public abstract class DrasylNode {
     private CompletableFuture<Void> shutdownSequence;
 
     /**
-     * Creates a new drasyl Node.
+     * Creates a new drasyl Node. The node is only being created, it neither connects to the Overlay
+     * Network, nor can send or receive messages. To do this you have to call {@link #start()}.
      * <p>
      * Note: This is a blocking method, because when a node is started for the first time, its
      * identity must be created. This can take up to a minute because of the proof of work.
@@ -144,12 +145,14 @@ public abstract class DrasylNode {
     }
 
     /**
-     * Creates a new drasyl Node with the given <code>config</code>.
+     * Creates a new drasyl Node with the given <code>config</code>. The node is only being created,
+     * it neither connects to the Overlay * Network, nor can send or receive messages. To do this
+     * you have to call {@link #start()}.
      * <p>
      * Note: This is a blocking method, because when a node is started for the first time, its
      * identity must be created. This can take up to a minute because of the proof of work.
      *
-     * @param config
+     * @param config custom configuration used for this node
      */
     @SuppressWarnings({ "java:S2095" })
     public DrasylNode(DrasylConfig config) throws DrasylException {
@@ -268,6 +271,8 @@ public abstract class DrasylNode {
     public abstract void onEvent(Event event);
 
     /**
+     * Return log level of loggers in org.drasyl package namespace.
+     *
      * @return return log level of loggers in org.drasyl package namespace
      */
     public static Level getLogLevel() {
@@ -278,7 +283,7 @@ public abstract class DrasylNode {
     /**
      * Set log level of all drasyl loggers in org.drasyl package namespace.
      *
-     * @param level
+     * @param level new log level
      */
     public static void setLogLevel(Level level) {
         ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.drasyl");
@@ -484,6 +489,8 @@ public abstract class DrasylNode {
     /**
      * Returns the version of the node. If the version could not be read, <code>null</code> is
      * returned.
+     *
+     * @return the version of the node
      */
     public static String getVersion() {
         final Properties properties = new Properties();
@@ -506,6 +513,8 @@ public abstract class DrasylNode {
     }
 
     /**
+     * Returns the {@link Identity} of this node.
+     *
      * @return the {@link Identity} of this node
      */
     public Identity identity() {
