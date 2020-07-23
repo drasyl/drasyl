@@ -20,12 +20,8 @@ package org.drasyl.peer.connection.client;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
-import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylConfig;
-import org.drasyl.DrasylException;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.util.DrasylFunction;
 import org.junit.jupiter.api.Nested;
@@ -74,14 +70,8 @@ class SuperPeerClientTest {
     private List<Duration> superPeerRetryDelays;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private Channel channel;
-    @Mock
-    private Subject<Boolean> connected;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private Bootstrap bootstrap;
-    @Mock
-    private ChannelInitializer<SocketChannel> channelInitializer;
-    @Mock
-    private DrasylFunction<URI, ChannelInitializer<SocketChannel>, DrasylException> channelInitializerSupplier;
 
     @Nested
     class Open {
@@ -90,7 +80,7 @@ class SuperPeerClientTest {
             when(bootstrapSupplier.apply(any())).thenReturn(bootstrap);
             endpoints = Set.of(URI.create("ws://localhost"));
 
-            try (SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, new AtomicBoolean(false), () -> false, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, connected, channel)) {
+            try (SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, new AtomicBoolean(false), () -> false, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, channel)) {
                 client.open();
 
                 verify(bootstrapSupplier).apply(any());
@@ -99,7 +89,7 @@ class SuperPeerClientTest {
 
         @Test
         void shouldNotConnectIfClientIsAlreadyOpen() throws ClientException {
-            try (SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, new AtomicBoolean(true), () -> false, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, connected, channel)) {
+            try (SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, new AtomicBoolean(true), () -> false, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, channel)) {
                 client.open();
 
                 verify(bootstrapSupplier, never()).apply(any());
@@ -113,7 +103,7 @@ class SuperPeerClientTest {
         void shouldScheduleReconnectIfClientIsOpenAndSuperPeerRetryDelaysIsNotEmpty() {
             when(config.getSuperPeerRetryDelays()).thenReturn(List.of(ofSeconds(1)));
 
-            try (SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, new AtomicBoolean(true), () -> true, nextEndpointPointer, new AtomicInteger(), bootstrapSupplier, connected, channel)) {
+            try (SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, new AtomicBoolean(true), () -> true, nextEndpointPointer, new AtomicInteger(), bootstrapSupplier, channel)) {
                 client.conditionalScheduledReconnect();
 
                 verify(workerGroup).schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
@@ -122,7 +112,7 @@ class SuperPeerClientTest {
 
         @Test
         void shouldNotScheduleReconnectIfClientIsNotOpen() {
-            try (SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, new AtomicBoolean(false), () -> false, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, connected, channel)) {
+            try (SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, new AtomicBoolean(false), () -> false, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, channel)) {
                 client.conditionalScheduledReconnect();
 
                 verify(workerGroup, never()).schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
@@ -138,7 +128,7 @@ class SuperPeerClientTest {
             endpoints.add(URI.create("ws://node1.org"));
             endpoints.add(URI.create("ws://node2.org"));
 
-            try (SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, opened, () -> false, new AtomicInteger(0), nextRetryDelayPointer, bootstrapSupplier, connected, channel)) {
+            try (SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, opened, () -> false, new AtomicInteger(0), nextRetryDelayPointer, bootstrapSupplier, channel)) {
                 assertEquals(URI.create("ws://node1.org"), client.nextEndpoint());
                 assertEquals(URI.create("ws://node2.org"), client.nextEndpoint());
                 assertEquals(URI.create("ws://node1.org"), client.nextEndpoint());
@@ -153,7 +143,7 @@ class SuperPeerClientTest {
             when(config.getSuperPeerRetryDelays()).thenReturn(superPeerRetryDelays);
             when(config.getSuperPeerRetryDelays()).thenReturn(List.of(ofSeconds(3), ofSeconds(6)));
 
-            try (SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, opened, () -> false, nextEndpointPointer, new AtomicInteger(0), bootstrapSupplier, connected, channel)) {
+            try (SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, opened, () -> false, nextEndpointPointer, new AtomicInteger(0), bootstrapSupplier, channel)) {
                 assertEquals(ofSeconds(3), client.nextRetryDelay());
                 assertEquals(ofSeconds(6), client.nextRetryDelay());
                 assertEquals(ofSeconds(6), client.nextRetryDelay());
@@ -166,7 +156,7 @@ class SuperPeerClientTest {
         @Test
         void shouldSetOpenedToFalseIfClientIsOpen() {
             AtomicBoolean opened = new AtomicBoolean(true);
-            SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, opened, () -> true, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, connected, channel);
+            SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, opened, () -> true, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, channel);
 
             client.close();
 
@@ -175,7 +165,7 @@ class SuperPeerClientTest {
 
         @Test
         void shouldNotCloseConnectionIfClientIsNotOpen() {
-            SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, new AtomicBoolean(false), () -> false, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, connected, channel);
+            SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, new AtomicBoolean(false), () -> false, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, channel);
 
             client.close();
 

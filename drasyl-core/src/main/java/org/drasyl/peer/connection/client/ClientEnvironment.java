@@ -18,7 +18,6 @@
  */
 package org.drasyl.peer.connection.client;
 
-import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
@@ -42,7 +41,6 @@ public class ClientEnvironment {
 
     private final PeerChannelGroup channelGroup;
     private final PeersManager peersManager;
-    private final Subject<Boolean> connected;
     private final Consumer<Event> eventConsumer;
     private final CompressedPublicKey serverPublicKey;
     private final boolean joinAsChildren;
@@ -57,7 +55,6 @@ public class ClientEnvironment {
                              Messenger messenger,
                              PeerChannelGroup channelGroup,
                              PeersManager peersManager,
-                             Subject<Boolean> connected,
                              Consumer<Event> eventConsumer,
                              boolean joinAsChildren,
                              CompressedPublicKey serverPublicKey,
@@ -71,7 +68,6 @@ public class ClientEnvironment {
         this.messenger = messenger;
         this.channelGroup = channelGroup;
         this.peersManager = peersManager;
-        this.connected = connected;
         this.eventConsumer = eventConsumer;
         this.joinAsChildren = joinAsChildren;
         this.serverPublicKey = serverPublicKey;
@@ -99,10 +95,6 @@ public class ClientEnvironment {
 
     public PeersManager getPeersManager() {
         return peersManager;
-    }
-
-    public Subject<Boolean> getConnected() {
-        return connected;
     }
 
     public Consumer<Event> getEventConsumer() {

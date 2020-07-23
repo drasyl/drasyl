@@ -23,7 +23,6 @@ import io.netty.buffer.Unpooled;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.ResourceLeakDetector;
-import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
@@ -115,7 +114,6 @@ class ServerIT {
     private Server server;
     private Messenger serverMessenger;
     private PeersManager peersManager;
-    private Observable<Boolean> serverSuperPeerConnected;
     private Identity identitySession1;
     private Identity identitySession2;
     private AtomicBoolean opened;
@@ -161,12 +159,11 @@ class ServerIT {
             }
             return completedFuture(null);
         }, peersManager, channelGroup);
-        serverSuperPeerConnected = Observable.just(false);
         opened = new AtomicBoolean(false);
         endpoints = new HashSet<>();
         acceptNewConnections = new AtomicBoolean(true);
 
-        server = new Server(serverIdentityManager.getIdentity(), serverMessenger, peersManager, serverConfig, channelGroup, workerGroup, bossGroup, serverSuperPeerConnected, opened, acceptNewConnections::get, publicKey -> {
+        server = new Server(serverIdentityManager.getIdentity(), serverMessenger, peersManager, serverConfig, channelGroup, workerGroup, bossGroup, opened, acceptNewConnections::get, publicKey -> {
         }, endpoints);
         server.open();
 
@@ -516,7 +513,7 @@ class ServerIT {
 
     @Test
     void shouldOpenAndCloseGracefully() throws DrasylException {
-        try (Server myServer = new Server(serverIdentityManager.getIdentity(), serverMessenger, peersManager, new DrasylConfig(), channelGroup, workerGroup, bossGroup, serverSuperPeerConnected, publicKey -> {
+        try (Server myServer = new Server(serverIdentityManager.getIdentity(), serverMessenger, peersManager, new DrasylConfig(), channelGroup, workerGroup, bossGroup, publicKey -> {
         }, endpoints, acceptNewConnections::get)) {
             myServer.open();
         }
@@ -527,7 +524,7 @@ class ServerIT {
     @Test
     void openShouldFailIfInvalidPortIsGiven() throws DrasylException {
         DrasylConfig config = DrasylConfig.newBuilder().serverBindPort(72722).build();
-        try (Server myServer = new Server(serverIdentityManager.getIdentity(), serverMessenger, peersManager, config, channelGroup, workerGroup, bossGroup, serverSuperPeerConnected, publicKey -> {
+        try (Server myServer = new Server(serverIdentityManager.getIdentity(), serverMessenger, peersManager, config, channelGroup, workerGroup, bossGroup, publicKey -> {
         }, endpoints, acceptNewConnections::get)) {
             assertThrows(ServerException.class, myServer::open);
         }

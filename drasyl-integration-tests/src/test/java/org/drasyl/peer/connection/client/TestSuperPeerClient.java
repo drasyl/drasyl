@@ -28,7 +28,6 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
@@ -80,7 +79,7 @@ public class TestSuperPeerClient extends SuperPeerClient {
                                 Subject<Event> receivedEvents,
                                 boolean doPingPong,
                                 boolean doJoin) {
-        this(config, identity, workerGroup, receivedEvents, new PeersManager(receivedEvents::onNext), channelGroup, BehaviorSubject.createDefault(false), doPingPong, doJoin);
+        this(config, identity, workerGroup, receivedEvents, new PeersManager(receivedEvents::onNext), channelGroup, doPingPong, doJoin);
     }
 
     private TestSuperPeerClient(DrasylConfig config,
@@ -89,13 +88,11 @@ public class TestSuperPeerClient extends SuperPeerClient {
                                 Subject<Event> receivedEvents,
                                 PeersManager peersManager,
                                 PeerChannelGroup channelGroup,
-                                Subject<Boolean> connected,
                                 boolean doPingPong,
                                 boolean doJoin) {
         super(
                 config,
                 workerGroup,
-                connected,
                 () -> true,
                 endpoint -> new Bootstrap()
                         .group(workerGroup)
@@ -107,7 +104,6 @@ public class TestSuperPeerClient extends SuperPeerClient {
                                 new Messenger((message -> completedFuture(null)), peersManager, channelGroup),
                                 channelGroup,
                                 peersManager,
-                                connected,
                                 receivedEvents::onNext,
                                 true,
                                 config.getSuperPeerPublicKey(),

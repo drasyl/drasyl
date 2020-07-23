@@ -3,8 +3,6 @@ package org.drasyl.peer.connection.client;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
-import io.reactivex.rxjava3.subjects.BehaviorSubject;
-import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
@@ -37,43 +35,11 @@ public class DirectClient extends AbstractClient {
     private final Runnable onFailure;
 
     public DirectClient(DrasylConfig config,
-                        Identity identity,
-                        PeersManager peersManager,
-                        Messenger messenger,
-                        PeerChannelGroup channelGroup,
-                        EventLoopGroup workerGroup,
-                        Consumer<Event> eventConsumer,
-                        Consumer<CompressedPublicKey> peerCommunicationConsumer,
-                        CompressedPublicKey serverPublicKey,
-                        Supplier<Set<URI>> endpointsSupplier,
-                        BooleanSupplier directConnectionDemand,
-                        Runnable onFailure,
-                        BooleanSupplier acceptNewConnectionsSupplier) {
-        this(
-                config,
-                identity,
-                peersManager,
-                messenger,
-                channelGroup,
-                workerGroup,
-                BehaviorSubject.createDefault(false),
-                eventConsumer,
-                peerCommunicationConsumer,
-                serverPublicKey,
-                endpointsSupplier,
-                directConnectionDemand,
-                onFailure,
-                acceptNewConnectionsSupplier
-        );
-    }
-
-    private DirectClient(DrasylConfig config,
                          Identity identity,
                          PeersManager peersManager,
                          Messenger messenger,
                          PeerChannelGroup channelGroup,
                          EventLoopGroup workerGroup,
-                         Subject<Boolean> connected,
                          Consumer<Event> eventConsumer,
                          Consumer<CompressedPublicKey> peerCommunicationConsumer,
                          CompressedPublicKey serverPublicKey,
@@ -85,7 +51,6 @@ public class DirectClient extends AbstractClient {
                 config.getDirectConnectionsRetryDelays(),
                 workerGroup,
                 endpointsSupplier,
-                connected,
                 acceptNewConnectionsSupplier,
                 identity,
                 messenger,
@@ -113,11 +78,10 @@ public class DirectClient extends AbstractClient {
                  AtomicInteger nextEndpointPointer,
                  AtomicInteger nextRetryDelayPointer,
                  DrasylFunction<URI, Bootstrap, ClientException> bootstrapSupplier,
-                 Subject<Boolean> connected,
                  Channel channel,
                  BooleanSupplier directConnectionDemand,
                  Runnable onFailure) {
-        super(retryDelays, workerGroup, endpointsSupplier, opened, acceptNewConnectionsSupplier, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, connected, channel);
+        super(retryDelays, workerGroup, endpointsSupplier, opened, acceptNewConnectionsSupplier, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, channel);
         this.directConnectionDemand = directConnectionDemand;
         this.onFailure = onFailure;
     }
