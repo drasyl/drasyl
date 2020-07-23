@@ -154,27 +154,6 @@ public class Server implements DrasylNodeComponent {
         this.nodeEndpoints = nodeEndpoints;
     }
 
-    private static ServerChannelInitializer initiateChannelInitializer(
-            ServerEnvironment environment,
-            Class<? extends ChannelInitializer<SocketChannel>> clazz) throws ServerException {
-        try {
-            Constructor<?> constructor = clazz.getConstructor(ServerEnvironment.class);
-            return (ServerChannelInitializer) constructor.newInstance(environment);
-        }
-        catch (NoSuchMethodException e) {
-            throw new ServerException("The given channel initializer has not the correct signature: '" + clazz + "'");
-        }
-        catch (IllegalAccessException e) {
-            throw new ServerException("Can't access the given channel initializer: '" + clazz + "'");
-        }
-        catch (InvocationTargetException e) {
-            throw new ServerException("Can't invoke the given channel initializer: '" + clazz + "'");
-        }
-        catch (InstantiationException e) {
-            throw new ServerException("Can't instantiate the given channel initializer: '" + clazz + "'");
-        }
-    }
-
     /**
      * Starts the server.
      */
@@ -212,6 +191,42 @@ public class Server implements DrasylNodeComponent {
         }
     }
 
+    /**
+     * Closes the server socket and all open client sockets.
+     */
+    @Override
+    @SuppressWarnings({ "java:S1905" })
+    public void close() {
+        if (opened.compareAndSet(true, false) && channel != null && channel.isOpen()) {
+            LOG.info("Stop Server listening at {}:{}...", config.getServerBindHost(), actualPort);
+            // shutdown server
+            channel.close().awaitUninterruptibly();
+            channel = null;
+            LOG.info("Server stopped");
+        }
+    }
+
+    private static ServerChannelInitializer initiateChannelInitializer(
+            ServerEnvironment environment,
+            Class<? extends ChannelInitializer<SocketChannel>> clazz) throws ServerException {
+        try {
+            Constructor<?> constructor = clazz.getConstructor(ServerEnvironment.class);
+            return (ServerChannelInitializer) constructor.newInstance(environment);
+        }
+        catch (NoSuchMethodException e) {
+            throw new ServerException("The given channel initializer has not the correct signature: '" + clazz + "'");
+        }
+        catch (IllegalAccessException e) {
+            throw new ServerException("Can't access the given channel initializer: '" + clazz + "'");
+        }
+        catch (InvocationTargetException e) {
+            throw new ServerException("Can't invoke the given channel initializer: '" + clazz + "'");
+        }
+        catch (InstantiationException e) {
+            throw new ServerException("Can't instantiate the given channel initializer: '" + clazz + "'");
+        }
+    }
+
     static Set<URI> determineActualEndpoints(DrasylConfig config, InetSocketAddress listenAddress) {
         Set<URI> configEndpoints = config.getServerEndpoints();
         if (!configEndpoints.isEmpty()) {
@@ -235,20 +250,5 @@ public class Server implements DrasylNodeComponent {
         }
         String scheme = config.getServerSSLEnabled() ? "wss" : "ws";
         return addresses.stream().map(a -> URI.create(scheme + "://" + a + ":" + listenAddress.getPort())).collect(Collectors.toSet());
-    }
-
-    /**
-     * Closes the server socket and all open client sockets.
-     */
-    @Override
-    @SuppressWarnings({ "java:S1905" })
-    public void close() {
-        if (opened.compareAndSet(true, false) && channel != null && channel.isOpen()) {
-            LOG.info("Stop Server listening at {}:{}...", config.getServerBindHost(), actualPort);
-            // shutdown server
-            channel.close();
-            channel = null;
-            LOG.info("Server stopped");
-        }
     }
 }
