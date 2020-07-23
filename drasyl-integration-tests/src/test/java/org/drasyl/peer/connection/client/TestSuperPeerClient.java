@@ -18,12 +18,18 @@
  */
 package org.drasyl.peer.connection.client;
 
+import io.netty.bootstrap.Bootstrap;
 import io.netty.buffer.ByteBuf;
 import io.netty.channel.ChannelFuture;
+import io.netty.channel.ChannelHandlerContext;
+import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
+import io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
+import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylConfig;
@@ -34,6 +40,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
+import org.drasyl.peer.connection.handler.SimpleChannelDuplexHandler;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.ResponseMessage;
@@ -43,12 +50,19 @@ import java.net.URI;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
+import static io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler.ClientHandshakeStateEvent.HANDSHAKE_COMPLETE;
+import static io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler.ClientHandshakeStateEvent.HANDSHAKE_TIMEOUT;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.awaitility.Awaitility.await;
+import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_HANDLER;
+import static org.drasyl.util.WebSocketUtil.webSocketPort;
 
 public class TestSuperPeerClient extends SuperPeerClient {
     private final Identity identity;
     private final Subject<Event> receivedEvents;
+    private final PublishSubject<Message> sentMessages;
+    private final PublishSubject<Message> receivedMessages;
+    private final CompletableFuture<Void> websocketHandshake;
 
     public TestSuperPeerClient(DrasylConfig config,
                                Identity identity,
@@ -78,12 +92,41 @@ public class TestSuperPeerClient extends SuperPeerClient {
                                 Subject<Boolean> connected,
                                 boolean doPingPong,
                                 boolean doJoin) {
-        super(config, workerGroup, connected, endpoint -> new TestClientChannelInitializer(new ClientEnvironment(config, identity, endpoint, new Messenger((message ->
-                completedFuture(null)), peersManager, channelGroup), channelGroup, peersManager, connected, receivedEvents::onNext, true,
-                config.getSuperPeerPublicKey(), config.getSuperPeerIdleRetries(), config.getSuperPeerIdleTimeout(), config.getSuperPeerHandshakeTimeout(), publicKey -> {
-        }), doPingPong, doJoin), () -> true);
+        super(
+                config,
+                workerGroup,
+                connected,
+                () -> true,
+                endpoint -> new Bootstrap()
+                        .group(workerGroup)
+                        .channel(NioSocketChannel.class)
+                        .handler(new TestClientChannelInitializer(new ClientEnvironment(
+                                config,
+                                identity,
+                                endpoint,
+                                new Messenger((message -> completedFuture(null)), peersManager, channelGroup),
+                                channelGroup,
+                                peersManager,
+                                connected,
+                                receivedEvents::onNext,
+                                true,
+                                config.getSuperPeerPublicKey(),
+                                config.getSuperPeerIdleRetries(),
+                                config.getSuperPeerIdleTimeout(),
+                                config.getSuperPeerHandshakeTimeout(),
+                                publicKey -> {
+
+                                }),
+                                doPingPong,
+                                doJoin
+                        ))
+                        .remoteAddress(endpoint.getHost(), webSocketPort(endpoint))
+        );
         this.identity = identity;
         this.receivedEvents = receivedEvents;
+        this.sentMessages = PublishSubject.create();
+        this.receivedMessages = PublishSubject.create();
+        this.websocketHandshake = new CompletableFuture<>();
     }
 
     public Observable<Event> receivedEvents() {
@@ -104,8 +147,7 @@ public class TestSuperPeerClient extends SuperPeerClient {
     }
 
     public Observable<Message> sentMessages() {
-        await().until(() -> channel != null);
-        return ((TestClientChannelInitializer) channelInitializer).sentMessages();
+        return sentMessages;
     }
 
     public CompressedPublicKey getPublicKey() {
@@ -124,13 +166,11 @@ public class TestSuperPeerClient extends SuperPeerClient {
     }
 
     public Observable<Message> receivedMessages() {
-        await().until(() -> channel != null);
-        return ((TestClientChannelInitializer) channelInitializer).receivedMessages();
+        return receivedMessages;
     }
 
     public void send(Message message) {
-        await().until(() -> channelInitializer != null);
-        ((TestClientChannelInitializer) channelInitializer).websocketHandshake().join();
+        websocketHandshake.join();
         ChannelFuture future = channel.writeAndFlush(message).awaitUninterruptibly();
         if (!future.isSuccess()) {
             throw new RuntimeException(future.cause());
@@ -138,11 +178,55 @@ public class TestSuperPeerClient extends SuperPeerClient {
     }
 
     public void sendRawBinary(ByteBuf byteBuf) {
-        await().until(() -> channelInitializer != null);
-        ((TestClientChannelInitializer) channelInitializer).websocketHandshake().join();
+        websocketHandshake.join();
         ChannelFuture future = channel.writeAndFlush(new BinaryWebSocketFrame(byteBuf)).awaitUninterruptibly();
         if (!future.isSuccess()) {
             throw new RuntimeException(future.cause());
         }
+    }
+
+    @Override
+    public void open() {
+        super.open();
+
+        await().until(() -> channel != null);
+        channel.pipeline().addAfter(CHUNK_HANDLER, "TestSuperPeerClient", new SimpleChannelDuplexHandler<Message, Message>(false, false, false) {
+            @Override
+            protected void channelRead0(ChannelHandlerContext ctx,
+                                        Message msg) {
+                receivedMessages.onNext(msg);
+                ctx.fireChannelRead(msg);
+            }
+
+            @Override
+            protected void channelWrite0(ChannelHandlerContext ctx,
+                                         Message msg,
+                                         ChannelPromise promise) {
+                sentMessages.onNext(msg);
+                ctx.write(msg, promise);
+            }
+
+            @Override
+            public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
+                sentMessages.onComplete();
+                receivedMessages.onComplete();
+                super.channelUnregistered(ctx);
+            }
+
+            @Override
+            public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+                super.userEventTriggered(ctx, evt);
+
+                if (evt instanceof WebSocketClientProtocolHandler.ClientHandshakeStateEvent) {
+                    WebSocketClientProtocolHandler.ClientHandshakeStateEvent e = (WebSocketClientProtocolHandler.ClientHandshakeStateEvent) evt;
+                    if (e == HANDSHAKE_COMPLETE) {
+                        websocketHandshake.complete(null);
+                    }
+                    else if (e == HANDSHAKE_TIMEOUT) {
+                        websocketHandshake.completeExceptionally(new Exception("WebSocket Handshake Timeout"));
+                    }
+                }
+            }
+        });
     }
 }

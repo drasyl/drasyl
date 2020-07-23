@@ -8,10 +8,16 @@ import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.reactivex.rxjava3.core.Observable;
-import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
+import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeComponent;
+import org.drasyl.event.Event;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
+import org.drasyl.messenger.Messenger;
+import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.util.DrasylFunction;
 import org.drasyl.util.DrasylScheduler;
 import org.drasyl.util.SetUtil;
@@ -26,6 +32,7 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
+import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -37,26 +44,56 @@ abstract class AbstractClient implements DrasylNodeComponent {
     private final AtomicBoolean opened;
     private final AtomicInteger nextEndpointPointer;
     private final AtomicInteger nextRetryDelayPointer;
-    private final Supplier<Bootstrap> bootstrapSupplier;
+    private final DrasylFunction<URI, Bootstrap, ClientException> bootstrapSupplier;
     private final Subject<Boolean> connected;
-    private final DrasylFunction<URI, ChannelInitializer<SocketChannel>, DrasylException> channelInitializerSupplier;
     private final List<Duration> retryDelays;
-    protected ChannelInitializer<SocketChannel> channelInitializer;
     protected Channel channel;
     protected BooleanSupplier acceptNewConnectionsSupplier;
 
     protected AbstractClient(List<Duration> retryDelays,
                              EventLoopGroup workerGroup,
                              Supplier<Set<URI>> endpointsSupplier,
-                             DrasylFunction<URI, ChannelInitializer<SocketChannel>, DrasylException> channelInitializerSupplier,
-                             BooleanSupplier acceptNewConnectionsSupplier) {
+                             Subject<Boolean> connected,
+                             BooleanSupplier acceptNewConnectionsSupplier,
+                             Identity identity,
+                             Messenger messenger,
+                             PeersManager peersManager,
+                             DrasylConfig config,
+                             PeerChannelGroup channelGroup,
+                             short idleRetries,
+                             Duration idleTimeout,
+                             Duration handshakeTimeout,
+                             Consumer<Event> eventConsumer,
+                             boolean joinsAsChildren,
+                             Consumer<CompressedPublicKey> peerCommunicationConsumer,
+                             CompressedPublicKey serverPublicKey,
+                             Class<? extends ChannelInitializer<SocketChannel>> channelInitializerClazz) {
         this(
                 retryDelays,
                 workerGroup,
                 endpointsSupplier,
-                BehaviorSubject.createDefault(false),
-                channelInitializerSupplier,
-                acceptNewConnectionsSupplier
+                connected,
+                acceptNewConnectionsSupplier,
+                endpoint -> new Bootstrap()
+                        .group(workerGroup)
+                        .channel(NioSocketChannel.class)
+                        .handler(initiateChannelInitializer(new ClientEnvironment(
+                                        config,
+                                        identity,
+                                        endpoint,
+                                        messenger,
+                                        channelGroup,
+                                        peersManager,
+                                        connected,
+                                        eventConsumer,
+                                        joinsAsChildren,
+                                        serverPublicKey,
+                                        idleRetries,
+                                        idleTimeout,
+                                        handshakeTimeout,
+                                        peerCommunicationConsumer),
+                                channelInitializerClazz))
+                        .remoteAddress(endpoint.getHost(), webSocketPort(endpoint))
         );
     }
 
@@ -64,8 +101,8 @@ abstract class AbstractClient implements DrasylNodeComponent {
                              EventLoopGroup workerGroup,
                              Supplier<Set<URI>> endpointsSupplier,
                              Subject<Boolean> connected,
-                             DrasylFunction<URI, ChannelInitializer<SocketChannel>, DrasylException> channelInitializerSupplier,
-                             BooleanSupplier acceptNewConnectionsSupplier) {
+                             BooleanSupplier acceptNewConnectionsSupplier,
+                             DrasylFunction<URI, Bootstrap, ClientException> bootstrapSupplier) {
         this(
                 retryDelays,
                 workerGroup,
@@ -74,10 +111,8 @@ abstract class AbstractClient implements DrasylNodeComponent {
                 acceptNewConnectionsSupplier,
                 new AtomicInteger(0),
                 new AtomicInteger(0),
-                Bootstrap::new,
+                bootstrapSupplier,
                 connected,
-                channelInitializerSupplier,
-                null,
                 null
         );
     }
@@ -89,10 +124,8 @@ abstract class AbstractClient implements DrasylNodeComponent {
                              BooleanSupplier acceptNewConnectionsSupplier,
                              AtomicInteger nextEndpointPointer,
                              AtomicInteger nextRetryDelayPointer,
-                             Supplier<Bootstrap> bootstrapSupplier,
+                             DrasylFunction<URI, Bootstrap, ClientException> bootstrapSupplier,
                              Subject<Boolean> connected,
-                             DrasylFunction<URI, ChannelInitializer<SocketChannel>, DrasylException> channelInitializerSupplier,
-                             ChannelInitializer<SocketChannel> channelInitializer,
                              Channel channel) {
         this.retryDelays = retryDelays;
         this.workerGroup = workerGroup;
@@ -103,8 +136,6 @@ abstract class AbstractClient implements DrasylNodeComponent {
         this.nextRetryDelayPointer = nextRetryDelayPointer;
         this.bootstrapSupplier = bootstrapSupplier;
         this.connected = connected;
-        this.channelInitializerSupplier = channelInitializerSupplier;
-        this.channelInitializer = channelInitializer;
         this.channel = channel;
     }
 
@@ -126,9 +157,7 @@ abstract class AbstractClient implements DrasylNodeComponent {
 
         getLogger().debug("Connect to Endpoint '{}'", endpoint);
         try {
-            channelInitializer = channelInitializerSupplier.apply(endpoint);
-
-            bootstrapSupplier.get().group(workerGroup).channel(NioSocketChannel.class).handler(channelInitializer).connect(endpoint.getHost(), webSocketPort(endpoint))
+            bootstrapSupplier.apply(endpoint).connect()
                     .addListener((ChannelFutureListener) channelFuture -> { // NOSONAR
                         if (channelFuture.isSuccess()) {
                             getLogger().debug("Connection to Endpoint '{}' established", endpoint);

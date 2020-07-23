@@ -18,88 +18,20 @@
  */
 package org.drasyl.peer.connection.superpeer;
 
-import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPipeline;
-import io.netty.channel.ChannelPromise;
-import io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler;
-import io.reactivex.rxjava3.subjects.PublishSubject;
 import org.drasyl.peer.connection.client.ClientEnvironment;
 import org.drasyl.peer.connection.client.DefaultClientChannelInitializer;
-import org.drasyl.peer.connection.handler.SimpleChannelDuplexHandler;
-import org.drasyl.peer.connection.message.Message;
 
-import java.util.concurrent.CompletableFuture;
-
-import static io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler.ClientHandshakeStateEvent.HANDSHAKE_COMPLETE;
-import static io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler.ClientHandshakeStateEvent.HANDSHAKE_TIMEOUT;
 import static org.drasyl.peer.connection.handler.PingPongHandler.PING_PONG_HANDLER;
 
 public class TestClientChannelInitializer extends DefaultClientChannelInitializer {
-    private final PublishSubject<Message> sentMessages;
-    private final PublishSubject<Message> receivedMessages;
     private final boolean doPingPong;
     private final boolean doJoin;
-
-    private final CompletableFuture<Void> websocketHandshake;
 
     public TestClientChannelInitializer(ClientEnvironment environment, boolean doPingPong, boolean doJoin) {
         super(environment);
         this.doPingPong = doPingPong;
         this.doJoin = doJoin;
-        sentMessages = PublishSubject.create();
-        receivedMessages = PublishSubject.create();
-        websocketHandshake = new CompletableFuture<>();
-    }
-
-    public PublishSubject<Message> sentMessages() {
-        return sentMessages;
-    }
-
-    public PublishSubject<Message> receivedMessages() {
-        return receivedMessages;
-    }
-
-    @Override
-    protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
-        super.afterPojoMarshalStage(pipeline);
-        pipeline.addLast(new SimpleChannelDuplexHandler<Message, Message>(false, false, false) {
-            @Override
-            protected void channelRead0(ChannelHandlerContext ctx,
-                                        Message msg) {
-                receivedMessages.onNext(msg);
-                ctx.fireChannelRead(msg);
-            }
-
-            @Override
-            protected void channelWrite0(ChannelHandlerContext ctx,
-                                         Message msg,
-                                         ChannelPromise promise) {
-                sentMessages.onNext(msg);
-                ctx.write(msg, promise);
-            }
-
-            @Override
-            public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
-                sentMessages.onComplete();
-                receivedMessages.onComplete();
-                super.channelUnregistered(ctx);
-            }
-
-            @Override
-            public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-                super.userEventTriggered(ctx, evt);
-
-                if (evt instanceof WebSocketClientProtocolHandler.ClientHandshakeStateEvent) {
-                    WebSocketClientProtocolHandler.ClientHandshakeStateEvent e = (WebSocketClientProtocolHandler.ClientHandshakeStateEvent) evt;
-                    if (e == HANDSHAKE_COMPLETE) {
-                        websocketHandshake.complete(null);
-                    }
-                    else if (e == HANDSHAKE_TIMEOUT) {
-                        websocketHandshake.completeExceptionally(new Exception("WebSocket Handshake Timeout"));
-                    }
-                }
-            }
-        });
     }
 
     @Override
@@ -118,9 +50,5 @@ public class TestClientChannelInitializer extends DefaultClientChannelInitialize
         if (!doJoin) {
             pipeline.remove(DRASYL_HANDSHAKE_AFTER_WEBSOCKET_HANDSHAKE);
         }
-    }
-
-    public CompletableFuture<Void> websocketHandshake() {
-        return websocketHandshake;
     }
 }

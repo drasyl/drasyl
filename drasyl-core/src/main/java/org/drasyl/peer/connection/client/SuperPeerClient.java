@@ -20,13 +20,10 @@ package org.drasyl.peer.connection.client;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylConfig;
-import org.drasyl.DrasylException;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
@@ -43,7 +40,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
-import java.util.function.Supplier;
 
 /**
  * This class represents the link between <code>DrasylNode</code> and the super peer. It is
@@ -61,10 +57,8 @@ public class SuperPeerClient extends AbstractClient {
                     BooleanSupplier acceptedNewConnections,
                     AtomicInteger nextEndpointPointer,
                     AtomicInteger nextRetryDelayPointer,
-                    Supplier<Bootstrap> bootstrapSupplier,
+                    DrasylFunction<URI, Bootstrap, ClientException> bootstrapSupplier,
                     Subject<Boolean> connected,
-                    DrasylFunction<URI, ChannelInitializer<SocketChannel>, DrasylException> channelInitializerSupplier,
-                    ChannelInitializer<SocketChannel> channelInitializer,
                     Channel channel) {
         super(
                 config.getSuperPeerRetryDelays(),
@@ -76,8 +70,6 @@ public class SuperPeerClient extends AbstractClient {
                 nextRetryDelayPointer,
                 bootstrapSupplier,
                 connected,
-                channelInitializerSupplier,
-                channelInitializer,
                 channel
         );
     }
@@ -85,15 +77,15 @@ public class SuperPeerClient extends AbstractClient {
     protected SuperPeerClient(DrasylConfig config,
                               EventLoopGroup workerGroup,
                               Subject<Boolean> connected,
-                              DrasylFunction<URI, ChannelInitializer<SocketChannel>, DrasylException> channelInitializerSupplier,
-                              BooleanSupplier acceptNewConnectionsSupplier) {
+                              BooleanSupplier acceptNewConnectionsSupplier,
+                              DrasylFunction<URI, Bootstrap, ClientException> bootstrapSupplier) {
         super(
                 config.getSuperPeerRetryDelays(),
                 workerGroup,
                 config::getSuperPeerEndpoints,
                 connected,
-                channelInitializerSupplier,
-                acceptNewConnectionsSupplier);
+                acceptNewConnectionsSupplier,
+                bootstrapSupplier);
     }
 
     public SuperPeerClient(DrasylConfig config,
@@ -134,8 +126,20 @@ public class SuperPeerClient extends AbstractClient {
                 workerGroup,
                 config::getSuperPeerEndpoints,
                 connected,
-                endpoint -> initiateChannelInitializer(new ClientEnvironment(config, identity, endpoint, messenger, channelGroup, peersManager, connected, eventConsumer, true, config.getSuperPeerPublicKey(), config.getSuperPeerIdleRetries(), config.getSuperPeerIdleTimeout(), config.getSuperPeerHandshakeTimeout(), peerCommunicationConsumer), config.getSuperPeerChannelInitializer()),
-                acceptNewConnectionsSupplier
+                acceptNewConnectionsSupplier,
+                identity,
+                messenger,
+                peersManager,
+                config,
+                channelGroup,
+                config.getSuperPeerIdleRetries(),
+                config.getSuperPeerIdleTimeout(),
+                config.getSuperPeerHandshakeTimeout(),
+                eventConsumer,
+                true,
+                peerCommunicationConsumer,
+                config.getSuperPeerPublicKey(),
+                config.getSuperPeerChannelInitializer()
         );
     }
 

@@ -2,13 +2,10 @@ package org.drasyl.peer.connection.client;
 
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylConfig;
-import org.drasyl.DrasylException;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
@@ -89,8 +86,21 @@ public class DirectClient extends AbstractClient {
                 workerGroup,
                 endpointsSupplier,
                 connected,
-                endpoint -> initiateChannelInitializer(new ClientEnvironment(config, identity, endpoint, messenger, channelGroup, peersManager, connected, eventConsumer, false, serverPublicKey, config.getDirectConnectionsIdleRetries(), config.getDirectConnectionsIdleTimeout(), config.getDirectConnectionsHandshakeTimeout(), peerCommunicationConsumer), config.getDirectConnectionsChannelInitializer()),
-                acceptNewConnectionsSupplier);
+                acceptNewConnectionsSupplier,
+                identity,
+                messenger,
+                peersManager,
+                config,
+                channelGroup,
+                config.getDirectConnectionsIdleRetries(),
+                config.getDirectConnectionsIdleTimeout(),
+                config.getDirectConnectionsHandshakeTimeout(),
+                eventConsumer,
+                false,
+                peerCommunicationConsumer,
+                serverPublicKey,
+                config.getDirectConnectionsChannelInitializer()
+        );
         this.directConnectionDemand = directConnectionDemand;
         this.onFailure = onFailure;
     }
@@ -102,14 +112,12 @@ public class DirectClient extends AbstractClient {
                  BooleanSupplier acceptNewConnectionsSupplier,
                  AtomicInteger nextEndpointPointer,
                  AtomicInteger nextRetryDelayPointer,
-                 Supplier<Bootstrap> bootstrapSupplier,
+                 DrasylFunction<URI, Bootstrap, ClientException> bootstrapSupplier,
                  Subject<Boolean> connected,
-                 DrasylFunction<URI, ChannelInitializer<SocketChannel>, DrasylException> channelInitializerSupplier,
-                 ChannelInitializer<SocketChannel> channelInitializer,
                  Channel channel,
                  BooleanSupplier directConnectionDemand,
                  Runnable onFailure) {
-        super(retryDelays, workerGroup, endpointsSupplier, opened, acceptNewConnectionsSupplier, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, connected, channelInitializerSupplier, channelInitializer, channel);
+        super(retryDelays, workerGroup, endpointsSupplier, opened, acceptNewConnectionsSupplier, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, connected, channel);
         this.directConnectionDemand = directConnectionDemand;
         this.onFailure = onFailure;
     }
