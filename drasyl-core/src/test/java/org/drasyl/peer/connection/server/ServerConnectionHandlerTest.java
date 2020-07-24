@@ -35,6 +35,7 @@ import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.Message;
+import org.drasyl.peer.connection.message.MessageId;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.RegisterGrandchildMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
@@ -52,11 +53,11 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static java.time.Duration.ofMillis;
+import static org.drasyl.peer.connection.PeerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_HANDSHAKE_TIMEOUT;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_IDENTITY_COLLISION;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
-import static org.drasyl.peer.connection.PeerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -149,14 +150,14 @@ class ServerConnectionHandlerTest {
 
     @Test
     void shouldRejectUnexpectedMessagesDuringHandshake() {
-        when(applicationMessage.getId()).thenReturn("123");
+        when(applicationMessage.getId()).thenReturn(new MessageId("123"));
 
         ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(applicationMessage);
 
-        assertEquals(new StatusMessage(STATUS_FORBIDDEN, "123"), channel.readOutbound());
+        assertEquals(new StatusMessage(STATUS_FORBIDDEN, new MessageId("123")), channel.readOutbound());
         assertNull(channel.readInbound());
     }
 
@@ -242,11 +243,11 @@ class ServerConnectionHandlerTest {
         void shouldAddPeerInformationAndGrandchildRouteAndInformSuperPeerOnSessionCreationAndRemovePeerInformationAndGrandchildRouteAndInformSuperPeerOnClose() {
             when(environment.getPeersManager()).thenReturn(peersManager);
             when(environment.getChannelGroup()).thenReturn(channelGroup);
-            when(offerMessage.getId()).thenReturn("123");
+            when(offerMessage.getId()).thenReturn(new MessageId("123"));
             when(requestMessage.getPublicKey()).thenReturn(publicKey0);
             when(requestMessage.getChildrenAndGrandchildren()).thenReturn(Set.of(grandchildrenPublicKey0));
             when(requestMessage.isChildrenJoin()).thenReturn(true);
-            when(statusMessage.getCorrespondingId()).thenReturn("123");
+            when(statusMessage.getCorrespondingId()).thenReturn(new MessageId("123"));
             when(statusMessage.getCode()).thenReturn(STATUS_OK);
             when(peersManager.getSuperPeer()).thenReturn(Triple.of(superPeerPublicKey, superPeerInformation, Set.of(superPeerPath)));
 
@@ -283,10 +284,10 @@ class ServerConnectionHandlerTest {
         void shouldAddPeerInformationOnSessionCreationAndRemovePeerInformationOnClose() {
             when(environment.getPeersManager()).thenReturn(peersManager);
             when(environment.getChannelGroup()).thenReturn(channelGroup);
-            when(offerMessage.getId()).thenReturn("123");
+            when(offerMessage.getId()).thenReturn(new MessageId("123"));
             when(requestMessage.getPublicKey()).thenReturn(publicKey0);
             when(requestMessage.isChildrenJoin()).thenReturn(false);
-            when(statusMessage.getCorrespondingId()).thenReturn("123");
+            when(statusMessage.getCorrespondingId()).thenReturn(new MessageId("123"));
             when(statusMessage.getCode()).thenReturn(STATUS_OK);
 
             ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);

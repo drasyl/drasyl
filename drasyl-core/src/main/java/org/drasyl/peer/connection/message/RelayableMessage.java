@@ -31,7 +31,7 @@ public abstract class RelayableMessage extends AbstractMessage {
     protected final CompressedPublicKey recipient;
     protected short hopCount;
 
-    protected RelayableMessage(String id,
+    protected RelayableMessage(MessageId id,
                                CompressedPublicKey recipient,
                                short hopCount) {
         super(id);

@@ -87,8 +87,8 @@ public class SignedMessage implements Message, Signable {
 
     @Override
     @JsonIgnore
-    public String getId() {
-        return "SignedMessage";
+    public MessageId getId() {
+        return new MessageId("SignedMessage");
     }
 
     @Override

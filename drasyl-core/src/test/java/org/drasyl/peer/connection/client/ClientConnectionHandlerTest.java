@@ -27,6 +27,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.JoinMessage;
+import org.drasyl.peer.connection.message.MessageId;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
@@ -90,8 +91,8 @@ class ClientConnectionHandlerTest {
     @Test
     void shouldFailHandshakeIfServerReplyWithStatusUnavailableOnWelcomeMessage() {
         when(handshakeFuture.isDone()).thenReturn(false);
-        when(requestMessage.getId()).thenReturn("123");
-        when(statusMessage.getCorrespondingId()).thenReturn("123");
+        when(requestMessage.getId()).thenReturn(new MessageId("123"));
+        when(statusMessage.getCorrespondingId()).thenReturn(new MessageId("123"));
         when(statusMessage.getCode()).thenReturn(STATUS_SERVICE_UNAVAILABLE);
 
         ClientConnectionHandler handler = new ClientConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage);
@@ -108,9 +109,9 @@ class ClientConnectionHandlerTest {
     class ServerAsSuperPeer {
         @Test
         void shouldAddPeerInformationAndSetSuperPeerAndEmitNodeOnlineEventOnSessionCreationAndRemovePeerInformationAndUnsetSuperPeerAndEmitNodeOfflineEventOnClose() {
-            when(requestMessage.getId()).thenReturn("123");
-            when(offerMessage.getCorrespondingId()).thenReturn("123");
-            when(offerMessage.getId()).thenReturn("456");
+            when(requestMessage.getId()).thenReturn(new MessageId("123"));
+            when(offerMessage.getCorrespondingId()).thenReturn(new MessageId("123"));
+            when(offerMessage.getId()).thenReturn(new MessageId("456"));
             when(environment.getPeersManager()).thenReturn(peersManager);
             when(environment.joinAsChildren()).thenReturn(true);
 
@@ -136,9 +137,9 @@ class ClientConnectionHandlerTest {
     class ServerAsPeer {
         @Test
         void shouldAddPeerInformationAndSetSuperPeerAndEmitNodeOnlineEventOnSessionCreationAndRemovePeerInformationAndUnsetSuperPeerAndEmitNodeOfflineEventOnClose() {
-            when(requestMessage.getId()).thenReturn("123");
-            when(offerMessage.getCorrespondingId()).thenReturn("123");
-            when(offerMessage.getId()).thenReturn("456");
+            when(requestMessage.getId()).thenReturn(new MessageId("123"));
+            when(offerMessage.getCorrespondingId()).thenReturn(new MessageId("123"));
+            when(offerMessage.getId()).thenReturn(new MessageId("456"));
             when(environment.getPeersManager()).thenReturn(peersManager);
             when(environment.joinAsChildren()).thenReturn(false);
 

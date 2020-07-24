@@ -37,7 +37,7 @@ public class QuitMessage extends AbstractMessage implements RequestMessage {
     private final CloseReason reason;
 
     @JsonCreator
-    private QuitMessage(@JsonProperty("id") String id,
+    private QuitMessage(@JsonProperty("id") MessageId id,
                         @JsonProperty("reason") CloseReason reason) {
         super(id);
         this.reason = requireNonNull(reason);

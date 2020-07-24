@@ -25,6 +25,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.handler.SimpleChannelDuplexHandler;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ChunkedMessage;
+import org.drasyl.peer.connection.message.MessageId;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,11 +43,11 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
     public static final String CHUNK_HANDLER = "chunkHandler";
     public static final int CHUNK_SIZE = 32768; // 32768 := 2^15 bytes for payload and 2^15 bytes for meta-data
     private final int maxContentLength;
-    private final HashMap<String, ChunkedMessageOutput> chunks;
+    private final HashMap<MessageId, ChunkedMessageOutput> chunks;
     private final CompressedPublicKey myIdentity;
     private final Duration transferTimeout;
 
-    ChunkedMessageHandler(HashMap<String, ChunkedMessageOutput> chunks,
+    ChunkedMessageHandler(HashMap<MessageId, ChunkedMessageOutput> chunks,
                           int maxContentLength,
                           CompressedPublicKey myIdentity,
                           Duration transferTimeout) {

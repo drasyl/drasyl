@@ -26,6 +26,7 @@ import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.Message;
+import org.drasyl.peer.connection.message.MessageId;
 import org.drasyl.peer.connection.message.PingMessage;
 import org.drasyl.peer.connection.message.PongMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
@@ -118,7 +119,7 @@ class PingPongHandlerTest {
         PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        channel.writeInbound(new PongMessage("123"));
+        channel.writeInbound(new PongMessage(new MessageId("123")));
         channel.flush();
 
         assertEquals(0, handler.retries.get());

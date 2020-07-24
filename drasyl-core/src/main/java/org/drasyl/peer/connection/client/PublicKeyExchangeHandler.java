@@ -26,15 +26,16 @@ import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.IamMessage;
+import org.drasyl.peer.connection.message.MessageId;
 import org.drasyl.peer.connection.message.WhoAreYouMessage;
 
 import java.time.Duration;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_HANDSHAKE_TIMEOUT;
-import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_WRONG_PUBLIC_KEY;
 import static org.drasyl.peer.connection.PeerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
 import static org.drasyl.peer.connection.client.PublicKeyExchangeHandler.PublicKeyExchangeState.KEY_AVAILABLE;
+import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_HANDSHAKE_TIMEOUT;
+import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_WRONG_PUBLIC_KEY;
 
 /**
  * This handler obtains the PublicKey of the super peer so that a join proof can be issued later.
@@ -44,12 +45,12 @@ public class PublicKeyExchangeHandler extends SimpleChannelInboundHandler<IamMes
     public static final String PUBLIC_KEY_EXCHANGE_HANDLER = "publicKeyExchangeHandler";
     private final CompressedPublicKey serverPublicKey;
     private final Duration timeout;
-    private String requestID;
+    private MessageId requestID;
     protected ScheduledFuture<?> timeoutFuture;
 
     PublicKeyExchangeHandler(CompressedPublicKey serverPublicKey,
                              Duration timeout,
-                             String requestID,
+                             MessageId requestID,
                              ScheduledFuture<?> timeoutFuture) {
         this.serverPublicKey = serverPublicKey;
         this.timeout = timeout;

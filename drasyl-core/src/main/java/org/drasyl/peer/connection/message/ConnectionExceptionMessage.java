@@ -39,7 +39,7 @@ public class ConnectionExceptionMessage extends AbstractMessage implements Reque
     private final Error error;
 
     @JsonCreator
-    private ConnectionExceptionMessage(@JsonProperty("id") String id,
+    private ConnectionExceptionMessage(@JsonProperty("id") MessageId id,
                                        @JsonProperty("error") Error error) {
         super(id);
         this.error = requireNonNull(error);

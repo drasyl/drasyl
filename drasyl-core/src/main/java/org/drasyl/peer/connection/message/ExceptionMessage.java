@@ -38,7 +38,7 @@ public class ExceptionMessage extends AbstractMessage {
     private final Error error;
 
     @JsonCreator
-    private ExceptionMessage(@JsonProperty("id") String id,
+    private ExceptionMessage(@JsonProperty("id") MessageId id,
                              @JsonProperty("error") Error error) {
         super(id);
         this.error = requireNonNull(error);

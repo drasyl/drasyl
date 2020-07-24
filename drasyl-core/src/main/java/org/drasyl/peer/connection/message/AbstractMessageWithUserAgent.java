@@ -44,7 +44,7 @@ abstract class AbstractMessageWithUserAgent extends AbstractMessage {
         this.userAgent = requireNonNull(userAgent);
     }
 
-    public AbstractMessageWithUserAgent(String id, String userAgent) {
+    public AbstractMessageWithUserAgent(MessageId id, String userAgent) {
         super(id);
         this.userAgent = requireNonNull(userAgent);
     }

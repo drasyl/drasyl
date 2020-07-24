@@ -51,5 +51,5 @@ public interface Message {
     /**
      * @return the unique id of this message. Each message generates a random id when it is created.
      */
-    String getId();
+    MessageId getId();
 }

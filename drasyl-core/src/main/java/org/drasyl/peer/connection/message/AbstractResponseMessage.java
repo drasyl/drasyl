@@ -24,19 +24,19 @@ import java.util.Objects;
 import static java.util.Objects.requireNonNull;
 
 abstract class AbstractResponseMessage<R extends RequestMessage> extends AbstractMessage implements ResponseMessage<R> {
-    protected final String correspondingId;
+    protected final MessageId correspondingId;
 
-    protected AbstractResponseMessage(String id, String correspondingId) {
+    protected AbstractResponseMessage(MessageId id, MessageId correspondingId) {
         super(id);
         this.correspondingId = requireNonNull(correspondingId);
     }
 
-    protected AbstractResponseMessage(String correspondingId) {
+    protected AbstractResponseMessage(MessageId correspondingId) {
         this.correspondingId = requireNonNull(correspondingId);
     }
 
     @Override
-    public String getCorrespondingId() {
+    public MessageId getCorrespondingId() {
         return correspondingId;
     }
 

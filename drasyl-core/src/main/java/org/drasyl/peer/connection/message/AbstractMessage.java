@@ -18,28 +18,27 @@
  */
 package org.drasyl.peer.connection.message;
 
-import org.drasyl.crypto.Crypto;
-
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.peer.connection.message.MessageId.randomMessageId;
 
 /**
  * Message that represents a message from one node to another one.
  */
 public abstract class AbstractMessage implements Message {
-    protected final String id;
+    protected final MessageId id;
 
     public AbstractMessage() {
-        this(Crypto.randomString(12));
+        this(randomMessageId());
     }
 
-    protected AbstractMessage(String id) {
+    protected AbstractMessage(MessageId id) {
         this.id = requireNonNull(id);
     }
 
     @Override
-    public String getId() {
+    public MessageId getId() {
         return id;
     }
 

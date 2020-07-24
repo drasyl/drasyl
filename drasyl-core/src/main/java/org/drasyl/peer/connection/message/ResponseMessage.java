@@ -29,5 +29,5 @@ public interface ResponseMessage<R extends RequestMessage> extends Message {
      *
      * @return
      */
-    String getCorrespondingId();
+    MessageId getCorrespondingId();
 }

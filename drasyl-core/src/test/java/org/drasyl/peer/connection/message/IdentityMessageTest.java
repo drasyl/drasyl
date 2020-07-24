@@ -42,7 +42,7 @@ class IdentityMessageTest {
     private CompressedPublicKey recipient;
     @Mock
     private CompressedPublicKey publicKey;
-    private String correspondingId = "123";
+    private final MessageId correspondingId = new MessageId("123");
     @Mock
     private PeerInformation peerInformation;
 
@@ -52,7 +52,7 @@ class IdentityMessageTest {
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
             String json = "{\"@type\":\"" + IdentityMessage.class.getSimpleName() + "\",\"id\":\"123\",\"recipient\":\"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\"publicKey\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"peerInformation\":{\"endpoints\":[]},\"correspondingId\":\"123\"}";
 
-            assertEquals(new IdentityMessage(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), PeerInformation.of(), "123"), JACKSON_READER.readValue(json, Message.class));
+            assertEquals(new IdentityMessage(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), PeerInformation.of(), new MessageId("123")), JACKSON_READER.readValue(json, Message.class));
         }
 
         @Test

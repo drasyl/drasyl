@@ -38,7 +38,7 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
     private final Set<CompressedPublicKey> childrenAndGrandchildren;
 
     @JsonCreator
-    private JoinMessage(@JsonProperty("id") String id,
+    private JoinMessage(@JsonProperty("id") MessageId id,
                         @JsonProperty("userAgent") String userAgent,
                         @JsonProperty("proofOfWork") ProofOfWork proofOfWork,
                         @JsonProperty("publicKey") CompressedPublicKey publicKey,

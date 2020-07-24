@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 class ChunkedMessageTest {
     CompressedPublicKey sender;
     CompressedPublicKey recipient;
-    private String id;
+    private MessageId id;
     private int contentLength;
     private String checksum;
 
@@ -46,7 +46,7 @@ class ChunkedMessageTest {
     void setUp() throws CryptoException {
         sender = CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb");
         recipient = CompressedPublicKey.of("033de3da699f6f9ffbd427c56725910655ba3913be4ff55b13c628e957c860fd55");
-        id = "id";
+        id = new MessageId("id");
         checksum = "abc";
         contentLength = 3;
     }

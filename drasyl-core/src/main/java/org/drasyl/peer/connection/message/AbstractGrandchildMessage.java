@@ -28,7 +28,7 @@ import static java.util.Objects.requireNonNull;
 abstract class AbstractGrandchildMessage extends AbstractMessage implements RequestMessage {
     protected Set<CompressedPublicKey> grandchildren;
 
-    protected AbstractGrandchildMessage(String id, Set<CompressedPublicKey> grandchildren) {
+    protected AbstractGrandchildMessage(MessageId id, Set<CompressedPublicKey> grandchildren) {
         super(id);
         this.grandchildren = requireNonNull(grandchildren);
     }

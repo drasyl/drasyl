@@ -26,12 +26,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class PongMessage extends AbstractResponseMessage<PingMessage> {
     @JsonCreator
-    public PongMessage(@JsonProperty("id") String id,
-                       @JsonProperty("correspondingId") String correspondingId) {
+    public PongMessage(@JsonProperty("id") MessageId id,
+                       @JsonProperty("correspondingId") MessageId correspondingId) {
         super(id, correspondingId);
     }
 
-    public PongMessage(String correspondingId) {
+    public PongMessage(MessageId correspondingId) {
         super(correspondingId);
     }
 

@@ -32,24 +32,24 @@ import static java.util.Objects.requireNonNull;
  */
 public class IamMessage extends AbstractMessage implements ResponseMessage<WhoAreYouMessage> {
     private final CompressedPublicKey publicKey;
-    private final String correspondingId;
+    private final MessageId correspondingId;
 
     @JsonCreator
-    public IamMessage(@JsonProperty("id") String id,
+    public IamMessage(@JsonProperty("id") MessageId id,
                       @JsonProperty("publicKey") CompressedPublicKey publicKey,
-                      @JsonProperty("correspondingId") String correspondingId) {
+                      @JsonProperty("correspondingId") MessageId correspondingId) {
         super(id);
         this.publicKey = requireNonNull(publicKey);
         this.correspondingId = requireNonNull(correspondingId);
     }
 
-    public IamMessage(CompressedPublicKey publicKey, String correspondingId) {
+    public IamMessage(CompressedPublicKey publicKey, MessageId correspondingId) {
         this.publicKey = requireNonNull(publicKey);
         this.correspondingId = requireNonNull(correspondingId);
     }
 
     @Override
-    public String getCorrespondingId() {
+    public MessageId getCorrespondingId() {
         return correspondingId;
     }
 

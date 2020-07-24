@@ -26,6 +26,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ChunkedMessage;
+import org.drasyl.peer.connection.message.MessageId;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -57,11 +58,11 @@ class ChunkedMessageHandlerTest {
     private Identity identity;
     private int maxContentLength;
     private Duration transferTimeout;
-    private String msgID;
+    private MessageId msgID;
     @Mock
     private CompressedPublicKey mockedPublicKey;
     @Mock
-    private HashMap<String, ChunkedMessageOutput> chunks;
+    private HashMap<MessageId, ChunkedMessageOutput> chunks;
     @Mock
     private ChunkedMessageOutput chunkedMessageOutput;
 
@@ -70,7 +71,7 @@ class ChunkedMessageHandlerTest {
         identity = Identity.of(ProofOfWork.of(16425882), "030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3", "05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34");
         maxContentLength = 1024; // 1KB
         transferTimeout = Duration.ofSeconds(10);
-        msgID = "id";
+        msgID = new MessageId("id");
     }
 
     @Test

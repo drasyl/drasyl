@@ -23,6 +23,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.peer.connection.message.Message;
+import org.drasyl.peer.connection.message.MessageId;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -58,7 +59,7 @@ class ServerNewConnectionsGuardTest {
     void shouldCloseConnectionOnClosedGuard() {
         when(ctx.channel()).thenReturn(channel);
         when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
-        when(message.getId()).thenReturn("sdasdsa");
+        when(message.getId()).thenReturn(new MessageId("sdasdsa"));
 
         ServerNewConnectionsGuard handler = new ServerNewConnectionsGuard(() -> false);
 

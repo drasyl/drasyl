@@ -38,25 +38,25 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
 class StatusMessageTest {
-    private String correspondingId;
+    private MessageId correspondingId;
 
     @BeforeEach
     void setUp() {
-        correspondingId = "123";
+        correspondingId = new MessageId("123");
     }
 
     @Nested
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException {
-            String json = "{\"@type\":\"" + StatusMessage.class.getSimpleName() + "\",\"id\":\"205E5ECE2F3F1E744D951658\",\"code\":" + STATUS_OK.getNumber() + ",\"correspondingId\":123}";
+            String json = "{\"@type\":\"" + StatusMessage.class.getSimpleName() + "\",\"id\":\"205E5ECE2F3F1E744D951658\",\"code\":" + STATUS_OK.getNumber() + ",\"correspondingId\":\"123\"}";
 
-            assertEquals(new StatusMessage(STATUS_OK, "123"), JACKSON_READER.readValue(json, Message.class));
+            assertEquals(new StatusMessage(STATUS_OK, new MessageId("123")), JACKSON_READER.readValue(json, Message.class));
         }
 
         @Test
         void shouldRejectIncompleteData() {
-            String json = "{\"@type\":\"" + StatusMessage.class.getSimpleName() + "\",\"id\":\"205E5ECE2F3F1E744D951658\",\"correspondingId\":123}";
+            String json = "{\"@type\":\"" + StatusMessage.class.getSimpleName() + "\",\"id\":\"205E5ECE2F3F1E744D951658\",\"correspondingId\":\"123\"}";
 
             assertThrows(ValueInstantiationException.class, () -> JACKSON_READER.readValue(json, Message.class));
         }

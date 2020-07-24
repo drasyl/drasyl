@@ -29,6 +29,7 @@ import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.IamMessage;
+import org.drasyl.peer.connection.message.MessageId;
 import org.drasyl.peer.connection.message.WhoAreYouMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -41,9 +42,9 @@ import java.time.Duration;
 import java.util.concurrent.Callable;
 import java.util.concurrent.TimeUnit;
 
+import static org.drasyl.peer.connection.PeerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_HANDSHAKE_TIMEOUT;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_WRONG_PUBLIC_KEY;
-import static org.drasyl.peer.connection.PeerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
@@ -69,12 +70,12 @@ class PublicKeyExchangeHandlerTest {
     private Duration timeout;
     @Mock
     private ScheduledFuture<?> timeoutFuture;
-    private String requestID;
+    private MessageId requestID;
 
     @BeforeEach
     void setUp() {
         timeout = Duration.ofSeconds(10);
-        requestID = "id";
+        requestID = new MessageId("id");
     }
 
     @Test
@@ -133,7 +134,7 @@ class PublicKeyExchangeHandlerTest {
     void shouldNotMatchingMessagePassOn() throws Exception {
         PublicKeyExchangeHandler handler = new PublicKeyExchangeHandler(mock(CompressedPublicKey.class), timeout, requestID, timeoutFuture);
 
-        IamMessage msg = new IamMessage(mockedPublicKey, "id2");
+        IamMessage msg = new IamMessage(mockedPublicKey, new MessageId("id2"));
         handler.channelRead0(ctx, msg);
 
         verify(ctx).fireChannelRead(msg);

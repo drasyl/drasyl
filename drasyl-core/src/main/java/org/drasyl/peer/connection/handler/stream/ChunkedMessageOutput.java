@@ -26,6 +26,7 @@ import org.drasyl.crypto.Hashing;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ChunkedMessage;
+import org.drasyl.peer.connection.message.MessageId;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -48,33 +49,9 @@ public class ChunkedMessageOutput {
     private final int contentLength;
     private final int maxContentLength;
     private final String checksum;
-    private final String msgID;
+    private final MessageId msgID;
     private int progress;
     private final Class<?> clazz;
-
-    ChunkedMessageOutput(ChannelHandlerContext ctx,
-                         CompressedPublicKey sender,
-                         CompressedPublicKey recipient,
-                         int contentLength,
-                         String checksum,
-                         String msgID,
-                         int maxContentLength,
-                         ByteBuf payload,
-                         Class<?> clazz,
-                         int progress,
-                         Runnable removeAction) {
-        this.ctx = ctx;
-        this.sender = sender;
-        this.recipient = recipient;
-        this.removeAction = removeAction;
-        this.payload = payload;
-        this.clazz = clazz;
-        this.contentLength = contentLength;
-        this.maxContentLength = maxContentLength;
-        this.checksum = checksum;
-        this.msgID = msgID;
-        this.progress = progress;
-    }
 
     /**
      * Generates a new ChunkedMessageOutput with combines multiple {@link ChunkedMessage}s into one
@@ -99,7 +76,7 @@ public class ChunkedMessageOutput {
                                 CompressedPublicKey recipient,
                                 int contentLength,
                                 String checksum,
-                                String msgID,
+                                MessageId msgID,
                                 int maxContentLength,
                                 Class<?> clazz,
                                 Runnable removeAction,
@@ -112,6 +89,30 @@ public class ChunkedMessageOutput {
 
             logDebug("Dropped chunked message `{}` because timeout has expired.", ctx, msgID);
         }, timeout, TimeUnit.MILLISECONDS);
+    }
+
+    ChunkedMessageOutput(ChannelHandlerContext ctx,
+                         CompressedPublicKey sender,
+                         CompressedPublicKey recipient,
+                         int contentLength,
+                         String checksum,
+                         MessageId msgID,
+                         int maxContentLength,
+                         ByteBuf payload,
+                         Class<?> clazz,
+                         int progress,
+                         Runnable removeAction) {
+        this.ctx = ctx;
+        this.sender = sender;
+        this.recipient = recipient;
+        this.removeAction = removeAction;
+        this.payload = payload;
+        this.clazz = clazz;
+        this.contentLength = contentLength;
+        this.maxContentLength = maxContentLength;
+        this.checksum = checksum;
+        this.msgID = msgID;
+        this.progress = progress;
     }
 
     /**
