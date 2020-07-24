@@ -51,6 +51,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -84,8 +85,7 @@ class DrasylNodeTest {
     private PeersManager peersManager;
     @Mock
     private AtomicBoolean started;
-    @Mock
-    private Set<URI> endpoints;
+    private final Set<URI> endpoints = new HashSet<>();
     @Mock
     private CompressedPublicKey publicKey;
     @Mock

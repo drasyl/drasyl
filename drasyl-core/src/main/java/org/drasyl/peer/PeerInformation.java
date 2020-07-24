@@ -61,11 +61,11 @@ public class PeerInformation {
     }
 
     public Set<URI> getEndpoints() {
-        return Set.copyOf(endpoints);
+        return endpoints;
     }
 
     public static PeerInformation of(Set<URI> endpoints) {
-        return new PeerInformation(endpoints);
+        return new PeerInformation(Set.copyOf(endpoints));
     }
 
     public static PeerInformation of() {

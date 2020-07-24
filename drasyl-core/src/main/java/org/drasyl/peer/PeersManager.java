@@ -177,7 +177,7 @@ public class PeersManager {
         try {
             lock.readLock().lock();
 
-            return children;
+            return Set.copyOf(children);
         }
         finally {
             lock.readLock().unlock();
@@ -191,7 +191,7 @@ public class PeersManager {
             lock.readLock().lock();
 
             PeerInformation peerInformation = peers.get(publicKey);
-            Set<Path> myPaths = this.paths.get(publicKey);
+            Set<Path> myPaths = Set.copyOf(this.paths.get(publicKey));
 
             return Pair.of(Objects.requireNonNullElseGet(peerInformation, PeerInformation::of), myPaths);
         }
