@@ -112,7 +112,7 @@ public class Monitoring implements DrasylNodeComponent {
             registry.config().commonTags(
                     "public_key", publicKey.toString(),
                     "host", ofNullable(NetworkUtil.getLocalHostName()).orElse("")
-            ).commonTags();
+            );
 
             // monitor PeersManager
             Gauge.builder("peersManager.peers", peersManager, pm -> pm.getPeers().size()).register(registry);
