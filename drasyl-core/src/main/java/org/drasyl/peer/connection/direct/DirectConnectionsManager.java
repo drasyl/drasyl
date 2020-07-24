@@ -41,10 +41,9 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.net.URI;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -71,9 +70,10 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
     private final PeerChannelGroup channelGroup;
     private final EventLoopGroup workerGroup;
     private final Consumer<Event> eventConsumer;
-    private final ConcurrentMap<CompressedPublicKey, DirectClient> clients;
+    private final Map<CompressedPublicKey, DirectClient> clients;
     private final BooleanSupplier acceptNewConnectionsSupplier;
     private final Set<URI> endpoints;
+    private final int maxConnections;
 
     public DirectConnectionsManager(DrasylConfig config,
                                     Identity identity,
@@ -98,9 +98,9 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
                 nodeEndpoints,
                 new DirectConnectionDemandsCache(config.getDirectConnectionsMaxConcurrentConnections(), ofSeconds(60)),
                 new RequestPeerInformationCache(1_000, ofSeconds(60)),
-                new ConcurrentHashMap<>(),
-                acceptNewConnectionsSupplier
-        );
+                new HashMap<>(),
+                acceptNewConnectionsSupplier,
+                config.getDirectConnectionsMaxConcurrentConnections());
     }
 
     DirectConnectionsManager(DrasylConfig config,
@@ -115,8 +115,9 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
                              Set<URI> nodeEndpoints,
                              DirectConnectionDemandsCache directConnectionDemandsCache,
                              RequestPeerInformationCache requestPeerInformationCache,
-                             ConcurrentMap<CompressedPublicKey, DirectClient> clients,
-                             BooleanSupplier acceptNewConnectionsSupplier) {
+                             Map<CompressedPublicKey, DirectClient> clients,
+                             BooleanSupplier acceptNewConnectionsSupplier,
+                             int maxConnections) {
         this.config = config;
         this.identity = identity;
         this.peersManager = peersManager;
@@ -131,6 +132,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
         this.pipeline = pipeline;
         this.clients = clients;
         this.acceptNewConnectionsSupplier = acceptNewConnectionsSupplier;
+        this.maxConnections = maxConnections;
     }
 
     @Override
@@ -233,27 +235,24 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
             };
 
             synchronized (this) {
-                int maxConnections = config.getDirectConnectionsMaxConcurrentConnections();
-                if (maxConnections == 0 || maxConnections > clients.size()) {
-                    clients.computeIfAbsent(publicKey, myPublicKey -> {
-                        DirectClient client = new DirectClient(
-                                config,
-                                identity,
-                                peersManager,
-                                messenger,
-                                channelGroup,
-                                workerGroup,
-                                eventConsumer,
-                                this::communicationOccurred,
-                                myPublicKey,
-                                endpointsSupplier,
-                                () -> directConnectionDemandsCache.contains(publicKey),
-                                () -> clients.remove(publicKey),
-                                acceptNewConnectionsSupplier);
-                        LOG.debug("Initiate direct connection to Peer '{}'", publicKey);
-                        client.open();
-                        return client;
-                    });
+                if ((maxConnections == 0 || maxConnections > clients.size()) && !clients.containsKey(publicKey) && !endpointsSupplier.get().isEmpty()) {
+                    DirectClient client = new DirectClient(
+                            config,
+                            identity,
+                            peersManager,
+                            messenger,
+                            channelGroup,
+                            workerGroup,
+                            eventConsumer,
+                            this::communicationOccurred,
+                            publicKey,
+                            endpointsSupplier,
+                            () -> directConnectionDemandsCache.contains(publicKey),
+                            () -> clients.remove(publicKey),
+                            acceptNewConnectionsSupplier);
+                    LOG.debug("Initiate direct connection to Peer '{}'", publicKey);
+                    clients.put(publicKey, client);
+                    client.open();
                 }
             }
         }
