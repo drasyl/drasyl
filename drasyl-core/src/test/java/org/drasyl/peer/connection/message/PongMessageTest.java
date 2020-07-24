@@ -35,11 +35,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
 class PongMessageTest {
-    private String correspondingId;
+    private MessageId correspondingId;
 
     @BeforeEach
     void setUp() {
-        correspondingId = "correspondingId";
+        correspondingId = new MessageId("correspondingId");
     }
 
     @Nested
@@ -48,7 +48,7 @@ class PongMessageTest {
         void shouldDeserializeToCorrectObject() throws IOException {
             String json = "{\"@type\":\"" + PongMessage.class.getSimpleName() + "\",\"id\":\"77175D7235920F3BA17341D7\",\"correspondingId\":\"123\"}";
 
-            assertEquals(new PongMessage("123"), JACKSON_READER.readValue(json, Message.class));
+            assertEquals(new PongMessage(new MessageId("123")), JACKSON_READER.readValue(json, Message.class));
         }
 
         @Test

@@ -69,7 +69,7 @@ public class ChunkedMessage extends ApplicationMessage {
      */
     ChunkedMessage(CompressedPublicKey sender,
                    CompressedPublicKey recipient,
-                   String id,
+                   MessageId id,
                    byte[] payload,
                    Class<?> payloadClazz,
                    int contentLength,
@@ -82,7 +82,7 @@ public class ChunkedMessage extends ApplicationMessage {
                            @JsonProperty("recipient") CompressedPublicKey recipient,
                            @JsonProperty("payload") byte[] payload,
                            @JsonProperty("payloadClazz") Class<?> payloadClazz,
-                           @JsonProperty("id") String id,
+                           @JsonProperty("id") MessageId id,
                            @JsonProperty("contentLength") int contentLength,
                            @JsonProperty("checksum") String checksum,
                            @JsonProperty("hopCount") short hopCount) {
@@ -155,7 +155,7 @@ public class ChunkedMessage extends ApplicationMessage {
      */
     public static ChunkedMessage createFirstChunk(CompressedPublicKey sender,
                                                   CompressedPublicKey recipient,
-                                                  String msgID,
+                                                  MessageId msgID,
                                                   byte[] payload,
                                                   Class<?> payloadClazz,
                                                   int contentLength,
@@ -173,7 +173,7 @@ public class ChunkedMessage extends ApplicationMessage {
      */
     public static ChunkedMessage createFollowChunk(CompressedPublicKey sender,
                                                    CompressedPublicKey recipient,
-                                                   String msgID,
+                                                   MessageId msgID,
                                                    byte[] payload) {
         return new ChunkedMessage(sender, recipient, msgID, payload, null, 0, null);
     }
@@ -187,7 +187,7 @@ public class ChunkedMessage extends ApplicationMessage {
      */
     public static ChunkedMessage createLastChunk(CompressedPublicKey sender,
                                                  CompressedPublicKey recipient,
-                                                 String msgID) {
+                                                 MessageId msgID) {
         return new ChunkedMessage(sender, recipient, msgID, new byte[]{}, null, 0, null);
     }
 }

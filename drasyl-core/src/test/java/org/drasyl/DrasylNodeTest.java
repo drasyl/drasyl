@@ -34,6 +34,7 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.IdentityMessage;
+import org.drasyl.peer.connection.message.MessageId;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.RelayableMessage;
 import org.drasyl.peer.connection.message.WhoisMessage;
@@ -291,7 +292,7 @@ class DrasylNodeTest {
         @Test
         void shouldReplyToWhoisMessage(@Mock(answer = Answers.RETURNS_DEEP_STUBS) WhoisMessage message) throws MessengerException {
             when(identity.getPublicKey()).thenReturn(publicKey);
-            when(message.getId()).thenReturn("123");
+            when(message.getId()).thenReturn(new MessageId("123"));
             when(message.getRecipient()).thenReturn(publicKey);
 
             DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, drasylNodeComponents, new AtomicBoolean(true), startSequence, shutdownSequence) {

@@ -39,7 +39,7 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
     protected final Class<?> payloadClazz;
 
     @JsonCreator
-    public ApplicationMessage(@JsonProperty("id") String id,
+    public ApplicationMessage(@JsonProperty("id") MessageId id,
                               @JsonProperty("sender") CompressedPublicKey sender,
                               @JsonProperty("recipient") CompressedPublicKey recipient,
                               @JsonProperty("payload") byte[] payload,

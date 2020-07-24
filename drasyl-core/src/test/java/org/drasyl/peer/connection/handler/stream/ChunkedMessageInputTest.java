@@ -25,6 +25,7 @@ import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ChunkedMessage;
+import org.drasyl.peer.connection.message.MessageId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,7 +54,7 @@ class ChunkedMessageInputTest {
     private Queue<ByteBuf> chunks;
     @Mock
     private ByteBuf sourcePayload;
-    private String msgID;
+    private MessageId msgID;
     private long progress;
     private boolean sentLastChunk;
     private byte[] payload;
@@ -63,7 +64,7 @@ class ChunkedMessageInputTest {
 
     @BeforeEach
     void setUp() {
-        msgID = "id";
+        msgID = new MessageId("id");
         payload = new byte[]{};
     }
 

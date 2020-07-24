@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class IamMessageTest {
     @Mock
     private CompressedPublicKey publicKey;
-    private String correspondingId = "123";
+    private final MessageId correspondingId = new MessageId("123");
 
     @Nested
     class JsonDeserialization {
@@ -47,7 +47,7 @@ class IamMessageTest {
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
             String json = "{\"@type\":\"" + IamMessage.class.getSimpleName() + "\",\"id\":\"123\",\"publicKey\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"correspondingId\":\"123\"}";
 
-            assertEquals(new IamMessage(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), "123"), JACKSON_READER.readValue(json, Message.class));
+            assertEquals(new IamMessage(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), new MessageId("123")), JACKSON_READER.readValue(json, Message.class));
         }
 
         @Test

@@ -26,7 +26,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class WhoAreYouMessage extends AbstractMessage implements RequestMessage {
     @JsonCreator
-    private WhoAreYouMessage(@JsonProperty("id") String id) {
+    private WhoAreYouMessage(@JsonProperty("id") MessageId id) {
         super(id);
     }
 

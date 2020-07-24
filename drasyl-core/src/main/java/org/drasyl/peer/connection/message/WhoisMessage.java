@@ -36,7 +36,7 @@ public class WhoisMessage extends RelayableMessage implements RequestMessage {
     private final PeerInformation peerInformation;
 
     @JsonCreator
-    private WhoisMessage(@JsonProperty("id") String id,
+    private WhoisMessage(@JsonProperty("id") MessageId id,
                          @JsonProperty("hopCount") short hopCount,
                          @JsonProperty("recipient") CompressedPublicKey recipient,
                          @JsonProperty("requester") CompressedPublicKey requester,

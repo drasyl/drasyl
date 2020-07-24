@@ -34,12 +34,12 @@ import static java.util.Objects.requireNonNull;
 public class IdentityMessage extends RelayableMessage implements ResponseMessage<WhoisMessage> {
     private final CompressedPublicKey publicKey;
     private final PeerInformation peerInformation;
-    private final String correspondingId;
+    private final MessageId correspondingId;
 
     public IdentityMessage(CompressedPublicKey recipient,
                            CompressedPublicKey publicKey,
                            PeerInformation peerInformation,
-                           String correspondingId) {
+                           MessageId correspondingId) {
         super(recipient);
         this.publicKey = requireNonNull(publicKey);
         this.peerInformation = requireNonNull(peerInformation);
@@ -47,11 +47,11 @@ public class IdentityMessage extends RelayableMessage implements ResponseMessage
     }
 
     @JsonCreator
-    private IdentityMessage(@JsonProperty("id") String id,
+    private IdentityMessage(@JsonProperty("id") MessageId id,
                             @JsonProperty("recipient") CompressedPublicKey recipient,
                             @JsonProperty("publicKey") CompressedPublicKey publicKey,
                             @JsonProperty("peerInformation") PeerInformation peerInformation,
-                            @JsonProperty("correspondingId") String correspondingId,
+                            @JsonProperty("correspondingId") MessageId correspondingId,
                             @JsonProperty("hopCount") short hopCount) {
         super(id, recipient, hopCount);
         this.publicKey = requireNonNull(publicKey);
@@ -68,7 +68,7 @@ public class IdentityMessage extends RelayableMessage implements ResponseMessage
     }
 
     @Override
-    public String getCorrespondingId() {
+    public MessageId getCorrespondingId() {
         return correspondingId;
     }
 

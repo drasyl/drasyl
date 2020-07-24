@@ -79,14 +79,14 @@ public class StatusMessage extends AbstractResponseMessage<RequestMessage> {
     private final Code code;
 
     @JsonCreator
-    private StatusMessage(@JsonProperty("id") String id,
+    private StatusMessage(@JsonProperty("id") MessageId id,
                           @JsonProperty("code") Code code,
-                          @JsonProperty("correspondingId") String correspondingId) {
+                          @JsonProperty("correspondingId") MessageId correspondingId) {
         super(id, correspondingId);
         this.code = requireNonNull(code);
     }
 
-    public StatusMessage(int code, String correspondingId) {
+    public StatusMessage(int code, MessageId correspondingId) {
         this(Code.from(code), correspondingId);
     }
 
@@ -97,7 +97,7 @@ public class StatusMessage extends AbstractResponseMessage<RequestMessage> {
      * @param correspondingId
      * @throws IllegalArgumentException if the code isn't a valid code code
      */
-    public StatusMessage(Code code, String correspondingId) {
+    public StatusMessage(Code code, MessageId correspondingId) {
         super(correspondingId);
         this.code = requireNonNull(code);
     }

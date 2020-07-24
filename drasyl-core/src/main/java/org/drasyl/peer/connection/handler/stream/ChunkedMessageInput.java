@@ -28,6 +28,7 @@ import org.drasyl.crypto.Hashing;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ChunkedMessage;
+import org.drasyl.peer.connection.message.MessageId;
 
 import java.util.LinkedList;
 import java.util.Queue;
@@ -41,7 +42,7 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
     private final Queue<ByteBuf> chunks;
     private final ByteBuf sourcePayload;
     private final Class<?> clazz;
-    private final String msgID;
+    private final MessageId msgID;
     private long progress;
     private boolean sentLastChuck;
 
@@ -52,7 +53,7 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
                         Queue<ByteBuf> chunks,
                         ByteBuf sourcePayload,
                         Class<?> clazz,
-                        String msgID,
+                        MessageId msgID,
                         long progress,
                         boolean sentLastChuck) {
         this.sender = sender;

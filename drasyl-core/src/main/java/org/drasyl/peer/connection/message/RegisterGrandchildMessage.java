@@ -29,7 +29,7 @@ import java.util.Set;
  */
 public class RegisterGrandchildMessage extends AbstractGrandchildMessage {
     @JsonCreator
-    private RegisterGrandchildMessage(@JsonProperty("id") String id,
+    private RegisterGrandchildMessage(@JsonProperty("id") MessageId id,
                                       @JsonProperty("grandchildren") Set<CompressedPublicKey> grandchildren) {
         super(id, grandchildren);
     }

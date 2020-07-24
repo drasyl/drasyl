@@ -23,6 +23,7 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import org.drasyl.peer.connection.message.AbstractMessage;
 import org.drasyl.peer.connection.message.Message;
+import org.drasyl.peer.connection.message.MessageId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -36,8 +37,8 @@ class MessageEncoderTest {
     void setUp() {
         message = new AbstractMessage() {
             @Override
-            public String getId() {
-                return "abc";
+            public MessageId getId() {
+                return new MessageId("abc");
             }
         };
 

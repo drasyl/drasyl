@@ -25,6 +25,7 @@ import io.netty.util.concurrent.EventExecutor;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ChunkedMessage;
+import org.drasyl.peer.connection.message.MessageId;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -61,13 +62,13 @@ class ChunkedMessageOutputTest {
     private int contentLength;
     private int maxContentLength;
     private String checksum;
-    private String msgID;
+    private MessageId msgID;
     private int progress;
     private byte[] rawPayload;
 
     @BeforeEach
     void setUp() {
-        msgID = "id";
+        msgID = new MessageId("id");
         rawPayload = new byte[]{
                 63,
                 -38,
@@ -154,7 +155,7 @@ class ChunkedMessageOutputTest {
     void equalsAndHashCodeTest() {
         ChunkedMessageOutput output1 = new ChunkedMessageOutput(ctx, sender, recipient, contentLength, checksum, msgID, maxContentLength, payload, payload.getClass(), progress, removeAction);
         ChunkedMessageOutput output2 = new ChunkedMessageOutput(ctx, sender, recipient, contentLength, checksum, msgID, maxContentLength, payload, payload.getClass(), progress, removeAction);
-        ChunkedMessageOutput output3 = new ChunkedMessageOutput(ctx, sender, recipient, contentLength, checksum, "abc", maxContentLength, payload, payload.getClass(), progress, removeAction);
+        ChunkedMessageOutput output3 = new ChunkedMessageOutput(ctx, sender, recipient, contentLength, checksum, new MessageId("abc"), maxContentLength, payload, payload.getClass(), progress, removeAction);
 
         assertEquals(output1, output2);
         assertEquals(output1.hashCode(), output2.hashCode());

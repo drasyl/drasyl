@@ -33,13 +33,13 @@ import static java.util.Objects.requireNonNull;
 public class WelcomeMessage extends AbstractMessageWithUserAgent implements ResponseMessage<JoinMessage> {
     private final PeerInformation peerInformation;
     @JsonInclude(JsonInclude.Include.NON_NULL)
-    private final String correspondingId;
+    private final MessageId correspondingId;
 
     @JsonCreator
-    private WelcomeMessage(@JsonProperty("id") String id,
+    private WelcomeMessage(@JsonProperty("id") MessageId id,
                            @JsonProperty("userAgent") String userAgent,
                            @JsonProperty("peerInformation") PeerInformation peerInformation,
-                           @JsonProperty("correspondingId") String correspondingId) {
+                           @JsonProperty("correspondingId") MessageId correspondingId) {
         super(id, userAgent);
         this.peerInformation = requireNonNull(peerInformation);
         this.correspondingId = requireNonNull(correspondingId);
@@ -52,7 +52,7 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
      * @param correspondingId
      */
     public WelcomeMessage(PeerInformation peerInformation,
-                          String correspondingId) {
+                          MessageId correspondingId) {
         this.peerInformation = requireNonNull(peerInformation);
         this.correspondingId = requireNonNull(correspondingId);
     }
@@ -62,7 +62,7 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
     }
 
     @Override
-    public String getCorrespondingId() {
+    public MessageId getCorrespondingId() {
         return correspondingId;
     }
 
