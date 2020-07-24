@@ -29,6 +29,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
+import java.util.HashSet;
 import java.util.Set;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
@@ -42,9 +43,8 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class JoinMessageTest {
     @Mock
     private CompressedPublicKey publicKey;
-    private boolean childrenJoin = false;
-    @Mock
-    private Set<CompressedPublicKey> childrenAndGrandchildren;
+    private final boolean childrenJoin = false;
+    private final Set<CompressedPublicKey> childrenAndGrandchildren = new HashSet<>();
     @Mock
     private CompressedPublicKey publicKey2;
     @Mock

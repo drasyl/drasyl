@@ -69,7 +69,7 @@ public class Node {
     }
 
     public Set<URI> getEndpoints() {
-        return Set.copyOf(endpoints);
+        return endpoints;
     }
 
     public static Node of(Identity identity) {
@@ -77,6 +77,6 @@ public class Node {
     }
 
     public static Node of(Identity identity, Set<URI> endpoints) {
-        return new Node(identity, endpoints);
+        return new Node(identity, Set.copyOf(endpoints));
     }
 }

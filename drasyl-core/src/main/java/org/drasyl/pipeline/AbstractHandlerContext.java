@@ -159,10 +159,10 @@ abstract class AbstractHandlerContext implements HandlerContext {
             ((InboundHandler) inboundCtx.handler()).read(inboundCtx, sender, msg);
         }
         catch (Exception e) {
-            inboundCtx.fireExceptionCaught(e);
             if (LOG.isWarnEnabled()) {
                 LOG.warn("Failed to invoke read() on next handler `{}` do to the following error: ", inboundCtx.name(), e);
             }
+            inboundCtx.fireExceptionCaught(e);
         }
     }
 
@@ -180,10 +180,10 @@ abstract class AbstractHandlerContext implements HandlerContext {
             ((InboundHandler) inboundCtx.handler()).eventTriggered(inboundCtx, event);
         }
         catch (Exception e) {
-            inboundCtx.fireExceptionCaught(e);
             if (LOG.isWarnEnabled()) {
                 LOG.warn("Failed to invoke eventTriggered() on next handler `{}` do to the following error: ", inboundCtx.name(), e);
             }
+            inboundCtx.fireExceptionCaught(e);
         }
     }
 
@@ -208,10 +208,10 @@ abstract class AbstractHandlerContext implements HandlerContext {
             ((OutboundHandler) outboundCtx.handler()).write(outboundCtx, recipient, msg, future);
         }
         catch (Exception e) {
-            outboundCtx.fireExceptionCaught(e);
             if (LOG.isWarnEnabled()) {
                 LOG.warn("Failed to invoke write() on next handler `{}` do to the following error: ", outboundCtx.name(), e);
             }
+            outboundCtx.fireExceptionCaught(e);
         }
 
         return future;

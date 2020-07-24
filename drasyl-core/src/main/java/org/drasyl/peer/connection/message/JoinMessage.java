@@ -61,7 +61,7 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
     public JoinMessage(ProofOfWork proofOfWork,
                        CompressedPublicKey publicKey,
                        Set<CompressedPublicKey> childrenAndGrandchildren) {
-        this(proofOfWork, publicKey, true, childrenAndGrandchildren);
+        this(proofOfWork, publicKey, true, Set.copyOf(childrenAndGrandchildren));
     }
 
     /**
@@ -79,7 +79,7 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
         this.proofOfWork = requireNonNull(proofOfWork);
         this.publicKey = requireNonNull(publicKey);
         this.childrenJoin = childrenJoin;
-        this.childrenAndGrandchildren = requireNonNull(childrenAndGrandchildren);
+        this.childrenAndGrandchildren = Set.copyOf(childrenAndGrandchildren);
     }
 
     public boolean isChildrenJoin() {
@@ -87,7 +87,7 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
     }
 
     public Set<CompressedPublicKey> getChildrenAndGrandchildren() {
-        return Set.copyOf(this.childrenAndGrandchildren);
+        return this.childrenAndGrandchildren;
     }
 
     public CompressedPublicKey getPublicKey() {
