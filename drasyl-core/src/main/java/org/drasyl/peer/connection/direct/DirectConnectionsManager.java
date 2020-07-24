@@ -19,6 +19,7 @@
 package org.drasyl.peer.connection.direct;
 
 import io.netty.channel.EventLoopGroup;
+import io.reactivex.rxjava3.core.Observable;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylNodeComponent;
 import org.drasyl.event.Event;
@@ -42,6 +43,7 @@ import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -84,7 +86,8 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
                                     EventLoopGroup workerGroup,
                                     Consumer<Event> eventConsumer,
                                     BooleanSupplier acceptNewConnectionsSupplier,
-                                    Set<URI> nodeEndpoints) {
+                                    Set<URI> nodeEndpoints,
+                                    Observable<CompressedPublicKey> communicationOccurred) {
         this(
                 config,
                 identity,
@@ -100,7 +103,9 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
                 new RequestPeerInformationCache(1_000, ofSeconds(60)),
                 new HashMap<>(),
                 acceptNewConnectionsSupplier,
-                config.getDirectConnectionsMaxConcurrentConnections());
+                config.getDirectConnectionsMaxConcurrentConnections()
+        );
+        communicationOccurred.subscribe(this::communicationOccurred);
     }
 
     DirectConnectionsManager(DrasylConfig config,
@@ -157,32 +162,13 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
         }
     }
 
-    @Override
-    public void close() {
-        if (opened.compareAndSet(true, false)) {
-            LOG.info("Stop Direct Connections Handler...");
-            // remove handler that has been added in {@link #open()}
-            pipeline.remove(DIRECT_CONNECTIONS_MANAGER);
-
-            // close and remove all client connections
-            for (Map.Entry<CompressedPublicKey, DirectClient> entry : clients.entrySet()) {
-                CompressedPublicKey publicKey = entry.getKey();
-                DirectClient client = entry.getValue();
-
-                clients.remove(publicKey);
-                client.close();
-            }
-            LOG.info("Direct Connections Handler stopped");
-        }
-    }
-
     /**
      * This method notifies the {@link DirectConnectionsManager} that a direct connection with
      * <code>publicKey</code> occurred.
      *
      * @param publicKey
      */
-    public void communicationOccurred(CompressedPublicKey publicKey) {
+    void communicationOccurred(CompressedPublicKey publicKey) {
         if (opened.get()) {
             directConnectionDemandsCache.add(publicKey);
             Pair<PeerInformation, Set<Path>> peer = peersManager.getPeer(publicKey);
@@ -193,6 +179,25 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
             else {
                 initiateDirectConnectionOnDemand(publicKey);
             }
+        }
+    }
+
+    @Override
+    public void close() {
+        if (opened.compareAndSet(true, false)) {
+            LOG.info("Stop Direct Connections Handler...");
+            // remove handler that has been added in {@link #open()}
+            pipeline.remove(DIRECT_CONNECTIONS_MANAGER);
+
+            // close and remove all client connections
+            for (Map.Entry<CompressedPublicKey, DirectClient> entry : new HashSet<>(clients.entrySet())) {
+                CompressedPublicKey publicKey = entry.getKey();
+                DirectClient client = entry.getValue();
+
+                clients.remove(publicKey);
+                client.close();
+            }
+            LOG.info("Direct Connections Handler stopped");
         }
     }
 
@@ -244,7 +249,6 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
                             channelGroup,
                             workerGroup,
                             eventConsumer,
-                            this::communicationOccurred,
                             publicKey,
                             endpointsSupplier,
                             () -> directConnectionDemandsCache.contains(publicKey),

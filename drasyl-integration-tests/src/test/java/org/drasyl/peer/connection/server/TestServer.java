@@ -62,9 +62,8 @@ public class TestServer extends Server {
                 messenger,
                 endpoints,
                 channelGroup,
-                () -> true,
-                publicKey -> {
-                })));
+                () -> true
+        )));
     }
 
     TestServer(DrasylConfig config,

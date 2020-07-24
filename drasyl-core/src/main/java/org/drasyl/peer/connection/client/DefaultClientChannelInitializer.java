@@ -30,7 +30,6 @@ import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.handler.stream.ChunkedWriteHandler;
 import org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
-import org.drasyl.peer.connection.handler.PeerCommunicationWatcher;
 import org.drasyl.peer.connection.handler.RelayableMessageGuard;
 import org.drasyl.peer.connection.handler.SignatureHandler;
 import org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler;
@@ -47,7 +46,6 @@ import static org.drasyl.peer.connection.client.PublicKeyExchangeHandler.PUBLIC_
 import static org.drasyl.peer.connection.client.PublicKeyExchangeHandler.PublicKeyExchangeState.KEY_AVAILABLE;
 import static org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler.EXCEPTION_MESSAGE_HANDLER;
 import static org.drasyl.peer.connection.handler.ExceptionHandler.EXCEPTION_HANDLER;
-import static org.drasyl.peer.connection.handler.PeerCommunicationWatcher.PEER_COMMUNICATION_WATCHER;
 import static org.drasyl.peer.connection.handler.RelayableMessageGuard.HOP_COUNT_GUARD;
 import static org.drasyl.peer.connection.handler.SignatureHandler.SIGNATURE_HANDLER;
 import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_HANDLER;
@@ -71,7 +69,6 @@ public class DefaultClientChannelInitializer extends ClientChannelInitializer {
     protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
         pipeline.addLast(SIGNATURE_HANDLER, new SignatureHandler(environment.getIdentity()));
         pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(environment.getConfig().getMessageHopLimit()));
-        pipeline.addLast(PEER_COMMUNICATION_WATCHER, new PeerCommunicationWatcher(environment.getIdentity().getPublicKey(), environment.getPeerCommunicationConsumer()));
         pipeline.addLast(CHUNKED_WRITER, new ChunkedWriteHandler());
         pipeline.addLast(CHUNK_HANDLER, new ChunkedMessageHandler(environment.getConfig().getMessageMaxContentLength(), environment.getIdentity().getPublicKey(), environment.getConfig().getMessageComposedMessageTransferTimeout()));
     }

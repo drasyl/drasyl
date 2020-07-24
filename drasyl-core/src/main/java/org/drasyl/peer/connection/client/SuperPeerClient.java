@@ -23,7 +23,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
-import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
@@ -83,14 +82,13 @@ public class SuperPeerClient extends AbstractClient {
     }
 
     public SuperPeerClient(DrasylConfig config,
-                            Identity identity,
-                            PeersManager peersManager,
-                            Messenger messenger,
-                            PeerChannelGroup channelGroup,
-                            EventLoopGroup workerGroup,
-                            Consumer<Event> eventConsumer,
-                            Consumer<CompressedPublicKey> peerCommunicationConsumer,
-                            BooleanSupplier acceptNewConnectionsSupplier) {
+                           Identity identity,
+                           PeersManager peersManager,
+                           Messenger messenger,
+                           PeerChannelGroup channelGroup,
+                           EventLoopGroup workerGroup,
+                           Consumer<Event> eventConsumer,
+                           BooleanSupplier acceptNewConnectionsSupplier) {
         super(
                 config.getSuperPeerRetryDelays(),
                 workerGroup,
@@ -106,7 +104,6 @@ public class SuperPeerClient extends AbstractClient {
                 config.getSuperPeerHandshakeTimeout(),
                 eventConsumer,
                 true,
-                peerCommunicationConsumer,
                 config.getSuperPeerPublicKey(),
                 config.getSuperPeerChannelInitializer()
         );

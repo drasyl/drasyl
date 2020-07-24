@@ -18,6 +18,7 @@
  */
 package org.drasyl.messenger;
 
+import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.ApplicationMessage;
@@ -48,12 +49,14 @@ class MessengerTest {
     private CompressedPublicKey address;
     @Mock
     private NoPathToPublicKeyException noPathToPublicKeyException;
+    @Mock
+    private Subject<CompressedPublicKey> peerCommunicationOccurred;
 
     @Nested
     class Send {
         @Test
         void shouldSendMessageToLoopbackSinkIfAllSinksArePresent() throws DrasylException {
-            Messenger messenger = new Messenger(loopbackSink, intraVmSink, channelGroupSink);
+            Messenger messenger = new Messenger(peerCommunicationOccurred, loopbackSink, intraVmSink, channelGroupSink);
             messenger.send(applicationMessage);
 
             verify(loopbackSink).send(applicationMessage);
@@ -64,7 +67,7 @@ class MessengerTest {
         void shouldSendMessageToIntraVmSinkIfLoopbackSinkCanNotSendMessage() throws DrasylException {
             doThrow(noPathToPublicKeyException).when(loopbackSink).send(any());
 
-            Messenger messenger = new Messenger(loopbackSink, intraVmSink, channelGroupSink);
+            Messenger messenger = new Messenger(peerCommunicationOccurred, loopbackSink, intraVmSink, channelGroupSink);
             messenger.send(applicationMessage);
 
             verify(intraVmSink).send(applicationMessage);
@@ -78,7 +81,7 @@ class MessengerTest {
             doThrow(noPathToPublicKeyException).when(intraVmSink).send(any());
             doThrow(noPathToPublicKeyException).when(channelGroupSink).send(any());
 
-            Messenger messenger = new Messenger(loopbackSink, intraVmSink, channelGroupSink);
+            Messenger messenger = new Messenger(peerCommunicationOccurred, loopbackSink, intraVmSink, channelGroupSink);
 
             assertThrows(NoPathToPublicKeyException.class, () -> messenger.send(applicationMessage));
         }
@@ -88,7 +91,7 @@ class MessengerTest {
             when(applicationMessage.getRecipient()).thenReturn(address);
             doThrow(NoPathToPublicKeyException.class).when(loopbackSink).send(any());
 
-            Messenger messenger = new Messenger(loopbackSink, (MessageSink) null, null);
+            Messenger messenger = new Messenger(peerCommunicationOccurred, loopbackSink, null, null);
 
             assertThrows(NoPathToPublicKeyException.class, () -> messenger.send(applicationMessage));
         }

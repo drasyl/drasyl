@@ -109,10 +109,8 @@ public class TestSuperPeerClient extends SuperPeerClient {
                                 config.getSuperPeerPublicKey(),
                                 config.getSuperPeerIdleRetries(),
                                 config.getSuperPeerIdleTimeout(),
-                                config.getSuperPeerHandshakeTimeout(),
-                                publicKey -> {
-
-                                }),
+                                config.getSuperPeerHandshakeTimeout()
+                        ),
                                 doPingPong,
                                 doJoin
                         ))
