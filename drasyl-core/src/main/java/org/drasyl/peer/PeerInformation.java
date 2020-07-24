@@ -20,7 +20,6 @@ package org.drasyl.peer;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableSet;
 
 import java.net.URI;
 import java.util.Objects;
@@ -62,7 +61,7 @@ public class PeerInformation {
     }
 
     public Set<URI> getEndpoints() {
-        return ImmutableSet.copyOf(endpoints);
+        return Set.copyOf(endpoints);
     }
 
     public static PeerInformation of(Set<URI> endpoints) {

@@ -18,7 +18,6 @@
  */
 package org.drasyl.peer.connection.message;
 
-import com.google.common.collect.ImmutableSet;
 import org.drasyl.identity.CompressedPublicKey;
 
 import java.util.Objects;
@@ -39,7 +38,7 @@ abstract class AbstractGrandchildMessage extends AbstractMessage implements Requ
     }
 
     public Set<CompressedPublicKey> getGrandchildren() {
-        return ImmutableSet.copyOf(grandchildren);
+        return Set.copyOf(grandchildren);
     }
 
     @Override

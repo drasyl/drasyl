@@ -20,7 +20,6 @@ package org.drasyl.peer.connection.message;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
-import com.google.common.collect.ImmutableSet;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 
@@ -88,7 +87,7 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
     }
 
     public Set<CompressedPublicKey> getChildrenAndGrandchildren() {
-        return ImmutableSet.copyOf(this.childrenAndGrandchildren);
+        return Set.copyOf(this.childrenAndGrandchildren);
     }
 
     public CompressedPublicKey getPublicKey() {

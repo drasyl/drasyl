@@ -19,7 +19,6 @@
 package org.drasyl.peer;
 
 import com.google.common.collect.HashMultimap;
-import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.SetMultimap;
 import org.drasyl.event.Event;
 import org.drasyl.event.Peer;
@@ -105,7 +104,7 @@ public class PeersManager {
         try {
             lock.readLock().lock();
 
-            return ImmutableMap.copyOf(peers);
+            return Map.copyOf(peers);
         }
         finally {
             lock.readLock().unlock();
@@ -119,7 +118,7 @@ public class PeersManager {
             // It is nessary to create a new HashMap, because otherwise this can raise a
             // ConcurrentModificationException.
             // See: https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/77
-            return ImmutableMap.copyOf(new HashMap<>(peers).entrySet().stream()
+            return Map.copyOf(new HashMap<>(peers).entrySet().stream()
                     .filter(e -> children.contains(e.getKey()) || grandchildrenRoutes.containsKey(e.getKey()))
                     .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
             );

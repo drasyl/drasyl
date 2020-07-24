@@ -19,8 +19,6 @@
 package org.drasyl;
 
 import ch.qos.logback.classic.Level;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableSet;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
@@ -197,19 +195,19 @@ public class DrasylConfig {
         this.messageComposedMessageTransferTimeout = config.getDuration(MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT);
         this.messageHopLimit = getShort(config, MESSAGE_HOP_LIMIT);
         this.serverSSLEnabled = config.getBoolean(SERVER_SSL_ENABLED);
-        this.serverSSLProtocols = ImmutableSet.copyOf(config.getStringList(SERVER_SSL_PROTOCOLS));
-        this.serverEndpoints = ImmutableSet.copyOf(getUriList(config, SERVER_ENDPOINTS));
+        this.serverSSLProtocols = Set.copyOf(config.getStringList(SERVER_SSL_PROTOCOLS));
+        this.serverEndpoints = Set.copyOf(getUriList(config, SERVER_ENDPOINTS));
 
         // Init super peer config
         this.superPeerEnabled = config.getBoolean(SUPER_PEER_ENABLED);
-        this.superPeerEndpoints = ImmutableSet.copyOf(getUriList(config, SUPER_PEER_ENDPOINTS));
+        this.superPeerEndpoints = Set.copyOf(getUriList(config, SUPER_PEER_ENDPOINTS));
         if (!config.getString(SUPER_PEER_PUBLIC_KEY).equals("")) {
             this.superPeerPublicKey = getPublicKey(config, SUPER_PEER_PUBLIC_KEY);
         }
         else {
             this.superPeerPublicKey = null;
         }
-        this.superPeerRetryDelays = ImmutableList.copyOf(config.getDurationList(SUPER_PEER_RETRY_DELAYS));
+        this.superPeerRetryDelays = List.copyOf(config.getDurationList(SUPER_PEER_RETRY_DELAYS));
         this.superPeerHandshakeTimeout = config.getDuration(SUPER_PEER_HANDSHAKE_TIMEOUT);
         this.superPeerChannelInitializer = getChannelInitializer(config, SUPER_PEER_CHANNEL_INITIALIZER);
         this.superPeerIdleRetries = getShort(config, SUPER_PEER_IDLE_RETRIES);
@@ -220,7 +218,7 @@ public class DrasylConfig {
         // Init direct connections config
         this.directConnectionsEnabled = config.getBoolean(DIRECT_CONNECTIONS_ENABLED);
         this.directConnectionsMaxConcurrentConnections = config.getInt(DIRECT_CONNECTIONS_MAX_CONCURRENT_CONNECTIONS);
-        this.directConnectionsRetryDelays = ImmutableList.copyOf(config.getDurationList(DIRECT_CONNECTIONS_RETRY_DELAYS));
+        this.directConnectionsRetryDelays = List.copyOf(config.getDurationList(DIRECT_CONNECTIONS_RETRY_DELAYS));
         this.directConnectionsHandshakeTimeout = config.getDuration(DIRECT_CONNECTIONS_HANDSHAKE_TIMEOUT);
         this.directConnectionsChannelInitializer = getChannelInitializer(config, DIRECT_CONNECTIONS_CHANNEL_INITIALIZER);
         this.directConnectionsIdleRetries = getShort(config, DIRECT_CONNECTIONS_IDLE_RETRIES);
@@ -235,7 +233,7 @@ public class DrasylConfig {
         monitoringInfluxReportingFrequency = config.getDuration(MONITORING_INFLUX_REPORTING_FREQUENCY);
 
         // Load plugins
-        this.pluginEnvironments = ImmutableList.copyOf(getPluginEnvironmentList(config, PLUGINS));
+        this.pluginEnvironments = List.copyOf(getPluginEnvironmentList(config, PLUGINS));
 
         // Load marshalling config
         this.marshallingAllowedTypes = config.getStringList(MARSHALLING_ALLOWED_TYPES);
