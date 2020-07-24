@@ -173,7 +173,7 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
     public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
         if (!handshakeFuture.isDone()) {
             if (getLogger().isWarnEnabled()) {
-                getLogger().warn("[{}]: Exception during handshake occurred: ", ctx.channel().id().asShortText(), cause);
+                getLogger().info("[{}]: Exception during handshake occurred: {}", ctx.channel().id().asShortText(), cause.getMessage());
             }
             // close connection if an error occurred before handshake
             ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_INITIALIZATION)).addListener(ChannelFutureListener.CLOSE);
