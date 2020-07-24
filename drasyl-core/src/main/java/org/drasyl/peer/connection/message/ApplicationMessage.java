@@ -19,12 +19,14 @@
 package org.drasyl.peer.connection.message;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.drasyl.identity.CompressedPublicKey;
 
 import java.util.Arrays;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Optional;
 
@@ -35,18 +37,37 @@ import static java.util.Objects.requireNonNull;
  */
 public class ApplicationMessage extends RelayableMessage implements RequestMessage {
     protected final CompressedPublicKey sender;
+    @JsonInclude(JsonInclude.Include.NON_EMPTY)
+    protected final Map<String, String> headers;
     protected final byte[] payload;
     protected final Class<?> payloadClazz;
+
+    public ApplicationMessage(MessageId id,
+                              CompressedPublicKey sender,
+                              CompressedPublicKey recipient,
+                              byte[] payload,
+                              Class<?> payloadClazz,
+                              short hopCount) {
+        this(id, sender, recipient, Map.of(), payload, payloadClazz, hopCount);
+    }
 
     @JsonCreator
     public ApplicationMessage(@JsonProperty("id") MessageId id,
                               @JsonProperty("sender") CompressedPublicKey sender,
                               @JsonProperty("recipient") CompressedPublicKey recipient,
+                              @JsonProperty("headers") Map<String, String> headers,
                               @JsonProperty("payload") byte[] payload,
                               @JsonProperty("payloadClazz") Class<?> payloadClazz,
                               @JsonProperty("hopCount") short hopCount) {
         super(id, recipient, hopCount);
         this.sender = requireNonNull(sender);
+        if (headers != null) {
+            this.headers = Map.copyOf(headers);
+        }
+        else {
+            // needed for backward compatibility
+            this.headers = Map.of();
+        }
         this.payload = requireNonNull(payload);
 
         /*
@@ -65,18 +86,21 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
      */
     public ApplicationMessage(CompressedPublicKey sender,
                               CompressedPublicKey recipient,
+                              Map<String, String> headers,
                               byte[] payload,
                               Class<?> payloadClazz) {
-        this(sender, recipient, payload, payloadClazz, (short) 0);
+        this(sender, recipient, headers, payload, payloadClazz, (short) 0);
     }
 
     ApplicationMessage(CompressedPublicKey sender,
                        CompressedPublicKey recipient,
+                       Map<String, String> headers,
                        byte[] payload,
                        Class<?> payloadClazz,
                        short hopCount) {
         super(recipient, hopCount);
         this.sender = requireNonNull(sender);
+        this.headers = requireNonNull(headers);
         this.payload = requireNonNull(payload);
 
         /*
@@ -84,6 +108,21 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
          * than 0.1.3-SNAPSHOT and returns on empty {@link #payloadClazz} the {@code byte[].class}.
          */
         this.payloadClazz = Objects.requireNonNullElse(payloadClazz, byte[].class);
+    }
+
+    /**
+     * Creates a new message.
+     *
+     * @param sender    The sender
+     * @param recipient The recipient
+     * @param payload   The data to be sent
+     */
+    public ApplicationMessage(CompressedPublicKey sender,
+                              CompressedPublicKey recipient,
+
+                              byte[] payload,
+                              Class<?> payloadClazz) {
+        this(sender, recipient, Map.of(), payload, payloadClazz, (short) 0);
     }
 
     /**
@@ -96,6 +135,21 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
 
     public CompressedPublicKey getSender() {
         return sender;
+    }
+
+    public Map<String, String> getHeaders() {
+        return headers;
+    }
+
+    /**
+     * Returns the value of header with name <code>name</code>, or {@code null} if this header does
+     * not exist.
+     *
+     * @return value of header with name <code>name</code>, or {@code null} if this header does not
+     * exist
+     */
+    public String getHeader(String name) {
+        return headers.get(name);
     }
 
     public byte[] getPayload() {
