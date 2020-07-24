@@ -48,6 +48,7 @@ public class ClientEnvironment {
     private final Duration idleTimeout;
     private final Duration handshakeTimeout;
 
+    @SuppressWarnings({ "java:S107" })
     public ClientEnvironment(DrasylConfig config,
                              Identity identity,
                              URI endpoint,

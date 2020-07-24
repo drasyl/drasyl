@@ -268,6 +268,7 @@ public abstract class DrasylNode {
      *
      * @param level new log level
      */
+    @SuppressWarnings({ "java:S4792" })
     public static void setLogLevel(Level level) {
         ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.drasyl");
         root.setLevel(level);

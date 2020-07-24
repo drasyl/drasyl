@@ -46,6 +46,7 @@ abstract class AbstractClient implements DrasylNodeComponent {
     protected Channel channel;
     protected BooleanSupplier acceptNewConnectionsSupplier;
 
+    @SuppressWarnings({ "java:S107" })
     protected AbstractClient(List<Duration> retryDelays,
                              EventLoopGroup workerGroup,
                              Supplier<Set<URI>> endpointsSupplier,
@@ -107,6 +108,7 @@ abstract class AbstractClient implements DrasylNodeComponent {
         );
     }
 
+    @SuppressWarnings({ "java:S107" })
     protected AbstractClient(List<Duration> retryDelays,
                              EventLoopGroup workerGroup,
                              Supplier<Set<URI>> endpointsSupplier,

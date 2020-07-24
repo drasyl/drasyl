@@ -63,6 +63,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.ExecutionException;
 
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -384,7 +385,7 @@ class SuperPeerClientIT {
 
             // send message
             RequestMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), bigPayload, bigPayload.getClass());
-            assertThrows(RuntimeException.class, () -> server.sendMessage(identityManager.getPublicKey(), request));
+            assertThrows(ExecutionException.class, () -> server.sendMessage(identityManager.getPublicKey(), request).get());
         }
     }
 }

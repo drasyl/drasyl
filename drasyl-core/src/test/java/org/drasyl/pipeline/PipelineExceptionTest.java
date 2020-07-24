@@ -20,21 +20,24 @@ package org.drasyl.pipeline;
 
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.Mockito.mock;
+import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
 class PipelineExceptionTest {
     @Test
-    void shouldCreateException() {
-        assertThrows(PipelineException.class, () -> {
-            throw new PipelineException(mock(Exception.class));
-        });
+    void shouldCreateExceptionWithCause(@Mock Exception cause) {
+        PipelineException exception = new PipelineException(cause);
 
-        assertThrows(PipelineException.class, () -> {
-            throw new PipelineException("error");
-        });
+        assertEquals(cause, exception.getCause());
+    }
+
+    @Test
+    void shouldCreateExceptionWithMessage() {
+        PipelineException exception = new PipelineException("error");
+
+        assertEquals("error", exception.getMessage());
     }
 }

@@ -31,10 +31,12 @@ import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.Message;
+import org.drasyl.util.FutureUtil;
 
 import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.awaitility.Awaitility.await;
@@ -90,11 +92,9 @@ public class TestServer extends Server {
         return channelInitializer.sentMessages();
     }
 
-    public void sendMessage(CompressedPublicKey recipient, Message message) {
+    public CompletableFuture<Void> sendMessage(CompressedPublicKey recipient, Message message) {
         ChannelFuture future = channelGroup.writeAndFlush(recipient, message).awaitUninterruptibly();
-        if (!future.isSuccess()) {
-            throw new RuntimeException(future.cause());
-        }
+        return FutureUtil.toFuture(future);
     }
 
     public void closeClient(CompressedPublicKey client) {

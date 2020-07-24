@@ -63,6 +63,7 @@ public class ChatGUI extends Application {
     private Stage stage;
     private DrasylNode node;
 
+    @SuppressWarnings({ "java:S112" })
     @Override
     public void start(Stage stage) {
         try {
@@ -102,7 +103,7 @@ public class ChatGUI extends Application {
             stage.show();
         }
         catch (Exception e) {
-            e.printStackTrace();
+            throw new RuntimeException(e);
         }
     }
 

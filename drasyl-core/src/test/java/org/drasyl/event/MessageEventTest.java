@@ -9,9 +9,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
 class MessageEventTest {
@@ -39,10 +37,8 @@ class MessageEventTest {
             MessageEvent event2 = new MessageEvent(message);
             MessageEvent event3 = new MessageEvent(message2);
 
-            assertTrue(event1.equals(event1));
             assertEquals(event1, event2);
             assertNotEquals(event1, event3);
-            assertFalse(event1.equals(null));
         }
     }
 
