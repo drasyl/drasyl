@@ -18,6 +18,7 @@
  */
 package org.drasyl.event;
 
+import com.google.common.collect.ImmutableSet;
 import org.drasyl.identity.Identity;
 
 import java.net.URI;
@@ -69,7 +70,7 @@ public class Node {
     }
 
     public Set<URI> getEndpoints() {
-        return endpoints;
+        return ImmutableSet.copyOf(endpoints);
     }
 
     public static Node of(Identity identity) {
