@@ -63,12 +63,12 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -162,7 +162,7 @@ public abstract class DrasylNode {
             this.peersManager = new PeersManager(this::onInternalEvent);
             this.channelGroup = new PeerChannelGroup();
             this.messenger = new Messenger(this::messageSink, peersManager, channelGroup);
-            this.endpoints = new HashSet<>();
+            this.endpoints = ConcurrentHashMap.newKeySet();
             this.acceptNewConnections = new AtomicBoolean();
             this.pipeline = new DrasylPipeline(this::onEvent, messenger::send, config, identity);
             this.components = new ArrayList<>();
@@ -381,12 +381,12 @@ public abstract class DrasylNode {
      * completed.
      */
     public CompletableFuture<Void> shutdown() {
-        if (started.compareAndSet(true, false)) {
+        if (startSequence.isDone() && started.compareAndSet(true, false)) {
             DrasylNode self = this;
             onInternalEvent(new NodeDownEvent(Node.of(identity, endpoints)));
             LOG.info("Shutdown drasyl Node with Identity '{}'...", identity);
             shutdownSequence = new CompletableFuture<>();
-            getInstanceHeavy().scheduleDirect(() -> {
+            startSequence.whenComplete((t, exp) -> getInstanceHeavy().scheduleDirect(() -> {
                 rejectNewConnections();
                 closeConnections();
                 for (int i = components.size() - 1; i >= 0; i--) {
@@ -397,7 +397,7 @@ public abstract class DrasylNode {
                 LOG.info("drasyl Node with Identity '{}' has shut down", identity);
                 shutdownSequence.complete(null);
                 INSTANCES.remove(self);
-            });
+            }));
         }
 
         return shutdownSequence;
@@ -434,7 +434,7 @@ public abstract class DrasylNode {
             LOG.info("Start drasyl Node v{}...", DrasylNode.getVersion());
             LOG.debug("The following configuration will be used: {}", config);
             startSequence = new CompletableFuture<>();
-            getInstanceHeavy().scheduleDirect(() -> {
+            shutdownSequence.whenComplete((t, ex) -> getInstanceHeavy().scheduleDirect(() -> {
                 try {
                     for (int i = 0; i < components.size(); i++) {
                         components.get(i).open();
@@ -460,7 +460,7 @@ public abstract class DrasylNode {
                     started.set(false);
                     startSequence.completeExceptionally(e);
                 }
-            });
+            }));
         }
 
         return startSequence;

@@ -107,6 +107,7 @@ class DrasylNodeTest {
                 public void onEvent(Event event) {
                 }
             });
+            shutdownSequence.complete(null);
             underTest.start().join();
 
             verify(drasylNodeComponent).open();
@@ -119,6 +120,7 @@ class DrasylNodeTest {
                 public void onEvent(Event event) {
                 }
             });
+            shutdownSequence.complete(null);
             underTest.start().join();
 
             verify(underTest).onInternalEvent(new NodeUpEvent(Node.of(identity, endpoints)));
@@ -134,6 +136,7 @@ class DrasylNodeTest {
                 public void onEvent(Event event) {
                 }
             });
+            shutdownSequence.complete(null);
             assertThrows(ExecutionException.class, underTest.start()::get);
 
             verify(underTest).onInternalEvent(new NodeUnrecoverableErrorEvent(Node.of(identity, endpoints), new DrasylException("error")));
@@ -152,6 +155,7 @@ class DrasylNodeTest {
                 public void onEvent(Event event) {
                 }
             });
+            startSequence.complete(null);
             underTest.shutdown().join();
 
             verify(drasylNodeComponent).close();
@@ -174,6 +178,7 @@ class DrasylNodeTest {
                 public void onEvent(Event event) {
                 }
             });
+            startSequence.complete(null);
             drasylNode.shutdown().join();
 
             verify(channelGroup).writeAndFlush(new QuitMessage(REASON_SHUTTING_DOWN));
@@ -268,6 +273,7 @@ class DrasylNodeTest {
                 public void onEvent(Event event) {
                 }
             });
+            startSequence.complete(null);
             underTest.shutdown().join();
 
             assertThrows(NoPathToPublicKeyException.class, () -> underTest.messageSink(message));
