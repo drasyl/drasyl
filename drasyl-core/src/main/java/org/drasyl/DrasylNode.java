@@ -68,7 +68,7 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
@@ -162,7 +162,7 @@ public abstract class DrasylNode {
             this.peersManager = new PeersManager(this::onInternalEvent);
             this.channelGroup = new PeerChannelGroup();
             this.messenger = new Messenger(this::messageSink, peersManager, channelGroup);
-            this.endpoints = ConcurrentHashMap.newKeySet();
+            this.endpoints = new CopyOnWriteArraySet<>();
             this.acceptNewConnections = new AtomicBoolean();
             this.pipeline = new DrasylPipeline(this::onEvent, messenger::send, config, identity);
             this.components = new ArrayList<>();
