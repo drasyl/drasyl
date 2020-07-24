@@ -28,6 +28,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
+import java.util.Map;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
@@ -55,6 +56,17 @@ class ApplicationMessageTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
+            String json = "{\"@type\":\"" + ApplicationMessage.class.getSimpleName() + "\",\"id\":\"123\",\"sender\":\"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\"recipient\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"headers\":{\"clazz\":\"foo.bar.Baz\"},\"payload\":\"AAEC\"}";
+
+            assertEquals(new ApplicationMessage(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), Map.of("clazz", "foo.bar.Baz"), new byte[]{
+                    0x00,
+                    0x01,
+                    0x02
+            }, byte[].class), JACKSON_READER.readValue(json, ApplicationMessage.class));
+        }
+
+        @Test
+        void shouldDeserializeJsonWithoutHeadersToCorrectObject() throws IOException, CryptoException {
             String json = "{\"@type\":\"" + ApplicationMessage.class.getSimpleName() + "\",\"id\":\"123\",\"sender\":\"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\"recipient\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"payload\":\"AAEC\"}";
 
             assertEquals(new ApplicationMessage(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), new byte[]{
@@ -76,7 +88,7 @@ class ApplicationMessageTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException {
-            ApplicationMessage message = new ApplicationMessage(sender, recipient, new byte[]{
+            ApplicationMessage message = new ApplicationMessage(sender, recipient, Map.of("clazz", "foo.bar.Baz"), new byte[]{
                     0x00,
                     0x01,
                     0x02
@@ -85,7 +97,7 @@ class ApplicationMessageTest {
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", ApplicationMessage.class.getSimpleName())
-                    .containsKeys("id", "recipient", "hopCount", "sender", "payload", "payloadClazz");
+                    .containsKeys("id", "recipient", "hopCount", "sender", "headers", "payload", "payloadClazz");
         }
     }
 
