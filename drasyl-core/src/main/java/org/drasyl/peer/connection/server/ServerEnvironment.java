@@ -19,7 +19,6 @@
 package org.drasyl.peer.connection.server;
 
 import org.drasyl.DrasylConfig;
-import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
@@ -28,7 +27,6 @@ import org.drasyl.peer.connection.PeerChannelGroup;
 import java.net.URI;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
 
 /**
  * This class encapsulates all information needed by a {@link ServerChannelInitializer}.
@@ -38,7 +36,6 @@ public class ServerEnvironment {
     private final Identity identity;
     private final PeersManager peersManager;
     private final BooleanSupplier acceptedNewConnectionsSupplier;
-    private final Consumer<CompressedPublicKey> peerCommunicationConsumer;
     private final Messenger messenger;
     private final Set<URI> endpoints;
     private final PeerChannelGroup channelGroup;
@@ -49,8 +46,7 @@ public class ServerEnvironment {
                              Messenger messenger,
                              Set<URI> endpoints,
                              PeerChannelGroup channelGroup,
-                             BooleanSupplier acceptedNewConnectionsSupplier,
-                             Consumer<CompressedPublicKey> peerCommunicationConsumer) {
+                             BooleanSupplier acceptedNewConnectionsSupplier) {
         this.config = config;
         this.identity = identity;
         this.peersManager = peersManager;
@@ -58,7 +54,6 @@ public class ServerEnvironment {
         this.endpoints = endpoints;
         this.channelGroup = channelGroup;
         this.acceptedNewConnectionsSupplier = acceptedNewConnectionsSupplier;
-        this.peerCommunicationConsumer = peerCommunicationConsumer;
     }
 
     public Identity getIdentity() {
@@ -91,9 +86,5 @@ public class ServerEnvironment {
 
     public PeerChannelGroup getChannelGroup() {
         return channelGroup;
-    }
-
-    public Consumer<CompressedPublicKey> getPeerCommunicationConsumer() {
-        return peerCommunicationConsumer;
     }
 }

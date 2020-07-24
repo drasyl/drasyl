@@ -175,7 +175,6 @@ class SuperPeerClientIT {
 
         // start client
         try (SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, event -> {
-        }, publicKey -> {
         }, () -> true)) {
             client.open();
 
@@ -192,8 +191,7 @@ class SuperPeerClientIT {
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
-        SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, publicKey -> {
-        }, () -> true);
+        SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true);
         client.open();
 
         // wait for node to become online, before closing it
@@ -211,8 +209,7 @@ class SuperPeerClientIT {
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
-        SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, publicKey -> {
-        }, () -> true);
+        SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true);
         client.open();
 
         // wait for node to become online, before closing it
@@ -232,7 +229,6 @@ class SuperPeerClientIT {
 
         // start client
         try (SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, event -> {
-        }, publicKey -> {
         }, () -> true)) {
             client.open();
             server.awaitClient(identityManager.getPublicKey());
@@ -253,7 +249,6 @@ class SuperPeerClientIT {
 
         // start client
         try (SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, event -> {
-        }, publicKey -> {
         }, () -> true)) {
             client.open();
             server.awaitClient(identityManager.getPublicKey());
@@ -278,8 +273,7 @@ class SuperPeerClientIT {
 
         // start client
         DrasylConfig noRetryConfig = DrasylConfig.newBuilder(config).superPeerRetryDelays(List.of()).build();
-        try (SuperPeerClient client = new SuperPeerClient(noRetryConfig, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, publicKey -> {
-        }, () -> true)) {
+        try (SuperPeerClient client = new SuperPeerClient(noRetryConfig, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
             client.open();
             server.awaitClient(identityManager.getPublicKey());
 
@@ -298,8 +292,7 @@ class SuperPeerClientIT {
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
-        try (SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, publicKey -> {
-        }, () -> true)) {
+        try (SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
             client.open();
 
             // verify emitted events
@@ -318,8 +311,7 @@ class SuperPeerClientIT {
                 .build();
 
         // start client
-        try (SuperPeerClient client = new SuperPeerClient(config1, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, publicKey -> {
-        }, () -> true)) {
+        try (SuperPeerClient client = new SuperPeerClient(config1, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
             client.open();
 
             // verify emitted events
@@ -338,8 +330,7 @@ class SuperPeerClientIT {
                 .build();
 
         // start client
-        try (SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, publicKey -> {
-        }, () -> true)) {
+        try (SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
             client.open();
             server.awaitClient(identityManager.getPublicKey());
 
@@ -361,8 +352,7 @@ class SuperPeerClientIT {
         TestObserver<Event> emittedEvents = emittedEventsSubject.filter(e -> e instanceof MessageEvent).test();
 
         // start client
-        try (SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, publicKey -> {
-        }, () -> true)) {
+        try (SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
             client.open();
             server.awaitClient(identityManager.getPublicKey());
 
@@ -384,8 +374,7 @@ class SuperPeerClientIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void messageExceedingMaxSizeShouldOnSendShouldThrowException() throws ClientException {
         // start client
-        try (SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, publicKey -> {
-        }, () -> true)) {
+        try (SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
             client.open();
             server.awaitClient(identityManager.getPublicKey());
 

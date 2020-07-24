@@ -27,7 +27,6 @@ import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylNodeComponent;
-import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
@@ -43,7 +42,6 @@ import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
 import java.util.stream.Collectors;
 
 import static org.drasyl.util.NetworkUtil.getAddresses;
@@ -87,10 +85,9 @@ public class Server implements DrasylNodeComponent {
                   PeerChannelGroup channelGroup,
                   EventLoopGroup workerGroup,
                   EventLoopGroup bossGroup,
-                  Consumer<CompressedPublicKey> peerCommunicationConsumer,
                   Set<URI> nodeEndpoints,
                   BooleanSupplier acceptNewConnectionsSupplier) throws ServerException {
-        this(identity, messenger, peersManager, config, channelGroup, workerGroup, bossGroup, new AtomicBoolean(false), acceptNewConnectionsSupplier, peerCommunicationConsumer, nodeEndpoints);
+        this(identity, messenger, peersManager, config, channelGroup, workerGroup, bossGroup, new AtomicBoolean(false), acceptNewConnectionsSupplier, nodeEndpoints);
     }
 
     /**
@@ -104,7 +101,6 @@ public class Server implements DrasylNodeComponent {
      * @param workerGroup                  netty shared worker group
      * @param bossGroup                    netty shared boss group
      * @param acceptNewConnectionsSupplier
-     * @param peerCommunicationConsumer
      * @param nodeEndpoints
      */
     public Server(Identity identity,
@@ -116,7 +112,6 @@ public class Server implements DrasylNodeComponent {
                   EventLoopGroup bossGroup,
                   AtomicBoolean opened,
                   BooleanSupplier acceptNewConnectionsSupplier,
-                  Consumer<CompressedPublicKey> peerCommunicationConsumer,
                   Set<URI> nodeEndpoints) throws ServerException {
         this(
                 config,
@@ -131,8 +126,8 @@ public class Server implements DrasylNodeComponent {
                                         messenger,
                                         nodeEndpoints,
                                         channelGroup,
-                                        acceptNewConnectionsSupplier,
-                                        peerCommunicationConsumer),
+                                        acceptNewConnectionsSupplier
+                                ),
                                 config.getServerChannelInitializer())));
     }
 

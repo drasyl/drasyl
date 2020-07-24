@@ -70,7 +70,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Consumer;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
@@ -168,27 +167,17 @@ public abstract class DrasylNode {
             this.pipeline = new DrasylPipeline(this::onEvent, messenger::send, config, identity);
             this.components = new ArrayList<>();
             this.components.add(new PluginManager(pipeline, config));
-            Consumer<CompressedPublicKey> communicationOccurredConsumer;
             if (config.areDirectConnectionsEnabled()) {
-                DirectConnectionsManager directConnectionsManager = new DirectConnectionsManager(config, identity, peersManager, messenger, pipeline, channelGroup, DrasylNode.WORKER_GROUP, this::onInternalEvent, acceptNewConnections::get, endpoints);
-                communicationOccurredConsumer = directConnectionsManager::communicationOccurred;
-                this.components.add(directConnectionsManager);
-            }
-            else {
-                communicationOccurredConsumer = publicKey -> {
-                };
+                this.components.add(new DirectConnectionsManager(config, identity, peersManager, messenger, pipeline, channelGroup, DrasylNode.WORKER_GROUP, this::onInternalEvent, acceptNewConnections::get, endpoints, messenger.communicationOccurred()));
             }
             if (config.isIntraVmDiscoveryEnabled()) {
-                IntraVmDiscovery intraVmDiscovery = new IntraVmDiscovery(identity.getPublicKey(), messenger, peersManager, this::onInternalEvent);
-                this.components.add(intraVmDiscovery);
+                this.components.add(new IntraVmDiscovery(identity.getPublicKey(), messenger, peersManager, this::onInternalEvent));
             }
             if (config.isSuperPeerEnabled()) {
-                SuperPeerClient superPeerClient = new SuperPeerClient(this.config, identity, peersManager, messenger, channelGroup, DrasylNode.WORKER_GROUP, this::onInternalEvent, communicationOccurredConsumer, acceptNewConnections::get);
-                this.components.add(superPeerClient);
+                this.components.add(new SuperPeerClient(this.config, identity, peersManager, messenger, channelGroup, DrasylNode.WORKER_GROUP, this::onInternalEvent, acceptNewConnections::get));
             }
             if (config.isServerEnabled()) {
-                Server server = new Server(identity, messenger, peersManager, this.config, channelGroup, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP, communicationOccurredConsumer, endpoints, acceptNewConnections::get);
-                this.components.add(server);
+                this.components.add(new Server(identity, messenger, peersManager, this.config, channelGroup, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP, endpoints, acceptNewConnections::get));
             }
             if (config.isMonitoringEnabled()) {
                 this.components.add(new Monitoring(config, peersManager, identity.getPublicKey(), pipeline));

@@ -35,18 +35,17 @@ public class DirectClient extends AbstractClient {
     private final Runnable onFailure;
 
     public DirectClient(DrasylConfig config,
-                         Identity identity,
-                         PeersManager peersManager,
-                         Messenger messenger,
-                         PeerChannelGroup channelGroup,
-                         EventLoopGroup workerGroup,
-                         Consumer<Event> eventConsumer,
-                         Consumer<CompressedPublicKey> peerCommunicationConsumer,
-                         CompressedPublicKey serverPublicKey,
-                         Supplier<Set<URI>> endpointsSupplier,
-                         BooleanSupplier directConnectionDemand,
-                         Runnable onFailure,
-                         BooleanSupplier acceptNewConnectionsSupplier) {
+                        Identity identity,
+                        PeersManager peersManager,
+                        Messenger messenger,
+                        PeerChannelGroup channelGroup,
+                        EventLoopGroup workerGroup,
+                        Consumer<Event> eventConsumer,
+                        CompressedPublicKey serverPublicKey,
+                        Supplier<Set<URI>> endpointsSupplier,
+                        BooleanSupplier directConnectionDemand,
+                        Runnable onFailure,
+                        BooleanSupplier acceptNewConnectionsSupplier) {
         super(
                 config.getDirectConnectionsRetryDelays(),
                 workerGroup,
@@ -62,7 +61,6 @@ public class DirectClient extends AbstractClient {
                 config.getDirectConnectionsHandshakeTimeout(),
                 eventConsumer,
                 false,
-                peerCommunicationConsumer,
                 serverPublicKey,
                 config.getDirectConnectionsChannelInitializer()
         );

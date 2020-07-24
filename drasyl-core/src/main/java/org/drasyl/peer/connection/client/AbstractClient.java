@@ -60,7 +60,6 @@ abstract class AbstractClient implements DrasylNodeComponent {
                              Duration handshakeTimeout,
                              Consumer<Event> eventConsumer,
                              boolean joinsAsChildren,
-                             Consumer<CompressedPublicKey> peerCommunicationConsumer,
                              CompressedPublicKey serverPublicKey,
                              Class<? extends ChannelInitializer<SocketChannel>> channelInitializerClazz) {
         this(
@@ -83,8 +82,8 @@ abstract class AbstractClient implements DrasylNodeComponent {
                                         serverPublicKey,
                                         idleRetries,
                                         idleTimeout,
-                                        handshakeTimeout,
-                                        peerCommunicationConsumer),
+                                        handshakeTimeout
+                                ),
                                 channelInitializerClazz))
                         .remoteAddress(endpoint.getHost(), webSocketPort(endpoint))
         );
