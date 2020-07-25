@@ -23,9 +23,13 @@ include:
 
 docker-build-master:
   stage: docker-build
+  tags:
+    - docker
 
 docker-build:
   stage: docker-build
+  tags:
+    - docker
 
 #sast:
 #  variables:
