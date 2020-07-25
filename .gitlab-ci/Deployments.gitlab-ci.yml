@@ -38,6 +38,7 @@ review:
   except:
     - master
   tags:
+    - docker
     - review
   # We don't need cache for deploy a review
   cache: {}
@@ -57,6 +58,7 @@ stop_review:
     name: review/$CI_COMMIT_REF_NAME
     action: stop
   tags:
+    - docker
     - review
   # We don't need cache for stop a review
   cache: {}
@@ -78,6 +80,7 @@ staging:
   only:
     - master
   tags:
+    - docker
     - staging
 
 stop_staging:
@@ -98,6 +101,7 @@ stop_staging:
     name: staging
     action: stop
   tags:
+    - docker
     - staging
 
 production:
@@ -118,6 +122,7 @@ production:
     - master
   when: manual
   tags:
+    - docker
     - production
 
 stop_production:
@@ -138,4 +143,5 @@ stop_production:
     name: production
     action: stop
   tags:
+    - docker
     - production
