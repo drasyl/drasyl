@@ -93,6 +93,6 @@ public class WebSocketUtil {
      * @return
      */
     public static boolean isWebSocketURI(URI uri) {
-        return isWebSocketNonSecureURI(uri) || isWebSocketURI(uri);
+        return isWebSocketNonSecureURI(uri) || isWebSocketSecureURI(uri);
     }
 }

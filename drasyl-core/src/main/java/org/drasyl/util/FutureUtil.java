@@ -39,7 +39,7 @@ public class FutureUtil {
         CompletableFuture<T> completableFuture = new CompletableFuture<>();
         future.addListener(f -> {
             if (f.isSuccess()) {
-                completableFuture.complete(null);
+                completableFuture.complete((T) f.getNow());
             }
             else {
                 completableFuture.completeExceptionally(f.cause());
@@ -79,7 +79,7 @@ public class FutureUtil {
             return;
         }
 
-        CompletableFuture.allOf(futures).exceptionally(e -> {
+        CompletableFuture.anyOf(futures).exceptionally(e -> {
             future.completeExceptionally(e);
 
             return null;
@@ -87,10 +87,10 @@ public class FutureUtil {
     }
 
     /**
-     * Completes {@code future} if all of the given {@code futures} are completed. When one of the
-     * given {@code futures} completes exceptionally, the given {@code future} will also complete
-     * exceptionally. If the given collection of {@code futures} is empty, the {@code future} is
-     * completed immediately.
+     * Completes {@code future} if all of the given {@code futures} are completed. When any of the
+     * given {@code futures} completes exceptionally, the given {@code future} will also completes
+     * exceptionally immediately. If the given list of {@code futures} is empty, the {@code future}
+     * is completed immediately.
      *
      * @param future  future that should be completed
      * @param futures futures that should be waited for
@@ -102,10 +102,10 @@ public class FutureUtil {
     }
 
     /**
-     * Completes {@code future} if all of the given {@code futures} are completed. When one of the
-     * given {@code futures} completes exceptionally, the given {@code future} will also complete
-     * exceptionally. If the given array of {@code futures} is empty, the {@code future} is
-     * completed immediately.
+     * Completes {@code future} if all of the given {@code futures} are completed. When any of the
+     * given {@code futures} completes exceptionally, the given {@code future} will also completes
+     * exceptionally immediately. If the given array of {@code futures} is empty, the {@code future}
+     * is completed immediately.
      *
      * @param future  future that should be completed
      * @param futures futures that should be waited for
@@ -120,11 +120,10 @@ public class FutureUtil {
             future.complete(null);
         }
         else {
+            completeOnAnyOfExceptionally(future, futures);
+
             CompletableFuture.allOf(futures).whenComplete((t, e) -> {
-                if (e != null) {
-                    future.completeExceptionally(e);
-                }
-                else {
+                if (e == null) {
                     future.complete(null);
                 }
             });
