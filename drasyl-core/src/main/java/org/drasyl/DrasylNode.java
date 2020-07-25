@@ -64,7 +64,6 @@ import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Map;
 import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -309,8 +308,7 @@ public abstract class DrasylNode {
      * <p>
      * <b>Note</b>: It is possible that the passed object cannot be serialized. In this case it is
      * not sent and the future is fulfilled with an exception. By default, drasyl allows the
-     * serialization of Java's primitive types, as well as {@link String}, {@link Collections},
-     * {@link Map}, {@link Number}, {@link URI} and all classes in the {@code org.drasyl} package.
+     * serialization of Java's primitive types, as well as {@link String} and {@link Number}.
      * Further objects can be added on start via the {@link DrasylConfig} or on demand via {@link
      * org.drasyl.pipeline.HandlerContext#validator}. If the {@link org.drasyl.pipeline.codec.DefaultCodec}
      * does not support these objects, a custom {@link Codec} can be added to the beginning of the
@@ -344,8 +342,7 @@ public abstract class DrasylNode {
      * <p>
      * <b>Note</b>: It is possible that the passed object cannot be serialized. In this case it is
      * not sent and the future is fulfilled with an exception. By default, drasyl allows the
-     * serialization of Java's primitive types, as well as {@link String}, {@link Collections},
-     * {@link Map}, {@link Number}, {@link URI} and all classes in the {@code org.drasyl} package.
+     * serialization of Java's primitive types, as well as {@link String} and {@link Number}.
      * Further objects can be added on start via the {@link DrasylConfig} or on demand via {@link
      * org.drasyl.pipeline.HandlerContext#validator}. If the {@link org.drasyl.pipeline.codec.DefaultCodec}
      * does not support these objects, a custom {@link Codec} can be added to the beginning of the

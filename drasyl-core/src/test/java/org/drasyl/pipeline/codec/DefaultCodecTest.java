@@ -24,6 +24,7 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.pipeline.EmbeddedPipeline;
@@ -107,7 +108,7 @@ class DefaultCodecTest {
 
         @Test
         void shouldEncodePOJOs() throws JsonProcessingException {
-            QuitMessage msg = new QuitMessage();
+            Integer msg = Integer.valueOf("10000");
             EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), DefaultCodec.INSTANCE);
             TestObserver<ApplicationMessage> testObserver = pipeline.outboundMessages().test();
 
@@ -163,15 +164,15 @@ class DefaultCodecTest {
 
         @Test
         void shouldDecodePOJOs() throws JsonProcessingException {
-            QuitMessage quitMessage = new QuitMessage();
-            ApplicationMessage msg = new ApplicationMessage(sender, recipient, JSONUtil.JACKSON_WRITER.writeValueAsBytes(quitMessage), QuitMessage.class);
+            Integer integer = Integer.valueOf("10000");
+            ApplicationMessage msg = new ApplicationMessage(sender, recipient, JSONUtil.JACKSON_WRITER.writeValueAsBytes(integer), Integer.class);
             EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), DefaultCodec.INSTANCE);
             TestObserver<Pair<CompressedPublicKey, Object>> testObserver = pipeline.inboundMessages().test();
 
             pipeline.processInbound(msg);
 
             testObserver.awaitCount(1);
-            testObserver.assertValue(Pair.of(sender, quitMessage));
+            testObserver.assertValue(Pair.of(sender, integer));
         }
     }
 
