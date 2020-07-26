@@ -24,11 +24,11 @@ import org.drasyl.identity.CompressedPublicKey;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * {@link DuplexHandler} which allows to explicit only handle a specific type of messages and
+ * {@link HandlerAdapter} which allows to explicit only handle a specific type of messages and
  * events.
  */
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public abstract class SimpleDuplexHandler<I, E, O> extends SimpleInboundHandler<I, E> implements OutboundHandler {
+public abstract class SimpleDuplexHandler<I, E, O> extends SimpleInboundHandler<I, E> {
     private final TypeParameterMatcher outboundMessageMatcher;
 
     protected SimpleDuplexHandler() {

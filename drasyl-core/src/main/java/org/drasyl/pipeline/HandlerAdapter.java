@@ -18,10 +18,15 @@
  */
 package org.drasyl.pipeline;
 
+import org.drasyl.event.Event;
+import org.drasyl.identity.CompressedPublicKey;
+
+import java.util.concurrent.CompletableFuture;
+
 /**
  * Skeleton implementation of a {@link Handler}.
  */
-public abstract class HandlerAdapter implements Handler {
+public class HandlerAdapter implements Handler {
     /**
      * Do nothing by default, sub-classes may override this method.
      */
@@ -36,5 +41,28 @@ public abstract class HandlerAdapter implements Handler {
     @Override
     public void handlerRemoved(HandlerContext ctx) {
         // Do nothing
+    }
+
+    @Override
+    public void read(HandlerContext ctx, CompressedPublicKey sender, Object msg) {
+        ctx.fireRead(sender, msg);
+    }
+
+    @Override
+    public void eventTriggered(HandlerContext ctx, Event event) {
+        ctx.fireEventTriggered(event);
+    }
+
+    @Override
+    public void exceptionCaught(HandlerContext ctx, Exception cause) {
+        ctx.fireExceptionCaught(cause);
+    }
+
+    @Override
+    public void write(HandlerContext ctx,
+                      CompressedPublicKey recipient,
+                      Object msg,
+                      CompletableFuture<Void> future) {
+        ctx.write(recipient, msg, future);
     }
 }

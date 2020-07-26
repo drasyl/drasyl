@@ -110,7 +110,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
         AbstractHandlerContext inboundCtx = findNextInbound();
 
         try {
-            ((InboundHandler) inboundCtx.handler()).exceptionCaught(inboundCtx, cause);
+            inboundCtx.handler().exceptionCaught(inboundCtx, cause);
         }
         catch (PipelineException e) {
             throw e;
@@ -123,11 +123,11 @@ abstract class AbstractHandlerContext implements HandlerContext {
     }
 
     /**
-     * Finds the next {@link AbstractHandlerContext} that holds a {@link InboundHandler}.
+     * Finds the next {@link AbstractHandlerContext} for inbound messages and events.
      */
     AbstractHandlerContext findNextInbound() {
         AbstractHandlerContext nextInbound = next;
-        while (!(nextInbound.handler() instanceof InboundHandler)) {
+        while (nextInbound.handler() == null) {
             nextInbound = nextInbound.getNext();
         }
 
@@ -135,11 +135,11 @@ abstract class AbstractHandlerContext implements HandlerContext {
     }
 
     /**
-     * Finds the previous {@link AbstractHandlerContext} that holds a {@link OutboundHandler}.
+     * Finds the previous {@link AbstractHandlerContext} for outbound messages.
      */
     AbstractHandlerContext findPrevOutbound() {
         AbstractHandlerContext prevOutbound = prev;
-        while (!(prevOutbound.handler() instanceof OutboundHandler)) {
+        while (prevOutbound.handler() == null) {
             prevOutbound = prevOutbound.getPrev();
         }
 
@@ -156,7 +156,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
     private void invokeRead(CompressedPublicKey sender, Object msg) {
         AbstractHandlerContext inboundCtx = findNextInbound();
         try {
-            ((InboundHandler) inboundCtx.handler()).read(inboundCtx, sender, msg);
+            inboundCtx.handler().read(inboundCtx, sender, msg);
         }
         catch (Exception e) {
             if (LOG.isWarnEnabled()) {
@@ -177,7 +177,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
         AbstractHandlerContext inboundCtx = findNextInbound();
 
         try {
-            ((InboundHandler) inboundCtx.handler()).eventTriggered(inboundCtx, event);
+            inboundCtx.handler().eventTriggered(inboundCtx, event);
         }
         catch (Exception e) {
             if (LOG.isWarnEnabled()) {
@@ -205,7 +205,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
         AbstractHandlerContext outboundCtx = findPrevOutbound();
 
         try {
-            ((OutboundHandler) outboundCtx.handler()).write(outboundCtx, recipient, msg, future);
+            outboundCtx.handler().write(outboundCtx, recipient, msg, future);
         }
         catch (Exception e) {
             if (LOG.isWarnEnabled()) {

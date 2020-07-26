@@ -21,7 +21,7 @@ package org.drasyl.plugins;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.pipeline.Handler;
-import org.drasyl.pipeline.InboundHandlerAdapter;
+import org.drasyl.pipeline.HandlerAdapter;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.util.DrasylFunction;
 import org.junit.jupiter.api.Nested;
@@ -53,7 +53,7 @@ class PluginManagerTest {
     @Mock
     private DrasylConfig config;
     @Mock
-    private static InboundHandlerAdapter handler;
+    private static HandlerAdapter handler;
     @Mock
     private DrasylFunction<Class<? extends AutoloadablePlugin>, Constructor<?>, Exception> constructorFunction;
 

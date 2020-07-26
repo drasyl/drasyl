@@ -36,7 +36,7 @@ import java.util.function.Consumer;
  * Special class that represents the tail of a {@link Pipeline}. This class can not be removed from
  * the pipeline.
  */
-class TailContext extends AbstractHandlerContext implements InboundHandler, OutboundHandler {
+class TailContext extends AbstractHandlerContext implements Handler {
     public static final String DRASYL_TAIL_HANDLER = "DRASYL_TAIL_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(TailContext.class);
     private final Consumer<Event> eventConsumer;

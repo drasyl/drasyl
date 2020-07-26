@@ -83,10 +83,9 @@ class DrasylPipelineIT {
                 0x05
         };
 
-        IntStream.range(0, 10).forEach(i -> pipeline.addLast("inboundHandler" + i, new InboundHandlerAdapter()));
-        IntStream.range(0, 10).forEach(i -> pipeline.addLast("outboundHandler" + i, new OutboundHandlerAdapter()));
+        IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 
-        pipeline.addLast("msgChanger", new InboundHandlerAdapter() {
+        pipeline.addLast("msgChanger", new HandlerAdapter() {
             @Override
             public void read(HandlerContext ctx, CompressedPublicKey sender, Object msg) {
                 super.read(ctx, identity2.getPublicKey(), newPayload);
@@ -108,10 +107,9 @@ class DrasylPipelineIT {
         Event testEvent = new Event() {
         };
 
-        IntStream.range(0, 10).forEach(i -> pipeline.addLast("inboundHandler" + i, new InboundHandlerAdapter()));
-        IntStream.range(0, 10).forEach(i -> pipeline.addLast("outboundHandler" + i, new OutboundHandlerAdapter()));
+        IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 
-        pipeline.addLast("eventProducer", new InboundHandlerAdapter() {
+        pipeline.addLast("eventProducer", new HandlerAdapter() {
             @Override
             public void read(HandlerContext ctx, CompressedPublicKey sender, Object msg) {
                 super.read(ctx, sender, msg);
@@ -141,10 +139,9 @@ class DrasylPipelineIT {
             assertEquals(exception.getMessage(), e.getCause().getCause().getMessage());
         });
 
-        IntStream.range(0, 10).forEach(i -> pipeline.addLast("inboundHandler" + i, new InboundHandlerAdapter()));
-        IntStream.range(0, 10).forEach(i -> pipeline.addLast("outboundHandler" + i, new OutboundHandlerAdapter()));
+        IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 
-        pipeline.addLast("exceptionProducer", new InboundHandlerAdapter() {
+        pipeline.addLast("exceptionProducer", new HandlerAdapter() {
             @Override
             public void read(HandlerContext ctx, CompressedPublicKey sender, Object msg) {
                 super.read(ctx, sender, msg);
@@ -152,7 +149,7 @@ class DrasylPipelineIT {
             }
         });
 
-        pipeline.addLast("exceptionCatcher", new InboundHandlerAdapter() {
+        pipeline.addLast("exceptionCatcher", new HandlerAdapter() {
             @Override
             public void exceptionCaught(HandlerContext ctx, Exception cause) {
                 exceptions.onNext(cause);
@@ -178,10 +175,9 @@ class DrasylPipelineIT {
 
         ApplicationMessage newMsg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), newPayload, newPayload.getClass());
 
-        IntStream.range(0, 10).forEach(i -> pipeline.addLast("inboundHandler" + i, new InboundHandlerAdapter()));
-        IntStream.range(0, 10).forEach(i -> pipeline.addLast("outboundHandler" + i, new OutboundHandlerAdapter()));
+        IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 
-        pipeline.addLast("outboundChanger", new OutboundHandlerAdapter() {
+        pipeline.addLast("outboundChanger", new HandlerAdapter() {
             @Override
             public void write(HandlerContext ctx,
                               CompressedPublicKey recipient,
@@ -206,10 +202,9 @@ class DrasylPipelineIT {
         TestObserver<ApplicationMessage> outbounds = outboundMessages.test();
         ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), payload, payload.getClass());
 
-        IntStream.range(0, 10).forEach(i -> pipeline.addLast("inboundHandler" + i, new InboundHandlerAdapter()));
-        IntStream.range(0, 10).forEach(i -> pipeline.addLast("outboundHandler" + i, new OutboundHandlerAdapter()));
+        IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 
-        pipeline.addLast("outbound", new OutboundHandlerAdapter() {
+        pipeline.addLast("outbound", new HandlerAdapter() {
             @Override
             public void write(HandlerContext ctx,
                               CompressedPublicKey recipient,
@@ -234,10 +229,9 @@ class DrasylPipelineIT {
         TestObserver<ApplicationMessage> outbounds = outboundMessages.test();
         ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), payload, payload.getClass());
 
-        IntStream.range(0, 10).forEach(i -> pipeline.addLast("inboundHandler" + i, new InboundHandlerAdapter()));
-        IntStream.range(0, 10).forEach(i -> pipeline.addLast("outboundHandler" + i, new OutboundHandlerAdapter()));
+        IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 
-        pipeline.addLast("outbound", new OutboundHandlerAdapter() {
+        pipeline.addLast("outbound", new HandlerAdapter() {
             @Override
             public void write(HandlerContext ctx,
                               CompressedPublicKey recipient,
@@ -262,10 +256,9 @@ class DrasylPipelineIT {
         TestObserver<ApplicationMessage> outbounds = outboundMessages.test();
         StringBuilder msg = new StringBuilder();
 
-        IntStream.range(0, 10).forEach(i -> pipeline.addLast("inboundHandler" + i, new InboundHandlerAdapter()));
-        IntStream.range(0, 10).forEach(i -> pipeline.addLast("outboundHandler" + i, new OutboundHandlerAdapter()));
+        IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 
-        pipeline.addLast("outbound", new OutboundHandlerAdapter() {
+        pipeline.addLast("outbound", new HandlerAdapter() {
             @Override
             public void write(HandlerContext ctx,
                               CompressedPublicKey recipient,

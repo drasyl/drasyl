@@ -37,7 +37,8 @@ import java.util.concurrent.CompletableFuture;
  * Special class that represents the head of a {@link Pipeline}. This class can not be removed from
  * the pipeline.
  */
-class HeadContext extends AbstractHandlerContext implements InboundHandler, OutboundHandler {
+@SuppressWarnings({ "common-java:DuplicatedBlocks" })
+class HeadContext extends AbstractHandlerContext implements Handler {
     public static final String DRASYL_HEAD_HANDLER = "DRASYL_HEAD_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(HeadContext.class);
     private final DrasylConsumer<ApplicationMessage, DrasylException> outboundConsumer;

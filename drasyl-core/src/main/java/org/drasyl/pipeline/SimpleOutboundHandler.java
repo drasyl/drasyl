@@ -25,7 +25,7 @@ import org.drasyl.peer.connection.message.ChunkedMessage;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * {@link OutboundHandlerAdapter} which allows to explicit only handle a specific type of messages.
+ * {@link HandlerAdapter} which allows to explicit only handle a specific type of messages.
  * <p>
  * For example here is an implementation which only handle {@link ChunkedMessage}s.
  *
@@ -40,7 +40,7 @@ import java.util.concurrent.CompletableFuture;
  *     }
  * </pre>
  */
-public abstract class SimpleOutboundHandler<O> extends OutboundHandlerAdapter {
+public abstract class SimpleOutboundHandler<O> extends HandlerAdapter {
     private final TypeParameterMatcher matcherMessage;
 
     /**

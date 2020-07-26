@@ -179,8 +179,8 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldInvokeExceptionCaught() {
-        InboundHandler inboundHandler = mock(InboundHandler.class);
-        when(next.handler()).thenReturn(inboundHandler);
+        Handler newHandler = mock(Handler.class);
+        when(next.handler()).thenReturn(newHandler);
 
         AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, validator) {
             @Override
@@ -194,17 +194,13 @@ class AbstractHandlerContextTest {
         ctx.fireExceptionCaught(exception);
 
         verify(next, times(2)).handler();
-        verify(inboundHandler).exceptionCaught(eq(next), eq(exception));
+        verify(newHandler).exceptionCaught(eq(next), eq(exception));
     }
 
     @Test
-    void shouldFindCorrectNextInbound() {
-        AbstractHandlerContext nextCtx = mock(AbstractHandlerContext.class);
-        InboundHandler inboundHandler = mock(InboundHandler.class);
-        OutboundHandler outboundHandler = mock(OutboundHandler.class);
-        when(next.handler()).thenReturn(outboundHandler);
-        when(next.getNext()).thenReturn(nextCtx);
-        when(nextCtx.handler()).thenReturn(inboundHandler);
+    void shouldFindCorrectNextHandler() {
+        Handler handler = mock(Handler.class);
+        when(next.handler()).thenReturn(handler);
 
         AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, validator) {
             @Override
@@ -215,36 +211,13 @@ class AbstractHandlerContextTest {
 
         AbstractHandlerContext actual = ctx.findNextInbound();
 
-        assertEquals(nextCtx, actual);
-        assertNotEquals(next, actual);
-    }
-
-    @Test
-    void shouldFindCorrectNextOutbound() {
-        AbstractHandlerContext prevCtx = mock(AbstractHandlerContext.class);
-        InboundHandler inboundHandler = mock(InboundHandler.class);
-        OutboundHandler outboundHandler = mock(OutboundHandler.class);
-        when(prev.handler()).thenReturn(inboundHandler);
-        when(prev.getPrev()).thenReturn(prevCtx);
-        when(prevCtx.handler()).thenReturn(outboundHandler);
-
-        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, validator) {
-            @Override
-            public Handler handler() {
-                return handler;
-            }
-        };
-
-        AbstractHandlerContext actual = ctx.findPrevOutbound();
-
-        assertEquals(prevCtx, actual);
-        assertNotEquals(prev, actual);
+        assertEquals(next, actual);
     }
 
     @Test
     void shouldInvokeRead() {
-        InboundHandler inboundHandler = mock(InboundHandler.class);
-        when(next.handler()).thenReturn(inboundHandler);
+        Handler newHandler = mock(Handler.class);
+        when(next.handler()).thenReturn(newHandler);
 
         AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, validator) {
             @Override
@@ -259,14 +232,14 @@ class AbstractHandlerContextTest {
         ctx.fireRead(sender, msg);
 
         verify(next, times(2)).handler();
-        verify(inboundHandler).read(eq(next), eq(sender), eq(msg));
+        verify(newHandler).read(eq(next), eq(sender), eq(msg));
     }
 
     @Test
     void shouldRethrowIfExceptionOccursDuringInvokeRead() {
-        InboundHandler inboundHandler = mock(InboundHandler.class);
-        when(next.handler()).thenReturn(inboundHandler);
-        doThrow(RuntimeException.class).when(inboundHandler).read(any(), any(), any());
+        Handler newHandler = mock(Handler.class);
+        when(next.handler()).thenReturn(newHandler);
+        doThrow(RuntimeException.class).when(newHandler).read(any(), any(), any());
 
         AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, validator) {
             @Override
@@ -281,14 +254,14 @@ class AbstractHandlerContextTest {
         ctx.fireRead(sender, msg);
 
         verify(next, times(2)).handler();
-        verify(inboundHandler).read(eq(next), eq(sender), eq(msg));
+        verify(newHandler).read(eq(next), eq(sender), eq(msg));
         verify(next).fireExceptionCaught(isA(RuntimeException.class));
     }
 
     @Test
     void shouldFireEventTriggered() {
-        InboundHandler inboundHandler = mock(InboundHandler.class);
-        when(next.handler()).thenReturn(inboundHandler);
+        Handler newHandler = mock(Handler.class);
+        when(next.handler()).thenReturn(newHandler);
 
         AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, validator) {
             @Override
@@ -302,14 +275,14 @@ class AbstractHandlerContextTest {
         ctx.fireEventTriggered(event);
 
         verify(next, times(2)).handler();
-        verify(inboundHandler).eventTriggered(eq(next), eq(event));
+        verify(newHandler).eventTriggered(eq(next), eq(event));
     }
 
     @Test
     void shouldRethrowIfExceptionOccursDuringFireEventTriggered() {
-        InboundHandler inboundHandler = mock(InboundHandler.class);
-        when(next.handler()).thenReturn(inboundHandler);
-        doThrow(RuntimeException.class).when(inboundHandler).eventTriggered(any(), any());
+        Handler newHandler = mock(Handler.class);
+        when(next.handler()).thenReturn(newHandler);
+        doThrow(RuntimeException.class).when(newHandler).eventTriggered(any(), any());
 
         AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, validator) {
             @Override
@@ -323,14 +296,14 @@ class AbstractHandlerContextTest {
         ctx.fireEventTriggered(event);
 
         verify(next, times(2)).handler();
-        verify(inboundHandler).eventTriggered(eq(next), eq(event));
+        verify(newHandler).eventTriggered(eq(next), eq(event));
         verify(next).fireExceptionCaught(isA(RuntimeException.class));
     }
 
     @Test
     void shouldWrite() {
-        OutboundHandler outboundHandler = mock(OutboundHandler.class);
-        when(prev.handler()).thenReturn(outboundHandler);
+        Handler newHandler = mock(Handler.class);
+        when(prev.handler()).thenReturn(newHandler);
 
         AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, validator) {
             @Override
@@ -345,14 +318,14 @@ class AbstractHandlerContextTest {
         ctx.write(recipient, msg);
 
         verify(prev, times(2)).handler();
-        verify(outboundHandler).write(eq(prev), eq(recipient), eq(msg), isA(CompletableFuture.class));
+        verify(newHandler).write(eq(prev), eq(recipient), eq(msg), isA(CompletableFuture.class));
     }
 
     @Test
     void shouldRethrowIfExceptionOccursDuringWrite() {
-        OutboundHandler outboundHandler = mock(OutboundHandler.class);
-        when(prev.handler()).thenReturn(outboundHandler);
-        doThrow(RuntimeException.class).when(outboundHandler).write(any(), any(), any(), any());
+        Handler newHandler = mock(Handler.class);
+        when(prev.handler()).thenReturn(newHandler);
+        doThrow(RuntimeException.class).when(newHandler).write(any(), any(), any(), any());
 
         AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, validator) {
             @Override
@@ -367,74 +340,8 @@ class AbstractHandlerContextTest {
         ctx.write(recipient, msg);
 
         verify(prev, times(2)).handler();
-        verify(outboundHandler).write(eq(prev), eq(recipient), eq(msg), isA(CompletableFuture.class));
+        verify(newHandler).write(eq(prev), eq(recipient), eq(msg), isA(CompletableFuture.class));
         verify(prev).fireExceptionCaught(isA(RuntimeException.class));
-    }
-
-    @Test
-    void shouldReturnNewHandlerOnFindNextInbound() {
-        AbstractHandlerContext context1 = mock(AbstractHandlerContext.class);
-        AbstractHandlerContext context2 = mock(AbstractHandlerContext.class);
-        AbstractHandlerContext context3 = mock(AbstractHandlerContext.class);
-
-        InboundHandler myHandler = mock(InboundHandler.class);
-        InboundHandler handlerToFind = mock(InboundHandler.class);
-
-        when(context1.handler()).thenReturn(mock(OutboundHandler.class));
-        when(context2.handler()).thenReturn(mock(OutboundHandler.class));
-        when(context3.handler()).thenReturn(handlerToFind);
-
-        when(context1.getNext()).thenReturn(context2);
-        when(context2.getNext()).thenReturn(context3);
-
-        AbstractHandlerContext context = new AbstractHandlerContext("test", config, pipeline, scheduler, identity, validator) {
-            @Override
-            public Handler handler() {
-                return myHandler;
-            }
-        };
-
-        context.setNextHandlerContext(context1);
-
-        assertEquals(context3, context.findNextInbound());
-        assertEquals(handlerToFind, context.findNextInbound().handler());
-        assertNotEquals(context, context.findNextInbound());
-        assertNotEquals(context1, context.findNextInbound());
-        assertNotEquals(context2, context.findNextInbound());
-        assertNotEquals(myHandler, context.findNextInbound().handler());
-    }
-
-    @Test
-    void shouldReturnNewHandlerOnFindNextOutbound() {
-        AbstractHandlerContext context1 = mock(AbstractHandlerContext.class);
-        AbstractHandlerContext context2 = mock(AbstractHandlerContext.class);
-        AbstractHandlerContext context3 = mock(AbstractHandlerContext.class);
-
-        OutboundHandler myHandler = mock(OutboundHandler.class);
-        OutboundHandler handlerToFind = mock(OutboundHandler.class);
-
-        when(context1.handler()).thenReturn(mock(InboundHandler.class));
-        when(context2.handler()).thenReturn(mock(InboundHandler.class));
-        when(context3.handler()).thenReturn(handlerToFind);
-
-        when(context1.getPrev()).thenReturn(context2);
-        when(context2.getPrev()).thenReturn(context3);
-
-        AbstractHandlerContext context = new AbstractHandlerContext("test", config, pipeline, scheduler, identity, validator) {
-            @Override
-            public Handler handler() {
-                return myHandler;
-            }
-        };
-
-        context.setPrevHandlerContext(context1);
-
-        assertEquals(context3, context.findPrevOutbound());
-        assertEquals(handlerToFind, context.findPrevOutbound().handler());
-        assertNotEquals(context, context.findPrevOutbound());
-        assertNotEquals(context1, context.findPrevOutbound());
-        assertNotEquals(context2, context.findPrevOutbound());
-        assertNotEquals(myHandler, context.findPrevOutbound().handler());
     }
 
     @Test
@@ -460,11 +367,11 @@ class AbstractHandlerContextTest {
             }
         };
 
-        InboundHandler inboundHandler = mock(InboundHandler.class);
+        Handler newHandler = mock(Handler.class);
         AbstractHandlerContext context1 = mock(AbstractHandlerContext.class);
         context.setNextHandlerContext(context1);
-        when(context1.handler()).thenReturn(inboundHandler);
-        doThrow(PipelineException.class).when(inboundHandler).exceptionCaught(any(), any());
+        when(context1.handler()).thenReturn(newHandler);
+        doThrow(PipelineException.class).when(newHandler).exceptionCaught(any(), any());
 
         Exception exception = mock(Exception.class);
 
@@ -480,14 +387,52 @@ class AbstractHandlerContextTest {
             }
         };
 
-        InboundHandler inboundHandler = mock(InboundHandler.class);
+        Handler newHandler = mock(Handler.class);
         AbstractHandlerContext context1 = mock(AbstractHandlerContext.class);
         context.setNextHandlerContext(context1);
-        when(context1.handler()).thenReturn(inboundHandler);
-        doThrow(IllegalArgumentException.class).when(inboundHandler).exceptionCaught(any(), any());
+        when(context1.handler()).thenReturn(newHandler);
+        doThrow(IllegalArgumentException.class).when(newHandler).exceptionCaught(any(), any());
 
         Exception exception = mock(Exception.class);
 
         assertDoesNotThrow(() -> context.fireExceptionCaught(exception));
+    }
+
+    @Test
+    void shouldSkipNullHandlerOnInbound() {
+        AbstractHandlerContext context = mock(AbstractHandlerContext.class);
+        when(next.handler()).thenReturn(null);
+        when(next.getNext()).thenReturn(context);
+        when(context.handler()).thenReturn(mock(Handler.class));
+
+        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, validator) {
+            @Override
+            public Handler handler() {
+                return handler;
+            }
+        };
+
+        AbstractHandlerContext actual = ctx.findNextInbound();
+
+        assertEquals(context, actual);
+    }
+
+    @Test
+    void shouldSkipNullHandlerOnOutbound() {
+        AbstractHandlerContext context = mock(AbstractHandlerContext.class);
+        when(prev.handler()).thenReturn(null);
+        when(prev.getPrev()).thenReturn(context);
+        when(context.handler()).thenReturn(mock(Handler.class));
+
+        AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, validator) {
+            @Override
+            public Handler handler() {
+                return handler;
+            }
+        };
+
+        AbstractHandlerContext actual = ctx.findPrevOutbound();
+
+        assertEquals(context, actual);
     }
 }

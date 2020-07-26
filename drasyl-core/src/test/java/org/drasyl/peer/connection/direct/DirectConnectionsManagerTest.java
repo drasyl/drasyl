@@ -13,8 +13,8 @@ import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.client.DirectClient;
 import org.drasyl.peer.connection.message.WhoisMessage;
 import org.drasyl.pipeline.DrasylPipeline;
+import org.drasyl.pipeline.HandlerAdapter;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.InboundHandlerAdapter;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -93,7 +93,7 @@ class DirectConnectionsManagerTest {
             when(event.getPeer().getPublicKey()).thenReturn(publicKey);
             when(directConnectionDemandsCache.contains(publicKey)).thenReturn(true);
             when(pipeline.addLast(eq(DIRECT_CONNECTIONS_MANAGER), any())).then(invocation -> {
-                InboundHandlerAdapter handler = invocation.getArgument(1);
+                HandlerAdapter handler = invocation.getArgument(1);
                 handler.eventTriggered(mock(HandlerContext.class), event);
                 return invocation.getMock();
             });

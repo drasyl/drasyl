@@ -25,8 +25,8 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 
 /**
- * {@link InboundHandlerAdapter} which allows to explicit only handle a specific type of messages
- * and events.
+ * {@link HandlerAdapter} which allows to explicit only handle a specific type of messages and
+ * events.
  * <p>
  * For example here is an implementation which only handle {@link MessageEvent} events.
  *
@@ -41,7 +41,7 @@ import org.drasyl.peer.connection.message.ApplicationMessage;
  *     }
  * </pre>
  */
-public abstract class SimpleInboundHandler<I, E> extends InboundHandlerAdapter {
+public abstract class SimpleInboundHandler<I, E> extends HandlerAdapter {
     private final TypeParameterMatcher matcherMessage;
     private final TypeParameterMatcher matcherEvent;
 
