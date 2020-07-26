@@ -13,23 +13,13 @@ stages:
 include:
   - local: /.gitlab-ci/Maven.gitlab-ci.yml # we have to use our own template, since GitLab's template uses JDK8, but we need JDK11
   - local: /.gitlab-ci/Deployments.gitlab-ci.yml
-  - template: Docker.gitlab-ci.yml # https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Docker.gitlab-ci.yml
+  - local: /.gitlab-ci/Docker.gitlab-ci.yml
 #  - template: SAST.gitlab-ci.yml # https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Security/SAST.gitlab-ci.yml
   - template: DAST.gitlab-ci.yml # https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Security/DAST.gitlab-ci.yml
 #  - template: Dependency-Scanning.gitlab-ci.yml # https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Security/Dependency-Scanning.gitlab-ci.yml
   - template: Container-Scanning.gitlab-ci.yml # https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Security/Container-Scanning.gitlab-ci.yml
   - template: License-Scanning.gitlab-ci.yml # https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Security/License-Scanning.gitlab-ci.yml
   - template: Code-Quality.gitlab-ci.yml # https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Jobs/Code-Quality.gitlab-ci.yml
-
-docker-build-master:
-  stage: docker-build
-  tags:
-    - docker
-
-docker-build:
-  stage: docker-build
-  tags:
-    - docker
 
 #sast:
 #  variables:
