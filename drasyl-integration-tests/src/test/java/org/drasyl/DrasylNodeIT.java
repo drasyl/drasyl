@@ -40,7 +40,6 @@ import org.drasyl.identity.ProofOfWork;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
@@ -76,6 +75,12 @@ class DrasylNodeIT {
         colorizedPrintln("FINISHED " + info.getDisplayName(), COLOR_CYAN, STYLE_REVERSED);
     }
 
+    private Pair<DrasylNode, Observable<Event>> createStartedNode(DrasylConfig config) throws DrasylException {
+        Pair<DrasylNode, Observable<Event>> pair = createNode(config);
+        pair.first().start();
+        return pair;
+    }
+
     private Pair<DrasylNode, Observable<Event>> createNode(DrasylConfig config) throws DrasylException {
         Subject<Event> subject = ReplaySubject.<Event>create().toSerialized();
         DrasylNode node = new DrasylNode(config) {
@@ -87,8 +92,6 @@ class DrasylNodeIT {
                 }
             }
         };
-        node.start();
-
         nodes.add(node);
 
         return Pair.of(node, subject);
@@ -121,7 +124,7 @@ class DrasylNodeIT {
                     .superPeerEnabled(false)
                     .intraVmDiscoveryEnabled(false)
                     .build();
-            superSuperPeer = createNode(config);
+            superSuperPeer = createStartedNode(config);
             NodeEvent superSuperPeerNodeUp = (NodeEvent) superSuperPeer.second().filter(e -> e instanceof NodeUpEvent).firstElement().blockingGet();
             int superSuperPeerPort = superSuperPeerNodeUp.getNode().getEndpoints().iterator().next().getPort();
             colorizedPrintln("CREATED superSuperPeer", COLOR_CYAN, STYLE_REVERSED);
@@ -137,7 +140,7 @@ class DrasylNodeIT {
                     .superPeerEndpoints(Set.of(URI.create("ws://127.0.0.1:" + superSuperPeerPort)))
                     .intraVmDiscoveryEnabled(false)
                     .build();
-            superPeer = createNode(config);
+            superPeer = createStartedNode(config);
             NodeEvent superPeerNodeUp = (NodeEvent) superPeer.second().filter(e -> e instanceof NodeUpEvent).firstElement().blockingGet();
             int superPeerPort = superPeerNodeUp.getNode().getEndpoints().iterator().next().getPort();
             colorizedPrintln("CREATED superPeer", COLOR_CYAN, STYLE_REVERSED);
@@ -152,7 +155,7 @@ class DrasylNodeIT {
                     .superPeerEndpoints(Set.of(URI.create("ws://127.0.0.1:" + superPeerPort)))
                     .intraVmDiscoveryEnabled(false)
                     .build();
-            client1 = createNode(config);
+            client1 = createStartedNode(config);
             colorizedPrintln("CREATED client1", COLOR_CYAN, STYLE_REVERSED);
 
             // client2
@@ -165,7 +168,7 @@ class DrasylNodeIT {
                     .superPeerEndpoints(Set.of(URI.create("ws://127.0.0.1:" + superPeerPort)))
                     .intraVmDiscoveryEnabled(false)
                     .build();
-            client2 = createNode(config);
+            client2 = createStartedNode(config);
             colorizedPrintln("CREATED client2", COLOR_CYAN, STYLE_REVERSED);
 
             superSuperPeer.second().filter(e -> e instanceof NodeUpEvent || e instanceof PeerDirectEvent || e instanceof PeerRelayEvent).test().awaitCount(4);
@@ -281,7 +284,7 @@ class DrasylNodeIT {
                     .superPeerEnabled(false)
                     .intraVmDiscoveryEnabled(false)
                     .build();
-            superPeer = createNode(config);
+            superPeer = createStartedNode(config);
             NodeEvent superPeerNodeUp = (NodeEvent) superPeer.second().filter(e -> e instanceof NodeUpEvent).firstElement().blockingGet();
             int superPeerPort = superPeerNodeUp.getNode().getEndpoints().iterator().next().getPort();
             colorizedPrintln("CREATED superPeer", COLOR_CYAN, STYLE_REVERSED);
@@ -297,7 +300,7 @@ class DrasylNodeIT {
                     .superPeerEndpoints(Set.of(URI.create("ws://127.0.0.1:" + superPeerPort)))
                     .intraVmDiscoveryEnabled(false)
                     .build();
-            client1 = createNode(config);
+            client1 = createStartedNode(config);
             colorizedPrintln("CREATED client1", COLOR_CYAN, STYLE_REVERSED);
 
             // client2
@@ -311,7 +314,7 @@ class DrasylNodeIT {
                     .superPeerEndpoints(Set.of(URI.create("ws://127.0.0.1:" + superPeerPort)))
                     .intraVmDiscoveryEnabled(false)
                     .build();
-            client2 = createNode(config);
+            client2 = createStartedNode(config);
             colorizedPrintln("CREATED client2", COLOR_CYAN, STYLE_REVERSED);
 
             superPeer.second().filter(e -> e instanceof NodeOnlineEvent || e instanceof PeerDirectEvent).test().awaitCount(3);
@@ -361,7 +364,7 @@ class DrasylNodeIT {
                     .serverEnabled(false)
                     .superPeerEnabled(false)
                     .build();
-            node1 = createNode(config);
+            node1 = createStartedNode(config);
             colorizedPrintln("CREATED node1", COLOR_CYAN, STYLE_REVERSED);
 
             // super peer
@@ -372,7 +375,7 @@ class DrasylNodeIT {
                     .serverEnabled(false)
                     .superPeerEnabled(false)
                     .build();
-            node2 = createNode(config);
+            node2 = createStartedNode(config);
             colorizedPrintln("CREATED node2", COLOR_CYAN, STYLE_REVERSED);
 
             // client1
@@ -383,7 +386,7 @@ class DrasylNodeIT {
                     .serverEnabled(false)
                     .superPeerEnabled(false)
                     .build();
-            node3 = createNode(config);
+            node3 = createStartedNode(config);
             colorizedPrintln("CREATED node3", COLOR_CYAN, STYLE_REVERSED);
 
             // client2
@@ -394,7 +397,7 @@ class DrasylNodeIT {
                     .serverEnabled(false)
                     .superPeerEnabled(false)
                     .build();
-            node4 = createNode(config);
+            node4 = createStartedNode(config);
             colorizedPrintln("CREATED node4", COLOR_CYAN, STYLE_REVERSED);
 
             node1.second().filter(e -> e instanceof NodeUpEvent || e instanceof PeerDirectEvent).test().awaitCount(3);
@@ -489,7 +492,7 @@ class DrasylNodeIT {
                     .superPeerEnabled(false)
                     .intraVmDiscoveryEnabled(false)
                     .build();
-            node1 = createNode(config);
+            node1 = createStartedNode(config);
             node1.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1);
             colorizedPrintln("CREATED node1", COLOR_CYAN, STYLE_REVERSED);
 
@@ -502,7 +505,7 @@ class DrasylNodeIT {
                     .superPeerEnabled(false)
                     .intraVmDiscoveryEnabled(false)
                     .build();
-            node2 = createNode(config);
+            node2 = createStartedNode(config);
             node2.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1);
             colorizedPrintln("CREATED node2", COLOR_CYAN, STYLE_REVERSED);
 
@@ -515,7 +518,7 @@ class DrasylNodeIT {
                     .superPeerEnabled(false)
                     .intraVmDiscoveryEnabled(false)
                     .build();
-            node3 = createNode(config);
+            node3 = createStartedNode(config);
             node3.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1);
             colorizedPrintln("CREATED node3", COLOR_CYAN, STYLE_REVERSED);
 
@@ -527,7 +530,7 @@ class DrasylNodeIT {
                     .serverEnabled(false)
                     .superPeerEnabled(false)
                     .build();
-            node4 = createNode(config);
+            node4 = createStartedNode(config);
             node4.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1);
             colorizedPrintln("CREATED node4", COLOR_CYAN, STYLE_REVERSED);
         }
@@ -591,18 +594,15 @@ class DrasylNodeIT {
             colorizedPrintln("CREATED node", COLOR_CYAN, STYLE_REVERSED);
         }
 
-
         @Test
         @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-        @Disabled("needs fixing")
-        void sendToSelfShouldThrowException() throws DrasylException, ExecutionException, InterruptedException {
+        void sendToSelfShouldThrowException() {
             assertThrows(ExecutionException.class, () -> node.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", "Hallo Welt").get());
         }
 
-
         @Test
         @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-        void sendToAnOtherPeerShouldThrowException() throws DrasylException, ExecutionException, InterruptedException {
+        void sendToAnOtherPeerShouldThrowException() {
             assertThrows(ExecutionException.class, () -> node.first().send("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22", "Hallo Welt").get());
         }
     }

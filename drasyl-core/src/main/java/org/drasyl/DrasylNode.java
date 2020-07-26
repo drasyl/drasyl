@@ -205,6 +205,10 @@ public abstract class DrasylNode {
     }
 
     CompletableFuture<Void> messageSink(RelayableMessage message) throws MessageSinkException {
+        if (!started.get()) {
+            throw new NoPathToPublicKeyException(identity.getPublicKey());
+        }
+
         CompressedPublicKey recipient = message.getRecipient();
 
         if (!identity.getPublicKey().equals(recipient)) {
