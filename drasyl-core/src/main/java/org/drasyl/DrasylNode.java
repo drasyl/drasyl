@@ -155,6 +155,7 @@ public abstract class DrasylNode {
     public DrasylNode(DrasylConfig config) throws DrasylException {
         try {
             this.config = config;
+            setLogLevel(this.config.getLoglevel());
             IdentityManager identityManager = new IdentityManager(this.config);
             identityManager.loadOrCreateIdentity();
             this.identity = identityManager.getIdentity();
@@ -184,7 +185,6 @@ public abstract class DrasylNode {
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = completedFuture(null);
-            setLogLevel(this.config.getLoglevel());
         }
         catch (ConfigException e) {
             throw new DrasylException("Couldn't load config: \n" + e.getMessage());
