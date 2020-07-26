@@ -30,8 +30,8 @@ import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.pipeline.Handler;
+import org.drasyl.pipeline.HandlerAdapter;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.InboundHandlerAdapter;
 import org.drasyl.pipeline.Pipeline;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -101,7 +101,7 @@ class PluginsIT {
                           PluginEnvironment environment) {
             super(pipeline, config, environment);
 
-            this.testHandler = new InboundHandlerAdapter() {
+            this.testHandler = new HandlerAdapter() {
                 @Override
                 public void handlerAdded(HandlerContext ctx) {
                     ctx.fireEventTriggered(event1);

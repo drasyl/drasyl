@@ -35,8 +35,8 @@ import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.client.DirectClient;
 import org.drasyl.peer.connection.message.WhoisMessage;
 import org.drasyl.pipeline.DrasylPipeline;
+import org.drasyl.pipeline.HandlerAdapter;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.InboundHandlerAdapter;
 import org.drasyl.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -145,7 +145,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
         if (opened.compareAndSet(false, true)) {
             LOG.debug("Start Direct Connections Manager...");
             // add handler to the pipeline that listens for {@link PeerRelayEvent}s.
-            pipeline.addLast(DIRECT_CONNECTIONS_MANAGER, new InboundHandlerAdapter() {
+            pipeline.addLast(DIRECT_CONNECTIONS_MANAGER, new HandlerAdapter() {
                 @Override
                 public void eventTriggered(HandlerContext ctx, Event event) {
                     super.eventTriggered(ctx, event);

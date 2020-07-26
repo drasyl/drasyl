@@ -18,35 +18,27 @@
  */
 package org.drasyl.pipeline;
 
+import org.drasyl.event.Event;
+import org.drasyl.identity.CompressedPublicKey;
+
+import java.util.concurrent.CompletableFuture;
+
 /**
  * Handles an I/O event or intercepts an I/O operation, and forwards it to its next handler in its
  * {@link Pipeline}.
  *
- * <h3>Sub-types</h3>
+ * <h3>Extend {@link HandlerAdapter} instead</h3>
  * <p>
- * {@link Handler} itself does not provide many methods, but you usually have to implement one of
- * its subtypes:
- * <ul>
- * <li>{@link InboundHandler} to handle inbound I/O events, and</li>
- * <li>{@link OutboundHandler} to handle outbound I/O operations.</li>
- * </ul>
- * </p>
- * <p>
- * Alternatively, the following adapter classes are provided for your convenience:
- * <ul>
- * <li>{@link InboundHandlerAdapter} to handle inbound I/O events,</li>
- * <li>{@link OutboundHandlerAdapter} to handle outbound I/O operations, and</li>
- * <li>{@link DuplexHandler} to handle both inbound and outbound events</li>
- * </ul>
+ * Because this interface has many methods to implement, you might want to extend {@link
+ * HandlerAdapter} instead.
  * </p>
  *
  * <h3>The context object</h3>
  * <p>
- * A {@link Handler} is provided with a {@link HandlerContext}
- * object.  A {@link Handler} is supposed to interact with the
- * {@link Pipeline} it belongs to via a context object.  Using the
- * context object, the {@link Handler} can pass events upstream or
- * downstream or modify the pipeline dynamically.
+ * A {@link Handler} is provided with a {@link HandlerContext} object.  A {@link Handler} is
+ * supposed to interact with the {@link Pipeline} it belongs to via a context object.  Using the
+ * context object, the {@link Handler} can pass events upstream or downstream or modify the pipeline
+ * dynamically.
  */
 public interface Handler {
     /**
@@ -60,4 +52,39 @@ public interface Handler {
      * handle events anymore.
      */
     void handlerRemoved(HandlerContext ctx);
+
+    /**
+     * Gets called if a {@link Object} was received.
+     *
+     * @param ctx    handler context
+     * @param sender the sender of the message
+     * @param msg    the message
+     */
+    void read(HandlerContext ctx, CompressedPublicKey sender, Object msg);
+
+    /**
+     * Gets called if a {@link Event} was emitted.
+     *
+     * @param ctx   handler context
+     * @param event the event
+     */
+    void eventTriggered(HandlerContext ctx, Event event);
+
+    /**
+     * Gets called if a {@link Exception} was thrown.
+     */
+    void exceptionCaught(HandlerContext ctx, Exception cause);
+
+    /**
+     * Gets called if a {@link Object} was send from the application to a recipient.
+     *
+     * @param ctx       handler context
+     * @param recipient the recipient of the message
+     * @param msg       the message
+     * @param future    a future for the message
+     */
+    void write(HandlerContext ctx,
+               CompressedPublicKey recipient,
+               Object msg,
+               CompletableFuture<Void> future);
 }
