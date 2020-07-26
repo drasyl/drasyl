@@ -71,7 +71,7 @@ class ChunkedMessageHandlerTest {
         identity = Identity.of(ProofOfWork.of(16425882), "030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3", "05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34");
         maxContentLength = 1024; // 1KB
         transferTimeout = Duration.ofSeconds(10);
-        msgID = new MessageId("id");
+        msgID = new MessageId("89ba3cd9efb7570eb3126d11");
     }
 
     @Test

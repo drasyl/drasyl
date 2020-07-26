@@ -36,7 +36,7 @@ class QuitMessageTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException {
-            String json = "{\"@type\":\"" + QuitMessage.class.getSimpleName() + "\",\"id\":\"77175D7235920F3BA17341D7\",\"reason\":\"Unknown reason for closing this connection.\"}";
+            String json = "{\"@type\":\"" + QuitMessage.class.getSimpleName() + "\",\"id\":\"89ba3cd9efb7570eb3126d11\",\"reason\":\"Unknown reason for closing this connection.\"}";
 
             assertEquals(new QuitMessage(), JACKSON_READER.readValue(json, Message.class));
         }

@@ -119,7 +119,7 @@ class PingPongHandlerTest {
         PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        channel.writeInbound(new PongMessage(new MessageId("123")));
+        channel.writeInbound(new PongMessage(new MessageId("412176952b5b81fd13f84a7c")));
         channel.flush();
 
         assertEquals(0, handler.retries.get());

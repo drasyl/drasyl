@@ -8,21 +8,35 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.IOException;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
+import static org.drasyl.peer.connection.message.MessageId.isValidMessageId;
+import static org.drasyl.peer.connection.message.MessageId.randomMessageId;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
 class MessageIdTest {
     @Nested
+    class Constructor {
+        @Test
+        void shouldValidateGivenId() {
+            assertThrows(IllegalArgumentException.class, () -> new MessageId("xyz"));
+        }
+    }
+
+    @Nested
     class Equals {
         @Test
         void shouldRecognizeEqualPairs() {
-            MessageId idA = new MessageId("123");
-            MessageId idB = new MessageId("123");
-            MessageId idC = new MessageId("456");
+            System.out.println();
+            MessageId idA = new MessageId("412176952b5b81fd13f84a7c");
+            MessageId idB = new MessageId("412176952b5b81fd13f84a7c");
+            MessageId idC = new MessageId("78c36c82b8d11c7217a011b3");
 
             assertEquals(idA, idA);
             assertEquals(idA, idB);
@@ -37,9 +51,9 @@ class MessageIdTest {
     class HashCode {
         @Test
         void shouldRecognizeEqualPairs() {
-            MessageId idA = new MessageId("123");
-            MessageId idB = new MessageId("123");
-            MessageId idC = new MessageId("456");
+            MessageId idA = new MessageId("412176952b5b81fd13f84a7c");
+            MessageId idB = new MessageId("412176952b5b81fd13f84a7c");
+            MessageId idC = new MessageId("78c36c82b8d11c7217a011b3");
 
             assertEquals(idA.hashCode(), idB.hashCode());
             assertNotEquals(idA.hashCode(), idC.hashCode());
@@ -51,9 +65,9 @@ class MessageIdTest {
     class ToString {
         @Test
         void shouldReturnCorrectString() {
-            String string = new MessageId("123").toString();
+            String string = new MessageId("412176952b5b81fd13f84a7c").toString();
 
-            assertEquals("123", string);
+            assertEquals("412176952b5b81fd13f84a7c", string);
         }
     }
 
@@ -61,10 +75,10 @@ class MessageIdTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException {
-            String json = "\"123\"";
+            String json = "\"412176952b5b81fd13f84a7c\"";
 
             assertEquals(
-                    new MessageId("123"),
+                    new MessageId("412176952b5b81fd13f84a7c"),
                     JACKSON_READER.readValue(json, MessageId.class)
             );
         }
@@ -74,10 +88,10 @@ class MessageIdTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException {
-            MessageId id = new MessageId("123");
+            MessageId id = new MessageId("412176952b5b81fd13f84a7c");
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(id))
-                    .isEqualTo("\"123\"");
+                    .isEqualTo("\"412176952b5b81fd13f84a7c\"");
         }
     }
 
@@ -85,12 +99,35 @@ class MessageIdTest {
     class RandomMessageId {
         @Test
         void shouldReturnRandomMessageId() {
-            MessageId idA = MessageId.randomMessageId();
-            MessageId idB = MessageId.randomMessageId();
+            MessageId idA = randomMessageId();
+            MessageId idB = randomMessageId();
 
             assertNotNull(idA);
             assertNotNull(idB);
             assertNotEquals(idA, idB);
+        }
+    }
+
+    @Nested
+    class IsValidMessageId {
+        @Test
+        void shouldReturnFalseForNullString() {
+            assertFalse(isValidMessageId(null));
+        }
+
+        @Test
+        void shouldReturnFalseForStringWithWrongLength() {
+            assertFalse(isValidMessageId("abc"));
+        }
+
+        @Test
+        void shouldReturnFalseForStringWithWrongChar() {
+            assertFalse(isValidMessageId("xyz"));
+        }
+
+        @Test
+        void shouldReturnTrueForValidString() {
+            assertTrue(isValidMessageId("f3d0aee7962de47a849bd7b0"));
         }
     }
 }

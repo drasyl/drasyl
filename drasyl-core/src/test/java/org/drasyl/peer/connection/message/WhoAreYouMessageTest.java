@@ -36,7 +36,7 @@ class WhoAreYouMessageTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException {
-            String json = "{\"@type\":\"" + WhoAreYouMessage.class.getSimpleName() + "\",\"id\":\"77175D7235920F3BA17341D7\"}";
+            String json = "{\"@type\":\"" + WhoAreYouMessage.class.getSimpleName() + "\",\"id\":\"89ba3cd9efb7570eb3126d11\"}";
 
             assertEquals(new WhoAreYouMessage(), JACKSON_READER.readValue(json, Message.class));
         }
