@@ -348,7 +348,7 @@ public class PeersManager {
 
             superPeer = null;
 
-            // TODO: send PeerUnreachableEvent for all peers without direct connection?
+            // TODO: send PeerUnreachableEvent for all peers without direct connection? (https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/72)
         }
         finally {
             lock.writeLock().unlock();
@@ -371,7 +371,7 @@ public class PeersManager {
                 );
                 superPeer = null;
 
-                // TODO: send PeerRelayEvent for all peers without direct connection?
+                // TODO: send PeerRelayEvent for all peers without direct connection? (https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/72)
             }
         }
         finally {
