@@ -26,7 +26,6 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
-import io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
@@ -49,8 +48,6 @@ import java.net.URI;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
-import static io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler.ClientHandshakeStateEvent.HANDSHAKE_COMPLETE;
-import static io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler.ClientHandshakeStateEvent.HANDSHAKE_TIMEOUT;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.awaitility.Awaitility.await;
 import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_HANDLER;
@@ -61,7 +58,6 @@ public class TestSuperPeerClient extends SuperPeerClient {
     private final Subject<Event> receivedEvents;
     private final PublishSubject<Message> sentMessages;
     private final PublishSubject<Message> receivedMessages;
-    private final CompletableFuture<Void> websocketHandshake;
 
     public TestSuperPeerClient(DrasylConfig config,
                                Identity identity,
@@ -120,7 +116,6 @@ public class TestSuperPeerClient extends SuperPeerClient {
         this.receivedEvents = receivedEvents;
         this.sentMessages = PublishSubject.create();
         this.receivedMessages = PublishSubject.create();
-        this.websocketHandshake = new CompletableFuture<>();
     }
 
     public Observable<Event> receivedEvents() {
@@ -163,8 +158,16 @@ public class TestSuperPeerClient extends SuperPeerClient {
         return receivedMessages;
     }
 
+    /**
+     * We want to wait until the websocket handshake is done. After the handshake, netty removes the
+     * WebSocketClientProtocolHandshakeHandler from the pipeline
+     */
+    public void waitUntilHandshakeIsDone() {
+        await().until(() -> channel.pipeline().get("io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandshakeHandler") == null);
+    }
+
     public void send(Message message) {
-        websocketHandshake.join();
+        waitUntilHandshakeIsDone();
         ChannelFuture future = channel.writeAndFlush(message).awaitUninterruptibly();
         if (!future.isSuccess()) {
             throw new RuntimeException(future.cause());
@@ -172,7 +175,7 @@ public class TestSuperPeerClient extends SuperPeerClient {
     }
 
     public void sendRawBinary(ByteBuf byteBuf) {
-        websocketHandshake.join();
+        waitUntilHandshakeIsDone();
         ChannelFuture future = channel.writeAndFlush(new BinaryWebSocketFrame(byteBuf)).awaitUninterruptibly();
         if (!future.isSuccess()) {
             throw new RuntimeException(future.cause());
@@ -205,21 +208,6 @@ public class TestSuperPeerClient extends SuperPeerClient {
                 sentMessages.onComplete();
                 receivedMessages.onComplete();
                 super.channelUnregistered(ctx);
-            }
-
-            @Override
-            public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-                super.userEventTriggered(ctx, evt);
-
-                if (evt instanceof WebSocketClientProtocolHandler.ClientHandshakeStateEvent) {
-                    WebSocketClientProtocolHandler.ClientHandshakeStateEvent e = (WebSocketClientProtocolHandler.ClientHandshakeStateEvent) evt;
-                    if (e == HANDSHAKE_COMPLETE) {
-                        websocketHandshake.complete(null);
-                    }
-                    else if (e == HANDSHAKE_TIMEOUT) {
-                        websocketHandshake.completeExceptionally(new Exception("WebSocket Handshake Timeout"));
-                    }
-                }
             }
         });
     }
