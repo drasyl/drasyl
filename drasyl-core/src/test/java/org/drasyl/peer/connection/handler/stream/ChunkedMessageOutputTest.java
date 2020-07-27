@@ -68,7 +68,7 @@ class ChunkedMessageOutputTest {
 
     @BeforeEach
     void setUp() {
-        msgID = new MessageId("id");
+        msgID = new MessageId("89ba3cd9efb7570eb3126d11");
         rawPayload = new byte[]{
                 63,
                 -38,
@@ -155,7 +155,7 @@ class ChunkedMessageOutputTest {
     void equalsAndHashCodeTest() {
         ChunkedMessageOutput output1 = new ChunkedMessageOutput(ctx, sender, recipient, contentLength, checksum, msgID, maxContentLength, payload, payload.getClass(), progress, removeAction);
         ChunkedMessageOutput output2 = new ChunkedMessageOutput(ctx, sender, recipient, contentLength, checksum, msgID, maxContentLength, payload, payload.getClass(), progress, removeAction);
-        ChunkedMessageOutput output3 = new ChunkedMessageOutput(ctx, sender, recipient, contentLength, checksum, new MessageId("abc"), maxContentLength, payload, payload.getClass(), progress, removeAction);
+        ChunkedMessageOutput output3 = new ChunkedMessageOutput(ctx, sender, recipient, contentLength, checksum, new MessageId("412176952b5b81fd13f84a7c"), maxContentLength, payload, payload.getClass(), progress, removeAction);
 
         assertEquals(output1, output2);
         assertEquals(output1.hashCode(), output2.hashCode());

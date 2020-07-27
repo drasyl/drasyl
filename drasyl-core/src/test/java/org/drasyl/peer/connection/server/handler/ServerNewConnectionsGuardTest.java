@@ -59,7 +59,7 @@ class ServerNewConnectionsGuardTest {
     void shouldCloseConnectionOnClosedGuard() {
         when(ctx.channel()).thenReturn(channel);
         when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
-        when(message.getId()).thenReturn(new MessageId("sdasdsa"));
+        when(message.getId()).thenReturn(new MessageId("593266d6c03547019e2d01ac"));
 
         ServerNewConnectionsGuard handler = new ServerNewConnectionsGuard(() -> false);
 

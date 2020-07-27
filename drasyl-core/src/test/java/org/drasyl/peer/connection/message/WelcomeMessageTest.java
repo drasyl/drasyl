@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
 class WelcomeMessageTest {
-    private final MessageId correspondingId = new MessageId("123");
+    private final MessageId correspondingId = new MessageId("412176952b5b81fd13f84a7c");
     @Mock
     private PeerInformation peerInformation;
 
@@ -46,14 +46,14 @@ class WelcomeMessageTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException {
-            String json = "{\"@type\":\"WelcomeMessage\",\"id\":\"4AE5CDCD8C21719F8E779F21\",\"userAgent\":\"\",\"peerInformation\":{\"endpoints\":[\"ws://test\"]},\"correspondingId\":\"123\"}";
+            String json = "{\"@type\":\"WelcomeMessage\",\"id\":\"c78fe75d4c93bc07e916e539\",\"userAgent\":\"\",\"peerInformation\":{\"endpoints\":[\"ws://test\"]},\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
 
-            assertEquals(new WelcomeMessage(PeerInformation.of(Set.of(URI.create("ws://test"))), new MessageId("123")), JACKSON_READER.readValue(json, Message.class));
+            assertEquals(new WelcomeMessage(PeerInformation.of(Set.of(URI.create("ws://test"))), new MessageId("412176952b5b81fd13f84a7c")), JACKSON_READER.readValue(json, Message.class));
         }
 
         @Test
         void shouldRejectIncompleteData() {
-            String json = "{\"@type\":\"WelcomeMessage\",\"id\":\"4AE5CDCD8C21719F8E779F21\",\"userAgent\":\"\",\"correspondingId\":\"123\"}";
+            String json = "{\"@type\":\"WelcomeMessage\",\"id\":\"c78fe75d4c93bc07e916e539\",\"userAgent\":\"\",\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
 
             assertThrows(ValueInstantiationException.class, () -> JACKSON_READER.readValue(json, Message.class));
         }

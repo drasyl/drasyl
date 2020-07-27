@@ -91,8 +91,8 @@ class ClientConnectionHandlerTest {
     @Test
     void shouldFailHandshakeIfServerReplyWithStatusUnavailableOnWelcomeMessage() {
         when(handshakeFuture.isDone()).thenReturn(false);
-        when(requestMessage.getId()).thenReturn(new MessageId("123"));
-        when(statusMessage.getCorrespondingId()).thenReturn(new MessageId("123"));
+        when(requestMessage.getId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
+        when(statusMessage.getCorrespondingId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
         when(statusMessage.getCode()).thenReturn(STATUS_SERVICE_UNAVAILABLE);
 
         ClientConnectionHandler handler = new ClientConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage);
@@ -109,9 +109,9 @@ class ClientConnectionHandlerTest {
     class ServerAsSuperPeer {
         @Test
         void shouldAddPeerInformationAndSetSuperPeerAndEmitNodeOnlineEventOnSessionCreationAndRemovePeerInformationAndUnsetSuperPeerAndEmitNodeOfflineEventOnClose() {
-            when(requestMessage.getId()).thenReturn(new MessageId("123"));
-            when(offerMessage.getCorrespondingId()).thenReturn(new MessageId("123"));
-            when(offerMessage.getId()).thenReturn(new MessageId("456"));
+            when(requestMessage.getId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
+            when(offerMessage.getCorrespondingId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
+            when(offerMessage.getId()).thenReturn(new MessageId("78c36c82b8d11c7217a011b3"));
             when(environment.getPeersManager()).thenReturn(peersManager);
             when(environment.joinAsChildren()).thenReturn(true);
 
@@ -124,7 +124,7 @@ class ClientConnectionHandlerTest {
 
             verify(peersManager).setPeerInformationAndAddPathAndSetSuperPeer(eq(publicKey), any(), any());
             verify(environment.getEventConsumer()).accept(new NodeOnlineEvent(Node.of(environment.getIdentity())));
-//        assertEquals(new StatusMessage(STATUS_OK, "456"), channel.readOutbound());
+//        assertEquals(new StatusMessage(STATUS_OK, "78c36c82b8d11c7217a011b3"), channel.readOutbound());
 
             channel.close();
 
@@ -137,9 +137,9 @@ class ClientConnectionHandlerTest {
     class ServerAsPeer {
         @Test
         void shouldAddPeerInformationAndSetSuperPeerAndEmitNodeOnlineEventOnSessionCreationAndRemovePeerInformationAndUnsetSuperPeerAndEmitNodeOfflineEventOnClose() {
-            when(requestMessage.getId()).thenReturn(new MessageId("123"));
-            when(offerMessage.getCorrespondingId()).thenReturn(new MessageId("123"));
-            when(offerMessage.getId()).thenReturn(new MessageId("456"));
+            when(requestMessage.getId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
+            when(offerMessage.getCorrespondingId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
+            when(offerMessage.getId()).thenReturn(new MessageId("78c36c82b8d11c7217a011b3"));
             when(environment.getPeersManager()).thenReturn(peersManager);
             when(environment.joinAsChildren()).thenReturn(false);
 
@@ -151,7 +151,7 @@ class ClientConnectionHandlerTest {
             channel.flush();
 
             verify(peersManager).setPeerInformationAndAddPath(eq(publicKey), any(), any());
-//        assertEquals(new StatusMessage(STATUS_OK, "456"), channel.readOutbound());
+//        assertEquals(new StatusMessage(STATUS_OK, "78c36c82b8d11c7217a011b3"), channel.readOutbound());
 
             channel.close();
 

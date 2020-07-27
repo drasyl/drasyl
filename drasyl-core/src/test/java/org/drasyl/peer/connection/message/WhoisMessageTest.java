@@ -54,14 +54,14 @@ class WhoisMessageTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
-            String json = "{\"@type\":\"WhoisMessage\",\"id\":\"4AE5CDCD8C21719F8E779F21\",\"recipient\":\"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\"requester\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"peerInformation\":{\"endpoints\":[\"ws://test\"]}}";
+            String json = "{\"@type\":\"WhoisMessage\",\"id\":\"c78fe75d4c93bc07e916e539\",\"recipient\":\"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\"requester\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"peerInformation\":{\"endpoints\":[\"ws://test\"]}}";
 
             assertEquals(new WhoisMessage(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), PeerInformation.of(Set.of(URI.create("ws://test")))), JACKSON_READER.readValue(json, Message.class));
         }
 
         @Test
         void shouldRejectIncompleteData() {
-            String json = "{\"@type\":\"WhoisMessage\",\"id\":\"4AE5CDCD8C21719F8E779F21\",\"requester\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"peerInformation\":{\"endpoints\":[\"ws://test\"]}}";
+            String json = "{\"@type\":\"WhoisMessage\",\"id\":\"c78fe75d4c93bc07e916e539\",\"requester\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"peerInformation\":{\"endpoints\":[\"ws://test\"]}}";
 
             assertThrows(ValueInstantiationException.class, () -> JACKSON_READER.readValue(json, Message.class));
         }

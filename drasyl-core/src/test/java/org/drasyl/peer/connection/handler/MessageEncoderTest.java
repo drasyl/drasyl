@@ -38,7 +38,7 @@ class MessageEncoderTest {
         message = new AbstractMessage() {
             @Override
             public MessageId getId() {
-                return new MessageId("abc");
+                return new MessageId("d8bc65cf7dc1951e96313055");
             }
         };
 
@@ -90,9 +90,30 @@ class MessageEncoderTest {
                 34,
                 58,
                 34,
-                97,
+                100,
+                56,
                 98,
                 99,
+                54,
+                53,
+                99,
+                102,
+                55,
+                100,
+                99,
+                49,
+                57,
+                53,
+                49,
+                101,
+                57,
+                54,
+                51,
+                49,
+                51,
+                48,
+                53,
+                53,
                 34,
                 125
         };

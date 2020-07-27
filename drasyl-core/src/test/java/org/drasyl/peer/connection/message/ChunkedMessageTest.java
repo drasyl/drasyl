@@ -46,7 +46,7 @@ class ChunkedMessageTest {
     void setUp() throws CryptoException {
         sender = CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb");
         recipient = CompressedPublicKey.of("033de3da699f6f9ffbd427c56725910655ba3913be4ff55b13c628e957c860fd55");
-        id = new MessageId("id");
+        id = new MessageId("89ba3cd9efb7570eb3126d11");
         checksum = "abc";
         contentLength = 3;
     }
@@ -55,7 +55,7 @@ class ChunkedMessageTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
-            String json = "{\"@type\":\"" + ChunkedMessage.class.getSimpleName() + "\",\"id\":\"123\",\"sender\":\"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\"recipient\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"payload\":\"AAEC\",\"checksum\":\"abc\",\"contentLength\":3}";
+            String json = "{\"@type\":\"" + ChunkedMessage.class.getSimpleName() + "\",\"id\":\"412176952b5b81fd13f84a7c\",\"sender\":\"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\"recipient\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"payload\":\"AAEC\",\"checksum\":\"abc\",\"contentLength\":3}";
 
             assertEquals(new ChunkedMessage(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), id, new byte[]{
                     0x00,

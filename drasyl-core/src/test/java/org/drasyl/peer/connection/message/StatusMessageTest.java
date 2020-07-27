@@ -42,21 +42,21 @@ class StatusMessageTest {
 
     @BeforeEach
     void setUp() {
-        correspondingId = new MessageId("123");
+        correspondingId = new MessageId("412176952b5b81fd13f84a7c");
     }
 
     @Nested
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException {
-            String json = "{\"@type\":\"" + StatusMessage.class.getSimpleName() + "\",\"id\":\"205E5ECE2F3F1E744D951658\",\"code\":" + STATUS_OK.getNumber() + ",\"correspondingId\":\"123\"}";
+            String json = "{\"@type\":\"" + StatusMessage.class.getSimpleName() + "\",\"id\":\"c78fe75d4c93bc07e916e539\",\"code\":" + STATUS_OK.getNumber() + ",\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
 
-            assertEquals(new StatusMessage(STATUS_OK, new MessageId("123")), JACKSON_READER.readValue(json, Message.class));
+            assertEquals(new StatusMessage(STATUS_OK, new MessageId("412176952b5b81fd13f84a7c")), JACKSON_READER.readValue(json, Message.class));
         }
 
         @Test
         void shouldRejectIncompleteData() {
-            String json = "{\"@type\":\"" + StatusMessage.class.getSimpleName() + "\",\"id\":\"205E5ECE2F3F1E744D951658\",\"correspondingId\":\"123\"}";
+            String json = "{\"@type\":\"" + StatusMessage.class.getSimpleName() + "\",\"id\":\"c78fe75d4c93bc07e916e539\",\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
 
             assertThrows(ValueInstantiationException.class, () -> JACKSON_READER.readValue(json, Message.class));
         }

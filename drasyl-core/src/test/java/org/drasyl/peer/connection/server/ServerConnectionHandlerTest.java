@@ -150,14 +150,14 @@ class ServerConnectionHandlerTest {
 
     @Test
     void shouldRejectUnexpectedMessagesDuringHandshake() {
-        when(applicationMessage.getId()).thenReturn(new MessageId("123"));
+        when(applicationMessage.getId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
 
         ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(applicationMessage);
 
-        assertEquals(new StatusMessage(STATUS_FORBIDDEN, new MessageId("123")), channel.readOutbound());
+        assertEquals(new StatusMessage(STATUS_FORBIDDEN, new MessageId("412176952b5b81fd13f84a7c")), channel.readOutbound());
         assertNull(channel.readInbound());
     }
 
@@ -243,11 +243,11 @@ class ServerConnectionHandlerTest {
         void shouldAddPeerInformationAndGrandchildRouteAndInformSuperPeerOnSessionCreationAndRemovePeerInformationAndGrandchildRouteAndInformSuperPeerOnClose() {
             when(environment.getPeersManager()).thenReturn(peersManager);
             when(environment.getChannelGroup()).thenReturn(channelGroup);
-            when(offerMessage.getId()).thenReturn(new MessageId("123"));
+            when(offerMessage.getId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
             when(requestMessage.getPublicKey()).thenReturn(publicKey0);
             when(requestMessage.getChildrenAndGrandchildren()).thenReturn(Set.of(grandchildrenPublicKey0));
             when(requestMessage.isChildrenJoin()).thenReturn(true);
-            when(statusMessage.getCorrespondingId()).thenReturn(new MessageId("123"));
+            when(statusMessage.getCorrespondingId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
             when(statusMessage.getCode()).thenReturn(STATUS_OK);
             when(peersManager.getSuperPeer()).thenReturn(Triple.of(superPeerPublicKey, superPeerInformation, Set.of(superPeerPath)));
 
@@ -284,10 +284,10 @@ class ServerConnectionHandlerTest {
         void shouldAddPeerInformationOnSessionCreationAndRemovePeerInformationOnClose() {
             when(environment.getPeersManager()).thenReturn(peersManager);
             when(environment.getChannelGroup()).thenReturn(channelGroup);
-            when(offerMessage.getId()).thenReturn(new MessageId("123"));
+            when(offerMessage.getId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
             when(requestMessage.getPublicKey()).thenReturn(publicKey0);
             when(requestMessage.isChildrenJoin()).thenReturn(false);
-            when(statusMessage.getCorrespondingId()).thenReturn(new MessageId("123"));
+            when(statusMessage.getCorrespondingId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
             when(statusMessage.getCode()).thenReturn(STATUS_OK);
 
             ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
