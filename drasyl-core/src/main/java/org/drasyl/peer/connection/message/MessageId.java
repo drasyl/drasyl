@@ -7,7 +7,7 @@ import org.drasyl.crypto.Crypto;
 import java.util.Objects;
 
 /**
- * A {@link Message} is uniquely identified by its 24 hex digit identifier.
+ * A {@link Message} is uniquely identified by its 24 lower-case hex digit identifier.
  */
 public class MessageId {
     @JsonValue
@@ -16,7 +16,7 @@ public class MessageId {
     @JsonCreator
     public MessageId(String id) {
         if (!isValidMessageId(id)) {
-            throw new IllegalArgumentException("ID must be a 24 hex digit string: " + id);
+            throw new IllegalArgumentException("ID must be a 24 lower-case hex digit string: " + id);
         }
         this.id = id;
     }
