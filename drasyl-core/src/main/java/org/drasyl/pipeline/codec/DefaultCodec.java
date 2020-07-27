@@ -13,7 +13,7 @@ import org.slf4j.LoggerFactory;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
-import java.util.List;
+import java.util.function.Consumer;
 
 import static java.util.Objects.requireNonNull;
 
@@ -32,10 +32,10 @@ public class DefaultCodec extends Codec<ObjectHolder, Object> {
     @Override
     void encode(HandlerContext ctx,
                 Object msg,
-                List<Object> out) {
+                Consumer<Object> passOnConsumer) {
         if (msg instanceof byte[]) {
             // skip byte arrays
-            out.add(ObjectHolder.of(byte[].class, (byte[]) msg));
+            passOnConsumer.accept(ObjectHolder.of(byte[].class, (byte[]) msg));
 
             if (LOG.isTraceEnabled()) {
                 LOG.trace("[{}]: Encoded Message '{}'", ctx.name(), msg);
@@ -50,7 +50,7 @@ public class DefaultCodec extends Codec<ObjectHolder, Object> {
                 byte[] b = new byte[buf.readableBytes()];
                 buf.getBytes(buf.readerIndex(), b);
 
-                out.add(ObjectHolder.of(msg.getClass(), b));
+                passOnConsumer.accept(ObjectHolder.of(msg.getClass(), b));
 
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("[{}]: Encoded Message '{}'", ctx.name(), msg);
@@ -58,7 +58,7 @@ public class DefaultCodec extends Codec<ObjectHolder, Object> {
             }
             catch (IOException e) {
                 LOG.warn("[{}]: Unable to serialize '{}': ", ctx.name(), msg, e);
-                out.add(msg);
+                passOnConsumer.accept(msg);
             }
             finally {
                 buf.release();
@@ -66,17 +66,15 @@ public class DefaultCodec extends Codec<ObjectHolder, Object> {
         }
         else {
             // can't encode, pass message to the next handler in the pipeline
-            out.add(msg);
+            passOnConsumer.accept(msg);
         }
     }
 
     @Override
-    void decode(HandlerContext ctx,
-                ObjectHolder msg,
-                List<Object> out) {
+    void decode(HandlerContext ctx, ObjectHolder msg, Consumer<Object> passOnConsumer) {
         if (byte[].class == msg.getClazz()) {
             // skip byte arrays
-            out.add(msg.getObject());
+            passOnConsumer.accept(msg.getObject());
 
             if (LOG.isTraceEnabled()) {
                 LOG.trace("[{}]: Decoded Message '{}'", ctx.name(), msg.getObject());
@@ -87,7 +85,7 @@ public class DefaultCodec extends Codec<ObjectHolder, Object> {
             try (ByteBufInputStream bis = new ByteBufInputStream(buf)) {
 
                 Object decodedMessage = requireNonNull(JSONUtil.JACKSON_READER.readValue((InputStream) bis, msg.getClazz()));
-                out.add(decodedMessage);
+                passOnConsumer.accept(decodedMessage);
 
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("[{}]: Decoded Message '{}'", ctx.name(), decodedMessage);
@@ -95,7 +93,7 @@ public class DefaultCodec extends Codec<ObjectHolder, Object> {
             }
             catch (IOException | IllegalArgumentException e) {
                 LOG.warn("[{}]: Unable to deserialize '{}': ", ctx.name(), msg, e);
-                out.add(msg);
+                passOnConsumer.accept(msg);
             }
             finally {
                 buf.release();
@@ -103,7 +101,7 @@ public class DefaultCodec extends Codec<ObjectHolder, Object> {
         }
         else {
             // can't decode, pass message to the next handler in the pipeline
-            out.add(msg);
+            passOnConsumer.accept(msg);
         }
     }
 }

@@ -4,10 +4,11 @@ import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.SimpleDuplexHandler;
+import org.drasyl.util.FutureUtil;
 
 import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 /**
  * Standard interface for all codecs of the {@link org.drasyl.pipeline.Pipeline}.
@@ -15,8 +16,9 @@ import java.util.concurrent.CompletableFuture;
  * A codec can be used to encode/decode a given set of objects into the correct format to process
  * the object in the ongoing steps.
  * <br>
- * A codec must have a symmetrical construction. {@link #encode(HandlerContext, D, List)} converts
- * an object of type D into type E and {@link #decode(HandlerContext, E, List)} vice versa.
+ * A codec must have a symmetrical construction. {@link #encode(HandlerContext, Object, Consumer)}
+ * converts an object of type D into type E and {@link #decode(HandlerContext, Object, Consumer)}
+ * vice versa.
  *
  * <p>
  * <b>Note</b>: You can use the {@link HandlerContext#validator()} to check if a given {@code
@@ -33,12 +35,7 @@ public abstract class Codec<E, D> extends SimpleDuplexHandler<E, Event, D> {
     @Override
     protected void matchedRead(HandlerContext ctx, CompressedPublicKey sender, E msg) {
         // decode a given application message
-        ArrayList<Object> out = new ArrayList<>();
-        decode(ctx, msg, out);
-
-        for (Object o : out) {
-            ctx.fireRead(sender, o);
-        }
+        decode(ctx, msg, decodedMessage -> ctx.fireRead(sender, decodedMessage));
     }
 
     @Override
@@ -51,50 +48,50 @@ public abstract class Codec<E, D> extends SimpleDuplexHandler<E, Event, D> {
             return;
         }
 
-        ArrayList<Object> out = new ArrayList<>();
-        encode(ctx, msg, out);
+        ArrayList<CompletableFuture<?>> futures = new ArrayList<>();
 
-        ArrayList<CompletableFuture<Void>> futures = new ArrayList<>();
+        encode(ctx, msg, encodedMsg -> {
+            CompletableFuture<Void> dependingFuture = new CompletableFuture<>();
+            futures.add(dependingFuture);
 
-        for (Object o : out) {
-            CompletableFuture<Void> newFuture = new CompletableFuture<>();
-            futures.add(newFuture);
-            ctx.write(recipient, o, newFuture);
-        }
-
-        CompletableFuture.allOf(futures.toArray(CompletableFuture[]::new)).handleAsync((t, e) -> {
-            if (e != null) {
-                future.completeExceptionally(e);
-            }
-            else {
-                future.complete(t);
-            }
-
-            return t;
+            ctx.write(recipient, encodedMsg, dependingFuture);
         });
+
+        FutureUtil.completeOnAllOf(future, futures);
     }
 
     /**
      * Encodes a given object of type {@code D} into type {@code E}.
      *
      * <br>
-     * If you want to skip a object, add it also to the {@code out} list.
+     * You have to use the given {@code passOnConsumer} to pass all objects to the next handler in
+     * the pipeline, no matter whether they have been encoded or not.
+     * <p>
+     * A codec should never act as a guard, but rather pass on all messages that it could not
+     * handle. There is always the possibility that there is another codec in the pipeline that can
+     * handle this object.
      *
-     * @param ctx the handler context
-     * @param msg the message that should be encoded
-     * @param out the output that should be passed to the next handler in the pipeline
+     * @param ctx            the handler context
+     * @param msg            the message that should be encoded
+     * @param passOnConsumer to pass messages to the next handler in the pipeline
      */
-    abstract void encode(HandlerContext ctx, D msg, List<Object> out);
+    abstract void encode(HandlerContext ctx,
+                         D msg,
+                         Consumer<Object> passOnConsumer);
 
     /**
      * Decodes a given object of type {@code E} into type {@code D}.
+     * <p>
+     * You have to use the given {@code passOnConsumer} to pass all objects to the next handler in
+     * the pipeline, no matter whether they have been decoded or not.
+     * <p>
+     * A codec should never act as a guard, but rather pass on all messages that it could not
+     * handle. There is always the possibility that there is another codec in the pipeline that can
+     * handle this object.
      *
-     * <br>
-     * If you want to skip a object, add it also to the {@code out} list.
-     *
-     * @param ctx the handler context
-     * @param msg the message that should be decoded
-     * @param out the output that should be passed to the next handler in the pipeline
+     * @param ctx            the handler context
+     * @param msg            the message that should be decoded
+     * @param passOnConsumer to pass messages to the next handler in the pipeline
      */
-    abstract void decode(HandlerContext ctx, E msg, List<Object> out);
+    abstract void decode(HandlerContext ctx, E msg, Consumer<Object> passOnConsumer);
 }

@@ -26,8 +26,8 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.eq;
@@ -43,15 +43,15 @@ class CodecTest {
 
     @Test
     void shouldSkipDoneFutures() {
-        Codec codec = new Codec() {
+        Codec<Object, Object> codec = new Codec<>() {
             @Override
-            void encode(HandlerContext ctx, Object msg, List out) {
-                out.add(msg);
+            void encode(HandlerContext ctx, Object msg, Consumer<Object> passOnConsumer) {
+                passOnConsumer.accept(msg);
             }
 
             @Override
-            void decode(HandlerContext ctx, Object msg, List out) {
-                out.add(msg);
+            void decode(HandlerContext ctx, Object msg, Consumer<Object> passOnConsumer) {
+                passOnConsumer.accept(msg);
             }
         };
 
@@ -65,15 +65,15 @@ class CodecTest {
 
     @Test
     void shouldCompleteParentFutureExceptionallyOnChildError() {
-        Codec codec = new Codec() {
+        Codec<Object, Object> codec = new Codec<>() {
             @Override
-            void encode(HandlerContext ctx, Object msg, List out) {
-                out.add(msg);
+            void encode(HandlerContext ctx, Object msg, Consumer<Object> passOnConsumer) {
+                passOnConsumer.accept(msg);
             }
 
             @Override
-            void decode(HandlerContext ctx, Object msg, List out) {
-                out.add(msg);
+            void decode(HandlerContext ctx, Object msg, Consumer<Object> passOnConsumer) {
+                passOnConsumer.accept(msg);
             }
         };
 
