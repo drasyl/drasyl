@@ -44,6 +44,8 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 
 /**
  * Uses shared memory to discover other drasyl nodes running on same JVM.
+ * <p>
+ * Inspired by: https://github.com/actoron/jadex/blob/10e464b230d7695dfd9bf2b36f736f93d69ee314/platform/base/src/main/java/jadex/platform/service/awareness/IntraVMAwarenessAgent.java
  */
 public class IntraVmDiscovery implements DrasylNodeComponent {
     private static final Logger LOG = LoggerFactory.getLogger(IntraVmDiscovery.class);
