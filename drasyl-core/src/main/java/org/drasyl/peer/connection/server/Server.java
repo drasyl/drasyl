@@ -172,7 +172,7 @@ public class Server implements DrasylNodeComponent {
                     nodeEndpoints.addAll(actualEndpoints);
                 }
                 else {
-                    throw new ServerException("Unable to start server: " + channelFuture.cause().getMessage());
+                    throw new ServerException("Unable to bind server to address " + config.getServerBindHost() + ":" + config.getServerBindPort() + ": " + channelFuture.cause().getMessage());
                 }
             }
             catch (IllegalArgumentException e) {
