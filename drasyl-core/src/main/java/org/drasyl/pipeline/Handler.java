@@ -59,16 +59,23 @@ public interface Handler {
      * @param ctx    handler context
      * @param sender the sender of the message
      * @param msg    the message
+     * @param future a future for the message
      */
-    void read(HandlerContext ctx, CompressedPublicKey sender, Object msg);
+    void read(HandlerContext ctx,
+              CompressedPublicKey sender,
+              Object msg,
+              CompletableFuture<Void> future);
 
     /**
      * Gets called if a {@link Event} was emitted.
      *
-     * @param ctx   handler context
-     * @param event the event
+     * @param ctx    handler context
+     * @param event  the event
+     * @param future a future for the message
      */
-    void eventTriggered(HandlerContext ctx, Event event);
+    void eventTriggered(HandlerContext ctx,
+                        Event event,
+                        CompletableFuture<Void> future);
 
     /**
      * Gets called if a {@link Exception} was thrown.

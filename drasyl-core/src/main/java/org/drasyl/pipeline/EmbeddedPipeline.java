@@ -32,6 +32,7 @@ import org.drasyl.util.DrasylScheduler;
 import org.drasyl.util.Pair;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
@@ -62,13 +63,19 @@ public class EmbeddedPipeline extends DefaultPipeline {
         outboundMessages = ReplaySubject.create();
 
         this.handlerNames = new ConcurrentHashMap<>();
-        this.head = new HeadContext(outboundMessages::onNext, config, this, DrasylScheduler.getInstanceHeavy(), identity, validator);
+        this.head = new HeadContext(msg -> {
+            outboundMessages.onNext(msg);
+            return CompletableFuture.completedFuture(null);
+        }, config, this, DrasylScheduler.getInstanceHeavy(), identity, validator);
         this.tail = new TailContext(inboundEvents::onNext, config, this, DrasylScheduler.getInstanceHeavy(), identity, validator) {
             @Override
-            public void read(HandlerContext ctx, CompressedPublicKey sender, Object msg) {
-                // Pass message to Application
+            public void read(HandlerContext ctx,
+                             CompressedPublicKey sender,
+                             Object msg,
+                             CompletableFuture<Void> future) {
                 inboundEvents.onNext(new MessageEvent(Pair.of(sender, msg)));
                 inboundMessages.onNext(Pair.of(sender, msg));
+                future.complete(null);
             }
         };
         this.scheduler = DrasylScheduler.getInstanceLight();

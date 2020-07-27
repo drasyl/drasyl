@@ -38,6 +38,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.Mockito.mock;
 
@@ -104,7 +105,7 @@ class PluginsIT {
             this.testHandler = new HandlerAdapter() {
                 @Override
                 public void handlerAdded(HandlerContext ctx) {
-                    ctx.fireEventTriggered(event1);
+                    ctx.fireEventTriggered(event1, new CompletableFuture<>());
                 }
             };
         }

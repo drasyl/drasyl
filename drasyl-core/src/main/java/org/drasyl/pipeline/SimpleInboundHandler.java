@@ -24,6 +24,8 @@ import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 
+import java.util.concurrent.CompletableFuture;
+
 /**
  * {@link HandlerAdapter} which allows to explicit only handle a specific type of messages and
  * events.
@@ -67,32 +69,35 @@ public abstract class SimpleInboundHandler<I, E> extends HandlerAdapter {
     }
 
     @Override
-    public void read(HandlerContext ctx, CompressedPublicKey sender, Object msg) {
+    public void read(HandlerContext ctx,
+                     CompressedPublicKey sender,
+                     Object msg,
+                     CompletableFuture<Void> future) {
         if (acceptInbound(msg)) {
             @SuppressWarnings("unchecked")
             I castedMsg = (I) msg;
-            matchedRead(ctx, sender, castedMsg);
+            matchedRead(ctx, sender, castedMsg, future);
         }
         else {
-            ctx.fireRead(sender, msg);
+            ctx.fireRead(sender, msg, future);
         }
     }
 
     @Override
-    public void eventTriggered(HandlerContext ctx, Event event) {
+    public void eventTriggered(HandlerContext ctx, Event event, CompletableFuture<Void> future) {
         if (acceptEvent(event)) {
             @SuppressWarnings("unchecked")
             E castedEvent = (E) event;
-            matchedEventTriggered(ctx, castedEvent);
+            matchedEventTriggered(ctx, castedEvent, future);
         }
         else {
-            ctx.fireEventTriggered(event);
+            ctx.fireEventTriggered(event, future);
         }
     }
 
     /**
      * Returns {@code true} if the given event should be handled. If {@code false} it will be passed
-     * to the next {@link InboundHandler} in the {@link Pipeline}.
+     * to the next {@link Handler} in the {@link Pipeline}.
      */
     protected boolean acceptEvent(Event msg) {
         return matcherEvent.match(msg);
@@ -101,14 +106,17 @@ public abstract class SimpleInboundHandler<I, E> extends HandlerAdapter {
     /**
      * Is called for each event of type {@link E}.
      *
-     * @param ctx   handler context
-     * @param event the event
+     * @param ctx    handler context
+     * @param event  the event
+     * @param future the future of the message
      */
-    protected abstract void matchedEventTriggered(HandlerContext ctx, E event);
+    protected abstract void matchedEventTriggered(HandlerContext ctx,
+                                                  E event,
+                                                  CompletableFuture<Void> future);
 
     /**
      * Returns {@code true} if the given message should be handled. If {@code false} it will be
-     * passed to the next {@link InboundHandler} in the {@link Pipeline}.
+     * passed to the next {@link Handler} in the {@link Pipeline}.
      */
     protected boolean acceptInbound(Object msg) {
         return matcherMessage.match(msg);
@@ -120,6 +128,10 @@ public abstract class SimpleInboundHandler<I, E> extends HandlerAdapter {
      * @param ctx    handler context
      * @param sender the sender of the message
      * @param msg    the message
+     * @param future the future of the message
      */
-    protected abstract void matchedRead(HandlerContext ctx, CompressedPublicKey sender, I msg);
+    protected abstract void matchedRead(HandlerContext ctx,
+                                        CompressedPublicKey sender,
+                                        I msg,
+                                        CompletableFuture<Void> future);
 }

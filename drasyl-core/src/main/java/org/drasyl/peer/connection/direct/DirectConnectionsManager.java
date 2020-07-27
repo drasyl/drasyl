@@ -46,6 +46,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
 import java.util.function.Consumer;
@@ -147,15 +148,17 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
             // add handler to the pipeline that listens for {@link PeerRelayEvent}s.
             pipeline.addLast(DIRECT_CONNECTIONS_MANAGER, new HandlerAdapter() {
                 @Override
-                public void eventTriggered(HandlerContext ctx, Event event) {
-                    super.eventTriggered(ctx, event);
-
+                public void eventTriggered(HandlerContext ctx,
+                                           Event event,
+                                           CompletableFuture<Void> future) {
                     if (opened.get() && event instanceof PeerRelayEvent) {
                         PeerRelayEvent peerRelayEvent = (PeerRelayEvent) event;
                         CompressedPublicKey publicKey = peerRelayEvent.getPeer().getPublicKey();
 
                         initiateDirectConnectionOnDemand(publicKey);
                     }
+
+                    super.eventTriggered(ctx, event, future);
                 }
             });
             LOG.debug("Direct Connections Manager started.");

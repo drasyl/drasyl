@@ -63,8 +63,8 @@ class MonitoringTest {
             when(registrySupplier.get()).thenReturn(registry);
             when(pipeline.addFirst(eq(MONITORING_HANDLER), any())).then(invocation -> {
                 SimpleDuplexHandler handler = invocation.getArgument(1);
-                handler.eventTriggered(ctx, mock(Event.class));
-                handler.read(ctx, mock(CompressedPublicKey.class), mock(Object.class));
+                handler.eventTriggered(ctx, mock(Event.class), new CompletableFuture<>());
+                handler.read(ctx, mock(CompressedPublicKey.class), mock(Object.class), new CompletableFuture<>());
                 handler.write(ctx, mock(CompressedPublicKey.class), mock(Object.class), new CompletableFuture<>());
                 return invocation.getMock();
             });

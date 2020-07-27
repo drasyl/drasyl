@@ -64,6 +64,8 @@ class AbstractHandlerContextTest {
     private Identity identity;
     @Mock
     private TypeValidator validator;
+    @Mock
+    private CompletableFuture<Void> future;
     private String name;
 
     @BeforeEach
@@ -229,17 +231,17 @@ class AbstractHandlerContextTest {
         CompressedPublicKey sender = mock(CompressedPublicKey.class);
         ApplicationMessage msg = mock(ApplicationMessage.class);
 
-        ctx.fireRead(sender, msg);
+        ctx.fireRead(sender, msg, future);
 
         verify(next, times(2)).handler();
-        verify(newHandler).read(eq(next), eq(sender), eq(msg));
+        verify(newHandler).read(eq(next), eq(sender), eq(msg), eq(future));
     }
 
     @Test
     void shouldRethrowIfExceptionOccursDuringInvokeRead() {
         Handler newHandler = mock(Handler.class);
         when(next.handler()).thenReturn(newHandler);
-        doThrow(RuntimeException.class).when(newHandler).read(any(), any(), any());
+        doThrow(RuntimeException.class).when(newHandler).read(any(), any(), any(), any());
 
         AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, validator) {
             @Override
@@ -251,10 +253,10 @@ class AbstractHandlerContextTest {
         CompressedPublicKey sender = mock(CompressedPublicKey.class);
         ApplicationMessage msg = mock(ApplicationMessage.class);
 
-        ctx.fireRead(sender, msg);
+        ctx.fireRead(sender, msg, future);
 
         verify(next, times(2)).handler();
-        verify(newHandler).read(eq(next), eq(sender), eq(msg));
+        verify(newHandler).read(eq(next), eq(sender), eq(msg), eq(future));
         verify(next).fireExceptionCaught(isA(RuntimeException.class));
     }
 
@@ -272,17 +274,17 @@ class AbstractHandlerContextTest {
 
         Event event = mock(Event.class);
 
-        ctx.fireEventTriggered(event);
+        ctx.fireEventTriggered(event, future);
 
         verify(next, times(2)).handler();
-        verify(newHandler).eventTriggered(eq(next), eq(event));
+        verify(newHandler).eventTriggered(eq(next), eq(event), eq(future));
     }
 
     @Test
     void shouldRethrowIfExceptionOccursDuringFireEventTriggered() {
         Handler newHandler = mock(Handler.class);
         when(next.handler()).thenReturn(newHandler);
-        doThrow(RuntimeException.class).when(newHandler).eventTriggered(any(), any());
+        doThrow(RuntimeException.class).when(newHandler).eventTriggered(any(), any(), any());
 
         AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, validator) {
             @Override
@@ -293,10 +295,10 @@ class AbstractHandlerContextTest {
 
         Event event = mock(Event.class);
 
-        ctx.fireEventTriggered(event);
+        ctx.fireEventTriggered(event, future);
 
         verify(next, times(2)).handler();
-        verify(newHandler).eventTriggered(eq(next), eq(event));
+        verify(newHandler).eventTriggered(eq(next), eq(event), eq(future));
         verify(next).fireExceptionCaught(isA(RuntimeException.class));
     }
 

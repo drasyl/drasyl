@@ -57,15 +57,34 @@ class TailContext extends AbstractHandlerContext implements Handler {
     }
 
     @Override
-    public void read(HandlerContext ctx, CompressedPublicKey sender, Object msg) {
+    public void read(HandlerContext ctx,
+                     CompressedPublicKey sender,
+                     Object msg,
+                     CompletableFuture<Void> future) {
         // Pass message to Application
-        eventConsumer.accept(new MessageEvent(Pair.of(sender, msg)));
+        if (future.isDone()) {
+            if (LOG.isWarnEnabled()) {
+                LOG.warn("Message `{}` was not written to the application, because the corresponding future was already completed.", msg);
+            }
+        }
+        else {
+            eventConsumer.accept(new MessageEvent(Pair.of(sender, msg)));
+            future.complete(null);
+        }
     }
 
     @Override
-    public void eventTriggered(HandlerContext ctx, Event event) {
+    public void eventTriggered(HandlerContext ctx, Event event, CompletableFuture<Void> future) {
         // Pass event to Application
-        eventConsumer.accept(event);
+        if (future.isDone()) {
+            if (LOG.isWarnEnabled()) {
+                LOG.warn("Event `{}` was not written to the application, because the corresponding future was already completed.", event);
+            }
+        }
+        else {
+            eventConsumer.accept(event);
+            future.complete(null);
+        }
     }
 
     @Override

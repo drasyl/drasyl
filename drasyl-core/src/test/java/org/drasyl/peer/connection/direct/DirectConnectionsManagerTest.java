@@ -25,6 +25,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.net.URI;
 import java.util.Map;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -94,7 +95,7 @@ class DirectConnectionsManagerTest {
             when(directConnectionDemandsCache.contains(publicKey)).thenReturn(true);
             when(pipeline.addLast(eq(DIRECT_CONNECTIONS_MANAGER), any())).then(invocation -> {
                 HandlerAdapter handler = invocation.getArgument(1);
-                handler.eventTriggered(mock(HandlerContext.class), event);
+                handler.eventTriggered(mock(HandlerContext.class), event, mock(CompletableFuture.class));
                 return invocation.getMock();
             });
 
