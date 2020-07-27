@@ -39,6 +39,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static org.mockito.Mockito.doReturn;
@@ -60,12 +61,17 @@ class SimpleInboundHandlerTest {
     void shouldTriggerOnMatchedMessage() throws JsonProcessingException {
         SimpleInboundHandler<byte[], Event> handler = new SimpleInboundHandler<>() {
             @Override
-            protected void matchedEventTriggered(HandlerContext ctx, Event event) {
-                super.eventTriggered(ctx, event);
+            protected void matchedEventTriggered(HandlerContext ctx,
+                                                 Event event,
+                                                 CompletableFuture<Void> future) {
+                super.eventTriggered(ctx, event, future);
             }
 
             @Override
-            protected void matchedRead(HandlerContext ctx, CompressedPublicKey sender, byte[] msg) {
+            protected void matchedRead(HandlerContext ctx,
+                                       CompressedPublicKey sender,
+                                       byte[] msg,
+                                       CompletableFuture<Void> future) {
                 // Emit this message as outbound message to test
                 ctx.pipeline().processOutbound(sender, msg);
             }
@@ -91,12 +97,17 @@ class SimpleInboundHandlerTest {
     void shouldPassthroughsNotMatchingMessage() {
         SimpleInboundHandler<List, Event> handler = new SimpleInboundHandler<>() {
             @Override
-            protected void matchedEventTriggered(HandlerContext ctx, Event event) {
-                ctx.fireEventTriggered(event);
+            protected void matchedEventTriggered(HandlerContext ctx,
+                                                 Event event,
+                                                 CompletableFuture<Void> future) {
+                ctx.fireEventTriggered(event, future);
             }
 
             @Override
-            protected void matchedRead(HandlerContext ctx, CompressedPublicKey sender, List msg) {
+            protected void matchedRead(HandlerContext ctx,
+                                       CompressedPublicKey sender,
+                                       List msg,
+                                       CompletableFuture<Void> future) {
                 // Emit this message as outbound message to test
                 ctx.pipeline().processOutbound(sender, msg);
             }
@@ -126,15 +137,18 @@ class SimpleInboundHandlerTest {
     void shouldTriggerOnMatchedEvent() throws InterruptedException {
         SimpleInboundHandler<ApplicationMessage, NodeUpEvent> handler = new SimpleInboundHandler<>(ApplicationMessage.class, NodeUpEvent.class) {
             @Override
-            protected void matchedEventTriggered(HandlerContext ctx, NodeUpEvent event) {
+            protected void matchedEventTriggered(HandlerContext ctx,
+                                                 NodeUpEvent event,
+                                                 CompletableFuture<Void> future) {
                 // Do nothing
             }
 
             @Override
             protected void matchedRead(HandlerContext ctx,
                                        CompressedPublicKey sender,
-                                       ApplicationMessage msg) {
-                ctx.fireRead(sender, msg);
+                                       ApplicationMessage msg,
+                                       CompletableFuture<Void> future) {
+                ctx.fireRead(sender, msg, future);
             }
         };
 
@@ -152,15 +166,18 @@ class SimpleInboundHandlerTest {
     void shouldPassthroughsNotMatchingEvents() {
         SimpleInboundHandler<ChunkedMessage, NodeUpEvent> handler = new SimpleInboundHandler<>() {
             @Override
-            protected void matchedEventTriggered(HandlerContext ctx, NodeUpEvent event) {
+            protected void matchedEventTriggered(HandlerContext ctx,
+                                                 NodeUpEvent event,
+                                                 CompletableFuture<Void> future) {
                 // Do nothing
             }
 
             @Override
             protected void matchedRead(HandlerContext ctx,
                                        CompressedPublicKey sender,
-                                       ChunkedMessage msg) {
-                ctx.fireRead(sender, msg);
+                                       ChunkedMessage msg,
+                                       CompletableFuture<Void> future) {
+                ctx.fireRead(sender, msg, future);
             }
         };
 

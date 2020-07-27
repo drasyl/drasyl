@@ -59,7 +59,7 @@ public abstract class SimpleDuplexHandler<I, E, O> extends SimpleInboundHandler<
 
     /**
      * Returns {@code true} if the given message should be handled. If {@code false} it will be
-     * passed to the next {@link InboundHandler} in the {@link Pipeline}.
+     * passed to the next {@link Handler} in the {@link Pipeline}.
      */
     protected boolean acceptOutbound(Object msg) {
         return outboundMessageMatcher.match(msg);

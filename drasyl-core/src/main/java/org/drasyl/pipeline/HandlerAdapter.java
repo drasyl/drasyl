@@ -44,13 +44,16 @@ public class HandlerAdapter implements Handler {
     }
 
     @Override
-    public void read(HandlerContext ctx, CompressedPublicKey sender, Object msg) {
-        ctx.fireRead(sender, msg);
+    public void read(HandlerContext ctx,
+                     CompressedPublicKey sender,
+                     Object msg,
+                     CompletableFuture<Void> future) {
+        ctx.fireRead(sender, msg, future);
     }
 
     @Override
-    public void eventTriggered(HandlerContext ctx, Event event) {
-        ctx.fireEventTriggered(event);
+    public void eventTriggered(HandlerContext ctx, Event event, CompletableFuture<Void> future) {
+        ctx.fireEventTriggered(event, future);
     }
 
     @Override

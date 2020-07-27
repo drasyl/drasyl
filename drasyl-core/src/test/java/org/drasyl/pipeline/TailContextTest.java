@@ -26,6 +26,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.Pair;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -38,8 +39,10 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class TailContextTest {
@@ -57,73 +60,116 @@ class TailContextTest {
     private Identity identity;
     @Mock
     private TypeValidator validator;
+    @Mock
+    private CompletableFuture<Void> future;
 
-    @Test
-    void shouldReturnSelfAsHandler() {
-        TailContext headContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
+    @Nested
+    class InGeneral {
+        @Test
+        void shouldReturnSelfAsHandler() {
+            TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
 
-        assertEquals(headContext, headContext.handler());
+            assertEquals(tailContext, tailContext.handler());
+        }
+
+        @Test
+        void shouldDoNothingOnHandlerAdded() {
+            TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
+
+            tailContext.handlerAdded(ctx);
+
+            verifyNoInteractions(ctx);
+        }
+
+        @Test
+        void shouldDoNothingOnHandlerRemoved() {
+            TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
+
+            tailContext.handlerRemoved(ctx);
+
+            verifyNoInteractions(ctx);
+        }
     }
 
-    @Test
-    void shouldDoNothingOnHandlerAdded() {
-        TailContext headContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
+    @Nested
+    class OnWrite {
+        @Test
+        void shouldPassthroughsOnWrite() {
+            TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
+            CompressedPublicKey recipient = mock(CompressedPublicKey.class);
+            Object msg = mock(Object.class);
 
-        headContext.handlerAdded(ctx);
+            tailContext.write(ctx, recipient, msg, future);
 
-        verifyNoInteractions(ctx);
+            verify(ctx).write(eq(recipient), eq(msg), eq(future));
+        }
     }
 
-    @Test
-    void shouldDoNothingOnHandlerRemoved() {
-        TailContext headContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
+    @Nested
+    class OnException {
+        @Test
+        void shouldThrowException() {
+            TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
+            Exception exception = mock(Exception.class);
 
-        headContext.handlerRemoved(ctx);
-
-        verifyNoInteractions(ctx);
+            assertThrows(Exception.class, () -> tailContext.exceptionCaught(ctx, exception));
+            verifyNoInteractions(ctx);
+        }
     }
 
-    @Test
-    void shouldPassthroughsOnWrite() {
-        TailContext headContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
-        CompressedPublicKey recipient = mock(CompressedPublicKey.class);
-        Object msg = mock(Object.class);
-        CompletableFuture future = mock(CompletableFuture.class);
+    @Nested
+    class OnEvent {
+        @Test
+        void shouldPassEventToConsumer() {
+            TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
+            Event event = mock(Event.class);
 
-        headContext.write(ctx, recipient, msg, future);
+            tailContext.eventTriggered(ctx, event, future);
 
-        verify(ctx).write(eq(recipient), eq(msg), eq(future));
+            verify(eventConsumer).accept(eq(event));
+            verifyNoInteractions(ctx);
+        }
+
+        @Test
+        void shouldNotWriteToConsumerWhenFutureIsDone() {
+            TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
+            Event event = mock(Event.class);
+
+            when(future.isDone()).thenReturn(true);
+
+            tailContext.eventTriggered(ctx, event, future);
+
+            verifyNoInteractions(eventConsumer);
+            verify(future, never()).complete(null);
+        }
     }
 
-    @Test
-    void shouldThrowException() {
-        TailContext headContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
-        Exception exception = mock(Exception.class);
+    @Nested
+    class OnRead {
+        @Test
+        void shouldPassMessageToApplication() {
+            TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
+            CompressedPublicKey sender = mock(CompressedPublicKey.class);
+            Object msg = mock(Object.class);
 
-        assertThrows(Exception.class, () -> headContext.exceptionCaught(ctx, exception));
-        verifyNoInteractions(ctx);
-    }
+            tailContext.read(ctx, sender, msg, future);
 
-    @Test
-    void shouldPassEventToConsumer() {
-        TailContext headContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
-        Event event = mock(Event.class);
+            verify(eventConsumer).accept(eq(new MessageEvent(Pair.of(sender, msg))));
+            verifyNoInteractions(ctx);
+        }
 
-        headContext.eventTriggered(ctx, event);
+        @Test
+        void shouldNotWriteToConsumerWhenFutureIsDone() {
+            TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
+            CompressedPublicKey sender = mock(CompressedPublicKey.class);
+            Object msg = mock(Object.class);
 
-        verify(eventConsumer).accept(eq(event));
-        verifyNoInteractions(ctx);
-    }
+            when(future.isDone()).thenReturn(true);
 
-    @Test
-    void shouldPassMessageToApplication() {
-        TailContext headContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
-        CompressedPublicKey sender = mock(CompressedPublicKey.class);
-        Object msg = mock(Object.class);
+            tailContext.read(ctx, sender, msg, future);
 
-        headContext.read(ctx, sender, msg);
-
-        verify(eventConsumer).accept(eq(new MessageEvent(Pair.of(sender, msg))));
-        verifyNoInteractions(ctx);
+            verifyNoInteractions(eventConsumer);
+            verify(future, never()).complete(null);
+        }
     }
 }

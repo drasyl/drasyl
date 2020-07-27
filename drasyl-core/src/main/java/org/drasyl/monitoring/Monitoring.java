@@ -125,17 +125,20 @@ public class Monitoring implements DrasylNodeComponent {
                 private final Map<String, Counter> counters = new HashMap<>();
 
                 @Override
-                protected void matchedEventTriggered(HandlerContext ctx, Event event) {
+                protected void matchedEventTriggered(HandlerContext ctx,
+                                                     Event event,
+                                                     CompletableFuture<Void> future) {
                     ctx.scheduler().scheduleDirect(() -> incrementObjectTypeCounter("pipeline.events", event));
-                    ctx.fireEventTriggered(event);
+                    ctx.fireEventTriggered(event, future);
                 }
 
                 @Override
                 protected void matchedRead(HandlerContext ctx,
                                            CompressedPublicKey sender,
-                                           Object msg) {
+                                           Object msg,
+                                           CompletableFuture<Void> future) {
                     ctx.scheduler().scheduleDirect(() -> incrementObjectTypeCounter("pipeline.inbound_messages", msg));
-                    ctx.fireRead(sender, msg);
+                    ctx.fireRead(sender, msg, future);
                 }
 
                 @Override

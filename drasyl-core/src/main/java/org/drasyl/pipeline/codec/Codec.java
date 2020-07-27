@@ -27,15 +27,33 @@ import java.util.function.Consumer;
  */
 public abstract class Codec<E, D> extends SimpleDuplexHandler<E, Event, D> {
     @Override
-    protected void matchedEventTriggered(HandlerContext ctx, Event event) {
+    protected void matchedEventTriggered(HandlerContext ctx,
+                                         Event event,
+                                         CompletableFuture<Void> future) {
         // Skip
-        ctx.fireEventTriggered(event);
+        ctx.fireEventTriggered(event, future);
     }
 
     @Override
-    protected void matchedRead(HandlerContext ctx, CompressedPublicKey sender, E msg) {
-        // decode a given application message
-        decode(ctx, msg, decodedMessage -> ctx.fireRead(sender, decodedMessage));
+    protected void matchedRead(HandlerContext ctx,
+                               CompressedPublicKey sender,
+                               E msg,
+                               CompletableFuture<Void> future) {
+        if (future.isDone()) {
+            ctx.fireRead(sender, msg, future);
+            return;
+        }
+
+        ArrayList<CompletableFuture<?>> futures = new ArrayList<>();
+
+        decode(ctx, msg, decodedMessage -> {
+            CompletableFuture<Void> dependingFuture = new CompletableFuture<>();
+            futures.add(dependingFuture);
+
+            ctx.fireRead(sender, decodedMessage, dependingFuture);
+        });
+
+        FutureUtil.completeOnAllOf(future, futures);
     }
 
     @Override
@@ -50,11 +68,11 @@ public abstract class Codec<E, D> extends SimpleDuplexHandler<E, Event, D> {
 
         ArrayList<CompletableFuture<?>> futures = new ArrayList<>();
 
-        encode(ctx, msg, encodedMsg -> {
+        encode(ctx, msg, encodedMessage -> {
             CompletableFuture<Void> dependingFuture = new CompletableFuture<>();
             futures.add(dependingFuture);
 
-            ctx.write(recipient, encodedMsg, dependingFuture);
+            ctx.write(recipient, encodedMessage, dependingFuture);
         });
 
         FutureUtil.completeOnAllOf(future, futures);

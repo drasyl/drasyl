@@ -44,8 +44,8 @@ import java.util.concurrent.CompletableFuture;
  * The following diagram describes how I/O events are processed by {@link Handler}s in a {@link
  * Pipeline} typically. An I/O event is handled by either a {@link InboundHandler} or a {@link
  * OutboundHandler} and be forwarded to its closest handler by calling the event propagation methods
- * defined in {@link HandlerContext}, such as {@link HandlerContext#fireRead(CompressedPublicKey, Object)} 
- * and {@link HandlerContext#write(CompressedPublicKey, Object)} .
+ * defined in {@link HandlerContext}, such as {@link HandlerContext#fireRead(CompressedPublicKey,
+ * Object)} and {@link HandlerContext#write(CompressedPublicKey, Object)} .
  *
  * <pre>
  *                                                 I/O Request
@@ -254,14 +254,14 @@ public interface Pipeline {
      *
      * @param msg the inbound message
      */
-    void processInbound(ApplicationMessage msg);
+    CompletableFuture<Void> processInbound(ApplicationMessage msg);
 
     /**
      * Processes an inbound event by the pipeline.
      *
      * @param event the inbound event
      */
-    void processInbound(Event event);
+    CompletableFuture<Void> processInbound(Event event);
 
     /**
      * Processes an outbound message by the pipeline.

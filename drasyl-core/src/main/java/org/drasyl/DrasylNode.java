@@ -218,9 +218,7 @@ public abstract class DrasylNode {
         if (message instanceof ApplicationMessage) {
             ApplicationMessage applicationMessage = (ApplicationMessage) message;
             peersManager.addPeer(applicationMessage.getSender());
-            pipeline.processInbound(applicationMessage);
-            // TODO: use future returned by pipeline.processInbound(ApplicationMessage) (https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/90)
-            return completedFuture(null);
+            return pipeline.processInbound(applicationMessage);
         }
         else if (message instanceof WhoisMessage) {
             WhoisMessage whoisMessage = (WhoisMessage) message;

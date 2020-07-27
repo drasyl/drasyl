@@ -26,7 +26,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.codec.ObjectHolder;
-import org.drasyl.util.DrasylConsumer;
+import org.drasyl.util.DrasylFunction;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -61,7 +61,7 @@ class DrasylPipelineTest {
     @Mock
     private Consumer<Event> eventConsumer;
     @Mock
-    private DrasylConsumer<ApplicationMessage, DrasylException> outboundConsumer;
+    private DrasylFunction<ApplicationMessage, CompletableFuture<Void>, DrasylException> outboundFunction;
     @Mock
     private Scheduler scheduler;
     @Mock
@@ -71,7 +71,7 @@ class DrasylPipelineTest {
 
     @Test
     void shouldCreateNewPipeline() {
-        DrasylPipeline pipeline = new DrasylPipeline(eventConsumer, outboundConsumer, config, identity);
+        DrasylPipeline pipeline = new DrasylPipeline(eventConsumer, outboundFunction, config, identity);
 
         assertNull(pipeline.get(DRASYL_HEAD_HANDLER));
         assertNull(pipeline.context(DRASYL_HEAD_HANDLER));
@@ -231,11 +231,11 @@ class DrasylPipelineTest {
         when(msg.getPayload()).thenReturn(payload);
         doReturn(payload.getClass()).when(msg).getPayloadClazz();
 
-        pipeline.processInbound(msg);
+        CompletableFuture<Void> future = pipeline.processInbound(msg);
 
         verify(scheduler).scheduleDirect(captor.capture());
         captor.getValue().run();
-        verify(head).fireRead(eq(sender), eq(ObjectHolder.of(payload.getClass(), payload)));
+        verify(head).fireRead(eq(sender), eq(ObjectHolder.of(payload.getClass(), payload)), eq(future));
     }
 
     @Test
@@ -245,11 +245,11 @@ class DrasylPipelineTest {
 
         Event event = mock(Event.class);
 
-        pipeline.processInbound(event);
+        CompletableFuture<Void> future = pipeline.processInbound(event);
 
         verify(scheduler).scheduleDirect(captor.capture());
         captor.getValue().run();
-        verify(head).fireEventTriggered(eq(event));
+        verify(head).fireEventTriggered(eq(event), eq(future));
     }
 
     @Test

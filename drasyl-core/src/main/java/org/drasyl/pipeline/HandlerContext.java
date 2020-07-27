@@ -47,9 +47,8 @@ public interface HandlerContext {
     /**
      * Received an {@link Throwable} in one of the inbound operations.
      * <p>
-     * This will result in having the  {@link InboundHandler#exceptionCaught(HandlerContext,
-     * Exception)} method  called of the next  {@link InboundHandler} contained in the  {@link
-     * Pipeline}.
+     * This will result in having the  {@link Handler#exceptionCaught(HandlerContext, Exception)}
+     * method  called of the next  {@link Handler} contained in the  {@link Pipeline}.
      *
      * @param cause the cause
      */
@@ -58,23 +57,29 @@ public interface HandlerContext {
     /**
      * Received a message.
      * <p>
-     * This will result in having the {@link InboundHandler#read(HandlerContext, Object)} method
-     * called of the next {@link InboundHandler} contained in the {@link Pipeline}.
+     * This will result in having the {@link Handler#read(HandlerContext, CompressedPublicKey,
+     * Object, CompletableFuture)} method called of the next {@link Handler} contained in the {@link
+     * Pipeline}.
      *
      * @param sender the sender of the message
      * @param msg    the message
+     * @param future the future of the message
      */
-    HandlerContext fireRead(CompressedPublicKey sender, Object msg);
+    CompletableFuture<Void> fireRead(CompressedPublicKey sender,
+                                     Object msg,
+                                     CompletableFuture<Void> future);
 
     /**
      * Received an event.
      * <p>
-     * This will result in having the  {@link InboundHandler#eventTriggered(HandlerContext, Event)}
-     * method  called of the next  {@link InboundHandler} contained in the  {@link Pipeline}.
+     * This will result in having the  {@link Handler#eventTriggered(HandlerContext, Event,
+     * CompletableFuture)} method  called of the next  {@link Handler} contained in the  {@link
+     * Pipeline}.
      *
-     * @param event the event
+     * @param event  the event
+     * @param future the future of the message
      */
-    HandlerContext fireEventTriggered(Event event);
+    CompletableFuture<Void> fireEventTriggered(Event event, CompletableFuture<Void> future);
 
     /**
      * Request to write a message via this {@link HandlerContext} through the {@link Pipeline}.
@@ -89,6 +94,7 @@ public interface HandlerContext {
      *
      * @param recipient the recipient of the message
      * @param msg       the message
+     * @param future    the future of the message
      */
     CompletableFuture<Void> write(CompressedPublicKey recipient,
                                   Object msg,

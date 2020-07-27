@@ -27,9 +27,11 @@ import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.codec.DefaultCodec;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.DrasylConsumer;
+import org.drasyl.util.DrasylFunction;
 import org.drasyl.util.DrasylScheduler;
 
 import java.util.Map;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
@@ -38,12 +40,12 @@ import java.util.function.Consumer;
  */
 public class DrasylPipeline extends DefaultPipeline {
     public DrasylPipeline(Consumer<Event> eventConsumer,
-                          DrasylConsumer<ApplicationMessage, DrasylException> outboundConsumer,
+                          DrasylFunction<ApplicationMessage, CompletableFuture<Void>, DrasylException> outboundFunction,
                           DrasylConfig config,
                           Identity identity) {
         this.handlerNames = new ConcurrentHashMap<>();
         this.validator = TypeValidator.of(config);
-        this.head = new HeadContext(outboundConsumer, config, this, DrasylScheduler.getInstanceHeavy(), identity, validator);
+        this.head = new HeadContext(outboundFunction, config, this, DrasylScheduler.getInstanceHeavy(), identity, validator);
         this.tail = new TailContext(eventConsumer, config, this, DrasylScheduler.getInstanceHeavy(), identity, validator);
         this.scheduler = DrasylScheduler.getInstanceLight();
         this.config = config;

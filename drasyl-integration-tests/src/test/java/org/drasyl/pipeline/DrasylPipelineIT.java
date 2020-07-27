@@ -72,7 +72,10 @@ class DrasylPipelineIT {
                 .identityPrivateKey(identity1.getPrivateKey())
                 .build();
 
-        pipeline = new DrasylPipeline(receivedEvents::onNext, outboundMessages::onNext, config, identity1);
+        pipeline = new DrasylPipeline(receivedEvents::onNext, msg -> {
+            outboundMessages.onNext(msg);
+            return CompletableFuture.completedFuture(null);
+        }, config, identity1);
     }
 
     @Test
@@ -87,8 +90,11 @@ class DrasylPipelineIT {
 
         pipeline.addLast("msgChanger", new HandlerAdapter() {
             @Override
-            public void read(HandlerContext ctx, CompressedPublicKey sender, Object msg) {
-                super.read(ctx, identity2.getPublicKey(), newPayload);
+            public void read(HandlerContext ctx,
+                             CompressedPublicKey sender,
+                             Object msg,
+                             CompletableFuture<Void> future) {
+                super.read(ctx, identity2.getPublicKey(), newPayload, future);
             }
         });
 
@@ -111,9 +117,12 @@ class DrasylPipelineIT {
 
         pipeline.addLast("eventProducer", new HandlerAdapter() {
             @Override
-            public void read(HandlerContext ctx, CompressedPublicKey sender, Object msg) {
-                super.read(ctx, sender, msg);
-                ctx.fireEventTriggered(testEvent);
+            public void read(HandlerContext ctx,
+                             CompressedPublicKey sender,
+                             Object msg,
+                             CompletableFuture<Void> future) {
+                super.read(ctx, sender, msg, future);
+                ctx.fireEventTriggered(testEvent, new CompletableFuture<>());
             }
         });
 
@@ -143,8 +152,11 @@ class DrasylPipelineIT {
 
         pipeline.addLast("exceptionProducer", new HandlerAdapter() {
             @Override
-            public void read(HandlerContext ctx, CompressedPublicKey sender, Object msg) {
-                super.read(ctx, sender, msg);
+            public void read(HandlerContext ctx,
+                             CompressedPublicKey sender,
+                             Object msg,
+                             CompletableFuture<Void> future) {
+                super.read(ctx, sender, msg, future);
                 throw exception;
             }
         });

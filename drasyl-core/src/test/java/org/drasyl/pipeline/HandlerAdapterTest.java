@@ -49,6 +49,8 @@ class HandlerAdapterTest {
     private Identity identity;
     @Mock
     private TypeValidator validator;
+    @Mock
+    private CompletableFuture<Void> future;
 
     @Test
     void shouldDoNothing() {
@@ -78,7 +80,6 @@ class HandlerAdapterTest {
 
             CompressedPublicKey recipient = mock(CompressedPublicKey.class);
             Object msg = mock(Object.class);
-            CompletableFuture<Void> future = mock(CompletableFuture.class);
 
             duplexHandler.write(ctx, recipient, msg, future);
 
@@ -95,9 +96,9 @@ class HandlerAdapterTest {
             CompressedPublicKey sender = mock(CompressedPublicKey.class);
             Object msg = mock(Object.class);
 
-            duplexHandler.read(ctx, sender, msg);
+            duplexHandler.read(ctx, sender, msg, future);
 
-            verify(ctx).fireRead(eq(sender), eq(msg));
+            verify(ctx).fireRead(eq(sender), eq(msg), eq(future));
         }
 
         @Test
@@ -106,9 +107,9 @@ class HandlerAdapterTest {
 
             Event event = mock(Event.class);
 
-            duplexHandler.eventTriggered(ctx, event);
+            duplexHandler.eventTriggered(ctx, event, future);
 
-            verify(ctx).fireEventTriggered(eq(event));
+            verify(ctx).fireEventTriggered(eq(event), eq(future));
         }
 
         @Test

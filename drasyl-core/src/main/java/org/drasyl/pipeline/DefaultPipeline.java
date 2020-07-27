@@ -281,13 +281,21 @@ public abstract class DefaultPipeline implements Pipeline {
     }
 
     @Override
-    public void processInbound(ApplicationMessage msg) {
-        this.scheduler.scheduleDirect(() -> this.head.fireRead(msg.getSender(), ObjectHolder.of(msg.getPayloadClazz(), msg.getPayload())));
+    public CompletableFuture<Void> processInbound(ApplicationMessage msg) {
+        CompletableFuture<Void> rtn = new CompletableFuture<>();
+
+        this.scheduler.scheduleDirect(() -> this.head.fireRead(msg.getSender(), ObjectHolder.of(msg.getPayloadClazz(), msg.getPayload()), rtn));
+
+        return rtn;
     }
 
     @Override
-    public void processInbound(Event event) {
-        this.scheduler.scheduleDirect(() -> this.head.fireEventTriggered(event));
+    public CompletableFuture<Void> processInbound(Event event) {
+        CompletableFuture<Void> rtn = new CompletableFuture<>();
+
+        this.scheduler.scheduleDirect(() -> this.head.fireEventTriggered(event, rtn));
+
+        return rtn;
     }
 
     @Override

@@ -27,7 +27,8 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.codec.ObjectHolder;
 import org.drasyl.pipeline.codec.TypeValidator;
-import org.drasyl.util.DrasylConsumer;
+import org.drasyl.util.DrasylFunction;
+import org.drasyl.util.FutureUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -41,16 +42,16 @@ import java.util.concurrent.CompletableFuture;
 class HeadContext extends AbstractHandlerContext implements Handler {
     public static final String DRASYL_HEAD_HANDLER = "DRASYL_HEAD_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(HeadContext.class);
-    private final DrasylConsumer<ApplicationMessage, DrasylException> outboundConsumer;
+    private final DrasylFunction<ApplicationMessage, CompletableFuture<Void>, DrasylException> outboundFunction;
 
-    public HeadContext(DrasylConsumer<ApplicationMessage, DrasylException> outboundConsumer,
+    public HeadContext(DrasylFunction<ApplicationMessage, CompletableFuture<Void>, DrasylException> outboundFunction,
                        DrasylConfig config,
                        Pipeline pipeline,
                        Scheduler scheduler,
                        Identity identity,
                        TypeValidator validator) {
         super(DRASYL_HEAD_HANDLER, config, pipeline, scheduler, identity, validator);
-        this.outboundConsumer = outboundConsumer;
+        this.outboundFunction = outboundFunction;
     }
 
     @Override
@@ -59,13 +60,16 @@ class HeadContext extends AbstractHandlerContext implements Handler {
     }
 
     @Override
-    public void read(HandlerContext ctx, CompressedPublicKey sender, Object msg) {
-        ctx.fireRead(sender, msg);
+    public void read(HandlerContext ctx,
+                     CompressedPublicKey sender,
+                     Object msg,
+                     CompletableFuture<Void> future) {
+        ctx.fireRead(sender, msg, future);
     }
 
     @Override
-    public void eventTriggered(HandlerContext ctx, Event event) {
-        ctx.fireEventTriggered(event);
+    public void eventTriggered(HandlerContext ctx, Event event, CompletableFuture<Void> future) {
+        ctx.fireEventTriggered(event, future);
     }
 
     @Override
@@ -89,8 +93,7 @@ class HeadContext extends AbstractHandlerContext implements Handler {
                 // therefore the msg must be a ObjectHolder at this point
                 if (msg instanceof ObjectHolder) {
                     ObjectHolder oh = (ObjectHolder) msg;
-                    outboundConsumer.accept(new ApplicationMessage(identity().getPublicKey(), recipient, oh.getObject(), oh.getClazz()));
-                    future.complete(null);
+                    FutureUtil.completeOnAllOf(future, outboundFunction.apply(new ApplicationMessage(identity().getPublicKey(), recipient, oh.getObject(), oh.getClazz())));
                 }
                 else {
                     future.completeExceptionally(new IllegalArgumentException("Message must be a ObjectHolder at the end of the pipeline."));
