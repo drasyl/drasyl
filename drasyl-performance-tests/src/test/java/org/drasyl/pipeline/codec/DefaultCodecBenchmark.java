@@ -29,7 +29,6 @@ import org.openjdk.jmh.annotations.Mode;
 import org.openjdk.jmh.annotations.Scope;
 import org.openjdk.jmh.annotations.State;
 
-import java.util.ArrayList;
 import java.util.Random;
 
 import static org.mockito.Mockito.mock;
@@ -61,12 +60,14 @@ public class DefaultCodecBenchmark {
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     public void encode() {
-        DefaultCodec.INSTANCE.encode(ctx, msg, new ArrayList<>());
+        DefaultCodec.INSTANCE.encode(ctx, msg, passOnConsumer -> {
+        });
     }
 
     @Benchmark
     @BenchmarkMode(Mode.Throughput)
     public void decode() {
-        DefaultCodec.INSTANCE.decode(ctx, msgEncoded, new ArrayList<>());
+        DefaultCodec.INSTANCE.decode(ctx, msgEncoded, passOnConsumer -> {
+        });
     }
 }

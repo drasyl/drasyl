@@ -24,7 +24,6 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.pipeline.EmbeddedPipeline;
@@ -39,9 +38,9 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.InputStream;
-import java.util.ArrayList;
 import java.util.Vector;
 import java.util.concurrent.CompletableFuture;
+import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -58,6 +57,8 @@ class DefaultCodecTest {
     private CompressedPublicKey sender;
     @Mock
     private CompressedPublicKey recipient;
+    @Mock
+    private Consumer<Object> passOnConsumer;
     private DrasylConfig config;
 
     @BeforeEach
@@ -83,13 +84,12 @@ class DefaultCodecTest {
         @Test
         void passthroughsOnNotSerializiableMessages() {
             StringBuilder msg = new StringBuilder();
-            ArrayList<Object> out = mock(ArrayList.class);
 
             when(ctx.validator()).thenReturn(TypeValidator.of(config));
 
-            DefaultCodec.INSTANCE.encode(ctx, msg, out);
+            DefaultCodec.INSTANCE.encode(ctx, msg, passOnConsumer);
 
-            verify(out).add(msg);
+            verify(passOnConsumer).accept(msg);
         }
 
         @Test
@@ -97,13 +97,12 @@ class DefaultCodecTest {
             TypeValidator validator = TypeValidator.of(config);
             validator.addClass(InputStream.class);
             InputStream msg = mock(InputStream.class);
-            ArrayList<Object> out = mock(ArrayList.class);
 
             when(ctx.validator()).thenReturn(TypeValidator.of(config));
 
-            DefaultCodec.INSTANCE.encode(ctx, msg, out);
+            DefaultCodec.INSTANCE.encode(ctx, msg, passOnConsumer);
 
-            verify(out).add(msg);
+            verify(passOnConsumer).accept(msg);
         }
 
         @Test
@@ -141,12 +140,11 @@ class DefaultCodecTest {
             ObjectHolder msg = ObjectHolder.of(StringBuilder.class, new byte[]{
                     34, 34
             });
-            ArrayList<Object> out = mock(ArrayList.class);
 
             when(ctx.validator()).thenReturn(TypeValidator.of(config));
-            DefaultCodec.INSTANCE.decode(ctx, msg, out);
+            DefaultCodec.INSTANCE.decode(ctx, msg, passOnConsumer);
 
-            verify(out).add(msg);
+            verify(passOnConsumer).accept(msg);
         }
 
         @Test
@@ -154,12 +152,11 @@ class DefaultCodecTest {
             TypeValidator validator = TypeValidator.of(config);
             validator.addClass(Vector.class);
             ObjectHolder msg = ObjectHolder.of(Vector.class, new byte[]{});
-            ArrayList<Object> out = mock(ArrayList.class);
 
             when(ctx.validator()).thenReturn(TypeValidator.of(config));
-            DefaultCodec.INSTANCE.decode(ctx, msg, out);
+            DefaultCodec.INSTANCE.decode(ctx, msg, passOnConsumer);
 
-            verify(out).add(msg);
+            verify(passOnConsumer).accept(msg);
         }
 
         @Test
