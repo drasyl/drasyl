@@ -31,8 +31,8 @@ public class SecretUtil {
      * #toString()}-call with a asterisk. Can be used to mask secrets (like private keys or
      * passwords).
      *
-     * @param secret
-     * @return
+     * @param secret the secret to be masked
+     * @return a masked secret
      */
     public static String maskSecret(Object secret) {
         if (secret != null) {

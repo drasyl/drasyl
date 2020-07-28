@@ -130,7 +130,7 @@ class SignatureHandlerTest {
     }
 
     @Test
-    void shouldNotPassthroughsMessageWhenPublicKeyCantBeExtracted() throws CryptoException {
+    void shouldNotPassthroughsMessageWhenPublicKeyCantBeExtracted() {
         SignatureHandler handler = new SignatureHandler(identity);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
         QuitMessage message = new QuitMessage();

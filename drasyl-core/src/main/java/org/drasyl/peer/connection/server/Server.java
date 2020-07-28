@@ -97,11 +97,11 @@ public class Server implements DrasylNodeComponent {
      * @param messenger                    the messenger object
      * @param peersManager                 the peers manager
      * @param config                       config that should be used
-     * @param channelGroup
+     * @param channelGroup                 the channel group
      * @param workerGroup                  netty shared worker group
      * @param bossGroup                    netty shared boss group
-     * @param acceptNewConnectionsSupplier
-     * @param nodeEndpoints
+     * @param acceptNewConnectionsSupplier the accept new connections supplier
+     * @param nodeEndpoints                the node endpoints
      */
     public Server(Identity identity,
                   Messenger messenger,

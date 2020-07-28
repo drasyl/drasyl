@@ -7,7 +7,7 @@ public interface DrasylNodeComponent extends AutoCloseable {
     /**
      * Starts the component.
      *
-     * @throws DrasylException
+     * @throws DrasylException if error occurs during opening
      */
     void open() throws DrasylException;
 

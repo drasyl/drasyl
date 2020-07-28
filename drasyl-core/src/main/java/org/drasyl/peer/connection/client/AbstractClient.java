@@ -132,9 +132,9 @@ abstract class AbstractClient implements DrasylNodeComponent {
     @Override
     public void open() {
         if (opened.compareAndSet(false, true)) {
-            getLogger().debug("Start Super Peer Client...");
+            getLogger().debug("Start Client...");
             connect(nextEndpoint());
-            getLogger().debug("Super Peer started");
+            getLogger().debug("Client started");
         }
     }
 
@@ -170,9 +170,7 @@ abstract class AbstractClient implements DrasylNodeComponent {
     }
 
     /**
-     * Returns the next peer's endpoint. Returns <code>null</code> if no endpoint is present.
-     *
-     * @return
+     * @return the next peer's endpoint. Returns <code>null</code> if no endpoint is present
      */
     URI nextEndpoint() {
         try {
@@ -206,10 +204,8 @@ abstract class AbstractClient implements DrasylNodeComponent {
     }
 
     /**
-     * Returns <code>true</code> if the client should attempt to reconnect. Otherwise
-     * <code>false</code> is returned.
-     *
-     * @return
+     * @return <code>true</code> if the client should attempt to reconnect. Otherwise
+     * <code>false</code> is returned
      */
     protected boolean shouldRetry() {
         return opened.get() && acceptNewConnectionsSupplier.getAsBoolean() && !retryDelays.isEmpty();
@@ -224,12 +220,10 @@ abstract class AbstractClient implements DrasylNodeComponent {
     }
 
     /**
-     * Returns the duration of delay before the client should make a new attempt to reconnect to
+     * @return the duration of delay before the client should make a new attempt to reconnect to
      * Server. Iterates over list of all delays specified in configuration. Uses last element
-     * permanently when end of list is reached. If list is empty, a {@link IllegalArgumentException}
-     * is thrown.
-     *
-     * @return
+     * permanently when end of list is reached.
+     * @throws IllegalArgumentException if list is empty
      */
     Duration nextRetryDelay() {
         Duration retryDelay = retryDelays.get(nextRetryDelayPointer.get());
@@ -241,10 +235,10 @@ abstract class AbstractClient implements DrasylNodeComponent {
     public void close() {
         if (opened.compareAndSet(true, false) && channel != null) {
             // close connection
-            getLogger().info("Stop Super Peer Client...");
+            getLogger().info("Stop Client...");
             channel.close().syncUninterruptibly();
             channel = null;
-            getLogger().info("Super Peer Client stopped");
+            getLogger().info("Client stopped");
         }
     }
 

@@ -115,7 +115,7 @@ public class PeersManager {
         try {
             lock.readLock().lock();
 
-            // It is nessary to create a new HashMap, because otherwise this can raise a
+            // It is necessary to create a new HashMap because otherwise, this can raise a
             // ConcurrentModificationException.
             // See: https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/77
             return Map.copyOf(new HashMap<>(peers).entrySet().stream()
@@ -128,6 +128,9 @@ public class PeersManager {
         }
     }
 
+    /**
+     * @return a map with the routes of our grandchildren
+     */
     public Map<CompressedPublicKey, CompressedPublicKey> getGrandchildrenRoutes() {
         try {
             lock.readLock().lock();
@@ -140,10 +143,8 @@ public class PeersManager {
     }
 
     /**
-     * Returns public key and information about Super Peer. If no Super Peer is defined, then
-     * <code>null</code> is returned.
-     *
-     * @return
+     * @return public key and information about Super Peer. If no Super Peer is defined, then
+     * <code>null</code> is returned
      */
     public Triple<CompressedPublicKey, PeerInformation, Set<Path>> getSuperPeer() {
         try {

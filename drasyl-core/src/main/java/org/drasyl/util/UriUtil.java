@@ -33,9 +33,9 @@ public class UriUtil {
      * This method sets the port in <code>uri</code> to <code>port</code> and returns the resulting
      * URI.
      *
-     * @param uri
-     * @param port
-     * @return
+     * @param uri  the base URI
+     * @param port the port
+     * @return a combined URI and port URI
      */
     public static URI overridePort(URI uri, int port) {
         try {

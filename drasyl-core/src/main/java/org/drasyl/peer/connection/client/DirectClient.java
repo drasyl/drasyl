@@ -87,7 +87,7 @@ public class DirectClient extends AbstractClient {
     /**
      * Should only make a new connection attempt if there is still a demand for it.
      *
-     * @return
+     * @return if a retry should be made
      */
     @Override
     protected boolean shouldRetry() {
@@ -95,7 +95,8 @@ public class DirectClient extends AbstractClient {
     }
 
     /**
-     * Call <code>onFailure</code> if the client can permanently not establish a connection anymore.
+     * Call <code>onFailure</code> if the client can permanently not establish a connection
+     * anymore.
      */
     @Override
     protected void failed() {

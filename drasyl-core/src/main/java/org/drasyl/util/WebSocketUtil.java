@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.util;
 
 import java.net.URI;
@@ -33,12 +32,10 @@ public class WebSocketUtil {
     }
 
     /**
-     * Returns the port in the Websocket URI. If no custom port is specified, the protocol default
-     * port is assumed. If no port could be determined, a {@link IllegalArgumentException} is
-     * thrown.
-     *
-     * @param uri
-     * @return
+     * @param uri the URI to be used for determining the WebSocket URI
+     * @return the port in the WebSocket URI. If no custom port is specified, the protocol default
+     * port is assumed
+     * @throws IllegalArgumentException ff no port could be determined
      */
     public static int webSocketPort(URI uri) {
         int port = uri.getPort();
@@ -63,34 +60,27 @@ public class WebSocketUtil {
     }
 
     /**
-     * Returns <code>true</code> if <code>uri</code> is a Websocket Secure URI. Otherwise, returns
-     * <code>false</code>.
-     *
-     * @param uri
-     * @return
+     * @param uri the URI to be checked
+     * @return <code>true</code> if <code>uri</code> is a WebSocket Secure URI. Otherwise, returns
+     * <code>false</code>
      */
     public static boolean isWebSocketSecureURI(URI uri) {
         return uri.getScheme() != null && uri.getScheme().equals("wss");
     }
 
     /**
-     * Returns <code>true</code> if <code>uri</code> is a non-secure Websocket URI. Otherwise,
-     * returns
-     * <code>false</code>.
-     *
-     * @param uri
-     * @return
+     * @param uri the URI to be checked
+     * @return <code>true</code> if <code>uri</code> is a non-secure Websocket URI. Otherwise,
+     * returns <code>false</code>
      */
     public static boolean isWebSocketNonSecureURI(URI uri) {
         return uri.getScheme() != null && uri.getScheme().equals("ws");
     }
 
     /**
-     * Returns <code>true</code> if <code>uri</code> is Websocket URI. Otherwise, returns
-     * <code>false</code>.
-     *
-     * @param uri
-     * @return
+     * @param uri the URI to be checked
+     * @return <code>true</code> if <code>uri</code> is Websocket URI. Otherwise, returns
+     * <code>false</code>
      */
     public static boolean isWebSocketURI(URI uri) {
         return isWebSocketNonSecureURI(uri) || isWebSocketSecureURI(uri);

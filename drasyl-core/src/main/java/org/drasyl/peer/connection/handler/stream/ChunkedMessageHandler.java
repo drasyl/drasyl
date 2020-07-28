@@ -66,7 +66,7 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx,
-                                ChunkedMessage msg) throws Exception {
+                                ChunkedMessage msg) {
         if (!msg.getRecipient().equals(myIdentity)) {
             // Only relaying...
             ReferenceCountUtil.retain(msg);
@@ -106,7 +106,7 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
 
     @Override
     protected void channelWrite0(ChannelHandlerContext ctx,
-                                 ApplicationMessage msg, ChannelPromise promise) throws Exception {
+                                 ApplicationMessage msg, ChannelPromise promise) {
         if (msg.getPayload().length > maxContentLength) {
             if (LOG.isWarnEnabled()) {
                 LOG.warn("[{}]: Payload is bigger than max content length. Message with id `{}` was not sent.", ctx.channel().id().asShortText(), msg.getId());

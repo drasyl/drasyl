@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.util;
 
 /**
@@ -30,8 +29,8 @@ public class LoggingUtil {
     /**
      * Cleans <code>obj</code> from line breaks and returns them as \n or \r.
      *
-     * @param obj
-     * @return
+     * @param obj the object to be cleaned
+     * @return cleaned string
      */
     public static String sanitizeLogArg(Object obj) {
         if (obj != null) {

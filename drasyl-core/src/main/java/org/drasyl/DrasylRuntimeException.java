@@ -45,7 +45,7 @@ public class DrasylRuntimeException extends RuntimeException {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        DrasylException that = (DrasylException) o;
+        DrasylRuntimeException that = (DrasylRuntimeException) o;
         return Objects.equals(getCause(), that.getCause()) &&
                 Objects.equals(getMessage(), that.getMessage());
     }

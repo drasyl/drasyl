@@ -58,6 +58,7 @@ public abstract class AbstractThreeWayHandshakeServerHandler<R extends RequestMe
     }
 
     @Override
+    @SuppressWarnings("unchecked")
     protected void doHandshake(ChannelHandlerContext ctx, Message message) {
         try {
             if (message instanceof RequestMessage && this.requestMessage == null) {

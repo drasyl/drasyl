@@ -20,12 +20,8 @@ package org.drasyl.peer.connection.server;
 
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.socket.SocketChannel;
 import org.drasyl.DrasylConfig;
-import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.util.NetworkUtil;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -56,8 +52,6 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ServerTest {
-    @Mock
-    private Identity identity;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private DrasylConfig config;
     @Mock
@@ -65,13 +59,7 @@ class ServerTest {
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private ServerBootstrap serverBootstrap;
     @Mock
-    private EventLoopGroup workerGroup;
-    @Mock
     private EventLoopGroup bossGroup;
-    @Mock
-    private ChannelInitializer<SocketChannel> channelInitializer;
-    @Mock
-    private PeerChannelGroup channelGroup;
 
     @Nested
     class Open {
