@@ -49,7 +49,7 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
      * Creates new welcome message.
      *
      * @param peerInformation the peer information of the node server
-     * @param correspondingId
+     * @param correspondingId the corresponding id of the previous join message
      */
     public WelcomeMessage(PeerInformation peerInformation,
                           MessageId correspondingId) {

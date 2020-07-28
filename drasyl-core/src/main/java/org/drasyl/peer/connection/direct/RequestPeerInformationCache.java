@@ -31,12 +31,11 @@ public class RequestPeerInformationCache {
     }
 
     /**
-     * Adds <code>publicKey</code> to the cache if it is not already cached. Returns
-     * <code>true</code> if the key was not already cached. Otherwise <code>false</code> is
-     * returned.
+     * Adds <code>publicKey</code> to the cache if it is not already cached.
      *
-     * @param publicKey
-     * @return
+     * @param publicKey the public key that should be added
+     * @return <code>true</code> if the key was not already cached, otherwise <code>false</code> is
+     * returned
      */
     public boolean add(CompressedPublicKey publicKey) {
         return cache.putIfAbsent(publicKey, Boolean.TRUE) == null;

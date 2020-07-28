@@ -25,7 +25,6 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler;
 import io.netty.handler.flush.FlushConsolidationHandler;
 import io.netty.handler.ssl.SslHandler;
-import org.drasyl.peer.connection.client.ClientChannelInitializer;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -35,7 +34,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.time.Duration;
-import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.any;
@@ -48,8 +46,6 @@ class ClientChannelInitializerTest {
     private Duration readIdleTimeout;
     private short pingPongRetries;
     private URI ipAddress;
-    @Mock
-    private CompletableFuture<Void> channelReadyFuture;
     @Mock
     private ChannelPipeline pipeline;
 

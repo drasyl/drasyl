@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.peer.connection.message;
 
 /**
@@ -25,9 +24,7 @@ package org.drasyl.peer.connection.message;
 @SuppressWarnings("java:S2326")
 public interface ResponseMessage<R extends RequestMessage> extends Message {
     /**
-     * Returns the id of the {@link RequestMessage} to which this response corresponds.
-     *
-     * @return
+     * @return the id of the {@link RequestMessage} to which this response corresponds
      */
     MessageId getCorrespondingId();
 }

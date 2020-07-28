@@ -92,7 +92,7 @@ public class PingPongHandler extends SimpleChannelInboundHandler<Message> {
             retries.set(0);
         }
         else {
-            // passthrough all other messages
+            // passthroughs all other messages
             ctx.fireChannelRead(msg);
         }
     }

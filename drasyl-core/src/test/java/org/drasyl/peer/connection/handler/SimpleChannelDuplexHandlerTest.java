@@ -57,14 +57,14 @@ class SimpleChannelDuplexHandlerTest {
     void testWrite0AndRead0() throws Exception {
         SimpleChannelDuplexHandler handler = new SimpleChannelDuplexHandler<Integer, String>() {
             @Override
-            protected void channelRead0(ChannelHandlerContext ctx, Integer msg) throws Exception {
+            protected void channelRead0(ChannelHandlerContext ctx, Integer msg) {
                 assertEquals(i, msg);
             }
 
             @Override
             protected void channelWrite0(ChannelHandlerContext ctx,
                                          String msg,
-                                         ChannelPromise promise) throws Exception {
+                                         ChannelPromise promise) {
                 assertEquals(o, msg);
             }
         };
@@ -77,17 +77,17 @@ class SimpleChannelDuplexHandlerTest {
 
     @Test
     void testNoMatch() throws Exception {
-        SimpleChannelDuplexHandler handler = new SimpleChannelDuplexHandler<>(Exception.class,
+        SimpleChannelDuplexHandler<Exception, Number> handler = new SimpleChannelDuplexHandler<>(Exception.class,
                 Number.class) {
             @Override
-            protected void channelRead0(ChannelHandlerContext ctx, Exception msg) throws Exception {
+            protected void channelRead0(ChannelHandlerContext ctx, Exception msg) {
                 fail("this should not be triggered!");
             }
 
             @Override
             protected void channelWrite0(ChannelHandlerContext ctx,
                                          Number msg,
-                                         ChannelPromise promise) throws Exception {
+                                         ChannelPromise promise) {
                 fail("this should not be triggered!");
             }
         };

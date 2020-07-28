@@ -87,7 +87,7 @@ class PublicKeyExchangeHandlerTest {
     }
 
     @Test
-    void shouldEmitEventKeyIsInConfig() throws Exception {
+    void shouldEmitEventKeyIsInConfig() {
         when(ctx.channel()).thenReturn(mockedChannel);
         when(mockedChannel.attr(ATTRIBUTE_PUBLIC_KEY)).thenReturn(mockedAttribute);
         when(ctx.pipeline()).thenReturn(pipeline);
@@ -102,7 +102,7 @@ class PublicKeyExchangeHandlerTest {
     }
 
     @Test
-    void shouldEmitEventKeyIsNotInConfig() throws Exception {
+    void shouldEmitEventKeyIsNotInConfig() {
         when(ctx.channel()).thenReturn(mockedChannel);
         when(mockedChannel.attr(ATTRIBUTE_PUBLIC_KEY)).thenReturn(mockedAttribute);
         when(ctx.pipeline()).thenReturn(pipeline);
@@ -117,7 +117,7 @@ class PublicKeyExchangeHandlerTest {
     }
 
     @Test
-    void shouldCloseConnectionOnWrongKey() throws Exception {
+    void shouldCloseConnectionOnWrongKey() {
         when(ctx.writeAndFlush(any())).thenReturn(mock(ChannelFuture.class));
 
         PublicKeyExchangeHandler handler = new PublicKeyExchangeHandler(mock(CompressedPublicKey.class), timeout, requestID, timeoutFuture);
@@ -131,7 +131,7 @@ class PublicKeyExchangeHandlerTest {
     }
 
     @Test
-    void shouldNotMatchingMessagePassOn() throws Exception {
+    void shouldNotMatchingMessagePassOn() {
         PublicKeyExchangeHandler handler = new PublicKeyExchangeHandler(mock(CompressedPublicKey.class), timeout, requestID, timeoutFuture);
 
         IamMessage msg = new IamMessage(mockedPublicKey, new MessageId("6d1a9c2d27fa8281a4933a60"));

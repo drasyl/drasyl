@@ -33,18 +33,16 @@ public class DirectConnectionDemandsCache {
     /**
      * Adds <code>publicKey</code> to the cache.
      *
-     * @param publicKey
+     * @param publicKey public key to be added
      */
     public void add(CompressedPublicKey publicKey) {
         cache.put(publicKey, Boolean.TRUE);
     }
 
     /**
-     * Returns <code>true</code>, if <code>publicKey</code> is contained in cache. Otherwise
-     * <code>false</code> is returned.
-     *
-     * @param publicKey
-     * @return
+     * @param publicKey the public key to be checked
+     * @return <code>true</code>, if <code>publicKey</code> is contained in cache. Otherwise
+     * <code>false</code> is returned
      */
     public boolean contains(CompressedPublicKey publicKey) {
         return cache.containsKey(publicKey);

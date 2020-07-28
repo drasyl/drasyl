@@ -63,7 +63,7 @@ public class PublicKeyExchangeHandler extends SimpleChannelInboundHandler<IamMes
     }
 
     @Override
-    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+    public void handlerAdded(ChannelHandlerContext ctx) {
         this.timeoutFuture = ctx.executor().schedule(() ->
                         ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE_TIMEOUT))
                 , timeout.toMillis(), MILLISECONDS);
@@ -85,7 +85,7 @@ public class PublicKeyExchangeHandler extends SimpleChannelInboundHandler<IamMes
 
     @Override
     protected void channelRead0(ChannelHandlerContext ctx,
-                                IamMessage msg) throws Exception {
+                                IamMessage msg) {
         if (msg.getCorrespondingId().equals(requestID)) {
             timeoutFuture.cancel(true);
             if (serverPublicKey != null && !serverPublicKey.equals(msg.getPublicKey())) {

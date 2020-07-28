@@ -66,7 +66,7 @@ class SimpleChannelOutboundHandlerTest {
             @Override
             protected void channelWrite0(ChannelHandlerContext ctx,
                                          String msg,
-                                         ChannelPromise promise) throws Exception {
+                                         ChannelPromise promise) {
                 assertEquals(o, msg);
             }
         };
@@ -82,7 +82,7 @@ class SimpleChannelOutboundHandlerTest {
             @Override
             protected void channelWrite0(ChannelHandlerContext ctx,
                                          Number msg,
-                                         ChannelPromise promise) throws Exception {
+                                         ChannelPromise promise) {
                 fail("this should not be triggered!");
             }
         };

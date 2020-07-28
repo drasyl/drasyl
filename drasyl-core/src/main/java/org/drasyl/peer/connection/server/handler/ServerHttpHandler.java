@@ -102,7 +102,7 @@ public class ServerHttpHandler extends SimpleChannelInboundHandler<FullHttpReque
             sendHttpResponse(ctx, res);
         }
         else {
-            // return "not found" for all other pathes
+            // return "not found" for all other path's
             sendHttpResponse(ctx, new DefaultFullHttpResponse(req.protocolVersion(), NOT_FOUND,
                     ctx.alloc().buffer(0)));
         }

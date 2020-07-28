@@ -169,7 +169,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
      * This method notifies the {@link DirectConnectionsManager} that a direct connection with
      * <code>publicKey</code> occurred.
      *
-     * @param publicKey
+     * @param publicKey the public key
      */
     void communicationOccurred(CompressedPublicKey publicKey) {
         if (opened.get()) {
@@ -209,7 +209,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
      * <code>publicKey</code>. Ensures that the information is not requested too often.
      * Fails silently if the request could not be made.
      *
-     * @param publicKey
+     * @param publicKey the public key
      */
     private void requestPeerInformation(CompressedPublicKey publicKey) {
         if (requestPeerInformationCache.add(publicKey)) {
@@ -232,7 +232,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
      * released if a connection is terminated and there is no longer a demand for a direct
      * connection to the peer.
      *
-     * @param publicKey
+     * @param publicKey the public key
      */
     private void initiateDirectConnectionOnDemand(CompressedPublicKey publicKey) {
         if (directConnectionDemandsCache.contains(publicKey)) {

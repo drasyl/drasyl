@@ -41,7 +41,9 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 public abstract class AbstractThreeWayHandshakeClientHandler<R extends RequestMessage, O extends ResponseMessage<?>> extends AbstractThreeWayHandshakeHandler {
     private final R requestMessage;
 
-    protected AbstractThreeWayHandshakeClientHandler(Duration timeout, Messenger messenger, R requestMessage) {
+    protected AbstractThreeWayHandshakeClientHandler(Duration timeout,
+                                                     Messenger messenger,
+                                                     R requestMessage) {
         super(timeout, messenger);
         this.requestMessage = requestMessage;
     }
@@ -63,6 +65,7 @@ public abstract class AbstractThreeWayHandshakeClientHandler<R extends RequestMe
             }
             else {
                 try {
+                    @SuppressWarnings("unchecked")
                     O offerMessage = (O) message;
                     ConnectionExceptionMessage.Error error = validateSessionOffer(offerMessage);
                     if (error == null) {
@@ -114,8 +117,9 @@ public abstract class AbstractThreeWayHandshakeClientHandler<R extends RequestMe
      * ConnectionExceptionMessage.Error} in case of error. Otherwise <code>null</code> must be
      * returned.
      *
-     * @param offerMessage
-     * @return
+     * @param offerMessage the message that should be validated
+     * @return {@link ConnectionExceptionMessage.Error} in case of error, otherwise
+     * <code>null</code>
      */
     protected abstract ConnectionExceptionMessage.Error validateSessionOffer(O offerMessage);
 
