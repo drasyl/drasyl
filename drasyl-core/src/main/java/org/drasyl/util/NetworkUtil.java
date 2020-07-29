@@ -18,6 +18,10 @@
  */
 package org.drasyl.util;
 
+import org.drasyl.crypto.Crypto;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -30,12 +34,15 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.net.URL;
+import java.net.URLConnection;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
+
+import static org.drasyl.util.UrlUtil.createUrl;
 
 /**
  * Utility class for network-related operations.
@@ -49,16 +56,26 @@ public final class NetworkUtil {
      * The maximum server port number.
      */
     public static final int MAX_PORT_NUMBER = 65535;
+    private static final Logger LOG = LoggerFactory.getLogger(NetworkUtil.class);
     /**
-     * Domains for IP detection.
+     * Services for external IPv4 address detection.
      */
-    private static final String[] ipCheckTools = {
-            "http://checkip.amazonaws.com",
-            "http://ipv4.icanhazip.com",
-            "http://bot.whatismyipaddress.com",
-            "http://myexternalip.com/raw",
-            "http://ipecho.net/plain",
-            "http://ifconfig.me/ip"
+    private static final URL[] EXTERNAL_IPV4_ADDRESS_SERVICES = {
+            createUrl("https://checkip.amazonaws.com"),
+            createUrl("https://ipv4.icanhazip.com"),
+            createUrl("https://ipv4.wtfismyip.com/text"),
+            createUrl("https://myexternalip.com/raw"),
+            createUrl("https://ipecho.net/plain"),
+            createUrl("https://ifconfig.me/ip"),
+            createUrl("https://ipv4.ipecho.roebert.eu")
+    };
+    /**
+     * Services for external IPv6 address detection.
+     */
+    private static final URL[] EXTERNAL_IPV6_ADDRESS_SERVICES = {
+            createUrl("https://ipv6.icanhazip.com"),
+            createUrl("https://ipv6.wtfismyip.com/text"),
+            createUrl("https://ipv6.ipecho.roebert.eu")
     };
 
     private NetworkUtil() {
@@ -66,46 +83,62 @@ public final class NetworkUtil {
     }
 
     /**
-     * Determines the external IP address.
+     * Determines the external IPv4 address.
      *
-     * @return the external IP address
-     * @throws IOException if the IP address cloud not resolve
+     * @return the external IPv4 address or {@code null} in case of error
      */
-    public static String getExternalIPAddress() throws IOException {
-        String ipAddress = null;
-        IOException ex = null;
-        for (String checker : ipCheckTools) {
-            try {
-                URL checkerURL = new URL(checker);
-
-                try (BufferedReader in = new BufferedReader(new InputStreamReader(checkerURL.openStream()))) {
-                    ipAddress = in.readLine();
-                    if (!isEmpty(ipAddress)) {
-                        break;
-                    }
-                }
-            }
-            catch (IOException e) {
-                ex = e;
-            }
-        }
-        if (isEmpty(ipAddress)) {
-            if (ex != null) {
-                throw ex;
-            }
-            throw new IOException("External IP address couldn't be resolved.");
-        }
-
-        return ipAddress;
+    public static Inet4Address getExternalIPv4Address() {
+        return getExternalIPAddress(EXTERNAL_IPV4_ADDRESS_SERVICES);
     }
 
     /**
-     * Checks if a CharSequence is empty ("") or null.
+     * Determines the external IP address.
+     * <p>
+     * Note: This is a blocking method, because it connects to external server that may react slowly
+     * or not at all.
      *
-     * @param cs the CharSequence to check, may be null
+     * @return the external IP address or {@code null} in case of error
      */
-    private static boolean isEmpty(final CharSequence cs) {
-        return cs == null || cs.length() == 0;
+    private static <T extends InetAddress> T getExternalIPAddress(URL[] providers) {
+        // distribute requests across all available ip check tools
+        int randomOffset = Crypto.randomNumber(providers.length);
+        for (int i = 0; i < providers.length; i++) {
+            URL provider = providers[(i + randomOffset) % providers.length];
+
+            try {
+                URLConnection connection = provider.openConnection();
+                connection.setConnectTimeout(5000);
+                connection.setReadTimeout(5000);
+                connection.getInputStream();
+
+                LOG.debug("Request external ip address from service '{}'...", provider);
+
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                    String response = reader.readLine();
+                    @SuppressWarnings("unchecked")
+                    T address = (T) InetAddress.getByName(response);
+                    if (!address.isLoopbackAddress() && !address.isAnyLocalAddress() && !address.isSiteLocalAddress()) {
+                        LOG.debug("Got external ip address '{}' from service '{}'", address, provider);
+                        return address;
+                    }
+                }
+            }
+            catch (IOException | ClassCastException e) {
+                // do nothing, skip to next provider
+            }
+        }
+
+        // no provider was successful
+        return null;
+    }
+
+    /**
+     * Determines the external IPv6 address.
+     *
+     * @return the external IPv6 address or {@code null} in case of error
+     */
+    public static Inet6Address getExternalIPv6Address() {
+        return getExternalIPAddress(EXTERNAL_IPV6_ADDRESS_SERVICES);
     }
 
     /**

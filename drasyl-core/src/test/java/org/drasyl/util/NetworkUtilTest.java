@@ -22,25 +22,42 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
+import java.net.Inet4Address;
+import java.net.Inet6Address;
 import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.UnknownHostException;
 
 import static org.drasyl.util.NetworkUtil.createInetAddress;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class NetworkUtilTest {
     @Nested
-    class GetExternalIPAddress {
+    class GetExternalIPv4Address {
         @Test
-        void shouldReturnCorrectValue() throws IOException {
-            assertNotNull(NetworkUtil.getExternalIPAddress());
-            assertNotEquals("", NetworkUtil.getExternalIPAddress());
+        void shouldReturnExternalIPv4Address() {
+            InetAddress address = NetworkUtil.getExternalIPv4Address();
+
+            if (address != null) {
+                assertThat(address, instanceOf(Inet4Address.class));
+            }
+        }
+    }
+
+    @Nested
+    class GetExternalIPv6Address {
+        @Test
+        void shouldReturnExternalIPv6Address() {
+            InetAddress address = NetworkUtil.getExternalIPv6Address();
+
+            if (address != null) {
+                assertThat(address, instanceOf(Inet6Address.class));
+            }
         }
     }
 
