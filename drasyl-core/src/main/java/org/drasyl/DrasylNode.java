@@ -45,6 +45,7 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.client.SuperPeerClient;
 import org.drasyl.peer.connection.direct.DirectConnectionsManager;
+import org.drasyl.peer.connection.localhost.LocalHostDiscovery;
 import org.drasyl.peer.connection.intravm.IntraVmDiscovery;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.IdentityMessage;
@@ -178,6 +179,9 @@ public abstract class DrasylNode {
             }
             if (config.isServerEnabled()) {
                 this.components.add(new Server(identity, messenger, peersManager, this.config, channelGroup, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP, endpoints, acceptNewConnections::get));
+            }
+            if (config.isLocalHostDiscoveryEnabled()) {
+                this.components.add(new LocalHostDiscovery(this.config, identity.getPublicKey(), peersManager, endpoints, messenger.communicationOccurred()));
             }
             if (config.isMonitoringEnabled()) {
                 this.components.add(new Monitoring(config, peersManager, identity.getPublicKey(), pipeline));

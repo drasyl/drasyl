@@ -82,6 +82,9 @@ public class DrasylConfig {
     static final String SUPER_PEER_IDLE_RETRIES = "drasyl.super-peer.idle.retries";
     static final String SUPER_PEER_IDLE_TIMEOUT = "drasyl.super-peer.idle.timeout";
     static final String INTRA_VM_DISCOVERY_ENABLED = "drasyl.intra-vm-discovery.enabled";
+    static final String LOCAL_HOST_DISCOVERY_ENABLED = "drasyl.local-host-discovery.enabled";
+    static final String LOCAL_HOST_DISCOVERY_PATH = "drasyl.local-host-discovery.path";
+    static final String LOCAL_HOST_DISCOVERY_LEASE_TIME = "drasyl.local-host-discovery.lease-time";
     static final String DIRECT_CONNECTIONS_ENABLED = "drasyl.direct-connections.enabled";
     static final String DIRECT_CONNECTIONS_MAX_CONCURRENT_CONNECTIONS = "drasyl.direct-connections.max-concurrent-connections";
     static final String DIRECT_CONNECTIONS_RETRY_DELAYS = "drasyl.direct-connections.retry-delays";
@@ -129,6 +132,9 @@ public class DrasylConfig {
     private final short superPeerIdleRetries;
     private final Duration superPeerIdleTimeout;
     private final boolean intraVmDiscoveryEnabled;
+    private final boolean localHostDiscoveryEnabled;
+    private final Path localHostDiscoveryPath;
+    private final Duration localHostDiscoveryLeaseTime;
     private final boolean directConnectionsEnabled;
     private final int directConnectionsMaxConcurrentConnections;
     private final List<Duration> directConnectionsRetryDelays;
@@ -216,6 +222,16 @@ public class DrasylConfig {
         this.superPeerIdleTimeout = config.getDuration(SUPER_PEER_IDLE_TIMEOUT);
 
         this.intraVmDiscoveryEnabled = config.getBoolean(INTRA_VM_DISCOVERY_ENABLED);
+
+        // Init local host discovery config
+        this.localHostDiscoveryEnabled = config.getBoolean(LOCAL_HOST_DISCOVERY_ENABLED);
+        if (!config.getString(LOCAL_HOST_DISCOVERY_PATH).equals("")) {
+            this.localHostDiscoveryPath = getPath(config, LOCAL_HOST_DISCOVERY_PATH);
+        }
+        else {
+            this.localHostDiscoveryPath = Paths.get(System.getProperty("java.io.tmpdir"), "drasyl-discovery");
+        }
+        this.localHostDiscoveryLeaseTime = config.getDuration(LOCAL_HOST_DISCOVERY_LEASE_TIME);
 
         // Init direct connections config
         this.directConnectionsEnabled = config.getBoolean(DIRECT_CONNECTIONS_ENABLED);
@@ -408,7 +424,9 @@ public class DrasylConfig {
                  short superPeerIdleRetries,
                  Duration superPeerIdleTimeout,
                  boolean intraVmDiscoveryEnabled,
-                 boolean directConnectionsEnabled,
+                 boolean localHostDiscoveryEnabled,
+                 Path localHostDiscoveryPath,
+                 Duration localHostDiscoveryLeaseTime, boolean directConnectionsEnabled,
                  int directConnectionsMaxConcurrentConnections,
                  List<Duration> directConnectionsRetryDelays,
                  Duration directConnectionsHandshakeTimeout,
@@ -454,6 +472,9 @@ public class DrasylConfig {
         this.superPeerIdleRetries = superPeerIdleRetries;
         this.superPeerIdleTimeout = superPeerIdleTimeout;
         this.intraVmDiscoveryEnabled = intraVmDiscoveryEnabled;
+        this.localHostDiscoveryEnabled = localHostDiscoveryEnabled;
+        this.localHostDiscoveryPath = localHostDiscoveryPath;
+        this.localHostDiscoveryLeaseTime = localHostDiscoveryLeaseTime;
         this.directConnectionsEnabled = directConnectionsEnabled;
         this.directConnectionsMaxConcurrentConnections = directConnectionsMaxConcurrentConnections;
         this.directConnectionsRetryDelays = directConnectionsRetryDelays;
@@ -610,6 +631,18 @@ public class DrasylConfig {
         return intraVmDiscoveryEnabled;
     }
 
+    public boolean isLocalHostDiscoveryEnabled() {
+        return localHostDiscoveryEnabled;
+    }
+
+    public Path getLocalHostDiscoveryPath() {
+        return localHostDiscoveryPath;
+    }
+
+    public Duration getLocalHostDiscoveryLeaseTime() {
+        return localHostDiscoveryLeaseTime;
+    }
+
     public boolean areDirectConnectionsEnabled() {
         return directConnectionsEnabled;
     }
@@ -668,7 +701,8 @@ public class DrasylConfig {
                 messageMaxContentLength, messageHopLimit, messageComposedMessageTransferTimeout,
                 superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays,
                 superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries,
-                superPeerIdleTimeout, intraVmDiscoveryEnabled, directConnectionsEnabled,
+                superPeerIdleTimeout, intraVmDiscoveryEnabled, localHostDiscoveryEnabled,
+                localHostDiscoveryPath, localHostDiscoveryLeaseTime, directConnectionsEnabled,
                 directConnectionsMaxConcurrentConnections, directConnectionsRetryDelays,
                 directConnectionsHandshakeTimeout, directConnectionsChannelInitializer,
                 directConnectionsIdleRetries, directConnectionsIdleTimeout, monitoringEnabled,
@@ -697,6 +731,7 @@ public class DrasylConfig {
                 superPeerEnabled == that.superPeerEnabled &&
                 superPeerIdleRetries == that.superPeerIdleRetries &&
                 intraVmDiscoveryEnabled == that.intraVmDiscoveryEnabled &&
+                localHostDiscoveryEnabled == that.localHostDiscoveryEnabled &&
                 directConnectionsEnabled == that.directConnectionsEnabled &&
                 directConnectionsMaxConcurrentConnections == that.directConnectionsMaxConcurrentConnections &&
                 directConnectionsIdleRetries == that.directConnectionsIdleRetries &&
@@ -719,6 +754,8 @@ public class DrasylConfig {
                 Objects.equals(superPeerHandshakeTimeout, that.superPeerHandshakeTimeout) &&
                 Objects.equals(superPeerChannelInitializer, that.superPeerChannelInitializer) &&
                 Objects.equals(superPeerIdleTimeout, that.superPeerIdleTimeout) &&
+                Objects.equals(localHostDiscoveryPath, that.localHostDiscoveryPath) &&
+                Objects.equals(localHostDiscoveryLeaseTime, that.localHostDiscoveryLeaseTime) &&
                 Objects.equals(directConnectionsRetryDelays, that.directConnectionsRetryDelays) &&
                 Objects.equals(directConnectionsHandshakeTimeout, that.directConnectionsHandshakeTimeout) &&
                 Objects.equals(directConnectionsChannelInitializer, that.directConnectionsChannelInitializer) &&
@@ -766,6 +803,9 @@ public class DrasylConfig {
                 ", superPeerIdleRetries=" + superPeerIdleRetries +
                 ", superPeerIdleTimeout=" + superPeerIdleTimeout +
                 ", intraVmDiscoveryEnabled=" + intraVmDiscoveryEnabled +
+                ", localHostDiscoveryEnabled=" + localHostDiscoveryEnabled +
+                ", localHostDiscoveryPath=" + localHostDiscoveryPath +
+                ", localHostDiscoveryLeaseTime=" + localHostDiscoveryLeaseTime +
                 ", directConnectionsEnabled=" + directConnectionsEnabled +
                 ", directConnectionsMaxConcurrentConnections=" + directConnectionsMaxConcurrentConnections +
                 ", directConnectionsRetryDelays=" + directConnectionsRetryDelays +
@@ -825,6 +865,9 @@ public class DrasylConfig {
                 config.superPeerIdleRetries,
                 config.superPeerIdleTimeout,
                 config.intraVmDiscoveryEnabled,
+                config.localHostDiscoveryEnabled,
+                config.localHostDiscoveryPath,
+                config.localHostDiscoveryLeaseTime,
                 config.directConnectionsEnabled,
                 config.directConnectionsMaxConcurrentConnections,
                 config.directConnectionsRetryDelays,
@@ -879,6 +922,9 @@ public class DrasylConfig {
         private short superPeerIdleRetries;
         private Duration superPeerIdleTimeout;
         private boolean intraVmDiscoveryEnabled;
+        private boolean localHostDiscoveryEnabled;
+        private Path localHostDiscoveryPath;
+        private Duration localHostDiscoveryLeaseTime;
         private boolean directConnectionsEnabled;
         private int directConnectionsMaxConcurrentConnections;
         private List<Duration> directConnectionsRetryDelays;
@@ -927,6 +973,9 @@ public class DrasylConfig {
                         short superPeerIdleRetries,
                         Duration superPeerIdleTimeout,
                         boolean intraVmDiscoveryEnabled,
+                        boolean localHostDiscoveryEnabled,
+                        Path localHostDiscoveryPath,
+                        Duration localHostDiscoveryLeaseTime,
                         boolean directConnectionsEnabled,
                         int directConnectionsMaxConcurrentConnections,
                         List<Duration> directConnectionsRetryDelays,
@@ -973,6 +1022,9 @@ public class DrasylConfig {
             this.superPeerIdleRetries = superPeerIdleRetries;
             this.superPeerIdleTimeout = superPeerIdleTimeout;
             this.intraVmDiscoveryEnabled = intraVmDiscoveryEnabled;
+            this.localHostDiscoveryEnabled = localHostDiscoveryEnabled;
+            this.localHostDiscoveryPath = localHostDiscoveryPath;
+            this.localHostDiscoveryLeaseTime = localHostDiscoveryLeaseTime;
             this.directConnectionsEnabled = directConnectionsEnabled;
             this.directConnectionsMaxConcurrentConnections = directConnectionsMaxConcurrentConnections;
             this.directConnectionsRetryDelays = directConnectionsRetryDelays;
@@ -1133,6 +1185,16 @@ public class DrasylConfig {
             return this;
         }
 
+        public Builder localHostDiscoveryEnabled(boolean localHostDiscoveryEnabled) {
+            this.localHostDiscoveryEnabled = localHostDiscoveryEnabled;
+            return this;
+        }
+
+        public Builder localHostDiscoveryLeaseTime(Duration localHostDiscoveryLeaseTime) {
+            this.localHostDiscoveryLeaseTime = localHostDiscoveryLeaseTime;
+            return this;
+        }
+
         public Builder directConnectionsEnabled(boolean directConnectionsEnabled) {
             this.directConnectionsEnabled = directConnectionsEnabled;
             return this;
@@ -1236,7 +1298,8 @@ public class DrasylConfig {
                     messageComposedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints,
                     superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout,
                     superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout,
-                    intraVmDiscoveryEnabled, directConnectionsEnabled,
+                    intraVmDiscoveryEnabled, localHostDiscoveryEnabled, localHostDiscoveryPath,
+                    localHostDiscoveryLeaseTime, directConnectionsEnabled,
                     directConnectionsMaxConcurrentConnections, directConnectionsRetryDelays,
                     directConnectionsHandshakeTimeout, directConnectionsChannelInitializer,
                     directConnectionsIdleRetries, directConnectionsIdleTimeout, monitoringEnabled,

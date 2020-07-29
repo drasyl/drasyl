@@ -145,6 +145,7 @@ class DrasylNodeIT {
                         .superPeerEnabled(false)
                         .directConnectionsEnabled(false)
                         .intraVmDiscoveryEnabled(false)
+                        .localHostDiscoveryEnabled(false)
                         .build();
                 superSuperPeer = createStartedNode(config);
                 NodeEvent superSuperPeerNodeUp = (NodeEvent) superSuperPeer.second().filter(e -> e instanceof NodeUpEvent).firstElement().blockingGet();
@@ -162,6 +163,7 @@ class DrasylNodeIT {
                         .superPeerEndpoints(Set.of(URI.create("ws://127.0.0.1:" + superSuperPeerPort)))
                         .directConnectionsEnabled(false)
                         .intraVmDiscoveryEnabled(false)
+                        .localHostDiscoveryEnabled(false)
                         .build();
                 superPeer = createStartedNode(config);
                 NodeEvent superPeerNodeUp = (NodeEvent) superPeer.second().filter(e -> e instanceof NodeUpEvent).firstElement().blockingGet();
@@ -178,6 +180,7 @@ class DrasylNodeIT {
                         .superPeerEndpoints(Set.of(URI.create("ws://127.0.0.1:" + superPeerPort)))
                         .directConnectionsEnabled(false)
                         .intraVmDiscoveryEnabled(false)
+                        .localHostDiscoveryEnabled(false)
                         .build();
                 client1 = createStartedNode(config);
                 colorizedPrintln("CREATED client1", COLOR_CYAN, STYLE_REVERSED);
@@ -192,6 +195,7 @@ class DrasylNodeIT {
                         .superPeerEndpoints(Set.of(URI.create("ws://127.0.0.1:" + superPeerPort)))
                         .directConnectionsEnabled(false)
                         .intraVmDiscoveryEnabled(false)
+                        .localHostDiscoveryEnabled(false)
                         .build();
                 client2 = createStartedNode(config);
                 colorizedPrintln("CREATED client2", COLOR_CYAN, STYLE_REVERSED);
@@ -332,6 +336,7 @@ class DrasylNodeIT {
                         .serverBindPort(0)
                         .superPeerEnabled(false)
                         .intraVmDiscoveryEnabled(false)
+                        .localHostDiscoveryEnabled(false)
                         .build();
                 superPeer = createStartedNode(config);
                 NodeEvent superPeerNodeUp = (NodeEvent) superPeer.second().filter(e -> e instanceof NodeUpEvent).firstElement().blockingGet();
@@ -348,6 +353,7 @@ class DrasylNodeIT {
                         .superPeerPublicKey(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
                         .superPeerEndpoints(Set.of(URI.create("ws://127.0.0.1:" + superPeerPort)))
                         .intraVmDiscoveryEnabled(false)
+                        .localHostDiscoveryEnabled(false)
                         .build();
                 client1 = createStartedNode(config);
                 colorizedPrintln("CREATED client1", COLOR_CYAN, STYLE_REVERSED);
@@ -362,6 +368,7 @@ class DrasylNodeIT {
                         .superPeerPublicKey(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
                         .superPeerEndpoints(Set.of(URI.create("ws://127.0.0.1:" + superPeerPort)))
                         .intraVmDiscoveryEnabled(false)
+                        .localHostDiscoveryEnabled(false)
                         .build();
                 client2 = createStartedNode(config);
                 colorizedPrintln("CREATED client2", COLOR_CYAN, STYLE_REVERSED);
@@ -423,6 +430,7 @@ class DrasylNodeIT {
                         .identityPrivateKey(CompressedPrivateKey.of("0c2945e523e1ab27c3b38ba62f0a67a21567dcfcbad4ff3fe7f8f7b202a18c93"))
                         .serverEnabled(false)
                         .superPeerEnabled(false)
+                        .localHostDiscoveryEnabled(false)
                         .build();
                 node1 = createStartedNode(config);
                 colorizedPrintln("CREATED node1", COLOR_CYAN, STYLE_REVERSED);
@@ -434,6 +442,7 @@ class DrasylNodeIT {
                         .identityPrivateKey(CompressedPrivateKey.of("6b4df6d8b8b509cb984508a681076efce774936c17cf450819e2262a9862f8"))
                         .serverEnabled(false)
                         .superPeerEnabled(false)
+                        .localHostDiscoveryEnabled(false)
                         .build();
                 node2 = createStartedNode(config);
                 colorizedPrintln("CREATED node2", COLOR_CYAN, STYLE_REVERSED);
@@ -445,6 +454,7 @@ class DrasylNodeIT {
                         .identityPrivateKey(CompressedPrivateKey.of("073a34ecaff06fdf3fbe44ddf3abeace43e3547033493b1ac4c0ae3c6ecd6173"))
                         .serverEnabled(false)
                         .superPeerEnabled(false)
+                        .localHostDiscoveryEnabled(false)
                         .build();
                 node3 = createStartedNode(config);
                 colorizedPrintln("CREATED node3", COLOR_CYAN, STYLE_REVERSED);
@@ -456,6 +466,7 @@ class DrasylNodeIT {
                         .identityPrivateKey(CompressedPrivateKey.of("0310991def7b530fced318876ac71025ebc0449a95967a0efc2e423086198f54"))
                         .serverEnabled(false)
                         .superPeerEnabled(false)
+                        .localHostDiscoveryEnabled(false)
                         .build();
                 node4 = createStartedNode(config);
                 colorizedPrintln("CREATED node4", COLOR_CYAN, STYLE_REVERSED);
@@ -526,6 +537,120 @@ class DrasylNodeIT {
         }
     }
 
+    @Nested
+    class TestLocalHostDiscovery {
+        /**
+         * Network Layout:
+         * <pre>
+         * +---+----+   +----+---+   +----+---+   +----+---+
+         * | Node 1 |   | Node 2 |   | Node 3 |   | Node 4 |
+         * +--------+   +--------+   +----+---+   +----+---+
+         * </pre>
+         */
+        @Nested
+        class FourNodesWithOnlyLocalHostDiscoveryEnabled {
+            private Pair<DrasylNode, Observable<Event>> node1;
+            private Pair<DrasylNode, Observable<Event>> node2;
+            private Pair<DrasylNode, Observable<Event>> node3;
+            private Pair<DrasylNode, Observable<Event>> node4;
+
+            @BeforeEach
+            void setUp() throws DrasylException, CryptoException {
+                //
+                // create nodes
+                //
+                DrasylConfig config;
+
+                // node1
+                config = DrasylConfig.newBuilder()
+                        .identityProofOfWork(ProofOfWork.of(13290399))
+                        .identityPublicKey(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"))
+                        .identityPrivateKey(CompressedPrivateKey.of("0c2945e523e1ab27c3b38ba62f0a67a21567dcfcbad4ff3fe7f8f7b202a18c93"))
+                        .serverEnabled(true)
+                        .serverBindPort(0)
+                        .superPeerEnabled(false)
+                        .directConnectionsEnabled(false)
+                        .intraVmDiscoveryEnabled(false)
+                        .build();
+                node1 = createStartedNode(config);
+                colorizedPrintln("CREATED node1", COLOR_CYAN, STYLE_REVERSED);
+
+                // node2
+                config = DrasylConfig.newBuilder()
+                        .identityProofOfWork(ProofOfWork.of(6518542))
+                        .identityPublicKey(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
+                        .identityPrivateKey(CompressedPrivateKey.of("6b4df6d8b8b509cb984508a681076efce774936c17cf450819e2262a9862f8"))
+                        .serverEnabled(true)
+                        .serverBindPort(0)
+                        .superPeerEnabled(false)
+                        .directConnectionsEnabled(false)
+                        .intraVmDiscoveryEnabled(false)
+                        .build();
+                node2 = createStartedNode(config);
+                colorizedPrintln("CREATED node2", COLOR_CYAN, STYLE_REVERSED);
+
+                // node3
+                config = DrasylConfig.newBuilder()
+                        .identityProofOfWork(ProofOfWork.of(12304070))
+                        .identityPublicKey(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))
+                        .identityPrivateKey(CompressedPrivateKey.of("073a34ecaff06fdf3fbe44ddf3abeace43e3547033493b1ac4c0ae3c6ecd6173"))
+                        .serverEnabled(true)
+                        .serverBindPort(0)
+                        .superPeerEnabled(false)
+                        .directConnectionsEnabled(false)
+                        .intraVmDiscoveryEnabled(false)
+                        .build();
+                node3 = createStartedNode(config);
+                colorizedPrintln("CREATED node3", COLOR_CYAN, STYLE_REVERSED);
+
+                // node4
+                config = DrasylConfig.newBuilder()
+                        .identityProofOfWork(ProofOfWork.of(33957767))
+                        .identityPublicKey(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))
+                        .identityPrivateKey(CompressedPrivateKey.of("0310991def7b530fced318876ac71025ebc0449a95967a0efc2e423086198f54"))
+                        .serverEnabled(true)
+                        .serverBindPort(0)
+                        .superPeerEnabled(false)
+                        .directConnectionsEnabled(false)
+                        .intraVmDiscoveryEnabled(false)
+                        .build();
+                node4 = createStartedNode(config);
+                colorizedPrintln("CREATED node4", COLOR_CYAN, STYLE_REVERSED);
+
+                node1.second().filter(e -> e instanceof NodeUpEvent || e instanceof PeerDirectEvent).test().awaitCount(3);
+                node2.second().filter(e -> e instanceof NodeUpEvent || e instanceof PeerDirectEvent).test().awaitCount(3);
+                node3.second().filter(e -> e instanceof NodeUpEvent || e instanceof PeerDirectEvent).test().awaitCount(3);
+                node4.second().filter(e -> e instanceof NodeUpEvent || e instanceof PeerDirectEvent).test().awaitCount(3);
+            }
+
+            /**
+             * This test checks whether the {@link org.drasyl.peer.connection.localhost.LocalHostDiscovery}
+             * emits the correct {@link PeerEvent}s after communication occurred.
+             */
+            @Test
+            @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+            void correctPeerEventsShouldBeEmitted() {
+                TestObserver<Event> node1Events = node1.second().filter(e -> e instanceof PeerUnreachableEvent).test();
+                TestObserver<Event> node2Events = node2.second().filter(e -> e instanceof PeerUnreachableEvent).test();
+                TestObserver<Event> node3Events = node3.second().filter(e -> e instanceof PeerUnreachableEvent).test();
+                TestObserver<Event> node4Events = node4.second().filter(e -> e instanceof PeerUnreachableEvent).test();
+
+                //
+                // send messages
+                //
+                node1.first().send("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22", "Hallo Welt");
+                node2.first().send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", "Hallo Welt");
+                node3.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", "Hallo Welt");
+                node4.first().send("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a", "Hallo Welt");
+
+                node1Events.awaitCount(3);
+                node2Events.awaitCount(3);
+                node3Events.awaitCount(3);
+                node4Events.awaitCount(3);
+            }
+        }
+    }
+
     /**
      * Network Layout:
      * <pre>
@@ -553,6 +678,7 @@ class DrasylNodeIT {
                     .serverEnabled(false)
                     .superPeerEnabled(false)
                     .intraVmDiscoveryEnabled(false)
+                    .localHostDiscoveryEnabled(false)
                     .build();
             node1 = createStartedNode(config);
             node1.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1);
@@ -601,6 +727,7 @@ class DrasylNodeIT {
                         .identityPrivateKey(CompressedPrivateKey.of("0310991def7b530fced318876ac71025ebc0449a95967a0efc2e423086198f54"))
                         .serverEnabled(false)
                         .superPeerEnabled(false)
+                        .localHostDiscoveryEnabled(false)
                         .build();
                 node1 = createNode(config);
                 colorizedPrintln("CREATED node1", COLOR_CYAN, STYLE_REVERSED);
