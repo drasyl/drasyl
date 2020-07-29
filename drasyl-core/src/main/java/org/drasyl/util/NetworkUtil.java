@@ -37,8 +37,6 @@ import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
 
-import static java.util.Objects.requireNonNull;
-
 /**
  * Utility class for network-related operations.
  */
@@ -62,18 +60,6 @@ public final class NetworkUtil {
             "http://ipecho.net/plain",
             "http://ifconfig.me/ip"
     };
-    private static final Set<String> MATCH_ALL_IP_ADDRESSES = Set.of(
-            "0.0.0.0",
-            "::",
-            "0:0:0:0:0:0:0:0",
-            "0000:0000:0000:0000:0000:0000:0000:0000"
-    );
-    private static final Set<String> LOOPBACK_IP_ADDRESSES = Set.of(
-            "127.0.0.1",
-            "::1",
-            "0:0:0:0:0:0:0:1",
-            "0000:0000:0000:0000:0000:0000:0000:0001"
-    );
 
     private NetworkUtil() {
         // util class
@@ -245,28 +231,6 @@ public final class NetworkUtil {
         else {
             return null;
         }
-    }
-
-    /**
-     * Returns <code>true</code>, if <code>address</code> is a loopback address. Otherwise
-     * <code>false</code> is returned.
-     *
-     * @param address
-     * @return
-     */
-    public static boolean isLoopbackAddress(String address) {
-        return LOOPBACK_IP_ADDRESSES.contains(address);
-    }
-
-    /**
-     * Returns <code>true</code>, if <code>address</code> is a match-all address. Otherwise
-     * <code>false</code> is returned.
-     *
-     * @param address
-     * @return
-     */
-    public static boolean isMatchAllAddress(String address) {
-        return MATCH_ALL_IP_ADDRESSES.contains(address);
     }
 
     /**

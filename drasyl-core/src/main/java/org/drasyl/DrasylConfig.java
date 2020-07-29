@@ -33,8 +33,10 @@ import org.drasyl.plugins.AutoloadablePlugin;
 import org.drasyl.plugins.PluginEnvironment;
 
 import java.io.File;
+import java.net.InetAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -104,7 +106,7 @@ public class DrasylConfig {
     private final CompressedPublicKey identityPublicKey;
     private final CompressedPrivateKey identityPrivateKey;
     private final Path identityPath;
-    private final String serverBindHost;
+    private final InetAddress serverBindHost;
     private final boolean serverEnabled;
     private final int serverBindPort;
     private final short serverIdleRetries;
@@ -184,7 +186,7 @@ public class DrasylConfig {
 
         // Init server config
         this.serverEnabled = config.getBoolean(SERVER_ENABLED);
-        this.serverBindHost = config.getString(SERVER_BIND_HOST);
+        this.serverBindHost = getInetAddress(config, SERVER_BIND_HOST);
         this.serverBindPort = config.getInt(SERVER_BIND_PORT);
         this.serverIdleRetries = getShort(config, SERVER_IDLE_RETRIES);
         this.serverIdleTimeout = config.getDuration(SERVER_IDLE_TIMEOUT);
@@ -367,13 +369,23 @@ public class DrasylConfig {
         return environments;
     }
 
+    private static InetAddress getInetAddress(Config config, String path) {
+        String stringValue = config.getString(path);
+        try {
+            return InetAddress.getByName(stringValue);
+        }
+        catch (UnknownHostException e) {
+            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "inet address", "unknown-host: " + e.getMessage());
+        }
+    }
+
     @SuppressWarnings({ "java:S107" })
     DrasylConfig(Level loglevel,
                  ProofOfWork identityProofOfWork,
                  CompressedPublicKey identityPublicKey,
                  CompressedPrivateKey identityPrivateKey,
                  Path identityPath,
-                 String serverBindHost,
+                 InetAddress serverBindHost,
                  boolean serverEnabled,
                  int serverBindPort,
                  short serverIdleRetries,
@@ -490,7 +502,7 @@ public class DrasylConfig {
         return loglevel;
     }
 
-    public String getServerBindHost() {
+    public InetAddress getServerBindHost() {
         return serverBindHost;
     }
 
@@ -844,7 +856,7 @@ public class DrasylConfig {
         private CompressedPublicKey identityPublicKey;
         private CompressedPrivateKey identityPrivateKey;
         private Path identityPath;
-        private String serverBindHost;
+        private InetAddress serverBindHost;
         private boolean serverEnabled;
         private int serverBindPort;
         private short serverIdleRetries;
@@ -892,7 +904,7 @@ public class DrasylConfig {
                         CompressedPublicKey identityPublicKey,
                         CompressedPrivateKey identityPrivateKey,
                         Path identityPath,
-                        String serverBindHost,
+                        InetAddress serverBindHost,
                         boolean serverEnabled,
                         int serverBindPort,
                         short serverIdleRetries,
@@ -1006,7 +1018,7 @@ public class DrasylConfig {
             return this;
         }
 
-        public Builder serverBindHost(String serverBindHost) {
+        public Builder serverBindHost(InetAddress serverBindHost) {
             this.serverBindHost = serverBindHost;
             return this;
         }
