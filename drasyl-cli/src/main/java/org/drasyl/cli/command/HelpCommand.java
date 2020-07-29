@@ -8,6 +8,9 @@ import java.util.stream.Collectors;
 
 import static org.drasyl.cli.Cli.COMMANDS;
 
+/**
+ * Show help for drasyl commands and flags.
+ */
 public class HelpCommand extends AbstractCommand {
     public HelpCommand() {
         this(System.out); // NOSONAR

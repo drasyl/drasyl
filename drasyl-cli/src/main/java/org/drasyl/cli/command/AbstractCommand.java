@@ -13,7 +13,7 @@ import java.io.PrintStream;
 import java.io.PrintWriter;
 import java.util.Map;
 
-public abstract class AbstractCommand implements Command {
+abstract class AbstractCommand implements Command {
     private static final String OPT_HELP = "help";
     protected final PrintStream printStream;
 

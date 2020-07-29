@@ -28,6 +28,10 @@ import org.drasyl.util.DrasylScheduler;
 
 import java.util.Map;
 
+/**
+ * Provides a command line interface with drasyl-related tools (run root node, generate identity,
+ * etc.).
+ */
 public class Cli {
     public static final Map<String, Command> COMMANDS;
 

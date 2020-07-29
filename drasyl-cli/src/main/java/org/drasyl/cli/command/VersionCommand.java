@@ -5,6 +5,9 @@ import org.drasyl.DrasylNode;
 
 import java.io.PrintStream;
 
+/**
+ * Show the version number.
+ */
 public class VersionCommand extends AbstractCommand {
     public VersionCommand() {
         this(System.out); // NOSONAR

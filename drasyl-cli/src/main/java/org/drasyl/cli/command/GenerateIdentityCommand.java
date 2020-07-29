@@ -12,6 +12,9 @@ import java.io.PrintStream;
 
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 
+/**
+ * Generate and output new Identity in JSON format.
+ */
 public class GenerateIdentityCommand extends AbstractCommand {
     public GenerateIdentityCommand() {
         this(System.out); // NOSONAR

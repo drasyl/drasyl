@@ -23,6 +23,9 @@ import java.util.function.Function;
 
 import static java.util.concurrent.CompletableFuture.failedFuture;
 
+/**
+ * Run a drasyl node.
+ */
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class NodeCommand extends AbstractCommand {
     private static final Logger log = LoggerFactory.getLogger(NodeCommand.class);
