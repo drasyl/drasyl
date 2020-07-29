@@ -26,6 +26,7 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.UnknownHostException;
 
+import static org.drasyl.util.NetworkUtil.createInetAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -91,6 +92,19 @@ class NetworkUtilTest {
                     InetAddress.getLocalHost().getHostName(),
                     NetworkUtil.getLocalHostName()
             );
+        }
+    }
+
+    @Nested
+    class CreateInetAddress {
+        @Test
+        void shouldReturnInetAddressForValidString() throws UnknownHostException {
+            assertEquals(InetAddress.getByName("192.168.188.112"), createInetAddress("192.168.188.112"));
+        }
+
+        @Test
+        void shouldThrowIllegalArgumentExceptionForInvalidString() {
+            assertThrows(IllegalArgumentException.class, () -> createInetAddress("foo.bar"));
         }
     }
 }

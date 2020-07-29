@@ -37,6 +37,8 @@ import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Utility class for network-related operations.
  */
@@ -279,6 +281,35 @@ public final class NetworkUtil {
         }
         catch (UnknownHostException e) {
             return null;
+        }
+    }
+
+    /**
+     * Creates a {@link InetAddress} by parsing the given string.
+     *
+     * <p> This convenience factory method works as if by invoking the {@link
+     * InetAddress#getByName(java.lang.String)} constructor; any {@link UnknownHostException} thrown
+     * by the constructor is caught and wrapped in a new {@link IllegalArgumentException} object,
+     * which is then thrown.
+     *
+     * <p> This method is provided for use in situations where it is known that
+     * the given string is a legal InetAddress, for example for InetAddress constants declared
+     * within a program, and so it would be considered a programming error for the string not to
+     * parse as such. The constructors, which throw {@link UnknownHostException} directly, should be
+     * used in situations where a InetAddress is being constructed from user input or from some
+     * other source that may be prone to errors.  </p>
+     *
+     * @param str The string to be parsed into a InetAddress
+     * @return The new InetAddress
+     * @throws IllegalArgumentException if no IP address for the {@code str} could be found, or if a
+     *                                  scope_id was specified for a global IPv6 address.
+     */
+    public static InetAddress createInetAddress(String str) {
+        try {
+            return InetAddress.getByName(str);
+        }
+        catch (UnknownHostException x) {
+            throw new IllegalArgumentException(x.getMessage(), x);
         }
     }
 }
