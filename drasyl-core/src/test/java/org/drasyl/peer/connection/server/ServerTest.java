@@ -26,8 +26,6 @@ import org.drasyl.util.NetworkUtil;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.junit.jupiter.params.ParameterizedTest;
-import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -39,9 +37,9 @@ import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.stream.Collectors;
 
 import static org.drasyl.peer.connection.server.Server.determineActualEndpoints;
+import static org.drasyl.util.NetworkUtil.createInetAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -65,9 +63,10 @@ class ServerTest {
     class Open {
         @Test
         void shouldSetOpenToTrue() throws ServerException {
+            when(config.getServerBindHost()).thenReturn(createInetAddress("0.0.0.0"));
             when(config.getServerEndpoints()).thenReturn(Set.of(URI.create("ws://localhost:22527/")));
-            when(serverBootstrap.bind((String) null, 0).isSuccess()).thenReturn(true);
-            when(serverBootstrap.bind((String) null, 0).channel().localAddress()).thenReturn(new InetSocketAddress(22527));
+            when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).isSuccess()).thenReturn(true);
+            when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
             AtomicBoolean opened = new AtomicBoolean(false);
             try (Server server = new Server(
@@ -113,22 +112,6 @@ class ServerTest {
 
             assertEquals(
                     Set.of(URI.create("ws://foo.bar:22527")),
-                    determineActualEndpoints(config, new InetSocketAddress(22527))
-            );
-        }
-
-        @ParameterizedTest
-        @ValueSource(strings = {
-                "0.0.0.0",
-                "::",
-                "0:0:0:0:0:0:0:0",
-                "0000:0000:0000:0000:0000:0000:0000:0000"
-        })
-        void shouldReturnEndpointsForAllAddressesIfServerIsBoundToAllInterfaces(String host) {
-            when(config.getServerEndpoints().isEmpty()).thenReturn(true);
-
-            assertEquals(
-                    NetworkUtil.getAddresses().stream().map(a -> URI.create("ws://" + a + ":" + 22527)).collect(Collectors.toSet()),
                     determineActualEndpoints(config, new InetSocketAddress(22527))
             );
         }

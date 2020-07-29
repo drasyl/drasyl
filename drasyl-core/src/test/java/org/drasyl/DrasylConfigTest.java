@@ -40,6 +40,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
+import java.net.InetAddress;
 import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -91,6 +92,7 @@ import static org.drasyl.DrasylConfig.SUPER_PEER_ENDPOINTS;
 import static org.drasyl.DrasylConfig.SUPER_PEER_HANDSHAKE_TIMEOUT;
 import static org.drasyl.DrasylConfig.SUPER_PEER_PUBLIC_KEY;
 import static org.drasyl.DrasylConfig.SUPER_PEER_RETRY_DELAYS;
+import static org.drasyl.util.NetworkUtil.createInetAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
@@ -111,7 +113,7 @@ class DrasylConfigTest {
     private CompressedPrivateKey identityPrivateKey;
     @Mock
     private Path identityPath;
-    private String serverBindHost;
+    private InetAddress serverBindHost;
     private boolean serverEnabled;
     private int serverBindPort;
     private short serverIdleRetries;
@@ -162,7 +164,7 @@ class DrasylConfigTest {
     @BeforeEach
     void setUp() {
         loglevel = Level.WARN;
-        serverBindHost = "0.0.0.0";
+        serverBindHost = createInetAddress("0.0.0.0");
         serverEnabled = true;
         serverBindPort = 22527;
         serverIdleRetries = 3;
@@ -206,14 +208,12 @@ class DrasylConfigTest {
     class Constructor {
         @Test
         void shouldReadConfigProperly() {
-            when(typesafeConfig.getString(SERVER_BIND_HOST)).thenReturn(serverBindHost);
-            when(typesafeConfig.getInt(SERVER_BIND_PORT)).thenReturn(serverBindPort);
             when(typesafeConfig.getInt(IDENTITY_PROOF_OF_WORK)).thenReturn(-1);
             when(typesafeConfig.getString(IDENTITY_PUBLIC_KEY)).thenReturn("");
             when(typesafeConfig.getString(IDENTITY_PRIVATE_KEY)).thenReturn("");
             when(typesafeConfig.getString(IDENTITY_PATH)).thenReturn(identityPathAsString);
             when(typesafeConfig.getBoolean(SERVER_ENABLED)).thenReturn(serverEnabled);
-            when(typesafeConfig.getString(SERVER_BIND_HOST)).thenReturn(serverBindHost);
+            when(typesafeConfig.getString(SERVER_BIND_HOST)).thenReturn(serverBindHost.getHostAddress());
             when(typesafeConfig.getInt(SERVER_BIND_PORT)).thenReturn(serverBindPort);
             when(typesafeConfig.getInt(SERVER_IDLE_RETRIES)).thenReturn(Short.valueOf(serverIdleRetries).intValue());
             when(typesafeConfig.getDuration(SERVER_IDLE_TIMEOUT)).thenReturn(serverIdleTimeout);

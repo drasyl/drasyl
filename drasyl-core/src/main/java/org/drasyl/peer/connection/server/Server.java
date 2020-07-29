@@ -45,7 +45,6 @@ import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
 import static org.drasyl.util.NetworkUtil.getAddresses;
-import static org.drasyl.util.NetworkUtil.isMatchAllAddress;
 import static org.drasyl.util.UriUtil.overridePort;
 
 /**
@@ -230,7 +229,7 @@ public class Server implements DrasylNodeComponent {
         }
 
         Set<String> addresses;
-        if (isMatchAllAddress(listenAddress.getAddress().getHostAddress())) {
+        if (listenAddress.getAddress().isAnyLocalAddress()) {
             // use all available addresses
             addresses = getAddresses();
         }

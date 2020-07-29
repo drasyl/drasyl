@@ -89,6 +89,7 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBI
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_SERVICE_UNAVAILABLE;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
+import static org.drasyl.util.NetworkUtil.createInetAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -136,7 +137,7 @@ class ServerIT {
                 .identityProofOfWork(ProofOfWork.of(6657650))
                 .identityPublicKey(CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"))
                 .identityPrivateKey(CompressedPrivateKey.of("0c27af38c77f2cd5cc2a0ff5c461003a9c24beb955f316135d251ecaf4dda03f"))
-                .serverBindHost("127.0.0.1")
+                .serverBindHost(createInetAddress("127.0.0.1"))
                 .serverBindPort(0)
                 .serverEndpoints(Set.of(URI.create("wss://127.0.0.1:0")))
                 .serverHandshakeTimeout(ofSeconds(5))

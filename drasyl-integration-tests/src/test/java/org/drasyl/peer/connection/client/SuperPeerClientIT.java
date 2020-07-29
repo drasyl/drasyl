@@ -71,6 +71,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_SIZE;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
+import static org.drasyl.util.NetworkUtil.createInetAddress;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static testutils.AnsiColor.COLOR_CYAN;
 import static testutils.AnsiColor.STYLE_REVERSED;
@@ -112,7 +113,7 @@ class SuperPeerClientIT {
                 .identityProofOfWork(ProofOfWork.of(6657650))
                 .identityPublicKey(CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"))
                 .identityPrivateKey(CompressedPrivateKey.of("0c27af38c77f2cd5cc2a0ff5c461003a9c24beb955f316135d251ecaf4dda03f"))
-                .serverBindHost("127.0.0.1")
+                .serverBindHost(createInetAddress("127.0.0.1"))
                 .serverBindPort(0)
                 .serverHandshakeTimeout(ofSeconds(5))
                 .serverSSLEnabled(true)
@@ -133,7 +134,7 @@ class SuperPeerClientIT {
                 .identityProofOfWork(ProofOfWork.of(5344366))
                 .identityPublicKey(CompressedPublicKey.of("0234789936c7941f850c382ea9d14ecb0aad03b99a9e29a9c15b42f5f1b0c4cf3d"))
                 .identityPrivateKey(CompressedPrivateKey.of("064f10d37111303ee20443661c8ea758045bbf809e4950dd84b8a1348863d0f8"))
-                .serverBindHost("127.0.0.1")
+                .serverBindHost(createInetAddress("127.0.0.1"))
                 .serverHandshakeTimeout(ofSeconds(5))
                 .serverSSLEnabled(true)
                 .serverIdleTimeout(ofSeconds(1))
