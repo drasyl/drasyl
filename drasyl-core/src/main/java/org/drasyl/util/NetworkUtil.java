@@ -104,34 +104,27 @@ public final class NetworkUtil {
         int randomOffset = Crypto.randomNumber(providers.length);
         for (int i = 0; i < providers.length; i++) {
             URL provider = providers[(i + randomOffset) % providers.length];
-            BufferedReader reader = null;
+
             try {
                 URLConnection connection = provider.openConnection();
                 connection.setConnectTimeout(5000);
                 connection.setReadTimeout(5000);
                 connection.getInputStream();
+
                 LOG.debug("Request external ip address from service '{}'...", provider);
-                reader = new BufferedReader(new InputStreamReader(connection.getInputStream()));
-                String response = reader.readLine();
-                @SuppressWarnings("unchecked")
-                T address = (T) InetAddress.getByName(response);
-                if (!address.isLoopbackAddress() && !address.isAnyLocalAddress() && !address.isSiteLocalAddress()) {
-                    LOG.debug("Got external ip address '{}' from service '{}'", address, provider);
-                    return address;
+
+                try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                    String response = reader.readLine();
+                    @SuppressWarnings("unchecked")
+                    T address = (T) InetAddress.getByName(response);
+                    if (!address.isLoopbackAddress() && !address.isAnyLocalAddress() && !address.isSiteLocalAddress()) {
+                        LOG.debug("Got external ip address '{}' from service '{}'", address, provider);
+                        return address;
+                    }
                 }
             }
             catch (IOException | ClassCastException e) {
                 // do nothing, skip to next provider
-            }
-            finally {
-                if (reader != null) {
-                    try {
-                        reader.close();
-                    }
-                    catch (IOException e) {
-                        // ignore
-                    }
-                }
             }
         }
 
