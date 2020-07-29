@@ -22,8 +22,8 @@ class UrlUtilTest {
         }
 
         @Test
-        void shouldThrowNullPointerExceptionForNullString() {
-            assertThrows(NullPointerException.class, () -> createUrl(null));
+        void shouldThrowIllegalArgumentExceptionForNullString() {
+            assertThrows(IllegalArgumentException.class, () -> createUrl(null));
         }
 
         @Test

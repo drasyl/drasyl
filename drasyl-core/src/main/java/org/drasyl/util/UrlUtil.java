@@ -3,8 +3,6 @@ package org.drasyl.util;
 import java.net.MalformedURLException;
 import java.net.URL;
 
-import static java.util.Objects.requireNonNull;
-
 /**
  * Utility class for operations on {@link URL}s.
  */
@@ -29,15 +27,14 @@ public class UrlUtil {
      *
      * @param str The string to be parsed into a URL
      * @return The new URL
-     * @throws NullPointerException     If {@code str} is {@code null}
      * @throws IllegalArgumentException if no protocol is specified, or an unknown protocol is
-     *                                  found, or {@code str}, or the parsed URL
+     *                                  found, or {@code spec} is {@code null}, or the parsed URL
      *                                  fails to comply with the specific syntax of the associated
      *                                  protocol.
      */
     public static URL createUrl(String str) {
         try {
-            return new URL(requireNonNull(str));
+            return new URL(str);
         }
         catch (MalformedURLException x) {
             throw new IllegalArgumentException(x.getMessage(), x);
