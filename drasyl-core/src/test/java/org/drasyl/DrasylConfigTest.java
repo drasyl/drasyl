@@ -62,6 +62,9 @@ import static org.drasyl.DrasylConfig.IDENTITY_PRIVATE_KEY;
 import static org.drasyl.DrasylConfig.IDENTITY_PROOF_OF_WORK;
 import static org.drasyl.DrasylConfig.IDENTITY_PUBLIC_KEY;
 import static org.drasyl.DrasylConfig.INTRA_VM_DISCOVERY_ENABLED;
+import static org.drasyl.DrasylConfig.LOCAL_HOST_DISCOVERY_ENABLED;
+import static org.drasyl.DrasylConfig.LOCAL_HOST_DISCOVERY_LEASE_TIME;
+import static org.drasyl.DrasylConfig.LOCAL_HOST_DISCOVERY_PATH;
 import static org.drasyl.DrasylConfig.MARSHALLING_ALLOWED_PACKAGES;
 import static org.drasyl.DrasylConfig.MARSHALLING_ALLOWED_TYPES;
 import static org.drasyl.DrasylConfig.MARSHALLING_ALLOW_ALL_PRIMITIVES;
@@ -141,6 +144,9 @@ class DrasylConfigTest {
     private Supplier<Set<String>> networkAddressesProvider;
     private Duration superPeerHandshakeTimeout;
     private boolean intraVmDiscoveryEnabled;
+    private boolean localHostDiscoveryEnabled;
+    private String localHostDiscoveryPathAsString;
+    private Duration localHostDiscoveryLeaseTime;
     private boolean directConnectionsEnabled;
     private int directConnectionsMaxConcurrentConnections;
     private final List<Duration> directConnectionsRetryDelays = List.of(ofSeconds(0), ofSeconds(1), ofSeconds(2), ofSeconds(4), ofSeconds(8));
@@ -184,6 +190,9 @@ class DrasylConfigTest {
         superPeerIdleTimeout = ofSeconds(60);
         identityPathAsString = "drasyl.identity.json";
         intraVmDiscoveryEnabled = true;
+        localHostDiscoveryEnabled = true;
+        localHostDiscoveryPathAsString = "foo/bar";
+        localHostDiscoveryLeaseTime = ofSeconds(60);
         directConnectionsEnabled = true;
         directConnectionsMaxConcurrentConnections = 10;
         directConnectionsIdleRetries = 3;
@@ -232,6 +241,9 @@ class DrasylConfigTest {
             when(typesafeConfig.getDuration(SUPER_PEER_HANDSHAKE_TIMEOUT)).thenReturn(superPeerHandshakeTimeout);
             when(typesafeConfig.getString(SUPER_PEER_CHANNEL_INITIALIZER)).thenReturn(superPeerChannelInitializer.getCanonicalName());
             when(typesafeConfig.getBoolean(INTRA_VM_DISCOVERY_ENABLED)).thenReturn(intraVmDiscoveryEnabled);
+            when(typesafeConfig.getBoolean(LOCAL_HOST_DISCOVERY_ENABLED)).thenReturn(localHostDiscoveryEnabled);
+            when(typesafeConfig.getString(LOCAL_HOST_DISCOVERY_PATH)).thenReturn(localHostDiscoveryPathAsString);
+            when(typesafeConfig.getDuration(LOCAL_HOST_DISCOVERY_LEASE_TIME)).thenReturn(localHostDiscoveryLeaseTime);
             when(typesafeConfig.getBoolean(DIRECT_CONNECTIONS_ENABLED)).thenReturn(directConnectionsEnabled);
             when(typesafeConfig.getDurationList(DIRECT_CONNECTIONS_RETRY_DELAYS)).thenReturn(directConnectionsRetryDelays);
             when(typesafeConfig.getDuration(DIRECT_CONNECTIONS_HANDSHAKE_TIMEOUT)).thenReturn(directConnectionsHandshakeTimeout);
@@ -275,6 +287,9 @@ class DrasylConfigTest {
             assertEquals(superPeerHandshakeTimeout, config.getSuperPeerHandshakeTimeout());
             assertEquals(superPeerChannelInitializer, config.getSuperPeerChannelInitializer());
             assertEquals(intraVmDiscoveryEnabled, config.isIntraVmDiscoveryEnabled());
+            assertEquals(localHostDiscoveryEnabled, config.isLocalHostDiscoveryEnabled());
+            assertEquals(Path.of(localHostDiscoveryPathAsString), config.getLocalHostDiscoveryPath());
+            assertEquals(localHostDiscoveryLeaseTime, config.getLocalHostDiscoveryLeaseTime());
             assertEquals(directConnectionsEnabled, config.areDirectConnectionsEnabled());
             assertEquals(directConnectionsRetryDelays, config.getDirectConnectionsRetryDelays());
             assertEquals(directConnectionsHandshakeTimeout, config.getDirectConnectionsHandshakeTimeout());
@@ -304,7 +319,8 @@ class DrasylConfigTest {
                     serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer,
                     messageMaxContentLength, messageHopLimit, composedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints,
                     superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries,
-                    superPeerIdleTimeout, intraVmDiscoveryEnabled, directConnectionsEnabled, directConnectionsMaxConcurrentConnections,
+                    superPeerIdleTimeout, intraVmDiscoveryEnabled, localHostDiscoveryEnabled, Path.of(localHostDiscoveryPathAsString),
+                    localHostDiscoveryLeaseTime, directConnectionsEnabled, directConnectionsMaxConcurrentConnections,
                     directConnectionsRetryDelays, directConnectionsHandshakeTimeout, directConnectionsChannelInitializer,
                     directConnectionsIdleRetries, directConnectionsIdleTimeout, monitoringEnabled, monitoringInfluxUri, monitoringInfluxUser,
                     monitoringInfluxPassword, monitoringInfluxDatabase, monitoringInfluxReportingFrequency, pluginEnvironments,
