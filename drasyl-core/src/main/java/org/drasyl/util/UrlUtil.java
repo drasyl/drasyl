@@ -30,7 +30,10 @@ public class UrlUtil {
      * @param str The string to be parsed into a URL
      * @return The new URL
      * @throws NullPointerException     If {@code str} is {@code null}
-     * @throws IllegalArgumentException If the given string violates RFC&nbsp;2396
+     * @throws IllegalArgumentException if no protocol is specified, or an unknown protocol is
+     *                                  found, or {@code str}, or the parsed URL
+     *                                  fails to comply with the specific syntax of the associated
+     *                                  protocol.
      */
     public static URL createUrl(String str) {
         try {
