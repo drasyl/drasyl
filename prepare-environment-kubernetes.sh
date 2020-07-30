@@ -36,7 +36,7 @@ spec:
         args: ["node"]
         env:
         - name: CONFIG_FORCE_drasyl_loglevel
-          value: "DEBUG"
+          value: "TRACE"
         - name: CONFIG_FORCE_drasyl_identity_proof__of__work
           value: "${DRASYL_PROOF_OF_WORK:-0}"
         - name: CONFIG_FORCE_drasyl_identity_public__key
