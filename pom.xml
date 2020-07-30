@@ -109,7 +109,7 @@
         <maven.compiler.target>11</maven.compiler.target>
         <logback.version>1.2.3</logback.version>
         <junit.version>5.7.0-M1</junit.version>
-        <mockito.version>3.4.4</mockito.version>
+        <mockito.version>3.4.6</mockito.version>
         <jackson.version>2.11.1</jackson.version>
         <hamcrest.version>2.2</hamcrest.version>
         <bouncycastle.version>1.66</bouncycastle.version>
