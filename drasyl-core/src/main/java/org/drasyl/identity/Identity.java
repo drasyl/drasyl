@@ -92,6 +92,7 @@ public class Identity {
      *
      * @return <code>true</code> if this identity is valid. Otherwise <code>false</code>
      */
+    @JsonIgnore
     public boolean isValid() {
         return proofOfWork.isValid(keyPair.getPublicKey(), POW_DIFFICULTY);
     }
