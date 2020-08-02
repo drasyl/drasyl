@@ -155,7 +155,10 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
                         PeerRelayEvent peerRelayEvent = (PeerRelayEvent) event;
                         CompressedPublicKey publicKey = peerRelayEvent.getPeer().getPublicKey();
 
-                        initiateDirectConnectionOnDemand(publicKey);
+                        // Important: We don't want to create direct connections to ourselves
+                        if (!publicKey.equals(identity.getPublicKey())) {
+                            initiateDirectConnectionOnDemand(publicKey);
+                        }
                     }
 
                     super.eventTriggered(ctx, event, future);
@@ -172,7 +175,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
      * @param publicKey the public key
      */
     void communicationOccurred(CompressedPublicKey publicKey) {
-        if (opened.get()) {
+        if (opened.get() && !publicKey.equals(identity.getPublicKey())) {
             directConnectionDemandsCache.add(publicKey);
             Pair<PeerInformation, Set<Path>> peer = peersManager.getPeer(publicKey);
             Set<Path> paths = peer.second();
