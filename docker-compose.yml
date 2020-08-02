@@ -7,3 +7,5 @@ services:
     restart: always
     ports:
       - 22527:22527
+    environment:
+      CONFIG_FORCE_drasyl_loglevel: DEBUG
