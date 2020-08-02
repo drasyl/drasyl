@@ -23,9 +23,24 @@ import org.junit.jupiter.api.Test;
 
 import java.net.URI;
 
+import static org.drasyl.util.UriUtil.createUri;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 class UriUtilTest {
+    @Nested
+    class CreateUri {
+        @Test
+        void shouldReturnUriForValidComponentsForValidComponents() {
+            assertEquals(URI.create("ws://example.com:22527"), createUri("ws", "example.com", 22527));
+        }
+
+        @Test
+        void shouldThrowIllegalArgumentExceptionForInvalidComponents() {
+            assertThrows(IllegalArgumentException.class, () -> createUri("ws", "\n", 22527));
+        }
+    }
+
     @Nested
     class OverridePort {
         @Test
