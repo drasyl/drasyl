@@ -67,6 +67,7 @@ public class UriUtil {
      * @param uri  the base URI
      * @param port the port
      * @return a combined URI and port URI
+     * @throws IllegalArgumentException if resulting URI violates RFC&nbsp;2396
      */
     public static URI overridePort(URI uri, int port) {
         try {
