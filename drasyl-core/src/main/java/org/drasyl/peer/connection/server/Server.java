@@ -36,6 +36,7 @@ import org.slf4j.LoggerFactory;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.HashSet;
@@ -45,6 +46,7 @@ import java.util.function.BooleanSupplier;
 import java.util.stream.Collectors;
 
 import static org.drasyl.util.NetworkUtil.getAddresses;
+import static org.drasyl.util.UriUtil.createUri;
 import static org.drasyl.util.UriUtil.overridePort;
 
 /**
@@ -228,16 +230,16 @@ public class Server implements DrasylNodeComponent {
             }).collect(Collectors.toSet());
         }
 
-        Set<String> addresses;
+        Set<InetAddress> addresses;
         if (listenAddress.getAddress().isAnyLocalAddress()) {
             // use all available addresses
             addresses = getAddresses();
         }
         else {
             // use given host
-            addresses = Set.of(listenAddress.getHostName());
+            addresses = Set.of(listenAddress.getAddress());
         }
         String scheme = config.getServerSSLEnabled() ? "wss" : "ws";
-        return addresses.stream().map(a -> URI.create(scheme + "://" + a + ":" + listenAddress.getPort())).collect(Collectors.toSet());
+        return addresses.stream().map(address -> createUri(scheme, address.getHostName(), listenAddress.getPort())).collect(Collectors.toSet());
     }
 }

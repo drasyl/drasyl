@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.drasyl.peer.connection.server.Server.determineActualEndpoints;
 import static org.drasyl.util.NetworkUtil.createInetAddress;
+import static org.drasyl.util.UriUtil.createUri;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -118,13 +119,12 @@ class ServerTest {
 
         @Test
         void shouldReturnEndpointForSpecificAddressesIfServerIsBoundToSpecificInterfaces() throws UnknownHostException {
-            String firstAddress = NetworkUtil.getAddresses().iterator().next();
+            InetAddress firstAddress = NetworkUtil.getAddresses().iterator().next();
             if (firstAddress != null) {
-                InetAddress inetAddress = InetAddress.getByName(firstAddress);
                 when(config.getServerEndpoints().isEmpty()).thenReturn(true);
 
                 assertEquals(
-                        Set.of(URI.create("ws://" + inetAddress.getHostName() + ":22527")),
+                        Set.of(createUri("ws", firstAddress.getHostName(), 22527)),
                         determineActualEndpoints(config, new InetSocketAddress(firstAddress, 22527))
                 );
             }

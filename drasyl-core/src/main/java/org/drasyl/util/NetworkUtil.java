@@ -37,7 +37,6 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
-import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
@@ -213,9 +212,9 @@ public final class NetworkUtil {
      *
      * @return
      */
-    public static Set<String> getAddresses() {
+    public static Set<InetAddress> getAddresses() {
         try {
-            Set<String> addresses = new HashSet<>();
+            Set<InetAddress> addresses = new HashSet<>();
 
             Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();
             while (ifaces.hasMoreElements()) {
@@ -227,9 +226,8 @@ public final class NetworkUtil {
 
                 Enumeration<InetAddress> ifaceAddresses = iface.getInetAddresses();
                 while (ifaceAddresses.hasMoreElements()) {
-                    InetAddress ifaceAddress = ifaceAddresses.nextElement();
-                    String address = getAddressByInetAddress(ifaceAddress);
-                    if (address != null) {
+                    InetAddress address = ifaceAddresses.nextElement();
+                    if (isValidNonSpecialIPAddress(address)) {
                         addresses.add(address);
                     }
                 }
@@ -238,32 +236,32 @@ public final class NetworkUtil {
             return addresses;
         }
         catch (SocketException e) {
-            return new HashSet<>(Collections.singletonList("127.0.0.1"));
+            return Set.of(InetAddress.getLoopbackAddress());
         }
     }
 
-    private static String getAddressByInetAddress(InetAddress ifaceAddress) {
-        if (ifaceAddress.isLoopbackAddress() || ifaceAddress.isLinkLocalAddress() || ifaceAddress.isMulticastAddress()) {
-            return null;
-        }
-
-        if (ifaceAddress instanceof Inet4Address) {
-            return ifaceAddress.getHostAddress();
-        }
-        else if (ifaceAddress instanceof Inet6Address) {
-            String hostAddress = ifaceAddress.getHostAddress();
-
-            // remove scope
-            int percent = hostAddress.indexOf('%');
-            if (percent != -1) {
-                hostAddress = hostAddress.substring(0, percent);
-            }
-
-            return "[" + hostAddress + "]";
+    /**
+     * Check if the given address is a normal IP address that is neither a loopback, link local nor
+     * multicast address.
+     *
+     * @param address the address that should be checked
+     * @return true if the address is a normal IP address, false otherwise
+     */
+    public static boolean isValidNonSpecialIPAddress(InetAddress address) {
+        boolean hasScope;
+        if (address instanceof Inet6Address) {
+            Inet6Address inet6Address = (Inet6Address) address;
+            hasScope = inet6Address.getScopeId() != 0 || inet6Address.getScopedInterface() != null;
         }
         else {
-            return null;
+            hasScope = false;
         }
+
+        return !hasScope &&
+                !address.isLoopbackAddress() &&
+                !address.isLinkLocalAddress() &&
+                !address.isMulticastAddress() &&
+                ((address instanceof Inet4Address) || (address instanceof Inet6Address));
     }
 
     /**
