@@ -2,7 +2,7 @@ version: '3.4'
 
 services:
   drasyl:
-    image: git.informatik.uni-hamburg.de:4567/sane-public/drasyl
+    image: drasyl/drasyl:latest
     command: node
     restart: always
     ports:
