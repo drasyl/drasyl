@@ -110,13 +110,13 @@
         <logback.version>1.2.3</logback.version>
         <junit.version>5.7.0-M1</junit.version>
         <mockito.version>3.4.6</mockito.version>
-        <jackson.version>2.11.1</jackson.version>
+        <jackson.version>2.11.2</jackson.version>
         <hamcrest.version>2.2</hamcrest.version>
         <bouncycastle.version>1.66</bouncycastle.version>
         <awaitility.version>4.0.3</awaitility.version>
         <netty.version>4.1.51.Final</netty.version>
         <guava.version>29.0-jre</guava.version>
-        <rxjava.version>3.0.4</rxjava.version>
+        <rxjava.version>3.0.5</rxjava.version>
         <sentry.version>1.7.30</sentry.version>
         <commons.version>4.4</commons.version>
         <micrometer.version>1.5.3</micrometer.version>
