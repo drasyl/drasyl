@@ -20,43 +20,61 @@ package org.drasyl.pipeline;
 
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
+import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.pipeline.codec.TypeValidator;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 
 /**
- * Special class that represents the head of a {@link Pipeline}. This class can not be removed from
- * the pipeline.
+ * Skeleton implementation for end handler of the {@link Pipeline}.
  */
 @SuppressWarnings({ "common-java:DuplicatedBlocks" })
-class HeadContext extends AbstractEndHandler {
-    public static final String DRASYL_HEAD_HANDLER = "DRASYL_HEAD_HANDLER";
-    private static final Logger LOG = LoggerFactory.getLogger(HeadContext.class);
+public abstract class AbstractEndHandler extends AbstractHandlerContext implements Handler {
+    public AbstractEndHandler(String name,
+                              DrasylConfig config,
+                              Pipeline pipeline,
+                              Scheduler scheduler,
+                              Identity identity,
+                              TypeValidator validator) {
+        super(name, config, pipeline, scheduler, identity, validator);
+    }
 
-    public HeadContext(DrasylConfig config,
-                       Pipeline pipeline,
-                       Scheduler scheduler,
-                       Identity identity,
-                       TypeValidator validator) {
-        super(DRASYL_HEAD_HANDLER, config, pipeline, scheduler, identity, validator);
+    @Override
+    public Handler handler() {
+        return this;
     }
 
     @Override
     public void handlerAdded(HandlerContext ctx) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Pipeline head was added.");
-        }
+        // skip
     }
 
     @Override
     public void handlerRemoved(HandlerContext ctx) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Pipeline head was removed.");
-        }
+        // skip
+    }
+
+    @Override
+    public void read(HandlerContext ctx,
+                     CompressedPublicKey sender,
+                     Object msg,
+                     CompletableFuture<Void> future) {
+        // skip
+        ctx.fireRead(sender, msg, future);
+    }
+
+    @Override
+    public void eventTriggered(HandlerContext ctx, Event event, CompletableFuture<Void> future) {
+        // skip
+        ctx.fireEventTriggered(event, future);
+    }
+
+    @Override
+    public void exceptionCaught(HandlerContext ctx, Exception cause) {
+        //skip
+        ctx.fireExceptionCaught(cause);
     }
 
     @Override
@@ -64,16 +82,7 @@ class HeadContext extends AbstractEndHandler {
                       CompressedPublicKey recipient,
                       Object msg,
                       CompletableFuture<Void> future) {
-        if (future.isDone()) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Message `{}` has arrived the end of the pipeline and was already completed.", msg);
-            }
-        }
-        else {
-            if (LOG.isWarnEnabled()) {
-                LOG.warn("Message `{}` has arrived the end of the pipeline and was not consumed before. Message was dropped.", msg);
-            }
-            future.completeExceptionally(new IllegalStateException("Message must be consumed before end of the pipeline."));
-        }
+        // skip
+        ctx.write(recipient, msg, future);
     }
 }

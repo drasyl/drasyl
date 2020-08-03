@@ -72,10 +72,19 @@ class DrasylPipelineIT {
                 .identityPrivateKey(identity1.getPrivateKey())
                 .build();
 
-        pipeline = new DrasylPipeline(receivedEvents::onNext, msg -> {
-            outboundMessages.onNext(msg);
-            return CompletableFuture.completedFuture(null);
-        }, config, identity1);
+        pipeline = new DrasylPipeline(receivedEvents::onNext, config, identity1);
+        pipeline.addFirst("outboundMessages", new SimpleOutboundHandler<ApplicationMessage>() {
+            @Override
+            protected void matchedWrite(HandlerContext ctx,
+                                        CompressedPublicKey recipient,
+                                        ApplicationMessage msg,
+                                        CompletableFuture<Void> future) {
+                if (!future.isDone()) {
+                    outboundMessages.onNext(msg);
+                    future.complete(null);
+                }
+            }
+        });
     }
 
     @Test

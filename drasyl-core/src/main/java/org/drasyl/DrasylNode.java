@@ -45,8 +45,8 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.client.SuperPeerClient;
 import org.drasyl.peer.connection.direct.DirectConnectionsManager;
-import org.drasyl.peer.connection.localhost.LocalHostDiscovery;
 import org.drasyl.peer.connection.intravm.IntraVmDiscovery;
+import org.drasyl.peer.connection.localhost.LocalHostDiscovery;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.IdentityMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
@@ -54,9 +54,12 @@ import org.drasyl.peer.connection.message.RelayableMessage;
 import org.drasyl.peer.connection.message.WhoisMessage;
 import org.drasyl.peer.connection.server.Server;
 import org.drasyl.pipeline.DrasylPipeline;
+import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
+import org.drasyl.pipeline.SimpleOutboundHandler;
 import org.drasyl.pipeline.codec.Codec;
 import org.drasyl.plugins.PluginManager;
+import org.drasyl.util.FutureUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -165,9 +168,36 @@ public abstract class DrasylNode {
             this.messenger = new Messenger(this::messageSink, peersManager, channelGroup);
             this.endpoints = new CopyOnWriteArraySet<>();
             this.acceptNewConnections = new AtomicBoolean();
-            this.pipeline = new DrasylPipeline(this::onEvent, messenger::send, config, identity);
+            this.pipeline = new DrasylPipeline(this::onEvent, config, identity);
             this.components = new ArrayList<>();
             this.components.add(new PluginManager(pipeline, config));
+
+            // --------------------------------- TODO ----------------------------------------------
+            // Remove this later, when the messenger is replaced and all components are added to the
+            // drasyl Pipeline.
+            pipeline.addFirst("passToMessengerHandler", new SimpleOutboundHandler<ApplicationMessage>() {
+                @Override
+                protected void matchedWrite(HandlerContext ctx,
+                                            CompressedPublicKey recipient,
+                                            ApplicationMessage msg,
+                                            CompletableFuture<Void> future) {
+                    if (future.isDone()) {
+                        if (LOG.isWarnEnabled()) {
+                            LOG.warn("Message `{}` was not written to the underlying drasyl layer, because the corresponding future was already completed.", msg);
+                        }
+                    }
+                    else {
+                        try {
+                            FutureUtil.completeOnAllOf(future, messenger.send(msg));
+                        }
+                        catch (Exception e) {
+                            future.completeExceptionally(e);
+                        }
+                    }
+                }
+            });
+            // -------------------------------------------------------------------------------------
+
             if (config.areDirectConnectionsEnabled()) {
                 this.components.add(new DirectConnectionsManager(config, identity, peersManager, messenger, pipeline, channelGroup, DrasylNode.WORKER_GROUP, this::onInternalEvent, acceptNewConnections::get, endpoints, messenger.communicationOccurred()));
             }

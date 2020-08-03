@@ -195,11 +195,6 @@ abstract class AbstractHandlerContext implements HandlerContext {
     }
 
     @Override
-    public CompletableFuture<Void> write(CompressedPublicKey recipient, Object msg) {
-        return write(recipient, msg, new CompletableFuture<>());
-    }
-
-    @Override
     public CompletableFuture<Void> write(CompressedPublicKey recipient,
                                          Object msg,
                                          CompletableFuture<Void> future) {

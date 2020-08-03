@@ -55,13 +55,11 @@ class DrasylPipelineTest {
     @Mock
     private Map<String, AbstractHandlerContext> handlerNames;
     @Mock
-    private AbstractHandlerContext head;
+    private AbstractEndHandler head;
     @Mock
-    private AbstractHandlerContext tail;
+    private AbstractEndHandler tail;
     @Mock
     private Consumer<Event> eventConsumer;
-    @Mock
-    private DrasylFunction<ApplicationMessage, CompletableFuture<Void>, DrasylException> outboundFunction;
     @Mock
     private Scheduler scheduler;
     @Mock
@@ -71,7 +69,7 @@ class DrasylPipelineTest {
 
     @Test
     void shouldCreateNewPipeline() {
-        DrasylPipeline pipeline = new DrasylPipeline(eventConsumer, outboundFunction, config, identity);
+        DrasylPipeline pipeline = new DrasylPipeline(eventConsumer, config, identity);
 
         assertNull(pipeline.get(DRASYL_HEAD_HANDLER));
         assertNull(pipeline.context(DRASYL_HEAD_HANDLER));

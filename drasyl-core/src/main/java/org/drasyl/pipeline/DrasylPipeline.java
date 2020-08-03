@@ -20,18 +20,14 @@ package org.drasyl.pipeline;
 
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
-import org.drasyl.DrasylException;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.codec.DefaultCodec;
+import org.drasyl.pipeline.codec.ObjectHolder2ApplicationMessageHandler;
 import org.drasyl.pipeline.codec.TypeValidator;
-import org.drasyl.util.DrasylConsumer;
-import org.drasyl.util.DrasylFunction;
 import org.drasyl.util.DrasylScheduler;
 
 import java.util.Map;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.function.Consumer;
 
@@ -40,12 +36,11 @@ import java.util.function.Consumer;
  */
 public class DrasylPipeline extends DefaultPipeline {
     public DrasylPipeline(Consumer<Event> eventConsumer,
-                          DrasylFunction<ApplicationMessage, CompletableFuture<Void>, DrasylException> outboundFunction,
                           DrasylConfig config,
                           Identity identity) {
         this.handlerNames = new ConcurrentHashMap<>();
         this.validator = TypeValidator.of(config);
-        this.head = new HeadContext(outboundFunction, config, this, DrasylScheduler.getInstanceHeavy(), identity, validator);
+        this.head = new HeadContext(config, this, DrasylScheduler.getInstanceHeavy(), identity, validator);
         this.tail = new TailContext(eventConsumer, config, this, DrasylScheduler.getInstanceHeavy(), identity, validator);
         this.scheduler = DrasylScheduler.getInstanceLight();
         this.config = config;
@@ -55,11 +50,12 @@ public class DrasylPipeline extends DefaultPipeline {
 
         // add default codec
         addFirst(DefaultCodec.DEFAULT_CODEC, DefaultCodec.INSTANCE);
+        addFirst(ObjectHolder2ApplicationMessageHandler.OBJECT_HOLDER2APP_MSG, ObjectHolder2ApplicationMessageHandler.INSTANCE);
     }
 
     DrasylPipeline(Map<String, AbstractHandlerContext> handlerNames,
-                   AbstractHandlerContext head,
-                   AbstractHandlerContext tail,
+                   AbstractEndHandler head,
+                   AbstractEndHandler tail,
                    Scheduler scheduler,
                    DrasylConfig config,
                    Identity identity) {

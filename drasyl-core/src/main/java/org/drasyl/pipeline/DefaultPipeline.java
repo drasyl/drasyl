@@ -40,8 +40,8 @@ import java.util.concurrent.CompletableFuture;
 public abstract class DefaultPipeline implements Pipeline {
     private static final Logger LOG = LoggerFactory.getLogger(DefaultPipeline.class);
     protected Map<String, AbstractHandlerContext> handlerNames;
-    protected AbstractHandlerContext head;
-    protected AbstractHandlerContext tail;
+    protected AbstractEndHandler head;
+    protected AbstractEndHandler tail;
     protected Scheduler scheduler;
     protected DrasylConfig config;
     protected Identity identity;
