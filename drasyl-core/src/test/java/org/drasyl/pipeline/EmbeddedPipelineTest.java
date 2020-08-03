@@ -26,6 +26,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.codec.DefaultCodec;
+import org.drasyl.pipeline.codec.ObjectHolder2ApplicationMessageHandler;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.BeforeEach;
@@ -51,7 +52,7 @@ class EmbeddedPipelineTest {
 
     @Test
     void shouldReturnInboundMessagesAndEvents() {
-        EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), DefaultCodec.INSTANCE, new HandlerAdapter(), new HandlerAdapter());
+        EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, new HandlerAdapter(), new HandlerAdapter());
         TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
         TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
         TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
@@ -88,7 +89,7 @@ class EmbeddedPipelineTest {
 
     @Test
     void shouldReturnOutboundMessages() {
-        EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), DefaultCodec.INSTANCE, new HandlerAdapter(), new HandlerAdapter());
+        EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, new HandlerAdapter(), new HandlerAdapter());
         TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
         TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
         TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();

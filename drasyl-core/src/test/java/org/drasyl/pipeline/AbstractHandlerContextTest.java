@@ -317,10 +317,10 @@ class AbstractHandlerContextTest {
         CompressedPublicKey recipient = mock(CompressedPublicKey.class);
         ApplicationMessage msg = mock(ApplicationMessage.class);
 
-        ctx.write(recipient, msg);
+        ctx.write(recipient, msg, future);
 
         verify(prev, times(2)).handler();
-        verify(newHandler).write(eq(prev), eq(recipient), eq(msg), isA(CompletableFuture.class));
+        verify(newHandler).write(eq(prev), eq(recipient), eq(msg), eq(future));
     }
 
     @Test
@@ -339,10 +339,10 @@ class AbstractHandlerContextTest {
         CompressedPublicKey recipient = mock(CompressedPublicKey.class);
         ApplicationMessage msg = mock(ApplicationMessage.class);
 
-        ctx.write(recipient, msg);
+        ctx.write(recipient, msg, future);
 
         verify(prev, times(2)).handler();
-        verify(newHandler).write(eq(prev), eq(recipient), eq(msg), isA(CompletableFuture.class));
+        verify(newHandler).write(eq(prev), eq(recipient), eq(msg), eq(future));
         verify(prev).fireExceptionCaught(isA(RuntimeException.class));
     }
 

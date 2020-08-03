@@ -45,7 +45,7 @@ import java.util.concurrent.CompletableFuture;
  * Pipeline} typically. An I/O event are handled by a {@link Handler}  and be forwarded to its
  * closest handler by calling the event propagation methods defined in {@link HandlerContext}, such
  * as {@link HandlerContext#fireRead(CompressedPublicKey, Object, CompletableFuture)} and {@link
- * HandlerContext#write(CompressedPublicKey, Object)} .
+ * HandlerContext#write(CompressedPublicKey, Object, CompletableFuture)} .
  *
  * <pre>
  *                                                 I/O Request
@@ -81,7 +81,7 @@ import java.util.concurrent.CompletableFuture;
  *                  |                                  \|/
  *  +---------------+-----------------------------------+---------------+
  *  |               |                                   |               |
- *  |       [ MessageSink.send() ]              [ DrasylNode.send() ]   |
+ *  |   [ DrasylNodeComponent ]              [ MessageSink.send() ]     |
  *  |                                                                   |
  *  |  drasyl internal I/O                                              |
  *  +-------------------------------------------------------------------+
@@ -125,7 +125,6 @@ import java.util.concurrent.CompletableFuture;
  * </li>
  * <li>Outbound event propagation methods:
  *     <ul>
- *     <li>{@link HandlerContext#write(CompressedPublicKey, Object)} </li>
  *     <li>{@link HandlerContext#write(CompressedPublicKey, Object, CompletableFuture)} </li>
  *     </ul>
  * </li>

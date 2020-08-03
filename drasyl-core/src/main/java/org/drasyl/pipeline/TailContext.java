@@ -36,7 +36,7 @@ import java.util.function.Consumer;
  * Special class that represents the tail of a {@link Pipeline}. This class can not be removed from
  * the pipeline.
  */
-class TailContext extends AbstractHandlerContext implements Handler {
+class TailContext extends AbstractEndHandler {
     public static final String DRASYL_TAIL_HANDLER = "DRASYL_TAIL_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(TailContext.class);
     private final Consumer<Event> eventConsumer;
@@ -52,8 +52,17 @@ class TailContext extends AbstractHandlerContext implements Handler {
     }
 
     @Override
-    public Handler handler() {
-        return this;
+    public void handlerAdded(HandlerContext ctx) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Pipeline tail was added.");
+        }
+    }
+
+    @Override
+    public void handlerRemoved(HandlerContext ctx) {
+        if (LOG.isDebugEnabled()) {
+            LOG.debug("Pipeline tail was removed.");
+        }
     }
 
     @Override
@@ -90,27 +99,5 @@ class TailContext extends AbstractHandlerContext implements Handler {
     @Override
     public void exceptionCaught(HandlerContext ctx, Exception cause) {
         throw new PipelineException(cause);
-    }
-
-    @Override
-    public void write(HandlerContext ctx,
-                      CompressedPublicKey recipient,
-                      Object msg,
-                      CompletableFuture<Void> future) {
-        ctx.write(recipient, msg, future);
-    }
-
-    @Override
-    public void handlerAdded(HandlerContext ctx) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Pipeline tail was added.");
-        }
-    }
-
-    @Override
-    public void handlerRemoved(HandlerContext ctx) {
-        if (LOG.isDebugEnabled()) {
-            LOG.debug("Pipeline tail was removed.");
-        }
     }
 }

@@ -63,10 +63,21 @@ public class EmbeddedPipeline extends DefaultPipeline {
         outboundMessages = ReplaySubject.create();
 
         this.handlerNames = new ConcurrentHashMap<>();
-        this.head = new HeadContext(msg -> {
-            outboundMessages.onNext(msg);
-            return CompletableFuture.completedFuture(null);
-        }, config, this, DrasylScheduler.getInstanceHeavy(), identity, validator);
+        this.head = new AbstractEndHandler(HeadContext.DRASYL_HEAD_HANDLER, config, this, DrasylScheduler.getInstanceHeavy(), identity, validator) {
+            @Override
+            public void write(HandlerContext ctx,
+                              CompressedPublicKey recipient,
+                              Object msg,
+                              CompletableFuture<Void> future) {
+                if (msg instanceof ApplicationMessage) {
+                    outboundMessages.onNext((ApplicationMessage) msg);
+                    future.complete(null);
+                }
+                else {
+                    future.completeExceptionally(new IllegalArgumentException("Message must be of type ApplicationMessage at the end of the pipeline"));
+                }
+            }
+        };
         this.tail = new TailContext(inboundEvents::onNext, config, this, DrasylScheduler.getInstanceHeavy(), identity, validator) {
             @Override
             public void read(HandlerContext ctx,

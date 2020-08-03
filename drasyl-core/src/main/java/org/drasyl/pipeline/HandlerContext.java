@@ -86,14 +86,6 @@ public interface HandlerContext {
      *
      * @param recipient the recipient of the message
      * @param msg       the message
-     */
-    CompletableFuture<Void> write(CompressedPublicKey recipient, Object msg);
-
-    /**
-     * Request to write a message via this {@link HandlerContext} through the {@link Pipeline}.
-     *
-     * @param recipient the recipient of the message
-     * @param msg       the message
      * @param future    the future of the message
      */
     CompletableFuture<Void> write(CompressedPublicKey recipient,
