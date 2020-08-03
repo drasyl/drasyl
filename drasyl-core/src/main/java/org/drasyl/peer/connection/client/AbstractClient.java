@@ -150,7 +150,6 @@ abstract class AbstractClient implements DrasylNodeComponent {
             bootstrapSupplier.apply(endpoint).connect()
                     .addListener((ChannelFutureListener) channelFuture -> { // NOSONAR
                         if (channelFuture.isSuccess()) {
-                            nextRetryDelayPointer.set(0); // reset retry delay
                             getLogger().debug("Connection to Endpoint '{}' established", endpoint);
                             channel = channelFuture.channel();
                             channel.closeFuture().addListener(future -> {
