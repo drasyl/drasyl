@@ -108,7 +108,6 @@ public final class NetworkUtil {
                 URLConnection connection = provider.openConnection();
                 connection.setConnectTimeout(5000);
                 connection.setReadTimeout(5000);
-                connection.getInputStream();
 
                 LOG.debug("Request external ip address from service '{}'...", provider);
 
