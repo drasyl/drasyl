@@ -109,6 +109,10 @@
             <groupId>io.reactivex.rxjava3</groupId>
             <artifactId>rxjava</artifactId>
         </dependency>
+        <dependency>
+            <groupId>com.offbynull.portmapper</groupId>
+            <artifactId>portmapper</artifactId>
+        </dependency>
 
         <!-- Test -->
         <dependency>
