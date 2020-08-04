@@ -923,7 +923,7 @@ public class DrasylConfig {
         private Duration superPeerIdleTimeout;
         private boolean intraVmDiscoveryEnabled;
         private boolean localHostDiscoveryEnabled;
-        private Path localHostDiscoveryPath;
+        private final Path localHostDiscoveryPath;
         private Duration localHostDiscoveryLeaseTime;
         private boolean directConnectionsEnabled;
         private int directConnectionsMaxConcurrentConnections;
@@ -1267,25 +1267,21 @@ public class DrasylConfig {
 
         public Builder marshallingAllowedTypes(List<String> marshallingAllowedTypes) {
             this.marshallingAllowedTypes = marshallingAllowedTypes;
-
             return this;
         }
 
         public Builder marshallingAllowAllPrimitives(boolean marshallingAllowAllPrimitives) {
             this.marshallingAllowAllPrimitives = marshallingAllowAllPrimitives;
-
             return this;
         }
 
         public Builder marshallingAllowArrayOfDefinedTypes(boolean marshallingAllowArrayOfDefinedTypes) {
             this.marshallingAllowArrayOfDefinedTypes = marshallingAllowArrayOfDefinedTypes;
-
             return this;
         }
 
         public Builder marshallingAllowedPackages(List<String> marshallingAllowedPackages) {
             this.marshallingAllowedPackages = marshallingAllowedPackages;
-
             return this;
         }
 
