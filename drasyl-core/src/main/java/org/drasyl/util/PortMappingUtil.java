@@ -245,16 +245,17 @@ public class PortMappingUtil {
         private void createMapping() {
             try {
                 mappedPort = mapper.mapPort(PortType.TCP, address.getPort(), address.getPort(), PORT_LIFETIME.getSeconds());
+                InetSocketAddress externalAdded = new InetSocketAddress(mappedPort.getExternalAddress().getHostName(), mappedPort.getExternalPort());
                 if (LOG.isDebugEnabled()) {
-                    LOG.debug("{} router has created {} port mapping {} -> {} (lifetime: {}s)", mappingMethod(), mappedPort.getPortType(), currentExternalAddress(), address, mappedPort.getLifetime());
+                    LOG.debug("{} router has created {} port mapping {} -> {} (lifetime: {}s)", mappingMethod(), mappedPort.getPortType(), externalAdded, address, mappedPort.getLifetime());
                 }
-                externalAddressObservable.onNext(Optional.of(new InetSocketAddress(mappedPort.getExternalAddress().getHostName(), mappedPort.getExternalPort())));
+                externalAddressObservable.onNext(Optional.of(externalAdded));
 
                 if (mappedPort.getLifetime() > 0) {
                     scheduleMappingRefresh(ofSeconds(mappedPort.getLifetime()).dividedBy(2));
                 }
                 else {
-                    throw new IllegalStateException("Non-positive lifetime (" + mappedPort.getLifetime() + "s) received from " + mappingMethod() + " router for " + mappedPort.getPortType() + " port mapping " + currentExternalAddress() + " -> " + address);
+                    throw new IllegalStateException("Non-positive lifetime (" + mappedPort.getLifetime() + "s) received from " + mappingMethod() + " router for " + mappedPort.getPortType() + " port mapping " + externalAdded + " -> " + address);
                 }
             }
             catch (InterruptedException e) {
