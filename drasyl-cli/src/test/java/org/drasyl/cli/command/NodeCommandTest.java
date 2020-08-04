@@ -70,7 +70,7 @@ public class NodeCommandTest {
         private CommandLine cmd;
 
         @Test
-        void shouldRunANode(@Mock  Pair pair) throws CliException {
+        void shouldRunANode(@Mock Pair<DrasylNode, CompletableFuture<Void>> pair) throws CliException {
             when(nodeSupplier.apply(any())).thenReturn(pair);
             when(pair.second()).thenReturn(completedFuture(null));
 

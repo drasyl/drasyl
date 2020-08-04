@@ -124,7 +124,7 @@ class SuperPeerClientTest {
     class NextEndpoint {
         @Test
         void shouldReturnCorrectEndpoint() {
-            endpoints = new TreeSet();
+            endpoints = new TreeSet<>();
             endpoints.add(URI.create("ws://node1.org"));
             endpoints.add(URI.create("ws://node2.org"));
 
