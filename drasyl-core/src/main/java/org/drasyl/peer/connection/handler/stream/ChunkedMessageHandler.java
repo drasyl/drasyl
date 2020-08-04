@@ -85,7 +85,6 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
                             msg.getChecksum(),
                             msg.getId(),
                             maxContentLength,
-                            msg.getPayloadClazz(),
                             () -> chunks.remove(msg.getId()),
                             transferTimeout.toMillis()
                     )

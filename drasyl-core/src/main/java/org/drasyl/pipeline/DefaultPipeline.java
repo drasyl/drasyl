@@ -284,7 +284,7 @@ public abstract class DefaultPipeline implements Pipeline {
     public CompletableFuture<Void> processInbound(ApplicationMessage msg) {
         CompletableFuture<Void> rtn = new CompletableFuture<>();
 
-        this.scheduler.scheduleDirect(() -> this.head.fireRead(msg.getSender(), ObjectHolder.of(msg.getPayloadClazz(), msg.getPayload()), rtn));
+        this.scheduler.scheduleDirect(() -> this.head.fireRead(msg.getSender(), ObjectHolder.of(msg.getHeader(ObjectHolder.CLASS_KEY_NAME), msg.getPayload()), rtn));
 
         return rtn;
     }

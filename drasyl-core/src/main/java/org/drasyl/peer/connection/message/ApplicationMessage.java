@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.pipeline.codec.ObjectHolder;
 
 import java.util.Arrays;
 import java.util.Map;
@@ -40,15 +41,13 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     protected final Map<String, String> headers;
     protected final byte[] payload;
-    protected final Class<?> payloadClazz;
 
     public ApplicationMessage(MessageId id,
                               CompressedPublicKey sender,
                               CompressedPublicKey recipient,
                               byte[] payload,
-                              Class<?> payloadClazz,
                               short hopCount) {
-        this(id, sender, recipient, Map.of(), payload, payloadClazz, hopCount);
+        this(id, sender, recipient, Map.of(), payload, hopCount);
     }
 
     @JsonCreator
@@ -57,7 +56,6 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
                               @JsonProperty("recipient") CompressedPublicKey recipient,
                               @JsonProperty("headers") Map<String, String> headers,
                               @JsonProperty("payload") byte[] payload,
-                              @JsonProperty("payloadClazz") Class<?> payloadClazz,
                               @JsonProperty("hopCount") short hopCount) {
         super(id, recipient, hopCount);
         this.sender = requireNonNull(sender);
@@ -69,12 +67,6 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
             this.headers = Map.of();
         }
         this.payload = requireNonNull(payload);
-
-        /*
-         * Needed for backwards compatible with {@link ApplicationMessage} of versions lower
-         * than 0.1.3-SNAPSHOT and returns on empty {@link #payloadClazz} the {@code byte[].class}.
-         */
-        this.payloadClazz = Objects.requireNonNullElse(payloadClazz, byte[].class);
     }
 
     /**
@@ -87,27 +79,19 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
     public ApplicationMessage(CompressedPublicKey sender,
                               CompressedPublicKey recipient,
                               Map<String, String> headers,
-                              byte[] payload,
-                              Class<?> payloadClazz) {
-        this(sender, recipient, headers, payload, payloadClazz, (short) 0);
+                              byte[] payload) {
+        this(sender, recipient, headers, payload, (short) 0);
     }
 
     ApplicationMessage(CompressedPublicKey sender,
                        CompressedPublicKey recipient,
                        Map<String, String> headers,
                        byte[] payload,
-                       Class<?> payloadClazz,
                        short hopCount) {
         super(recipient, hopCount);
         this.sender = requireNonNull(sender);
         this.headers = requireNonNull(headers);
         this.payload = requireNonNull(payload);
-
-        /*
-         * Needed for backwards compatible with {@link ApplicationMessage} of versions lower
-         * than 0.1.3-SNAPSHOT and returns on empty {@link #payloadClazz} the {@code byte[].class}.
-         */
-        this.payloadClazz = Objects.requireNonNullElse(payloadClazz, byte[].class);
     }
 
     /**
@@ -119,18 +103,8 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
      */
     public ApplicationMessage(CompressedPublicKey sender,
                               CompressedPublicKey recipient,
-
-                              byte[] payload,
-                              Class<?> payloadClazz) {
-        this(sender, recipient, Map.of(), payload, payloadClazz, (short) 0);
-    }
-
-    /**
-     * @return the class of the encoded payload
-     * @since 0.1.3-SNAPSHOT
-     */
-    public Class<?> getPayloadClazz() {
-        return payloadClazz;
+                              byte[] payload) {
+        this(sender, recipient, Map.of(), payload, (short) 0);
     }
 
     public CompressedPublicKey getSender() {
@@ -143,12 +117,18 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
 
     /**
      * Returns the value of header with name <code>name</code>, or {@code null} if this header does
-     * not exist.
+     * not exist. Returns {@code byte[].class.getName()} if the header does not contain a value for
+     * {@code name = } {@link ObjectHolder#CLASS_KEY_NAME}.
      *
      * @return value of header with name <code>name</code>, or {@code null} if this header does not
      * exist
      */
     public String getHeader(String name) {
+        // for backward compatibility
+        if (name.equals(ObjectHolder.CLASS_KEY_NAME) && !headers.containsKey(name)) {
+            return byte[].class.getName();
+        }
+
         return headers.get(name);
     }
 
@@ -165,7 +145,7 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(super.hashCode(), sender);
+        int result = Objects.hash(super.hashCode(), sender, headers);
         result = 31 * result + Arrays.hashCode(payload);
         return result;
     }
@@ -183,7 +163,8 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
         }
         ApplicationMessage that = (ApplicationMessage) o;
         return Objects.equals(sender, that.sender) &&
-                Arrays.equals(payload, that.payload);
+                Arrays.equals(payload, that.payload) &&
+                Objects.equals(headers, that.headers);
     }
 
     @Override
@@ -191,9 +172,9 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
         return "ApplicationMessage{" +
                 "sender=" + sender +
                 ", payload=byte[" + Optional.ofNullable(payload).orElse(new byte[]{}).length + "] { ... }" +
-                ", payloadClazz=" + payloadClazz +
                 ", recipient=" + recipient +
                 ", hopCount=" + hopCount +
+                ", headers=" + headers +
                 ", id='" + id + '\'' +
                 '}';
     }

@@ -144,11 +144,12 @@ class HandlerAdapterTest {
             ApplicationMessage msg = mock(ApplicationMessage.class);
             when(msg.getSender()).thenReturn(sender);
             when(msg.getPayload()).thenReturn(new byte[]{});
+            when(msg.getHeader(ObjectHolder.CLASS_KEY_NAME)).thenReturn(byte[].class.getName());
 
             pipeline.processInbound(msg);
 
             events.awaitCount(1);
-            events.assertValue(Pair.of(sender, ObjectHolder.of(null, new byte[]{})));
+            events.assertValue(Pair.of(sender, ObjectHolder.of(byte[].class, new byte[]{})));
         }
     }
 }

@@ -216,7 +216,7 @@ class ServerIT {
     }
 
     @Test
-    void applicationMessageShouldBeForwardedToRecipient() throws ClientException {
+    void applicationMessageShouldBeForwardedToRecipient() {
         // create connections
         try (TestSuperPeerClient session1 = clientSessionAfterJoin(configClient1, identitySession1)) {
             try (TestSuperPeerClient session2 = clientSessionAfterJoin(configClient2, identitySession2)) {
@@ -230,7 +230,7 @@ class ServerIT {
                 };
 
                 // send message
-                RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session2.getPublicKey(), payload, payload.getClass());
+                RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session2.getPublicKey(), payload);
                 session1.send(request);
                 receivedMessages2.awaitCount(1);
                 receivedMessages2.assertValueAt(0, val -> {
@@ -246,7 +246,7 @@ class ServerIT {
     }
 
     private TestSuperPeerClient clientSessionAfterJoin(DrasylConfig config,
-                                                       Identity identity) throws ClientException {
+                                                       Identity identity) {
         TestSuperPeerClient client = new TestSuperPeerClient(config, identity, workerGroup, true, true, endpoints);
         client.open();
         awaitClientJoin(identity);
@@ -283,13 +283,13 @@ class ServerIT {
 
     private TestSuperPeerClient clientSession(DrasylConfig config,
                                               Server server,
-                                              Identity identity) throws ClientException {
+                                              Identity identity) {
         return clientSession(config, identity, true);
     }
 
     private TestSuperPeerClient clientSession(DrasylConfig config,
                                               Identity identity,
-                                              boolean doPingPong) throws ClientException {
+                                              boolean doPingPong) {
         TestSuperPeerClient client = new TestSuperPeerClient(config, identity, workerGroup, doPingPong, false, endpoints);
         client.open();
         return client;
@@ -297,7 +297,7 @@ class ServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void joinedClientsShouldNoBeDroppedAfterTimeout() throws InterruptedException, ClientException {
+    void joinedClientsShouldNoBeDroppedAfterTimeout() throws InterruptedException {
         // create connection
         try (TestSuperPeerClient session = clientSessionAfterJoin(configClient1, identitySession1)) {
 
@@ -388,7 +388,7 @@ class ServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientsNotSendingPongMessageShouldBeDroppedAfterTimeout() throws InterruptedException, ClientException {
+    void clientsNotSendingPongMessageShouldBeDroppedAfterTimeout() throws InterruptedException {
         // create connection
         try (TestSuperPeerClient session = clientSession(configClient1, identitySession1, false)) {
 
@@ -405,7 +405,7 @@ class ServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientsSendingPongMessageShouldNotBeDroppedAfterTimeout() throws InterruptedException, ClientException {
+    void clientsSendingPongMessageShouldNotBeDroppedAfterTimeout() throws InterruptedException {
         // create connection
         try (TestSuperPeerClient session = clientSessionAfterJoin(configClient1, identitySession1)) {
 
@@ -419,7 +419,7 @@ class ServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void pingMessageShouldBeRespondedWithPongMessage() throws ExecutionException, InterruptedException, ClientException {
+    void pingMessageShouldBeRespondedWithPongMessage() throws ExecutionException, InterruptedException {
         // create connection
         try (TestSuperPeerClient session = clientSession(configClient1, identitySession1, false)) {
 
@@ -446,7 +446,7 @@ class ServerIT {
             RequestMessage request = new ApplicationMessage(sender, recipient, new byte[]{
                     0x00,
                     0x01
-            }, byte[].class);
+            });
             CompletableFuture<ResponseMessage<?>> send = session.sendRequest(request);
 
             // verify response
@@ -459,7 +459,7 @@ class ServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void messageWithMaxSizeShouldArrive() throws ClientException {
+    void messageWithMaxSizeShouldArrive() {
         ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.DISABLED);
         // create connection
         try (TestSuperPeerClient session1 = clientSessionAfterJoin(configClient1, identitySession1)) {
@@ -472,7 +472,7 @@ class ServerIT {
                 new Random().nextBytes(bigPayload);
 
                 // send message
-                RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session2.getPublicKey(), bigPayload, bigPayload.getClass());
+                RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session2.getPublicKey(), bigPayload);
                 session2.send(request);
 
                 // verify response
@@ -484,7 +484,7 @@ class ServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void messageExceedingChunkSizeShouldBeSend() throws ClientException {
+    void messageExceedingChunkSizeShouldBeSend() {
         // create connections
         try (TestSuperPeerClient session1 = clientSessionAfterJoin(configClient1, identitySession1)) {
             try (TestSuperPeerClient session2 = clientSessionAfterJoin(configClient2, identitySession2)) {
@@ -495,7 +495,7 @@ class ServerIT {
                 new Random().nextBytes(bigPayload);
 
                 // send message
-                RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session2.getPublicKey(), bigPayload, bigPayload.getClass());
+                RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session2.getPublicKey(), bigPayload);
 
                 session1.send(request);
                 receivedMessages2.awaitCount(1);
@@ -530,7 +530,7 @@ class ServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void shuttingDownServerShouldRejectNewConnections() throws ExecutionException, InterruptedException, ClientException {
+    void shuttingDownServerShouldRejectNewConnections() throws ExecutionException, InterruptedException {
         try (TestSuperPeerClient session = clientSession(configClient1, server, identitySession1)) {
             acceptNewConnections.set(false);
 

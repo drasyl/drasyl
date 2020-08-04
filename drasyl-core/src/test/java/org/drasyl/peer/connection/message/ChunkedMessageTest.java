@@ -61,7 +61,7 @@ class ChunkedMessageTest {
                     0x00,
                     0x01,
                     0x02
-            }, byte[].class, contentLength, checksum), JACKSON_READER.readValue(json, ApplicationMessage.class));
+            }, contentLength, checksum), JACKSON_READER.readValue(json, ApplicationMessage.class));
         }
     }
 
@@ -73,7 +73,7 @@ class ChunkedMessageTest {
                     0x00,
                     0x01,
                     0x02
-            }, byte[].class, contentLength, checksum);
+            }, contentLength, checksum);
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
@@ -117,17 +117,17 @@ class ChunkedMessageTest {
                     0x00,
                     0x01,
                     0x02
-            }, byte[].class, contentLength, checksum);
+            }, contentLength, checksum);
             ChunkedMessage message2 = ChunkedMessage.createFirstChunk(sender, recipient, id, new byte[]{
                     0x00,
                     0x01,
                     0x02
-            }, byte[].class, contentLength, checksum);
+            }, contentLength, checksum);
             ChunkedMessage message3 = ChunkedMessage.createFirstChunk(sender, recipient, id, new byte[]{
                     0x03,
                     0x02,
                     0x01
-            }, byte[].class, contentLength, checksum);
+            }, contentLength, checksum);
 
             assertEquals(message1, message2);
             assertNotEquals(message2, message3);
@@ -142,17 +142,17 @@ class ChunkedMessageTest {
                     0x00,
                     0x01,
                     0x02
-            }, byte[].class, contentLength, checksum);
+            }, contentLength, checksum);
             ChunkedMessage message2 = ChunkedMessage.createFirstChunk(sender, recipient, id, new byte[]{
                     0x00,
                     0x01,
                     0x02
-            }, byte[].class, contentLength, checksum);
+            }, contentLength, checksum);
             ChunkedMessage message3 = ChunkedMessage.createFirstChunk(sender, recipient, id, new byte[]{
                     0x03,
                     0x02,
                     0x01
-            }, byte[].class, contentLength, checksum);
+            }, contentLength, checksum);
 
             assertEquals(message1, message2);
             assertEquals(message1.hashCode(), message2.hashCode());

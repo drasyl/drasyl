@@ -29,10 +29,12 @@ import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.pipeline.codec.ObjectHolder;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.stream.IntStream;
@@ -107,7 +109,7 @@ class DrasylPipelineIT {
             }
         });
 
-        ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), payload, payload.getClass());
+        ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), payload);
 
         pipeline.processInbound(msg);
 
@@ -135,7 +137,7 @@ class DrasylPipelineIT {
             }
         });
 
-        ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), payload, payload.getClass());
+        ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), payload);
 
         pipeline.processInbound(msg);
 
@@ -178,7 +180,7 @@ class DrasylPipelineIT {
             }
         });
 
-        ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), payload, payload.getClass());
+        ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), payload);
 
         pipeline.processInbound(msg);
 
@@ -194,7 +196,7 @@ class DrasylPipelineIT {
                 0x05
         };
 
-        ApplicationMessage newMsg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), newPayload, newPayload.getClass());
+        ApplicationMessage newMsg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), Map.of(ObjectHolder.CLASS_KEY_NAME, newPayload.getClass().getName()), newPayload);
 
         IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 
@@ -221,7 +223,7 @@ class DrasylPipelineIT {
     @Test
     void shouldNotPassthroughsMessagesWithDoneFuture() {
         TestObserver<ApplicationMessage> outbounds = outboundMessages.test();
-        ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), payload, payload.getClass());
+        ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), payload);
 
         IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 
@@ -248,7 +250,7 @@ class DrasylPipelineIT {
     @Test
     void shouldNotPassthroughsMessagesWithExceptionallyFuture() {
         TestObserver<ApplicationMessage> outbounds = outboundMessages.test();
-        ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), payload, payload.getClass());
+        ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity2.getPublicKey(), payload);
 
         IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 

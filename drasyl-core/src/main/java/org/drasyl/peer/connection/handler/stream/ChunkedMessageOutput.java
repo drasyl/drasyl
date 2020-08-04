@@ -51,7 +51,6 @@ public class ChunkedMessageOutput {
     private final String checksum;
     private final MessageId msgID;
     private int progress;
-    private final Class<?> clazz;
 
     /**
      * Generates a new ChunkedMessageOutput with combines multiple {@link ChunkedMessage}s into one
@@ -65,7 +64,6 @@ public class ChunkedMessageOutput {
      * @param msgID            the message id of all chunks and the resulting {@link
      *                         ApplicationMessage}
      * @param maxContentLength the max content length on this node
-     * @param clazz            the class of the payload
      * @param removeAction     the remove action to remove this class from the {@link
      *                         ChunkedMessageHandler#chunks}
      * @param timeout          the timeout for receiving all chunks, after this timeout the {@link
@@ -78,10 +76,9 @@ public class ChunkedMessageOutput {
                                 String checksum,
                                 MessageId msgID,
                                 int maxContentLength,
-                                Class<?> clazz,
                                 Runnable removeAction,
                                 long timeout) {
-        this(ctx, sender, recipient, contentLength, checksum, msgID, maxContentLength, Unpooled.buffer(), clazz, 0, removeAction);
+        this(ctx, sender, recipient, contentLength, checksum, msgID, maxContentLength, Unpooled.buffer(), 0, removeAction);
         this.ctx.executor().schedule(() -> {
             this.ctx.writeAndFlush(new StatusMessage(StatusMessage.Code.STATUS_REQUEST_TIMEOUT, this.msgID));
             removeAction.run();
@@ -99,7 +96,6 @@ public class ChunkedMessageOutput {
                          MessageId msgID,
                          int maxContentLength,
                          ByteBuf payload,
-                         Class<?> clazz,
                          int progress,
                          Runnable removeAction) {
         this.ctx = ctx;
@@ -107,7 +103,6 @@ public class ChunkedMessageOutput {
         this.recipient = recipient;
         this.removeAction = removeAction;
         this.payload = payload;
-        this.clazz = clazz;
         this.contentLength = contentLength;
         this.maxContentLength = maxContentLength;
         this.checksum = checksum;
@@ -148,7 +143,7 @@ public class ChunkedMessageOutput {
                 }
                 else {
                     try {
-                        ctx.fireChannelRead(new ApplicationMessage(msgID, sender, recipient, payload.array(), clazz, (short) 0));
+                        ctx.fireChannelRead(new ApplicationMessage(msgID, sender, recipient, payload.array(), (short) 0));
                     }
                     finally {
                         payload.release();

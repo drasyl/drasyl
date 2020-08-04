@@ -246,7 +246,7 @@ class SuperPeerClientIT {
     @Test
     @Disabled("disabled, because StatusMessage is currently not used and therefore has been removed.")
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldRespondToApplicationMessageWithStatusOk() throws ClientException {
+    void clientShouldRespondToApplicationMessageWithStatusOk() {
         TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof StatusMessage).test();
 
         // start client
@@ -259,7 +259,7 @@ class SuperPeerClientIT {
             ApplicationMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), new byte[]{
                     0x00,
                     0x01
-            }, byte[].class);
+            });
             server.sendMessage(identityManager.getPublicKey(), request);
 
             // verify received message
@@ -270,7 +270,7 @@ class SuperPeerClientIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldEmitNodeOfflineEventAfterReceivingQuitMessage() throws ClientException {
+    void clientShouldEmitNodeOfflineEventAfterReceivingQuitMessage() {
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
@@ -290,7 +290,7 @@ class SuperPeerClientIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldEmitNodeOnlineEventAfterReceivingWelcomeMessage() throws ClientException {
+    void clientShouldEmitNodeOnlineEventAfterReceivingWelcomeMessage() {
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
@@ -305,7 +305,7 @@ class SuperPeerClientIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldEmitNodeOnlineAlsoWithoutSuperPeerPubKeyInConfig() throws ClientException {
+    void clientShouldEmitNodeOnlineAlsoWithoutSuperPeerPubKeyInConfig() {
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         DrasylConfig config1 = DrasylConfig.newBuilder(config)
@@ -324,7 +324,7 @@ class SuperPeerClientIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldReconnectOnDisconnect() throws ClientException {
+    void clientShouldReconnectOnDisconnect() {
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         DrasylConfig config1 = DrasylConfig.newBuilder(config)
@@ -349,7 +349,7 @@ class SuperPeerClientIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void messageExceedingMaxSizeShouldNotBeSend() throws ClientException {
+    void messageExceedingMaxSizeShouldNotBeSend() {
         TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof StatusMessage).test();
         TestObserver<Event> emittedEvents = emittedEventsSubject.filter(e -> e instanceof MessageEvent).test();
 
@@ -363,7 +363,7 @@ class SuperPeerClientIT {
             new Random().nextBytes(bigPayload);
 
             // send message
-            RequestMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), bigPayload, bigPayload.getClass());
+            RequestMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), bigPayload);
             server.sendMessage(identityManager.getPublicKey(), request);
 
             receivedMessages.awaitCount(2);
@@ -374,7 +374,7 @@ class SuperPeerClientIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void messageExceedingMaxSizeShouldOnSendShouldThrowException() throws ClientException {
+    void messageExceedingMaxSizeShouldOnSendShouldThrowException() {
         // start client
         try (SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
             client.open();
@@ -385,7 +385,7 @@ class SuperPeerClientIT {
             new Random().nextBytes(bigPayload);
 
             // send message
-            RequestMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), bigPayload, bigPayload.getClass());
+            RequestMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), bigPayload);
             assertThrows(ExecutionException.class, () -> server.sendMessage(identityManager.getPublicKey(), request).get());
         }
     }

@@ -28,7 +28,7 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 @ExtendWith(MockitoExtension.class)
 class ObjectHolderTest {
     @Test
-    void shouldReturnCorrectValues() {
+    void shouldReturnCorrectValues() throws ClassNotFoundException {
         byte[] obj = new byte[]{};
         Class<Integer> clazz = Integer.class;
 
@@ -36,6 +36,7 @@ class ObjectHolderTest {
 
         assertEquals(obj, objectHolder.getObject());
         assertEquals(clazz, objectHolder.getClazz());
+        assertEquals(clazz.getName(), objectHolder.getClazzAsString());
 
         // Ignore toString
         objectHolder.toString();
