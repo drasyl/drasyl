@@ -29,6 +29,7 @@ import java.io.PrintWriter;
 import java.net.Inet4Address;
 import java.net.Inet6Address;
 import java.net.InetAddress;
+import java.net.InterfaceAddress;
 import java.net.NetworkInterface;
 import java.net.ServerSocket;
 import java.net.Socket;
@@ -37,6 +38,7 @@ import java.net.URL;
 import java.net.URLConnection;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Set;
@@ -207,9 +209,10 @@ public final class NetworkUtil {
 
     /**
      * Returns a list of the IP addresses of all network interfaces of the local computer. If no IP
-     * addresses can be obtained, 127.0.0.1 is returned.
+     * addresses can be obtained, the loopback address is returned.
      *
-     * @return
+     * @return list of IP addresses of all network interfaces of local computer or loopback address
+     * if no address can be obtained
      */
     public static Set<InetAddress> getAddresses() {
         try {
@@ -305,5 +308,110 @@ public final class NetworkUtil {
         catch (UnknownHostException x) {
             throw new IllegalArgumentException(x.getMessage(), x);
         }
+    }
+
+    /**
+     * Returns the network prefix length for given address. This is also known as the subnet mask in
+     * the context of IPv4 addresses. Typical IPv4 values would be 8 (255.0.0.0), 16 (255.255.0.0)
+     * or 24 (255.255.255.0).
+     * <p>
+     * Typical IPv6 values would be 128 (::1/128) or 10 (fe80::203:baff:fe27:1243/10)
+     *
+     * @param address The {@code InetAddress} to search with.
+     * @return a {@code short} representing the prefix length for the subnet of that address or
+     * {@code -1} if there is no network interface with given IP address.
+     * @throws NullPointerException If the specified address is {@code null}.
+     */
+    public static short getNetworkPrefixLength(InetAddress address) {
+        try {
+            NetworkInterface networkInterface = NetworkInterface.getByInetAddress(address);
+            if (networkInterface != null) {
+                for (InterfaceAddress ifaceAddress : networkInterface.getInterfaceAddresses()) {
+                    if (address.equals(ifaceAddress.getAddress())) {
+                        return ifaceAddress.getNetworkPrefixLength();
+                    }
+                }
+            }
+
+            // no network interface with the specified IP address found
+            return -1;
+        }
+        catch (SocketException e) {
+            // I/O error occurs
+            return -1;
+        }
+    }
+
+    /**
+     * Checks if two given addresses are in the same network.
+     *
+     * @param a    first address
+     * @param b    second address
+     * @param mask the network mask in CIDR notation
+     * @return true if the two given addresses are in the same network, false otherwise
+     */
+    public static boolean sameNetwork(final InetAddress a, final InetAddress b, final short mask) {
+        return sameNetwork(a.getAddress(), b.getAddress(), mask);
+    }
+
+    /**
+     * Checks if two given addresses are in the same network.
+     *
+     * @param x    first address
+     * @param y    second address
+     * @param cidr the network mask in CIDR notation
+     * @return true if the two given addresses are in the same network, false otherwise
+     */
+    public static boolean sameNetwork(final byte[] x, final byte[] y, final short cidr) {
+        if (x == y) {
+            return true;
+        }
+        if (x == null || y == null) {
+            return false;
+        }
+        if (x.length != y.length) {
+            return false;
+        }
+
+        // converting the CIDR mask to byte array of correct length
+        byte[] mask = cidr2Netmask(cidr, x.length);
+
+        for (int i = 0; i < x.length; i++) {
+            if ((x[i] & mask[i]) != (y[i] & mask[i])) {
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Converts a given CIDR mask to valid IPv4 or IPv6 network mask.
+     *
+     * @param cidr       the cidr
+     * @param byteLength the final mask length (IPv4 = 4 bytes, IPv6 = 16 bytes)
+     * @return the CIDR as network mask byte array
+     * @throws IllegalArgumentException if the {@code byteLength} argument is invalid
+     */
+    public static byte[] cidr2Netmask(short cidr, int byteLength) {
+        if (byteLength != 4 && byteLength != 16) {
+            throw new IllegalArgumentException("A valid IP address has always 4 or 16 bytes.");
+        }
+
+        boolean[] bitSet = new boolean[byteLength * 8];
+        Arrays.fill(bitSet, 0, cidr, true);
+
+        byte[] mask = new byte[byteLength];
+        for (int i = 0; i < mask.length; i++) {
+            byte b = 0;
+            for (int j = 0; j < 8; j++) {
+                if (bitSet[8 * i + j]) {
+                    b |= 1 << (7 - j);
+                }
+            }
+            mask[i] = b;
+        }
+
+        return mask;
     }
 }

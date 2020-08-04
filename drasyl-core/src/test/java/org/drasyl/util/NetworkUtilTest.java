@@ -29,10 +29,15 @@ import java.net.ServerSocket;
 import java.net.UnknownHostException;
 
 import static org.drasyl.util.NetworkUtil.createInetAddress;
+import static org.drasyl.util.NetworkUtil.getAddresses;
+import static org.drasyl.util.NetworkUtil.getNetworkPrefixLength;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
+import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -102,6 +107,14 @@ class NetworkUtilTest {
     }
 
     @Nested
+    class GetAddresses {
+        @Test
+        void shouldReturnNotNull() {
+            assertNotNull(getAddresses());
+        }
+    }
+
+    @Nested
     class GetLocalHostName {
         @Test
         void shouldReturnHostName() throws UnknownHostException {
@@ -122,6 +135,98 @@ class NetworkUtilTest {
         @Test
         void shouldThrowIllegalArgumentExceptionForInvalidString() {
             assertThrows(IllegalArgumentException.class, () -> createInetAddress("foo.bar"));
+        }
+    }
+
+    @Nested
+    class GetNetworkPrefixLength {
+        @Test
+        void shouldNotThrowException() {
+            for (InetAddress address : getAddresses()) {
+                assertDoesNotThrow(() -> getNetworkPrefixLength(address));
+            }
+        }
+    }
+
+    @Nested
+    class Cidr2Netmask {
+        @Test
+        void shouldConvertToCorrectNetmaskForIPv4() throws UnknownHostException {
+            InetAddress mask = InetAddress.getByName("255.255.255.0");
+            short cidr = 24;
+
+            assertArrayEquals(mask.getAddress(), NetworkUtil.cidr2Netmask(cidr, 4));
+        }
+
+        @Test
+        void shouldConvertToCorrectNetmaskForIPv6() throws UnknownHostException {
+            InetAddress mask = InetAddress.getByName("ffff:ffff:ffff:ff80::");
+            short cidr = 57;
+
+            assertArrayEquals(mask.getAddress(), NetworkUtil.cidr2Netmask(cidr, 16));
+        }
+
+        @Test
+        void shouldThrowExceptionOnInvalidInput() {
+            assertThrows(IllegalArgumentException.class, () -> NetworkUtil.cidr2Netmask((short) 24, 3));
+            assertThrows(IllegalArgumentException.class, () -> NetworkUtil.cidr2Netmask((short) 24, 17));
+        }
+    }
+
+    @Nested
+    class SameNetwork {
+        @Test
+        void shouldWorkForSameNetworkIPv4() throws UnknownHostException {
+            InetAddress currentIP = InetAddress.getByName("192.168.1.129");
+            InetAddress firstIP = InetAddress.getByName("192.168.1.0");
+            InetAddress lastIP = InetAddress.getByName("192.168.1.255");
+            InetAddress lastNotIncludedIP = InetAddress.getByName("192.168.0.255");
+            InetAddress firstNotIncludedIP = InetAddress.getByName("192.168.2.0");
+            short netmask = (short) 24;
+
+            byte[] currentIPBytes = currentIP.getAddress();
+
+            assertTrue(NetworkUtil.sameNetwork(firstIP, currentIP, netmask));
+            assertTrue(NetworkUtil.sameNetwork(lastIP, currentIP, netmask));
+            assertTrue(NetworkUtil.sameNetwork(currentIP, currentIP, netmask));
+            assertTrue(NetworkUtil.sameNetwork(currentIPBytes, currentIPBytes, netmask));
+            assertFalse(NetworkUtil.sameNetwork(lastNotIncludedIP, currentIP, netmask));
+            assertFalse(NetworkUtil.sameNetwork(firstNotIncludedIP, currentIP, netmask));
+            assertFalse(NetworkUtil.sameNetwork(currentIPBytes, new byte[]{}, netmask));
+        }
+
+        @Test
+        void shouldReturnFalseOnNull() {
+            assertFalse(NetworkUtil.sameNetwork(new byte[]{}, null, (short) 24));
+            assertFalse(NetworkUtil.sameNetwork(null, new byte[]{}, (short) 24));
+        }
+
+        @Test
+        void shouldThrowExceptionOnNull() throws UnknownHostException {
+            InetAddress address = InetAddress.getByName("192.168.1.129");
+
+            assertThrows(NullPointerException.class, () -> NetworkUtil.sameNetwork(address, null, (short) 24));
+            assertThrows(NullPointerException.class, () -> NetworkUtil.sameNetwork(null, address, (short) 24));
+        }
+
+        @Test
+        void shouldWorkForSameNetworkIPv6() throws UnknownHostException {
+            InetAddress currentIP = InetAddress.getByName("2001:0db8:85a3:08d3:1319:8a2e:0370:7347");
+            InetAddress firstIP = InetAddress.getByName("2001:0db8:85a3:0880:0000:0000:0000:0000");
+            InetAddress lastIP = InetAddress.getByName("2001:0db8:85a3:08ff:ffff:ffff:ffff:ffff");
+            InetAddress lastNotIncludedIP = InetAddress.getByName("2001:0db8:85a3:07ff:ffff:ffff:ffff:ffff");
+            InetAddress firstNotIncludedIP = InetAddress.getByName("2001:0db8:85a3:0980:0000:0000:0000:0000");
+            short netmask = (short) 57;
+
+            byte[] currentIPBytes = currentIP.getAddress();
+
+            assertTrue(NetworkUtil.sameNetwork(firstIP, currentIP, netmask));
+            assertTrue(NetworkUtil.sameNetwork(lastIP, currentIP, netmask));
+            assertTrue(NetworkUtil.sameNetwork(currentIP, currentIP, netmask));
+            assertTrue(NetworkUtil.sameNetwork(currentIPBytes, currentIPBytes, netmask));
+            assertFalse(NetworkUtil.sameNetwork(lastNotIncludedIP, currentIP, netmask));
+            assertFalse(NetworkUtil.sameNetwork(firstNotIncludedIP, currentIP, netmask));
+            assertFalse(NetworkUtil.sameNetwork(currentIPBytes, new byte[]{}, netmask));
         }
     }
 }
