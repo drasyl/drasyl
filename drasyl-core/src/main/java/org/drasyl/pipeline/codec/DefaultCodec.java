@@ -72,36 +72,52 @@ public class DefaultCodec extends Codec<ObjectHolder, Object> {
 
     @Override
     void decode(HandlerContext ctx, ObjectHolder msg, Consumer<Object> passOnConsumer) {
-        if (byte[].class == msg.getClazz()) {
-            // skip byte arrays
-            passOnConsumer.accept(msg.getObject());
-
-            if (LOG.isTraceEnabled()) {
-                LOG.trace("[{}]: Decoded Message '{}'", ctx.name(), msg.getObject());
-            }
-        }
-        else if (ctx.validator().validate(msg.getClazz()) && JSONUtil.JACKSON_WRITER.canSerialize(msg.getClazz())) {
-            ByteBuf buf = Unpooled.wrappedBuffer(msg.getObject());
-            try (ByteBufInputStream bis = new ByteBufInputStream(buf)) {
-
-                Object decodedMessage = requireNonNull(JSONUtil.JACKSON_READER.readValue((InputStream) bis, msg.getClazz()));
-                passOnConsumer.accept(decodedMessage);
+        try {
+            if (byte[].class == msg.getClazz()) {
+                // skip byte arrays
+                passOnConsumer.accept(msg.getObject());
 
                 if (LOG.isTraceEnabled()) {
-                    LOG.trace("[{}]: Decoded Message '{}'", ctx.name(), decodedMessage);
+                    LOG.trace("[{}]: Decoded Message '{}'", ctx.name(), msg.getObject());
                 }
             }
-            catch (IOException | IllegalArgumentException e) {
-                LOG.warn("[{}]: Unable to deserialize '{}': ", ctx.name(), msg, e);
+            else if (ctx.validator().validate(msg.getClazz()) && JSONUtil.JACKSON_WRITER.canSerialize(msg.getClazz())) {
+                decodeObjectHolder(ctx, msg, passOnConsumer);
+            }
+            else {
+                // can't decode, pass message to the next handler in the pipeline
                 passOnConsumer.accept(msg);
             }
-            finally {
-                buf.release();
-            }
         }
-        else {
+        catch (ClassNotFoundException e) {
+            if (LOG.isWarnEnabled()) {
+                LOG.warn("[{}]: Unable to deserialize '{}': ", ctx.name(), msg, e);
+            }
             // can't decode, pass message to the next handler in the pipeline
             passOnConsumer.accept(msg);
+        }
+    }
+
+    void decodeObjectHolder(HandlerContext ctx,
+                            ObjectHolder msg,
+                            Consumer<Object> passOnConsumer) throws ClassNotFoundException {
+        ByteBuf buf = Unpooled.wrappedBuffer(msg.getObject());
+        try (ByteBufInputStream bis = new ByteBufInputStream(buf)) {
+            Object decodedMessage = requireNonNull(JSONUtil.JACKSON_READER.readValue((InputStream) bis, msg.getClazz()));
+            passOnConsumer.accept(decodedMessage);
+
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("[{}]: Decoded Message '{}'", ctx.name(), decodedMessage);
+            }
+        }
+        catch (IOException | IllegalArgumentException e) {
+            if (LOG.isWarnEnabled()) {
+                LOG.warn("[{}]: Unable to deserialize '{}': ", ctx.name(), msg, e);
+            }
+            passOnConsumer.accept(msg);
+        }
+        finally {
+            buf.release();
         }
     }
 }

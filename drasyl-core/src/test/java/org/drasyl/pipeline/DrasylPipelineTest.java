@@ -20,13 +20,11 @@ package org.drasyl.pipeline;
 
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
-import org.drasyl.DrasylException;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.codec.ObjectHolder;
-import org.drasyl.util.DrasylFunction;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -227,7 +225,7 @@ class DrasylPipelineTest {
         ApplicationMessage msg = mock(ApplicationMessage.class);
         when(msg.getSender()).thenReturn(sender);
         when(msg.getPayload()).thenReturn(payload);
-        doReturn(payload.getClass()).when(msg).getPayloadClazz();
+        doReturn(payload.getClass().getName()).when(msg).getHeader(ObjectHolder.CLASS_KEY_NAME);
 
         CompletableFuture<Void> future = pipeline.processInbound(msg);
 

@@ -26,6 +26,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.codec.DefaultCodec;
+import org.drasyl.pipeline.codec.ObjectHolder;
 import org.drasyl.pipeline.codec.ObjectHolder2ApplicationMessageHandler;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.Pair;
@@ -34,6 +35,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+
+import java.util.Map;
 
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -61,7 +64,7 @@ class EmbeddedPipelineTest {
         ApplicationMessage msg = mock(ApplicationMessage.class);
 
         when(msg.getSender()).thenReturn(sender);
-        doReturn(String.class).when(msg).getPayloadClazz();
+        doReturn(String.class.getName()).when(msg).getHeader(ObjectHolder.CLASS_KEY_NAME);
         when(msg.getPayload()).thenReturn(new byte[]{
                 34,
                 72,
@@ -101,7 +104,7 @@ class EmbeddedPipelineTest {
         pipeline.processOutbound(recipient, msg);
 
         outboundMessageTestObserver.awaitCount(1);
-        outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, recipient, msg, byte[].class));
+        outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, msg.getClass().getName()), msg));
         inboundMessageTestObserver.assertNoValues();
         eventTestObserver.assertNoValues();
     }

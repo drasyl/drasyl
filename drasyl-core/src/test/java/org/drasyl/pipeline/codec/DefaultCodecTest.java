@@ -25,7 +25,6 @@ import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
-import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.util.JSONUtil;
@@ -38,6 +37,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.InputStream;
+import java.util.Map;
 import java.util.Vector;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -78,7 +78,7 @@ class DefaultCodecTest {
             pipeline.processOutbound(recipient, msg);
 
             testObserver.awaitCount(1);
-            testObserver.assertValue(new ApplicationMessage(sender, recipient, msg, byte[].class));
+            testObserver.assertValue(new ApplicationMessage(sender, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, msg.getClass().getName()), msg));
         }
 
         @Test
@@ -115,7 +115,7 @@ class DefaultCodecTest {
             CompletableFuture<Void> future = pipeline.processOutbound(recipient, msg);
 
             testObserver.awaitCount(1);
-            testObserver.assertValue(new ApplicationMessage(sender, recipient, JSONUtil.JACKSON_WRITER.writeValueAsBytes(msg), QuitMessage.class));
+            testObserver.assertValue(new ApplicationMessage(sender, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, Integer.class.getName()), JSONUtil.JACKSON_WRITER.writeValueAsBytes(msg)));
             future.join();
             assertTrue(future.isDone());
         }
@@ -125,7 +125,7 @@ class DefaultCodecTest {
     class Decode {
         @Test
         void shouldSkippByteArrays() {
-            ApplicationMessage msg = new ApplicationMessage(sender, recipient, new byte[]{}, byte[].class);
+            ApplicationMessage msg = new ApplicationMessage(sender, recipient, new byte[]{});
             EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE);
             TestObserver<Pair<CompressedPublicKey, Object>> testObserver = pipeline.inboundMessages().test();
 
@@ -153,7 +153,16 @@ class DefaultCodecTest {
             validator.addClass(Vector.class);
             ObjectHolder msg = ObjectHolder.of(Vector.class, new byte[]{});
 
-            when(ctx.validator()).thenReturn(TypeValidator.of(config));
+            when(ctx.validator()).thenReturn(validator);
+            DefaultCodec.INSTANCE.decode(ctx, msg, passOnConsumer);
+
+            verify(passOnConsumer).accept(msg);
+        }
+
+        @Test
+        void passthroughsOnNotSerializiableMessages3() {
+            ObjectHolder msg = ObjectHolder.of("foo.bar.Class", new byte[]{});
+
             DefaultCodec.INSTANCE.decode(ctx, msg, passOnConsumer);
 
             verify(passOnConsumer).accept(msg);
@@ -162,7 +171,7 @@ class DefaultCodecTest {
         @Test
         void shouldDecodePOJOs() throws JsonProcessingException {
             Integer integer = Integer.valueOf("10000");
-            ApplicationMessage msg = new ApplicationMessage(sender, recipient, JSONUtil.JACKSON_WRITER.writeValueAsBytes(integer), Integer.class);
+            ApplicationMessage msg = new ApplicationMessage(sender, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, Integer.class.getName()), JSONUtil.JACKSON_WRITER.writeValueAsBytes(integer));
             EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE);
             TestObserver<Pair<CompressedPublicKey, Object>> testObserver = pipeline.inboundMessages().test();
 

@@ -29,6 +29,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ChunkedMessage;
 import org.drasyl.pipeline.codec.DefaultCodec;
+import org.drasyl.pipeline.codec.ObjectHolder;
 import org.drasyl.pipeline.codec.ObjectHolder2ApplicationMessageHandler;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.JSONUtil;
@@ -41,6 +42,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
@@ -89,7 +91,7 @@ class SimpleDuplexHandlerTest {
                                             byte[] msg,
                                             CompletableFuture<Void> future) {
                     // Emit this message as inbound message to test
-                    ctx.pipeline().processInbound(new ApplicationMessage(identity.getPublicKey(), recipient, msg, msg.getClass()));
+                    ctx.pipeline().processInbound(new ApplicationMessage(identity.getPublicKey(), recipient, msg));
                 }
             };
 
@@ -142,7 +144,7 @@ class SimpleDuplexHandlerTest {
             pipeline.processOutbound(recipient, payload);
 
             outboundMessageTestObserver.awaitCount(1);
-            outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, recipient, payload, byte[].class));
+            outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, byte[].class.getName()), payload));
             inboundMessageTestObserver.assertNoValues();
         }
     }
@@ -185,10 +187,10 @@ class SimpleDuplexHandlerTest {
             CompressedPublicKey sender = mock(CompressedPublicKey.class);
             when(identity.getPublicKey()).thenReturn(sender);
             byte[] msg = JSONUtil.JACKSON_WRITER.writeValueAsBytes(new byte[]{});
-            pipeline.processInbound(new ApplicationMessage(sender, sender, msg, byte[].class));
+            pipeline.processInbound(new ApplicationMessage(sender, sender, msg));
 
             outboundMessageTestObserver.awaitCount(1);
-            outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, sender, msg, byte[].class));
+            outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, sender, Map.of(ObjectHolder.CLASS_KEY_NAME, byte[].class.getName()), msg));
             inboundMessageTestObserver.assertNoValues();
             eventTestObserver.assertNoValues();
         }
@@ -230,7 +232,7 @@ class SimpleDuplexHandlerTest {
             ApplicationMessage msg = mock(ApplicationMessage.class);
 
             when(msg.getPayload()).thenReturn(payload);
-            doReturn(payload.getClass()).when(msg).getPayloadClazz();
+            doReturn(payload.getClass().getName()).when(msg).getHeader(ObjectHolder.CLASS_KEY_NAME);
 
             pipeline.processInbound(msg);
 

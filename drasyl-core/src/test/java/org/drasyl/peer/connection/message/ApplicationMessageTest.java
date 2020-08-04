@@ -56,13 +56,13 @@ class ApplicationMessageTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
-            String json = "{\"@type\":\"" + ApplicationMessage.class.getSimpleName() + "\",\"id\":\"412176952b5b81fd13f84a7c\",\"sender\":\"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\"recipient\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"headers\":{\"clazz\":\"foo.bar.Baz\"},\"payload\":\"AAEC\"}";
+            String json = "{\"@type\":\"" + ApplicationMessage.class.getSimpleName() + "\",\"id\":\"412176952b5b81fd13f84a7c\",\"sender\":\"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\"recipient\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"headers\":{\"clazz\":\"[B\"},\"payload\":\"AAEC\"}";
 
-            assertEquals(new ApplicationMessage(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), Map.of("clazz", "foo.bar.Baz"), new byte[]{
+            assertEquals(new ApplicationMessage(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), Map.of("clazz", byte[].class.getName()), new byte[]{
                     0x00,
                     0x01,
                     0x02
-            }, byte[].class), JACKSON_READER.readValue(json, ApplicationMessage.class));
+            }), JACKSON_READER.readValue(json, ApplicationMessage.class));
         }
 
         @Test
@@ -73,7 +73,7 @@ class ApplicationMessageTest {
                     0x00,
                     0x01,
                     0x02
-            }, byte[].class), JACKSON_READER.readValue(json, ApplicationMessage.class));
+            }), JACKSON_READER.readValue(json, ApplicationMessage.class));
         }
 
         @Test
@@ -88,16 +88,16 @@ class ApplicationMessageTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException {
-            ApplicationMessage message = new ApplicationMessage(sender, recipient, Map.of("clazz", "foo.bar.Baz"), new byte[]{
+            ApplicationMessage message = new ApplicationMessage(sender, recipient, Map.of("clazz", byte[].class.getName()), new byte[]{
                     0x00,
                     0x01,
                     0x02
-            }, byte[].class, (short) 64);
+            }, (short) 64);
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", ApplicationMessage.class.getSimpleName())
-                    .containsKeys("id", "recipient", "hopCount", "sender", "headers", "payload", "payloadClazz");
+                    .containsKeys("id", "recipient", "hopCount", "sender", "headers", "payload");
         }
     }
 
@@ -105,13 +105,13 @@ class ApplicationMessageTest {
     class Constructor {
         @Test
         void shouldRejectNullValues() {
-            assertThrows(NullPointerException.class, () -> new ApplicationMessage(null, recipient, new byte[]{}, byte[].class), "Message requires a sender");
+            assertThrows(NullPointerException.class, () -> new ApplicationMessage(null, recipient, new byte[]{}), "Message requires a sender");
 
-            assertThrows(NullPointerException.class, () -> new ApplicationMessage(sender, null, new byte[]{}, byte[].class), "Message requires a recipient");
+            assertThrows(NullPointerException.class, () -> new ApplicationMessage(sender, null, new byte[]{}), "Message requires a recipient");
 
-            assertThrows(NullPointerException.class, () -> new ApplicationMessage(sender, recipient, null, byte[].class), "Message requires a payload");
+            assertThrows(NullPointerException.class, () -> new ApplicationMessage(sender, recipient, null), "Message requires a payload");
 
-            assertThrows(NullPointerException.class, () -> new ApplicationMessage(null, null, null, byte[].class), "Message requires a sender, a recipient and a payload");
+            assertThrows(NullPointerException.class, () -> new ApplicationMessage(null, null, null), "Message requires a sender, a recipient and a payload");
         }
     }
 
@@ -123,17 +123,17 @@ class ApplicationMessageTest {
                     0x00,
                     0x01,
                     0x02
-            }, byte[].class);
+            });
             ApplicationMessage message2 = new ApplicationMessage(sender, recipient, new byte[]{
                     0x00,
                     0x01,
                     0x02
-            }, byte[].class);
+            });
             ApplicationMessage message3 = new ApplicationMessage(sender, recipient, new byte[]{
                     0x03,
                     0x02,
                     0x01
-            }, byte[].class);
+            });
 
             assertEquals(message1, message2);
             assertNotEquals(message2, message3);
@@ -148,17 +148,17 @@ class ApplicationMessageTest {
                     0x00,
                     0x01,
                     0x02
-            }, byte[].class, hopCount);
+            }, hopCount);
             ApplicationMessage message2 = new ApplicationMessage(id, sender, recipient, new byte[]{
                     0x00,
                     0x01,
                     0x02
-            }, byte[].class, hopCount);
+            }, hopCount);
             ApplicationMessage message3 = new ApplicationMessage(id, sender, recipient, new byte[]{
                     0x03,
                     0x02,
                     0x01
-            }, byte[].class, hopCount);
+            }, hopCount);
 
             assertEquals(message1.hashCode(), message2.hashCode());
             assertEquals(message1.hashCode(), message2.hashCode());
@@ -170,7 +170,7 @@ class ApplicationMessageTest {
     class IncrementHopCount {
         @Test
         void shouldIncrementHopCountByOne() {
-            ApplicationMessage message = new ApplicationMessage(sender, recipient, new byte[]{}, byte[].class);
+            ApplicationMessage message = new ApplicationMessage(sender, recipient, new byte[]{});
 
             message.incrementHopCount();
 

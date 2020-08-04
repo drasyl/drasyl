@@ -25,6 +25,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ChunkedMessage;
 import org.drasyl.pipeline.codec.DefaultCodec;
+import org.drasyl.pipeline.codec.ObjectHolder;
 import org.drasyl.pipeline.codec.ObjectHolder2ApplicationMessageHandler;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.Pair;
@@ -34,6 +35,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.Mockito.mock;
@@ -64,7 +66,7 @@ class SimpleOutboundHandlerTest {
                                         byte[] msg,
                                         CompletableFuture<Void> future) {
                 // Emit this message as inbound message to test
-                ctx.pipeline().processInbound(new ApplicationMessage(identity.getPublicKey(), recipient, msg, msg.getClass()));
+                ctx.pipeline().processInbound(new ApplicationMessage(identity.getPublicKey(), recipient, msg));
             }
         };
 
@@ -103,7 +105,7 @@ class SimpleOutboundHandlerTest {
         pipeline.processOutbound(recipient, payload);
 
         outboundMessageTestObserver.awaitCount(1);
-        outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, recipient, payload, byte[].class));
+        outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, payload.getClass().getName()), payload));
         inboundMessageTestObserver.assertNoValues();
     }
 }

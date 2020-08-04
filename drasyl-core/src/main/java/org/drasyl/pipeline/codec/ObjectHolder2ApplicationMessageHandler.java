@@ -23,6 +23,7 @@ import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.SimpleOutboundHandler;
 
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 public class ObjectHolder2ApplicationMessageHandler extends SimpleOutboundHandler<ObjectHolder> {
@@ -37,6 +38,6 @@ public class ObjectHolder2ApplicationMessageHandler extends SimpleOutboundHandle
                                 CompressedPublicKey recipient,
                                 ObjectHolder msg,
                                 CompletableFuture<Void> future) {
-        ctx.write(recipient, new ApplicationMessage(ctx.identity().getPublicKey(), recipient, msg.getObject(), msg.getClazz()), future);
+        ctx.write(recipient, new ApplicationMessage(ctx.identity().getPublicKey(), recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, msg.getClazzAsString()), msg.getObject()), future);
     }
 }

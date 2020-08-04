@@ -8,15 +8,20 @@ import java.util.Objects;
  * deserialized object.
  */
 public class ObjectHolder {
-    private final Class<?> clazz;
+    public static final String CLASS_KEY_NAME = "clazz";
+    private final String clazz;
     private final byte[] object;
 
-    private ObjectHolder(Class<?> clazz, byte[] object) {
+    private ObjectHolder(String clazz, byte[] object) {
         this.clazz = clazz;
         this.object = object;
     }
 
-    public Class<?> getClazz() {
+    public Class<?> getClazz() throws ClassNotFoundException {
+        return Class.forName(clazz);
+    }
+
+    public String getClazzAsString() {
         return clazz;
     }
 
@@ -52,7 +57,11 @@ public class ObjectHolder {
                 '}';
     }
 
-    public static ObjectHolder of(Class<?> clazz, byte[] o) {
+    public static ObjectHolder of(String clazz, byte[] o) {
         return new ObjectHolder(clazz, o);
+    }
+
+    public static ObjectHolder of(Class<?> clazz, byte[] o) {
+        return of(clazz.getName(), o);
     }
 }
