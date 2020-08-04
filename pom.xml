@@ -122,6 +122,7 @@
         <micrometer.version>1.5.3</micrometer.version>
         <maven.scm>1.11.2</maven.scm>
         <nexus.staging>1.6.8</nexus.staging>
+        <portmapper.version>2.0.5</portmapper.version>
     </properties>
 
     <dependencyManagement>
@@ -269,6 +270,11 @@
                 <groupId>io.micrometer</groupId>
                 <artifactId>micrometer-registry-influx</artifactId>
                 <version>${micrometer.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>com.offbynull.portmapper</groupId>
+                <artifactId>portmapper</artifactId>
+                <version>${portmapper.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

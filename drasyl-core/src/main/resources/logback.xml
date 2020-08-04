@@ -39,6 +39,9 @@
         </encoder>
     </appender>
 
+    <logger name="com.offbynull.portmapper" level="OFF">
+    </logger>
+
     <!-- available levels: off, error, warn, info, debug, trace -->
 
     <root level="WARN">
