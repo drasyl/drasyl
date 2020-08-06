@@ -513,7 +513,7 @@ class ServerIT {
 
     @Test
     void shouldOpenAndCloseGracefully() throws DrasylException {
-        try (Server myServer = new Server(serverIdentityManager.getIdentity(), serverMessenger, peersManager, new DrasylConfig(), channelGroup, workerGroup, bossGroup, endpoints, acceptNewConnections::get)) {
+        try (Server myServer = new Server(serverIdentityManager.getIdentity(), serverMessenger, peersManager, serverConfig, channelGroup, workerGroup, bossGroup, endpoints, acceptNewConnections::get)) {
             myServer.open();
         }
 
