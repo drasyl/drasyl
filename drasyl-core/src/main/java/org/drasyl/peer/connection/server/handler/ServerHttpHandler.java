@@ -147,8 +147,7 @@ public class ServerHttpHandler extends SimpleChannelInboundHandler<FullHttpReque
 
     public static ByteBuf getContent(CompressedPublicKey identity) {
         return Unpooled.copiedBuffer(
-                "\n" +
-                        "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n" +
+                "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n" +
                         "<html><head>\n" +
                         "<title>400 Bad Request</title>\n" +
                         "</head><body>\n" +
@@ -156,7 +155,7 @@ public class ServerHttpHandler extends SimpleChannelInboundHandler<FullHttpReque
                         "<p>Not a WebSocket Handshake Request: Missing Upgrade.</p>\n" +
                         "<hr>\n" +
                         "<address>drasyl/" + DrasylNode.getVersion() + " with Public Key " + identity + "</address>\n" +
-                        "</body></html>\n", CharsetUtil.UTF_8);
+                        "</body></html>", CharsetUtil.UTF_8);
     }
 
     private static class PeersStatus {

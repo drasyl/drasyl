@@ -24,10 +24,10 @@ public class HelpCommand extends AbstractCommand {
     protected void help(CommandLine cmd) {
         helpTemplate(
                 "help",
-                "drasyl is an general purpose transport overlay network.\n" +
-                        "\n" +
-                        "See the home page (https://drasyl.org/) for installation, usage,\n" +
-                        "documentation, changelog and configuration walkthroughs."
+                String.format("drasyl is an general purpose transport overlay network.%n" +
+                        "%n" +
+                        "See the home page (https://drasyl.org/) for installation, usage,%n" +
+                        "documentation, changelog and configuration walkthroughs.")
         );
     }
 

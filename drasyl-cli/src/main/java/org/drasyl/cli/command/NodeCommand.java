@@ -78,27 +78,27 @@ public class NodeCommand extends AbstractCommand {
         helpTemplate(
                 "node",
                 "Run a drasyl node in the current directory.",
-                DEFAULT_CONF + " syntax:\n" +
-                        "drasyl {\n" +
-                        "  identity {\n" +
-                        "    public-key = \"...\"\n" +
-                        "    private-key = \"...\"\n" +
-                        "  }\n" +
-                        "\n" +
-                        "  server {\n" +
-                        "    enabled = true\n" +
-                        "    bind-host = \"0.0.0.0\"\n" +
-                        "    bind-port = 22527\n" +
-                        "  }\n" +
-                        "\n" +
-                        "  super-peer {\n" +
-                        "    enabled = true\n" +
-                        "    endpoints = [\"wss://staging.env.drasyl.org\"]\n" +
-                        "    public-key = \"\"\n" +
-                        "  }\n" +
-                        "}\n" +
-                        "\n" +
-                        "Use \"drasyl node --config my-" + DEFAULT_CONF + "\" to use a custom config."
+                String.format(DEFAULT_CONF + " syntax:%n" +
+                        "drasyl {%n" +
+                        "  identity {%n" +
+                        "    public-key = \"...\"%n" +
+                        "    private-key = \"...\"%n" +
+                        "  }%n" +
+                        "%n" +
+                        "  server {%n" +
+                        "    enabled = true%n" +
+                        "    bind-host = \"0.0.0.0\"%n" +
+                        "    bind-port = 22527%n" +
+                        "  }%n" +
+                        "%n" +
+                        "  super-peer {%n" +
+                        "    enabled = true%n" +
+                        "    endpoints = [\"wss://staging.env.drasyl.org\"]%n" +
+                        "    public-key = \"\"%n" +
+                        "  }%n" +
+                        "}%n" +
+                        "%n" +
+                        "Use \"drasyl node --config my-" + DEFAULT_CONF + "\" to use a custom config.")
         );
     }
 

@@ -221,7 +221,7 @@ public abstract class DrasylNode {
             this.shutdownSequence = completedFuture(null);
         }
         catch (ConfigException e) {
-            throw new DrasylException("Couldn't load config: \n" + e.getMessage());
+            throw new DrasylException("Couldn't load config: " + e.getMessage());
         }
     }
 
