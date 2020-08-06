@@ -20,11 +20,13 @@ package org.drasyl.util;
 
 import com.google.common.util.concurrent.ThreadFactoryBuilder;
 import io.reactivex.rxjava3.core.Scheduler;
+import io.reactivex.rxjava3.plugins.RxJavaPlugins;
 import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.LinkedBlockingQueue;
+import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.ThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
@@ -46,6 +48,11 @@ public class DrasylScheduler {
     private static ThreadPoolExecutor heavyExecutor;
 
     static {
+        RxJavaPlugins.setErrorHandler(error -> {
+            if (!(error.getCause() instanceof RejectedExecutionException)) {
+                LOG.warn("", error);
+            }
+        });
         start();
     }
 
