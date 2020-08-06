@@ -42,7 +42,6 @@ import org.drasyl.event.NodeEvent;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.util.Pair;
 
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
@@ -79,7 +78,7 @@ public class ChatGUI extends Application {
                 @Override
                 public void onEvent(Event event) {
                     if (event instanceof MessageEvent) {
-                        parseMessage(((MessageEvent) event).getMessage());
+                        parseMessage(((MessageEvent) event).getPayload());
                     }
                     else if (event instanceof NodeOnlineEvent) {
                         if (!online.isDone()) {
@@ -139,9 +138,9 @@ public class ChatGUI extends Application {
         return new Scene(vBox, 800, 600);
     }
 
-    private void parseMessage(Pair<CompressedPublicKey, Object> payload) {
-        if (payload.second() instanceof Message) {
-            Message msg = (Message) payload.second();
+    private void parseMessage(Object obj) {
+        if (obj instanceof Message) {
+            Message msg = (Message) obj;
 
             txtArea.appendText("[" + msg.getUsername() + "]: " + msg.getMsg() + "\n");
         }

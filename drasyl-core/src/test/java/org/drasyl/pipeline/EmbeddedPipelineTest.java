@@ -86,7 +86,7 @@ class EmbeddedPipelineTest {
         inboundMessageTestObserver.awaitCount(1);
         inboundMessageTestObserver.assertValue(Pair.of(sender, "Hello World"));
         eventTestObserver.awaitCount(1);
-        eventTestObserver.assertValue(new MessageEvent(Pair.of(sender, "Hello World")));
+        eventTestObserver.assertValue(new MessageEvent(sender, "Hello World"));
         outboundMessageTestObserver.assertNoValues();
     }
 

@@ -25,7 +25,6 @@ import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.pipeline.codec.TypeValidator;
-import org.drasyl.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -77,7 +76,7 @@ class TailContext extends AbstractEndHandler {
             }
         }
         else {
-            eventConsumer.accept(new MessageEvent(Pair.of(sender, msg)));
+            eventConsumer.accept(new MessageEvent(sender, msg));
             future.complete(null);
         }
     }

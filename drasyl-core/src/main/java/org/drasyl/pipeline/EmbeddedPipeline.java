@@ -84,7 +84,7 @@ public class EmbeddedPipeline extends DefaultPipeline {
                              CompressedPublicKey sender,
                              Object msg,
                              CompletableFuture<Void> future) {
-                inboundEvents.onNext(new MessageEvent(Pair.of(sender, msg)));
+                inboundEvents.onNext(new MessageEvent(sender, msg));
                 inboundMessages.onNext(Pair.of(sender, msg));
                 future.complete(null);
             }

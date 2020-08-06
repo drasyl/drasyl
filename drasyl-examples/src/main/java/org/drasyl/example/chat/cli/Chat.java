@@ -29,7 +29,6 @@ import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.util.DrasylScheduler;
-import org.drasyl.util.Pair;
 
 import java.io.File;
 import java.util.Scanner;
@@ -59,9 +58,10 @@ public class Chat {
             @Override
             public void onEvent(Event event) {
                 if (event instanceof MessageEvent) {
-                    Pair<CompressedPublicKey, Object> message = ((MessageEvent) event).getMessage();
-                    if (message.second() instanceof String) {
-                        addBeforePrompt("From " + message.first() + ": " + message.second());
+                    CompressedPublicKey sender = ((MessageEvent) event).getSender();
+                    Object message = ((MessageEvent) event).getPayload();
+                    if (message instanceof String) {
+                        addBeforePrompt("From " + sender + ": " + message);
                     }
                 }
                 else if (event instanceof NodeOnlineEvent) {

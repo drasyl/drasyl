@@ -1,7 +1,6 @@
 package org.drasyl.event;
 
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -14,28 +13,30 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 @ExtendWith(MockitoExtension.class)
 class MessageEventTest {
     @Mock
-    private Pair<CompressedPublicKey, Object> message;
+    private CompressedPublicKey sender;
+    @Mock
+    private Object message;
 
     @Nested
     class GetMessage {
         @Test
         void shouldReturnMessage() {
-            MessageEvent event = new MessageEvent(message);
+            MessageEvent event = new MessageEvent(sender, message);
 
-            assertEquals(message, event.getMessage());
+            assertEquals(message, event.getPayload());
         }
     }
 
     @Nested
     class Equals {
         @Mock
-        private Pair<CompressedPublicKey, Object> message2;
+        private Object message2;
 
         @Test
         void notSameBecauseOfDifferentMessage() {
-            MessageEvent event1 = new MessageEvent(message);
-            MessageEvent event2 = new MessageEvent(message);
-            MessageEvent event3 = new MessageEvent(message2);
+            MessageEvent event1 = new MessageEvent(sender, message);
+            MessageEvent event2 = new MessageEvent(sender, message);
+            MessageEvent event3 = new MessageEvent(sender, message2);
 
             assertEquals(event1, event2);
             assertNotEquals(event1, event3);
@@ -45,13 +46,13 @@ class MessageEventTest {
     @Nested
     class HashCode {
         @Mock
-        private Pair<CompressedPublicKey, Object> message2;
+        private Object message2;
 
         @Test
         void notSameBecauseOfDifferentMessage() {
-            MessageEvent event1 = new MessageEvent(message);
-            MessageEvent event2 = new MessageEvent(message);
-            MessageEvent event3 = new MessageEvent(message2);
+            MessageEvent event1 = new MessageEvent(sender, message);
+            MessageEvent event2 = new MessageEvent(sender, message);
+            MessageEvent event3 = new MessageEvent(sender, message2);
 
             assertEquals(event1.hashCode(), event2.hashCode());
             assertNotEquals(event1.hashCode(), event3.hashCode());

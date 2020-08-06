@@ -30,7 +30,6 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.codec.ObjectHolder;
-import org.drasyl.util.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -114,7 +113,7 @@ class DrasylPipelineIT {
         pipeline.processInbound(msg);
 
         events.awaitCount(1);
-        events.assertValue(new MessageEvent(Pair.of(identity2.getPublicKey(), newPayload)));
+        events.assertValue(new MessageEvent(identity2.getPublicKey(), newPayload));
     }
 
     @Test
@@ -142,7 +141,7 @@ class DrasylPipelineIT {
         pipeline.processInbound(msg);
 
         events.awaitCount(2);
-        events.assertValueAt(0, new MessageEvent(Pair.of(msg.getSender(), payload)));
+        events.assertValueAt(0, new MessageEvent(msg.getSender(), payload));
         events.assertValueAt(1, testEvent);
     }
 

@@ -239,7 +239,7 @@ class SimpleDuplexHandlerTest {
             inboundMessageTestObserver.awaitCount(1);
             inboundMessageTestObserver.assertValue(Pair.of(msg.getSender(), payload));
             eventTestObserver.awaitCount(1);
-            eventTestObserver.assertValue(new MessageEvent(Pair.of(msg.getSender(), payload)));
+            eventTestObserver.assertValue(new MessageEvent(msg.getSender(), payload));
             outboundMessageTestObserver.assertNoValues();
         }
 

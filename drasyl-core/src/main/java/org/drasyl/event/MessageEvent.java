@@ -1,33 +1,38 @@
 package org.drasyl.event;
 
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.util.Pair;
 
 import java.util.Objects;
-
-import static java.util.Objects.requireNonNull;
 
 /**
  * This event signals that the node has received a message addressed to it.
  */
 public class MessageEvent implements Event {
-    private final Pair<CompressedPublicKey, Object> message;
+    private final CompressedPublicKey sender;
+    private final Object payload;
 
-    public MessageEvent(Pair<CompressedPublicKey, Object> message) {
-        this.message = requireNonNull(message);
+    public MessageEvent(CompressedPublicKey sender, Object payload) {
+        this.sender = sender;
+        this.payload = payload;
     }
 
     /**
-     * @return a pair containing the sender's public key as first element and the message payload as
-     * second element.
+     * @return the message's sender
      */
-    public Pair<CompressedPublicKey, Object> getMessage() {
-        return message;
+    public CompressedPublicKey getSender() {
+        return sender;
+    }
+
+    /**
+     * @return th message
+     */
+    public Object getPayload() {
+        return payload;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(message);
+        return Objects.hash(sender, payload);
     }
 
     @Override
@@ -39,13 +44,15 @@ public class MessageEvent implements Event {
             return false;
         }
         MessageEvent that = (MessageEvent) o;
-        return Objects.equals(message, that.message);
+        return Objects.equals(sender, that.sender) &&
+                Objects.equals(payload, that.payload);
     }
 
     @Override
     public String toString() {
         return "MessageEvent{" +
-                "message=" + message +
+                "sender=" + sender +
+                ", message=" + payload +
                 '}';
     }
 }

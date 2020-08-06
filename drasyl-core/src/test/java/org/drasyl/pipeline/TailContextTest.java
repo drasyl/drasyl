@@ -25,7 +25,6 @@ import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.pipeline.codec.TypeValidator;
-import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -154,7 +153,7 @@ class TailContextTest {
 
             tailContext.read(ctx, sender, msg, future);
 
-            verify(eventConsumer).accept(eq(new MessageEvent(Pair.of(sender, msg))));
+            verify(eventConsumer).accept(eq(new MessageEvent(sender, msg)));
             verifyNoInteractions(ctx);
         }
 
