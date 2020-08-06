@@ -192,8 +192,12 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
     public void close() {
         if (opened.compareAndSet(true, false)) {
             LOG.info("Stop Direct Connections Handler...");
+
             // remove handler that has been added in {@link #open()}
             pipeline.remove(DIRECT_CONNECTIONS_MANAGER);
+
+            // remove all direct connection demands
+            directConnectionDemandsCache.clear();
 
             // close and remove all client connections
             for (Map.Entry<CompressedPublicKey, DirectClient> entry : new HashSet<>(clients.entrySet())) {

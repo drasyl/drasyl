@@ -47,4 +47,11 @@ public class DirectConnectionDemandsCache {
     public boolean contains(CompressedPublicKey publicKey) {
         return cache.containsKey(publicKey);
     }
+
+    /**
+     * Clears the cache.
+     */
+    public void clear() {
+        cache.clear();
+    }
 }
