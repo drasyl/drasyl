@@ -118,6 +118,7 @@ public class LocalHostDiscovery implements DrasylNodeComponent {
     @SuppressWarnings({ "java:S3776" })
     public void open() {
         if (opened.compareAndSet(false, true)) {
+            LOG.debug("Start Local Host Discovery...");
             File directory = discoveryPath.toFile();
             if (!directory.exists()) {
                 directory.mkdir(); // NOSONAR
@@ -131,6 +132,7 @@ public class LocalHostDiscovery implements DrasylNodeComponent {
                 keepOwnInformationUpToDate();
                 communicationObserver = communicationOccurred.subscribe(publicKey -> conditionalScan());
             }
+            LOG.debug("Local Host Discovery started.");
         }
     }
 
