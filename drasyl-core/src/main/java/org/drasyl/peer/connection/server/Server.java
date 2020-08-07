@@ -242,6 +242,6 @@ public class Server implements DrasylNodeComponent {
             addresses = Set.of(listenAddress.getAddress());
         }
         String scheme = config.getServerSSLEnabled() ? "wss" : "ws";
-        return addresses.stream().map(address -> createUri(scheme, address.getHostName(), listenAddress.getPort())).collect(Collectors.toSet());
+        return addresses.stream().map(address -> createUri(scheme, address.getHostAddress(), listenAddress.getPort())).collect(Collectors.toSet());
     }
 }
