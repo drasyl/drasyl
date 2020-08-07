@@ -39,6 +39,10 @@
         </encoder>
     </appender>
 
+    <!-- hide "Couldn't find a suitable DSN" warning -->
+    <logger name="io.sentry" level="ERROR">
+    </logger>
+
     <logger name="com.offbynull.portmapper" level="OFF">
     </logger>
 
