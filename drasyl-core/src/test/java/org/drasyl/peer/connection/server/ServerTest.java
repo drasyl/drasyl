@@ -71,7 +71,7 @@ class ServerTest {
 
             AtomicBoolean opened = new AtomicBoolean(false);
             try (Server server = new Server(
-                    config, serverBootstrap, opened, -1, serverChannel,
+                    config, serverBootstrap, opened, null, serverChannel,
                     new HashSet<>(), new HashSet<>())) {
                 server.open();
 
@@ -82,7 +82,7 @@ class ServerTest {
         @Test
         void shouldDoNothingIfServerHasAlreadyBeenStarted() throws ServerException {
             try (Server server = new Server(
-                    config, serverBootstrap, new AtomicBoolean(true), -1, serverChannel,
+                    config, serverBootstrap, new AtomicBoolean(true), null, serverChannel,
                     new HashSet<>(), new HashSet<>())) {
                 server.open();
 
@@ -96,7 +96,7 @@ class ServerTest {
         @Test
         void shouldDoNothingIfServerHasAlreadyBeenShutDown() {
             Server server = new Server(
-                    config, serverBootstrap, new AtomicBoolean(false), -1, serverChannel,
+                    config, serverBootstrap, new AtomicBoolean(false), null, serverChannel,
                     new HashSet<>(), new HashSet<>());
 
             server.close();
@@ -118,7 +118,7 @@ class ServerTest {
         }
 
         @Test
-        void shouldReturnEndpointForSpecificAddressesIfServerIsBoundToSpecificInterfaces() throws UnknownHostException {
+        void shouldReturnEndpointForSpecificAddressesIfServerIsBoundToSpecificInterfaces() {
             InetAddress firstAddress = NetworkUtil.getAddresses().iterator().next();
             if (firstAddress != null) {
                 when(config.getServerEndpoints().isEmpty()).thenReturn(true);

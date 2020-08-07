@@ -61,20 +61,21 @@ public class Server implements DrasylNodeComponent {
     private final AtomicBoolean opened;
     private final Set<URI> nodeEndpoints;
     private Channel channel;
-    private int actualPort;
     private Set<URI> actualEndpoints;
+    private InetSocketAddress socketAddress;
 
     Server(DrasylConfig config,
            ServerBootstrap serverBootstrap,
            AtomicBoolean opened,
-           int actualPort, Channel channel,
+           InetSocketAddress socketAddress,
+           Channel channel,
            Set<URI> actualEndpoints,
            Set<URI> nodeEndpoints) {
         this.config = config;
         this.channel = channel;
         this.serverBootstrap = serverBootstrap;
         this.opened = opened;
-        this.actualPort = actualPort;
+        this.socketAddress = socketAddress;
         this.actualEndpoints = actualEndpoints;
         this.nodeEndpoints = nodeEndpoints;
     }
@@ -140,7 +141,7 @@ public class Server implements DrasylNodeComponent {
         this.channel = null;
         this.serverBootstrap = serverBootstrap;
         this.opened = opened;
-        this.actualPort = -1;
+        this.socketAddress = null;
         this.actualEndpoints = new HashSet<>();
         this.nodeEndpoints = nodeEndpoints;
     }
@@ -163,14 +164,15 @@ public class Server implements DrasylNodeComponent {
 
                     channel.closeFuture().addListener(future -> {
                         nodeEndpoints.removeAll(actualEndpoints);
-                        actualPort = -1;
+                        socketAddress = null;
                         actualEndpoints = Set.of();
                     });
 
-                    InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
-                    actualPort = socketAddress.getPort();
+                    socketAddress = (InetSocketAddress) channel.localAddress();
                     actualEndpoints = determineActualEndpoints(config, socketAddress);
                     nodeEndpoints.addAll(actualEndpoints);
+
+                    LOG.debug("Server started and listening at {}", socketAddress);
                 }
                 else {
                     throw new ServerException("Unable to bind server to address " + config.getServerBindHost() + ":" + config.getServerBindPort() + ": " + channelFuture.cause().getMessage());
@@ -189,7 +191,7 @@ public class Server implements DrasylNodeComponent {
     @SuppressWarnings({ "java:S1905" })
     public void close() {
         if (opened.compareAndSet(true, false) && channel != null && channel.isOpen()) {
-            LOG.info("Stop Server listening at {}:{}...", config.getServerBindHost(), actualPort);
+            LOG.info("Stop Server listening at {}...", socketAddress);
             // shutdown server
             channel.close().awaitUninterruptibly();
             channel = null;
