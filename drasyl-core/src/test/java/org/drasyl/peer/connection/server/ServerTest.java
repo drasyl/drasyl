@@ -124,7 +124,7 @@ class ServerTest {
                 when(config.getServerEndpoints().isEmpty()).thenReturn(true);
 
                 assertEquals(
-                        Set.of(createUri("ws", firstAddress.getHostName(), 22527)),
+                        Set.of(createUri("ws", firstAddress.getHostAddress(), 22527)),
                         determineActualEndpoints(config, new InetSocketAddress(firstAddress, 22527))
                 );
             }
