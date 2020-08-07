@@ -58,8 +58,7 @@ public class Cli {
         Cli cli = new Cli();
         try {
             cli.run(args);
-            DrasylNode.irrevocablyTerminate();
-            DrasylScheduler.shutdown();
+            System.exit(0);
         }
         catch (CommandNotFoundCliException e) {
             System.out.println("Error: " + e.getMessage()); // NOSONAR
