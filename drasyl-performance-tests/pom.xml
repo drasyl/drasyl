@@ -36,7 +36,7 @@
     <url>https://drasyl.org/</url>
 
     <properties>
-        <jmh.version>1.23</jmh.version>
+        <jmh.version>1.25</jmh.version>
     </properties>
 
     <dependencies>
