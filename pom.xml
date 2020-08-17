@@ -108,8 +108,8 @@
         <maven.compiler.source>11</maven.compiler.source>
         <maven.compiler.target>11</maven.compiler.target>
         <logback.version>1.2.3</logback.version>
-        <junit.version>5.7.0-M1</junit.version>
-        <mockito.version>3.4.6</mockito.version>
+        <junit.version>5.6.2</junit.version>
+        <mockito.version>3.5.0</mockito.version>
         <jackson.version>2.11.2</jackson.version>
         <hamcrest.version>2.2</hamcrest.version>
         <bouncycastle.version>1.66</bouncycastle.version>
@@ -119,7 +119,7 @@
         <rxjava.version>3.0.5</rxjava.version>
         <sentry.version>1.7.30</sentry.version>
         <commons.version>4.4</commons.version>
-        <micrometer.version>1.5.3</micrometer.version>
+        <micrometer.version>1.5.4</micrometer.version>
         <maven.scm>1.11.2</maven.scm>
         <nexus.staging>1.6.8</nexus.staging>
         <portmapper.version>2.0.5</portmapper.version>
@@ -244,7 +244,7 @@
             <dependency>
                 <groupId>org.jetbrains</groupId>
                 <artifactId>annotations</artifactId>
-                <version>19.0.0</version>
+                <version>20.0.0</version>
             </dependency>
             <dependency>
                 <groupId>commons-codec</groupId>
@@ -304,7 +304,7 @@
                 <plugin>
                     <groupId>pl.project13.maven</groupId>
                     <artifactId>git-commit-id-plugin</artifactId>
-                    <version>4.0.0</version>
+                    <version>4.0.2</version>
                 </plugin>
                 <plugin>
                     <groupId>org.sonarsource.scanner.maven</groupId>
