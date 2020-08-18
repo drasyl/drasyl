@@ -28,6 +28,11 @@ import java.security.PublicKey;
  * This interface models a compressed key that can be converted into a string and vice versa.
  */
 public class CompressedPublicKey extends AbstractCompressedKey<PublicKey> {
+    /**
+     * @param compressedKey
+     * @throws IllegalArgumentException if string parameter does not conform to a valid key
+     * @throws CryptoException
+     */
     public CompressedPublicKey(String compressedKey) throws CryptoException {
         super(compressedKey);
     }
@@ -40,6 +45,9 @@ public class CompressedPublicKey extends AbstractCompressedKey<PublicKey> {
         super(compressedKey, key);
     }
 
+    /**
+     * @throws IllegalArgumentException if string parameter does not conform to a valid key
+     */
     @Override
     public PublicKey toUncompressedKey() throws CryptoException {
         if (key == null) {
@@ -53,6 +61,7 @@ public class CompressedPublicKey extends AbstractCompressedKey<PublicKey> {
      *
      * @param compressedKey compressed key as String
      * @return {@link CompressedPublicKey}
+     * @throws IllegalArgumentException if string parameter does not conform to a valid key
      */
     public static CompressedPublicKey of(String compressedKey) throws CryptoException {
         return new CompressedPublicKey(compressedKey);
