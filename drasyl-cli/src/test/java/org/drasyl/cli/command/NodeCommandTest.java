@@ -23,13 +23,11 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 public class NodeCommandTest {
-    @Mock
     private PrintStream printStream;
     @Mock
     private Function<DrasylConfig, Pair<DrasylNode, CompletableFuture<Void>>> nodeSupplier;

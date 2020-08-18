@@ -17,7 +17,6 @@ import static org.hamcrest.Matchers.containsString;
 
 @ExtendWith(MockitoExtension.class)
 class GenerateIdentityCommandTest {
-    @Mock
     private PrintStream printStream;
     @InjectMocks
     private GenerateIdentityCommand underTest;

@@ -17,7 +17,6 @@ import static org.hamcrest.Matchers.containsString;
 
 @ExtendWith(MockitoExtension.class)
 class VersionCommandTest {
-    @Mock
     private PrintStream printStream;
     @InjectMocks
     private VersionCommand underTest;
