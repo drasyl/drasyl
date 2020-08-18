@@ -40,6 +40,9 @@ public class CompressedPrivateKey extends AbstractCompressedKey<PrivateKey> {
         super(compressedKey, key);
     }
 
+    /**
+     * @throws IllegalArgumentException if string parameter does not conform to a valid key
+     */
     @Override
     public PrivateKey toUncompressedKey() throws CryptoException {
         if (key == null) {
