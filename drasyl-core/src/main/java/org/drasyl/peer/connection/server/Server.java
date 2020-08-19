@@ -25,12 +25,19 @@ import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
+import io.reactivex.rxjava3.core.Observable;
+import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylNodeComponent;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
+import org.drasyl.util.DrasylScheduler;
+import org.drasyl.util.Pair;
+import org.drasyl.util.PortMappingUtil;
+import org.drasyl.util.PortMappingUtil.PortMapping;
+import org.drasyl.util.SetUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -39,13 +46,18 @@ import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 import static org.drasyl.util.NetworkUtil.getAddresses;
+import static org.drasyl.util.ObservableUtil.pairWithPreviousObservable;
 import static org.drasyl.util.UriUtil.createUri;
 import static org.drasyl.util.UriUtil.overridePort;
 
@@ -60,9 +72,12 @@ public class Server implements DrasylNodeComponent {
     private final DrasylConfig config;
     private final AtomicBoolean opened;
     private final Set<URI> nodeEndpoints;
+    private final Scheduler scheduler;
+    private final Function<InetSocketAddress, Set<PortMapping>> portExposer;
     private Channel channel;
     private Set<URI> actualEndpoints;
     private InetSocketAddress socketAddress;
+    private Set<PortMapping> portMappings;
 
     Server(DrasylConfig config,
            ServerBootstrap serverBootstrap,
@@ -70,7 +85,9 @@ public class Server implements DrasylNodeComponent {
            InetSocketAddress socketAddress,
            Channel channel,
            Set<URI> actualEndpoints,
-           Set<URI> nodeEndpoints) {
+           Set<URI> nodeEndpoints,
+           Scheduler scheduler,
+           Function<InetSocketAddress, Set<PortMapping>> portExposer) {
         this.config = config;
         this.channel = channel;
         this.serverBootstrap = serverBootstrap;
@@ -78,6 +95,8 @@ public class Server implements DrasylNodeComponent {
         this.socketAddress = socketAddress;
         this.actualEndpoints = actualEndpoints;
         this.nodeEndpoints = nodeEndpoints;
+        this.scheduler = scheduler;
+        this.portExposer = portExposer;
     }
 
     public Server(Identity identity,
@@ -133,8 +152,9 @@ public class Server implements DrasylNodeComponent {
                 null,
                 null,
                 new HashSet<>(),
-                nodeEndpoints
-        );
+                nodeEndpoints,
+                DrasylScheduler.getInstanceHeavy(),
+                PortMappingUtil::expose);
     }
 
     /**
@@ -154,6 +174,7 @@ public class Server implements DrasylNodeComponent {
                     channel = channelFuture.channel();
 
                     channel.closeFuture().addListener(future -> {
+                        unexposeEndpoints();
                         nodeEndpoints.removeAll(actualEndpoints);
                         socketAddress = null;
                         actualEndpoints = Set.of();
@@ -164,6 +185,10 @@ public class Server implements DrasylNodeComponent {
                     nodeEndpoints.addAll(actualEndpoints);
 
                     LOG.debug("Server started and listening at {}", socketAddress);
+
+                    if (config.isServerExposeEnabled()) {
+                        exposeEndpoints(socketAddress);
+                    }
                 }
                 else {
                     throw new ServerException("Unable to bind server to address " + config.getServerBindHost() + ":" + config.getServerBindPort() + ": " + channelFuture.cause().getMessage());
@@ -188,6 +213,45 @@ public class Server implements DrasylNodeComponent {
             channel = null;
             LOG.info("Server stopped");
         }
+    }
+
+    void exposeEndpoints(InetSocketAddress socketAddress) {
+        scheduler.scheduleDirect(() -> {
+            // create port mappings
+            portMappings = portExposer.apply(socketAddress);
+
+            // we need to observe these mappings because they can change or fail over time
+            List<Observable<Optional<InetSocketAddress>>> externalAddressObservables = portMappings.stream().map(PortMapping::externalAddress).collect(Collectors.toList());
+            @SuppressWarnings("unchecked")
+            Observable<Set<InetSocketAddress>> allExternalAddressesObservable = Observable.combineLatest(
+                    externalAddressObservables,
+                    newMappings -> Arrays.stream(newMappings).map(o -> (Optional<InetSocketAddress>) o).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toSet())
+            );
+            Observable<Pair<Set<InetSocketAddress>, Set<InetSocketAddress>>> allExternalAddressesChangesObservable = pairWithPreviousObservable(allExternalAddressesObservable);
+
+            String scheme = config.getServerSSLEnabled() ? "wss" : "ws";
+            allExternalAddressesChangesObservable.subscribe(pair -> {
+                Set<InetSocketAddress> currentAddresses = pair.first();
+                Set<InetSocketAddress> previousAddresses = Optional.ofNullable(pair.second()).orElse(Set.of());
+
+                Set<InetSocketAddress> addressesToRemove = SetUtil.difference(previousAddresses, currentAddresses);
+                Set<URI> endpointsToRemove = addressesToRemove.stream().map(address -> createUri(scheme, address.getHostName(), address.getPort())).collect(Collectors.toSet());
+                nodeEndpoints.removeAll(endpointsToRemove);
+
+                Set<InetSocketAddress> addressesToAdd = SetUtil.difference(currentAddresses, previousAddresses);
+                Set<URI> endpointsToAdd = addressesToAdd.stream().map(address -> createUri(scheme, address.getHostName(), address.getPort())).collect(Collectors.toSet());
+                nodeEndpoints.addAll(endpointsToAdd);
+            });
+        });
+    }
+
+    private void unexposeEndpoints() {
+        scheduler.scheduleDirect(() -> {
+            if (portMappings != null) {
+                portMappings.forEach(PortMapping::close);
+                portMappings = null;
+            }
+        });
     }
 
     private static ServerChannelInitializer initiateChannelInitializer(

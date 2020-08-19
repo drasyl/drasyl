@@ -73,6 +73,7 @@ public class DrasylConfig {
     static final String SERVER_SSL_PROTOCOLS = "drasyl.server.ssl.protocols";
     static final String SERVER_HANDSHAKE_TIMEOUT = "drasyl.server.handshake-timeout";
     static final String SERVER_CHANNEL_INITIALIZER = "drasyl.server.channel-initializer";
+    static final String SERVER_EXPOSE_ENABLED = "drasyl.server.expose.enabled";
     static final String SUPER_PEER_ENABLED = "drasyl.super-peer.enabled";
     static final String SUPER_PEER_ENDPOINTS = "drasyl.super-peer.endpoints";
     static final String SUPER_PEER_PUBLIC_KEY = "drasyl.super-peer.public-key";
@@ -120,6 +121,7 @@ public class DrasylConfig {
     private final Duration serverHandshakeTimeout;
     private final Set<URI> serverEndpoints;
     private final Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer;
+    private final boolean serverExposeEnabled;
     private final int messageMaxContentLength;
     private final short messageHopLimit;
     private final Duration messageComposedMessageTransferTimeout;
@@ -205,6 +207,7 @@ public class DrasylConfig {
         this.serverSSLEnabled = config.getBoolean(SERVER_SSL_ENABLED);
         this.serverSSLProtocols = Set.copyOf(config.getStringList(SERVER_SSL_PROTOCOLS));
         this.serverEndpoints = Set.copyOf(getUriList(config, SERVER_ENDPOINTS));
+        this.serverExposeEnabled = config.getBoolean(SERVER_EXPOSE_ENABLED);
 
         // Init super peer config
         this.superPeerEnabled = config.getBoolean(SUPER_PEER_ENABLED);
@@ -412,6 +415,7 @@ public class DrasylConfig {
                  Duration serverHandshakeTimeout,
                  Set<URI> serverEndpoints,
                  Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer,
+                 boolean serverExposeEnabled,
                  int messageMaxContentLength,
                  short messageHopLimit,
                  Duration messageComposedMessageTransferTimeout,
@@ -460,6 +464,7 @@ public class DrasylConfig {
         this.serverHandshakeTimeout = serverHandshakeTimeout;
         this.serverEndpoints = serverEndpoints;
         this.serverChannelInitializer = serverChannelInitializer;
+        this.serverExposeEnabled = serverExposeEnabled;
         this.messageMaxContentLength = messageMaxContentLength;
         this.messageHopLimit = messageHopLimit;
         this.messageComposedMessageTransferTimeout = messageComposedMessageTransferTimeout;
@@ -692,17 +697,22 @@ public class DrasylConfig {
         return marshallingAllowedPackages;
     }
 
+    public boolean isServerExposeEnabled() {
+        return serverExposeEnabled;
+    }
+
     @Override
     public int hashCode() {
         return Objects.hash(loglevel, identityProofOfWork, identityPublicKey, identityPrivateKey,
                 identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries,
                 serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols,
                 serverHandshakeTimeout, serverEndpoints, serverChannelInitializer,
-                messageMaxContentLength, messageHopLimit, messageComposedMessageTransferTimeout,
-                superPeerEnabled, superPeerEndpoints, superPeerPublicKey, superPeerRetryDelays,
-                superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries,
-                superPeerIdleTimeout, intraVmDiscoveryEnabled, localHostDiscoveryEnabled,
-                localHostDiscoveryPath, localHostDiscoveryLeaseTime, directConnectionsEnabled,
+                serverExposeEnabled, messageMaxContentLength, messageHopLimit,
+                messageComposedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints,
+                superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout,
+                superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout,
+                intraVmDiscoveryEnabled, localHostDiscoveryEnabled, localHostDiscoveryPath,
+                localHostDiscoveryLeaseTime, directConnectionsEnabled,
                 directConnectionsMaxConcurrentConnections, directConnectionsRetryDelays,
                 directConnectionsHandshakeTimeout, directConnectionsChannelInitializer,
                 directConnectionsIdleRetries, directConnectionsIdleTimeout, monitoringEnabled,
@@ -747,6 +757,7 @@ public class DrasylConfig {
                 Objects.equals(serverHandshakeTimeout, that.serverHandshakeTimeout) &&
                 Objects.equals(serverEndpoints, that.serverEndpoints) &&
                 Objects.equals(serverChannelInitializer, that.serverChannelInitializer) &&
+                Objects.equals(serverExposeEnabled, that.serverExposeEnabled) &&
                 Objects.equals(messageComposedMessageTransferTimeout, that.messageComposedMessageTransferTimeout) &&
                 Objects.equals(superPeerEndpoints, that.superPeerEndpoints) &&
                 Objects.equals(superPeerPublicKey, that.superPeerPublicKey) &&
@@ -791,6 +802,7 @@ public class DrasylConfig {
                 ", serverHandshakeTimeout=" + serverHandshakeTimeout +
                 ", serverEndpoints=" + serverEndpoints +
                 ", serverChannelInitializer=" + serverChannelInitializer +
+                ", serverExposeEnabled=" + serverExposeEnabled +
                 ", messageMaxContentLength=" + messageMaxContentLength +
                 ", messageHopLimit=" + messageHopLimit +
                 ", messageComposedMessageTransferTimeout=" + messageComposedMessageTransferTimeout +
@@ -853,6 +865,7 @@ public class DrasylConfig {
                 config.serverHandshakeTimeout,
                 config.serverEndpoints,
                 config.serverChannelInitializer,
+                config.serverExposeEnabled,
                 config.messageMaxContentLength,
                 config.messageHopLimit,
                 config.messageComposedMessageTransferTimeout,
@@ -910,6 +923,7 @@ public class DrasylConfig {
         private Duration serverHandshakeTimeout;
         private Set<URI> serverEndpoints;
         private Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer;
+        private boolean serverExposeEnabled;
         private int messageMaxContentLength;
         private short messageHopLimit;
         private Duration messageComposedMessageTransferTimeout;
@@ -961,6 +975,7 @@ public class DrasylConfig {
                         Duration serverHandshakeTimeout,
                         Set<URI> serverEndpoints,
                         Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer,
+                        boolean serverExposeEnabled,
                         int messageMaxContentLength,
                         short messageHopLimit,
                         Duration messageComposedMessageTransferTimeout,
@@ -1043,6 +1058,7 @@ public class DrasylConfig {
             this.marshallingAllowAllPrimitives = marshallingAllowAllPrimitives;
             this.marshallingAllowArrayOfDefinedTypes = marshallingAllowArrayOfDefinedTypes;
             this.marshallingAllowedPackages = marshallingAllowedPackages;
+            this.serverExposeEnabled = serverExposeEnabled;
         }
 
         public Builder loglevel(Level loglevel) {
@@ -1285,12 +1301,17 @@ public class DrasylConfig {
             return this;
         }
 
+        public Builder serverExposeEnabled(boolean serverExposeEnabled) {
+            this.serverExposeEnabled = serverExposeEnabled;
+            return this;
+        }
+
         public DrasylConfig build() {
             return new DrasylConfig(loglevel, identityProofOfWork, identityPublicKey,
                     identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort,
                     serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled,
                     serverSSLProtocols, serverHandshakeTimeout, serverEndpoints,
-                    serverChannelInitializer, messageMaxContentLength, messageHopLimit,
+                    serverChannelInitializer, serverExposeEnabled, messageMaxContentLength, messageHopLimit,
                     messageComposedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints,
                     superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout,
                     superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout,
@@ -1302,7 +1323,8 @@ public class DrasylConfig {
                     monitoringInfluxUri, monitoringInfluxUser, monitoringInfluxPassword,
                     monitoringInfluxDatabase, monitoringInfluxReportingFrequency,
                     pluginEnvironments, marshallingAllowedTypes, marshallingAllowAllPrimitives,
-                    marshallingAllowArrayOfDefinedTypes, marshallingAllowedPackages);
+                    marshallingAllowArrayOfDefinedTypes, marshallingAllowedPackages
+            );
         }
     }
 }

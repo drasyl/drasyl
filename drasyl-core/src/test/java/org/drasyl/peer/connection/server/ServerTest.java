@@ -21,8 +21,12 @@ package org.drasyl.peer.connection.server;
 import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
+import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.util.NetworkUtil;
+import org.drasyl.util.PortMappingUtil;
+import org.drasyl.util.PortMappingUtil.PortMapping;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,10 +37,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
-import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Function;
 
 import static org.drasyl.peer.connection.server.Server.determineActualEndpoints;
 import static org.drasyl.util.NetworkUtil.createInetAddress;
@@ -59,6 +63,10 @@ class ServerTest {
     private ServerBootstrap serverBootstrap;
     @Mock
     private EventLoopGroup bossGroup;
+    @Mock
+    private Scheduler scheduler;
+    @Mock
+    private final Function<InetSocketAddress, Set<PortMapping>> portExposer = PortMappingUtil::expose;
 
     @Nested
     class Open {
@@ -72,7 +80,7 @@ class ServerTest {
             AtomicBoolean opened = new AtomicBoolean(false);
             try (Server server = new Server(
                     config, serverBootstrap, opened, null, serverChannel,
-                    new HashSet<>(), new HashSet<>())) {
+                    new HashSet<>(), new HashSet<>(), scheduler, portExposer)) {
                 server.open();
 
                 assertTrue(opened.get());
@@ -83,10 +91,44 @@ class ServerTest {
         void shouldDoNothingIfServerHasAlreadyBeenStarted() throws ServerException {
             try (Server server = new Server(
                     config, serverBootstrap, new AtomicBoolean(true), null, serverChannel,
-                    new HashSet<>(), new HashSet<>())) {
+                    new HashSet<>(), new HashSet<>(), scheduler, portExposer)) {
                 server.open();
 
                 verify(serverBootstrap, never()).group(any(), any());
+            }
+        }
+
+        @Test
+        void shouldExposeServerWhenExposingIsEnabled() throws ServerException {
+            when(config.isServerExposeEnabled()).thenReturn(true);
+            when(config.getServerBindHost()).thenReturn(createInetAddress("0.0.0.0"));
+            when(config.getServerEndpoints()).thenReturn(Set.of(URI.create("ws://localhost:22527/")));
+            when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).isSuccess()).thenReturn(true);
+            when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).channel().localAddress()).thenReturn(new InetSocketAddress(22527));
+
+            try (Server server = new Server(
+                    config, serverBootstrap, new AtomicBoolean(), null, serverChannel,
+                    new HashSet<>(), new HashSet<>(), scheduler, portExposer)) {
+                server.open();
+
+                verify(scheduler).scheduleDirect(any());
+            }
+        }
+
+        @Test
+        void shouldNotExposeServerWhenExposingIsDisabled() throws ServerException {
+            when(config.isServerExposeEnabled()).thenReturn(false);
+            when(config.getServerBindHost()).thenReturn(createInetAddress("0.0.0.0"));
+            when(config.getServerEndpoints()).thenReturn(Set.of(URI.create("ws://localhost:22527/")));
+            when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).isSuccess()).thenReturn(true);
+            when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).channel().localAddress()).thenReturn(new InetSocketAddress(22527));
+
+            try (Server server = new Server(
+                    config, serverBootstrap, new AtomicBoolean(), null, serverChannel,
+                    new HashSet<>(), new HashSet<>(), scheduler, portExposer)) {
+                server.open();
+
+                verify(scheduler, never()).scheduleDirect(any());
             }
         }
     }
@@ -97,11 +139,41 @@ class ServerTest {
         void shouldDoNothingIfServerHasAlreadyBeenShutDown() {
             Server server = new Server(
                     config, serverBootstrap, new AtomicBoolean(false), null, serverChannel,
-                    new HashSet<>(), new HashSet<>());
+                    new HashSet<>(), new HashSet<>(), scheduler, portExposer);
 
             server.close();
 
             verify(bossGroup, times(0)).shutdownGracefully();
+        }
+    }
+
+    @Nested
+    class ExposeEndpoints {
+        @Mock
+        private Set<PortMapping> mappings;
+
+        @BeforeEach
+        void setUp() {
+            when(config.getServerBindHost()).thenReturn(createInetAddress("0.0.0.0"));
+            when(config.getServerEndpoints()).thenReturn(Set.of(URI.create("ws://localhost:22527/")));
+            when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).channel().localAddress()).thenReturn(new InetSocketAddress(22527));
+            when(scheduler.scheduleDirect(any())).then(invocation -> {
+                Runnable argument = invocation.getArgument(0, Runnable.class);
+                argument.run();
+                return null;
+            });
+            when(portExposer.apply(any())).thenReturn(mappings);
+        }
+
+        @Test
+        void shouldExposeEndpoints() {
+            InetSocketAddress address = new InetSocketAddress(22527);
+            try (Server server = new Server(config, serverBootstrap, new AtomicBoolean(), null, serverChannel,
+                    new HashSet<>(), new HashSet<>(), scheduler, portExposer)) {
+                server.exposeEndpoints(address);
+
+                verify(portExposer).apply(address);
+            }
         }
     }
 
