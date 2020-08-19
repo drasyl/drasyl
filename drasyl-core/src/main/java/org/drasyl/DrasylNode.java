@@ -309,18 +309,18 @@ public abstract class DrasylNode {
         root.setLevel(level);
     }
 
-    DrasylNode(DrasylConfig config,
-               Identity identity,
-               PeersManager peersManager,
-               PeerChannelGroup channelGroup,
-               Messenger messenger,
-               Set<URI> endpoints,
-               AtomicBoolean acceptNewConnections,
-               DrasylPipeline pipeline,
-               List<DrasylNodeComponent> components,
-               AtomicBoolean started,
-               CompletableFuture<Void> startSequence,
-               CompletableFuture<Void> shutdownSequence) {
+    protected DrasylNode(DrasylConfig config,
+                         Identity identity,
+                         PeersManager peersManager,
+                         PeerChannelGroup channelGroup,
+                         Messenger messenger,
+                         Set<URI> endpoints,
+                         AtomicBoolean acceptNewConnections,
+                         DrasylPipeline pipeline,
+                         List<DrasylNodeComponent> components,
+                         AtomicBoolean started,
+                         CompletableFuture<Void> startSequence,
+                         CompletableFuture<Void> shutdownSequence) {
         this.config = config;
         this.identity = identity;
         this.peersManager = peersManager;
