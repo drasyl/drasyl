@@ -84,6 +84,7 @@ import static org.drasyl.DrasylConfig.SERVER_BIND_PORT;
 import static org.drasyl.DrasylConfig.SERVER_CHANNEL_INITIALIZER;
 import static org.drasyl.DrasylConfig.SERVER_ENABLED;
 import static org.drasyl.DrasylConfig.SERVER_ENDPOINTS;
+import static org.drasyl.DrasylConfig.SERVER_EXPOSE_ENABLED;
 import static org.drasyl.DrasylConfig.SERVER_HANDSHAKE_TIMEOUT;
 import static org.drasyl.DrasylConfig.SERVER_IDLE_RETRIES;
 import static org.drasyl.DrasylConfig.SERVER_IDLE_TIMEOUT;
@@ -127,6 +128,7 @@ class DrasylConfigTest {
     private Duration serverHandshakeTimeout;
     private Set<URI> serverEndpoints;
     private Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer;
+    private boolean serverExposeEnabled;
     private int messageMaxContentLength;
     private short messageHopLimit;
     private boolean superPeerEnabled;
@@ -180,6 +182,7 @@ class DrasylConfigTest {
         serverHandshakeTimeout = ofSeconds(30);
         serverEndpoints = Set.of();
         serverChannelInitializer = DefaultServerChannelInitializer.class;
+        serverExposeEnabled = true;
         messageMaxContentLength = 1024;
         messageHopLimit = 64;
         superPeerEnabled = true;
@@ -234,6 +237,7 @@ class DrasylConfigTest {
             when(typesafeConfig.getBoolean(SERVER_SSL_ENABLED)).thenReturn(serverSSLEnabled);
             when(typesafeConfig.getStringList(SERVER_SSL_PROTOCOLS)).thenReturn(new ArrayList<>(serverSSLProtocols));
             when(typesafeConfig.getStringList(SERVER_ENDPOINTS)).thenReturn(List.of());
+            when(typesafeConfig.getBoolean(SERVER_EXPOSE_ENABLED)).thenReturn(serverExposeEnabled);
             when(typesafeConfig.getBoolean(SUPER_PEER_ENABLED)).thenReturn(superPeerEnabled);
             when(typesafeConfig.getStringList(SUPER_PEER_ENDPOINTS)).thenReturn(List.of("ws://foo.bar:123", "wss://example.com"));
             when(typesafeConfig.getString(SUPER_PEER_PUBLIC_KEY)).thenReturn("");
@@ -278,6 +282,7 @@ class DrasylConfigTest {
             assertEquals(serverHandshakeTimeout, config.getServerHandshakeTimeout());
             assertEquals(Set.of(), config.getServerEndpoints());
             assertEquals(serverChannelInitializer, config.getServerChannelInitializer());
+            assertEquals(serverExposeEnabled, config.isServerExposeEnabled());
             assertEquals(messageMaxContentLength, config.getMessageMaxContentLength());
             assertEquals(messageHopLimit, config.getMessageHopLimit());
             assertEquals(superPeerEnabled, config.isSuperPeerEnabled());
@@ -317,7 +322,7 @@ class DrasylConfigTest {
             DrasylConfig config = new DrasylConfig(loglevel, proofOfWork, identityPublicKey, identityPrivateKey, identityPath,
                     serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize,
                     serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer,
-                    messageMaxContentLength, messageHopLimit, composedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints,
+                    serverExposeEnabled, messageMaxContentLength, messageHopLimit, composedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints,
                     superPeerPublicKey, superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries,
                     superPeerIdleTimeout, intraVmDiscoveryEnabled, localHostDiscoveryEnabled, Path.of(localHostDiscoveryPathAsString),
                     localHostDiscoveryLeaseTime, directConnectionsEnabled, directConnectionsMaxConcurrentConnections,
@@ -373,6 +378,7 @@ class DrasylConfigTest {
                     .serverHandshakeTimeout(DEFAULT.getServerHandshakeTimeout())
                     .serverEndpoints(DEFAULT.getServerEndpoints())
                     .serverChannelInitializer(DEFAULT.getServerChannelInitializer())
+                    .serverExposeEnabled(DEFAULT.isServerExposeEnabled())
                     .messageMaxContentLength(DEFAULT.getMessageMaxContentLength())
                     .messageHopLimit(DEFAULT.getMessageHopLimit())
                     .superPeerEnabled(DEFAULT.isSuperPeerEnabled())
