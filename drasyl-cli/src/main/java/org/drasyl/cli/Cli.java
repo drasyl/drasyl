@@ -23,6 +23,7 @@ import org.drasyl.cli.command.GenerateIdentityCommand;
 import org.drasyl.cli.command.HelpCommand;
 import org.drasyl.cli.command.NodeCommand;
 import org.drasyl.cli.command.VersionCommand;
+import org.drasyl.cli.command.WormholeCommand;
 
 import java.util.Map;
 
@@ -38,7 +39,8 @@ public class Cli {
                 "genidentity", new GenerateIdentityCommand(),
                 "help", new HelpCommand(),
                 "node", new NodeCommand(),
-                "version", new VersionCommand()
+                "version", new VersionCommand(),
+                "wormhole", new WormholeCommand()
         );
     }
 
