@@ -75,11 +75,15 @@ public class TestServer extends Server {
                TestServerChannelInitializer channelInitializer) {
         super(
                 config,
-                new AtomicBoolean(),
-                new HashSet<>(),
                 new ServerBootstrap().group(bossGroup, workerGroup)
                         .channel(NioServerSocketChannel.class)
-                        .childHandler(channelInitializer));
+                        .childHandler(channelInitializer),
+                new AtomicBoolean(),
+                null,
+                null,
+                new HashSet<>(),
+                new HashSet<>()
+        );
         this.channelGroup = channelGroup;
         this.channelInitializer = channelInitializer;
     }

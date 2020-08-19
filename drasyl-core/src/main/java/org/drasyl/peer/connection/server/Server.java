@@ -117,8 +117,6 @@ public class Server implements DrasylNodeComponent {
                   Set<URI> nodeEndpoints) throws ServerException {
         this(
                 config,
-                opened,
-                nodeEndpoints,
                 new ServerBootstrap().group(bossGroup, workerGroup)
                         .channel(NioServerSocketChannel.class)
                         .childHandler(initiateChannelInitializer(new ServerEnvironment(
@@ -130,20 +128,13 @@ public class Server implements DrasylNodeComponent {
                                         channelGroup,
                                         acceptNewConnectionsSupplier
                                 ),
-                                config.getServerChannelInitializer())));
-    }
-
-    public Server(DrasylConfig config,
-                  AtomicBoolean opened,
-                  Set<URI> nodeEndpoints,
-                  ServerBootstrap serverBootstrap) {
-        this.config = config;
-        this.channel = null;
-        this.serverBootstrap = serverBootstrap;
-        this.opened = opened;
-        this.socketAddress = null;
-        this.actualEndpoints = new HashSet<>();
-        this.nodeEndpoints = nodeEndpoints;
+                                config.getServerChannelInitializer())),
+                opened,
+                null,
+                null,
+                new HashSet<>(),
+                nodeEndpoints
+        );
     }
 
     /**
