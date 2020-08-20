@@ -40,6 +40,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
+import static java.util.concurrent.CompletableFuture.failedFuture;
 
 /**
  * Uses shared memory to discover other drasyl nodes running on same JVM.
@@ -54,7 +55,7 @@ public class IntraVmDiscovery implements DrasylNodeComponent {
         IntraVmDiscovery discoveree = discoveries.get(recipient);
 
         if (discoveree == null) {
-            throw new NoPathToPublicKeyException(recipient);
+            return failedFuture(new NoPathToPublicKeyException(recipient));
         }
 
         return discoveree.path.send(message);

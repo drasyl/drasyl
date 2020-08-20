@@ -27,7 +27,6 @@ import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
-import org.drasyl.messenger.MessengerException;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
@@ -221,12 +220,11 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
     private void requestPeerInformation(CompressedPublicKey publicKey) {
         if (requestPeerInformationCache.add(publicKey)) {
             LOG.debug("Request information for Peer '{}'", publicKey);
-            try {
-                messenger.send(new WhoisMessage(publicKey, identity.getPublicKey(), PeerInformation.of(endpoints)));
-            }
-            catch (MessengerException e) {
-                LOG.debug("Unable to request information for Peer '{}': {}", publicKey, e.getMessage());
-            }
+            messenger.send(new WhoisMessage(publicKey, identity.getPublicKey(), PeerInformation.of(endpoints))).whenComplete((done, e) -> {
+                if (e != null) {
+                    LOG.debug("Unable to request information for Peer '{}': {}", publicKey, e.getMessage());
+                }
+            });
         }
     }
 

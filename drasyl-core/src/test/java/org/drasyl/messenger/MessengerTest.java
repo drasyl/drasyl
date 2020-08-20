@@ -19,7 +19,6 @@
 package org.drasyl.messenger;
 
 import io.reactivex.rxjava3.subjects.Subject;
-import org.drasyl.DrasylException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.junit.jupiter.api.Nested;
@@ -27,21 +26,26 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.Answer;
 
+import java.util.concurrent.ExecutionException;
+import java.util.function.BiConsumer;
+
+import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class MessengerTest {
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private MessageSink loopbackSink;
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private MessageSink intraVmSink;
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private MessageSink channelGroupSink;
     @Mock
     private ApplicationMessage applicationMessage;
@@ -55,17 +59,18 @@ class MessengerTest {
     @Nested
     class Send {
         @Test
-        void shouldSendMessageToLoopbackSinkIfAllSinksArePresent() throws DrasylException {
+        void shouldSendMessageToLoopbackSinkIfAllSinksArePresent() {
             Messenger messenger = new Messenger(peerCommunicationOccurred, loopbackSink, intraVmSink, channelGroupSink);
             messenger.send(applicationMessage);
 
             verify(loopbackSink).send(applicationMessage);
             verify(intraVmSink, never()).send(any());
+            verify(channelGroupSink, never()).send(any());
         }
 
         @Test
-        void shouldSendMessageToIntraVmSinkIfLoopbackSinkCanNotSendMessage() throws DrasylException {
-            doThrow(noPathToPublicKeyException).when(loopbackSink).send(any());
+        void shouldSendMessageToIntraVmSinkIfLoopbackSinkCanNotSendMessage() {
+            when(loopbackSink.send(any())).thenReturn(failedFuture(noPathToPublicKeyException));
 
             Messenger messenger = new Messenger(peerCommunicationOccurred, loopbackSink, intraVmSink, channelGroupSink);
             messenger.send(applicationMessage);
@@ -75,25 +80,21 @@ class MessengerTest {
         }
 
         @Test
-        void shouldThrowExceptionIfAllSinksCanNotSendMessage() throws DrasylException {
+        void shouldThrowExceptionIfNoSinkCanNotSendMessage() {
             when(applicationMessage.getRecipient()).thenReturn(address);
-            doThrow(noPathToPublicKeyException).when(loopbackSink).send(any());
-            doThrow(noPathToPublicKeyException).when(intraVmSink).send(any());
-            doThrow(noPathToPublicKeyException).when(channelGroupSink).send(any());
+            Answer<Object> failingSink = invocation -> {
+                @SuppressWarnings("unchecked")
+                BiConsumer<Void, Throwable> consumer = invocation.getArgument(0, BiConsumer.class);
+                consumer.accept(null, new NoPathToPublicKeyException(address));
+                return null;
+            };
+            when(loopbackSink.send(any()).whenComplete(any())).then(failingSink);
+            when(intraVmSink.send(any()).whenComplete(any())).then(failingSink);
+            when(channelGroupSink.send(any()).whenComplete(any())).then(failingSink);
 
             Messenger messenger = new Messenger(peerCommunicationOccurred, loopbackSink, intraVmSink, channelGroupSink);
 
-            assertThrows(NoPathToPublicKeyException.class, () -> messenger.send(applicationMessage));
-        }
-
-        @Test
-        void shouldThrowExceptionIfNoSinkCanProcessMessage() throws MessageSinkException {
-            when(applicationMessage.getRecipient()).thenReturn(address);
-            doThrow(NoPathToPublicKeyException.class).when(loopbackSink).send(any());
-
-            Messenger messenger = new Messenger(peerCommunicationOccurred, loopbackSink, null, null);
-
-            assertThrows(NoPathToPublicKeyException.class, () -> messenger.send(applicationMessage));
+            assertThrows(ExecutionException.class, () -> messenger.send(applicationMessage).get());
         }
     }
 }

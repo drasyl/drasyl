@@ -18,7 +18,6 @@
  */
 package org.drasyl.messenger;
 
-import com.google.common.collect.Lists;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
@@ -29,12 +28,12 @@ import org.drasyl.peer.connection.message.RelayableMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.List;
-import java.util.Objects;
+import java.util.LinkedList;
+import java.util.NoSuchElementException;
 import java.util.concurrent.CompletableFuture;
-import java.util.stream.Collectors;
 
 import static java.util.Objects.requireNonNull;
+import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.drasyl.util.FutureUtil.toFuture;
 
 /**
@@ -71,11 +70,11 @@ public class Messenger {
                         return toFuture(channelGroup.writeAndFlush(superPeer, message));
                     }
                     catch (IllegalArgumentException e2) {
-                        throw new NoPathToPublicKeyException(recipient);
+                        return failedFuture(new NoPathToPublicKeyException(recipient));
                     }
                 }
                 else {
-                    throw new NoPathToPublicKeyException(recipient);
+                    return failedFuture(new NoPathToPublicKeyException(recipient));
                 }
             }
         });
@@ -103,28 +102,49 @@ public class Messenger {
      * @param message message to be sent
      * @return a completed future if the message was successfully processed, otherwise an
      * exceptionally future
-     * @throws MessengerException if sending is not possible (e.g. because no path to the peer
-     *                            exists)
      */
-    public CompletableFuture<Void> send(RelayableMessage message) throws MessengerException {
+    public CompletableFuture<Void> send(RelayableMessage message) {
         LOG.trace("Send Message: {}", message);
 
         communicationOccurred.onNext(message.getRecipient());
 
-        List<MessageSink> messageSinks = Lists.newArrayList(loopbackSink, intraVmSink, channelGroupSink)
-                .stream().filter(Objects::nonNull).collect(Collectors.toList());
-        for (MessageSink messageSink : messageSinks) {
-            try {
-                CompletableFuture<Void> future = messageSink.send(message);
-                LOG.trace("Message was processed with Message Sink '{}'", messageSink);
-                return future;
-            }
-            catch (NoPathToPublicKeyException e) {
-                // do nothing (continue with next MessageSink)
-            }
-        }
+        LinkedList<MessageSink> messageSinks = new LinkedList<>();
+        messageSinks.add(loopbackSink);
+        messageSinks.add(intraVmSink);
+        messageSinks.add(channelGroupSink);
 
-        throw new NoPathToPublicKeyException(message.getRecipient());
+        CompletableFuture<Void> result = new CompletableFuture<>();
+        sendWithMessageSinks(message, messageSinks, result);
+        return result;
+    }
+
+    private void sendWithMessageSinks(RelayableMessage message,
+                                      LinkedList<MessageSink> messageSinks,
+                                      CompletableFuture<Void> result) {
+        try {
+            // get next non-null MessageSink
+            MessageSink messageSink;
+            do {
+                messageSink = messageSinks.removeFirst();
+            }
+            while (messageSink == null);
+
+            // try to send message with current MessageSink
+            messageSink.send(message).whenComplete((done, e) -> {
+                if (e == null) {
+                    // successfully sent
+                    result.complete(null);
+                }
+                else {
+                    // failure -> send with remaining MessageSinks
+                    sendWithMessageSinks(message, messageSinks, result);
+                }
+            });
+        }
+        catch (NoSuchElementException e) {
+            // no MessageSinks remaining
+            result.completeExceptionally(new NoPathToPublicKeyException(message.getRecipient()));
+        }
     }
 
     public void setIntraVmSink(MessageSink intraVmSink) {
