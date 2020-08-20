@@ -59,6 +59,9 @@ public class PeerChannelGroup extends DefaultChannelGroup {
         this(new HashMap<>(), executor);
     }
 
+    /**
+     * @throws IllegalArgumentException if no channel with given identity could be found
+     */
     public ChannelFuture writeAndFlush(CompressedPublicKey identity, Object message) {
         Channel existingChannel = find(identity);
         if (existingChannel != null) {
