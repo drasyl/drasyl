@@ -35,7 +35,6 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
-import org.drasyl.messenger.MessageSinkException;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.messenger.MessengerException;
 import org.drasyl.messenger.NoPathToPublicKeyException;
@@ -187,12 +186,7 @@ public abstract class DrasylNode {
                         }
                     }
                     else {
-                        try {
-                            FutureUtil.completeOnAllOf(future, messenger.send(msg));
-                        }
-                        catch (Exception e) {
-                            future.completeExceptionally(e);
-                        }
+                        FutureUtil.completeOnAllOf(future, messenger.send(msg));
                     }
                 }
             });
@@ -238,15 +232,15 @@ public abstract class DrasylNode {
         pipeline.processInbound(event);
     }
 
-    CompletableFuture<Void> messageSink(RelayableMessage message) throws MessageSinkException {
+    CompletableFuture<Void> messageSink(RelayableMessage message) {
         if (!started.get()) {
-            throw new NoPathToPublicKeyException(identity.getPublicKey());
+            return failedFuture(new NoPathToPublicKeyException(identity.getPublicKey()));
         }
 
         CompressedPublicKey recipient = message.getRecipient();
 
         if (!identity.getPublicKey().equals(recipient)) {
-            throw new NoPathToPublicKeyException(recipient);
+            return failedFuture(new NoPathToPublicKeyException(recipient));
         }
 
         if (message instanceof ApplicationMessage) {
@@ -262,13 +256,10 @@ public abstract class DrasylNode {
             PeerInformation myPeerInformation = PeerInformation.of(endpoints);
             IdentityMessage identityMessage = new IdentityMessage(whoisMessage.getRequester(), myPublicKey, myPeerInformation, whoisMessage.getId());
 
-            try {
-                return messenger.send(identityMessage);
-            }
-            catch (MessengerException e) {
+            return messenger.send(identityMessage).exceptionally(e -> {
                 LOG.info("Unable to reply to {}: {}", whoisMessage, e.getMessage());
-                return completedFuture(null);
-            }
+                return null;
+            });
         }
         else if (message instanceof IdentityMessage) {
             IdentityMessage identityMessage = (IdentityMessage) message;

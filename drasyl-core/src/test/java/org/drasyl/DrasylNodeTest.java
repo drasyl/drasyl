@@ -26,10 +26,7 @@ import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
-import org.drasyl.messenger.MessageSinkException;
 import org.drasyl.messenger.Messenger;
-import org.drasyl.messenger.MessengerException;
-import org.drasyl.messenger.NoPathToPublicKeyException;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.ApplicationMessage;
@@ -45,7 +42,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.LoggerFactory;
@@ -64,6 +60,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.spy;
@@ -77,9 +74,9 @@ class DrasylNodeTest {
     private final byte[] payload = new byte[]{ 0x4f };
     @Mock
     private DrasylConfig config;
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private Messenger messenger;
     @Mock
     private PeersManager peersManager;
@@ -90,7 +87,7 @@ class DrasylNodeTest {
     private CompressedPublicKey publicKey;
     @Mock
     private DrasylPipeline pipeline;
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private PeerChannelGroup channelGroup;
     @Mock
     private AtomicBoolean acceptNewConnections;
@@ -275,11 +272,11 @@ class DrasylNodeTest {
             startSequence.complete(null);
             underTest.shutdown().join();
 
-            assertThrows(NoPathToPublicKeyException.class, () -> underTest.messageSink(message));
+            assertThrows(ExecutionException.class, () -> underTest.messageSink(message).get());
         }
 
         @Test
-        void shouldPassApplicationMessageToPipeline(@Mock ApplicationMessage message) throws MessageSinkException {
+        void shouldPassApplicationMessageToPipeline(@Mock ApplicationMessage message) {
             when(identity.getPublicKey()).thenReturn(publicKey);
             when(message.getRecipient()).thenReturn(publicKey);
 
@@ -295,7 +292,7 @@ class DrasylNodeTest {
         }
 
         @Test
-        void shouldReplyToWhoisMessage(@Mock(answer = Answers.RETURNS_DEEP_STUBS) WhoisMessage message) throws MessengerException {
+        void shouldReplyToWhoisMessage(@Mock(answer = RETURNS_DEEP_STUBS) WhoisMessage message) {
             when(identity.getPublicKey()).thenReturn(publicKey);
             when(message.getId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
             when(message.getRecipient()).thenReturn(publicKey);
@@ -311,7 +308,7 @@ class DrasylNodeTest {
         }
 
         @Test
-        void shouldPassIdentityMessageToPeersManager(@Mock(answer = Answers.RETURNS_DEEP_STUBS) IdentityMessage message) throws MessengerException {
+        void shouldPassIdentityMessageToPeersManager(@Mock(answer = RETURNS_DEEP_STUBS) IdentityMessage message) {
             when(identity.getPublicKey()).thenReturn(publicKey);
             when(message.getRecipient()).thenReturn(publicKey);
 

@@ -1,9 +1,7 @@
 package org.drasyl.peer.connection.intravm;
 
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.messenger.MessageSinkException;
 import org.drasyl.messenger.Messenger;
-import org.drasyl.messenger.NoPathToPublicKeyException;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
@@ -14,8 +12,10 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import static org.drasyl.peer.connection.intravm.IntraVmDiscovery.MESSAGE_SINK;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.aMapWithSize;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -82,16 +82,16 @@ class IntraVmDiscoveryTest {
     class MessageSink {
         @Test
         void shouldThrowExceptionForUnknownRecipient(@Mock RelayableMessage message) {
-            assertThrows(NoPathToPublicKeyException.class, () -> IntraVmDiscovery.MESSAGE_SINK.send(message));
+            assertThrows(ExecutionException.class, () -> MESSAGE_SINK.send(message).get());
         }
 
         @Test
-        void shouldPassMessageToPathForKnownRecipient(@Mock RelayableMessage message) throws MessageSinkException {
+        void shouldPassMessageToPathForKnownRecipient(@Mock RelayableMessage message) {
             when(message.getRecipient()).thenReturn(publicKey);
 
             try (IntraVmDiscovery underTest = new IntraVmDiscovery(publicKey, messenger, peersManager, path, peerInformation, new AtomicBoolean(false))) {
                 underTest.open();
-                IntraVmDiscovery.MESSAGE_SINK.send(message);
+                MESSAGE_SINK.send(message);
 
                 verify(path).send(message);
             }

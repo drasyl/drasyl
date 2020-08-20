@@ -24,7 +24,6 @@ import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.messenger.Messenger;
-import org.drasyl.messenger.MessengerException;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.QuitMessage;
@@ -128,12 +127,11 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
     protected void processMessageAfterHandshake(ChannelHandlerContext ctx, Message message) {
         if (message instanceof RelayableMessage) {
             RelayableMessage relayableMessage = (RelayableMessage) message;
-            try {
-                messenger.send(relayableMessage);
-            }
-            catch (MessengerException e) {
-                getLogger().trace("Unable to send Message {}: {}", relayableMessage, e.getMessage());
-            }
+            messenger.send(relayableMessage).whenComplete((done, e) -> {
+                if (e != null) {
+                    getLogger().trace("Unable to send Message {}: {}", relayableMessage, e.getMessage());
+                }
+            });
         }
         else {
             getLogger().debug("Could not process the message {}", message);

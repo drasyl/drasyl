@@ -33,8 +33,6 @@ public interface MessageSink {
      * @param message message to be sent
      * @return a completed future if the message was successfully processed, otherwise an
      * exceptionally future
-     * @throws MessageSinkException if sending is not possible (e.g. because no path to the peer
-     *                              exists)
      */
-    CompletableFuture<Void> send(RelayableMessage message) throws MessageSinkException;
+    CompletableFuture<Void> send(RelayableMessage message);
 }
