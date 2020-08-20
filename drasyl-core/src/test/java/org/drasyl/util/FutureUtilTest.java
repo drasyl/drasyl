@@ -130,10 +130,9 @@ class FutureUtilTest {
         void shouldCompleteFutureIfAnyFutureInCollectionCompletesExceptionally() {
             CompletableFuture<?> future1 = new CompletableFuture<>();
             CompletableFuture<?> future2 = new CompletableFuture<>();
-            CompletableFuture<Void> futureToComplete = new CompletableFuture<>();
             Collection<CompletableFuture<?>> futures = List.of(future1, future2);
 
-            FutureUtil.completeOnAllOf(futureToComplete, futures);
+            CompletableFuture<Void> futureToComplete = FutureUtil.getCompleteOnAllOf(futures);
 
             future1.completeExceptionally(new Exception());
 
@@ -150,10 +149,9 @@ class FutureUtilTest {
         void shouldCompleteFutureIfAllFuturesInCollectionCompletesNormally() {
             CompletableFuture<Void> future1 = new CompletableFuture<>();
             CompletableFuture<Object> future2 = new CompletableFuture<>();
-            CompletableFuture<Void> futureToComplete = new CompletableFuture<>();
             Collection<CompletableFuture<?>> futures = List.of(future1, future2);
 
-            FutureUtil.completeOnAllOf(futureToComplete, futures);
+            CompletableFuture<Void> futureToComplete = FutureUtil.getCompleteOnAllOf(futures);
 
             future1.complete(null);
             future2.complete(new Object());
@@ -170,10 +168,9 @@ class FutureUtilTest {
         void shouldNotCompleteFutureIfAnyFuturesInCollectionIsNotCompleted() {
             CompletableFuture<Void> future1 = new CompletableFuture<>();
             CompletableFuture<Object> future2 = new CompletableFuture<>();
-            CompletableFuture<Void> futureToComplete = new CompletableFuture<>();
             Collection<CompletableFuture<?>> futures = List.of(future1, future2);
 
-            FutureUtil.completeOnAllOf(futureToComplete, futures);
+            CompletableFuture<Void> futureToComplete = FutureUtil.getCompleteOnAllOf(futures);
 
             future1.complete(null);
 
@@ -185,9 +182,7 @@ class FutureUtilTest {
 
         @Test
         void shouldReturnImmediatelyWhenListIsEmpty() {
-            CompletableFuture<Void> futureToComplete = new CompletableFuture<>();
-
-            FutureUtil.completeOnAllOf(futureToComplete);
+            CompletableFuture<Void> futureToComplete = FutureUtil.getCompleteOnAllOf();
 
             futureToComplete.complete(null);
 
@@ -200,6 +195,8 @@ class FutureUtilTest {
             assertThrows(NullPointerException.class, () -> FutureUtil.completeOnAllOf(future, (CompletableFuture<?>) null));
             assertThrows(NullPointerException.class, () -> FutureUtil.completeOnAllOf(null));
             assertThrows(NullPointerException.class, () -> FutureUtil.completeOnAllOf(null, (Collection<CompletableFuture<?>>) null));
+            assertThrows(NullPointerException.class, () -> FutureUtil.getCompleteOnAllOf((CompletableFuture<?>) null));
+            assertThrows(NullPointerException.class, () -> FutureUtil.getCompleteOnAllOf((Collection<CompletableFuture<?>>) null));
         }
     }
 }

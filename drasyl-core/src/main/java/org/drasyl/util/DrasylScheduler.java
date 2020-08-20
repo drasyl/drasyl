@@ -25,6 +25,7 @@ import io.reactivex.rxjava3.schedulers.Schedulers;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.ThreadFactory;
@@ -42,10 +43,8 @@ import java.util.concurrent.TimeUnit;
 public class DrasylScheduler {
     public static final long SHUTDOWN_TIMEOUT = 10_000L; // 10s until the schedulers are stopped immediately
     private static final Logger LOG = LoggerFactory.getLogger(DrasylScheduler.class);
-    private static Scheduler lightScheduler;
-    private static Scheduler heavyScheduler;
-    private static ThreadPoolExecutor lightExecutor;
-    private static ThreadPoolExecutor heavyExecutor;
+    protected static volatile boolean lightSchedulerCreated = false;
+    protected static volatile boolean heavySchedulerCreated = false;
 
     static {
         RxJavaPlugins.setErrorHandler(error -> {
@@ -53,7 +52,6 @@ public class DrasylScheduler {
                 LOG.warn("", error);
             }
         });
-        start();
     }
 
     private DrasylScheduler() {
@@ -66,73 +64,107 @@ public class DrasylScheduler {
      * @return a {@link Scheduler} for fast and light tasks
      */
     public static Scheduler getInstanceLight() {
-        return lightScheduler;
+        return LazyLightSchedulerHolder.INSTANCE.scheduler;
     }
 
     /**
-     * Use this {@link Scheduler} for slow and heavy task that does not do longer computations.
+     * Use this {@link Scheduler} for slow and heavy task that does do longer computations.
      *
      * @return a {@link Scheduler} for slow and heavy tasks
      */
     public static Scheduler getInstanceHeavy() {
-        return heavyScheduler;
+        return LazyHeavySchedulerHolder.INSTANCE.scheduler;
     }
 
     /**
      * Shutdown the two schedulers.
-     */
-    public static void shutdown() {
-        shutdownThreadPoolExecutor(lightExecutor);
-        shutdownThreadPoolExecutor(heavyExecutor);
-    }
-
-    private static void shutdownThreadPoolExecutor(ThreadPoolExecutor executor) {
-        executor.shutdown();
-
-        try {
-            if (!executor.awaitTermination(SHUTDOWN_TIMEOUT, TimeUnit.MILLISECONDS)) {
-                executor.shutdownNow();
-            }
-        }
-        catch (InterruptedException e) {
-            executor.shutdownNow();
-            LOG.debug("", e);
-            Thread.currentThread().interrupt();
-        }
-    }
-
-    /**
-     * Starts the two schedulers.
-     */
-    public static void start() {
-        Pair<ThreadPoolExecutor, Scheduler> light = generate("Drasyl-Light-Task-ThreadPool-%d");
-        lightExecutor = light.first();
-        lightScheduler = light.second();
-
-        Pair<ThreadPoolExecutor, Scheduler> heavy = generate("Drasyl-Heavy-Task-ThreadPool-%d");
-        heavyExecutor = heavy.first();
-        heavyScheduler = heavy.second();
-    }
-
-    /**
-     * Generates an executor and scheduler.
      *
-     * @param name the name format for the created threads
-     * @return an executor and the corresponding scheduler
+     * <p>
+     * <b>This operation cannot be undone. After performing this operation, no new task can
+     * be submitted!</b>
+     * </p>
      */
-    private static Pair<ThreadPoolExecutor, Scheduler> generate(String name) {
-        ThreadFactory threadFactory = new ThreadFactoryBuilder()
-                .setNameFormat(name)
-                .build();
-        ThreadPoolExecutor executor = new ThreadPoolExecutor(
-                Math.min(1, Math.max(1, Runtime.getRuntime().availableProcessors() / 3)),  //corePoolSize
-                Math.min(2, Math.max(1, Runtime.getRuntime().availableProcessors() / 3)),  //maximumPoolSize
-                60L, TimeUnit.MILLISECONDS, //keepAliveTime, unit
-                new LinkedBlockingQueue<>(1000),  //workQueue
-                threadFactory
-        );
-        Scheduler scheduler = Schedulers.from(executor);
+    public static CompletableFuture<Void> shutdown() {
+        CompletableFuture<Void> lightSchedulerFuture;
+        CompletableFuture<Void> heavySchedulerFuture;
 
-        return Pair.of(executor, scheduler);
+        if (lightSchedulerCreated) {
+            lightSchedulerFuture = LazyLightSchedulerHolder.INSTANCE.shutdown();
+        }
+        else {
+            lightSchedulerFuture = CompletableFuture.completedFuture(null);
+        }
+
+        if (heavySchedulerCreated) {
+            heavySchedulerFuture = LazyHeavySchedulerHolder.INSTANCE.shutdown();
+        }
+        else {
+            heavySchedulerFuture = CompletableFuture.completedFuture(null);
+        }
+
+        return FutureUtil.getCompleteOnAllOf(lightSchedulerFuture, heavySchedulerFuture);
+    }
+
+    private static class LazyLightSchedulerHolder {
+        static final DrasylExecutor INSTANCE = new DrasylExecutor("Drasyl-Light-Task-ThreadPool-%d");
+        static final boolean LOCK = lightSchedulerCreated = true;
+
+        private LazyLightSchedulerHolder() {
+        }
+    }
+
+    private static class LazyHeavySchedulerHolder {
+        static final DrasylExecutor INSTANCE = new DrasylExecutor("Drasyl-Heavy-Task-ThreadPool-%d");
+        static final boolean LOCK = heavySchedulerCreated = true;
+
+        private LazyHeavySchedulerHolder() {
+        }
+    }
+
+    private static class DrasylExecutor {
+        final Scheduler scheduler;
+        final ThreadPoolExecutor executor;
+
+        /**
+         * Generates an executor and scheduler.
+         *
+         * @param name the name format for the created threads
+         */
+        DrasylExecutor(String name) {
+            ThreadFactory threadFactory = new ThreadFactoryBuilder()
+                    .setNameFormat(name)
+                    .build();
+            this.executor = new ThreadPoolExecutor(
+                    Math.min(1, Math.max(1, Runtime.getRuntime().availableProcessors() / 3)),  //corePoolSize
+                    Math.min(2, Math.max(1, Runtime.getRuntime().availableProcessors() / 3)),  //maximumPoolSize
+                    60L, TimeUnit.MILLISECONDS, //keepAliveTime, unit
+                    new LinkedBlockingQueue<>(1000),  //workQueue
+                    threadFactory
+            );
+            this.scheduler = Schedulers.from(executor);
+        }
+
+        private CompletableFuture<Void> shutdown() {
+            CompletableFuture<Void> future = new CompletableFuture<>();
+
+            new Thread(() -> {
+                executor.shutdown();
+
+                try {
+                    if (!executor.awaitTermination(SHUTDOWN_TIMEOUT, TimeUnit.MILLISECONDS)) {
+                        executor.shutdownNow();
+                    }
+                }
+                catch (InterruptedException e) {
+                    executor.shutdownNow();
+                    LOG.debug("", e);
+                    Thread.currentThread().interrupt();
+                }
+
+                future.complete(null);
+            }).start();
+
+            return future;
+        }
     }
 }

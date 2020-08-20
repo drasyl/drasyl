@@ -107,17 +107,14 @@ import static org.drasyl.util.DrasylScheduler.getInstanceHeavy;
 public abstract class DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);
     private static final List<DrasylNode> INSTANCES;
-    private static final EventLoopGroup WORKER_GROUP;
-    private static final EventLoopGroup BOSS_GROUP;
+    private static volatile boolean workerGroupCreated = false;
+    private static volatile boolean bossGroupCreated = false;
 
     static {
         // https://github.com/netty/netty/issues/7817
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
         Sentry.getStoredClient().setRelease(DrasylNode.getVersion());
         INSTANCES = Collections.synchronizedList(new ArrayList<>());
-        // https://github.com/netty/netty/issues/639#issuecomment-9263566
-        WORKER_GROUP = new NioEventLoopGroup(Math.min(2, Math.max(2, Runtime.getRuntime().availableProcessors() * 2 / 3 - 2)));
-        BOSS_GROUP = new NioEventLoopGroup(2);
     }
 
     private final DrasylConfig config;
@@ -193,16 +190,16 @@ public abstract class DrasylNode {
             // -------------------------------------------------------------------------------------
 
             if (config.areDirectConnectionsEnabled()) {
-                this.components.add(new DirectConnectionsManager(config, identity, peersManager, messenger, pipeline, channelGroup, DrasylNode.WORKER_GROUP, this::onInternalEvent, acceptNewConnections::get, endpoints, messenger.communicationOccurred()));
+                this.components.add(new DirectConnectionsManager(config, identity, peersManager, messenger, pipeline, channelGroup, LazyWorkerGroupHolder.INSTANCE, this::onInternalEvent, acceptNewConnections::get, endpoints, messenger.communicationOccurred()));
             }
             if (config.isIntraVmDiscoveryEnabled()) {
                 this.components.add(new IntraVmDiscovery(identity.getPublicKey(), messenger, peersManager, this::onInternalEvent));
             }
             if (config.isSuperPeerEnabled()) {
-                this.components.add(new SuperPeerClient(this.config, identity, peersManager, messenger, channelGroup, DrasylNode.WORKER_GROUP, this::onInternalEvent, acceptNewConnections::get));
+                this.components.add(new SuperPeerClient(this.config, identity, peersManager, messenger, channelGroup, LazyWorkerGroupHolder.INSTANCE, this::onInternalEvent, acceptNewConnections::get));
             }
             if (config.isServerEnabled()) {
-                this.components.add(new Server(identity, messenger, peersManager, this.config, channelGroup, DrasylNode.WORKER_GROUP, DrasylNode.BOSS_GROUP, endpoints, acceptNewConnections::get));
+                this.components.add(new Server(identity, messenger, peersManager, this.config, channelGroup, LazyWorkerGroupHolder.INSTANCE, LazyBossGroupHolder.INSTANCE, endpoints, acceptNewConnections::get));
             }
             if (config.isLocalHostDiscoveryEnabled()) {
                 this.components.add(new LocalHostDiscovery(this.config, identity.getPublicKey(), peersManager, endpoints, messenger.communicationOccurred()));
@@ -278,27 +275,6 @@ public abstract class DrasylNode {
      * @param event the event
      */
     public abstract void onEvent(Event event);
-
-    /**
-     * Return log level of loggers in org.drasyl package namespace.
-     *
-     * @return return log level of loggers in org.drasyl package namespace
-     */
-    public static Level getLogLevel() {
-        ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.drasyl");
-        return root.getLevel();
-    }
-
-    /**
-     * Set log level of all drasyl loggers in org.drasyl package namespace.
-     *
-     * @param level new log level
-     */
-    @SuppressWarnings({ "java:S4792" })
-    public static void setLogLevel(Level level) {
-        ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.drasyl");
-        root.setLevel(level);
-    }
 
     protected DrasylNode(DrasylConfig config,
                          Identity identity,
@@ -490,10 +466,6 @@ public abstract class DrasylNode {
         return startSequence;
     }
 
-    private void acceptNewConnections() {
-        acceptNewConnections.set(true);
-    }
-
     /**
      * Returns the version of the node. If the version could not be read, <code>null</code> is
      * returned.
@@ -509,6 +481,10 @@ public abstract class DrasylNode {
         catch (IOException e) {
             return null;
         }
+    }
+
+    private void acceptNewConnections() {
+        acceptNewConnections.set(true);
     }
 
     /**
@@ -530,6 +506,27 @@ public abstract class DrasylNode {
     }
 
     /**
+     * Return log level of loggers in org.drasyl package namespace.
+     *
+     * @return return log level of loggers in org.drasyl package namespace
+     */
+    public static Level getLogLevel() {
+        ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.drasyl");
+        return root.getLevel();
+    }
+
+    /**
+     * Set log level of all drasyl loggers in org.drasyl package namespace.
+     *
+     * @param level new log level
+     */
+    @SuppressWarnings({ "java:S4792" })
+    public static void setLogLevel(Level level) {
+        ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.drasyl");
+        root.setLevel(level);
+    }
+
+    /**
      * This method stops the shared threads ({@link EventLoopGroup}s), but only if none {@link
      * DrasylNode} is using them anymore.
      *
@@ -540,8 +537,31 @@ public abstract class DrasylNode {
      */
     public static void irrevocablyTerminate() {
         if (INSTANCES.isEmpty()) {
-            BOSS_GROUP.shutdownGracefully().syncUninterruptibly();
-            WORKER_GROUP.shutdownGracefully().syncUninterruptibly();
+            if (bossGroupCreated) {
+                LazyBossGroupHolder.INSTANCE.shutdownGracefully().syncUninterruptibly();
+            }
+
+            if (workerGroupCreated) {
+                LazyWorkerGroupHolder.INSTANCE.shutdownGracefully().syncUninterruptibly();
+            }
+        }
+    }
+
+    private static class LazyWorkerGroupHolder {
+        // https://github.com/netty/netty/issues/639#issuecomment-9263566
+        static final EventLoopGroup INSTANCE = new NioEventLoopGroup(Math.min(2, Math.max(2, Runtime.getRuntime().availableProcessors() * 2 / 3 - 2)));
+        static final boolean LOCK = workerGroupCreated = true;
+
+        private LazyWorkerGroupHolder() {
+        }
+    }
+
+    private static class LazyBossGroupHolder {
+        // https://github.com/netty/netty/issues/639#issuecomment-9263566
+        static final EventLoopGroup INSTANCE = new NioEventLoopGroup(2);
+        static final boolean LOCK = bossGroupCreated = true;
+
+        private LazyBossGroupHolder() {
         }
     }
 }

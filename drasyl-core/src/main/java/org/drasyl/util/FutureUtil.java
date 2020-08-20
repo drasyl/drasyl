@@ -87,6 +87,35 @@ public class FutureUtil {
     }
 
     /**
+     * Returns a completed future if all of the given {@code futures} are completed. When any of the
+     * given {@code futures} completes exceptionally, the future will also completes exceptionally
+     * immediately. If the given list of {@code futures} is empty, the future is completed
+     * immediately.
+     *
+     * @param futures futures that should be waited for
+     * @throws NullPointerException if {@code futures} is null
+     */
+    public static CompletableFuture<Void> getCompleteOnAllOf(Collection<CompletableFuture<?>> futures) {
+        return getCompleteOnAllOf(futures.toArray(CompletableFuture[]::new));
+    }
+
+    /**
+     * Returns a completed future if all of the given {@code futures} are completed. When any of the
+     * given {@code futures} completes exceptionally, the future will also completes exceptionally
+     * immediately. If the given array of {@code futures} is empty, the future is completed
+     * immediately.
+     *
+     * @param futures futures that should be waited for
+     * @throws NullPointerException if {@code futures} is null
+     */
+    public static CompletableFuture<Void> getCompleteOnAllOf(CompletableFuture<?>... futures) {
+        CompletableFuture<Void> future = new CompletableFuture<>();
+        completeOnAllOf(future, futures);
+
+        return future;
+    }
+
+    /**
      * Completes {@code future} if all of the given {@code futures} are completed. When any of the
      * given {@code futures} completes exceptionally, the given {@code future} will also completes
      * exceptionally immediately. If the given list of {@code futures} is empty, the {@code future}
