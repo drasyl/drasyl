@@ -469,8 +469,8 @@ public abstract class DrasylNode {
             startSequence = new CompletableFuture<>();
             shutdownSequence.whenComplete((t, ex) -> getInstanceHeavy().scheduleDirect(() -> {
                 try {
-                    for (int i = 0; i < components.size(); i++) {
-                        components.get(i).open();
+                    for (DrasylNodeComponent component : components) {
+                        component.open();
                     }
                     acceptNewConnections();
 
