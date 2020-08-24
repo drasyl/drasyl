@@ -35,8 +35,8 @@ public class LoggingUtil {
     public static String sanitizeLogArg(Object obj) {
         if (obj != null) {
             return obj.toString()
-                    .replaceAll("\n", "\\\\n")
-                    .replaceAll("\r", "\\\\r");
+                    .replace("\n", "\\n")
+                    .replace("\r", "\\r");
         }
         else {
             return null;
