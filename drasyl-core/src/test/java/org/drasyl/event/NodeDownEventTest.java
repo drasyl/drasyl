@@ -7,9 +7,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 
 @ExtendWith(MockitoExtension.class)
 class NodeDownEventTest {
@@ -37,10 +35,8 @@ class NodeDownEventTest {
             NodeDownEvent event2 = new NodeDownEvent(node);
             NodeDownEvent event3 = new NodeDownEvent(node2);
 
-            assertTrue(event1.equals(event1));
             assertEquals(event1, event2);
             assertNotEquals(event1, event3);
-            assertFalse(event1.equals(null));
         }
     }
 
