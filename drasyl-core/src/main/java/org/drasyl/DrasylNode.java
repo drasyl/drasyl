@@ -24,7 +24,6 @@ import com.typesafe.config.ConfigException;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.group.ChannelGroupFutureListener;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.netty.handler.codec.http.DefaultHttpHeaders;
 import io.sentry.Sentry;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
@@ -116,9 +115,6 @@ public abstract class DrasylNode {
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
         Sentry.getStoredClient().setRelease(DrasylNode.getVersion());
         INSTANCES = Collections.synchronizedList(new ArrayList<>());
-
-        // This is a test for GitHub codeQL
-        new DefaultHttpHeaders(false);
     }
 
     private final DrasylConfig config;
