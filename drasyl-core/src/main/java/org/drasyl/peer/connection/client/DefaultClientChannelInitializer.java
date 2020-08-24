@@ -22,12 +22,13 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelInboundHandlerAdapter;
 import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
-import io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler;
+import io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler.ClientHandshakeStateEvent;
 import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.handler.stream.ChunkedWriteHandler;
+import org.drasyl.peer.connection.client.PublicKeyExchangeHandler.PublicKeyExchangeState;
 import org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.RelayableMessageGuard;
@@ -77,43 +78,7 @@ public class DefaultClientChannelInitializer extends ClientChannelInitializer {
     protected void customStage(ChannelPipeline pipeline) {
         pipeline.addLast(EXCEPTION_MESSAGE_HANDLER, ConnectionExceptionMessageHandler.INSTANCE);
 
-        pipeline.addLast(DRASYL_HANDSHAKE_AFTER_WEBSOCKET_HANDSHAKE, new ChannelInboundHandlerAdapter() {
-            @Override
-            public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
-                super.userEventTriggered(ctx, evt);
-
-                if (evt instanceof WebSocketClientProtocolHandler.ClientHandshakeStateEvent) {
-                    WebSocketClientProtocolHandler.ClientHandshakeStateEvent e = (WebSocketClientProtocolHandler.ClientHandshakeStateEvent) evt;
-                    if (e == HANDSHAKE_COMPLETE) {
-                        if (LOG.isTraceEnabled()) {
-                            LOG.trace("[{}]: WebSocket Handshake completed. Now adding {}.", ctx.channel().id().asShortText(), PublicKeyExchangeHandler.class.getSimpleName());
-                        }
-                        // Must be added before the exception handler otherwise exceptions are not captured anymore and raising an error
-                        // See: https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/77
-                        pipeline.addBefore(EXCEPTION_HANDLER, PUBLIC_KEY_EXCHANGE_HANDLER, new PublicKeyExchangeHandler(environment.getServerPublicKey(), environment.getConfig().getServerHandshakeTimeout()));
-                    }
-                    else if (e == HANDSHAKE_TIMEOUT) {
-                        if (LOG.isTraceEnabled()) {
-                            LOG.trace("[{}]: WebSocket Handshake timed out. Close channel.", ctx.channel().id().asShortText());
-                        }
-                        ctx.close();
-                    }
-                }
-                else if (evt instanceof PublicKeyExchangeHandler.PublicKeyExchangeState) {
-                    PublicKeyExchangeHandler.PublicKeyExchangeState e = (PublicKeyExchangeHandler.PublicKeyExchangeState) evt;
-                    if (e == KEY_AVAILABLE) {
-                        if (LOG.isTraceEnabled()) {
-                            LOG.trace("[{}]: Public key available. Now adding {}.", ctx.channel().id().asShortText(), ClientConnectionHandler.class.getSimpleName());
-                        }
-
-                        // Must be added before the exception handler otherwise exceptions are not captured anymore and raising an error
-                        // See: https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/77
-                        pipeline.addBefore(EXCEPTION_HANDLER, CLIENT_CONNECTION_HANDLER, new ClientConnectionHandler(environment));
-                        pipeline.remove(this);
-                    }
-                }
-            }
-        });
+        pipeline.addLast(DRASYL_HANDSHAKE_AFTER_WEBSOCKET_HANDSHAKE, new MyChannelInboundHandlerAdapter(pipeline));
     }
 
     @Override
@@ -134,5 +99,57 @@ public class DefaultClientChannelInitializer extends ClientChannelInitializer {
             }
         }
         return null;
+    }
+
+    private class MyChannelInboundHandlerAdapter extends ChannelInboundHandlerAdapter {
+        private final ChannelPipeline pipeline;
+
+        public MyChannelInboundHandlerAdapter(ChannelPipeline pipeline) {
+            this.pipeline = pipeline;
+        }
+
+        @Override
+        public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+            super.userEventTriggered(ctx, evt);
+
+            if (evt instanceof ClientHandshakeStateEvent) {
+                handleClientHandshakeStateEvent(ctx, (ClientHandshakeStateEvent) evt);
+            }
+            else if (evt instanceof PublicKeyExchangeState) {
+                handlePublicKeyExchangeStateEvent(ctx, (PublicKeyExchangeState) evt);
+            }
+        }
+
+        private void handlePublicKeyExchangeStateEvent(ChannelHandlerContext ctx,
+                                                       PublicKeyExchangeState e) {
+            if (e == KEY_AVAILABLE) {
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("[{}]: Public key available. Now adding {}.", ctx.channel().id().asShortText(), ClientConnectionHandler.class.getSimpleName());
+                }
+
+                // Must be added before the exception handler otherwise exceptions are not captured anymore and raising an error
+                // See: https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/77
+                pipeline.addBefore(EXCEPTION_HANDLER, CLIENT_CONNECTION_HANDLER, new ClientConnectionHandler(environment));
+                pipeline.remove(this);
+            }
+        }
+
+        private void handleClientHandshakeStateEvent(ChannelHandlerContext ctx,
+                                                     ClientHandshakeStateEvent e) {
+            if (e == HANDSHAKE_COMPLETE) {
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("[{}]: WebSocket Handshake completed. Now adding {}.", ctx.channel().id().asShortText(), PublicKeyExchangeHandler.class.getSimpleName());
+                }
+                // Must be added before the exception handler otherwise exceptions are not captured anymore and raising an error
+                // See: https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/77
+                pipeline.addBefore(EXCEPTION_HANDLER, PUBLIC_KEY_EXCHANGE_HANDLER, new PublicKeyExchangeHandler(environment.getServerPublicKey(), environment.getConfig().getServerHandshakeTimeout()));
+            }
+            else if (e == HANDSHAKE_TIMEOUT) {
+                if (LOG.isTraceEnabled()) {
+                    LOG.trace("[{}]: WebSocket Handshake timed out. Close channel.", ctx.channel().id().asShortText());
+                }
+                ctx.close();
+            }
+        }
     }
 }
