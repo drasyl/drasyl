@@ -303,10 +303,11 @@ public abstract class DrasylNode {
     }
 
     /**
-     * Sends the content of <code>payload</code> to the identity <code>recipient</code>. Throws a
-     * {@link MessengerException} if the message could not be sent to the recipient or a super peer.
-     * Important: Just because no exception was thrown does not automatically mean that the message
-     * could be delivered. Delivery confirmations must be implemented by the application.
+     * Sends the content of {@code payload} to the identity {@code recipient}. Returns a
+     * failed future with a {@link MessengerException} if the message could not be sent to the
+     * recipient or a super peer. Important: Just because the future did not fail does not
+     * automatically mean that the message could be delivered. Delivery confirmations must be
+     * implemented by the application.
      *
      * <p>
      * <b>Note</b>: It is possible that the passed object cannot be serialized. In this case it is
@@ -337,10 +338,11 @@ public abstract class DrasylNode {
     }
 
     /**
-     * Sends the content of <code>payload</code> to the identity <code>recipient</code>. Throws a
-     * {@link MessengerException} if the message could not be sent to the recipient or a super peer.
-     * Important: Just because no exception was thrown does not automatically mean that the message
-     * could be delivered. Delivery confirmations must be implemented by the application.
+     * Sends the content of {@code payload} to the identity {@code recipient}. Returns a
+     * failed future with a {@link MessengerException} if the message could not be sent to the
+     * recipient or a super peer. Important: Just because the future did not fail does not
+     * automatically mean that the message could be delivered. Delivery confirmations must be
+     * implemented by the application.
      *
      * <p>
      * <b>Note</b>: It is possible that the passed object cannot be serialized. In this case it is
