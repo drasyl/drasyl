@@ -112,7 +112,7 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
             }
 
             ReferenceCountUtil.release(msg);
-            promise.setFailure(new IllegalArgumentException("Payload was to big."));
+            promise.setFailure(new IllegalArgumentException("The payload has a size of " + msg.getPayload().length + " bytes and is too large. The max. allowed size is " + maxContentLength + " bytes."));
             return;
         }
 
