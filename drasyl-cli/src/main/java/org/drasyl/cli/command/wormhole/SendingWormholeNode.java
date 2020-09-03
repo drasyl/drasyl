@@ -54,8 +54,9 @@ public class SendingWormholeNode extends DrasylNode {
         this.sent = sent;
     }
 
-    public SendingWormholeNode(PrintStream printStream) throws DrasylException {
-        super(DrasylConfig.newBuilder().serverBindPort(0).marshallingAllowedTypes(List.of(WormholeMessage.class.getName())).build());
+    public SendingWormholeNode(DrasylConfig config,
+                               PrintStream printStream) throws DrasylException {
+        super(DrasylConfig.newBuilder(config).serverBindPort(0).marshallingAllowedTypes(List.of(WormholeMessage.class.getName())).build());
         this.doneFuture = new CompletableFuture<>();
         this.printStream = printStream;
         this.password = Crypto.randomString(16);

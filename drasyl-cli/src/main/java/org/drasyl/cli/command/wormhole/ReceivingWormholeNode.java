@@ -15,6 +15,8 @@ import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.pipeline.DrasylPipeline;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.io.PrintStream;
 import java.net.URI;
@@ -26,9 +28,11 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.drasyl.util.DrasylScheduler.getInstanceLight;
+import static org.drasyl.util.SecretUtil.maskSecret;
 
 @SuppressWarnings({ "java:S107" })
 public class ReceivingWormholeNode extends DrasylNode {
+    private static final Logger log = LoggerFactory.getLogger(ReceivingWormholeNode.class);
     private final CompletableFuture<Void> doneFuture;
     private final PrintStream printStream;
     private final AtomicBoolean received;
@@ -60,8 +64,9 @@ public class ReceivingWormholeNode extends DrasylNode {
         this.timeoutGuard = timeoutGuard;
     }
 
-    public ReceivingWormholeNode(PrintStream printStream) throws DrasylException {
-        super(DrasylConfig.newBuilder().serverBindPort(0).marshallingAllowedTypes(List.of(WormholeMessage.class.getName())).build());
+    public ReceivingWormholeNode(DrasylConfig config,
+                                 PrintStream printStream) throws DrasylException {
+        super(DrasylConfig.newBuilder(config).serverBindPort(0).marshallingAllowedTypes(List.of(WormholeMessage.class.getName())).build());
         this.doneFuture = new CompletableFuture<>();
         this.printStream = printStream;
         this.received = new AtomicBoolean();
@@ -122,6 +127,7 @@ public class ReceivingWormholeNode extends DrasylNode {
     public void requestText(CompressedPublicKey sender,
                             String password,
                             AtomicInteger remainingRetries) {
+        log.debug("Requesting text from '{}' with password '{}'", sender, maskSecret(password));
         send(sender, new PasswordMessage(password)).whenComplete((result, e) -> {
             if (e != null) {
                 if (remainingRetries.decrementAndGet() > 0) {

@@ -1,13 +1,14 @@
 package org.drasyl.cli.command;
 
 import org.apache.commons.cli.CommandLine;
+import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.cli.CliException;
 import org.drasyl.cli.command.wormhole.ReceivingWormholeNode;
 import org.drasyl.cli.command.wormhole.SendingWormholeNode;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.util.DrasylFunction;
+import org.drasyl.util.DrasylBiFunction;
 
 import java.io.PrintStream;
 import java.util.List;
@@ -21,8 +22,8 @@ import java.util.function.Supplier;
  */
 public class WormholeCommand extends AbstractCommand {
     private final Supplier<Scanner> scannerSupplier;
-    private final DrasylFunction<PrintStream, SendingWormholeNode, DrasylException> sendingNodeSupplier;
-    private final DrasylFunction<PrintStream, ReceivingWormholeNode, DrasylException> receivingNodeSupplier;
+    private final DrasylBiFunction<DrasylConfig, PrintStream, SendingWormholeNode, DrasylException> sendingNodeSupplier;
+    private final DrasylBiFunction<DrasylConfig, PrintStream, ReceivingWormholeNode, DrasylException> receivingNodeSupplier;
 
     public WormholeCommand() {
         this(
@@ -35,8 +36,8 @@ public class WormholeCommand extends AbstractCommand {
 
     WormholeCommand(PrintStream printStream,
                     Supplier<Scanner> scannerSupplier,
-                    DrasylFunction<PrintStream, SendingWormholeNode, DrasylException> sendingNodeSupplier,
-                    DrasylFunction<PrintStream, ReceivingWormholeNode, DrasylException> receivingNodeSupplier) {
+                    DrasylBiFunction<DrasylConfig, PrintStream, SendingWormholeNode, DrasylException> sendingNodeSupplier,
+                    DrasylBiFunction<DrasylConfig, PrintStream, ReceivingWormholeNode, DrasylException> receivingNodeSupplier) {
         super(printStream);
         this.scannerSupplier = scannerSupplier;
         this.sendingNodeSupplier = sendingNodeSupplier;
@@ -68,10 +69,10 @@ public class WormholeCommand extends AbstractCommand {
             String subcommand = argList.get(1);
             switch (subcommand) {
                 case "send":
-                    send();
+                    send(cmd);
                     break;
                 case "receive":
-                    receive(argList);
+                    receive(cmd);
                     break;
                 default:
                     throw new CliException("Unknown command \"" + subcommand + "\" for \"drasyl wormhole\"");
@@ -82,11 +83,11 @@ public class WormholeCommand extends AbstractCommand {
         }
     }
 
-    private void send() throws CliException {
+    private void send(CommandLine cmd) throws CliException {
         SendingWormholeNode node = null;
         try {
             // prepare node
-            node = sendingNodeSupplier.apply(printStream);
+            node = sendingNodeSupplier.apply(getDrasylConfig(cmd), printStream);
             node.start();
 
             // obtain text
@@ -113,14 +114,15 @@ public class WormholeCommand extends AbstractCommand {
         }
     }
 
-    private void receive(List<String> argList) throws CliException {
+    private void receive(CommandLine cmd) throws CliException {
         ReceivingWormholeNode node = null;
         try {
             // prepare node
-            node = receivingNodeSupplier.apply(printStream);
+            node = receivingNodeSupplier.apply(getDrasylConfig(cmd), printStream);
             node.start();
 
             // obtain code
+            List<String> argList = cmd.getArgList();
             String code;
             if (argList.size() < 3) {
                 printStream.print("Enter wormhole code: ");

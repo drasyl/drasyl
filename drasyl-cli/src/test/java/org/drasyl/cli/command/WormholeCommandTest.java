@@ -1,11 +1,12 @@
 package org.drasyl.cli.command;
 
 import org.apache.commons.cli.CommandLine;
+import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.cli.CliException;
 import org.drasyl.cli.command.wormhole.ReceivingWormholeNode;
 import org.drasyl.cli.command.wormhole.SendingWormholeNode;
-import org.drasyl.util.DrasylFunction;
+import org.drasyl.util.DrasylBiFunction;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -34,9 +35,9 @@ class WormholeCommandTest {
     @Mock
     private Supplier<Scanner> scannerSupplier;
     @Mock
-    private DrasylFunction<PrintStream, SendingWormholeNode, DrasylException> sendingNodeSupplier;
+    private DrasylBiFunction<DrasylConfig, PrintStream, SendingWormholeNode, DrasylException> sendingNodeSupplier;
     @Mock
-    private DrasylFunction<PrintStream, ReceivingWormholeNode, DrasylException> receivingNodeSupplier;
+    private DrasylBiFunction<DrasylConfig, PrintStream, ReceivingWormholeNode, DrasylException> receivingNodeSupplier;
     @InjectMocks
     private WormholeCommand underTest;
 
@@ -75,7 +76,7 @@ class WormholeCommandTest {
             when(cmd.getArgList().size()).thenReturn(2);
             when(cmd.getArgList().get(1)).thenReturn("send");
             when(scannerSupplier.get()).thenReturn(new Scanner("Hallo Welt"));
-            when(sendingNodeSupplier.apply(any())).thenReturn(node);
+            when(sendingNodeSupplier.apply(any(), any())).thenReturn(node);
 
             underTest.execute(cmd);
 
@@ -87,7 +88,7 @@ class WormholeCommandTest {
             when(cmd.getArgList().size()).thenReturn(3);
             when(cmd.getArgList().get(1)).thenReturn("receive");
             when(cmd.getArgList().get(2)).thenReturn("022e170caf9292de6af36562d2773e62d573e33d09550e1620b9cae75b1a3a98281ff73f2346d55195d0cd274c101c4775");
-            when(receivingNodeSupplier.apply(any())).thenReturn(node);
+            when(receivingNodeSupplier.apply(any(), any())).thenReturn(node);
 
             underTest.execute(cmd);
 

@@ -58,7 +58,6 @@ public class NodeCommandTest {
             assertThat(output, containsString("Usage:" + System.lineSeparator()));
             assertThat(output, containsString("drasyl node [flags]" + System.lineSeparator()));
             assertThat(output, containsString("Flags:" + System.lineSeparator()));
-            assertThat(output, containsString("syntax:" + System.lineSeparator()));
         }
     }
 
