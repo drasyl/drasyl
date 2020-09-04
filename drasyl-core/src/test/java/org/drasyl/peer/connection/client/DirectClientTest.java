@@ -3,6 +3,7 @@ package org.drasyl.peer.connection.client;
 import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
+import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.util.DrasylFunction;
 import org.junit.jupiter.api.Nested;
@@ -12,7 +13,6 @@ import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
@@ -41,13 +41,13 @@ class DirectClientTest {
     @Mock
     private AtomicInteger nextRetryDelayPointer;
     @Mock
-    private DrasylFunction<URI, Bootstrap, ClientException> bootstrapSupplier;
+    private DrasylFunction<Endpoint, Bootstrap, ClientException> bootstrapSupplier;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private Channel channel;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private Bootstrap bootstrap;
     @Mock
-    private Supplier<Set<URI>> endpointsSupplier;
+    private Supplier<Set<Endpoint>> endpointsSupplier;
     @Mock
     private BooleanSupplier directConnectionDemand;
     @Mock
@@ -60,7 +60,7 @@ class DirectClientTest {
         @Test
         void shouldConnectIfClientIsNotAlreadyOpen() throws ClientException {
             when(bootstrapSupplier.apply(any())).thenReturn(bootstrap);
-            when(endpointsSupplier.get()).thenReturn(Set.of(URI.create("ws://localhost")));
+            when(endpointsSupplier.get()).thenReturn(Set.of(Endpoint.of("ws://localhost")));
 
             try (DirectClient client = new DirectClient(retryDelays, workerGroup, endpointsSupplier, new AtomicBoolean(), () -> false, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, channel, directConnectionDemand, onFailure)) {
                 client.open();

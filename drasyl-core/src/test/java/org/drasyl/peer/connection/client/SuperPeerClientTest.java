@@ -22,6 +22,7 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
 import org.drasyl.DrasylConfig;
+import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.util.DrasylFunction;
 import org.junit.jupiter.api.Nested;
@@ -31,7 +32,6 @@ import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
@@ -57,7 +57,7 @@ class SuperPeerClientTest {
     @Mock
     private EventLoopGroup workerGroup;
     @Mock
-    private Set<URI> endpoints;
+    private Set<Endpoint> endpoints;
     @Mock
     private AtomicBoolean opened;
     @Mock
@@ -65,7 +65,7 @@ class SuperPeerClientTest {
     @Mock
     private AtomicInteger nextRetryDelayPointer;
     @Mock
-    private DrasylFunction<URI, Bootstrap, ClientException> bootstrapSupplier;
+    private DrasylFunction<Endpoint, Bootstrap, ClientException> bootstrapSupplier;
     @Mock
     private List<Duration> superPeerRetryDelays;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
@@ -78,7 +78,7 @@ class SuperPeerClientTest {
         @Test
         void shouldConnectIfClientIsNotAlreadyOpen() throws ClientException {
             when(bootstrapSupplier.apply(any())).thenReturn(bootstrap);
-            endpoints = Set.of(URI.create("ws://localhost"));
+            endpoints = Set.of(Endpoint.of("ws://localhost"));
 
             try (SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, new AtomicBoolean(false), () -> false, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, channel)) {
                 client.open();
@@ -125,13 +125,13 @@ class SuperPeerClientTest {
         @Test
         void shouldReturnCorrectEndpoint() {
             endpoints = new TreeSet<>();
-            endpoints.add(URI.create("ws://node1.org"));
-            endpoints.add(URI.create("ws://node2.org"));
+            endpoints.add(Endpoint.of("ws://node1.org"));
+            endpoints.add(Endpoint.of("ws://node2.org"));
 
             try (SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, opened, () -> false, new AtomicInteger(0), nextRetryDelayPointer, bootstrapSupplier, channel)) {
-                assertEquals(URI.create("ws://node1.org"), client.nextEndpoint());
-                assertEquals(URI.create("ws://node2.org"), client.nextEndpoint());
-                assertEquals(URI.create("ws://node1.org"), client.nextEndpoint());
+                assertEquals(Endpoint.of("ws://node1.org"), client.nextEndpoint());
+                assertEquals(Endpoint.of("ws://node2.org"), client.nextEndpoint());
+                assertEquals(Endpoint.of("ws://node1.org"), client.nextEndpoint());
             }
         }
     }

@@ -34,7 +34,6 @@ import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.RelayableMessageGuard;
 import org.drasyl.peer.connection.handler.SignatureHandler;
 import org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler;
-import org.drasyl.util.WebSocketUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -88,11 +87,11 @@ public class DefaultClientChannelInitializer extends ClientChannelInitializer {
 
     @Override
     protected SslHandler generateSslContext(SocketChannel ch) throws ClientException {
-        if (WebSocketUtil.isWebSocketSecureURI(target)) {
+        if (target.isSecureEndpoint()) {
             try {
                 SslContext sslContext = SslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE)
                         .protocols(environment.getConfig().getServerSSLProtocols()).build();
-                return sslContext.newHandler(ch.alloc(), target.getHost(), WebSocketUtil.webSocketPort(target));
+                return sslContext.newHandler(ch.alloc(), target.getHost(), target.getPort());
             }
             catch (SSLException e) {
                 throw new ClientException(e);

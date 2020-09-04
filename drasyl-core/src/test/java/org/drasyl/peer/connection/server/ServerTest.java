@@ -23,6 +23,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
+import org.drasyl.peer.Endpoint;
 import org.drasyl.util.NetworkUtil;
 import org.drasyl.util.PortMappingUtil;
 import org.drasyl.util.PortMappingUtil.PortMapping;
@@ -36,7 +37,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -73,7 +73,7 @@ class ServerTest {
         @Test
         void shouldSetOpenToTrue() throws ServerException {
             when(config.getServerBindHost()).thenReturn(createInetAddress("0.0.0.0"));
-            when(config.getServerEndpoints()).thenReturn(Set.of(URI.create("ws://localhost:22527/")));
+            when(config.getServerEndpoints()).thenReturn(Set.of(Endpoint.of("ws://localhost:22527/")));
             when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).isSuccess()).thenReturn(true);
             when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
@@ -102,7 +102,7 @@ class ServerTest {
         void shouldExposeServerWhenExposingIsEnabled() throws ServerException {
             when(config.isServerExposeEnabled()).thenReturn(true);
             when(config.getServerBindHost()).thenReturn(createInetAddress("0.0.0.0"));
-            when(config.getServerEndpoints()).thenReturn(Set.of(URI.create("ws://localhost:22527/")));
+            when(config.getServerEndpoints()).thenReturn(Set.of(Endpoint.of("ws://localhost:22527/")));
             when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).isSuccess()).thenReturn(true);
             when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
@@ -119,7 +119,7 @@ class ServerTest {
         void shouldNotExposeServerWhenExposingIsDisabled() throws ServerException {
             when(config.isServerExposeEnabled()).thenReturn(false);
             when(config.getServerBindHost()).thenReturn(createInetAddress("0.0.0.0"));
-            when(config.getServerEndpoints()).thenReturn(Set.of(URI.create("ws://localhost:22527/")));
+            when(config.getServerEndpoints()).thenReturn(Set.of(Endpoint.of("ws://localhost:22527/")));
             when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).isSuccess()).thenReturn(true);
             when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
@@ -155,7 +155,7 @@ class ServerTest {
         @BeforeEach
         void setUp() {
             when(config.getServerBindHost()).thenReturn(createInetAddress("0.0.0.0"));
-            when(config.getServerEndpoints()).thenReturn(Set.of(URI.create("ws://localhost:22527/")));
+            when(config.getServerEndpoints()).thenReturn(Set.of(Endpoint.of("ws://localhost:22527/")));
             when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).channel().localAddress()).thenReturn(new InetSocketAddress(22527));
             when(scheduler.scheduleDirect(any())).then(invocation -> {
                 Runnable argument = invocation.getArgument(0, Runnable.class);
@@ -181,10 +181,10 @@ class ServerTest {
     class DetermineActualEndpoints {
         @Test
         void shouldReturnConfigEndpointsIfSpecified() {
-            when(config.getServerEndpoints()).thenReturn(Set.of(URI.create("ws://foo.bar:22527")));
+            when(config.getServerEndpoints()).thenReturn(Set.of(Endpoint.of("ws://foo.bar:22527")));
 
             assertEquals(
-                    Set.of(URI.create("ws://foo.bar:22527")),
+                    Set.of(Endpoint.of("ws://foo.bar:22527")),
                     determineActualEndpoints(config, new InetSocketAddress(22527))
             );
         }
@@ -196,7 +196,7 @@ class ServerTest {
                 when(config.getServerEndpoints().isEmpty()).thenReturn(true);
 
                 assertEquals(
-                        Set.of(createUri("ws", firstAddress.getHostAddress(), 22527)),
+                        Set.of(Endpoint.of(createUri("ws", firstAddress.getHostAddress(), 22527))),
                         determineActualEndpoints(config, new InetSocketAddress(firstAddress, 22527))
                 );
             }

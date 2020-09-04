@@ -23,10 +23,10 @@ import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
+import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 
-import java.net.URI;
 import java.time.Duration;
 import java.util.function.Consumer;
 
@@ -36,7 +36,7 @@ import java.util.function.Consumer;
 public class ClientEnvironment {
     private final DrasylConfig config;
     private final Identity identity;
-    private final URI endpoint;
+    private final Endpoint endpoint;
     private final Messenger messenger;
 
     private final PeerChannelGroup channelGroup;
@@ -51,7 +51,7 @@ public class ClientEnvironment {
     @SuppressWarnings({ "java:S107" })
     public ClientEnvironment(DrasylConfig config,
                              Identity identity,
-                             URI endpoint,
+                             Endpoint endpoint,
                              Messenger messenger,
                              PeerChannelGroup channelGroup,
                              PeersManager peersManager,
@@ -79,7 +79,7 @@ public class ClientEnvironment {
         return config;
     }
 
-    public URI getEndpoint() {
+    public Endpoint getEndpoint() {
         return endpoint;
     }
 

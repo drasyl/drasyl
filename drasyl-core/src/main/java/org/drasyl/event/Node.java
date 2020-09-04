@@ -19,8 +19,8 @@
 package org.drasyl.event;
 
 import org.drasyl.identity.Identity;
+import org.drasyl.peer.Endpoint;
 
-import java.net.URI;
 import java.util.Objects;
 import java.util.Set;
 
@@ -31,9 +31,9 @@ import java.util.Set;
  */
 public class Node {
     private final Identity identity;
-    private final Set<URI> endpoints;
+    private final Set<Endpoint> endpoints;
 
-    Node(Identity identity, Set<URI> endpoints) {
+    Node(Identity identity, Set<Endpoint> endpoints) {
         this.identity = identity;
         this.endpoints = endpoints;
     }
@@ -68,7 +68,7 @@ public class Node {
         return identity;
     }
 
-    public Set<URI> getEndpoints() {
+    public Set<Endpoint> getEndpoints() {
         return endpoints;
     }
 
@@ -76,7 +76,7 @@ public class Node {
         return of(identity, Set.of());
     }
 
-    public static Node of(Identity identity, Set<URI> endpoints) {
+    public static Node of(Identity identity, Set<Endpoint> endpoints) {
         return new Node(identity, Set.copyOf(endpoints));
     }
 }

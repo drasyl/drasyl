@@ -27,6 +27,7 @@ import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
+import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
@@ -40,7 +41,6 @@ import org.drasyl.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URI;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
@@ -74,7 +74,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
     private final Consumer<Event> eventConsumer;
     private final Map<CompressedPublicKey, DirectClient> clients;
     private final BooleanSupplier acceptNewConnectionsSupplier;
-    private final Set<URI> endpoints;
+    private final Set<Endpoint> endpoints;
     private final int maxConnections;
 
     public DirectConnectionsManager(DrasylConfig config,
@@ -86,7 +86,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
                                     EventLoopGroup workerGroup,
                                     Consumer<Event> eventConsumer,
                                     BooleanSupplier acceptNewConnectionsSupplier,
-                                    Set<URI> nodeEndpoints,
+                                    Set<Endpoint> endpoints,
                                     Observable<CompressedPublicKey> communicationOccurred) {
         this(
                 config,
@@ -98,7 +98,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
                 channelGroup,
                 workerGroup,
                 eventConsumer,
-                nodeEndpoints,
+                endpoints,
                 new DirectConnectionDemandsCache(config.getDirectConnectionsMaxConcurrentConnections(), ofSeconds(60)),
                 new RequestPeerInformationCache(1_000, ofSeconds(60)),
                 new HashMap<>(),
@@ -117,7 +117,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
                              PeerChannelGroup channelGroup,
                              EventLoopGroup workerGroup,
                              Consumer<Event> eventConsumer,
-                             Set<URI> nodeEndpoints,
+                             Set<Endpoint> endpoints,
                              DirectConnectionDemandsCache directConnectionDemandsCache,
                              RequestPeerInformationCache requestPeerInformationCache,
                              Map<CompressedPublicKey, DirectClient> clients,
@@ -131,7 +131,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
         this.channelGroup = channelGroup;
         this.workerGroup = workerGroup;
         this.eventConsumer = eventConsumer;
-        this.endpoints = nodeEndpoints;
+        this.endpoints = endpoints;
         this.directConnectionDemandsCache = directConnectionDemandsCache;
         this.requestPeerInformationCache = requestPeerInformationCache;
         this.pipeline = pipeline;
@@ -241,7 +241,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
      */
     private void initiateDirectConnectionOnDemand(CompressedPublicKey publicKey) {
         if (directConnectionDemandsCache.contains(publicKey)) {
-            Supplier<Set<URI>> endpointsSupplier = () -> {
+            Supplier<Set<Endpoint>> endpointsSupplier = () -> {
                 Pair<PeerInformation, Set<Path>> peer = peersManager.getPeer(publicKey);
                 PeerInformation peerInformation = peer.first();
                 return peerInformation.getEndpoints();

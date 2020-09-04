@@ -37,6 +37,7 @@ import org.drasyl.event.PeerUnreachableEvent;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.peer.Endpoint;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,7 +46,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
 
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -160,7 +160,7 @@ class DrasylNodeIT {
                         .serverBindHost(createInetAddress("127.0.0.1"))
                         .serverBindPort(0)
                         .superPeerPublicKey(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"))
-                        .superPeerEndpoints(Set.of(URI.create("ws://127.0.0.1:" + superSuperPeerPort)))
+                        .superPeerEndpoints(Set.of(Endpoint.of("ws://127.0.0.1:" + superSuperPeerPort)))
                         .directConnectionsEnabled(false)
                         .intraVmDiscoveryEnabled(false)
                         .localHostDiscoveryEnabled(false)
@@ -177,7 +177,7 @@ class DrasylNodeIT {
                         .identityPrivateKey(CompressedPrivateKey.of("073a34ecaff06fdf3fbe44ddf3abeace43e3547033493b1ac4c0ae3c6ecd6173"))
                         .serverEnabled(false)
                         .superPeerPublicKey(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
-                        .superPeerEndpoints(Set.of(URI.create("ws://127.0.0.1:" + superPeerPort)))
+                        .superPeerEndpoints(Set.of(Endpoint.of("ws://127.0.0.1:" + superPeerPort)))
                         .directConnectionsEnabled(false)
                         .intraVmDiscoveryEnabled(false)
                         .localHostDiscoveryEnabled(false)
@@ -192,7 +192,7 @@ class DrasylNodeIT {
                         .identityPrivateKey(CompressedPrivateKey.of("0310991def7b530fced318876ac71025ebc0449a95967a0efc2e423086198f54"))
                         .serverEnabled(false)
                         .superPeerPublicKey(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
-                        .superPeerEndpoints(Set.of(URI.create("ws://127.0.0.1:" + superPeerPort)))
+                        .superPeerEndpoints(Set.of(Endpoint.of("ws://127.0.0.1:" + superPeerPort)))
                         .directConnectionsEnabled(false)
                         .intraVmDiscoveryEnabled(false)
                         .localHostDiscoveryEnabled(false)
@@ -351,7 +351,7 @@ class DrasylNodeIT {
                         .serverBindHost(createInetAddress("127.0.0.1"))
                         .serverBindPort(0)
                         .superPeerPublicKey(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
-                        .superPeerEndpoints(Set.of(URI.create("ws://127.0.0.1:" + superPeerPort)))
+                        .superPeerEndpoints(Set.of(Endpoint.of("ws://127.0.0.1:" + superPeerPort)))
                         .intraVmDiscoveryEnabled(false)
                         .localHostDiscoveryEnabled(false)
                         .build();
@@ -366,7 +366,7 @@ class DrasylNodeIT {
                         .serverBindHost(createInetAddress("127.0.0.1"))
                         .serverBindPort(0)
                         .superPeerPublicKey(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
-                        .superPeerEndpoints(Set.of(URI.create("ws://127.0.0.1:" + superPeerPort)))
+                        .superPeerEndpoints(Set.of(Endpoint.of("ws://127.0.0.1:" + superPeerPort)))
                         .intraVmDiscoveryEnabled(false)
                         .localHostDiscoveryEnabled(false)
                         .build();

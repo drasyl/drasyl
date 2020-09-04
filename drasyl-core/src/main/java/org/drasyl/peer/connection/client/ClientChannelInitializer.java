@@ -26,9 +26,9 @@ import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshakerFactory;
 import io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler;
 import io.netty.handler.codec.http.websocketx.WebSocketVersion;
+import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.connection.DefaultSessionInitializer;
 
-import java.net.URI;
 import java.time.Duration;
 
 /**
@@ -36,7 +36,7 @@ import java.time.Duration;
  */
 @SuppressWarnings("java:S4818")
 public abstract class ClientChannelInitializer extends DefaultSessionInitializer {
-    protected final URI target;
+    protected final Endpoint target;
 
     /**
      * Initialize a netty Channel for an outbound connection to a node server.
@@ -55,7 +55,7 @@ public abstract class ClientChannelInitializer extends DefaultSessionInitializer
     public ClientChannelInitializer(int flushBufferSize,
                                     Duration readIdleTimeout,
                                     short pingPongRetries,
-                                    URI target) {
+                                    Endpoint target) {
         super(flushBufferSize, readIdleTimeout, pingPongRetries);
         this.target = target;
     }
@@ -64,7 +64,7 @@ public abstract class ClientChannelInitializer extends DefaultSessionInitializer
     protected void beforeMarshalStage(ChannelPipeline pipeline) {
         pipeline.addLast(new HttpClientCodec());
         pipeline.addLast(new HttpObjectAggregator(65536));
-        WebSocketClientHandshaker webSocketHandshaker = WebSocketClientHandshakerFactory.newHandshaker(target, WebSocketVersion.V13, null, false, new DefaultHttpHeaders());
+        WebSocketClientHandshaker webSocketHandshaker = WebSocketClientHandshakerFactory.newHandshaker(target.toURI(), WebSocketVersion.V13, null, false, new DefaultHttpHeaders());
         pipeline.addLast(new WebSocketClientProtocolHandler(webSocketHandshaker, false, false));
     }
 }

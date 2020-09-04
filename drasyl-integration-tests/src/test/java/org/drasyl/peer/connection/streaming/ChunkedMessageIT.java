@@ -31,6 +31,7 @@ import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.messenger.Messenger;
+import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.client.TestSuperPeerClient;
@@ -49,7 +50,6 @@ import org.junit.jupiter.api.RepeatedTest;
 import org.junit.jupiter.api.TestInfo;
 import testutils.AnsiColor;
 
-import java.net.URI;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
@@ -73,7 +73,7 @@ class ChunkedMessageIT {
     private static TestSuperPeerClient session2;
     private static byte[] bigPayload;
     private static PeerChannelGroup channelGroup;
-    private static Set<URI> endpoints;
+    private static Set<Endpoint> endpoints;
 
     @BeforeEach
     void setup(TestInfo info) {
@@ -116,7 +116,7 @@ class ChunkedMessageIT {
                 .identityPrivateKey(CompressedPrivateKey.of("0c27af38c77f2cd5cc2a0ff5c461003a9c24beb955f316135d251ecaf4dda03f"))
                 .serverBindHost(createInetAddress("127.0.0.1"))
                 .serverBindPort(0)
-                .serverEndpoints(Set.of(URI.create("wss://127.0.0.1:0")))
+                .serverEndpoints(Set.of(Endpoint.of("wss://127.0.0.1:0")))
                 .serverHandshakeTimeout(ofSeconds(5))
                 .serverSSLEnabled(true)
                 .serverIdleTimeout(ofSeconds(1))

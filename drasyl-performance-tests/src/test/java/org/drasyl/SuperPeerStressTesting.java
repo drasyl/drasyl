@@ -8,8 +8,8 @@ import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
+import org.drasyl.peer.Endpoint;
 
-import java.net.URI;
 import java.time.Duration;
 import java.util.Set;
 
@@ -28,7 +28,7 @@ public class SuperPeerStressTesting {
 
     public static void main(String[] args) throws DrasylException {
         DrasylConfig baseConfig = DrasylConfig.newBuilder()
-                .superPeerEndpoints(Set.of(URI.create("wss://review-monitoring-md6yhe.env.drasyl.org")))
+                .superPeerEndpoints(Set.of(Endpoint.of("wss://review-monitoring-md6yhe.env.drasyl.org")))
                 .superPeerPublicKey(null)
                 .serverEnabled(false)
                 .loglevel(Level.INFO)

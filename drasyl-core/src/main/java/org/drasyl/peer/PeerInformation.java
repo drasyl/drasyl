@@ -21,7 +21,6 @@ package org.drasyl.peer;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 
-import java.net.URI;
 import java.util.Objects;
 import java.util.Set;
 
@@ -29,10 +28,10 @@ import java.util.Set;
  * Contains information on a specific peer (e.g. known endpoints).
  */
 public class PeerInformation {
-    protected final Set<URI> endpoints;
+    protected final Set<Endpoint> endpoints;
 
     @JsonCreator
-    protected PeerInformation(@JsonProperty("endpoints") Set<URI> endpoints) {
+    protected PeerInformation(@JsonProperty("endpoints") Set<Endpoint> endpoints) {
         this.endpoints = endpoints;
     }
 
@@ -60,11 +59,11 @@ public class PeerInformation {
                 '}';
     }
 
-    public Set<URI> getEndpoints() {
+    public Set<Endpoint> getEndpoints() {
         return endpoints;
     }
 
-    public static PeerInformation of(Set<URI> endpoints) {
+    public static PeerInformation of(Set<Endpoint> endpoints) {
         return new PeerInformation(Set.copyOf(endpoints));
     }
 

@@ -21,10 +21,10 @@ package org.drasyl.peer.connection.server;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
+import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 
-import java.net.URI;
 import java.util.Set;
 import java.util.function.BooleanSupplier;
 
@@ -37,14 +37,14 @@ public class ServerEnvironment {
     private final PeersManager peersManager;
     private final BooleanSupplier acceptedNewConnectionsSupplier;
     private final Messenger messenger;
-    private final Set<URI> endpoints;
+    private final Set<Endpoint> endpoints;
     private final PeerChannelGroup channelGroup;
 
     public ServerEnvironment(DrasylConfig config,
                              Identity identity,
                              PeersManager peersManager,
                              Messenger messenger,
-                             Set<URI> endpoints,
+                             Set<Endpoint> endpoints,
                              PeerChannelGroup channelGroup,
                              BooleanSupplier acceptedNewConnectionsSupplier) {
         this.config = config;
@@ -80,7 +80,7 @@ public class ServerEnvironment {
         return messenger;
     }
 
-    public Set<URI> getEndpoints() {
+    public Set<Endpoint> getEndpoints() {
         return endpoints;
     }
 

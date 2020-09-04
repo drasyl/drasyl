@@ -35,7 +35,8 @@ public class WebSocketUtil {
      * @param uri the URI to be used for determining the WebSocket URI
      * @return the port in the WebSocket URI. If no custom port is specified, the protocol default
      * port is assumed
-     * @throws IllegalArgumentException ff no port could be determined
+     * @throws IllegalArgumentException if no port could be determined
+     * @throws NullPointerException     if {@code uri} is {@code null}
      */
     public static int webSocketPort(URI uri) {
         int port = uri.getPort();
@@ -63,6 +64,7 @@ public class WebSocketUtil {
      * @param uri the URI to be checked
      * @return <code>true</code> if <code>uri</code> is a WebSocket Secure URI. Otherwise, returns
      * <code>false</code>
+     * @throws NullPointerException if {@code uri} is {@code null}
      */
     public static boolean isWebSocketSecureURI(URI uri) {
         return uri.getScheme() != null && uri.getScheme().equals("wss");
@@ -72,6 +74,7 @@ public class WebSocketUtil {
      * @param uri the URI to be checked
      * @return <code>true</code> if <code>uri</code> is a non-secure Websocket URI. Otherwise,
      * returns <code>false</code>
+     * @throws NullPointerException if {@code uri} is {@code null}
      */
     public static boolean isWebSocketNonSecureURI(URI uri) {
         return uri.getScheme() != null && uri.getScheme().equals("ws");
@@ -81,6 +84,7 @@ public class WebSocketUtil {
      * @param uri the URI to be checked
      * @return <code>true</code> if <code>uri</code> is Websocket URI. Otherwise, returns
      * <code>false</code>
+     * @throws NullPointerException if {@code uri} is {@code null}
      */
     public static boolean isWebSocketURI(URI uri) {
         return isWebSocketNonSecureURI(uri) || isWebSocketSecureURI(uri);

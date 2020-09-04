@@ -8,13 +8,13 @@ import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
+import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.util.DrasylFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
@@ -42,7 +42,7 @@ public class DirectClient extends AbstractClient {
                         EventLoopGroup workerGroup,
                         Consumer<Event> eventConsumer,
                         CompressedPublicKey serverPublicKey,
-                        Supplier<Set<URI>> endpointsSupplier,
+                        Supplier<Set<Endpoint>> endpointsSupplier,
                         BooleanSupplier directConnectionDemand,
                         Runnable onFailure,
                         BooleanSupplier acceptNewConnectionsSupplier) {
@@ -70,12 +70,12 @@ public class DirectClient extends AbstractClient {
 
     DirectClient(List<Duration> retryDelays,
                  EventLoopGroup workerGroup,
-                 Supplier<Set<URI>> endpointsSupplier,
+                 Supplier<Set<Endpoint>> endpointsSupplier,
                  AtomicBoolean opened,
                  BooleanSupplier acceptNewConnectionsSupplier,
                  AtomicInteger nextEndpointPointer,
                  AtomicInteger nextRetryDelayPointer,
-                 DrasylFunction<URI, Bootstrap, ClientException> bootstrapSupplier,
+                 DrasylFunction<Endpoint, Bootstrap, ClientException> bootstrapSupplier,
                  Channel channel,
                  BooleanSupplier directConnectionDemand,
                  Runnable onFailure) {

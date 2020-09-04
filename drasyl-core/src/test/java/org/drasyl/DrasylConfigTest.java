@@ -28,6 +28,7 @@ import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.connection.client.DefaultClientChannelInitializer;
 import org.drasyl.peer.connection.server.DefaultServerChannelInitializer;
 import org.drasyl.plugins.PluginEnvironment;
@@ -41,7 +42,6 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import java.net.InetAddress;
-import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -126,13 +126,13 @@ class DrasylConfigTest {
     private boolean serverSSLEnabled;
     private final Set<String> serverSSLProtocols = Set.of("TLSv1.3", "TLSv1.2");
     private Duration serverHandshakeTimeout;
-    private Set<URI> serverEndpoints;
+    private Set<Endpoint> serverEndpoints;
     private Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer;
     private boolean serverExposeEnabled;
     private int messageMaxContentLength;
     private short messageHopLimit;
     private boolean superPeerEnabled;
-    private Set<URI> superPeerEndpoints;
+    private Set<Endpoint> superPeerEndpoints;
     @Mock
     private CompressedPublicKey superPeerPublicKey;
     private final List<Duration> superPeerRetryDelays = List.of(ofSeconds(0), ofSeconds(1), ofSeconds(2), ofSeconds(4), ofSeconds(8));
@@ -186,7 +186,7 @@ class DrasylConfigTest {
         messageMaxContentLength = 1024;
         messageHopLimit = 64;
         superPeerEnabled = true;
-        superPeerEndpoints = Set.of(URI.create("ws://foo.bar:123"), URI.create("wss://example.com"));
+        superPeerEndpoints = Set.of(Endpoint.of("ws://foo.bar:123"), Endpoint.of("wss://example.com"));
         superPeerChannelInitializer = DefaultClientChannelInitializer.class;
         superPeerIdleRetries = 3;
         superPeerHandshakeTimeout = ofSeconds(30);

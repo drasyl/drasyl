@@ -28,6 +28,7 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
+import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.Message;
@@ -35,7 +36,6 @@ import org.drasyl.util.DrasylScheduler;
 import org.drasyl.util.FutureUtil;
 import org.drasyl.util.PortMappingUtil;
 
-import java.net.URI;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -58,7 +58,7 @@ public class TestServer extends Server {
                       PeerChannelGroup channelGroup,
                       EventLoopGroup workerGroup,
                       EventLoopGroup bossGroup,
-                      Set<URI> endpoints) {
+                      Set<Endpoint> endpoints) {
         this(config, channelGroup, workerGroup, bossGroup, new TestServerChannelInitializer(new ServerEnvironment(
                 config,
                 identity,
