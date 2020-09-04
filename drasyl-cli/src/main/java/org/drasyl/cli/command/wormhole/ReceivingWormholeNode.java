@@ -12,6 +12,7 @@ import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
+import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.pipeline.DrasylPipeline;
@@ -19,7 +20,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.PrintStream;
-import java.net.URI;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -49,7 +49,7 @@ public class ReceivingWormholeNode extends DrasylNode {
                           PeersManager peersManager,
                           PeerChannelGroup channelGroup,
                           Messenger messenger,
-                          Set<URI> endpoints,
+                          Set<Endpoint> endpoints,
                           AtomicBoolean acceptNewConnections,
                           DrasylPipeline pipeline,
                           List<DrasylNodeComponent> components,
@@ -127,7 +127,9 @@ public class ReceivingWormholeNode extends DrasylNode {
     public void requestText(CompressedPublicKey sender,
                             String password,
                             AtomicInteger remainingRetries) {
-        log.debug("Requesting text from '{}' with password '{}'", sender, maskSecret(password));
+        if (log.isDebugEnabled()) {
+            log.debug("Requesting text from '{}' with password '{}'", sender, maskSecret(password));
+        }
         send(sender, new PasswordMessage(password)).whenComplete((result, e) -> {
             if (e != null) {
                 if (remainingRetries.decrementAndGet() > 0) {

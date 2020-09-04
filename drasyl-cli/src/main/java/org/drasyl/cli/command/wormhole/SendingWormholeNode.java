@@ -12,12 +12,12 @@ import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
+import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.pipeline.DrasylPipeline;
 
 import java.io.PrintStream;
-import java.net.URI;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -40,7 +40,7 @@ public class SendingWormholeNode extends DrasylNode {
                         PeersManager peersManager,
                         PeerChannelGroup channelGroup,
                         Messenger messenger,
-                        Set<URI> endpoints,
+                        Set<Endpoint> endpoints,
                         AtomicBoolean acceptNewConnections,
                         DrasylPipeline pipeline,
                         List<DrasylNodeComponent> components,

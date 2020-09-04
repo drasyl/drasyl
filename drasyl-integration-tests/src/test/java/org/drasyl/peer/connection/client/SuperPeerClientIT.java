@@ -38,6 +38,7 @@ import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.messenger.Messenger;
+import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.ApplicationMessage;
@@ -58,7 +59,6 @@ import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.parallel.Execution;
 import org.junit.jupiter.api.parallel.ExecutionMode;
 
-import java.net.URI;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Random;
@@ -95,7 +95,7 @@ class SuperPeerClientIT {
     private Subject<Event> emittedEventsSubject;
     private PeerChannelGroup channelGroup;
     private PeerChannelGroup channelGroupServer;
-    private Set<URI> endpoints;
+    private Set<Endpoint> endpoints;
 
     @BeforeEach
     void setup(TestInfo info) throws DrasylException, CryptoException {
@@ -119,7 +119,7 @@ class SuperPeerClientIT {
                 .serverSSLEnabled(true)
                 .serverIdleTimeout(ofSeconds(1))
                 .serverIdleRetries((short) 1)
-                .superPeerEndpoints(Set.of(URI.create("wss://127.0.0.1:22527")))
+                .superPeerEndpoints(Set.of(Endpoint.of("wss://127.0.0.1:22527")))
                 .superPeerRetryDelays(List.of(ofSeconds(0), ofSeconds(1), ofSeconds(2), ofSeconds(4), ofSeconds(8), ofSeconds(16), ofSeconds(32), ofSeconds(60)))
                 .superPeerIdleTimeout(ofSeconds(1))
                 .superPeerIdleRetries((short) 1)

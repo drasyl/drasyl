@@ -9,6 +9,7 @@ import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
+import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.pipeline.DrasylPipeline;
@@ -21,7 +22,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.net.URI;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -62,7 +62,7 @@ class ReceivingWormholeNodeTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylPipeline pipeline;
     @Mock
-    private Set<URI> endpoints;
+    private Set<Endpoint> endpoints;
     @Mock
     private AtomicBoolean acceptNewConnections;
     @Mock

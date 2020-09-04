@@ -7,6 +7,7 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylNodeComponent;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.util.DrasylScheduler;
@@ -15,7 +16,6 @@ import org.slf4j.LoggerFactory;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.FileSystem;
 import java.nio.file.Path;
 import java.nio.file.WatchService;
@@ -55,7 +55,7 @@ public class LocalHostDiscovery implements DrasylNodeComponent {
     private final Duration leaseTime;
     private final CompressedPublicKey ownPublicKey;
     private final PeersManager peersManager;
-    private final Set<URI> endpoints;
+    private final Set<Endpoint> endpoints;
     private final Observable<CompressedPublicKey> communicationOccurred;
     private final AtomicBoolean opened;
     private final AtomicBoolean doScan;
@@ -69,7 +69,7 @@ public class LocalHostDiscovery implements DrasylNodeComponent {
     public LocalHostDiscovery(DrasylConfig config,
                               CompressedPublicKey ownPublicKey,
                               PeersManager peersManager,
-                              Set<URI> endpoints,
+                              Set<Endpoint> endpoints,
                               Observable<CompressedPublicKey> communicationOccurred) {
         this(
                 config.getLocalHostDiscoveryPath(),
@@ -92,7 +92,7 @@ public class LocalHostDiscovery implements DrasylNodeComponent {
                        Duration leaseTime,
                        CompressedPublicKey ownPublicKey,
                        PeersManager peersManager,
-                       Set<URI> endpoints,
+                       Set<Endpoint> endpoints,
                        Observable<CompressedPublicKey> communicationOccurred,
                        AtomicBoolean opened,
                        AtomicBoolean doScan,

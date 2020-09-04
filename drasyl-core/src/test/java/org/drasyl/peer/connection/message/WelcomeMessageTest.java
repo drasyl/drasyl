@@ -19,6 +19,7 @@
 package org.drasyl.peer.connection.message;
 
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
+import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeerInformation;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.Set;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
@@ -48,7 +48,7 @@ class WelcomeMessageTest {
         void shouldDeserializeToCorrectObject() throws IOException {
             String json = "{\"@type\":\"WelcomeMessage\",\"id\":\"c78fe75d4c93bc07e916e539\",\"userAgent\":\"\",\"peerInformation\":{\"endpoints\":[\"ws://test\"]},\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
 
-            assertEquals(new WelcomeMessage(PeerInformation.of(Set.of(URI.create("ws://test"))), new MessageId("412176952b5b81fd13f84a7c")), JACKSON_READER.readValue(json, Message.class));
+            assertEquals(new WelcomeMessage(PeerInformation.of(Set.of(Endpoint.of("ws://test"))), new MessageId("412176952b5b81fd13f84a7c")), JACKSON_READER.readValue(json, Message.class));
         }
 
         @Test

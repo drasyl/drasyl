@@ -7,6 +7,7 @@ import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
+import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.client.DirectClient;
@@ -20,7 +21,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.net.URI;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -56,7 +56,7 @@ class DirectConnectionsManagerTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Messenger messenger;
     @Mock
-    private Set<URI> endpoints;
+    private Set<Endpoint> endpoints;
     @Mock
     private DirectConnectionDemandsCache directConnectionDemandsCache;
     @Mock

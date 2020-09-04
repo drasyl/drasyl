@@ -14,6 +14,7 @@ import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
+import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.util.DrasylFunction;
@@ -22,7 +23,6 @@ import org.slf4j.Logger;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
-import java.net.URI;
 import java.time.Duration;
 import java.util.List;
 import java.util.Set;
@@ -33,15 +33,14 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.util.WebSocketUtil.webSocketPort;
 
 abstract class AbstractClient implements DrasylNodeComponent {
     private final EventLoopGroup workerGroup;
-    private final Supplier<Set<URI>> endpointsSupplier;
+    private final Supplier<Set<Endpoint>> endpointsSupplier;
     private final AtomicBoolean opened;
     private final AtomicInteger nextEndpointPointer;
     private final AtomicInteger nextRetryDelayPointer;
-    private final DrasylFunction<URI, Bootstrap, ClientException> bootstrapSupplier;
+    private final DrasylFunction<Endpoint, Bootstrap, ClientException> bootstrapSupplier;
     private final List<Duration> retryDelays;
     protected Channel channel;
     protected BooleanSupplier acceptNewConnectionsSupplier;
@@ -49,7 +48,7 @@ abstract class AbstractClient implements DrasylNodeComponent {
     @SuppressWarnings({ "java:S107" })
     protected AbstractClient(List<Duration> retryDelays,
                              EventLoopGroup workerGroup,
-                             Supplier<Set<URI>> endpointsSupplier,
+                             Supplier<Set<Endpoint>> endpointsSupplier,
                              BooleanSupplier acceptNewConnectionsSupplier,
                              Identity identity,
                              Messenger messenger,
@@ -86,15 +85,15 @@ abstract class AbstractClient implements DrasylNodeComponent {
                                         handshakeTimeout
                                 ),
                                 channelInitializerClazz))
-                        .remoteAddress(endpoint.getHost(), webSocketPort(endpoint))
+                        .remoteAddress(endpoint.getHost(), endpoint.getPort())
         );
     }
 
     protected AbstractClient(List<Duration> retryDelays,
                              EventLoopGroup workerGroup,
-                             Supplier<Set<URI>> endpointsSupplier,
+                             Supplier<Set<Endpoint>> endpointsSupplier,
                              BooleanSupplier acceptNewConnectionsSupplier,
-                             DrasylFunction<URI, Bootstrap, ClientException> bootstrapSupplier) {
+                             DrasylFunction<Endpoint, Bootstrap, ClientException> bootstrapSupplier) {
         this(
                 retryDelays,
                 workerGroup,
@@ -111,12 +110,12 @@ abstract class AbstractClient implements DrasylNodeComponent {
     @SuppressWarnings({ "java:S107" })
     protected AbstractClient(List<Duration> retryDelays,
                              EventLoopGroup workerGroup,
-                             Supplier<Set<URI>> endpointsSupplier,
+                             Supplier<Set<Endpoint>> endpointsSupplier,
                              AtomicBoolean opened,
                              BooleanSupplier acceptNewConnectionsSupplier,
                              AtomicInteger nextEndpointPointer,
                              AtomicInteger nextRetryDelayPointer,
-                             DrasylFunction<URI, Bootstrap, ClientException> bootstrapSupplier,
+                             DrasylFunction<Endpoint, Bootstrap, ClientException> bootstrapSupplier,
                              Channel channel) {
         this.retryDelays = retryDelays;
         this.workerGroup = workerGroup;
@@ -138,7 +137,7 @@ abstract class AbstractClient implements DrasylNodeComponent {
         }
     }
 
-    void connect(URI endpoint) {
+    void connect(Endpoint endpoint) {
         if (endpoint == null) {
             getLogger().debug("No endpoint present. Permanently unable to connect to Server.");
             failed();
@@ -172,10 +171,10 @@ abstract class AbstractClient implements DrasylNodeComponent {
     /**
      * @return the next peer's endpoint. Returns <code>null</code> if no endpoint is present
      */
-    URI nextEndpoint() {
+    Endpoint nextEndpoint() {
         try {
-            Set<URI> endpoints = endpointsSupplier.get();
-            URI endpoint = SetUtil.nthElement(endpoints, nextEndpointPointer.get());
+            Set<Endpoint> endpoints = endpointsSupplier.get();
+            Endpoint endpoint = SetUtil.nthElement(endpoints, nextEndpointPointer.get());
             nextEndpointPointer.updateAndGet(p -> (p + 1) % endpoints.size());
             return endpoint;
         }

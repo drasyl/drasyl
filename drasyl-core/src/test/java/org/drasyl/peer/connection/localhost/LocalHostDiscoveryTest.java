@@ -5,6 +5,7 @@ import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
 import org.junit.jupiter.api.Nested;
@@ -16,7 +17,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -52,7 +52,7 @@ class LocalHostDiscoveryTest {
     @Mock
     private PeersManager peersManager;
     @Mock
-    private Set<URI> endpoints;
+    private Set<Endpoint> endpoints;
     @Mock
     private Observable<CompressedPublicKey> communicationOccurred;
     @Mock
@@ -130,7 +130,7 @@ class LocalHostDiscoveryTest {
                 return null;
             });
 
-            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, Set.of(URI.create("ws://localhost:123")), communicationOccurred, opened, doScan, scheduler, watchDisposable, postDisposable, communicationObserver);
+            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, Set.of(Endpoint.of("ws://localhost:123")), communicationOccurred, opened, doScan, scheduler, watchDisposable, postDisposable, communicationObserver);
             underTest.open();
 
             verify(discoveryPath.getFileSystem().newWatchService()).poll();
@@ -171,10 +171,10 @@ class LocalHostDiscoveryTest {
             Path path = Paths.get(dir.toString(), "03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a.json");
             Files.writeString(path, "{\"endpoints\":[\"ws://localhost:123\"]}", StandardOpenOption.CREATE);
 
-            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, Set.of(URI.create("ws://localhost:123")), communicationOccurred, new AtomicBoolean(true), new AtomicBoolean(true), scheduler, watchDisposable, postDisposable, communicationObserver);
+            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, Set.of(Endpoint.of("ws://localhost:123")), communicationOccurred, new AtomicBoolean(true), new AtomicBoolean(true), scheduler, watchDisposable, postDisposable, communicationObserver);
             underTest.conditionalScan();
 
-            verify(peersManager).setPeerInformation(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"), PeerInformation.of(Set.of(URI.create("ws://localhost:123"))));
+            verify(peersManager).setPeerInformation(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"), PeerInformation.of(Set.of(Endpoint.of("ws://localhost:123"))));
         }
     }
 }

@@ -39,6 +39,7 @@ import org.drasyl.messenger.Messenger;
 import org.drasyl.messenger.MessengerException;
 import org.drasyl.messenger.NoPathToPublicKeyException;
 import org.drasyl.monitoring.Monitoring;
+import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
@@ -63,7 +64,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -122,7 +122,7 @@ public abstract class DrasylNode {
     private final PeersManager peersManager;
     private final PeerChannelGroup channelGroup;
     private final Messenger messenger;
-    private final Set<URI> endpoints;
+    private final Set<Endpoint> endpoints;
     private final AtomicBoolean acceptNewConnections;
     private final DrasylPipeline pipeline;
     private final List<DrasylNodeComponent> components;
@@ -281,7 +281,7 @@ public abstract class DrasylNode {
                          PeersManager peersManager,
                          PeerChannelGroup channelGroup,
                          Messenger messenger,
-                         Set<URI> endpoints,
+                         Set<Endpoint> endpoints,
                          AtomicBoolean acceptNewConnections,
                          DrasylPipeline pipeline,
                          List<DrasylNodeComponent> components,

@@ -36,6 +36,7 @@ import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
+import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.handler.SimpleChannelDuplexHandler;
@@ -44,14 +45,12 @@ import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.ResponseMessage;
 import org.drasyl.peer.connection.superpeer.TestClientChannelInitializer;
 
-import java.net.URI;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.awaitility.Awaitility.await;
 import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_HANDLER;
-import static org.drasyl.util.WebSocketUtil.webSocketPort;
 
 public class TestSuperPeerClient extends SuperPeerClient {
     private final Identity identity;
@@ -64,7 +63,7 @@ public class TestSuperPeerClient extends SuperPeerClient {
                                EventLoopGroup workerGroup,
                                boolean doPingPong,
                                boolean doJoin,
-                               Set<URI> endpoints) {
+                               Set<Endpoint> endpoints) {
         this(DrasylConfig.newBuilder(config).superPeerEnabled(true).superPeerEndpoints(endpoints).build(), identity, new PeerChannelGroup(), workerGroup, ReplaySubject.create(), doPingPong, doJoin);
     }
 
@@ -110,7 +109,7 @@ public class TestSuperPeerClient extends SuperPeerClient {
                                 doPingPong,
                                 doJoin
                         ))
-                        .remoteAddress(endpoint.getHost(), webSocketPort(endpoint))
+                        .remoteAddress(endpoint.getHost(), endpoint.getPort())
         );
         this.identity = identity;
         this.receivedEvents = receivedEvents;

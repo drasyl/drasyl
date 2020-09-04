@@ -25,19 +25,16 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler;
 import io.netty.handler.flush.FlushConsolidationHandler;
 import io.netty.handler.ssl.SslHandler;
+import org.drasyl.peer.Endpoint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.time.Duration;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -45,22 +42,22 @@ class ClientChannelInitializerTest {
     private int flushBufferSize;
     private Duration readIdleTimeout;
     private short pingPongRetries;
-    private URI ipAddress;
+    private Endpoint endpoint;
     @Mock
     private ChannelPipeline pipeline;
 
     @BeforeEach
-    void setUp() throws URISyntaxException {
+    void setUp() {
         flushBufferSize = FlushConsolidationHandler.DEFAULT_EXPLICIT_FLUSH_AFTER_FLUSHES;
         readIdleTimeout = Duration.ofSeconds(2);
         pingPongRetries = 3;
-        ipAddress = new URI("ws://localhost:22527/");
+        endpoint = Endpoint.of("ws://localhost:22527/");
     }
 
     @Test
     void beforeMarshalStage() {
         ClientChannelInitializer initializer = new ClientChannelInitializer(flushBufferSize, readIdleTimeout, pingPongRetries,
-                ipAddress) {
+                endpoint) {
             @Override
             protected void customStage(ChannelPipeline pipeline) {
 
@@ -77,28 +74,5 @@ class ClientChannelInitializerTest {
         verify(pipeline).addLast(any(HttpClientCodec.class));
         verify(pipeline).addLast(any(HttpObjectAggregator.class));
         verify(pipeline).addLast(any(WebSocketClientProtocolHandler.class));
-    }
-
-    @Test
-    void exceptionOnInvalidTarget() {
-        assertThrows(URISyntaxException.class, () -> {
-            ClientChannelInitializer initializer = new ClientChannelInitializer(flushBufferSize, readIdleTimeout, pingPongRetries,
-                    new URI("|<>:22527")) {
-                @Override
-                protected void customStage(ChannelPipeline pipeline) {
-
-                }
-
-                @Override
-                protected SslHandler generateSslContext(SocketChannel ch) {
-                    return null;
-                }
-            };
-            initializer.beforeMarshalStage(pipeline);
-        });
-
-        verify(pipeline, never()).addLast(any(HttpClientCodec.class));
-        verify(pipeline, never()).addLast(any(HttpObjectAggregator.class));
-        verify(pipeline, never()).addLast(any(WebSocketClientProtocolHandler.class));
     }
 }

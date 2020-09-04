@@ -29,13 +29,12 @@ import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.peer.Endpoint;
 import org.drasyl.plugins.AutoloadablePlugin;
 import org.drasyl.plugins.PluginEnvironment;
 
 import java.io.File;
 import java.net.InetAddress;
-import java.net.URI;
-import java.net.URISyntaxException;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -119,14 +118,14 @@ public class DrasylConfig {
     private final boolean serverSSLEnabled;
     private final Set<String> serverSSLProtocols;
     private final Duration serverHandshakeTimeout;
-    private final Set<URI> serverEndpoints;
+    private final Set<Endpoint> serverEndpoints;
     private final Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer;
     private final boolean serverExposeEnabled;
     private final int messageMaxContentLength;
     private final short messageHopLimit;
     private final Duration messageComposedMessageTransferTimeout;
     private final boolean superPeerEnabled;
-    private final Set<URI> superPeerEndpoints;
+    private final Set<Endpoint> superPeerEndpoints;
     private final CompressedPublicKey superPeerPublicKey;
     private final List<Duration> superPeerRetryDelays;
     private final Duration superPeerHandshakeTimeout;
@@ -206,12 +205,12 @@ public class DrasylConfig {
         this.messageHopLimit = getShort(config, MESSAGE_HOP_LIMIT);
         this.serverSSLEnabled = config.getBoolean(SERVER_SSL_ENABLED);
         this.serverSSLProtocols = Set.copyOf(config.getStringList(SERVER_SSL_PROTOCOLS));
-        this.serverEndpoints = Set.copyOf(getUriList(config, SERVER_ENDPOINTS));
+        this.serverEndpoints = Set.copyOf(getEndpointList(config, SERVER_ENDPOINTS));
         this.serverExposeEnabled = config.getBoolean(SERVER_EXPOSE_ENABLED);
 
         // Init super peer config
         this.superPeerEnabled = config.getBoolean(SUPER_PEER_ENABLED);
-        this.superPeerEndpoints = Set.copyOf(getUriList(config, SUPER_PEER_ENDPOINTS));
+        this.superPeerEndpoints = Set.copyOf(getEndpointList(config, SUPER_PEER_ENDPOINTS));
         if (!config.getString(SUPER_PEER_PUBLIC_KEY).equals("")) {
             this.superPeerPublicKey = getPublicKey(config, SUPER_PEER_PUBLIC_KEY);
         }
@@ -345,18 +344,18 @@ public class DrasylConfig {
         return (short) integerValue;
     }
 
-    private List<URI> getUriList(Config config, String path) {
+    private List<Endpoint> getEndpointList(Config config, String path) {
         List<String> stringListValue = config.getStringList(path);
-        List<URI> uriList = new ArrayList<>();
+        List<Endpoint> endpointList = new ArrayList<>();
         try {
             for (String stringValue : stringListValue) {
-                uriList.add(new URI(stringValue));
+                endpointList.add(Endpoint.of(stringValue));
             }
         }
-        catch (URISyntaxException e) {
+        catch (IllegalArgumentException e) {
             throw new ConfigException.WrongType(config.getValue(path).origin(), path, "url", "invalid-value: " + e.getMessage());
         }
-        return uriList;
+        return endpointList;
     }
 
     private Class<ChannelInitializer<SocketChannel>> getChannelInitializer(Config config,
@@ -413,14 +412,14 @@ public class DrasylConfig {
                  boolean serverSSLEnabled,
                  Set<String> serverSSLProtocols,
                  Duration serverHandshakeTimeout,
-                 Set<URI> serverEndpoints,
+                 Set<Endpoint> serverEndpoints,
                  Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer,
                  boolean serverExposeEnabled,
                  int messageMaxContentLength,
                  short messageHopLimit,
                  Duration messageComposedMessageTransferTimeout,
                  boolean superPeerEnabled,
-                 Set<URI> superPeerEndpoints,
+                 Set<Endpoint> superPeerEndpoints,
                  CompressedPublicKey superPeerPublicKey,
                  List<Duration> superPeerRetryDelays,
                  Duration superPeerHandshakeTimeout,
@@ -584,7 +583,7 @@ public class DrasylConfig {
         return serverHandshakeTimeout;
     }
 
-    public Set<URI> getServerEndpoints() {
+    public Set<Endpoint> getServerEndpoints() {
         return serverEndpoints;
     }
 
@@ -608,7 +607,7 @@ public class DrasylConfig {
         return superPeerEnabled;
     }
 
-    public Set<URI> getSuperPeerEndpoints() {
+    public Set<Endpoint> getSuperPeerEndpoints() {
         return superPeerEndpoints;
     }
 
@@ -921,14 +920,14 @@ public class DrasylConfig {
         private boolean serverSSLEnabled;
         private Set<String> serverSSLProtocols;
         private Duration serverHandshakeTimeout;
-        private Set<URI> serverEndpoints;
+        private Set<Endpoint> serverEndpoints;
         private Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer;
         private boolean serverExposeEnabled;
         private int messageMaxContentLength;
         private short messageHopLimit;
         private Duration messageComposedMessageTransferTimeout;
         private boolean superPeerEnabled;
-        private Set<URI> superPeerEndpoints;
+        private Set<Endpoint> superPeerEndpoints;
         private CompressedPublicKey superPeerPublicKey;
         private List<Duration> superPeerRetryDelays;
         private Duration superPeerHandshakeTimeout;
@@ -973,14 +972,14 @@ public class DrasylConfig {
                         boolean serverSSLEnabled,
                         Set<String> serverSSLProtocols,
                         Duration serverHandshakeTimeout,
-                        Set<URI> serverEndpoints,
+                        Set<Endpoint> serverEndpoints,
                         Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer,
                         boolean serverExposeEnabled,
                         int messageMaxContentLength,
                         short messageHopLimit,
                         Duration messageComposedMessageTransferTimeout,
                         boolean superPeerEnabled,
-                        Set<URI> superPeerEndpoints,
+                        Set<Endpoint> superPeerEndpoints,
                         CompressedPublicKey superPeerPublicKey,
                         List<Duration> superPeerRetryDelays,
                         Duration superPeerHandshakeTimeout,
@@ -1131,7 +1130,7 @@ public class DrasylConfig {
             return this;
         }
 
-        public Builder serverEndpoints(Set<URI> serverEndpoints) {
+        public Builder serverEndpoints(Set<Endpoint> serverEndpoints) {
             this.serverEndpoints = serverEndpoints;
             return this;
         }
@@ -1161,7 +1160,7 @@ public class DrasylConfig {
             return this;
         }
 
-        public Builder superPeerEndpoints(Set<URI> superPeerEndpoints) {
+        public Builder superPeerEndpoints(Set<Endpoint> superPeerEndpoints) {
             this.superPeerEndpoints = superPeerEndpoints;
             return this;
         }

@@ -31,6 +31,7 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylNodeComponent;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
+import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.util.DrasylScheduler;
@@ -45,7 +46,6 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.net.URI;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
@@ -71,11 +71,11 @@ public class Server implements DrasylNodeComponent {
     private final ServerBootstrap serverBootstrap;
     private final DrasylConfig config;
     private final AtomicBoolean opened;
-    private final Set<URI> nodeEndpoints;
+    private final Set<Endpoint> nodeEndpoints;
     private final Scheduler scheduler;
     private final Function<InetSocketAddress, Set<PortMapping>> portExposer;
     private Channel channel;
-    private Set<URI> actualEndpoints;
+    private Set<Endpoint> actualEndpoints;
     private InetSocketAddress socketAddress;
     private Set<PortMapping> portMappings;
 
@@ -84,8 +84,8 @@ public class Server implements DrasylNodeComponent {
            AtomicBoolean opened,
            InetSocketAddress socketAddress,
            Channel channel,
-           Set<URI> actualEndpoints,
-           Set<URI> nodeEndpoints,
+           Set<Endpoint> actualEndpoints,
+           Set<Endpoint> nodeEndpoints,
            Scheduler scheduler,
            Function<InetSocketAddress, Set<PortMapping>> portExposer) {
         this.config = config;
@@ -106,7 +106,7 @@ public class Server implements DrasylNodeComponent {
                   PeerChannelGroup channelGroup,
                   EventLoopGroup workerGroup,
                   EventLoopGroup bossGroup,
-                  Set<URI> nodeEndpoints,
+                  Set<Endpoint> nodeEndpoints,
                   BooleanSupplier acceptNewConnectionsSupplier) throws ServerException {
         this(identity, messenger, peersManager, config, channelGroup, workerGroup, bossGroup, new AtomicBoolean(false), acceptNewConnectionsSupplier, nodeEndpoints);
     }
@@ -133,7 +133,7 @@ public class Server implements DrasylNodeComponent {
                   EventLoopGroup bossGroup,
                   AtomicBoolean opened,
                   BooleanSupplier acceptNewConnectionsSupplier,
-                  Set<URI> nodeEndpoints) throws ServerException {
+                  Set<Endpoint> nodeEndpoints) throws ServerException {
         this(
                 config,
                 new ServerBootstrap().group(bossGroup, workerGroup)
@@ -235,11 +235,11 @@ public class Server implements DrasylNodeComponent {
                 Set<InetSocketAddress> previousAddresses = Optional.ofNullable(pair.second()).orElse(Set.of());
 
                 Set<InetSocketAddress> addressesToRemove = SetUtil.difference(previousAddresses, currentAddresses);
-                Set<URI> endpointsToRemove = addressesToRemove.stream().map(address -> createUri(scheme, address.getHostName(), address.getPort())).collect(Collectors.toSet());
+                Set<Endpoint> endpointsToRemove = addressesToRemove.stream().map(address -> Endpoint.of(createUri(scheme, address.getHostName(), address.getPort()))).collect(Collectors.toSet());
                 nodeEndpoints.removeAll(endpointsToRemove);
 
                 Set<InetSocketAddress> addressesToAdd = SetUtil.difference(currentAddresses, previousAddresses);
-                Set<URI> endpointsToAdd = addressesToAdd.stream().map(address -> createUri(scheme, address.getHostName(), address.getPort())).collect(Collectors.toSet());
+                Set<Endpoint> endpointsToAdd = addressesToAdd.stream().map(address -> Endpoint.of(createUri(scheme, address.getHostName(), address.getPort()))).collect(Collectors.toSet());
                 nodeEndpoints.addAll(endpointsToAdd);
             });
         });
@@ -275,15 +275,16 @@ public class Server implements DrasylNodeComponent {
         }
     }
 
-    static Set<URI> determineActualEndpoints(DrasylConfig config, InetSocketAddress listenAddress) {
-        Set<URI> configEndpoints = config.getServerEndpoints();
+    static Set<Endpoint> determineActualEndpoints(DrasylConfig config,
+                                                  InetSocketAddress listenAddress) {
+        Set<Endpoint> configEndpoints = config.getServerEndpoints();
         if (!configEndpoints.isEmpty()) {
             // read endpoints from config
-            return configEndpoints.stream().map(uri -> {
-                if (uri.getPort() == 0) {
-                    return overridePort(uri, listenAddress.getPort());
+            return configEndpoints.stream().map(endpoint -> {
+                if (endpoint.getPort() == 0) {
+                    return Endpoint.of(overridePort(endpoint.toURI(), listenAddress.getPort()));
                 }
-                return uri;
+                return endpoint;
             }).collect(Collectors.toSet());
         }
 
@@ -297,6 +298,6 @@ public class Server implements DrasylNodeComponent {
             addresses = Set.of(listenAddress.getAddress());
         }
         String scheme = config.getServerSSLEnabled() ? "wss" : "ws";
-        return addresses.stream().map(address -> createUri(scheme, address.getHostAddress(), listenAddress.getPort())).collect(Collectors.toSet());
+        return addresses.stream().map(address -> Endpoint.of(createUri(scheme, address.getHostAddress(), listenAddress.getPort()))).collect(Collectors.toSet());
     }
 }

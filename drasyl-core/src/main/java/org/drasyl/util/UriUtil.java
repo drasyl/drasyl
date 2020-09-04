@@ -48,7 +48,7 @@ public class UriUtil {
      * @param host   Host name The host to be parsed into a URL
      * @param port   Port number The port to be parsed into a URL
      * @return The new URI
-     * @throws URISyntaxException If the URI constructed from the given components violates
+     * @throws IllegalArgumentException If the URI constructed from the given components violates
      *                            RFC&nbsp;2396
      */
     public static URI createUri(String scheme, String host, int port) {

@@ -27,6 +27,7 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
+import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.ApplicationMessage;
@@ -46,7 +47,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.slf4j.LoggerFactory;
 
-import java.net.URI;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -82,7 +82,7 @@ class DrasylNodeTest {
     private PeersManager peersManager;
     @Mock
     private AtomicBoolean started;
-    private final Set<URI> endpoints = new HashSet<>();
+    private final Set<Endpoint> endpoints = new HashSet<>();
     @Mock
     private CompressedPublicKey publicKey;
     @Mock

@@ -21,6 +21,7 @@ package org.drasyl.peer.connection.message;
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeerInformation;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -29,7 +30,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
-import java.net.URI;
 import java.util.Set;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
@@ -56,7 +56,7 @@ class WhoisMessageTest {
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
             String json = "{\"@type\":\"WhoisMessage\",\"id\":\"c78fe75d4c93bc07e916e539\",\"recipient\":\"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\"requester\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"peerInformation\":{\"endpoints\":[\"ws://test\"]}}";
 
-            assertEquals(new WhoisMessage(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), PeerInformation.of(Set.of(URI.create("ws://test")))), JACKSON_READER.readValue(json, Message.class));
+            assertEquals(new WhoisMessage(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), PeerInformation.of(Set.of(Endpoint.of("ws://test")))), JACKSON_READER.readValue(json, Message.class));
         }
 
         @Test
@@ -71,7 +71,7 @@ class WhoisMessageTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException, CryptoException {
-            WhoisMessage message = new WhoisMessage(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), PeerInformation.of(Set.of(URI.create("ws://test"))));
+            WhoisMessage message = new WhoisMessage(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), PeerInformation.of(Set.of(Endpoint.of("ws://test"))));
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
