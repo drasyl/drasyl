@@ -16,7 +16,7 @@ include:
   - local: /.gitlab-ci/Docker.gitlab-ci.yml
 #  - template: SAST.gitlab-ci.yml # https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Security/SAST.gitlab-ci.yml
   - template: DAST.gitlab-ci.yml # https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Security/DAST.gitlab-ci.yml
-#  - template: Dependency-Scanning.gitlab-ci.yml # https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Security/Dependency-Scanning.gitlab-ci.yml
+  - template: Dependency-Scanning.gitlab-ci.yml # https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Security/Dependency-Scanning.gitlab-ci.yml
   - template: Container-Scanning.gitlab-ci.yml # https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Security/Container-Scanning.gitlab-ci.yml
   - template: License-Scanning.gitlab-ci.yml # https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Security/License-Scanning.gitlab-ci.yml
   - template: Code-Quality.gitlab-ci.yml # https://gitlab.com/gitlab-org/gitlab-foss/-/blob/master/lib/gitlab/ci/templates/Jobs/Code-Quality.gitlab-ci.yml
@@ -37,11 +37,11 @@ dast:
       when: always
     - when: never
 
-#dependency_scanning:
-#  rules:
-#    - if: $CI_EXTENDED || $DEPENDENCY_SCANNING_ENABLED
-#      when: always
-#    - when: never
+gemnasium-maven-dependency_scanning:
+  rules:
+    - if: $CI_EXTENDED || $DEPENDENCY_SCANNING_ENABLED
+      when: always
+    - when: never
 
 container_scanning:
   stage: docker-test
