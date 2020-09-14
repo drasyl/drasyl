@@ -50,6 +50,7 @@ import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.server.TestServer;
+import org.drasyl.util.UriUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -108,33 +109,13 @@ class SuperPeerClientIT {
         serverWorkerGroup = new NioEventLoopGroup();
         bossGroup = new NioEventLoopGroup(1);
 
-        config = DrasylConfig.newBuilder()
-//                .loglevel(Level.TRACE)
-                .identityProofOfWork(ProofOfWork.of(6657650))
-                .identityPublicKey(CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"))
-                .identityPrivateKey(CompressedPrivateKey.of("0c27af38c77f2cd5cc2a0ff5c461003a9c24beb955f316135d251ecaf4dda03f"))
-                .serverBindHost(createInetAddress("127.0.0.1"))
-                .serverBindPort(0)
-                .serverHandshakeTimeout(ofSeconds(5))
-                .serverSSLEnabled(true)
-                .serverIdleTimeout(ofSeconds(1))
-                .serverIdleRetries((short) 1)
-                .superPeerEndpoints(Set.of(Endpoint.of("wss://127.0.0.1:22527")))
-                .superPeerRetryDelays(List.of(ofSeconds(0), ofSeconds(1), ofSeconds(2), ofSeconds(4), ofSeconds(8), ofSeconds(16), ofSeconds(32), ofSeconds(60)))
-                .superPeerIdleTimeout(ofSeconds(1))
-                .superPeerIdleRetries((short) 1)
-                .messageMaxContentLength(CHUNK_SIZE + 1)
-                .superPeerPublicKey(CompressedPublicKey.of("0234789936c7941f850c382ea9d14ecb0aad03b99a9e29a9c15b42f5f1b0c4cf3d"))
-                .build();
-        DrasylNode.setLogLevel(config.getLoglevel());
-        identityManager = new IdentityManager(config);
-        identityManager.loadOrCreateIdentity();
-
         serverConfig = DrasylConfig.newBuilder()
                 .identityProofOfWork(ProofOfWork.of(5344366))
                 .identityPublicKey(CompressedPublicKey.of("0234789936c7941f850c382ea9d14ecb0aad03b99a9e29a9c15b42f5f1b0c4cf3d"))
                 .identityPrivateKey(CompressedPrivateKey.of("064f10d37111303ee20443661c8ea758045bbf809e4950dd84b8a1348863d0f8"))
                 .serverBindHost(createInetAddress("127.0.0.1"))
+                .serverBindPort(0)
+                .serverExposeEnabled(false)
                 .serverHandshakeTimeout(ofSeconds(5))
                 .serverSSLEnabled(true)
                 .serverIdleTimeout(ofSeconds(1))
@@ -156,6 +137,30 @@ class SuperPeerClientIT {
 
         server = new TestServer(identityManagerServer.getIdentity(), messengerServer, peersManagerServer, serverConfig, channelGroupServer, serverWorkerGroup, bossGroup, endpoints);
         server.open();
+
+        config = DrasylConfig.newBuilder()
+//                .loglevel(Level.TRACE)
+                .identityProofOfWork(ProofOfWork.of(6657650))
+                .identityPublicKey(CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"))
+                .identityPrivateKey(CompressedPrivateKey.of("0c27af38c77f2cd5cc2a0ff5c461003a9c24beb955f316135d251ecaf4dda03f"))
+                .serverBindHost(createInetAddress("127.0.0.1"))
+                .serverBindPort(0)
+                .serverHandshakeTimeout(ofSeconds(5))
+                .serverSSLEnabled(true)
+                .serverIdleTimeout(ofSeconds(1))
+                .serverIdleRetries((short) 1)
+                .superPeerEndpoints(endpoints)
+                .serverBindPort(0)
+                .superPeerRetryDelays(List.of(ofSeconds(0), ofSeconds(1), ofSeconds(2), ofSeconds(4), ofSeconds(8), ofSeconds(16), ofSeconds(32), ofSeconds(60)))
+                .superPeerIdleTimeout(ofSeconds(1))
+                .superPeerIdleRetries((short) 1)
+                .messageMaxContentLength(CHUNK_SIZE + 1)
+                .superPeerPublicKey(CompressedPublicKey.of("0234789936c7941f850c382ea9d14ecb0aad03b99a9e29a9c15b42f5f1b0c4cf3d"))
+                .build();
+        DrasylNode.setLogLevel(config.getLoglevel());
+        identityManager = new IdentityManager(config);
+        identityManager.loadOrCreateIdentity();
+
         emittedEventsSubject = ReplaySubject.<Event>create().toSerialized();
     }
 

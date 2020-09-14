@@ -67,14 +67,15 @@ public class TestServer extends Server {
                 endpoints,
                 channelGroup,
                 () -> true
-        )));
+        )), endpoints);
     }
 
     TestServer(DrasylConfig config,
                PeerChannelGroup channelGroup,
                EventLoopGroup workerGroup,
                EventLoopGroup bossGroup,
-               TestServerChannelInitializer channelInitializer) {
+               TestServerChannelInitializer channelInitializer,
+               Set<Endpoint> endpoints) {
         super(
                 config,
                 new ServerBootstrap().group(bossGroup, workerGroup)
@@ -84,7 +85,7 @@ public class TestServer extends Server {
                 null,
                 null,
                 new HashSet<>(),
-                new HashSet<>(),
+                endpoints,
                 DrasylScheduler.getInstanceHeavy(),
                 PortMappingUtil::expose
         );
