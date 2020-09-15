@@ -59,10 +59,6 @@ docker build -t drasyl/drasyl:latest .
 docker push drasyl/drasyl:latest
 ```
 
-## Code Style
-
-We use a custom Java code style for which is described in the following file [.editorconfig](../../.editorconfig).
-
 ## Available Super Peers
 
 | **Endpoint**                      | **Public Key**                                                       | **Used drasyl version**                                                    |
