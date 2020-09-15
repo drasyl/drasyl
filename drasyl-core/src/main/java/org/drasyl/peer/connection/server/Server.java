@@ -69,6 +69,7 @@ import static org.drasyl.util.UriUtil.overridePort;
 public class Server implements DrasylNodeComponent {
     private static final Logger LOG = LoggerFactory.getLogger(Server.class);
     private final ServerBootstrap serverBootstrap;
+    private final Identity identity;
     private final DrasylConfig config;
     private final AtomicBoolean opened;
     private final Set<Endpoint> nodeEndpoints;
@@ -79,7 +80,8 @@ public class Server implements DrasylNodeComponent {
     private InetSocketAddress socketAddress;
     private Set<PortMapping> portMappings;
 
-    Server(DrasylConfig config,
+    Server(Identity identity,
+           DrasylConfig config,
            ServerBootstrap serverBootstrap,
            AtomicBoolean opened,
            InetSocketAddress socketAddress,
@@ -88,6 +90,7 @@ public class Server implements DrasylNodeComponent {
            Set<Endpoint> nodeEndpoints,
            Scheduler scheduler,
            Function<InetSocketAddress, Set<PortMapping>> portExposer) {
+        this.identity = identity;
         this.config = config;
         this.channel = channel;
         this.serverBootstrap = serverBootstrap;
@@ -135,6 +138,7 @@ public class Server implements DrasylNodeComponent {
                   BooleanSupplier acceptNewConnectionsSupplier,
                   Set<Endpoint> nodeEndpoints) throws ServerException {
         this(
+                identity,
                 config,
                 new ServerBootstrap().group(bossGroup, workerGroup)
                         .channel(NioServerSocketChannel.class)
@@ -181,7 +185,7 @@ public class Server implements DrasylNodeComponent {
                     });
 
                     socketAddress = (InetSocketAddress) channel.localAddress();
-                    actualEndpoints = determineActualEndpoints(config, socketAddress);
+                    actualEndpoints = determineActualEndpoints(identity, config, socketAddress);
                     nodeEndpoints.addAll(actualEndpoints);
 
                     LOG.debug("Server started and listening at {}", socketAddress);
@@ -235,11 +239,17 @@ public class Server implements DrasylNodeComponent {
                 Set<InetSocketAddress> previousAddresses = Optional.ofNullable(pair.second()).orElse(Set.of());
 
                 Set<InetSocketAddress> addressesToRemove = SetUtil.difference(previousAddresses, currentAddresses);
-                Set<Endpoint> endpointsToRemove = addressesToRemove.stream().map(address -> Endpoint.of(createUri(scheme, address.getHostName(), address.getPort()))).collect(Collectors.toSet());
+                Set<Endpoint> endpointsToRemove = addressesToRemove.stream()
+                        .map(address -> createUri(scheme, address.getHostName(), address.getPort()))
+                        .map(address -> Endpoint.of(address, identity.getPublicKey()))
+                        .collect(Collectors.toSet());
                 nodeEndpoints.removeAll(endpointsToRemove);
 
                 Set<InetSocketAddress> addressesToAdd = SetUtil.difference(currentAddresses, previousAddresses);
-                Set<Endpoint> endpointsToAdd = addressesToAdd.stream().map(address -> Endpoint.of(createUri(scheme, address.getHostName(), address.getPort()))).collect(Collectors.toSet());
+                Set<Endpoint> endpointsToAdd = addressesToAdd.stream()
+                        .map(address -> createUri(scheme, address.getHostName(), address.getPort()))
+                        .map(address -> Endpoint.of(address, identity.getPublicKey()))
+                        .collect(Collectors.toSet());
                 nodeEndpoints.addAll(endpointsToAdd);
             });
         });
@@ -275,14 +285,15 @@ public class Server implements DrasylNodeComponent {
         }
     }
 
-    static Set<Endpoint> determineActualEndpoints(DrasylConfig config,
+    static Set<Endpoint> determineActualEndpoints(Identity identity,
+                                                  DrasylConfig config,
                                                   InetSocketAddress listenAddress) {
         Set<Endpoint> configEndpoints = config.getServerEndpoints();
         if (!configEndpoints.isEmpty()) {
             // read endpoints from config
             return configEndpoints.stream().map(endpoint -> {
                 if (endpoint.getPort() == 0) {
-                    return Endpoint.of(overridePort(endpoint.toURI(), listenAddress.getPort()));
+                    return Endpoint.of(overridePort(endpoint.getURI(), listenAddress.getPort()), identity.getPublicKey());
                 }
                 return endpoint;
             }).collect(Collectors.toSet());
@@ -298,6 +309,9 @@ public class Server implements DrasylNodeComponent {
             addresses = Set.of(listenAddress.getAddress());
         }
         String scheme = config.getServerSSLEnabled() ? "wss" : "ws";
-        return addresses.stream().map(address -> Endpoint.of(createUri(scheme, address.getHostAddress(), listenAddress.getPort()))).collect(Collectors.toSet());
+        return addresses.stream()
+                .map(address -> createUri(scheme, address.getHostAddress(), listenAddress.getPort()))
+                .map(address -> Endpoint.of(address, identity.getPublicKey()))
+                .collect(Collectors.toSet());
     }
 }

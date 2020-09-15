@@ -257,7 +257,6 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
                             channelGroup,
                             workerGroup,
                             eventConsumer,
-                            publicKey,
                             endpointsSupplier,
                             () -> directConnectionDemandsCache.contains(publicKey),
                             () -> clients.remove(publicKey),

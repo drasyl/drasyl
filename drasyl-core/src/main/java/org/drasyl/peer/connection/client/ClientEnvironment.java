@@ -20,7 +20,6 @@ package org.drasyl.peer.connection.client;
 
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
-import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.Endpoint;
@@ -42,7 +41,6 @@ public class ClientEnvironment {
     private final PeerChannelGroup channelGroup;
     private final PeersManager peersManager;
     private final Consumer<Event> eventConsumer;
-    private final CompressedPublicKey serverPublicKey;
     private final boolean joinAsChildren;
     private final short idleRetries;
     private final Duration idleTimeout;
@@ -57,7 +55,6 @@ public class ClientEnvironment {
                              PeersManager peersManager,
                              Consumer<Event> eventConsumer,
                              boolean joinAsChildren,
-                             CompressedPublicKey serverPublicKey,
                              short idleRetries,
                              Duration idleTimeout,
                              Duration handshakeTimeout) {
@@ -69,7 +66,6 @@ public class ClientEnvironment {
         this.peersManager = peersManager;
         this.eventConsumer = eventConsumer;
         this.joinAsChildren = joinAsChildren;
-        this.serverPublicKey = serverPublicKey;
         this.idleRetries = idleRetries;
         this.idleTimeout = idleTimeout;
         this.handshakeTimeout = handshakeTimeout;
@@ -113,10 +109,6 @@ public class ClientEnvironment {
 
     public short getIdleRetries() {
         return idleRetries;
-    }
-
-    public CompressedPublicKey getServerPublicKey() {
-        return serverPublicKey;
     }
 
     public PeerChannelGroup getChannelGroup() {

@@ -23,6 +23,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.util.NetworkUtil;
 import org.drasyl.util.PortMappingUtil;
@@ -55,6 +56,8 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class ServerTest {
+    @Mock
+    private Identity identity;
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private DrasylConfig config;
     @Mock
@@ -79,7 +82,7 @@ class ServerTest {
 
             AtomicBoolean opened = new AtomicBoolean(false);
             try (Server server = new Server(
-                    config, serverBootstrap, opened, null, serverChannel,
+                    identity, config, serverBootstrap, opened, null, serverChannel,
                     new HashSet<>(), new HashSet<>(), scheduler, portExposer)) {
                 server.open();
 
@@ -90,7 +93,7 @@ class ServerTest {
         @Test
         void shouldDoNothingIfServerHasAlreadyBeenStarted() throws ServerException {
             try (Server server = new Server(
-                    config, serverBootstrap, new AtomicBoolean(true), null, serverChannel,
+                    identity, config, serverBootstrap, new AtomicBoolean(true), null, serverChannel,
                     new HashSet<>(), new HashSet<>(), scheduler, portExposer)) {
                 server.open();
 
@@ -107,7 +110,7 @@ class ServerTest {
             when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
             try (Server server = new Server(
-                    config, serverBootstrap, new AtomicBoolean(), null, serverChannel,
+                    identity, config, serverBootstrap, new AtomicBoolean(), null, serverChannel,
                     new HashSet<>(), new HashSet<>(), scheduler, portExposer)) {
                 server.open();
 
@@ -124,7 +127,7 @@ class ServerTest {
             when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
             try (Server server = new Server(
-                    config, serverBootstrap, new AtomicBoolean(), null, serverChannel,
+                    identity, config, serverBootstrap, new AtomicBoolean(), null, serverChannel,
                     new HashSet<>(), new HashSet<>(), scheduler, portExposer)) {
                 server.open();
 
@@ -138,7 +141,7 @@ class ServerTest {
         @Test
         void shouldDoNothingIfServerHasAlreadyBeenShutDown() {
             Server server = new Server(
-                    config, serverBootstrap, new AtomicBoolean(false), null, serverChannel,
+                    identity, config, serverBootstrap, new AtomicBoolean(false), null, serverChannel,
                     new HashSet<>(), new HashSet<>(), scheduler, portExposer);
 
             server.close();
@@ -168,7 +171,7 @@ class ServerTest {
         @Test
         void shouldExposeEndpoints() {
             InetSocketAddress address = new InetSocketAddress(22527);
-            try (Server server = new Server(config, serverBootstrap, new AtomicBoolean(), null, serverChannel,
+            try (Server server = new Server(identity, config, serverBootstrap, new AtomicBoolean(), null, serverChannel,
                     new HashSet<>(), new HashSet<>(), scheduler, portExposer)) {
                 server.exposeEndpoints(address);
 
@@ -185,7 +188,7 @@ class ServerTest {
 
             assertEquals(
                     Set.of(Endpoint.of("ws://foo.bar:22527")),
-                    determineActualEndpoints(config, new InetSocketAddress(22527))
+                    determineActualEndpoints(identity, config, new InetSocketAddress(22527))
             );
         }
 
@@ -197,7 +200,7 @@ class ServerTest {
 
                 assertEquals(
                         Set.of(Endpoint.of(createUri("ws", firstAddress.getHostAddress(), 22527))),
-                        determineActualEndpoints(config, new InetSocketAddress(firstAddress, 22527))
+                        determineActualEndpoints(identity, config, new InetSocketAddress(firstAddress, 22527))
                 );
             }
         }

@@ -2,11 +2,15 @@ package org.drasyl.peer;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import org.drasyl.crypto.CryptoException;
+import org.drasyl.identity.CompressedPublicKey;
 
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Objects;
 
+import static org.drasyl.util.UriUtil.overrideFragment;
+import static org.drasyl.util.UriUtil.removeFragment;
 import static org.drasyl.util.WebSocketUtil.isWebSocketSecureURI;
 import static org.drasyl.util.WebSocketUtil.isWebSocketURI;
 import static org.drasyl.util.WebSocketUtil.webSocketPort;
@@ -16,8 +20,8 @@ import static org.drasyl.util.WebSocketUtil.webSocketPort;
  * (Secure) protocol.
  */
 public class Endpoint implements Comparable<Endpoint> {
-    @JsonValue
     private final URI uri;
+    private final CompressedPublicKey publicKey;
 
     /**
      * Creates a new {@code Endpoint}.
@@ -26,12 +30,31 @@ public class Endpoint implements Comparable<Endpoint> {
      * @throws NullPointerException     if {@code uri} is {@code null}
      * @throws IllegalArgumentException if {@code uri} is an invalid {@code Endpoint}
      */
-    @JsonCreator
-    Endpoint(URI uri) {
+    Endpoint(URI uri, CompressedPublicKey publicKey) {
         if (!isWebSocketURI(uri)) {
             throw new IllegalArgumentException("URI must use the WebSocket (Secure) protocol.");
         }
         this.uri = uri;
+        this.publicKey = publicKey;
+    }
+
+    /**
+     * Returns the {@link URI} of this {@code Endpoint}.
+     *
+     * @return a {@link URI} contained in this {@code Endpoint}
+     */
+    public URI getURI() {
+        return uri;
+    }
+
+    /**
+     * Returns the {@link CompressedPublicKey} of this {@code Endpoint}.
+     *
+     * @return a {@link CompressedPublicKey} if this {@code Endpoint} contains a public key.
+     * Otherwise {@code null}
+     */
+    public CompressedPublicKey getPublicKey() {
+        return publicKey;
     }
 
     @Override
@@ -43,30 +66,28 @@ public class Endpoint implements Comparable<Endpoint> {
             return false;
         }
         Endpoint endpoint = (Endpoint) o;
-        return Objects.equals(uri, endpoint.uri);
+        return Objects.equals(uri, endpoint.uri) &&
+                Objects.equals(publicKey, endpoint.publicKey);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(uri);
+        return Objects.hash(uri, publicKey);
     }
 
-    /**
-     * Converts this {@code Endpoint} to an {@link URI}.
-     *
-     * @return a {@link URI} representing this {@code endpoint}
-     */
-    public URI toURI() {
-        return uri;
-    }
-
+    @JsonValue
     @Override
     public String toString() {
-        return uri.toString();
+        if (publicKey == null) {
+            return uri.toString();
+        }
+        else {
+            return overrideFragment(uri, publicKey.toString()).toString();
+        }
     }
 
     /**
-     * Returns the host component of this endpont.
+     * Returns the host component of this endpoint.
      *
      * @return The host component of this URI, or {@code null} if the host is undefined
      */
@@ -74,6 +95,11 @@ public class Endpoint implements Comparable<Endpoint> {
         return uri.getHost();
     }
 
+    /**
+     * Returns the port of this endpoint.
+     *
+     * @return The port of this endpoint
+     */
     public int getPort() {
         return webSocketPort(uri);
     }
@@ -100,6 +126,38 @@ public class Endpoint implements Comparable<Endpoint> {
     }
 
     /**
+     * Converts an {@link URI} and {@link CompressedPublicKey} into {@code Endpoint}.
+     *
+     * @param uri       uri component of the endpoint
+     * @param publicKey public key component of the endpoint
+     * @return {@code Endpoint} converted from {@code uri} and {@code publicKey}
+     * @throws NullPointerException     if {@code uri} is {@code null}
+     * @throws IllegalArgumentException if {@code uri} and {@code publicKey} creates an invalid {@code Endpoint}
+     */
+    public static Endpoint of(URI uri, CompressedPublicKey publicKey) {
+        return new Endpoint(removeFragment(uri), publicKey);
+    }
+
+    /**
+     * Converts an {@link String} and {@link CompressedPublicKey} into {@code Endpoint}.
+     *
+     * @param uri       uri component of the endpoint
+     * @param publicKey public key component of the endpoint
+     * @return {@code Endpoint} converted from {@code endpoint}
+     * @throws NullPointerException     if {@code uri} is {@code null}
+     * @throws IllegalArgumentException if {@code uri} and {@code publicKey} creates an invalid {@code Endpoint} or violates
+     *                                  RFC&nbsp;2396
+     */
+    public static Endpoint of(String uri, CompressedPublicKey publicKey) {
+        try {
+            return of(new URI(uri), publicKey);
+        }
+        catch (URISyntaxException x) {
+            throw new IllegalArgumentException(x.getMessage(), x);
+        }
+    }
+
+    /**
      * Converts an {@link URI} into {@code Endpoint}.
      *
      * @param endpoint a drasyl node endpoint represented as {@code URI}
@@ -108,7 +166,17 @@ public class Endpoint implements Comparable<Endpoint> {
      * @throws IllegalArgumentException if {@code endpoint} is an invalid {@code Endpoint}
      */
     public static Endpoint of(URI endpoint) {
-        return new Endpoint(endpoint);
+        if (endpoint.getFragment() != null) {
+            try {
+                return of(endpoint, CompressedPublicKey.of(endpoint.getFragment()));
+            }
+            catch (CryptoException e) {
+                throw new IllegalArgumentException(e.getMessage(), e);
+            }
+        }
+        else {
+            return new Endpoint(endpoint, null);
+        }
     }
 
     /**
@@ -120,6 +188,7 @@ public class Endpoint implements Comparable<Endpoint> {
      * @throws IllegalArgumentException if {@code endpoint} is an invalid {@code Endpoint} or
      *                                  violates RFC&nbsp;2396
      */
+    @JsonCreator
     public static Endpoint of(String endpoint) {
         try {
             return of(new URI(endpoint));

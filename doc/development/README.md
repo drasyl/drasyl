@@ -4,7 +4,7 @@
 
 ### 1. Ensure Changelog is up-to-date 
 
-[CHANGELOG](CHANGELOG.md)
+[CHANGELOG](../../CHANGELOG.md)
 
 ### 2. Bump Maven Version
 

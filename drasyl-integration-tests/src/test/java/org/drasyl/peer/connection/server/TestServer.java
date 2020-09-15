@@ -59,7 +59,7 @@ public class TestServer extends Server {
                       EventLoopGroup workerGroup,
                       EventLoopGroup bossGroup,
                       Set<Endpoint> endpoints) {
-        this(config, channelGroup, workerGroup, bossGroup, new TestServerChannelInitializer(new ServerEnvironment(
+        this(identity, config, channelGroup, workerGroup, bossGroup, new TestServerChannelInitializer(new ServerEnvironment(
                 config,
                 identity,
                 peersManager,
@@ -70,13 +70,15 @@ public class TestServer extends Server {
         )), endpoints);
     }
 
-    TestServer(DrasylConfig config,
+    TestServer(Identity identity,
+               DrasylConfig config,
                PeerChannelGroup channelGroup,
                EventLoopGroup workerGroup,
                EventLoopGroup bossGroup,
                TestServerChannelInitializer channelInitializer,
                Set<Endpoint> endpoints) {
         super(
+                identity,
                 config,
                 new ServerBootstrap().group(bossGroup, workerGroup)
                         .channel(NioServerSocketChannel.class)

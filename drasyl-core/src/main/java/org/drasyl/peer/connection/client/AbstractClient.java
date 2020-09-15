@@ -11,7 +11,6 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeComponent;
 import org.drasyl.event.Event;
-import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.Endpoint;
@@ -60,7 +59,6 @@ abstract class AbstractClient implements DrasylNodeComponent {
                              Duration handshakeTimeout,
                              Consumer<Event> eventConsumer,
                              boolean joinsAsChildren,
-                             CompressedPublicKey serverPublicKey,
                              Class<? extends ChannelInitializer<SocketChannel>> channelInitializerClazz) {
         this(
                 retryDelays,
@@ -79,7 +77,6 @@ abstract class AbstractClient implements DrasylNodeComponent {
                                         peersManager,
                                         eventConsumer,
                                         joinsAsChildren,
-                                        serverPublicKey,
                                         idleRetries,
                                         idleTimeout,
                                         handshakeTimeout
