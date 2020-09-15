@@ -626,7 +626,7 @@ class DrasylNodeIT {
              * emits the correct {@link PeerEvent}s after communication occurred.
              */
             @Test
-            @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+            @Timeout(value = TIMEOUT * 2, unit = MILLISECONDS)
             void correctPeerEventsShouldBeEmitted() {
                 TestObserver<Event> node1Events = node1.second().filter(e -> e instanceof PeerUnreachableEvent).test();
                 TestObserver<Event> node2Events = node2.second().filter(e -> e instanceof PeerUnreachableEvent).test();
