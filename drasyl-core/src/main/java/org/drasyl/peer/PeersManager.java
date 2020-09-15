@@ -24,7 +24,6 @@ import org.drasyl.event.Event;
 import org.drasyl.event.Peer;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerRelayEvent;
-import org.drasyl.event.PeerUnreachableEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.util.Pair;
 import org.drasyl.util.SetUtil;
@@ -242,13 +241,11 @@ public class PeersManager {
         if (existingPathCount == 0 && newPathCount > 0) {
             eventConsumer.accept(new PeerDirectEvent(new Peer(publicKey)));
         }
-        else if ((existingInformation == null || existingPathCount > 0) && newPathCount == 0) {
-            if ((publicKey.equals(superPeer) || superPeer == null) && !children.contains(publicKey) && !grandchildrenRoutes.containsKey(publicKey)) {
-                eventConsumer.accept(new PeerUnreachableEvent(new Peer(publicKey)));
-            }
-            else {
+        else if ((existingInformation == null || existingPathCount > 0) && newPathCount == 0 &&
+                ((!publicKey.equals(superPeer) && superPeer != null) ||
+                        children.contains(publicKey) ||
+                        grandchildrenRoutes.containsKey(publicKey))) {
                 eventConsumer.accept(new PeerRelayEvent(new Peer(publicKey)));
-            }
         }
     }
 
@@ -348,8 +345,6 @@ public class PeersManager {
             lock.writeLock().lock();
 
             superPeer = null;
-
-            // TODO: send PeerUnreachableEvent for all peers without direct connection? (https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/72)
         }
         finally {
             lock.writeLock().unlock();
