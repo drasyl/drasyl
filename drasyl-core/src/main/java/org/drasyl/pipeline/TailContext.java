@@ -76,8 +76,13 @@ class TailContext extends AbstractEndHandler {
             }
         }
         else {
-            eventConsumer.accept(new MessageEvent(sender, msg));
+            MessageEvent event = new MessageEvent(sender, msg);
+            eventConsumer.accept(event);
             future.complete(null);
+
+            if (LOG.isTraceEnabled()) {
+                LOG.trace("Event has passed the pipeline: `{}` ", event);
+            }
         }
     }
 
@@ -92,6 +97,10 @@ class TailContext extends AbstractEndHandler {
         else {
             eventConsumer.accept(event);
             future.complete(null);
+        }
+
+        if (LOG.isTraceEnabled()) {
+            LOG.trace("Event has passed the pipeline: `{}` ", event);
         }
     }
 
