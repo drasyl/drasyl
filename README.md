@@ -32,7 +32,7 @@ Maven:
 
 Gradle:
 
-```compile group: 'org.drasyl', name: 'drasyl-core', version: '0.1.2'```
+```compile group: 'org.drasyl', name: 'drasyl-core', version: '0.2.0'```
 
 ## Standalone Command Line Interface
 
