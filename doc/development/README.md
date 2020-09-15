@@ -42,15 +42,15 @@ Attach `drasyl-1.2.0.zip` generated from GitLab CI.
 ### 7. Release Container Image on Docker Hub
 
 ```
-docker pull docker tag git.informatik.uni-hamburg.de:4567/sane-public/drasyl:1-2-0
-docker tag git.informatik.uni-hamburg.de:4567/sane-public/drasyl:1-2-0 drasy/drasyl:1.2.0
-docker tag git.informatik.uni-hamburg.de:4567/sane-public/drasyl:1-2-0 drasy/drasyl:1.2
-docker tag git.informatik.uni-hamburg.de:4567/sane-public/drasyl:1-2-0 drasy/drasyl:1
-docker tag git.informatik.uni-hamburg.de:4567/sane-public/drasyl:1-2-0 drasy/drasyl:latest
-docker push drasy/drasyl:1.2.0
-docker push drasy/drasyl:1.2
-docker push drasyl:1
-docker push drasyl:latest
+docker pull git.informatik.uni-hamburg.de:4567/sane-public/drasyl:v1.2.0
+docker tag git.informatik.uni-hamburg.de:4567/sane-public/drasyl:v1.2.0 drasyl/drasyl:1.2.0
+docker tag git.informatik.uni-hamburg.de:4567/sane-public/drasyl:v1.2.0 drasyl/drasyl:1.2
+docker tag git.informatik.uni-hamburg.de:4567/sane-public/drasyl:v1.2.0 drasyl/drasyl:1
+docker tag git.informatik.uni-hamburg.de:4567/sane-public/drasyl:v1.2.0 drasyl/drasyl:latest
+docker push drasyl/drasyl:1.2.0
+docker push drasyl/drasyl:1.2
+docker push drasyl/drasyl:1
+docker push drasyl/drasyl:latest
 ```
 
 ## Build dist
