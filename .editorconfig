@@ -1357,3 +1357,6 @@ ij_json_wrap_long_lines = false
 
 [{spring.schemas, spring.handlers, *.properties}]
 ij_properties_align_group_field_declarations = false
+
+[*.md]
+max_line_length = 100
