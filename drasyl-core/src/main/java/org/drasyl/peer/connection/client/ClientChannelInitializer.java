@@ -64,7 +64,7 @@ public abstract class ClientChannelInitializer extends DefaultSessionInitializer
     protected void beforeMarshalStage(ChannelPipeline pipeline) {
         pipeline.addLast(new HttpClientCodec());
         pipeline.addLast(new HttpObjectAggregator(65536));
-        WebSocketClientHandshaker webSocketHandshaker = WebSocketClientHandshakerFactory.newHandshaker(target.toURI(), WebSocketVersion.V13, null, false, new DefaultHttpHeaders());
+        WebSocketClientHandshaker webSocketHandshaker = WebSocketClientHandshakerFactory.newHandshaker(target.getURI(), WebSocketVersion.V13, null, false, new DefaultHttpHeaders());
         pipeline.addLast(new WebSocketClientProtocolHandler(webSocketHandshaker, false, false));
     }
 }

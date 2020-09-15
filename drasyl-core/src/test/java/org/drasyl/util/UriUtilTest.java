@@ -49,4 +49,21 @@ class UriUtilTest {
             assertEquals(URI.create("ws://example.com:22527/foo?bar=baz#hello-world"), UriUtil.overridePort(URI.create("ws://example.com:1337/foo?bar=baz#hello-world"), 22527));
         }
     }
+
+    @Nested
+    class OverrideFragment {
+        @Test
+        void shouldReturnCorrectValue() {
+            assertEquals(URI.create("ws://example.com#foo-bar"), UriUtil.overrideFragment(URI.create("ws://example.com"), "foo-bar"));
+            assertEquals(URI.create("ws://example.com#hello-world"), UriUtil.overrideFragment(URI.create("ws://example.com#foo-bar"), "hello-world"));
+        }
+    }
+
+    @Nested
+    class RemoveFragment {
+        @Test
+        void shouldReturnURIWithoutFragment() {
+            assertEquals(URI.create("ws://example.com:22527"), UriUtil.removeFragment(URI.create("ws://example.com:22527#hello-world")));
+        }
+    }
 }

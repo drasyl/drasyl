@@ -177,7 +177,6 @@ class ServerIT {
                 .identityPrivateKey(identitySession1.getPrivateKey())
                 .serverSSLEnabled(true)
                 .superPeerEndpoints(endpoints)
-                .superPeerPublicKey(CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"))
                 .superPeerChannelInitializer(TestClientChannelInitializer.class)
                 .messageComposedMessageTransferTimeout(ofSeconds(60))
                 .messageMaxContentLength(1024 * 1024)

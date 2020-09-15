@@ -101,7 +101,6 @@ public class TestSuperPeerClient extends SuperPeerClient {
                                 peersManager,
                                 receivedEvents::onNext,
                                 true,
-                                config.getSuperPeerPublicKey(),
                                 config.getSuperPeerIdleRetries(),
                                 config.getSuperPeerIdleTimeout(),
                                 config.getSuperPeerHandshakeTimeout()

@@ -141,7 +141,7 @@ public class DefaultClientChannelInitializer extends ClientChannelInitializer {
                 }
                 // Must be added before the exception handler otherwise exceptions are not captured anymore and raising an error
                 // See: https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/77
-                pipeline.addBefore(EXCEPTION_HANDLER, PUBLIC_KEY_EXCHANGE_HANDLER, new PublicKeyExchangeHandler(environment.getServerPublicKey(), environment.getConfig().getServerHandshakeTimeout()));
+                pipeline.addBefore(EXCEPTION_HANDLER, PUBLIC_KEY_EXCHANGE_HANDLER, new PublicKeyExchangeHandler(environment.getEndpoint().getPublicKey(), environment.getConfig().getServerHandshakeTimeout()));
             }
             else if (e == HANDSHAKE_TIMEOUT) {
                 if (LOG.isTraceEnabled()) {

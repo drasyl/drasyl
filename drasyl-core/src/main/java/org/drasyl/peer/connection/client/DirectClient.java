@@ -5,7 +5,6 @@ import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
-import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.Endpoint;
@@ -41,7 +40,6 @@ public class DirectClient extends AbstractClient {
                         PeerChannelGroup channelGroup,
                         EventLoopGroup workerGroup,
                         Consumer<Event> eventConsumer,
-                        CompressedPublicKey serverPublicKey,
                         Supplier<Set<Endpoint>> endpointsSupplier,
                         BooleanSupplier directConnectionDemand,
                         Runnable onFailure,
@@ -61,7 +59,6 @@ public class DirectClient extends AbstractClient {
                 config.getDirectConnectionsHandshakeTimeout(),
                 eventConsumer,
                 false,
-                serverPublicKey,
                 config.getDirectConnectionsChannelInitializer()
         );
         this.directConnectionDemand = directConnectionDemand;

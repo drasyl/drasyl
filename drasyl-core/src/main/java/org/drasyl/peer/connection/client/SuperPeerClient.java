@@ -104,7 +104,6 @@ public class SuperPeerClient extends AbstractClient {
                 config.getSuperPeerHandshakeTimeout(),
                 eventConsumer,
                 true,
-                config.getSuperPeerPublicKey(),
                 config.getSuperPeerChannelInitializer()
         );
     }

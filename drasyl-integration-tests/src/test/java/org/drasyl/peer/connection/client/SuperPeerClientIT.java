@@ -109,6 +109,27 @@ class SuperPeerClientIT {
         serverWorkerGroup = new NioEventLoopGroup();
         bossGroup = new NioEventLoopGroup(1);
 
+        config = DrasylConfig.newBuilder()
+//                .loglevel(Level.TRACE)
+                .identityProofOfWork(ProofOfWork.of(6657650))
+                .identityPublicKey(CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"))
+                .identityPrivateKey(CompressedPrivateKey.of("0c27af38c77f2cd5cc2a0ff5c461003a9c24beb955f316135d251ecaf4dda03f"))
+                .serverBindHost(createInetAddress("127.0.0.1"))
+                .serverBindPort(0)
+                .serverHandshakeTimeout(ofSeconds(5))
+                .serverSSLEnabled(true)
+                .serverIdleTimeout(ofSeconds(1))
+                .serverIdleRetries((short) 1)
+                .superPeerEndpoints(Set.of(Endpoint.of("wss://127.0.0.1:22527#0234789936c7941f850c382ea9d14ecb0aad03b99a9e29a9c15b42f5f1b0c4cf3d")))
+                .superPeerRetryDelays(List.of(ofSeconds(0), ofSeconds(1), ofSeconds(2), ofSeconds(4), ofSeconds(8), ofSeconds(16), ofSeconds(32), ofSeconds(60)))
+                .superPeerIdleTimeout(ofSeconds(1))
+                .superPeerIdleRetries((short) 1)
+                .messageMaxContentLength(CHUNK_SIZE + 1)
+                .build();
+        DrasylNode.setLogLevel(config.getLoglevel());
+        identityManager = new IdentityManager(config);
+        identityManager.loadOrCreateIdentity();
+
         serverConfig = DrasylConfig.newBuilder()
                 .identityProofOfWork(ProofOfWork.of(5344366))
                 .identityPublicKey(CompressedPublicKey.of("0234789936c7941f850c382ea9d14ecb0aad03b99a9e29a9c15b42f5f1b0c4cf3d"))
@@ -155,7 +176,6 @@ class SuperPeerClientIT {
                 .superPeerIdleTimeout(ofSeconds(1))
                 .superPeerIdleRetries((short) 1)
                 .messageMaxContentLength(CHUNK_SIZE + 1)
-                .superPeerPublicKey(CompressedPublicKey.of("0234789936c7941f850c382ea9d14ecb0aad03b99a9e29a9c15b42f5f1b0c4cf3d"))
                 .build();
         DrasylNode.setLogLevel(config.getLoglevel());
         identityManager = new IdentityManager(config);
@@ -177,7 +197,7 @@ class SuperPeerClientIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldSendJoinMessageOnConnect() throws ClientException {
+    void clientShouldSendJoinMessageOnConnect() {
         TestObserver<Message> receivedMessages = server.receivedMessages().test();
 
         // start client
@@ -193,7 +213,7 @@ class SuperPeerClientIT {
 
     @Disabled("Race Condition error")
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldSendQuitMessageOnClientSideDisconnect() throws ClientException {
+    void clientShouldSendQuitMessageOnClientSideDisconnect() {
         TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof QuitMessage).test();
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
@@ -212,7 +232,7 @@ class SuperPeerClientIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldEmitNodeOfflineEventOnClientSideDisconnect() throws ClientException {
+    void clientShouldEmitNodeOfflineEventOnClientSideDisconnect() {
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
@@ -230,7 +250,7 @@ class SuperPeerClientIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldRespondToPingMessageWithPongMessage() throws ClientException {
+    void clientShouldRespondToPingMessageWithPongMessage() {
         PingMessage request = new PingMessage();
         TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof PongMessage && ((PongMessage) m).getCorrespondingId().equals(request.getId())).test();
 
@@ -313,9 +333,7 @@ class SuperPeerClientIT {
     void clientShouldEmitNodeOnlineAlsoWithoutSuperPeerPubKeyInConfig() {
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
-        DrasylConfig config1 = DrasylConfig.newBuilder(config)
-                .superPeerPublicKey(null)
-                .build();
+        DrasylConfig config1 = DrasylConfig.newBuilder(config).build();
 
         // start client
         try (SuperPeerClient client = new SuperPeerClient(config1, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
@@ -332,12 +350,10 @@ class SuperPeerClientIT {
     void clientShouldReconnectOnDisconnect() {
         TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
-        DrasylConfig config1 = DrasylConfig.newBuilder(config)
-                .superPeerPublicKey(null)
-                .build();
+        DrasylConfig config1 = DrasylConfig.newBuilder(config).build();
 
         // start client
-        try (SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
+        try (SuperPeerClient client = new SuperPeerClient(config1, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
             client.open();
             server.awaitClient(identityManager.getPublicKey());
 

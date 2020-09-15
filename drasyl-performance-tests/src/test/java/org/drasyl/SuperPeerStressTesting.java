@@ -29,7 +29,6 @@ public class SuperPeerStressTesting {
     public static void main(String[] args) throws DrasylException {
         DrasylConfig baseConfig = DrasylConfig.newBuilder()
                 .superPeerEndpoints(Set.of(Endpoint.of("wss://review-monitoring-md6yhe.env.drasyl.org")))
-                .superPeerPublicKey(null)
                 .serverEnabled(false)
                 .loglevel(Level.INFO)
                 .build();

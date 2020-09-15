@@ -49,7 +49,7 @@ public class UriUtil {
      * @param port   Port number The port to be parsed into a URL
      * @return The new URI
      * @throws IllegalArgumentException If the URI constructed from the given components violates
-     *                            RFC&nbsp;2396
+     *                                  RFC&nbsp;2396
      */
     public static URI createUri(String scheme, String host, int port) {
         try {
@@ -75,6 +75,45 @@ public class UriUtil {
         }
         catch (URISyntaxException e) {
             throw new IllegalArgumentException(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * This method sets the fragment in {@code uri} to {@code fragment} and returns the resulting
+     * URI.
+     *
+     * @param uri      the base URI
+     * @param fragment the fragment
+     * @return a combined URI and fragment URI
+     * @throws IllegalArgumentException if resulting URI violates RFC&nbsp;2396
+     */
+    public static URI overrideFragment(URI uri, String fragment) {
+        try {
+            return new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), uri.getPath(), uri.getQuery(), fragment);
+        }
+        catch (URISyntaxException e) {
+            throw new IllegalArgumentException(e.getMessage(), e);
+        }
+    }
+
+    /**
+     * This method removes the fragment in {@code uri} and returns the resulting URI.
+     *
+     * @param uri the base URI
+     * @return URI without fragment
+     * @throws IllegalArgumentException if resulting URI violates RFC&nbsp;2396
+     */
+    public static URI removeFragment(URI uri) {
+        if (uri.getFragment() != null) {
+            try {
+                return new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), uri.getPath(), uri.getQuery(), null);
+            }
+            catch (URISyntaxException e) {
+                throw new IllegalArgumentException(e.getMessage(), e);
+            }
+        }
+        else {
+            return uri;
         }
     }
 }
