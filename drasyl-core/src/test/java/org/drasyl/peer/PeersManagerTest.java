@@ -24,7 +24,6 @@ import org.drasyl.event.Event;
 import org.drasyl.event.Peer;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerRelayEvent;
-import org.drasyl.event.PeerUnreachableEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.util.Pair;
 import org.drasyl.util.Triple;
@@ -234,16 +233,6 @@ class PeersManagerTest {
             verify(eventConsumer).accept(new PeerRelayEvent(new Peer(publicKey)));
         }
 
-        @Test
-        void shouldEmitPeerUnreachableEventIfThereIsNoSuperPeer(@Mock CompressedPublicKey publicKey,
-                                                                @Mock PeerInformation peerInformation) {
-            underTest = new PeersManager(lock, peers, paths, children, grandchildrenRoutes, null, eventConsumer);
-
-            underTest.setPeerInformation(publicKey, peerInformation);
-
-            verify(eventConsumer).accept(new PeerUnreachableEvent(new Peer(publicKey)));
-        }
-
         @AfterEach
         void tearDown() {
             verify(lock.writeLock()).lock();
@@ -299,19 +288,6 @@ class PeersManagerTest {
             underTest.removePath(publicKey, path);
 
             verify(eventConsumer).accept(new PeerRelayEvent(new Peer(publicKey)));
-        }
-
-        @Test
-        void shouldEmitPeerUnreachableEventIfThereIsNoSuperPeer(@Mock CompressedPublicKey publicKey,
-                                                                @Mock PeerInformation peerInformation,
-                                                                @Mock Path path) {
-            underTest = new PeersManager(lock, peers, paths, children, grandchildrenRoutes, null, eventConsumer);
-            peers.put(publicKey, peerInformation);
-            paths.put(publicKey, path);
-
-            underTest.removePath(publicKey, path);
-
-            verify(eventConsumer).accept(new PeerUnreachableEvent(new Peer(publicKey)));
         }
 
         @AfterEach

@@ -27,17 +27,18 @@ import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
+import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.event.Peer;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerEvent;
 import org.drasyl.event.PeerRelayEvent;
-import org.drasyl.event.PeerUnreachableEvent;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
+import org.drasyl.peer.connection.localhost.LocalHostDiscovery;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -47,7 +48,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.TestInfo;
 import org.junit.jupiter.api.Timeout;
 
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -290,8 +290,8 @@ class DrasylNodeIT {
                 // send messages
                 //
                 TestObserver<Event> superSuperPeerEvents = superSuperPeer.second().filter(e -> e instanceof PeerRelayEvent).test();
-                TestObserver<Event> client1Events = client1.second().filter(e -> e instanceof PeerUnreachableEvent).test();
-                TestObserver<Event> client2Events = client2.second().filter(e -> e instanceof PeerUnreachableEvent).test();
+                TestObserver<Event> client1Events = client1.second().filter(e -> e instanceof NodeOfflineEvent).test();
+                TestObserver<Event> client2Events = client2.second().filter(e -> e instanceof NodeOfflineEvent).test();
 
                 superPeer.first().shutdown().join();
 
@@ -580,7 +580,7 @@ class DrasylNodeIT {
                         .serverEnabled(true)
                         .serverBindPort(0)
                         .superPeerEnabled(false)
-                        .directConnectionsEnabled(false)
+                        .directConnectionsEnabled(true)
                         .intraVmDiscoveryEnabled(false)
                         .build();
                 node1 = createStartedNode(config);
@@ -595,7 +595,7 @@ class DrasylNodeIT {
                         .serverEnabled(true)
                         .serverBindPort(0)
                         .superPeerEnabled(false)
-                        .directConnectionsEnabled(false)
+                        .directConnectionsEnabled(true)
                         .intraVmDiscoveryEnabled(false)
                         .build();
                 node2 = createStartedNode(config);
@@ -610,7 +610,7 @@ class DrasylNodeIT {
                         .serverEnabled(true)
                         .serverBindPort(0)
                         .superPeerEnabled(false)
-                        .directConnectionsEnabled(false)
+                        .directConnectionsEnabled(true)
                         .intraVmDiscoveryEnabled(false)
                         .build();
                 node3 = createStartedNode(config);
@@ -625,7 +625,7 @@ class DrasylNodeIT {
                         .serverEnabled(true)
                         .serverBindPort(0)
                         .superPeerEnabled(false)
-                        .directConnectionsEnabled(false)
+                        .directConnectionsEnabled(true)
                         .intraVmDiscoveryEnabled(false)
                         .build();
                 node4 = createStartedNode(config);
@@ -638,17 +638,21 @@ class DrasylNodeIT {
             }
 
             /**
-             * This test checks whether the {@link org.drasyl.peer.connection.localhost.LocalHostDiscovery}
-             * emits the correct {@link PeerEvent}s after communication occurred.
+             * This test checks whether the {@link LocalHostDiscovery} emits the correct {@link
+             * PeerEvent}s after communication occurred.
              */
             @Disabled("Fails in CI for unknown reasons")
             @Test
             @Timeout(value = TIMEOUT * 2, unit = MILLISECONDS)
             void correctPeerEventsShouldBeEmitted() {
-                TestObserver<Event> node1Events = node1.second().filter(e -> e instanceof PeerUnreachableEvent).test();
-                TestObserver<Event> node2Events = node2.second().filter(e -> e instanceof PeerUnreachableEvent).test();
-                TestObserver<Event> node3Events = node3.second().filter(e -> e instanceof PeerUnreachableEvent).test();
-                TestObserver<Event> node4Events = node4.second().filter(e -> e instanceof PeerUnreachableEvent).test();
+                /*
+                 * TODO: Fix this test by using the PeerDirectEvent.
+                 * Therefore we need a PeerInformation onChange listener in the PeersManager.
+                 */
+                TestObserver<Event> node1Events = node1.second().filter(e -> e instanceof PeerDirectEvent).test();
+                TestObserver<Event> node2Events = node2.second().filter(e -> e instanceof PeerDirectEvent).test();
+                TestObserver<Event> node3Events = node3.second().filter(e -> e instanceof PeerDirectEvent).test();
+                TestObserver<Event> node4Events = node4.second().filter(e -> e instanceof PeerDirectEvent).test();
 
                 await().atMost(ofSeconds(60)).until(() -> {
                     // since LocalHostDiscovery only performs a discovery on communication, we have to simulate a constant communication
