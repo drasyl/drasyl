@@ -120,17 +120,22 @@ public class LocalHostDiscovery implements DrasylNodeComponent {
         if (opened.compareAndSet(false, true)) {
             LOG.debug("Start Local Host Discovery...");
             File directory = discoveryPath.toFile();
-            if (!directory.exists()) {
-                directory.mkdir(); // NOSONAR
+            if (!directory.exists() && !directory.mkdir()) {
+                LOG.warn("Discovery directory '{}' could not be created.", discoveryPath.toAbsolutePath());
             }
-
-            if (!(directory.isDirectory() && directory.canRead() && directory.canWrite())) {
-                LOG.warn("Discovery directory '{}' not accessible", discoveryPath.toAbsolutePath());
+            else if (!(directory.isDirectory() && directory.canRead() && directory.canWrite())) {
+                LOG.warn("Discovery directory '{}' not accessible.", discoveryPath.toAbsolutePath());
             }
             else {
+                scan();
                 tryWatchDirectory();
                 keepOwnInformationUpToDate();
-                communicationObserver = communicationOccurred.subscribe(publicKey -> conditionalScan());
+                communicationObserver = communicationOccurred.subscribe(publicKey -> {
+                    // A scan only happens if a change in the directory was monitored or the time of last poll is too old.
+                    if (doScan.compareAndSet(true, false)) {
+                        scan();
+                    }
+                });
             }
             LOG.debug("Local Host Discovery started.");
         }
@@ -183,30 +188,26 @@ public class LocalHostDiscovery implements DrasylNodeComponent {
     }
 
     /**
-     * Scans in {@link #discoveryPath} for peer information of other drasyl nodes. A scan only
-     * happens if a change in the directory was monitored or the time of last poll is too old.
+     * Scans in {@link #discoveryPath} for peer information of other drasyl nodes.
      */
-    void conditionalScan() {
-        if (doScan.compareAndSet(true, false)) {
-            LOG.debug("Scan directory {} for new peer", discoveryPath);
-            String ownPublicKeyString = this.ownPublicKey.toString();
-            long maxAge = System.currentTimeMillis() - leaseTime.toMillis();
-            File[] files = discoveryPath.toFile().listFiles();
-            if (files != null) {
-                for (File file : files) {
-                    try {
-                        String fileName = file.getName();
-                        if (file.lastModified() >= maxAge && fileName.length() == 71 && fileName.endsWith(".json") && !fileName.startsWith(ownPublicKeyString)) {
-                            CompressedPublicKey publicKey = CompressedPublicKey.of(fileName.replace(".json", ""));
-                            PeerInformation peerInformation = JACKSON_READER.readValue(file, PeerInformation.class);
-                            LOG.trace("Information for peer {} discovered by file '{}'", publicKey, fileName);
-                            peersManager.setPeerInformation(publicKey, peerInformation);
-                        }
+    void scan() {
+        LOG.debug("Scan directory {} for new peers.", discoveryPath);
+        String ownPublicKeyString = this.ownPublicKey.toString();
+        long maxAge = System.currentTimeMillis() - leaseTime.toMillis();
+        File[] files = discoveryPath.toFile().listFiles();
+        if (files != null) {
+            for (File file : files) {
+                try {
+                    String fileName = file.getName();
+                    if (file.lastModified() >= maxAge && fileName.length() == 71 && fileName.endsWith(".json") && !fileName.startsWith(ownPublicKeyString)) {
+                        CompressedPublicKey publicKey = CompressedPublicKey.of(fileName.replace(".json", ""));
+                        PeerInformation peerInformation = JACKSON_READER.readValue(file, PeerInformation.class);
+                        LOG.trace("Information for peer {} discovered by file '{}'", publicKey, fileName);
+                        peersManager.setPeerInformation(publicKey, peerInformation);
                     }
-                    catch (CryptoException | IOException e) {
-                        LOG.warn("Unable to read peer information from '{}'. Delete corrupt file: ", file.getAbsolutePath(), e);
-                        file.delete(); // NOSONAR
-                    }
+                }
+                catch (CryptoException | IOException e) {
+                    LOG.warn("Unable to read peer information from '{}': ", file.getAbsolutePath(), e);
                 }
             }
         }
@@ -219,6 +220,7 @@ public class LocalHostDiscovery implements DrasylNodeComponent {
         PeerInformation peerInformation = PeerInformation.of(endpoints);
 
         Path filePath = discoveryPath.resolve(ownPublicKey.toString() + ".json");
+        LOG.trace("Post own Peer Information to {}", filePath);
         File file = filePath.toFile();
         try {
             if (peerInformation.equals(postedPeerInformation)) {
