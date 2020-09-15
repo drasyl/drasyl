@@ -164,7 +164,7 @@ class LocalHostDiscoveryTest {
     }
 
     @Nested
-    class ConditionalScan {
+    class Scan {
         @Test
         void shouldScanDirectory(@TempDir Path dir) throws IOException, CryptoException {
             when(discoveryPath.toFile()).thenReturn(dir.toFile());
@@ -172,7 +172,7 @@ class LocalHostDiscoveryTest {
             Files.writeString(path, "{\"endpoints\":[\"ws://localhost:123\"]}", StandardOpenOption.CREATE);
 
             underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, Set.of(Endpoint.of("ws://localhost:123")), communicationOccurred, new AtomicBoolean(true), new AtomicBoolean(true), scheduler, watchDisposable, postDisposable, communicationObserver);
-            underTest.conditionalScan();
+            underTest.scan();
 
             verify(peersManager).setPeerInformation(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"), PeerInformation.of(Set.of(Endpoint.of("ws://localhost:123"))));
         }
