@@ -19,11 +19,15 @@ mvn clean release:prepare
 
 Wait for GitLab CI to finish build tasks and select "Keep" on maven-deploy job artifact.
 
-### 4. Release to Maven Central Repository
+### 4. Deploy new release to production Environment
+
+Start the manual `production` CI job at the pipeline with the release in the `master` branch.
+
+### 5. Release to Maven Central Repository
 
 Login into the [Sonatype OSSRH Nexus Repository Manager](https://oss.sonatype.org), go to the "Staging Repositories" tab, and close the corresponding release. Wait for the checks, then refresh and click "Release".
 
-### 5. Create Release on GitHub
+### 6. Create Release on GitHub
 
 Go to https://github.com/drasyl-overlay/drasyl/releases.
 
@@ -35,7 +39,7 @@ Go to https://github.com/drasyl-overlay/drasyl/releases.
 
 Attach `drasyl-1.2.0.zip` generated from GitLab CI.
 
-### 6. Release Container Image on Docker Hub
+### 7. Release Container Image on Docker Hub
 
 ```
 docker pull docker tag git.informatik.uni-hamburg.de:4567/sane-public/drasyl:1-2-0
