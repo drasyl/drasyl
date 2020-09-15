@@ -161,7 +161,6 @@ public class DrasylConfig {
      * Creates a new config for a drasyl node.
      *
      * @param config config to be loaded
-     * @throws ConfigException if the given config is invalid
      */
     public DrasylConfig(Config config) {
         config.checkValid(ConfigFactory.defaultReference(), "drasyl");
