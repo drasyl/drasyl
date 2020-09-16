@@ -11,13 +11,13 @@ Maven:
 <dependency>
     <groupId>org.drasyl</groupId>
     <artifactId>drasyl-core</artifactId>
-    <version>0.1.2</version>
+    <version>0.2.0</version>
 </dependency>
 ```
 
 Gradle:
 
-```compile group: 'org.drasyl', name: 'drasyl-core', version: '0.1.2'```
+```compile group: 'org.drasyl', name: 'drasyl-core', version: '0.2.0'```
 
 ## Implementing `DrasylNode`
 
