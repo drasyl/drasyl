@@ -29,6 +29,7 @@ And get hacking.
 Make sure you
 
   * Use the [drasyl code style](.editorconfig).
+  * Add [changelog](./CHANGELOG.md) entry
   * Add documentation for a new feature.
   * Add tests for a new feature.
   * squash commits down to one per feature.
