@@ -24,6 +24,7 @@ jobs:
           path: docs/site
   deploy:
     name: Deploy
+    runs-on: alpine:latest
     needs: build
     steps:
       - name: Checkout Code
