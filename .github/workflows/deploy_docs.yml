@@ -8,16 +8,13 @@ jobs:
   build:
     name: Build
     runs-on: ubuntu-latest
-    container: python:3.8.5
     steps:
       - name: Checkout Code
         uses: actions/checkout@master
-      - name: Install Dependencies
-        run: pip install --user -r docs/requirements.txt
       - name: Build
         run: |
           cd docs/
-          mkdocs build
+          make docs
       - name: Upload Docs Artifacts
         uses: actions/upload-artifact@v2
         with:
