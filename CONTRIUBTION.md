@@ -5,7 +5,7 @@ This is a short guide on how to contribute things to drasyl.
 ## Reporting a bug
 
 When filing an issue, please include the following information if possible as well as a description
-of the problem. Make sure you test with the [latest snapshot version of drasyl](doc/development/README.md#use-latest-snapshot-version):
+of the problem. Make sure you test with the [latest snapshot version of drasyl](docs/getting-started/snapshots.md):
 
   * drasyl version
   * Expected behavior

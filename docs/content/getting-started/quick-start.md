@@ -19,16 +19,6 @@ Gradle:
 
 ```compile group: 'org.drasyl', name: 'drasyl-core', version: '0.2.0'```
 
-## Command Line Interface
-
-There is a drasyl command line interface with some utilities that can be found on the releases page: [https://github.com/drasyl-overlay/drasyl/releases](https://github.com/drasyl-overlay/drasyl/releases)
-
-It is also available in docker:
-
-```bash
-docker run drasyl/drasyl help
-```
-
 ## Implementing `DrasylNode`
 
 Next, you can create your own drasyl node by implementing [`DrasylNode`](https://github.com/drasyl-overlay/drasyl/tree/master/drasyl-core/src/main/java/org/drasyl/DrasylNode.java).
@@ -59,30 +49,9 @@ the different event types.
 
 For example, you should listen for `NodeOnlineEvent` before start sending messages, and pause when `NodeOfflineEvent` has been received.
 
-The state diagram below shows which events occur in which order during the lifetime of a drasyl node:
-
-```mermaid
-stateDiagram-v2
-    state started <<fork>>
-        [*] --> started
-        started --> NodeUpEvent
-        NodeUpEvent --> NodeDownEvent
-        NodeUpEvent --> NodeOnlineEvent
-        NodeOnlineEvent --> NodeOfflineEvent
-        NodeOfflineEvent --> NodeOnlineEvent
-        NodeOfflineEvent --> NodeDownEvent
-        NodeOfflineEvent --> NodeIdentityCollisionEvent
-        NodeUpEvent --> NodeIdentityCollisionEvent
-        NodeIdentityCollisionEvent --> NodeOnlineEvent
-        NodeIdentityCollisionEvent --> NodeDownEvent
-        NodeDownEvent --> NodeNormalTerminationEvent
-        started --> NodeUnrecoverableErrorEvent
-
-    state join <<join>>
-        NodeNormalTerminationEvent --> join
-        NodeUnrecoverableErrorEvent --> join
-        join --> [*]
-```
+!!! info "Advanced References"
+    
+    If you are interested in the life cycle of the individual events, you can find a state diagram [here](../../architecture/diagrams/#node-events).
 
 ## Sending Messages
 
@@ -91,7 +60,13 @@ Each drasyl node creates an identity at its first startup consisting of a crypto
 From the public key, a 10 hex digit address is derived, by which each node can be uniquely identified.
 Currently, addresses of recipient nodes must be known, as drasyl currently has no function for querying available addresses.
 
-The `send()` method needs the recipient as first argument and the message payload as second argument (example `node.send("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9", "Hello World")`).
+The `send()` method needs the recipient as first argument and the message payload as second argument.
+
+!!! info "Example"
+
+    ```java
+        node.send("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9", "Hello World")
+    ```
 
 The method does not give any feedback on whether the message could be delivered. However, it can throw an exception if the local node has no connection to the
 drasyl network.
@@ -141,6 +116,7 @@ DrasylConfig config = DrasylConfig.newBuilder()
 
 The created `DrasylConfig` object can then be passed to the `DrasylNode` constructor.
 
-An overview of all available configuration parameters, their meaning and all default values can be found in the [`reference.conf`](https://github.com/drasyl-overlay/drasyl/tree/master/drasyl-core/src/main/resources/reference.conf) file.
+An overview of all available configuration parameters, their meaning and all default values can be found in the [`reference.conf`](https://github.com/drasyl-overlay/drasyl/tree/master/drasyl-core/src/main/resources/reference.conf) file
+and/or at the [configuration](../../configuration/) section.
 
 Further information can be taken directly from the configuration library that is used internally by drasyl: [https://github.com/lightbend/config](https://github.com/lightbend/config)
