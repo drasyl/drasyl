@@ -25,7 +25,7 @@ jobs:
           sudo "$GOPATH/bin/structor" --owner="drasyl-overlay" --repo-name="drasyl" \
             --rqts-url="https://raw.githubusercontent.com/drasyl-overlay/drasyl/master/docs/requirements.txt" \
             --dockerfile-url="https://raw.githubusercontent.com/drasyl-overlay/drasyl/master/docs/docs.Dockerfile" \
-            --menu.js-url="https://raw.githubusercontent.com/mmatur/structor-sample/master/structor-menu.js.gotmpl" \
+            --menu.js-url="https://raw.githubusercontent.com/drasyl-overlay/drasyl/master/docs/theme/structor-menu.js.gotmpl" \
             --exp-branch=master --force-edit-url --debug
       - name: Upload Docs Artifacts
         uses: actions/upload-artifact@v2
