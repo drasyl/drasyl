@@ -18,16 +18,12 @@ docs: docs-clean docs-image docs-build
 docs-serve: docs-image
 	docker run  $(DOCKER_RUN_DOC_OPTS) $(DRASYL_DOCS_BUILD_IMAGE) mkdocs serve
 
-# Serve docs on http://localhost:8000 with mike, you must be on the gh-pages branch
-docs-mike-serve: docs-image
-	docker run  $(DOCKER_RUN_DOC_OPTS) $(DRASYL_DOCS_BUILD_IMAGE) mike serve
-
 # Utilities Targets for each step
 docs-image:
 	docker build -t $(DRASYL_DOCS_BUILD_IMAGE) -f docs.Dockerfile ./
 
 docs-build: docs-image
-	docker run $(DOCKER_RUN_DOC_OPTS) $(DRASYL_DOCS_BUILD_IMAGE) sh -c "mike deploy master \
+	docker run $(DOCKER_RUN_DOC_OPTS) $(DRASYL_DOCS_BUILD_IMAGE) sh -c "mkdocs build \
 		&& chown -R $(shell id -u):$(shell id -g) ./site"
 
 docs-clean:

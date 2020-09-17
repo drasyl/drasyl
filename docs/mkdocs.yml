@@ -2,7 +2,7 @@ site_name: drasyl
 site_description: drasyl Documentation
 site_author: drasyl
 site_url: https://docs.drasyl.org
-dev_addr: 127.0.0.1:8000
+dev_addr: 0.0.0.0:8000
 
 repo_name: 'drasyl-overlay/drasyl'
 repo_url: 'https://github.com/drasyl-overlay/drasyl'
@@ -46,13 +46,11 @@ extra:
 extra_css:
   - assets/style/content.css
   - assets/style/atom-one-light.css
-  - assets/style/version-select.css
 
 extra_javascript:
   - assets/js/mermaid.min.js
   - assets/js/hljs/highlight.min.js # Download from https://highlightjs.org/download/
   - assets/js/extra.js
-  - assets/js/version-select.js
 
 plugins:
   - search
@@ -74,7 +72,7 @@ markdown_extensions:
       custom_fences:
         - name: mermaid
           class: mermaid
-          format: '!!python/name:pymdownx.superfences.fence_div_format'
+          format: !!python/name:pymdownx.superfences.fence_div_format
   - pymdownx.tasklist
 
 # Page tree
