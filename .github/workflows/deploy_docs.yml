@@ -14,7 +14,7 @@ jobs:
       - name: Install Dependencies
         run: |
           echo "Download documentation generator"
-          curl -sfL https://raw.githubusercontent.com/containous/structor/master/godownloader.sh | bash -s -- -b $GOPATH/bin ${STRUCTOR_VERSION}
+          curl -sfL https://raw.githubusercontent.com/containous/structor/master/godownloader.sh | sudo bash -s -- -b $GOPATH/bin ${STRUCTOR_VERSION}
         env:
           STRUCTOR_VERSION: v1.10.0
       - name: Build
