@@ -3,7 +3,10 @@ const versions = [
   {{- $text := $version.Text }}
   {{- if eq $version.State "EXPERIMENTAL" }}
     {{- $latest := semver $.Latest }}
-    {{- $text = printf "v%d.%d (unreleased)" $latest.Major (int64 1 | add $latest.Minor) }}
+    {{- $text = printf "nightly" }}
+  {{- end}}
+  {{- if eq $version.Selected true }}
+    {{- $text = printf "latest (%s)" .Name }}
   {{- end}}
   {path: "{{ $version.Path }}", text: "{{ $text }}", selected: {{ $version.Selected }} },
 {{- end}}
