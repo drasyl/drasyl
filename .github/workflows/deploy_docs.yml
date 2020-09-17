@@ -22,20 +22,20 @@ jobs:
         with:
           name: docs-artifact
           path: docs/site
-    deploy:
-      name: Deploy
-      needs: build
-      steps:
-        - name: Checkout Code
-          uses: actions/checkout@master
-        - name: Download Docs Artifacts
-          uses: actions/download-artifact@v2
-          with:
-            name: docs-artifact
-            path: docs/site
-        - name: Deploy to Github Pages
-          uses: peaceiris/actions-gh-pages@v3
-          with:
-            github_token: ${{ secrets.GITHUB_TOKEN }}
-            publish_dir: ./docs/site
-            publish_branch: gh-pages
+  deploy:
+    name: Deploy
+    needs: build
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@master
+      - name: Download Docs Artifacts
+        uses: actions/download-artifact@v2
+        with:
+          name: docs-artifact
+          path: docs/site
+      - name: Deploy to Github Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./docs/site
+          publish_branch: gh-pages
