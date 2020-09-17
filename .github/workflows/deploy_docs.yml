@@ -3,7 +3,6 @@ on:
   push:
     branches:
       - master
-  pull_request:
 jobs:
   build:
     name: Build
@@ -11,6 +10,8 @@ jobs:
     steps:
       - name: Checkout Code
         uses: actions/checkout@master
+        with:
+          fetch-depth: 0
       - name: Install Dependencies
         run: |
           echo "Download documentation generator"
