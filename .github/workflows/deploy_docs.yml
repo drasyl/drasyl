@@ -13,12 +13,19 @@ jobs:
         uses: actions/checkout@master
       - name: Install Dependencies
         run: |
-          sudo curl -sI https://github.com/containous/structor/releases/latest | grep -Fi Location  | tr -d '\r' | sed "s/tag/download/g" | awk -F " " '{ print $2 "/structor_linux-amd64"}' | wget --output-document=$GOPATH/bin/structor -i -
-          sudo chmod +x $GOPATH/bin/structor
+          echo "Download documentation generator"
+          curl -sfL https://raw.githubusercontent.com/containous/structor/master/godownloader.sh | bash -s -- -b $GOPATH/bin ${STRUCTOR_VERSION}
+        env:
+          STRUCTOR_VERSION: v1.10.0
       - name: Build
         run: |
+          echo "Build documentation"
           cd docs/
-          structor --owner="drasyl-overlay" --repo-name="drasyl" --dockerfile-url="https://raw.githubusercontent.com/drasyl-overlay/drasyl/master/docs/docs.Dockerfile" --menu.js-url="https://raw.githubusercontent.com/mmatur/structor-sample/master/structor-menu.js.gotmpl" --exp-branch=master --force-edit-url --debug
+          sudo "$GOPATH/bin/structor" --owner="drasyl-overlay" --repo-name="drasyl" \
+            --rqts-url="https://raw.githubusercontent.com/drasyl-overlay/drasyl/master/docs/requirements.txt" \
+            --dockerfile-url="https://raw.githubusercontent.com/drasyl-overlay/drasyl/master/docs/docs.Dockerfile" \
+            --menu.js-url="https://raw.githubusercontent.com/mmatur/structor-sample/master/structor-menu.js.gotmpl" \
+            --exp-branch=master --force-edit-url --debug
       - name: Upload Docs Artifacts
         uses: actions/upload-artifact@v2
         with:
