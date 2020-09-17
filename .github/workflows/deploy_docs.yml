@@ -13,8 +13,8 @@ jobs:
         uses: actions/checkout@master
       - name: Install Dependencies
         run: |
-          curl -sI https://github.com/containous/structor/releases/latest | grep -Fi Location  | tr -d '\r' | sed "s/tag/download/g" | awk -F " " '{ print $2 "/structor_linux-amd64"}' | wget --output-document=$GOPATH/bin/structor -i -
-          chmod +x $GOPATH/bin/structor
+          sudo curl -sI https://github.com/containous/structor/releases/latest | grep -Fi Location  | tr -d '\r' | sed "s/tag/download/g" | awk -F " " '{ print $2 "/structor_linux-amd64"}' | wget --output-document=$GOPATH/bin/structor -i -
+          sudo chmod +x $GOPATH/bin/structor
       - name: Build
         run: |
           cd docs/
