@@ -19,13 +19,15 @@ Gradle:
 
 ```compile group: 'org.drasyl', name: 'drasyl-core', version: '0.2.0'```
 
-## Standalone Command Line Interface
+## Command Line Interface
 
-There is a drasyl command line interface with some utilities that can be found on the releases page: https://github.com/drasyl-overlay/drasyl/releases
+There is a drasyl command line interface with some utilities that can be found on the releases page: [https://github.com/drasyl-overlay/drasyl/releases](https://github.com/drasyl-overlay/drasyl/releases)
 
 It is also available in docker:
 
-```docker run drasyl/drasyl help```
+```bash
+docker run drasyl/drasyl help
+```
 
 ## Implementing `DrasylNode`
 
@@ -104,7 +106,7 @@ Example:
 public void onEvent(Event event) {
     if (event instanceof MessageEvent) {
         Pair message = event.getMessage();
-        System.out.println("Message received from " + message.first() + " with payload " + new String(message.second()));
+        System.out.println("Message received from " + message.getSender() + " with payload " + message.getPayload());
     }
 }
 ...

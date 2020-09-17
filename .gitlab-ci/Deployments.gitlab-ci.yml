@@ -128,6 +128,7 @@ production:
     on_stop: stop_production
   only:
     - master
+    - /^v\d+\.\d+/
   when: manual
   tags:
     - docker
@@ -146,6 +147,7 @@ stop_production:
     # DRASYL_PRIVATE_KEY is defined securely in GitLab CI/CD Settings
   only:
     - master
+    - /^v\d+\.\d+/
   when: manual
   environment:
     name: production

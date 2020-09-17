@@ -54,3 +54,8 @@ git status # Check what will happen, if you made a mistake resetting, you can ru
 git commit # Add a new commit message.
 git push --force # Push the squashed commit to your fork repo.
 ```
+
+## Making a release ##
+
+There are separate instructions for making a release in the [RELEASE](RELEASE.md)
+file.

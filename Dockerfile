@@ -1,6 +1,6 @@
 FROM kubeless/unzip AS build
 
-ADD ./drasyl-*.zip .
+ADD ./drasyl-*.zip ./
 
 RUN unzip -qq ./drasyl-*.zip && \
     rm ./drasyl-*.zip
