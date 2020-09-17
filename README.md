@@ -65,7 +65,7 @@ node.shutdown();
 
 ## Documentation
 
-More information can be found in the (still very short) [documentation](doc/README.md).
+More information can be found in the (still very short) [documentation](https://docs.drasyl.org).
 
 -------------------------------------
 _Licensed under [GNU Lesser General Public License v3.0](LICENSE)_
