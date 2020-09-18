@@ -69,6 +69,8 @@ class PluginsIT {
                 .identityProofOfWork(identity.getProofOfWork())
                 .identityPublicKey(identity.getPublicKey())
                 .identityPrivateKey(identity.getPrivateKey())
+                .serverExposeEnabled(false)
+                .superPeerEnabled(false)
                 .build();
 
         node = new DrasylNode(config) {
