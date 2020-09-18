@@ -18,7 +18,6 @@
  */
 package org.drasyl;
 
-import ch.qos.logback.classic.Level;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigMemorySize;
 import com.typesafe.config.ConfigObject;
@@ -107,7 +106,6 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.WARN)
 class DrasylConfigTest {
-    private Level loglevel;
     @Mock
     private ProofOfWork proofOfWork;
     @Mock
@@ -170,7 +168,6 @@ class DrasylConfigTest {
 
     @BeforeEach
     void setUp() {
-        loglevel = Level.WARN;
         serverBindHost = createInetAddress("0.0.0.0");
         serverEnabled = true;
         serverBindPort = 22527;
@@ -316,7 +313,7 @@ class DrasylConfigTest {
         void shouldMaskSecrets() throws CryptoException {
             identityPrivateKey = CompressedPrivateKey.of("07e98a2f8162a4002825f810c0fbd69b0c42bd9cb4f74a21bc7807bc5acb4f5f");
 
-            DrasylConfig config = new DrasylConfig(loglevel, proofOfWork, identityPublicKey, identityPrivateKey, identityPath,
+            DrasylConfig config = new DrasylConfig(proofOfWork, identityPublicKey, identityPrivateKey, identityPath,
                     serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize,
                     serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer,
                     serverExposeEnabled, messageMaxContentLength, messageHopLimit, composedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints,
@@ -359,7 +356,6 @@ class DrasylConfigTest {
         @Test
         void shouldCreateCorrectConfig() {
             DrasylConfig config = DrasylConfig.newBuilder()
-                    .loglevel(DEFAULT.getLoglevel())
                     .identityProofOfWork(DEFAULT.getIdentityProofOfWork())
                     .identityPublicKey(DEFAULT.getIdentityPublicKey())
                     .identityPrivateKey(DEFAULT.getIdentityPrivateKey())

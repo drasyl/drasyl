@@ -21,31 +21,23 @@
     <!-- https://stackoverflow.com/questions/3257154/how-to-prevent-logback-from-outputting-its-own-status-at-the-start-of-every-log -->
     <statusListener class="ch.qos.logback.core.status.NopStatusListener" />
 
-    <appender name="STDOUT"
-              class="ch.qos.logback.core.ConsoleAppender">
-        <!-- encoders are assigned the type ch.qos.logback.classic.encoder.PatternLayoutEncoder
-            by default -->
+    <!-- Configure the Console appender -->
+    <appender name="Console" class="ch.qos.logback.core.ConsoleAppender">
         <encoder>
-            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n
-            </pattern>
+            <pattern>%d [%t] %-5level %logger{36} %X{sourceThread} - %msg%n</pattern>
         </encoder>
     </appender>
 
-    <appender name="ASYNC"
-              class="ch.qos.logback.classic.AsyncAppender">
-        <queueSize>8192</queueSize>
-        <neverBlock>true</neverBlock>
-        <appender-ref ref="STDOUT"/>
+    <!-- Configure the Sentry appender, overriding the logging threshold to the WARN level -->
+    <appender name="Sentry" class="io.sentry.logback.SentryAppender">
+        <filter class="ch.qos.logback.classic.filter.ThresholdFilter">
+            <level>WARN</level>
+        </filter>
+        <!-- Optionally add an encoder -->
+        <encoder>
+            <pattern>%d{HH:mm:ss.SSS} [%thread] %-5level %logger{36} - %msg%n</pattern>
+        </encoder>
     </appender>
-
-    <logger name="org.drasyl.core" level="debug">
-    </logger>
-
-    <logger name="io.netty" level="error">
-    </logger>
-
-    <logger name="io.netty.util.ResourceLeakDetector" level="debug">
-    </logger>
 
     <!-- hide "Couldn't find a suitable DSN" warning -->
     <logger name="io.sentry" level="ERROR">
@@ -56,7 +48,8 @@
 
     <!-- available levels: off, error, warn, info, debug, trace -->
 
-    <root level="debug">
-        <appender-ref ref="STDOUT"/>
+    <root level="WARN">
+        <appender-ref ref="Console"/>
+        <appender-ref ref="Sentry"/>
     </root>
 </configuration>

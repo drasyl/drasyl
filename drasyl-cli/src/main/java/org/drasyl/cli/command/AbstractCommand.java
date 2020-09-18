@@ -41,7 +41,7 @@ abstract class AbstractCommand implements Command {
         try {
             CommandLine cmd = parser.parse(flags, args);
 
-            DrasylNode.setLogLevel(getLoglevel(cmd));
+            setLogLevel(cmd);
             log.debug("drasyl: Version '{}' starting with parameters [{}]", DrasylNode.getVersion(), args.length > 0 ? "'" + String.join("', '", args) + "'" : "");
 
             if (cmd.hasOption(OPT_HELP)) {
@@ -124,17 +124,14 @@ abstract class AbstractCommand implements Command {
 
     protected abstract void execute(CommandLine cmd) throws CliException;
 
-    protected Level getLoglevel(CommandLine cmd) {
-        Level level;
+    protected void setLogLevel(CommandLine cmd) {
         if (cmd.hasOption(OPT_VERBOSE)) {
             String levelString = cmd.getOptionValue(OPT_VERBOSE);
-            level = Level.valueOf(levelString);
-        }
-        else {
-            level = DrasylNode.getLogLevel();
-        }
+            Level level = Level.valueOf(levelString);
 
-        return level;
+            ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.drasyl");
+            root.setLevel(level);
+        }
     }
 
     protected DrasylConfig getDrasylConfig(CommandLine cmd) {
@@ -151,12 +148,6 @@ abstract class AbstractCommand implements Command {
         else {
             log.info("Config file '{}' not found - using defaults", DEFAULT_CONF_PATH);
             config = new DrasylConfig();
-        }
-
-        // override loglevel
-        Level loglevel = getLoglevel(cmd);
-        if (config.getLoglevel() != loglevel) {
-            config = DrasylConfig.newBuilder(config).loglevel(loglevel).build();
         }
 
         return config;

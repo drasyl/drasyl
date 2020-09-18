@@ -101,6 +101,23 @@
             <scope>compile</scope>
         </dependency>
 
+        <!-- Logging -->
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-classic</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>ch.qos.logback</groupId>
+            <artifactId>logback-core</artifactId>
+        </dependency>
+
+        <!-- Sentry -->
+        <dependency>
+            <groupId>io.sentry</groupId>
+            <artifactId>sentry-logback</artifactId>
+            <version>1.7.30</version>
+        </dependency>
+
         <!-- Command Line Interfae -->
         <!-- https://mvnrepository.com/artifact/commons-cli/commons-cli -->
         <dependency>

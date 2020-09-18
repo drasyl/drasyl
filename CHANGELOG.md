@@ -63,7 +63,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -
 -
 -
--
+- `drasyl-core` now only depends on slf4j and no longer on logback. As part of this, the methods
+`DrasylNode.getLogLevel()` and `DrasylNode.setLogLevel()` have been removed and the configuration
+`drasyl.loglevel` has been removed.
 -
 -
 -

@@ -33,10 +33,8 @@ spec:
       containers:
       - name: "$CI_PROJECT_NAME"
         image: "${image_repository}:${image_tag}"
-        args: ["node"]
+        args: ["node", "--verbose", "TRACE"]
         env:
-        - name: CONFIG_FORCE_drasyl_loglevel
-          value: "TRACE"
         - name: CONFIG_FORCE_drasyl_identity_proof__of__work
           value: "${DRASYL_PROOF_OF_WORK:-0}"
         - name: CONFIG_FORCE_drasyl_identity_public__key
