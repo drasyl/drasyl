@@ -62,7 +62,6 @@ class PeersManagerTest {
     private Map<CompressedPublicKey, PeerInformation> peers;
     private SetMultimap<CompressedPublicKey, Path> paths;
     private Set<CompressedPublicKey> children;
-    private Map<CompressedPublicKey, CompressedPublicKey> grandchildrenRoutes;
     @Mock
     private CompressedPublicKey superPeer;
     @Mock
@@ -74,8 +73,7 @@ class PeersManagerTest {
         peers = new HashMap<>();
         paths = HashMultimap.create();
         children = new HashSet<>();
-        grandchildrenRoutes = new HashMap<>();
-        underTest = new PeersManager(lock, peers, paths, children, grandchildrenRoutes, superPeer, eventConsumer);
+        underTest = new PeersManager(lock, peers, paths, children, superPeer, eventConsumer);
     }
 
     @Nested
@@ -96,31 +94,14 @@ class PeersManagerTest {
     }
 
     @Nested
-    class GetChildrenAndGrandchildren {
+    class GetChildren {
         @Test
-        void shouldReturnChildrenAndGrandchildren(@Mock CompressedPublicKey publicKey,
-                                                  @Mock PeerInformation peerInformation) {
+        void shouldReturnChildren(@Mock CompressedPublicKey publicKey,
+                                  @Mock PeerInformation peerInformation) {
             peers.put(publicKey, peerInformation);
             children.add(publicKey);
 
-            assertEquals(Map.of(publicKey, peerInformation), underTest.getChildrenAndGrandchildren());
-        }
-
-        @AfterEach
-        void tearDown() {
-            verify(lock.readLock()).lock();
-            verify(lock.readLock()).unlock();
-        }
-    }
-
-    @Nested
-    class GetGrandchildrenRoutes {
-        @Test
-        void shouldReturnGrandchildrenRoutes(@Mock CompressedPublicKey grandchildren,
-                                             @Mock CompressedPublicKey children) {
-            grandchildrenRoutes.put(grandchildren, children);
-
-            assertEquals(Map.of(grandchildren, children), underTest.getGrandchildrenRoutes());
+            assertEquals(Map.of(publicKey, peerInformation), underTest.getChildren());
         }
 
         @AfterEach
@@ -212,21 +193,9 @@ class PeersManagerTest {
         @Test
         void shouldEmitPeerRelayEventIfThereIsNoSuperPeerAndPeerIsChildren(@Mock CompressedPublicKey publicKey,
                                                                            @Mock PeerInformation peerInformation) {
-            underTest = new PeersManager(lock, peers, paths, children, grandchildrenRoutes, null, eventConsumer);
+            underTest = new PeersManager(lock, peers, paths, children, null, eventConsumer);
 
             children.add(publicKey);
-
-            underTest.setPeerInformation(publicKey, peerInformation);
-
-            verify(eventConsumer).accept(new PeerRelayEvent(new Peer(publicKey)));
-        }
-
-        @Test
-        void shouldEmitPeerRelayEventIfThereIsNoSuperPeerAndPeerIsGrandchildren(@Mock CompressedPublicKey publicKey,
-                                                                                @Mock PeerInformation peerInformation) {
-            underTest = new PeersManager(lock, peers, paths, children, grandchildrenRoutes, null, eventConsumer);
-
-            grandchildrenRoutes.put(publicKey, mock(CompressedPublicKey.class));
 
             underTest.setPeerInformation(publicKey, peerInformation);
 
@@ -288,57 +257,6 @@ class PeersManagerTest {
             underTest.removePath(publicKey, path);
 
             verify(eventConsumer).accept(new PeerRelayEvent(new Peer(publicKey)));
-        }
-
-        @AfterEach
-        void tearDown() {
-            verify(lock.writeLock()).lock();
-            verify(lock.writeLock()).unlock();
-        }
-    }
-
-    @Nested
-    class AddGrandchildrenRoute {
-        @Test
-        void shouldAddGrandchildrenRoute(@Mock CompressedPublicKey grandchildren,
-                                         @Mock CompressedPublicKey children) {
-            underTest.addGrandchildrenRoute(grandchildren, children);
-
-            assertEquals(children, grandchildrenRoutes.get(grandchildren));
-        }
-
-        @Test
-        @Disabled("not implemented")
-        void shouldEmitPeerRelayEventForGrandchildren(@Mock CompressedPublicKey grandchildren,
-                                                      @Mock CompressedPublicKey children) {
-            underTest.addGrandchildrenRoute(grandchildren, children);
-
-            verify(eventConsumer).accept(new PeerRelayEvent(new Peer(grandchildren)));
-        }
-
-        @AfterEach
-        void tearDown() {
-            verify(lock.writeLock()).lock();
-            verify(lock.writeLock()).unlock();
-        }
-    }
-
-    @Nested
-    class RemoveGrandchildrenRoute {
-        @Test
-        void shouldRemoveGrandchildrenRoute(@Mock CompressedPublicKey grandchildren,
-                                            @Mock CompressedPublicKey children) {
-            grandchildrenRoutes.put(grandchildren, children);
-
-            underTest.removeGrandchildrenRoute(grandchildren);
-
-            assertNull(grandchildrenRoutes.get(grandchildren));
-        }
-
-        @Test
-        @Disabled("not implemented")
-        void shouldEmitPeerUnknownEventForGrandchildren() {
-            fail("not implemented (introduce PeerUnknownEvent?)");
         }
 
         @AfterEach

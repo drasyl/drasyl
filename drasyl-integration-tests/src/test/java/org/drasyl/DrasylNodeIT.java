@@ -107,12 +107,6 @@ class DrasylNodeIT {
         /**
          * Network Layout:
          * <pre>
-         *        +-------+
-         *        | Super |
-         *        | Super |
-         *        | Peer  |
-         *        +---+---+
-         *            |
          *        +---+---+
          *        | Super |
          *        | Peer  |
@@ -127,7 +121,6 @@ class DrasylNodeIT {
          */
         @Nested
         class SuperSuperPeerAndSuperPeerAndTwoClientWhenOnlyNettyBasesDiscoveriesAreEnabled {
-            private Pair<DrasylNode, Observable<Event>> superSuperPeer;
             private Pair<DrasylNode, Observable<Event>> superPeer;
             private Pair<DrasylNode, Observable<Event>> client1;
             private Pair<DrasylNode, Observable<Event>> client2;
@@ -139,24 +132,6 @@ class DrasylNodeIT {
                 //
                 DrasylConfig config;
 
-                // super super peer
-                config = DrasylConfig.newBuilder()
-                        .identityProofOfWork(ProofOfWork.of(13290399))
-                        .identityPublicKey(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"))
-                        .identityPrivateKey(CompressedPrivateKey.of("0c2945e523e1ab27c3b38ba62f0a67a21567dcfcbad4ff3fe7f8f7b202a18c93"))
-                        .serverExposeEnabled(false)
-                        .serverBindHost(createInetAddress("127.0.0.1"))
-                        .serverBindPort(0)
-                        .superPeerEnabled(false)
-                        .directConnectionsEnabled(false)
-                        .intraVmDiscoveryEnabled(false)
-                        .localHostDiscoveryEnabled(false)
-                        .build();
-                superSuperPeer = createStartedNode(config);
-                NodeEvent superSuperPeerNodeUp = (NodeEvent) superSuperPeer.second().filter(e -> e instanceof NodeUpEvent).firstElement().blockingGet();
-                int superSuperPeerPort = superSuperPeerNodeUp.getNode().getEndpoints().iterator().next().getPort();
-                colorizedPrintln("CREATED superSuperPeer", COLOR_CYAN, STYLE_REVERSED);
-
                 // super peer
                 config = DrasylConfig.newBuilder()
                         .identityProofOfWork(ProofOfWork.of(6518542))
@@ -165,7 +140,7 @@ class DrasylNodeIT {
                         .serverExposeEnabled(false)
                         .serverBindHost(createInetAddress("127.0.0.1"))
                         .serverBindPort(0)
-                        .superPeerEndpoints(Set.of(Endpoint.of("ws://127.0.0.1:" + superSuperPeerPort + "#03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a")))
+                        .superPeerEnabled(false)
                         .directConnectionsEnabled(false)
                         .intraVmDiscoveryEnabled(false)
                         .localHostDiscoveryEnabled(false)
@@ -205,8 +180,7 @@ class DrasylNodeIT {
                 client2 = createStartedNode(config);
                 colorizedPrintln("CREATED client2", COLOR_CYAN, STYLE_REVERSED);
 
-                superSuperPeer.second().filter(e -> e instanceof NodeUpEvent || e instanceof PeerDirectEvent || e instanceof PeerRelayEvent).test().awaitCount(4);
-                superPeer.second().filter(e -> e instanceof NodeOnlineEvent || e instanceof PeerDirectEvent).test().awaitCount(3);
+                superPeer.second().filter(e -> e instanceof NodeUpEvent || e instanceof PeerDirectEvent).test().awaitCount(3);
                 client1.second().filter(e -> e instanceof NodeOnlineEvent || e instanceof PeerDirectEvent).test().awaitCount(2);
                 client2.second().filter(e -> e instanceof NodeOnlineEvent || e instanceof PeerDirectEvent).test().awaitCount(2);
             }
@@ -220,7 +194,6 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void applicationMessagesShouldBeDelivered() {
-                TestObserver<Event> superSuperPeerMessages = superSuperPeer.second().filter(e -> e instanceof MessageEvent).test();
                 TestObserver<Event> superPeerMessages = superPeer.second().filter(e -> e instanceof MessageEvent).test();
                 TestObserver<Event> client1Messages = client1.second().filter(e -> e instanceof MessageEvent).test();
                 TestObserver<Event> client2Messages = client2.second().filter(e -> e instanceof MessageEvent).test();
@@ -233,12 +206,10 @@ class DrasylNodeIT {
                 //
                 // send messages
                 //
-                Set<String> identities = Set.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a",
-                        "030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22",
+                Set<String> identities = Set.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22",
                         "025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4",
                         "025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e");
                 for (String recipient : identities) {
-                    superSuperPeer.first().send(recipient, "Hallo Welt");
                     superPeer.first().send(recipient, "Hallo Welt");
                     client1.first().send(recipient, "Hallo Welt");
                     client2.first().send(recipient, "Hallo Welt");
@@ -247,10 +218,9 @@ class DrasylNodeIT {
                 //
                 // verify
                 //
-                superSuperPeerMessages.awaitCount(4);
-                superPeerMessages.awaitCount(4);
-                client1Messages.awaitCount(4);
-                client2Messages.awaitCount(4);
+                superPeerMessages.awaitCount(3);
+                client1Messages.awaitCount(3);
+                client2Messages.awaitCount(3);
             }
 
             /**
@@ -263,7 +233,6 @@ class DrasylNodeIT {
                 //
                 // send messages
                 //
-                TestObserver<Event> superSuperPeerEvents = superSuperPeer.second().filter(e -> e instanceof PeerDirectEvent || e instanceof PeerRelayEvent).test();
                 TestObserver<Event> superPeerEvents = superPeer.second().filter(e -> e instanceof PeerDirectEvent).test();
                 TestObserver<Event> client1Events = client1.second().filter(e -> e instanceof PeerDirectEvent).test();
                 TestObserver<Event> client2Events = client2.second().filter(e -> e instanceof PeerDirectEvent).test();
@@ -273,8 +242,7 @@ class DrasylNodeIT {
 //            client1.second().subscribe(e -> System.err.println("C1: " + e));
 //            client2.second().subscribe(e -> System.err.println("C2: " + e));
 
-                superSuperPeerEvents.awaitCount(3);
-                superPeerEvents.awaitCount(3);
+                superPeerEvents.awaitCount(2);
                 client1Events.awaitCount(1);
                 client2Events.awaitCount(1);
             }
@@ -289,13 +257,11 @@ class DrasylNodeIT {
                 //
                 // send messages
                 //
-                TestObserver<Event> superSuperPeerEvents = superSuperPeer.second().filter(e -> e instanceof PeerRelayEvent).test();
                 TestObserver<Event> client1Events = client1.second().filter(e -> e instanceof NodeOfflineEvent).test();
                 TestObserver<Event> client2Events = client2.second().filter(e -> e instanceof NodeOfflineEvent).test();
 
                 superPeer.first().shutdown().join();
 
-                superSuperPeerEvents.awaitCount(1);
                 client1Events.awaitCount(1);
                 client2Events.awaitCount(1);
             }

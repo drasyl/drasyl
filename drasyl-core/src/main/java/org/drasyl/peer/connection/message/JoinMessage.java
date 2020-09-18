@@ -35,20 +35,17 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
     private final ProofOfWork proofOfWork;
     private final CompressedPublicKey publicKey;
     private final boolean childrenJoin;
-    private final Set<CompressedPublicKey> childrenAndGrandchildren;
 
     @JsonCreator
     private JoinMessage(@JsonProperty("id") MessageId id,
                         @JsonProperty("userAgent") String userAgent,
                         @JsonProperty("proofOfWork") ProofOfWork proofOfWork,
                         @JsonProperty("publicKey") CompressedPublicKey publicKey,
-                        @JsonProperty("childrenJoin") boolean childrenJoin,
-                        @JsonProperty("childrenAndGrandchildren") Set<CompressedPublicKey> childrenAndGrandchildren) {
+                        @JsonProperty("childrenJoin") boolean childrenJoin) {
         super(id, userAgent);
         this.proofOfWork = requireNonNull(proofOfWork);
         this.publicKey = requireNonNull(publicKey);
         this.childrenJoin = childrenJoin;
-        this.childrenAndGrandchildren = requireNonNull(childrenAndGrandchildren);
     }
 
     /**
@@ -56,12 +53,10 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
      *
      * @param proofOfWork              the proof of work
      * @param publicKey                the identity of the joining node
-     * @param childrenAndGrandchildren the (grand-)children of this node
      */
     public JoinMessage(ProofOfWork proofOfWork,
-                       CompressedPublicKey publicKey,
-                       Set<CompressedPublicKey> childrenAndGrandchildren) {
-        this(proofOfWork, publicKey, true, Set.copyOf(childrenAndGrandchildren));
+                       CompressedPublicKey publicKey) {
+        this(proofOfWork, publicKey, true);
     }
 
     /**
@@ -70,24 +65,17 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
      * @param proofOfWork              the proof of work
      * @param publicKey                the identity of the joining node
      * @param childrenJoin             join peer as children
-     * @param childrenAndGrandchildren the (grand-)children of this node
      */
     public JoinMessage(ProofOfWork proofOfWork,
                        CompressedPublicKey publicKey,
-                       boolean childrenJoin,
-                       Set<CompressedPublicKey> childrenAndGrandchildren) {
+                       boolean childrenJoin) {
         this.proofOfWork = requireNonNull(proofOfWork);
         this.publicKey = requireNonNull(publicKey);
         this.childrenJoin = childrenJoin;
-        this.childrenAndGrandchildren = Set.copyOf(childrenAndGrandchildren);
     }
 
     public boolean isChildrenJoin() {
         return childrenJoin;
-    }
-
-    public Set<CompressedPublicKey> getChildrenAndGrandchildren() {
-        return this.childrenAndGrandchildren;
     }
 
     public CompressedPublicKey getPublicKey() {
@@ -100,7 +88,7 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), proofOfWork, publicKey, childrenJoin, childrenAndGrandchildren);
+        return Objects.hash(super.hashCode(), proofOfWork, publicKey, childrenJoin);
     }
 
     @Override
@@ -117,8 +105,7 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
         JoinMessage that = (JoinMessage) o;
         return childrenJoin == that.childrenJoin &&
                 Objects.equals(proofOfWork, that.proofOfWork) &&
-                Objects.equals(publicKey, that.publicKey) &&
-                Objects.equals(childrenAndGrandchildren, that.childrenAndGrandchildren);
+                Objects.equals(publicKey, that.publicKey);
     }
 
     @Override
@@ -127,7 +114,6 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
                 "proofOfWork=" + proofOfWork +
                 ", publicKey=" + publicKey +
                 ", childrenJoin=" + childrenJoin +
-                ", childrenAndGrandchildren=" + childrenAndGrandchildren +
                 ", id='" + id + '\'' +
                 '}';
     }

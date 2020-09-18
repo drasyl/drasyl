@@ -76,7 +76,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -
 -
 -
--
+- Nodes now only accept children joins if they are configured as a super peer (`drasyl.super-peer.enabled = false`).
 -
 -
 -

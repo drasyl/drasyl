@@ -43,10 +43,9 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * This class contains information about other peers. This includes the public keys, available
- * interfaces, connections or relations (e.g. direct/relayed connection, super peer, child,
- * grandchild). Before a relation is set for a peer, it must be ensured that its information is
- * available. Likewise, the information may not be removed from a peer if the peer still has a
- * relation
+ * interfaces, connections or relations (e.g. direct/relayed connection, super peer, child). Before
+ * a relation is set for a peer, it must be ensured that its information is available. Likewise, the
+ * information may not be removed from a peer if the peer still has a relation
  *
  * <p>
  * This class is optimized for concurrent access and is thread-safe.
@@ -57,26 +56,23 @@ public class PeersManager {
     private final Map<CompressedPublicKey, PeerInformation> peers;
     private final SetMultimap<CompressedPublicKey, Path> paths;
     private final Set<CompressedPublicKey> children;
-    private final Map<CompressedPublicKey, CompressedPublicKey> grandchildrenRoutes;
     private final Consumer<Event> eventConsumer;
     private CompressedPublicKey superPeer;
 
     public PeersManager(Consumer<Event> eventConsumer) {
-        this(new ReentrantReadWriteLock(true), new HashMap<>(), HashMultimap.create(), new HashSet<>(), new HashMap<>(), null, eventConsumer);
+        this(new ReentrantReadWriteLock(true), new HashMap<>(), HashMultimap.create(), new HashSet<>(), null, eventConsumer);
     }
 
     PeersManager(ReadWriteLock lock,
                  Map<CompressedPublicKey, PeerInformation> peers,
                  SetMultimap<CompressedPublicKey, Path> paths,
                  Set<CompressedPublicKey> children,
-                 Map<CompressedPublicKey, CompressedPublicKey> grandchildrenRoutes,
                  CompressedPublicKey superPeer,
                  Consumer<Event> eventConsumer) {
         this.lock = lock;
         this.peers = peers;
         this.paths = paths;
         this.children = children;
-        this.grandchildrenRoutes = grandchildrenRoutes;
         this.superPeer = superPeer;
         this.eventConsumer = eventConsumer;
     }
@@ -89,7 +85,6 @@ public class PeersManager {
             return "PeersManager{" +
                     "peers=" + peers +
                     ", children=" + children +
-                    ", grandchildrenRoutes=" + grandchildrenRoutes +
                     ", eventConsumer=" + eventConsumer +
                     ", superPeer=" + superPeer +
                     '}';
@@ -110,31 +105,14 @@ public class PeersManager {
         }
     }
 
-    public Map<CompressedPublicKey, PeerInformation> getChildrenAndGrandchildren() {
+    public Map<CompressedPublicKey, PeerInformation> getChildren() {
         try {
             lock.readLock().lock();
 
             // It is necessary to create a new HashMap because otherwise, this can raise a
             // ConcurrentModificationException.
             // See: https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/77
-            return Map.copyOf(new HashMap<>(peers).entrySet().stream()
-                    .filter(e -> children.contains(e.getKey()) || grandchildrenRoutes.containsKey(e.getKey()))
-                    .collect(Collectors.toMap(Map.Entry::getKey, Map.Entry::getValue))
-            );
-        }
-        finally {
-            lock.readLock().unlock();
-        }
-    }
-
-    /**
-     * @return a map with the routes of our grandchildren
-     */
-    public Map<CompressedPublicKey, CompressedPublicKey> getGrandchildrenRoutes() {
-        try {
-            lock.readLock().lock();
-
-            return Map.copyOf(grandchildrenRoutes);
+            return new HashSet<>(children).stream().collect(Collectors.toMap(c -> c, peers::get));
         }
         finally {
             lock.readLock().unlock();
@@ -243,8 +221,7 @@ public class PeersManager {
         }
         else if ((existingInformation == null || existingPathCount > 0) && newPathCount == 0 &&
                 ((!publicKey.equals(superPeer) && superPeer != null) ||
-                        children.contains(publicKey) ||
-                        grandchildrenRoutes.containsKey(publicKey))) {
+                        children.contains(publicKey))) {
                 eventConsumer.accept(new PeerRelayEvent(new Peer(publicKey)));
         }
     }
@@ -306,34 +283,6 @@ public class PeersManager {
                     peers.get(publicKey),
                     SetUtil.difference(paths.get(publicKey), path)
             );
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    public void addGrandchildrenRoute(CompressedPublicKey grandchildren,
-                                      CompressedPublicKey children) {
-        requireNonNull(grandchildren);
-        requireNonNull(children);
-
-        try {
-            lock.writeLock().lock();
-
-            grandchildrenRoutes.put(grandchildren, children);
-        }
-        finally {
-            lock.writeLock().unlock();
-        }
-    }
-
-    public void removeGrandchildrenRoute(CompressedPublicKey grandchildren) {
-        requireNonNull(grandchildren);
-
-        try {
-            lock.writeLock().lock();
-
-            grandchildrenRoutes.remove(grandchildren);
         }
         finally {
             lock.writeLock().unlock();
