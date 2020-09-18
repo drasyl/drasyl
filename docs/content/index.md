@@ -1,5 +1,8 @@
 # Welcome
 
+!!! important "Nightly Version"
+
+    You're currently on a nightly version branch. If you're only interested  in the latest stable version, please click [here](/).
 
 ![drasyl architecture](https://github.com/drasyl-overlay/drasyl/raw/master/drasyl-architecture.png)
 
