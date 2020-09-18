@@ -18,7 +18,6 @@
  */
 package org.drasyl;
 
-import ch.qos.logback.classic.Level;
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
@@ -53,7 +52,6 @@ import static org.drasyl.util.SecretUtil.maskSecret;
 public class DrasylConfig {
     static final DrasylConfig DEFAULT = new DrasylConfig(ConfigFactory.defaultReference());
     //======================================== Config Paths ========================================
-    static final String LOGLEVEL = "drasyl.loglevel";
     static final String IDENTITY_PROOF_OF_WORK = "drasyl.identity.proof-of-work";
     static final String IDENTITY_PUBLIC_KEY = "drasyl.identity.public-key";
     static final String IDENTITY_PRIVATE_KEY = "drasyl.identity.private-key";
@@ -103,7 +101,6 @@ public class DrasylConfig {
     static final String MARSHALLING_ALLOW_ARRAY_OF_DEFINED_TYPES = "drasyl.marshalling.allow-array-of-defined-types";
     static final String MARSHALLING_ALLOWED_PACKAGES = "drasyl.marshalling.allowed-packages";
     //======================================= Config Values ========================================
-    private final Level loglevel; // NOSONAR
     private final ProofOfWork identityProofOfWork;
     private final CompressedPublicKey identityPublicKey;
     private final CompressedPrivateKey identityPrivateKey;
@@ -164,8 +161,6 @@ public class DrasylConfig {
      */
     public DrasylConfig(Config config) {
         config.checkValid(ConfigFactory.defaultReference(), "drasyl");
-
-        this.loglevel = getLoglevel(config, LOGLEVEL);
 
         // init identity config
         if (config.getInt(IDENTITY_PROOF_OF_WORK) >= 0) {
@@ -251,10 +246,6 @@ public class DrasylConfig {
         this.marshallingAllowAllPrimitives = config.getBoolean(MARSHALLING_ALLOW_ALL_PRIMITIVES);
         this.marshallingAllowArrayOfDefinedTypes = config.getBoolean(MARSHALLING_ALLOW_ARRAY_OF_DEFINED_TYPES);
         this.marshallingAllowedPackages = config.getStringList(MARSHALLING_ALLOWED_PACKAGES);
-    }
-
-    private Level getLoglevel(Config config, String path) {
-        return Level.valueOf(config.getString(path));
     }
 
     /**
@@ -389,8 +380,7 @@ public class DrasylConfig {
     }
 
     @SuppressWarnings({ "java:S107" })
-    DrasylConfig(Level loglevel,
-                 ProofOfWork identityProofOfWork,
+    DrasylConfig(ProofOfWork identityProofOfWork,
                  CompressedPublicKey identityPublicKey,
                  CompressedPrivateKey identityPrivateKey,
                  Path identityPath,
@@ -437,7 +427,6 @@ public class DrasylConfig {
                  boolean marshallingAllowAllPrimitives,
                  boolean marshallingAllowArrayOfDefinedTypes,
                  List<String> marshallingAllowedPackages) {
-        this.loglevel = loglevel;
         this.identityProofOfWork = identityProofOfWork;
         this.identityPublicKey = identityPublicKey;
         this.identityPrivateKey = identityPrivateKey;
@@ -510,10 +499,6 @@ public class DrasylConfig {
 
     public Duration getMonitoringInfluxReportingFrequency() {
         return monitoringInfluxReportingFrequency;
-    }
-
-    public Level getLoglevel() {
-        return loglevel;
     }
 
     public InetAddress getServerBindHost() {
@@ -687,7 +672,7 @@ public class DrasylConfig {
 
     @Override
     public int hashCode() {
-        return Objects.hash(loglevel, identityProofOfWork, identityPublicKey, identityPrivateKey,
+        return Objects.hash(identityProofOfWork, identityPublicKey, identityPrivateKey,
                 identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries,
                 serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols,
                 serverHandshakeTimeout, serverEndpoints, serverChannelInitializer,
@@ -730,7 +715,6 @@ public class DrasylConfig {
                 directConnectionsMaxConcurrentConnections == that.directConnectionsMaxConcurrentConnections &&
                 directConnectionsIdleRetries == that.directConnectionsIdleRetries &&
                 monitoringEnabled == that.monitoringEnabled &&
-                Objects.equals(loglevel, that.loglevel) &&
                 Objects.equals(identityProofOfWork, that.identityProofOfWork) &&
                 Objects.equals(identityPublicKey, that.identityPublicKey) &&
                 Objects.equals(identityPrivateKey, that.identityPrivateKey) &&
@@ -769,8 +753,7 @@ public class DrasylConfig {
     @Override
     public String toString() {
         return "DrasylConfig{" +
-                "loglevel=" + loglevel +
-                ", identityProofOfWork=" + identityProofOfWork +
+                "identityProofOfWork=" + identityProofOfWork +
                 ", identityPublicKey=" + identityPublicKey +
                 ", identityPrivateKey=" + maskSecret(identityPrivateKey) +
                 ", identityPath=" + identityPath +
@@ -831,7 +814,6 @@ public class DrasylConfig {
 
     public static Builder newBuilder(DrasylConfig config) {
         return new Builder(
-                config.loglevel,
                 config.identityProofOfWork,
                 config.identityPublicKey,
                 config.identityPrivateKey,
@@ -888,7 +870,6 @@ public class DrasylConfig {
      */
     public static final class Builder {
         //======================================= Config Values ========================================
-        private Level loglevel; // NOSONAR
         private ProofOfWork identityProofOfWork;
         private CompressedPublicKey identityPublicKey;
         private CompressedPrivateKey identityPrivateKey;
@@ -939,8 +920,7 @@ public class DrasylConfig {
         private List<String> marshallingAllowedPackages;
 
         @SuppressWarnings({ "java:S107" })
-        private Builder(Level loglevel,
-                        ProofOfWork identityProofOfWork,
+        private Builder(ProofOfWork identityProofOfWork,
                         CompressedPublicKey identityPublicKey,
                         CompressedPrivateKey identityPrivateKey,
                         Path identityPath,
@@ -988,7 +968,6 @@ public class DrasylConfig {
                         boolean marshallingAllowAllPrimitives,
                         boolean marshallingAllowArrayOfDefinedTypes,
                         List<String> marshallingAllowedPackages) {
-            this.loglevel = loglevel;
             this.identityProofOfWork = identityProofOfWork;
             this.identityPublicKey = identityPublicKey;
             this.identityPrivateKey = identityPrivateKey;
@@ -1037,11 +1016,6 @@ public class DrasylConfig {
             this.marshallingAllowArrayOfDefinedTypes = marshallingAllowArrayOfDefinedTypes;
             this.marshallingAllowedPackages = marshallingAllowedPackages;
             this.serverExposeEnabled = serverExposeEnabled;
-        }
-
-        public Builder loglevel(Level loglevel) {
-            this.loglevel = loglevel;
-            return this;
         }
 
         public Builder identityProofOfWork(ProofOfWork identityProofOfWork) {
@@ -1280,7 +1254,7 @@ public class DrasylConfig {
         }
 
         public DrasylConfig build() {
-            return new DrasylConfig(loglevel, identityProofOfWork, identityPublicKey,
+            return new DrasylConfig(identityProofOfWork, identityPublicKey,
                     identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort,
                     serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled,
                     serverSSLProtocols, serverHandshakeTimeout, serverEndpoints,

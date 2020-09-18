@@ -25,7 +25,6 @@ import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
-import org.drasyl.DrasylNode;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
@@ -50,7 +49,6 @@ import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.server.TestServer;
-import org.drasyl.util.UriUtil;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -100,6 +98,9 @@ class SuperPeerClientIT {
 
     @BeforeEach
     void setup(TestInfo info) throws DrasylException, CryptoException {
+//        ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.drasyl");
+//        root.setLevel(Level.TRACE);
+
         colorizedPrintln("STARTING " + info.getDisplayName(), COLOR_CYAN, STYLE_REVERSED);
 
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
@@ -110,7 +111,6 @@ class SuperPeerClientIT {
         bossGroup = new NioEventLoopGroup(1);
 
         config = DrasylConfig.newBuilder()
-//                .loglevel(Level.TRACE)
                 .identityProofOfWork(ProofOfWork.of(6657650))
                 .identityPublicKey(CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"))
                 .identityPrivateKey(CompressedPrivateKey.of("0c27af38c77f2cd5cc2a0ff5c461003a9c24beb955f316135d251ecaf4dda03f"))
@@ -127,7 +127,6 @@ class SuperPeerClientIT {
                 .superPeerIdleRetries((short) 1)
                 .messageMaxContentLength(CHUNK_SIZE + 1)
                 .build();
-        DrasylNode.setLogLevel(config.getLoglevel());
         identityManager = new IdentityManager(config);
         identityManager.loadOrCreateIdentity();
 
@@ -162,7 +161,6 @@ class SuperPeerClientIT {
         server.open();
 
         config = DrasylConfig.newBuilder()
-//                .loglevel(Level.TRACE)
                 .identityProofOfWork(ProofOfWork.of(6657650))
                 .identityPublicKey(CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"))
                 .identityPrivateKey(CompressedPrivateKey.of("0c27af38c77f2cd5cc2a0ff5c461003a9c24beb955f316135d251ecaf4dda03f"))
@@ -180,7 +178,6 @@ class SuperPeerClientIT {
                 .superPeerIdleRetries((short) 1)
                 .messageMaxContentLength(CHUNK_SIZE + 1)
                 .build();
-        DrasylNode.setLogLevel(config.getLoglevel());
         identityManager = new IdentityManager(config);
         identityManager.loadOrCreateIdentity();
 

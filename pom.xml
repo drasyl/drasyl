@@ -117,12 +117,12 @@
         <netty.version>4.1.52.Final</netty.version>
         <guava.version>29.0-jre</guava.version>
         <rxjava.version>3.0.6</rxjava.version>
-        <sentry.version>1.7.30</sentry.version>
         <commons.version>4.4</commons.version>
         <micrometer.version>1.5.4</micrometer.version>
         <maven.scm>1.11.2</maven.scm>
         <nexus.staging>1.6.8</nexus.staging>
         <portmapper.version>2.0.5</portmapper.version>
+        <slf4j.version>1.7.21</slf4j.version>
     </properties>
 
     <dependencyManagement>
@@ -194,6 +194,13 @@
                 <version>${jackson.version}</version>
             </dependency>
 
+            <!-- SLF4J -->
+            <dependency>
+                <groupId>org.slf4j</groupId>
+                <artifactId>slf4j-api</artifactId>
+                <version>${slf4j.version}</version>
+            </dependency>
+
             <!-- Logback -->
             <dependency>
                 <groupId>ch.qos.logback</groupId>
@@ -211,13 +218,6 @@
                 <groupId>io.reactivex.rxjava3</groupId>
                 <artifactId>rxjava</artifactId>
                 <version>${rxjava.version}</version>
-            </dependency>
-
-            <!-- Sentry -->
-            <dependency>
-                <groupId>io.sentry</groupId>
-                <artifactId>sentry-logback</artifactId>
-                <version>${sentry.version}</version>
             </dependency>
 
             <!-- Guava -->

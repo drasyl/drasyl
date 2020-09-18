@@ -18,7 +18,6 @@
  */
 package org.drasyl;
 
-import ch.qos.logback.classic.Level;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.Node;
@@ -36,16 +35,13 @@ import org.drasyl.peer.connection.message.MessageId;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.RelayableMessage;
 import org.drasyl.peer.connection.message.WhoisMessage;
-import org.drasyl.peer.connection.server.Server;
 import org.drasyl.pipeline.DrasylPipeline;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.slf4j.LoggerFactory;
 
 import java.util.HashSet;
 import java.util.List;
@@ -54,12 +50,9 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import static ch.qos.logback.classic.Level.TRACE;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
@@ -320,38 +313,6 @@ class DrasylNodeTest {
             underTest.messageSink(message);
 
             verify(peersManager).setPeerInformation(message.getPublicKey(), message.getPeerInformation());
-        }
-    }
-
-    @Nested
-    class SetLogLevel {
-        private Level logLevel;
-
-        @Test
-        void shouldSetLogLevel() {
-            DrasylNode.setLogLevel(TRACE);
-
-            assertTrue(LoggerFactory.getLogger(DrasylNode.class).isTraceEnabled());
-            assertTrue(LoggerFactory.getLogger(Server.class).isTraceEnabled());
-        }
-
-        @BeforeEach
-        void setUp() {
-            logLevel = DrasylNode.getLogLevel();
-        }
-
-        @AfterEach
-        void tearDown() {
-            // restore default log level
-            DrasylNode.setLogLevel(logLevel);
-        }
-    }
-
-    @Nested
-    class GetLogLevel {
-        @Test
-        void shouldReturnLogLevel() {
-            assertNull(DrasylNode.getLogLevel());
         }
     }
 }

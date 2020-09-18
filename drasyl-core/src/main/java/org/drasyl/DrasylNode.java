@@ -18,13 +18,11 @@
  */
 package org.drasyl;
 
-import ch.qos.logback.classic.Level;
 import com.google.common.annotations.Beta;
 import com.typesafe.config.ConfigException;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.group.ChannelGroupFutureListener;
 import io.netty.channel.nio.NioEventLoopGroup;
-import io.sentry.Sentry;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.Node;
@@ -113,7 +111,6 @@ public abstract class DrasylNode {
     static {
         // https://github.com/netty/netty/issues/7817
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
-        Sentry.getStoredClient().setRelease(DrasylNode.getVersion());
         INSTANCES = Collections.synchronizedList(new ArrayList<>());
     }
 
@@ -155,7 +152,6 @@ public abstract class DrasylNode {
     public DrasylNode(DrasylConfig config) throws DrasylException {
         try {
             this.config = config;
-            setLogLevel(this.config.getLoglevel());
             IdentityManager identityManager = new IdentityManager(this.config);
             identityManager.loadOrCreateIdentity();
             this.identity = identityManager.getIdentity();
@@ -505,27 +501,6 @@ public abstract class DrasylNode {
      */
     public Identity identity() {
         return identity;
-    }
-
-    /**
-     * Return log level of loggers in org.drasyl package namespace.
-     *
-     * @return return log level of loggers in org.drasyl package namespace
-     */
-    public static Level getLogLevel() {
-        ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.drasyl");
-        return root.getLevel();
-    }
-
-    /**
-     * Set log level of all drasyl loggers in org.drasyl package namespace.
-     *
-     * @param level new log level
-     */
-    @SuppressWarnings({ "java:S4792" })
-    public static void setLogLevel(Level level) {
-        ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.drasyl");
-        root.setLevel(level);
     }
 
     /**

@@ -1,6 +1,5 @@
 package org.drasyl;
 
-import ch.qos.logback.classic.Level;
 import com.google.common.cache.Cache;
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.RemovalListener;
@@ -30,7 +29,6 @@ public class SuperPeerStressTesting {
         DrasylConfig baseConfig = DrasylConfig.newBuilder()
                 .superPeerEndpoints(Set.of(Endpoint.of("wss://review-monitoring-md6yhe.env.drasyl.org")))
                 .serverEnabled(false)
-                .loglevel(Level.INFO)
                 .build();
 
         SuperPeerStressTesting creator = new SuperPeerStressTesting(100, ofSeconds(300));
@@ -48,7 +46,6 @@ public class SuperPeerStressTesting {
                 .identityPrivateKey(identity.getPrivateKey())
                 .identityProofOfWork(identity.getProofOfWork())
                 .intraVmDiscoveryEnabled(false)
-                .loglevel(Level.TRACE)
                 .build();
         DrasylNode node = new DrasylNode(config) {
             @Override
