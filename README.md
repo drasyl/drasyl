@@ -4,7 +4,7 @@
 [![LGPL v3](https://img.shields.io/badge/license-LGPL%20v3-blue)](https://www.gnu.org/licenses/lgpl-3.0)
 [![Maven Central](https://img.shields.io/maven-central/v/org.drasyl/drasyl-core.svg)](https://mvnrepository.com/artifact/org.drasyl/drasyl-core)
 [![Javadocs](https://javadoc.io/badge2/org.drasyl/drasyl-core/javadoc.svg)](https://www.javadoc.io/doc/org.drasyl/drasyl-core)
-[![Docker Pulls](https://img.shields.io/docker/pulls/drasyl/drasyl)](https://hub.docker.com/repository/docker/drasyl/drasyl)
+[![Docker Pulls](https://img.shields.io/docker/pulls/drasyl/drasyl)](https://hub.docker.com/r/drasyl/drasyl)
 
 drasyl is a general-purpose overlay network framework for rapid development of distributed P2P applications.
 
