@@ -17,7 +17,9 @@ Maven:
 
 Gradle:
 
-```compile group: 'org.drasyl', name: 'drasyl-core', version: '0.2.0'```
+```gradle
+compile group: 'org.drasyl', name: 'drasyl-core', version: '0.2.0'
+```
 
 ## Implementing `DrasylNode`
 
@@ -65,7 +67,7 @@ The `send()` method needs the recipient as first argument and the message payloa
 !!! info "Example"
 
     ```java
-        node.send("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9", "Hello World")
+    node.send("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9", "Hello World")
     ```
 
 The method does not give any feedback on whether the message could be delivered. However, it can throw an exception if the local node has no connection to the
