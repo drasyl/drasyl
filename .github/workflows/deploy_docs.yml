@@ -17,7 +17,7 @@ jobs:
           echo "Download documentation generator"
           curl -sfL https://raw.githubusercontent.com/containous/structor/master/godownloader.sh | sudo bash -s -- -b $GOPATH/bin ${STRUCTOR_VERSION}
         env:
-          STRUCTOR_VERSION: v1.11.1
+          STRUCTOR_VERSION: v1.11.2
       - name: Build
         run: |
           echo "Build documentation"

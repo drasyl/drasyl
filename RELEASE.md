@@ -4,6 +4,7 @@ This file describes how to make the various kinds of releases
 
 ## Making a release
 
+* Remove the nightly/snapshot information from the [getting-started/quick-start.md](docs/content/getting-started/quick-start.md) and the [index.md](docs/content/index.md).
 + Ensure [CHANGELOG](CHANGELOG.md) is up-to-date.
 * Build software and push to maven repository:
 ```bash

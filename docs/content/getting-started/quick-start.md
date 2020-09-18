@@ -1,8 +1,29 @@
 # Quick Start
 
+!!! important "Nightly Version"
+
+    You're currently on a nightly version branch. If you're only interested  in the latest stable version, please click [here](/).
+
 This guide describes the necessary steps to create your first drasyl node and how to integrate it into your application.
 
 Once the node is set up, it and therefore your application can participate in the drasyl Overlay Network and communicate with other nodes and applications.
+
+## Add Snapshot Repository
+
+```xml
+<repositories>
+    <repository>
+        <id>oss.sonatype.org-snapshot</id>
+        <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+        <releases>
+            <enabled>false</enabled>
+        </releases>
+        <snapshots>
+            <enabled>true</enabled>
+        </snapshots>
+    </repository>
+</repositories>
+```
 
 ## Add Dependency
 
@@ -11,14 +32,14 @@ Maven:
 <dependency>
     <groupId>org.drasyl</groupId>
     <artifactId>drasyl-core</artifactId>
-    <version>0.2.0</version>
+    <version>0.2.1-SNAPSHOT</version>
 </dependency>
 ```
 
 Gradle:
 
 ```gradle
-compile group: 'org.drasyl', name: 'drasyl-core', version: '0.2.0'
+compile group: 'org.drasyl', name: 'drasyl-core', version: '0.2.1-SNAPSHOT'
 ```
 
 ## Implementing `DrasylNode`

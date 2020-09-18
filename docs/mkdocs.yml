@@ -80,8 +80,6 @@ nav:
   - 'Welcome': 'index.md'
   - 'Getting Started':
       - 'Quick Start': 'getting-started/quick-start.md'
-      - 'Build': 'getting-started/build.md'
-      - 'Snapshots': 'getting-started/snapshots.md'
       - 'CLI': 'getting-started/cli.md'
       - 'Super-Peers': 'getting-started/super-peers.md'
   - 'Configuration':
