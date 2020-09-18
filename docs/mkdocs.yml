@@ -67,12 +67,7 @@ markdown_extensions:
   - pymdownx.highlight:
       use_pygments: false # hljs is used instead of pygment for TOML highlighting support
   - pymdownx.smartsymbols
-  - pymdownx.superfences:
-      # make exceptions to highlighting of code:
-      custom_fences:
-        - name: mermaid
-          class: mermaid
-          format: !!python/name:pymdownx.superfences.fence_div_format
+  - pymdownx.superfences
   - pymdownx.tasklist
 
 # Page tree

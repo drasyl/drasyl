@@ -4,7 +4,7 @@
 
 The state diagram below shows which events occur in which order during the lifetime of a drasyl node:
 
-```mermaid
+<div class="mermaid">
 stateDiagram-v2
     state started <<fork>>
         [*] --> started
@@ -25,10 +25,11 @@ stateDiagram-v2
         NodeNormalTerminationEvent --> join
         NodeUnrecoverableErrorEvent --> join
         join --> [*]
-```
+</div>
 
 ## Client Server Communication
-```mermaid
+
+<div class="mermaid">
 sequenceDiagram
   Note over Client,Server: Session State: New
   par Session Request
@@ -63,10 +64,11 @@ sequenceDiagram
       end
     end
   end
-```
+</div>
 
 ## Peer Session States
-```mermaid
+
+<div class="mermaid">
 stateDiagram
 	[*] --> Initialization
 	Initialization --> Errored
@@ -75,4 +77,4 @@ stateDiagram
 	Active --> Terminated
 	Terminated --> [*]
 	Errored --> [*]
-```
+</div>
