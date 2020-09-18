@@ -53,12 +53,6 @@ public class Messenger {
         this(PublishSubject.create(), loopbackSink, null, message -> {
             CompressedPublicKey recipient = message.getRecipient();
 
-            // if recipient is a grandchild, we must send message to appropriate child
-            CompressedPublicKey grandchildrenPath = peersManager.getGrandchildrenRoutes().get(recipient);
-            if (grandchildrenPath != null) {
-                recipient = grandchildrenPath;
-            }
-
             try {
                 return toFuture(channelGroup.writeAndFlush(recipient, message));
             }

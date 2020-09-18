@@ -68,10 +68,6 @@ public class ServerEnvironment {
         return acceptedNewConnectionsSupplier;
     }
 
-    public boolean isDisconnectedFromSuperPeer() {
-        return !config.isSuperPeerEnabled() || peersManager.getSuperPeerKey() != null;
-    }
-
     public DrasylConfig getConfig() {
         return config;
     }

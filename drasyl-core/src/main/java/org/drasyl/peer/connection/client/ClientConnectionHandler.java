@@ -64,8 +64,7 @@ public class ClientConnectionHandler extends AbstractThreeWayHandshakeClientHand
                 environment.getMessenger(),
                 new JoinMessage(environment.getIdentity().getProofOfWork(),
                         environment.getIdentity().getPublicKey(),
-                        environment.joinAsChildren(),
-                        environment.getPeersManager().getChildrenAndGrandchildren().keySet()
+                        environment.joinAsChildren()
                 )
         );
         this.environment = environment;

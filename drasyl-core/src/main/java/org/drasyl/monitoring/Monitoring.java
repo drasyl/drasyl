@@ -118,7 +118,6 @@ public class Monitoring implements DrasylNodeComponent {
             Gauge.builder("peersManager.peers", peersManager, pm -> pm.getPeers().size()).register(registry);
             Gauge.builder("peersManager.superPeer", peersManager, pm -> pm.getSuperPeerKey() != null ? 1 : 0).register(registry);
             Gauge.builder("peersManager.children", peersManager, pm -> pm.getChildrenKeys().size()).register(registry);
-            Gauge.builder("peersManager.grandchildrenRoutes", peersManager, pm -> pm.getGrandchildrenRoutes().size()).register(registry);
 
             // monitor Pipeline
             pipeline.addFirst(MONITORING_HANDLER, new SimpleDuplexHandler<Object, Event, Object>() {

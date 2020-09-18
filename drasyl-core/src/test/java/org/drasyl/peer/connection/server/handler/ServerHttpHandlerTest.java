@@ -112,7 +112,7 @@ class ServerHttpHandlerTest {
         assertEquals(OK, httpResponse.status());
         assertThatJson(content)
                 .isObject()
-                .containsKeys("children", "grandchildrenRoutes", "superPeer");
+                .containsKeys("children", "superPeer");
 
         // Important: release the ByteBuf after testing, otherwise the ResourceLeakDetector raises alarms for tests
         httpResponse.release();
