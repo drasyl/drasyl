@@ -43,6 +43,10 @@ gemnasium-maven-dependency_scanning:
       when: always
     - when: never
 
+gemnasium-python-dependency_scanning:
+  rules:
+    - when: never
+
 container_scanning:
   stage: docker-test
   rules:
