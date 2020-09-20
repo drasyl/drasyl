@@ -5,7 +5,7 @@ ADD ./drasyl-*.zip ./
 RUN unzip -qq ./drasyl-*.zip && \
     rm ./drasyl-*.zip
 
-FROM drasyl/drasyl-build-images:jre-11-curl-7.64.0
+FROM openjdk:11-jre-slim
 
 RUN mkdir /usr/local/share/drasyl && \
     ln -s ../share/drasyl/bin/drasyl /usr/local/bin/drasyl
@@ -15,8 +15,3 @@ COPY --from=build ./drasyl-* /usr/local/share/drasyl/
 EXPOSE 22527
 
 ENTRYPOINT ["drasyl"]
-
-HEALTHCHECK --start-period=15s \
-            --interval=10s \
-    CMD curl http://localhost:22527 2>&1 \
-        | grep -q 'Not a WebSocket Handshake Request: Missing Upgrade'
