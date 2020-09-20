@@ -26,7 +26,7 @@ include:
 #  variables:
 #    SAST_JAVA_VERSION: 11
 #  rules:
-#    - if: '$CI_COMMIT_BRANCH == "master"'
+#    - if: $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH
 #      when: always
 #    - when: never
 
@@ -40,7 +40,7 @@ include:
 
 gemnasium-maven-dependency_scanning:
   rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH
       when: always
     - when: never
 
@@ -51,7 +51,7 @@ gemnasium-python-dependency_scanning:
 container_scanning:
   stage: docker-test
   rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH
       when: always
     - when: never
 
@@ -61,7 +61,7 @@ license_scanning:
     MAVEN_CLI_OPTS: -DskipTests
     LM_JAVA_VERSION: 11
   rules:
-    - if: '$CI_COMMIT_BRANCH == "master"'
+    - if: $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH
       when: always
     - when: never
 
