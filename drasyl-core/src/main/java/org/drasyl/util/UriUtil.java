@@ -32,8 +32,8 @@ public class UriUtil {
     /**
      * Creates a URI by parsing the given components.
      *
-     * <p> This convenience factory method works as if by invoking the {@link
-     * URI(String, String, String, int, String, String, String)} constructor; any {@link
+     * <p> This convenience factory method works as if by invoking the {@link URI#URI(String,
+     * String, String, int, String, String, String)} constructor; any {@link
      * URISyntaxException} thrown by the constructor is caught and wrapped in a new {@link
      * IllegalArgumentException} object, which is then thrown.
      *

@@ -33,12 +33,12 @@ public class ObservableUtil {
      * <pre>
      * Source:
      *   +---+  +---+  +---+
-     * --+ A +--+ B +--+ C +->
+     * --+ A +--+ B +--+ C +-&gt;
      *   +---+  +---+  +---+
      *
      * pairWithPreviousObservable:
      *   +---+  +---+  +---+
-     * --+ A +--+ B +--+ C +->
+     * --+ A +--+ B +--+ C +-&gt;
      *   | ⊥ |  | A |  | B |
      *   +---+  +---+  +---+
      * </pre>

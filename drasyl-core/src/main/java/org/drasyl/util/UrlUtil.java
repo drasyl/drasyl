@@ -15,7 +15,7 @@ public class UrlUtil {
      * Creates a {@link URL} by parsing the given string.
      *
      * <p> This convenience factory method works as if by invoking the {@link
-     * URL(String)} constructor; any {@link MalformedURLException} thrown by the constructor is
+     * URL#URL(String)} constructor; any {@link MalformedURLException} thrown by the constructor is
      * caught and wrapped in a new {@link IllegalArgumentException} object, which is then thrown.
      *
      * <p> This method is provided for use in situations where it is known that

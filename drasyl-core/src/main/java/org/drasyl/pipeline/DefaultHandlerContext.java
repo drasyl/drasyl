@@ -23,9 +23,23 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
 import org.drasyl.pipeline.codec.TypeValidator;
 
+/**
+ * The default handler context implementation.
+ */
 public class DefaultHandlerContext extends AbstractHandlerContext {
     private final Handler handler;
 
+    /**
+     * Generates a new default handler context for the given {@code handler}.
+     *
+     * @param name      the name of the handler
+     * @param handler   the handler
+     * @param config    the config of the drasyl node
+     * @param pipeline  the corresponding pipeline object
+     * @param scheduler the corresponding scheduler
+     * @param identity  the identity of the corresponding node
+     * @param validator the validator of the pipeline
+     */
     public DefaultHandlerContext(String name,
                                  Handler handler,
                                  DrasylConfig config,

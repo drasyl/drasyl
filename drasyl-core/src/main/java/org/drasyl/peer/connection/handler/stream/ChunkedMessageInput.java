@@ -33,6 +33,10 @@ import org.drasyl.peer.connection.message.MessageId;
 import java.util.LinkedList;
 import java.util.Queue;
 
+/**
+ * This class is responsible for chunking a {@link ApplicationMessage} into multiple {@link
+ * ChunkedMessage}s.
+ */
 @SuppressWarnings({ "java:S107" })
 public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
     private final CompressedPublicKey sender;
@@ -69,7 +73,8 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
      * Generates a {@link ChunkedInput} for the {@link ChunkedWriteHandler} from the given {@link
      * ApplicationMessage}.
      *
-     * @param msg the message that should be sent in chunks
+     * @param msg       the message that should be sent in chunks
+     * @param chunkSize the size of each chunk
      */
     public ChunkedMessageInput(ApplicationMessage msg, int chunkSize) {
         this(msg.getSender(), msg.getRecipient(), msg.payloadAsByteBuf().readableBytes(),
@@ -79,22 +84,51 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
         chunkedArray(this.chunks, sourcePayload, chunkSize);
     }
 
+    /**
+     * Return {@code true} if and only if there is no data left in the stream and the stream has
+     * reached at its end.
+     */
     @Override
     public boolean isEndOfInput() {
         return sentLastChuck;
     }
 
+    /**
+     * Releases the resources associated with the input.
+     */
     @Override
     public void close() {
         chunks.clear();
         sourcePayload.release();
     }
 
+    /**
+     * @param ctx The context which provides a {@link ByteBufAllocator} if buffer allocation is
+     *            necessary.
+     * @return the fetched chunk. {@code null} if there is no data left in the stream. Please note
+     * that {@code null} does not necessarily mean that the stream has reached at its end.  In a
+     * slow stream, the next chunk might be unavailable just momentarily.
+     * @deprecated Use {@link #readChunk(ByteBufAllocator)}.
+     *
+     * <p>Fetches a chunked data from the stream. Once this method returns the last chunk
+     * and thus the stream has reached at its end, any subsequent {@link #isEndOfInput()} call must
+     * return {@code true}.
+     */
     @Override
     public ChunkedMessage readChunk(ChannelHandlerContext ctx) {
         return readChunk(ctx.alloc());
     }
 
+    /**
+     * Fetches a chunked data from the stream. Once this method returns the last chunk and thus the
+     * stream has reached at its end, any subsequent {@link #isEndOfInput()} call must return {@code
+     * true}.
+     *
+     * @param allocator {@link ByteBufAllocator} if buffer allocation is necessary.
+     * @return the fetched chunk. {@code null} if there is no data left in the stream. Please note
+     * that {@code null} does not necessarily mean that the stream has reached at its end.  In a
+     * slow stream, the next chunk might be unavailable just momentarily.
+     */
     @Override
     public ChunkedMessage readChunk(ByteBufAllocator allocator) {
         if (chunks.isEmpty()) {
@@ -137,11 +171,20 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
         }
     }
 
+    /**
+     * Returns the length of the input.
+     *
+     * @return the length of the input if the length of the input is known. a negative value if the
+     * length of the input is unknown.
+     */
     @Override
     public long length() {
         return contentLength;
     }
 
+    /**
+     * Returns current transfer progress.
+     */
     @Override
     public long progress() {
         return progress;

@@ -50,6 +50,9 @@ import java.security.spec.ECPoint;
 import java.security.spec.ECPublicKeySpec;
 import java.security.spec.PKCS8EncodedKeySpec;
 
+/**
+ * Util class that provides cryptography functions for drasyl.
+ */
 public class Crypto {
     public static final SecureRandom SRND = new SecureRandom();
     private static final Logger LOG = LoggerFactory.getLogger(Crypto.class);
@@ -66,6 +69,11 @@ public class Crypto {
         // util class
     }
 
+    /**
+     * Generates an asymmetric curve key pair for signing.
+     *
+     * @return asymmetric key pair
+     */
     public static KeyPair generateKeys() {
         try {
             X9ECParameters ecP = CustomNamedCurves.getByName(CURVE_NAME);
@@ -80,11 +88,26 @@ public class Crypto {
         }
     }
 
+    /**
+     * Generates an asymmetric curve key pair from the given compressed private and public key.
+     *
+     * @param compressedPrivate compressed private key
+     * @param compressedPublic  compressed public key
+     * @return asymmetric curve key pair
+     * @throws CryptoException if key pair could not be generated
+     */
     public static KeyPair makeKeyPair(byte[] compressedPrivate,
                                       byte[] compressedPublic) throws CryptoException {
         return new KeyPair(getPublicKeyFromBytes(compressedPublic), getPrivateKeyFromBytes(compressedPrivate));
     }
 
+    /**
+     * Generates an asymmetric curve public key from the given bytes.
+     *
+     * @param pubKey public key as byte array
+     * @return asymmetric curve public key
+     * @throws CryptoException if public key could not be generated
+     */
     public static PublicKey getPublicKeyFromBytes(byte[] pubKey) throws CryptoException {
         if (pubKey.length <= 33) {
             return parseCompressedPublicKey(pubKey);
@@ -100,6 +123,13 @@ public class Crypto {
         }
     }
 
+    /**
+     * Generates an asymmetric curve private key from the given bytes.
+     *
+     * @param privKey private key as byte array
+     * @return asymmetric curve private key
+     * @throws CryptoException if private key could not be generated
+     */
     public static PrivateKey getPrivateKeyFromBytes(byte[] privKey) throws CryptoException {
         if (privKey.length <= 33) {
             return parseCompressedPrivateKey(privKey);
@@ -116,6 +146,13 @@ public class Crypto {
         }
     }
 
+    /**
+     * Generates an asymmetric curve public key from the given compressed public key.
+     *
+     * @param compressedPubKey compressed public key
+     * @return asymmetric curve public key
+     * @throws CryptoException if public key could not be generated
+     */
     public static ECPublicKey parseCompressedPublicKey(byte[] compressedPubKey) throws CryptoException {
         try {
             X9ECParameters ecP = CustomNamedCurves.getByName(CURVE_NAME);
@@ -134,6 +171,12 @@ public class Crypto {
         }
     }
 
+    /**
+     * Generates the curve key specs from the given public or private key byte array.
+     *
+     * @param pubOrPrivKey public or private key byte array
+     * @return curve key specs
+     */
     private static ECPublicKeySpec getKeySpec(byte[] pubOrPrivKey) {
         X9ECParameters ecP = CustomNamedCurves.getByName(CURVE_NAME);
         ECParameterSpec ecSpec = new ECParameterSpec(ecP.getCurve(), ecP.getG(), ecP.getN(), ecP.getH(), ecP.getSeed());
@@ -143,6 +186,13 @@ public class Crypto {
         return new ECPublicKeySpec(point, actualParams);
     }
 
+    /**
+     * Generates an asymmetric curve private key from the given compressed private key.
+     *
+     * @param compressedPrivateKey compressed private key
+     * @return asymmetric curve private key
+     * @throws CryptoException if private key could not be generated
+     */
     public static ECPrivateKey parseCompressedPrivateKey(byte[] compressedPrivateKey) throws CryptoException {
         X9ECParameters ecP = CustomNamedCurves.getByName(CURVE_NAME);
         ECParameterSpec ecSpec = new ECParameterSpec(ecP.getCurve(), ecP.getG(), ecP.getN(), ecP.getH(), ecP.getSeed());
@@ -155,6 +205,13 @@ public class Crypto {
         }
     }
 
+    /**
+     * Generates an asymmetric, compressed curve public key from the given public key.
+     *
+     * @param key the public key
+     * @return compressed public key
+     * @throws CryptoException if the public key was not in ECPublicKey format
+     */
     public static byte[] compressedKey(PublicKey key) throws CryptoException {
         if (key instanceof ECPublicKey) {
             return ((ECPublicKey) key).getQ().getEncoded(true);
@@ -162,6 +219,13 @@ public class Crypto {
         throw new CryptoException(new IllegalArgumentException("Can only compress ECPublicKey"));
     }
 
+    /**
+     * Generates an asymmetric, compressed curve private key from the given private key.
+     *
+     * @param privkey the private key
+     * @return compressed private key
+     * @throws CryptoException if the public key was not in ECPrivateKey format
+     */
     public static byte[] compressedKey(PrivateKey privkey) throws CryptoException {
         if (privkey instanceof ECPrivateKey) {
             return ((ECPrivateKey) privkey).getD().toByteArray();
@@ -170,7 +234,7 @@ public class Crypto {
     }
 
     /**
-     * Signs the given signable with the Privatekey. This will also put the resulting signature into
+     * Signs the given signable with the PrivateKey. This will also put the resulting signature into
      * the Signable object
      *
      * @param key      Key to use
@@ -182,6 +246,13 @@ public class Crypto {
         signable.setSignature(new org.drasyl.crypto.Signature(signatureBytes));
     }
 
+    /**
+     * Creates signature from the given message with the PrivateKey.
+     *
+     * @param key     Key to use
+     * @param message message to sign
+     * @throws CryptoException on failure
+     */
     public static byte[] signMessage(PrivateKey key, byte[] message) throws CryptoException {
         try {
             Signature ecdsaSign = Signature.getInstance(SHA256_WITH_ECDSA, PROVIDER);
@@ -194,6 +265,14 @@ public class Crypto {
         }
     }
 
+    /**
+     * Verifies the signature of the given message with the signature and compressed public key.
+     *
+     * @param compressedPublicKey the compressed public key
+     * @param message             the message to verify
+     * @param signature           the signature of the message
+     * @return if the message is valid or not
+     */
     public static boolean verifySignature(byte[] compressedPublicKey,
                                           byte[] message,
                                           byte[] signature) {
@@ -207,6 +286,14 @@ public class Crypto {
         return false;
     }
 
+    /**
+     * Verify the signature of the given message with the signature and public key.
+     *
+     * @param pubkey    the public key
+     * @param message   the message to verify
+     * @param signature the signature of the message
+     * @return if the message is valid or not
+     */
     public static boolean verifySignature(PublicKey pubkey, byte[] message, byte[] signature) {
         try {
             Signature ecdsaVerify = Signature.getInstance(SHA256_WITH_ECDSA, PROVIDER);
@@ -220,6 +307,13 @@ public class Crypto {
         return false;
     }
 
+    /**
+     * Verify the signature of the given Signable object with the public key.
+     *
+     * @param publicKey the public key
+     * @param content   the Signable object
+     * @return if the content is valid or not
+     */
     public static boolean verifySignature(PublicKey publicKey, Signable content) {
         if (content == null || content.getSignature() == null) {
             return false;

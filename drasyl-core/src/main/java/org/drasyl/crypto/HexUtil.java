@@ -18,6 +18,9 @@
  */
 package org.drasyl.crypto;
 
+/**
+ * Util class that provides hexadecimal functions for drasyl.
+ */
 public final class HexUtil {
     private static final char[] HEX_ARRAY = "0123456789abcdef".toCharArray();
 
