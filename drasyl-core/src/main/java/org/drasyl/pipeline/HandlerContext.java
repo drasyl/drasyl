@@ -35,11 +35,15 @@ import java.util.concurrent.CompletableFuture;
  */
 public interface HandlerContext {
     /**
+     * Returns the name of the {@link Handler}.
+     *
      * @return the name of the {@link Handler}
      */
     String name();
 
     /**
+     * Returns the associated {@link Handler}.
+     *
      * @return the associated {@link Handler}
      */
     Handler handler();
@@ -93,11 +97,15 @@ public interface HandlerContext {
                                   CompletableFuture<Void> future);
 
     /**
+     * Returns the corresponding {@link DrasylConfig}.
+     *
      * @return the corresponding {@link DrasylConfig}
      */
     DrasylConfig config();
 
     /**
+     * Returns the corresponding {@link Pipeline}.
+     *
      * @return the corresponding {@link Pipeline}
      */
     Pipeline pipeline();
@@ -111,11 +119,15 @@ public interface HandlerContext {
     Scheduler scheduler();
 
     /**
+     * Returns the identifier of this node.
+     *
      * @return the identity of this node
      */
     Identity identity();
 
     /**
+     * Returns the type of this pipeline.
+     *
      * @return the type validator
      */
     TypeValidator validator();

@@ -21,7 +21,7 @@ package org.drasyl.crypto;
 import java.util.Arrays;
 
 /**
- * A signature. (Wrapper class for byte[])
+ * A signature class for drasyl messages, that wraps a byte array signature.
  */
 public class Signature {
     private final byte[] bytes; // NOSONAR
@@ -31,9 +31,9 @@ public class Signature {
     }
 
     /**
-     * Signature
+     * Generates a new signature from the given byte array.
      *
-     * @param sig
+     * @param sig the signature as byte array
      */
     public Signature(byte[] sig) {
         bytes = sig;

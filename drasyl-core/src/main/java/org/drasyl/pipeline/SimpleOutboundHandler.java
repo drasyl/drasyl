@@ -34,7 +34,7 @@ import java.util.concurrent.CompletableFuture;
  *             {@link SimpleOutboundHandler}&lt;{@link ChunkedMessage}&gt; {
  *
  *         {@code @Override}
- *         protected void matchedWrite({@link HandlerContext} ctx, {@link ChunkedMessage} msg, {@link CompletableFuture}&lt;{@link Void}&gt future) {
+ *         protected void matchedWrite({@link HandlerContext} ctx, {@link ChunkedMessage} msg, {@link CompletableFuture}&lt;{@link Void}&gt; future) {
  *             System.out.println(msg);
  *         }
  *     }
