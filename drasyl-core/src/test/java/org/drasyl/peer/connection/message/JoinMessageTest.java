@@ -29,8 +29,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
-import java.util.HashSet;
-import java.util.Set;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
@@ -48,20 +46,18 @@ class JoinMessageTest {
     private CompressedPublicKey publicKey2;
     @Mock
     private ProofOfWork proofOfWork;
-    @Mock
-    private ProofOfWork proofOfWork2;
 
     @Nested
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
-            String json = "{\"@type\":\"" + JoinMessage.class.getSimpleName() + "\",\"id\":\"4ae5cdcd8c21719f8e779f21\",\"userAgent\":\"\",\"proofOfWork\":3556154,\"publicKey\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\"}";
+            String json = "{\"@type\":\"" + JoinMessage.class.getSimpleName() + "\",\"id\":\"4ae5cdcd8c21719f8e779f21\",\"userAgent\":\"\",\"proofOfWork\":3556154,\"publicKey\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\",\"networkId\":1337}";
 
             assertEquals(new JoinMessage(
                     ProofOfWork.of(3556154),
                     CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"),
-                    false
-            ), JACKSON_READER.readValue(json, Message.class));
+                    false,
+                    1337), JACKSON_READER.readValue(json, Message.class));
         }
 
         @Test
@@ -76,12 +72,12 @@ class JoinMessageTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException {
-            JoinMessage message = new JoinMessage(ProofOfWork.of(1), publicKey);
+            JoinMessage message = new JoinMessage(ProofOfWork.of(1), publicKey, 1337);
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", JoinMessage.class.getSimpleName())
-                    .containsKeys("id", "userAgent", "proofOfWork", "publicKey", "childrenJoin");
+                    .containsKeys("id", "userAgent", "proofOfWork", "publicKey", "childrenJoin", "networkId");
         }
     }
 
@@ -89,9 +85,9 @@ class JoinMessageTest {
     class Constructor {
         @Test
         void shouldRejectNullValues() {
-            assertThrows(NullPointerException.class, () -> new JoinMessage(proofOfWork, null), "Join requires a public key");
+            assertThrows(NullPointerException.class, () -> new JoinMessage(proofOfWork, null, 1337), "Join requires a public key");
 
-            assertThrows(NullPointerException.class, () -> new JoinMessage(null, null), "Join requires a public key and endpoints");
+            assertThrows(NullPointerException.class, () -> new JoinMessage(null, null, 1337), "Join requires a public key and endpoints");
         }
     }
 
@@ -99,9 +95,9 @@ class JoinMessageTest {
     class Equals {
         @Test
         void notSameBecauseOfDifferentPublicKey() {
-            JoinMessage message1 = new JoinMessage(proofOfWork, publicKey, childrenJoin);
-            JoinMessage message2 = new JoinMessage(proofOfWork, publicKey, childrenJoin);
-            JoinMessage message3 = new JoinMessage(proofOfWork, publicKey2, childrenJoin);
+            JoinMessage message1 = new JoinMessage(proofOfWork, publicKey, childrenJoin, 1337);
+            JoinMessage message2 = new JoinMessage(proofOfWork, publicKey, childrenJoin, 1337);
+            JoinMessage message3 = new JoinMessage(proofOfWork, publicKey2, childrenJoin, 1337);
 
             assertEquals(message1, message2);
             assertNotEquals(message2, message3);
@@ -112,9 +108,9 @@ class JoinMessageTest {
     class HashCode {
         @Test
         void notSameBecauseOfDifferentPublicKey() {
-            JoinMessage message1 = new JoinMessage(proofOfWork, publicKey, childrenJoin);
-            JoinMessage message2 = new JoinMessage(proofOfWork, publicKey, childrenJoin);
-            JoinMessage message3 = new JoinMessage(proofOfWork, publicKey2, childrenJoin);
+            JoinMessage message1 = new JoinMessage(proofOfWork, publicKey, childrenJoin, 1337);
+            JoinMessage message2 = new JoinMessage(proofOfWork, publicKey, childrenJoin, 1337);
+            JoinMessage message3 = new JoinMessage(proofOfWork, publicKey2, childrenJoin, 1337);
 
             assertEquals(message1.hashCode(), message2.hashCode());
             assertNotEquals(message2.hashCode(), message3.hashCode());

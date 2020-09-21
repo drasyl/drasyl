@@ -40,7 +40,6 @@ import org.drasyl.peer.PeersManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.util.Map;
 import java.util.Set;
 
 import static io.netty.handler.codec.http.HttpHeaderNames.CONTENT_TYPE;
@@ -59,11 +58,14 @@ import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
  */
 public class ServerHttpHandler extends SimpleChannelInboundHandler<FullHttpRequest> {
     private static final Logger LOG = LoggerFactory.getLogger(ServerHttpHandler.class);
+    private final int networkId;
     private final CompressedPublicKey publicKey;
     private final PeersManager peersManager;
 
-    public ServerHttpHandler(CompressedPublicKey publicKey,
+    public ServerHttpHandler(int networkId,
+                             CompressedPublicKey publicKey,
                              PeersManager peersManager) {
+        this.networkId = networkId;
         this.publicKey = publicKey;
         this.peersManager = peersManager;
     }
@@ -79,7 +81,7 @@ public class ServerHttpHandler extends SimpleChannelInboundHandler<FullHttpReque
 
         // response with node information on HEAD request
         if (HEAD.equals(req.method())) {
-            generateHeaders(ctx, req, publicKey, OK);
+            generateHeaders(ctx, req, networkId, publicKey, OK);
             return;
         }
 
@@ -92,11 +94,12 @@ public class ServerHttpHandler extends SimpleChannelInboundHandler<FullHttpReque
 
         if ("/".equals(req.uri()) || "/index.html".equals(req.uri()) || "/index.htm".equals(req.uri())) {
             // display custom bad request error page for root path
-            generateHeaders(ctx, req, publicKey, BAD_REQUEST);
+            generateHeaders(ctx, req, networkId, publicKey, BAD_REQUEST);
         }
         else if ("/peers.json".equals(req.uri())) {
             DefaultFullHttpResponse res = new DefaultFullHttpResponse(req.protocolVersion(), OK,
                     getPeers(peersManager));
+            res.headers().set("x-network-id", networkId);
             res.headers().set("x-public-key", publicKey);
             res.headers().set(CONTENT_TYPE, "application/json; charset=UTF-8");
             sendHttpResponse(ctx, res);
@@ -110,11 +113,13 @@ public class ServerHttpHandler extends SimpleChannelInboundHandler<FullHttpReque
 
     private static void generateHeaders(ChannelHandlerContext ctx,
                                         FullHttpRequest req,
-                                        CompressedPublicKey identity,
+                                        int networkId,
+                                        CompressedPublicKey publicKey,
                                         HttpResponseStatus status) {
-        ByteBuf content = getContent(identity);
+        ByteBuf content = getContent(networkId, publicKey);
         FullHttpResponse res = new DefaultFullHttpResponse(req.protocolVersion(), status, content);
-        res.headers().set("x-public-key", identity);
+        res.headers().set("x-network-id", networkId);
+        res.headers().set("x-public-key", publicKey);
         res.headers().set(CONTENT_TYPE, "text/html; charset=UTF-8");
         HttpUtil.setContentLength(res, content.readableBytes());
         sendHttpResponse(ctx, res);
@@ -145,7 +150,7 @@ public class ServerHttpHandler extends SimpleChannelInboundHandler<FullHttpReque
         }
     }
 
-    public static ByteBuf getContent(CompressedPublicKey identity) {
+    public static ByteBuf getContent(int networkId, CompressedPublicKey publicKey) {
         return Unpooled.copiedBuffer(
                 "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n" +
                         "<html><head>\n" +
@@ -154,7 +159,7 @@ public class ServerHttpHandler extends SimpleChannelInboundHandler<FullHttpReque
                         "<h1>Bad Request</h1>\n" +
                         "<p>Not a WebSocket Handshake Request: Missing Upgrade.</p>\n" +
                         "<hr>\n" +
-                        "<address>drasyl/" + DrasylNode.getVersion() + " with Public Key " + identity + "</address>\n" +
+                        "<address>drasyl/" + DrasylNode.getVersion() + " with Public Key " + publicKey + " and Network ID " + networkId + "</address>\n" +
                         "</body></html>", CharsetUtil.UTF_8);
     }
 

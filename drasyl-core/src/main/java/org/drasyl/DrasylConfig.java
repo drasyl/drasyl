@@ -52,6 +52,7 @@ import static org.drasyl.util.SecretUtil.maskSecret;
 public class DrasylConfig {
     static final DrasylConfig DEFAULT = new DrasylConfig(ConfigFactory.defaultReference());
     //======================================== Config Paths ========================================
+    static final String NETWORK_ID = "drasyl.network.id";
     static final String IDENTITY_PROOF_OF_WORK = "drasyl.identity.proof-of-work";
     static final String IDENTITY_PUBLIC_KEY = "drasyl.identity.public-key";
     static final String IDENTITY_PRIVATE_KEY = "drasyl.identity.private-key";
@@ -101,6 +102,7 @@ public class DrasylConfig {
     static final String MARSHALLING_ALLOW_ARRAY_OF_DEFINED_TYPES = "drasyl.marshalling.allow-array-of-defined-types";
     static final String MARSHALLING_ALLOWED_PACKAGES = "drasyl.marshalling.allowed-packages";
     //======================================= Config Values ========================================
+    private final int networkId;
     private final ProofOfWork identityProofOfWork;
     private final CompressedPublicKey identityPublicKey;
     private final CompressedPrivateKey identityPrivateKey;
@@ -161,6 +163,8 @@ public class DrasylConfig {
      */
     public DrasylConfig(Config config) {
         config.checkValid(ConfigFactory.defaultReference(), "drasyl");
+
+        this.networkId = config.getInt(NETWORK_ID);
 
         // init identity config
         if (config.getInt(IDENTITY_PROOF_OF_WORK) >= 0) {
@@ -380,7 +384,8 @@ public class DrasylConfig {
     }
 
     @SuppressWarnings({ "java:S107" })
-    DrasylConfig(ProofOfWork identityProofOfWork,
+    DrasylConfig(int networkId,
+                 ProofOfWork identityProofOfWork,
                  CompressedPublicKey identityPublicKey,
                  CompressedPrivateKey identityPrivateKey,
                  Path identityPath,
@@ -427,6 +432,7 @@ public class DrasylConfig {
                  boolean marshallingAllowAllPrimitives,
                  boolean marshallingAllowArrayOfDefinedTypes,
                  List<String> marshallingAllowedPackages) {
+        this.networkId = networkId;
         this.identityProofOfWork = identityProofOfWork;
         this.identityPublicKey = identityPublicKey;
         this.identityPrivateKey = identityPrivateKey;
@@ -475,6 +481,10 @@ public class DrasylConfig {
         this.marshallingAllowAllPrimitives = marshallingAllowAllPrimitives;
         this.marshallingAllowArrayOfDefinedTypes = marshallingAllowArrayOfDefinedTypes;
         this.marshallingAllowedPackages = marshallingAllowedPackages;
+    }
+
+    public int getNetworkId() {
+        return networkId;
     }
 
     public boolean isMonitoringEnabled() {
@@ -672,7 +682,7 @@ public class DrasylConfig {
 
     @Override
     public int hashCode() {
-        return Objects.hash(identityProofOfWork, identityPublicKey, identityPrivateKey,
+        return Objects.hash(networkId, identityProofOfWork, identityPublicKey, identityPrivateKey,
                 identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries,
                 serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols,
                 serverHandshakeTimeout, serverEndpoints, serverChannelInitializer,
@@ -700,7 +710,8 @@ public class DrasylConfig {
             return false;
         }
         DrasylConfig that = (DrasylConfig) o;
-        return serverEnabled == that.serverEnabled &&
+        return networkId == that.networkId &&
+                serverEnabled == that.serverEnabled &&
                 serverBindPort == that.serverBindPort &&
                 serverIdleRetries == that.serverIdleRetries &&
                 flushBufferSize == that.flushBufferSize &&
@@ -753,7 +764,8 @@ public class DrasylConfig {
     @Override
     public String toString() {
         return "DrasylConfig{" +
-                "identityProofOfWork=" + identityProofOfWork +
+                "networkId=" + networkId +
+                ", identityProofOfWork=" + identityProofOfWork +
                 ", identityPublicKey=" + identityPublicKey +
                 ", identityPrivateKey=" + maskSecret(identityPrivateKey) +
                 ", identityPath=" + identityPath +
@@ -814,6 +826,7 @@ public class DrasylConfig {
 
     public static Builder newBuilder(DrasylConfig config) {
         return new Builder(
+                config.networkId,
                 config.identityProofOfWork,
                 config.identityPublicKey,
                 config.identityPrivateKey,
@@ -870,6 +883,7 @@ public class DrasylConfig {
      */
     public static final class Builder {
         //======================================= Config Values ========================================
+        private int networkId;
         private ProofOfWork identityProofOfWork;
         private CompressedPublicKey identityPublicKey;
         private CompressedPrivateKey identityPrivateKey;
@@ -920,7 +934,8 @@ public class DrasylConfig {
         private List<String> marshallingAllowedPackages;
 
         @SuppressWarnings({ "java:S107" })
-        private Builder(ProofOfWork identityProofOfWork,
+        private Builder(int networkId,
+                        ProofOfWork identityProofOfWork,
                         CompressedPublicKey identityPublicKey,
                         CompressedPrivateKey identityPrivateKey,
                         Path identityPath,
@@ -968,6 +983,7 @@ public class DrasylConfig {
                         boolean marshallingAllowAllPrimitives,
                         boolean marshallingAllowArrayOfDefinedTypes,
                         List<String> marshallingAllowedPackages) {
+            this.networkId = networkId;
             this.identityProofOfWork = identityProofOfWork;
             this.identityPublicKey = identityPublicKey;
             this.identityPrivateKey = identityPrivateKey;
@@ -1016,6 +1032,11 @@ public class DrasylConfig {
             this.marshallingAllowArrayOfDefinedTypes = marshallingAllowArrayOfDefinedTypes;
             this.marshallingAllowedPackages = marshallingAllowedPackages;
             this.serverExposeEnabled = serverExposeEnabled;
+        }
+
+        public Builder networkId(int networkId) {
+            this.networkId = networkId;
+            return this;
         }
 
         public Builder identityProofOfWork(ProofOfWork identityProofOfWork) {
@@ -1254,7 +1275,7 @@ public class DrasylConfig {
         }
 
         public DrasylConfig build() {
-            return new DrasylConfig(identityProofOfWork, identityPublicKey,
+            return new DrasylConfig(networkId, identityProofOfWork, identityPublicKey,
                     identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort,
                     serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled,
                     serverSSLProtocols, serverHandshakeTimeout, serverEndpoints,

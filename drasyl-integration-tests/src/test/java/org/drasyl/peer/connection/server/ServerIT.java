@@ -120,6 +120,7 @@ class ServerIT {
     private Set<Endpoint> endpoints;
     private AtomicBoolean acceptNewConnections;
     private PeerChannelGroup channelGroup;
+    private int networkId;
 
     @BeforeEach
     void setup(TestInfo info) throws DrasylException, CryptoException {
@@ -135,6 +136,7 @@ class ServerIT {
         identitySession2 = Identity.of(26778671, "0236fde6a49564a0eaa2a7d6c8f73b97062d5feb36160398c08a5b73f646aa5fe5", "093d1ee70518508cac18eaf90d312f768c14d43de9bfd2618a2794d8df392da0");
 
         serverConfig = DrasylConfig.newBuilder()
+                .networkId(0)
                 .identityProofOfWork(ProofOfWork.of(6657650))
                 .identityPublicKey(CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"))
                 .identityPrivateKey(CompressedPrivateKey.of("0c27af38c77f2cd5cc2a0ff5c461003a9c24beb955f316135d251ecaf4dda03f"))
@@ -171,6 +173,7 @@ class ServerIT {
         server.open();
 
         configClient1 = DrasylConfig.newBuilder()
+                .networkId(0)
                 .serverEnabled(false)
                 .identityProofOfWork(identitySession1.getProofOfWork())
                 .identityPublicKey(identitySession1.getPublicKey())
@@ -189,6 +192,8 @@ class ServerIT {
                 .identityPublicKey(identitySession2.getPublicKey())
                 .identityPrivateKey(identitySession2.getPrivateKey())
                 .build();
+
+        networkId = 0;
     }
 
     @AfterEach
@@ -207,7 +212,7 @@ class ServerIT {
         try (TestSuperPeerClient session = clientSession(configClient1, server, identitySession1)) {
 
             // send message
-            RequestMessage request = new JoinMessage(session.getIdentity().getProofOfWork(), session.getIdentity().getPublicKey());
+            RequestMessage request = new JoinMessage(session.getIdentity().getProofOfWork(), session.getIdentity().getPublicKey(), networkId);
             CompletableFuture<ResponseMessage<?>> send = session.sendRequest(request);
 
             // verify response
@@ -266,10 +271,10 @@ class ServerIT {
             try (TestSuperPeerClient session2 = clientSession(configClient2, server, identitySession2)) {
 
                 // send messages
-                RequestMessage request1 = new JoinMessage(session1.getIdentity().getProofOfWork(), session1.getIdentity().getPublicKey());
+                RequestMessage request1 = new JoinMessage(session1.getIdentity().getProofOfWork(), session1.getIdentity().getPublicKey(), networkId);
                 CompletableFuture<ResponseMessage<?>> send1 = session1.sendRequest(request1);
 
-                RequestMessage request2 = new JoinMessage(session2.getIdentity().getProofOfWork(), session2.getIdentity().getPublicKey());
+                RequestMessage request2 = new JoinMessage(session2.getIdentity().getProofOfWork(), session2.getIdentity().getPublicKey(), networkId);
                 CompletableFuture<ResponseMessage<?>> send2 = session2.sendRequest(request2);
 
                 // verify responses
@@ -321,12 +326,12 @@ class ServerIT {
                 TestObserver<Message> receivedMessages2 = session2.receivedMessages().test();
 
                 // send messages
-                RequestMessage request1 = new JoinMessage(session1.getIdentity().getProofOfWork(), session1.getIdentity().getPublicKey());
+                RequestMessage request1 = new JoinMessage(session1.getIdentity().getProofOfWork(), session1.getIdentity().getPublicKey(), networkId);
                 ResponseMessage<?> response1 = session1.sendRequest(request1).get();
                 session1.send(new StatusMessage(STATUS_OK, response1.getId()));
                 await().until(() -> channelGroup.find(session1.getIdentity().getPublicKey()) != null);
 
-                RequestMessage request2 = new JoinMessage(session1.getIdentity().getProofOfWork(), session1.getIdentity().getPublicKey());
+                RequestMessage request2 = new JoinMessage(session1.getIdentity().getProofOfWork(), session1.getIdentity().getPublicKey(), networkId);
                 ResponseMessage<?> response2 = session2.sendRequest(request2).join();
                 session2.send(new StatusMessage(STATUS_OK, response2.getId()));
 
@@ -523,7 +528,10 @@ class ServerIT {
 
     @Test
     void openShouldFailIfInvalidPortIsGiven() throws DrasylException {
-        DrasylConfig config = DrasylConfig.newBuilder().serverBindPort(72722).build();
+        DrasylConfig config = DrasylConfig.newBuilder()
+                .networkId(0)
+                .serverBindPort(72722)
+                .build();
         try (Server myServer = new Server(serverIdentityManager.getIdentity(), serverMessenger, peersManager, config, channelGroup, workerGroup, bossGroup, endpoints, acceptNewConnections::get)) {
             assertThrows(ServerException.class, myServer::open);
         }
@@ -536,7 +544,7 @@ class ServerIT {
             acceptNewConnections.set(false);
 
             // send message
-            RequestMessage request = new JoinMessage(session.getIdentity().getProofOfWork(), session.getIdentity().getPublicKey());
+            RequestMessage request = new JoinMessage(session.getIdentity().getProofOfWork(), session.getIdentity().getPublicKey(), networkId);
             CompletableFuture<ResponseMessage<?>> send = session.sendRequest(request);
 
             // verify response
@@ -575,7 +583,7 @@ class ServerIT {
             TestObserver<Message> receivedMessages = session.receivedMessages().filter(msg -> msg instanceof ConnectionExceptionMessage).test();
 
             // send messages
-            RequestMessage request1 = new JoinMessage(identitySession2.getProofOfWork(), session.getIdentity().getPublicKey());
+            RequestMessage request1 = new JoinMessage(identitySession2.getProofOfWork(), session.getIdentity().getPublicKey(), networkId);
             session.sendRequest(request1);
 
             // verify response

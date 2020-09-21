@@ -111,6 +111,7 @@ class ChunkedMessageIT {
         Identity identitySession2 = Identity.of(26778671, "0236fde6a49564a0eaa2a7d6c8f73b97062d5feb36160398c08a5b73f646aa5fe5", "093d1ee70518508cac18eaf90d312f768c14d43de9bfd2618a2794d8df392da0");
 
         DrasylConfig serverConfig = DrasylConfig.newBuilder()
+                .networkId(0)
                 .messageMaxContentLength(1024 * 1024 * 100)
                 .identityProofOfWork(ProofOfWork.of(6657650))
                 .identityPublicKey(CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"))
@@ -136,6 +137,7 @@ class ChunkedMessageIT {
         server.open();
 
         config = DrasylConfig.newBuilder()
+                .networkId(0)
                 .messageMaxContentLength(1024 * 1024 * 100)
                 .serverEnabled(false)
                 .serverSSLEnabled(true)

@@ -7,6 +7,10 @@ else
   image_tag=${CI_APPLICATION_TAG:-$CI_COMMIT_TAG}
 fi
 
+if [[ -z "$DRASYL_NETWORK_ID" ]]; then
+  DRASYL_NETWORK_ID=$((RANDOM - 32768))
+fi
+
 host=$CI_ENVIRONMENT_SLUG.$APP_HOST
 
 cat << EOF
@@ -35,6 +39,8 @@ spec:
         image: "${image_repository}:${image_tag}"
         args: ["node", "--verbose", "TRACE"]
         env:
+        - name: CONFIG_FORCE_drasyl_network_id
+          value: "${DRASYL_NETWORK_ID}"
         - name: CONFIG_FORCE_drasyl_identity_proof__of__work
           value: "${DRASYL_PROOF_OF_WORK:-0}"
         - name: CONFIG_FORCE_drasyl_identity_public__key

@@ -68,6 +68,7 @@ class DrasylPipelineIT {
         };
 
         DrasylConfig config = DrasylConfig.newBuilder()
+                .networkId(0)
                 .identityProofOfWork(identity1.getProofOfWork())
                 .identityPublicKey(identity1.getPublicKey())
                 .identityPrivateKey(identity1.getPrivateKey())

@@ -100,6 +100,7 @@ public class ConnectionExceptionMessage extends AbstractMessage implements Reque
         CONNECTION_ERROR_PING_PONG("Too many Ping Messages were not answered with a Pong Message."),
         CONNECTION_ERROR_IDENTITY_COLLISION("Peer states that my address is already used by another peer with different Public Key."),
         CONNECTION_ERROR_WRONG_PUBLIC_KEY("Peer has sent an unexpected Public Key. This could indicate a configuration error or man-in-the-middle attack."),
+        CONNECTION_ERROR_OTHER_NETWORK("Peer belongs to other network."),
         CONNECTION_ERROR_PROOF_OF_WORK_INVALID("The proof of work for the given public key is invalid."),
         CONNECTION_ERROR_NOT_A_SUPER_PEER("Peer is not configured as super peer and therefore does not accept children.");
         private static final Map<String, Error> errors = new HashMap<>();

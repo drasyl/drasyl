@@ -81,6 +81,7 @@ staging:
   <<: *deploy-base-kubernetes
   stage: staging
   variables:
+    DRASYL_NETWORK_ID: -25421
     DRASYL_PROOF_OF_WORK: 10724607
     DRASYL_PUBLIC_KEY: 03096ae3080a369829a44847d5af1f652bef3f9921e9e1bbad64970babe6d3c502
     # DRASYL_PRIVATE_KEY is defined securely in GitLab CI/CD Settings
@@ -99,6 +100,7 @@ stop_staging:
   stage: cleanup
   variables:
     GIT_STRATEGY: none
+    DRASYL_NETWORK_ID: -25421
     DRASYL_PROOF_OF_WORK: 10724607
     DRASYL_PUBLIC_KEY: 03096ae3080a369829a44847d5af1f652bef3f9921e9e1bbad64970babe6d3c502
     # DRASYL_PRIVATE_KEY is defined securely in GitLab CI/CD Settings
@@ -119,6 +121,7 @@ production:
     APP_IMAGE: "${CI_REGISTRY_IMAGE}:latest"
     APP_DEPLOY_HOST: "production.${APP_HOST}"
     SENTRY_ENVIRONMENT: production
+    DRASYL_NETWORK_ID: 1
     DRASYL_PROOF_OF_WORK: 10992904
     DRASYL_PUBLIC_KEY: 025fff6f625f5dee816d9f8fe43895479aecfda187cb6a3330894a07e698bc5bd8
     # DRASYL_PRIVATE_KEY is defined securely in GitLab CI/CD Settings
@@ -142,6 +145,7 @@ stop_production:
     APP_IMAGE: "${CI_REGISTRY_IMAGE}:latest"
     APP_DEPLOY_HOST: "production.${APP_HOST}"
     SENTRY_ENVIRONMENT: production
+    DRASYL_NETWORK_ID: 1
     DRASYL_PROOF_OF_WORK: 10992904
     DRASYL_PUBLIC_KEY: 025fff6f625f5dee816d9f8fe43895479aecfda187cb6a3330894a07e698bc5bd8
     # DRASYL_PRIVATE_KEY is defined securely in GitLab CI/CD Settings

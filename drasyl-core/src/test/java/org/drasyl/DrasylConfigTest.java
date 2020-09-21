@@ -77,6 +77,7 @@ import static org.drasyl.DrasylConfig.MONITORING_INFLUX_PASSWORD;
 import static org.drasyl.DrasylConfig.MONITORING_INFLUX_REPORTING_FREQUENCY;
 import static org.drasyl.DrasylConfig.MONITORING_INFLUX_URI;
 import static org.drasyl.DrasylConfig.MONITORING_INFLUX_USER;
+import static org.drasyl.DrasylConfig.NETWORK_ID;
 import static org.drasyl.DrasylConfig.PLUGINS;
 import static org.drasyl.DrasylConfig.SERVER_BIND_HOST;
 import static org.drasyl.DrasylConfig.SERVER_BIND_PORT;
@@ -106,6 +107,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.WARN)
 class DrasylConfigTest {
+    private int networkId;
     @Mock
     private ProofOfWork proofOfWork;
     @Mock
@@ -168,6 +170,7 @@ class DrasylConfigTest {
 
     @BeforeEach
     void setUp() {
+        networkId = 1337;
         serverBindHost = createInetAddress("0.0.0.0");
         serverEnabled = true;
         serverBindPort = 22527;
@@ -216,6 +219,7 @@ class DrasylConfigTest {
     class Constructor {
         @Test
         void shouldReadConfigProperly() {
+            when(typesafeConfig.getInt(NETWORK_ID)).thenReturn(networkId);
             when(typesafeConfig.getInt(IDENTITY_PROOF_OF_WORK)).thenReturn(-1);
             when(typesafeConfig.getString(IDENTITY_PUBLIC_KEY)).thenReturn("");
             when(typesafeConfig.getString(IDENTITY_PRIVATE_KEY)).thenReturn("");
@@ -262,6 +266,7 @@ class DrasylConfigTest {
 
             DrasylConfig config = new DrasylConfig(typesafeConfig);
 
+            assertEquals(networkId, config.getNetworkId());
             assertEquals(serverBindHost, config.getServerBindHost());
             assertEquals(serverBindPort, config.getServerBindPort());
             assertNull(config.getIdentityProofOfWork());
@@ -313,7 +318,7 @@ class DrasylConfigTest {
         void shouldMaskSecrets() throws CryptoException {
             identityPrivateKey = CompressedPrivateKey.of("07e98a2f8162a4002825f810c0fbd69b0c42bd9cb4f74a21bc7807bc5acb4f5f");
 
-            DrasylConfig config = new DrasylConfig(proofOfWork, identityPublicKey, identityPrivateKey, identityPath,
+            DrasylConfig config = new DrasylConfig(networkId, proofOfWork, identityPublicKey, identityPrivateKey, identityPath,
                     serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize,
                     serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer,
                     serverExposeEnabled, messageMaxContentLength, messageHopLimit, composedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints,
@@ -356,6 +361,7 @@ class DrasylConfigTest {
         @Test
         void shouldCreateCorrectConfig() {
             DrasylConfig config = DrasylConfig.newBuilder()
+                    .networkId(DEFAULT.getNetworkId())
                     .identityProofOfWork(DEFAULT.getIdentityProofOfWork())
                     .identityPublicKey(DEFAULT.getIdentityPublicKey())
                     .identityPrivateKey(DEFAULT.getIdentityPrivateKey())

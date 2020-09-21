@@ -40,6 +40,7 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_IDENTITY_COLLISION;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_NOT_A_SUPER_PEER;
+import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_OTHER_NETWORK;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_PROOF_OF_WORK_INVALID;
 
 /**
@@ -80,15 +81,18 @@ public class ServerConnectionHandler extends AbstractThreeWayHandshakeServerHand
     protected ConnectionExceptionMessage.Error validateSessionRequest(JoinMessage requestMessage) {
         CompressedPublicKey clientPublicKey = requestMessage.getPublicKey();
 
-        if (requestMessage.isChildrenJoin() && environment.getConfig().isSuperPeerEnabled()) {
+        if (!requestMessage.getProofOfWork().isValid(requestMessage.getPublicKey(),
+                IdentityManager.POW_DIFFICULTY)) {
+            return CONNECTION_ERROR_PROOF_OF_WORK_INVALID;
+        }
+        else if (requestMessage.isChildrenJoin() && environment.getConfig().isSuperPeerEnabled()) {
             return CONNECTION_ERROR_NOT_A_SUPER_PEER;
         }
         else if (environment.getIdentity().getPublicKey().equals(clientPublicKey)) {
             return CONNECTION_ERROR_IDENTITY_COLLISION;
         }
-        else if (!requestMessage.getProofOfWork().isValid(requestMessage.getPublicKey(),
-                IdentityManager.POW_DIFFICULTY)) {
-            return CONNECTION_ERROR_PROOF_OF_WORK_INVALID;
+        else if (environment.getConfig().getNetworkId() != requestMessage.getNetworkId()) {
+            return CONNECTION_ERROR_OTHER_NETWORK;
         }
         else {
             return null;
