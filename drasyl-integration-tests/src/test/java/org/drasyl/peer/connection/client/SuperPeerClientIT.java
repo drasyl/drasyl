@@ -95,6 +95,7 @@ class SuperPeerClientIT {
     private PeerChannelGroup channelGroup;
     private PeerChannelGroup channelGroupServer;
     private Set<Endpoint> endpoints;
+    private int networkId;
 
     @BeforeEach
     void setup(TestInfo info) throws DrasylException, CryptoException {
@@ -111,6 +112,7 @@ class SuperPeerClientIT {
         bossGroup = new NioEventLoopGroup(1);
 
         config = DrasylConfig.newBuilder()
+                .networkId(0)
                 .identityProofOfWork(ProofOfWork.of(6657650))
                 .identityPublicKey(CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"))
                 .identityPrivateKey(CompressedPrivateKey.of("0c27af38c77f2cd5cc2a0ff5c461003a9c24beb955f316135d251ecaf4dda03f"))
@@ -131,6 +133,7 @@ class SuperPeerClientIT {
         identityManager.loadOrCreateIdentity();
 
         serverConfig = DrasylConfig.newBuilder()
+                .networkId(0)
                 .identityProofOfWork(ProofOfWork.of(5344366))
                 .identityPublicKey(CompressedPublicKey.of("0234789936c7941f850c382ea9d14ecb0aad03b99a9e29a9c15b42f5f1b0c4cf3d"))
                 .identityPrivateKey(CompressedPrivateKey.of("064f10d37111303ee20443661c8ea758045bbf809e4950dd84b8a1348863d0f8"))
@@ -161,6 +164,7 @@ class SuperPeerClientIT {
         server.open();
 
         config = DrasylConfig.newBuilder()
+                .networkId(0)
                 .identityProofOfWork(ProofOfWork.of(6657650))
                 .identityPublicKey(CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"))
                 .identityPrivateKey(CompressedPrivateKey.of("0c27af38c77f2cd5cc2a0ff5c461003a9c24beb955f316135d251ecaf4dda03f"))
@@ -182,6 +186,7 @@ class SuperPeerClientIT {
         identityManager.loadOrCreateIdentity();
 
         emittedEventsSubject = ReplaySubject.<Event>create().toSerialized();
+        networkId = 0;
     }
 
     @AfterEach
@@ -207,7 +212,7 @@ class SuperPeerClientIT {
 
             // verify received messages
             receivedMessages.awaitCount(1);
-            receivedMessages.assertValueAt(0, new JoinMessage(identityManager.getProofOfWork(), identityManager.getPublicKey()));
+            receivedMessages.assertValueAt(0, new JoinMessage(identityManager.getProofOfWork(), identityManager.getPublicKey(), networkId));
         }
     }
 

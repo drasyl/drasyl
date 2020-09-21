@@ -10,6 +10,7 @@ import io.netty.util.CharsetUtil;
 import org.drasyl.DrasylNode;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.PeersManager;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
@@ -31,12 +32,17 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
 class ServerHttpHandlerTest {
+    private int networkId;
     @Mock
     private CompressedPublicKey publicKey;
     @Mock
-    private PeersManager peersManager; // Do not remove, it is auto injected into the underTest object
-    @InjectMocks
+    private PeersManager peersManager;
     private ServerHttpHandler underTest;
+
+    @BeforeEach
+    void setUp() {
+        underTest = new ServerHttpHandler(networkId, publicKey, peersManager);
+    }
 
     @Test
     void shouldPassThroughWebsocketRequests() {

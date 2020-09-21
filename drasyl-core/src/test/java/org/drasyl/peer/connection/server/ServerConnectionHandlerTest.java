@@ -27,8 +27,6 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.messenger.Messenger;
-import org.drasyl.peer.Path;
-import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.ApplicationMessage;
@@ -53,11 +51,13 @@ import static org.drasyl.peer.connection.PeerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_HANDSHAKE_TIMEOUT;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_IDENTITY_COLLISION;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_NOT_A_SUPER_PEER;
+import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_OTHER_NETWORK;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.ArgumentMatchers.anyShort;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
@@ -75,7 +75,7 @@ class ServerConnectionHandlerTest {
     private Throwable cause;
     @Mock
     private ApplicationMessage applicationMessage;
-    @Mock
+    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private JoinMessage joinMessage;
     @Mock
     private Messenger messenger;
@@ -95,12 +95,6 @@ class ServerConnectionHandlerTest {
     private Channel nettyChannel;
     @Mock
     private PeerChannelGroup channelGroup;
-    @Mock
-    private CompressedPublicKey superPeerPublicKey;
-    @Mock
-    private PeerInformation superPeerInformation;
-    @Mock
-    private Path superPeerPath;
     @Mock
     private StatusMessage statusMessage;
     @Mock
@@ -129,6 +123,7 @@ class ServerConnectionHandlerTest {
     void shouldRejectIncomingJoinMessageWithSamePublicKey() {
         when(environment.getIdentity().getPublicKey()).thenReturn(publicKey0);
         when(joinMessage.getPublicKey()).thenReturn(publicKey0);
+        when(joinMessage.getProofOfWork().isValid(any(), anyShort())).thenReturn(true);
 
         ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, null, offerMessage);
         EmbeddedChannel channel = new EmbeddedChannel(handler);
@@ -137,6 +132,21 @@ class ServerConnectionHandlerTest {
         channel.flush();
 
         assertEquals(new ConnectionExceptionMessage(CONNECTION_ERROR_IDENTITY_COLLISION), channel.readOutbound());
+    }
+
+    @Test
+    void shouldRejectIncomingJoinMessageWithOtherNetworkId() {
+        when(environment.getConfig().getNetworkId()).thenReturn(23);
+        when(joinMessage.getNetworkId()).thenReturn(32);
+        when(joinMessage.getProofOfWork().isValid(any(), anyShort())).thenReturn(true);
+
+        ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, null, offerMessage);
+        EmbeddedChannel channel = new EmbeddedChannel(handler);
+
+        channel.writeInbound(joinMessage);
+        channel.flush();
+
+        assertEquals(new ConnectionExceptionMessage(CONNECTION_ERROR_OTHER_NETWORK), channel.readOutbound());
     }
 
     @Test
@@ -210,6 +220,7 @@ class ServerConnectionHandlerTest {
         void shouldRejectClientJoins() {
             when(environment.getConfig().isSuperPeerEnabled()).thenReturn(true);
             when(joinMessage.isChildrenJoin()).thenReturn(true);
+            when(joinMessage.getProofOfWork().isValid(any(), anyShort())).thenReturn(true);
 
             ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, null, offerMessage);
             EmbeddedChannel channel = new EmbeddedChannel(handler);

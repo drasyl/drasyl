@@ -1,4 +1,8 @@
 #!/bin/sh
+if [[ -z "$DRASYL_NETWORK_ID" ]]; then
+  DRASYL_NETWORK_ID=$((RANDOM - 32768))
+fi
+
 cat << EOF
 version: '3.4'
 
@@ -15,6 +19,7 @@ services:
     hostname: ${APP_DEPLOY_HOST}
     command: node --verbose DEBUG
     environment:
+      CONFIG_FORCE_drasyl_network_id: "$DRASYL_NETWORK_ID"
       CONFIG_FORCE_drasyl_identity_proof__of__work: $DRASYL_PROOF_OF_WORK
       CONFIG_FORCE_drasyl_identity_public__key: $DRASYL_PUBLIC_KEY
       CONFIG_FORCE_drasyl_identity_private__key: $DRASYL_PRIVATE_KEY

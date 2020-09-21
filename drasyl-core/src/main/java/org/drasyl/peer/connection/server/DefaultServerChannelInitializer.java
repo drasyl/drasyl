@@ -66,7 +66,7 @@ public class DefaultServerChannelInitializer extends ServerChannelInitializer {
         pipeline.addLast(new HttpServerCodec());
         pipeline.addLast(new HttpObjectAggregator(65536));
         pipeline.addLast(new WebSocketServerCompressionHandler());
-        pipeline.addLast(new ServerHttpHandler(environment.getIdentity().getPublicKey(), environment.getPeersManager()));
+        pipeline.addLast(new ServerHttpHandler(environment.getConfig().getNetworkId(), environment.getIdentity().getPublicKey(), environment.getPeersManager()));
         pipeline.addLast(new WebSocketServerProtocolHandler("/", null, true));
     }
 
