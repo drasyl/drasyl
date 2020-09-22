@@ -3,7 +3,7 @@
     <option name="MAIN_CLASS_NAME" value="org.drasyl.cli.Cli" />
     <module name="drasyl-cli" />
     <option name="PROGRAM_PARAMETERS" value="node --verbose debug" />
-    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$/wormhole-send" />
+    <option name="WORKING_DIRECTORY" value="$PROJECT_DIR$" />
     <extension name="coverage">
       <pattern>
         <option name="PATTERN" value="org.drasyl.cli.*" />
