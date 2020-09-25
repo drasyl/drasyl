@@ -40,13 +40,12 @@ import static org.drasyl.pipeline.HeadContext.DRASYL_HEAD_HANDLER;
 import static org.drasyl.pipeline.TailContext.DRASYL_TAIL_HANDLER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.ArgumentMatchers.same;
+import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
 class DrasylPipelineTest {
@@ -114,9 +113,16 @@ class DrasylPipelineTest {
         pipeline.addBefore("name1", "name2", handler);
 
         verify(baseCtx).setPrevHandlerContext(captor.capture());
-        verify(head).setNextHandlerContext(eq(captor.getValue()));
-        assertEquals(handler, captor.getValue().handler());
-        verify(captor.getValue().handler()).handlerAdded(eq(captor.getValue()));
+        verify(baseCtx, never()).setNextHandlerContext(any());
+
+        assertSame(handler, captor.getValue().handler());
+        assertSame(captor.getValue().getPrev(), head);
+        assertSame(captor.getValue().getNext(), baseCtx);
+
+        verify(head).setNextHandlerContext(same(captor.getValue()));
+        verify(head, never()).setPrevHandlerContext(any());
+
+        verify(captor.getValue().handler()).handlerAdded(same(captor.getValue()));
     }
 
     @Test

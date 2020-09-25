@@ -156,8 +156,8 @@ public abstract class DefaultPipeline implements Pipeline {
             newCtx.setNextHandlerContext(baseCtx);
 
             // Set correct pointer on old context
-            baseCtx.setPrevHandlerContext(newCtx);
             baseCtx.getPrev().setNextHandlerContext(newCtx);
+            baseCtx.setPrevHandlerContext(newCtx);
 
             registerNewHandler(name, newCtx);
         }
