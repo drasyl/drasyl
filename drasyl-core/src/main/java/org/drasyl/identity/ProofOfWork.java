@@ -100,9 +100,26 @@ public class ProofOfWork {
     public boolean isValid(CompressedPublicKey publicKey, short difficulty) {
         requireNonNull(publicKey);
 
-        String hash = Hashing.sha256Hex(publicKey.getCompressedKey() + this.nonce);
+        String hash = generateHash(publicKey, nonce);
 
         return hash.startsWith("0".repeat(difficulty));
+    }
+
+    private static String generateHash(CompressedPublicKey publicKey, int nonce) {
+        return Hashing.sha256Hex(publicKey.getCompressedKey() + nonce);
+    }
+
+    public static short getDifficulty(ProofOfWork proofOfWork, CompressedPublicKey publicKey) {
+        String hash = generateHash(publicKey, proofOfWork.getNonce());
+        short i;
+
+        for (i = 0; i < hash.length(); i++) {
+            if (hash.charAt(i) != '0') {
+                break;
+            }
+        }
+
+        return i;
     }
 
     public void incNonce() {

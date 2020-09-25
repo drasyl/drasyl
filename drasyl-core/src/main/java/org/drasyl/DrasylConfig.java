@@ -40,6 +40,7 @@ import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
 
@@ -357,13 +358,15 @@ public class DrasylConfig {
 
     private List<PluginEnvironment> getPluginEnvironmentList(Config config, String path) {
         List<PluginEnvironment> environments = new ArrayList<>();
-        for (ConfigValue value : config.getObject(path).values()) {
-            Config plugin = value.atKey("plugin");
 
-            if (plugin.getBoolean("plugin.enabled")) {
+        for (Map.Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
+            final String key = entry.getKey();
+            final Config plugin = entry.getValue().atKey(key);
+
+            if (plugin.getBoolean(key + ".enabled")) {
                 try {
-                    Class<? extends AutoloadablePlugin> clazz = (Class<? extends AutoloadablePlugin>) Class.forName(plugin.getString("plugin.class"));
-                    environments.add(new PluginEnvironment(plugin.getObject("plugin.options"), clazz));
+                    Class<? extends AutoloadablePlugin> clazz = (Class<? extends AutoloadablePlugin>) Class.forName(plugin.getString(key + ".class"));
+                    environments.add(new PluginEnvironment(plugin, clazz));
                 }
                 catch (ClassNotFoundException e) {
                     throw new ConfigException.WrongType(plugin.origin(), "class", "autoloadable plugin", "class-not-found: " + e.getMessage());

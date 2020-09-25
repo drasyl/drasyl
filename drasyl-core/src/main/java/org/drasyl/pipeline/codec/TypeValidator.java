@@ -82,9 +82,9 @@ public class TypeValidator {
      *
      * @param clazz class that should be added
      */
-    public void addClass(Class<?> clazz) {
+    public void addClass(Class<?>... clazz) {
         synchronized (classes) {
-            classes.add(clazz);
+            classes.addAll(List.of(clazz));
         }
     }
 
