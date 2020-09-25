@@ -21,7 +21,6 @@ package org.drasyl.plugins;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeComponent;
-import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.util.DrasylFunction;
 import org.slf4j.Logger;
@@ -61,9 +60,7 @@ public class PluginManager implements DrasylNodeComponent {
         LOG.debug("Start Plugins...");
         for (PluginEnvironment pluginEnvironment : config.getPluginEnvironments()) {
             AutoloadablePlugin plugin = loadPlugin(pluginEnvironment);
-            plugins.put(plugin.name(), plugin);
-            addHandlerToPipeline(plugin);
-            plugin.onAdded();
+            add(plugin);
         }
         LOG.debug("Plugins started.");
     }
@@ -91,12 +88,6 @@ public class PluginManager implements DrasylNodeComponent {
         }
     }
 
-    private void addHandlerToPipeline(DrasylPlugin plugin) {
-        for (Handler handler : plugin.getHandler()) {
-            pipeline.addLast(handler.getClass().getSimpleName(), handler);
-        }
-    }
-
     /**
      * Stops all plugins and removes them from the plugin list.
      */
@@ -104,23 +95,11 @@ public class PluginManager implements DrasylNodeComponent {
     public synchronized void close() {
         LOG.info("Stop Plugins...");
         for (DrasylPlugin plugin : plugins.values()) {
-            removeHandlerFromPipeline(plugin);
             plugin.onRemove();
         }
 
         plugins.clear();
         LOG.info("Plugins stopped");
-    }
-
-    private void removeHandlerFromPipeline(DrasylPlugin plugin) {
-        for (Handler handler : plugin.getHandler()) {
-            try {
-                pipeline.remove(handler.getClass().getSimpleName());
-            }
-            catch (Exception e) {
-                // Do nothing
-            }
-        }
     }
 
     /**
@@ -129,9 +108,9 @@ public class PluginManager implements DrasylNodeComponent {
      *
      * @param plugin the plugin that should be added
      */
-    public synchronized void add(DrasylPlugin plugin) {
+    public synchronized void add(DrasylPlugin plugin) throws DrasylException {
+        duplicateCheck(plugin.name());
         plugins.put(plugin.name(), plugin);
-        addHandlerToPipeline(plugin);
         plugin.onAdded();
     }
 
@@ -143,7 +122,18 @@ public class PluginManager implements DrasylNodeComponent {
      */
     public synchronized void remove(String name) {
         DrasylPlugin plugin = plugins.remove(name);
-        removeHandlerFromPipeline(plugin);
         plugin.onRemove();
+    }
+
+    /**
+     * Checks if the plugin is already added and throws an exception in this case.
+     *
+     * @param name the plugin name
+     * @throws DrasylException if plugin is already added
+     */
+    private void duplicateCheck(String name) throws DrasylException {
+        if (plugins.containsKey(name)) {
+            throw new DrasylException("Can't add the '" + name + "' plugin twice.");
+        }
     }
 }

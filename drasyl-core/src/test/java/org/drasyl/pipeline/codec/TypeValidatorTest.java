@@ -106,7 +106,7 @@ class TypeValidatorTest {
             TypeValidator validator = new TypeValidator(classes, packages, false, false, () -> null);
             validator.addClass(String.class);
 
-            verify(classes).add(eq(String.class));
+            verify(classes).addAll(eq(List.of(String.class)));
             verifyNoInteractions(packages);
         }
 

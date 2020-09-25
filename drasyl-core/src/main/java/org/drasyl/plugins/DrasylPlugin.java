@@ -18,35 +18,16 @@
  */
 package org.drasyl.plugins;
 
-import org.drasyl.pipeline.Handler;
-
-import java.util.List;
-
 /**
  * This interface is implemented by all drasyl plugins.
  */
 public interface DrasylPlugin {
-    /**
-     * This method gets called when the plugin is added to drasyl and adds the given {@link
-     * Handler}s to the corresponding {@link org.drasyl.pipeline.Pipeline}. If you want to add your
-     * {@link Handler}s manually, return an empty list.
-     *
-     * @return a sorted list of {@link Handler} that should be added to the {@link
-     * org.drasyl.pipeline.Pipeline}
-     */
-    List<Handler> getHandler();
-
     /**
      * The plugin name must be unique.
      *
      * @return the plugin name
      */
     String name();
-
-    /**
-     * @return a description of this plugin
-     */
-    String description();
 
     /**
      * This method gets called when the plugin was removed from drasyl.

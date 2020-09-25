@@ -29,7 +29,6 @@ import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.Identity;
-import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.HandlerAdapter;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
@@ -37,7 +36,6 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.List;
 import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.Mockito.mock;
@@ -59,7 +57,6 @@ class PluginsIT {
                 " test-plugin {\n" +
                 "  class = \"org.drasyl.plugins.PluginsIT$TestPlugin\"\n" +
                 "  enabled = true\n" +
-                "  options {}\n" +
                 " }\n" +
                 "}");
 
@@ -97,34 +94,15 @@ class PluginsIT {
     }
 
     public static class TestPlugin extends AutoloadablePlugin {
-        private final Handler testHandler;
-
         public TestPlugin(Pipeline pipeline,
                           DrasylConfig config,
                           PluginEnvironment environment) {
             super(pipeline, config, environment);
-
-            this.testHandler = new HandlerAdapter() {
-                @Override
-                public void handlerAdded(HandlerContext ctx) {
-                    ctx.fireEventTriggered(event1, new CompletableFuture<>());
-                }
-            };
-        }
-
-        @Override
-        public List<Handler> getHandler() {
-            return List.of(testHandler);
         }
 
         @Override
         public String name() {
             return "PluginsIT.TestPlugin";
-        }
-
-        @Override
-        public String description() {
-            return "This is a test plugin.";
         }
 
         @Override
@@ -134,6 +112,12 @@ class PluginsIT {
 
         @Override
         public void onAdded() {
+            pipeline.addLast("TestHandler", new HandlerAdapter() {
+                @Override
+                public void handlerAdded(HandlerContext ctx) {
+                    ctx.fireEventTriggered(event1, new CompletableFuture<>());
+                }
+            });
             pipeline.processInbound(event2);
         }
     }

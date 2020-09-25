@@ -18,7 +18,7 @@
  */
 package org.drasyl.plugins;
 
-import com.typesafe.config.ConfigObject;
+import com.typesafe.config.Config;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -29,14 +29,14 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @ExtendWith(MockitoExtension.class)
 class PluginEnvironmentTest {
     @Mock
-    private ConfigObject options;
+    private Config options;
     private final Class<? extends AutoloadablePlugin> clazz = AutoloadablePlugin.class;
 
     @Test
     void shouldReturnCorrectOptions() {
         PluginEnvironment env = new PluginEnvironment(options, clazz);
 
-        assertEquals(options, env.getOptions());
+        assertEquals(options, env.getOptions().getConfig());
     }
 
     @Test

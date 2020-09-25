@@ -20,8 +20,6 @@ package org.drasyl.plugins;
 
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
-import org.drasyl.pipeline.Handler;
-import org.drasyl.pipeline.HandlerAdapter;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.util.DrasylFunction;
 import org.junit.jupiter.api.Nested;
@@ -53,8 +51,6 @@ class PluginManagerTest {
     @Mock
     private DrasylConfig config;
     @Mock
-    private static HandlerAdapter handler;
-    @Mock
     private DrasylFunction<Class<? extends AutoloadablePlugin>, Constructor<?>, Exception> constructorFunction;
 
     @Test
@@ -66,19 +62,26 @@ class PluginManagerTest {
     }
 
     @Test
-    void shouldAddPlugin() {
+    void shouldAddPlugin() throws DrasylException {
         PluginManager manager = new PluginManager(pipeline, config, plugins, constructorFunction);
 
         DrasylPlugin plugin = mock(DrasylPlugin.class);
-        Handler handler = mock(Handler.class);
-        when(plugin.getHandler()).thenReturn(List.of(handler));
         when(plugin.name()).thenReturn("PluginName");
 
         manager.add(plugin);
 
         verify(plugins).put(plugin.name(), plugin);
-        verify(pipeline).addLast(handler.getClass().getSimpleName(), handler);
         verify(plugin).onAdded();
+    }
+
+    @Test
+    void shouldThrowExceptionOnDuplicatePlugin() {
+        PluginManager manager = new PluginManager(pipeline, config, plugins, constructorFunction);
+        DrasylPlugin plugin = mock(DrasylPlugin.class);
+        when(plugin.name()).thenReturn("PluginName");
+        when(plugins.containsKey(plugin.name())).thenReturn(true);
+
+        assertThrows(DrasylException.class, () -> manager.add(plugin));
     }
 
     @Test
@@ -86,15 +89,12 @@ class PluginManagerTest {
         DrasylPlugin plugin = mock(DrasylPlugin.class);
         when(plugin.name()).thenReturn("PluginName");
         when(plugins.remove(plugin.name())).thenReturn(plugin);
-        Handler handler = mock(Handler.class);
-        when(plugin.getHandler()).thenReturn(List.of(handler));
 
         PluginManager manager = new PluginManager(pipeline, config, plugins, constructorFunction);
 
         manager.remove(plugin.name());
 
         verify(plugins).remove(eq(plugin.name()));
-        verify(pipeline).remove(eq(handler.getClass().getSimpleName()));
         verify(plugin).onRemove();
     }
 
@@ -102,14 +102,11 @@ class PluginManagerTest {
     void shouldRemovePluginsOnStop() {
         DrasylPlugin plugin = mock(DrasylPlugin.class);
         when(plugins.values()).thenReturn(List.of(plugin));
-        Handler handler = mock(Handler.class);
-        when(plugin.getHandler()).thenReturn(List.of(handler));
 
         PluginManager manager = new PluginManager(pipeline, config, plugins, constructorFunction);
 
         manager.close();
 
-        verify(pipeline).remove(eq(handler.getClass().getSimpleName()));
         verify(plugin).onRemove();
         verify(plugins).clear();
     }
@@ -127,7 +124,6 @@ class PluginManagerTest {
         manager.open();
 
         verify(plugins).put(isA(String.class), isA(TestPlugin.class));
-        verify(pipeline).addLast(handler.getClass().getSimpleName(), handler);
     }
 
     @Nested
@@ -181,18 +177,8 @@ class PluginManagerTest {
         }
 
         @Override
-        public List<Handler> getHandler() {
-            return List.of(handler);
-        }
-
-        @Override
         public String name() {
             return "PluginManagerTest.TestPlugin";
-        }
-
-        @Override
-        public String description() {
-            return "This is a test plugin.";
         }
 
         @Override

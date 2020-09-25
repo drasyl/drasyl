@@ -18,30 +18,39 @@
  */
 package org.drasyl.plugins;
 
-import com.typesafe.config.ConfigObject;
+import com.typesafe.config.Config;
 
 /**
  * Models environment information of a {@link DrasylPlugin} that are required by the plugin or the
  * {@link PluginManager} to automatically load the plugin.
  */
 public class PluginEnvironment {
-    private final ConfigObject options;
+    private final PluginOptions options;
     private final Class<? extends AutoloadablePlugin> clazz;
 
-    public PluginEnvironment(ConfigObject options,
+    public PluginEnvironment(Config options,
+                             Class<? extends AutoloadablePlugin> clazz) {
+        this(new DefaultPluginOptions(options), clazz);
+    }
+
+    public PluginEnvironment(PluginOptions options,
                              Class<? extends AutoloadablePlugin> clazz) {
         this.options = options;
         this.clazz = clazz;
     }
 
     /**
-     * @return the {@link ConfigObject} of the corresponding plugin
+     * Returns the {@link PluginOptions} of the corresponding plugin.
+     *
+     * @return the {@link PluginOptions} of the corresponding plugin
      */
-    public ConfigObject getOptions() {
+    public PluginOptions getOptions() {
         return options;
     }
 
     /**
+     * Returns the class of the corresponding plugin.
+     *
      * @return the class of the corresponding plugin
      */
     public Class<? extends AutoloadablePlugin> getClazz() {
