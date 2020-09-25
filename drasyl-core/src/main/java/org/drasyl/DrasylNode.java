@@ -189,7 +189,7 @@ public abstract class DrasylNode {
                 this.components.add(new DirectConnectionsManager(config, identity, peersManager, messenger, pipeline, channelGroup, LazyWorkerGroupHolder.INSTANCE, this::onInternalEvent, acceptNewConnections::get, endpoints, messenger.communicationOccurred()));
             }
             if (config.isIntraVmDiscoveryEnabled()) {
-                this.components.add(new IntraVmDiscovery(identity.getPublicKey(), messenger, peersManager, this::onInternalEvent));
+                this.components.add(new IntraVmDiscovery(identity.getPublicKey(), messenger, peersManager, pipeline));
             }
             if (config.isSuperPeerEnabled()) {
                 this.components.add(new SuperPeerClient(this.config, identity, peersManager, messenger, channelGroup, LazyWorkerGroupHolder.INSTANCE, this::onInternalEvent, acceptNewConnections::get));

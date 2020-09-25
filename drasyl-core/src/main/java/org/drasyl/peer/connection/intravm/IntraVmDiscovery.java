@@ -29,6 +29,7 @@ import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.pipeline.Pipeline;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -72,7 +73,7 @@ public class IntraVmDiscovery implements DrasylNodeComponent {
     public IntraVmDiscovery(CompressedPublicKey publicKey,
                             Messenger messenger,
                             PeersManager peersManager,
-                            Consumer<Event> eventConsumer) {
+                            Pipeline pipeline) {
         this(
                 publicKey,
                 messenger,
@@ -83,7 +84,7 @@ public class IntraVmDiscovery implements DrasylNodeComponent {
                     }
 
                     ApplicationMessage applicationMessage = (ApplicationMessage) message;
-                    eventConsumer.accept(new MessageEvent(applicationMessage.getSender(), applicationMessage.getPayload()));
+                    pipeline.processInbound(applicationMessage);
 
                     return completedFuture(null);
                 }
