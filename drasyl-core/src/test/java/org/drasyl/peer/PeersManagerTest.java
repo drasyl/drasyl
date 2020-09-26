@@ -277,22 +277,6 @@ class PeersManagerTest {
             assertNull(underTest.getSuperPeer());
         }
 
-        @Test
-        @Disabled("not implemented")
-        void shouldEmitPeerUnreachableEventForSuperPeer(@Mock PeerInformation peerInformation) {
-            peers.put(superPeer, peerInformation);
-
-            underTest.unsetSuperPeer();
-
-            verify(eventConsumer).accept(new PeerDirectEvent(new Peer(superPeer)));
-        }
-
-        @Test
-        @Disabled("not implemented")
-        void shouldEmitPeerUnreachableForAllPeersWithoutDirectConnection() {
-            fail("not implemented");
-        }
-
         @AfterEach
         void tearDown() {
             verify(lock.writeLock()).lock();
@@ -310,12 +294,6 @@ class PeersManagerTest {
             underTest.unsetSuperPeerAndRemovePath(path);
 
             assertNull(underTest.getSuperPeer());
-        }
-
-        @Test
-        @Disabled("not implemented")
-        void shouldEmitPeerUnreachableEventForSuperPeerIfNoPathsLeft() {
-            fail("not implemented");
         }
 
         @Test
@@ -373,12 +351,6 @@ class PeersManagerTest {
 
             assertThat(underTest.getPeers(), hasKey(publicKey));
             assertEquals(Set.of(), underTest.getChildrenKeys());
-        }
-
-        @Test
-        @Disabled("not implemented")
-        void shouldEmitPeerUnknownEventForChildren() {
-            fail("not implemented (introduce PeerUnknownEvent?)");
         }
 
         @AfterEach
