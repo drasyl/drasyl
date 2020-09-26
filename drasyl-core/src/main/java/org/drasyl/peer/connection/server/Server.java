@@ -211,11 +211,11 @@ public class Server implements DrasylNodeComponent {
     @SuppressWarnings({ "java:S1905" })
     public void close() {
         if (opened.compareAndSet(true, false) && channel != null && channel.isOpen()) {
-            LOG.info("Stop Server listening at {}...", socketAddress);
+            LOG.debug("Stop Server listening at {}...", socketAddress);
             // shutdown server
             channel.close().awaitUninterruptibly();
             channel = null;
-            LOG.info("Server stopped");
+            LOG.debug("Server stopped");
         }
     }
 

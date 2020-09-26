@@ -242,6 +242,7 @@ public class LocalHostDiscovery implements DrasylNodeComponent {
     @Override
     public void close() {
         if (opened.compareAndSet(true, false)) {
+            LOG.debug("Stop Local Host Discovery...");
             if (communicationObserver != null) {
                 communicationObserver.dispose();
             }
@@ -251,6 +252,7 @@ public class LocalHostDiscovery implements DrasylNodeComponent {
             if (postDisposable != null) {
                 postDisposable.dispose();
             }
+            LOG.debug("Local Host Discovery stopped.");
         }
     }
 }

@@ -93,13 +93,13 @@ public class PluginManager implements DrasylNodeComponent {
      */
     @Override
     public synchronized void close() {
-        LOG.info("Stop Plugins...");
+        LOG.debug("Stop Plugins...");
         for (DrasylPlugin plugin : plugins.values()) {
             plugin.onRemove();
         }
 
         plugins.clear();
-        LOG.info("Plugins stopped");
+        LOG.debug("Plugins stopped");
     }
 
     /**

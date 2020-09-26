@@ -161,11 +161,11 @@ public class Monitoring implements DrasylNodeComponent {
     @Override
     public void close() {
         if (opened.compareAndSet(true, false)) {
-            LOG.info("Stop Monitoring...");
+            LOG.debug("Stop Monitoring...");
             pipeline.remove(MONITORING_HANDLER);
             registry.close();
             registry = null;
-            LOG.info("Monitoring stopped.");
+            LOG.debug("Monitoring stopped.");
         }
     }
 }

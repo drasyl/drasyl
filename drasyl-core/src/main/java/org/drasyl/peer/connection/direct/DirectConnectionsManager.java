@@ -190,7 +190,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
     @Override
     public void close() {
         if (opened.compareAndSet(true, false)) {
-            LOG.info("Stop Direct Connections Handler...");
+            LOG.debug("Stop Direct Connections Handler...");
 
             // remove handler that has been added in {@link #open()}
             pipeline.remove(DIRECT_CONNECTIONS_MANAGER);
@@ -206,7 +206,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
                 clients.remove(publicKey);
                 client.close();
             }
-            LOG.info("Direct Connections Handler stopped");
+            LOG.debug("Direct Connections Handler stopped");
         }
     }
 

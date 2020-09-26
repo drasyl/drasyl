@@ -231,10 +231,10 @@ abstract class AbstractClient implements DrasylNodeComponent {
     public void close() {
         if (opened.compareAndSet(true, false) && channel != null) {
             // close connection
-            getLogger().info("Stop Client...");
+            getLogger().debug("Stop Client...");
             channel.close().syncUninterruptibly();
             channel = null;
-            getLogger().info("Client stopped");
+            getLogger().debug("Client stopped");
         }
     }
 

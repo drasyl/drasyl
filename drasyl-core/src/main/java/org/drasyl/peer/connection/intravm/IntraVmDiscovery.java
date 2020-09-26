@@ -140,7 +140,7 @@ public class IntraVmDiscovery implements DrasylNodeComponent {
     public void close() {
         try {
             lock.writeLock().lock();
-            LOG.info("Stop Intra VM Discovery...");
+            LOG.debug("Stop Intra VM Discovery...");
 
             if (opened.compareAndSet(true, false)) {
                 // remove message sink
@@ -153,7 +153,7 @@ public class IntraVmDiscovery implements DrasylNodeComponent {
                     peersManager.removePath(d.publicKey, path);
                 });
             }
-            LOG.info("Intra VM Discovery stopped.");
+            LOG.debug("Intra VM Discovery stopped.");
         }
         finally {
             lock.writeLock().unlock();
