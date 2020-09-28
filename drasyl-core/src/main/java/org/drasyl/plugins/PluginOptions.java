@@ -61,6 +61,23 @@ public abstract class PluginOptions {
         return this.config;
     }
 
+    @Override
+    public int hashCode() {
+        return Objects.hash(config);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        PluginOptions that = (PluginOptions) o;
+        return Objects.equals(config, that.config);
+    }
+
     /**
      * Builder implementation for this configuration.
      * <p>
@@ -74,12 +91,12 @@ public abstract class PluginOptions {
     public abstract static class BuilderBase<B extends PluginOptions, T extends BuilderBase<B, T>> {
         Config config;
 
-        protected abstract T self();
-
         public T config(Config config) {
             this.config = config;
             return self();
         }
+
+        protected abstract T self();
 
         public abstract B build();
 

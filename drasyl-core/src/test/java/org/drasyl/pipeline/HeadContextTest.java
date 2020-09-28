@@ -115,6 +115,18 @@ class HeadContextTest {
 
             verify(future).completeExceptionally(isA(IllegalStateException.class));
         }
+
+        @Test
+        void shouldCompleteFutureAndNothingElseOnAutoSwallow() {
+            HeadContext headContext = new HeadContext(config, pipeline, scheduler, identity, validator);
+            CompressedPublicKey recipient = mock(CompressedPublicKey.class);
+            AutoSwallow msg = new AutoSwallow() {};
+
+            headContext.write(ctx, recipient, msg, future);
+
+            verify(future, never()).completeExceptionally(any());
+            verify(future).complete(null);
+        }
     }
 
     @Nested

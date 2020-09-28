@@ -33,6 +33,8 @@ public final class HexUtil {
      *
      * @param hexString e.g. "AB34"
      * @return byte array {AB,34}
+     * @throws IllegalArgumentException if string parameter does not conform to lexical value space
+     *                                  defined in XML Schema Part 2: Datatypes for xsd:hexBinary.
      */
     public static byte[] fromString(String hexString) {
         return parseHexBinary(hexString);

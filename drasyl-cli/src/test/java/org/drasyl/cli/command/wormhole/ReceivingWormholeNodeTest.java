@@ -13,6 +13,7 @@ import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.pipeline.DrasylPipeline;
+import org.drasyl.plugins.PluginManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -42,7 +43,7 @@ class ReceivingWormholeNodeTest {
     private final CompletableFuture<Void> shutdownSequence = new CompletableFuture<>();
     private ByteArrayOutputStream outputStream;
     private PrintStream printStream;
-    private AtomicBoolean received = new AtomicBoolean();
+    private final AtomicBoolean received = new AtomicBoolean();
     @Mock
     private CompressedPublicKey sender;
     @Mock
@@ -68,6 +69,8 @@ class ReceivingWormholeNodeTest {
     @Mock
     private List<DrasylNodeComponent> components;
     @Mock
+    private PluginManager pluginManager;
+    @Mock
     private CompletableFuture<Void> doneFuture;
     private ReceivingWormholeNode underTest;
 
@@ -75,7 +78,7 @@ class ReceivingWormholeNodeTest {
     void setUp() {
         outputStream = new ByteArrayOutputStream();
         printStream = new PrintStream(outputStream, true);
-        underTest = new ReceivingWormholeNode(doneFuture, printStream, received, sender, timeoutGuard, config, identity, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, components, started, startSequence, shutdownSequence);
+        underTest = new ReceivingWormholeNode(doneFuture, printStream, received, sender, timeoutGuard, config, identity, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, components, pluginManager, started, startSequence, shutdownSequence);
     }
 
     @Nested

@@ -16,6 +16,7 @@ import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.pipeline.DrasylPipeline;
+import org.drasyl.plugins.PluginManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -53,10 +54,11 @@ public class ReceivingWormholeNode extends DrasylNode {
                           AtomicBoolean acceptNewConnections,
                           DrasylPipeline pipeline,
                           List<DrasylNodeComponent> components,
+                          PluginManager pluginManager,
                           AtomicBoolean started,
                           CompletableFuture<Void> startSequence,
                           CompletableFuture<Void> shutdownSequence) {
-        super(config, identity, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, components, started, startSequence, shutdownSequence);
+        super(config, identity, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, components, pluginManager, started, startSequence, shutdownSequence);
         this.doneFuture = doneFuture;
         this.printStream = printStream;
         this.received = received;

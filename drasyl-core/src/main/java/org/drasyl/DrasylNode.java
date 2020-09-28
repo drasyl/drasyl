@@ -124,6 +124,7 @@ public abstract class DrasylNode {
     private final DrasylPipeline pipeline;
     private final List<DrasylNodeComponent> components;
     private final AtomicBoolean started;
+    private final PluginManager pluginManager;
     private CompletableFuture<Void> startSequence;
     private CompletableFuture<Void> shutdownSequence;
 
@@ -162,7 +163,6 @@ public abstract class DrasylNode {
             this.acceptNewConnections = new AtomicBoolean();
             this.pipeline = new DrasylPipeline(this::onEvent, config, identity);
             this.components = new ArrayList<>();
-            this.components.add(new PluginManager(pipeline, config));
 
             // --------------------------------- TODO ----------------------------------------------
             // Remove this later, when the messenger is replaced and all components are added to the
@@ -203,6 +203,8 @@ public abstract class DrasylNode {
             if (config.isMonitoringEnabled()) {
                 this.components.add(new Monitoring(config, peersManager, identity.getPublicKey(), pipeline));
             }
+
+            this.pluginManager = new PluginManager(pipeline, config);
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = completedFuture(null);
@@ -281,6 +283,7 @@ public abstract class DrasylNode {
                          AtomicBoolean acceptNewConnections,
                          DrasylPipeline pipeline,
                          List<DrasylNodeComponent> components,
+                         PluginManager pluginManager,
                          AtomicBoolean started,
                          CompletableFuture<Void> startSequence,
                          CompletableFuture<Void> shutdownSequence) {
@@ -293,6 +296,7 @@ public abstract class DrasylNode {
         this.pipeline = pipeline;
         this.channelGroup = channelGroup;
         this.components = components;
+        this.pluginManager = pluginManager;
         this.started = started;
         this.startSequence = startSequence;
         this.shutdownSequence = shutdownSequence;
@@ -380,13 +384,15 @@ public abstract class DrasylNode {
      */
     public CompletableFuture<Void> shutdown() {
         if (startSequence.isDone() && started.compareAndSet(true, false)) {
-            DrasylNode self = this;
             onInternalEvent(new NodeDownEvent(Node.of(identity, endpoints)));
             LOG.info("Shutdown drasyl Node with Identity '{}'...", identity);
             shutdownSequence = new CompletableFuture<>();
+            pluginManager.beforeStop();
+
             startSequence.whenComplete((t, exp) -> getInstanceHeavy().scheduleDirect(() -> {
                 rejectNewConnections();
                 closeConnections();
+
                 for (int i = components.size() - 1; i >= 0; i--) {
                     components.get(i).close();
                 }
@@ -394,7 +400,8 @@ public abstract class DrasylNode {
                 onInternalEvent(new NodeNormalTerminationEvent(Node.of(identity, endpoints)));
                 LOG.info("drasyl Node with Identity '{}' has shut down", identity);
                 shutdownSequence.complete(null);
-                INSTANCES.remove(self);
+                INSTANCES.remove(DrasylNode.this);
+                pluginManager.afterStop();
             }));
         }
 
@@ -434,6 +441,7 @@ public abstract class DrasylNode {
             startSequence = new CompletableFuture<>();
             shutdownSequence.whenComplete((t, ex) -> getInstanceHeavy().scheduleDirect(() -> {
                 try {
+                    pluginManager.beforeStart();
                     for (DrasylNodeComponent component : components) {
                         component.open();
                     }
@@ -442,11 +450,13 @@ public abstract class DrasylNode {
                     onInternalEvent(new NodeUpEvent(Node.of(identity, endpoints)));
                     LOG.info("drasyl Node with Identity '{}' has started", identity);
                     startSequence.complete(null);
+                    pluginManager.afterStart();
                 }
                 catch (DrasylException e) {
                     onInternalEvent(new NodeUnrecoverableErrorEvent(Node.of(identity, endpoints), e));
                     LOG.info("Could not start drasyl Node: {}", e.getMessage());
                     LOG.info("Stop all running components...");
+                    pluginManager.beforeStop();
 
                     rejectNewConnections();
                     closeConnections();
@@ -457,6 +467,8 @@ public abstract class DrasylNode {
                     LOG.info("All components stopped");
                     started.set(false);
                     startSequence.completeExceptionally(e);
+                    INSTANCES.remove(DrasylNode.this);
+                    pluginManager.afterStop();
                 }
             }));
         }

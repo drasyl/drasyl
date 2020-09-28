@@ -28,20 +28,45 @@ import java.security.PrivateKey;
  * This interface models a compressed key that can be converted into a string and vice versa.
  */
 public class CompressedPrivateKey extends AbstractCompressedKey<PrivateKey> {
+    /**
+     * Creates a new compressed private key from the given string.
+     *
+     * @param compressedKey compressed private key
+     * @throws IllegalArgumentException if string parameter does not conform to a valid hexadecimal
+     *                                  string
+     * @throws CryptoException          if the string parameter does not conform to a valid key
+     */
     public CompressedPrivateKey(String compressedKey) throws CryptoException {
         super(compressedKey);
     }
 
+    /**
+     * Creates a new compressed private key from the given private key.
+     *
+     * @param key compressed private key
+     * @throws IllegalArgumentException if parameter does not conform to a valid hexadecimal string
+     * @throws CryptoException          if the parameter does not conform to a valid key
+     */
     public CompressedPrivateKey(PrivateKey key) throws CryptoException {
         this(HexUtil.bytesToHex(Crypto.compressedKey(key)), key);
     }
 
+    /**
+     * Creates a new compressed private key from the given string and private key.
+     *
+     * @param compressedKey compressed private key
+     * @param key           private key
+     */
     CompressedPrivateKey(String compressedKey, PrivateKey key) {
         super(compressedKey, key);
     }
 
     /**
-     * @throws IllegalArgumentException if string parameter does not conform to a valid key
+     * Returns the {@link PrivateKey} object of this compressed private key.
+     *
+     * @throws IllegalArgumentException if string parameter does not conform to a valid hexadecimal
+     *                                  string
+     * @throws CryptoException          if the string parameter does not conform to a valid key
      */
     @Override
     public PrivateKey toUncompressedKey() throws CryptoException {
@@ -55,7 +80,10 @@ public class CompressedPrivateKey extends AbstractCompressedKey<PrivateKey> {
      * Converts a {@link String} into a {@link CompressedPrivateKey}.
      *
      * @param compressedKey compressed key as String
-     * @return {@link CompressedPrivateKey}
+     * @return {@link CompressedPublicKey}
+     * @throws CryptoException          if string parameter does not conform to a valid key
+     * @throws IllegalArgumentException if string parameter does not conform to a valid hexadecimal
+     *                                  string
      */
     public static CompressedPrivateKey of(String compressedKey) throws CryptoException {
         return new CompressedPrivateKey(compressedKey);
@@ -65,7 +93,10 @@ public class CompressedPrivateKey extends AbstractCompressedKey<PrivateKey> {
      * Converts a {@link PrivateKey} into a {@link CompressedPrivateKey}.
      *
      * @param key private key
-     * @return {@link CompressedPrivateKey}
+     * @return {@link CompressedPublicKey}
+     * @throws CryptoException          if string parameter does not conform to a valid key
+     * @throws IllegalArgumentException if string parameter does not conform to a valid hexadecimal
+     *                                  string
      */
     public static CompressedPrivateKey of(PrivateKey key) throws CryptoException {
         return new CompressedPrivateKey(key);

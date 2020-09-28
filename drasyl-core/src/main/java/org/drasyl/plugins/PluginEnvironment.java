@@ -20,6 +20,8 @@ package org.drasyl.plugins;
 
 import com.typesafe.config.Config;
 
+import java.util.Objects;
+
 /**
  * Models environment information of a {@link DrasylPlugin} that are required by the plugin or the
  * {@link PluginManager} to automatically load the plugin.
@@ -55,5 +57,23 @@ public class PluginEnvironment {
      */
     public Class<? extends AutoloadablePlugin> getClazz() {
         return clazz;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(options, clazz);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        PluginEnvironment that = (PluginEnvironment) o;
+        return Objects.equals(options, that.options) &&
+                Objects.equals(clazz, that.clazz);
     }
 }
