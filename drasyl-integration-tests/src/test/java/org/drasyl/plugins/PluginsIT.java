@@ -106,12 +106,7 @@ class PluginsIT {
         }
 
         @Override
-        public void onRemove() {
-            // Do nothing
-        }
-
-        @Override
-        public void onAdded() {
+        public void onAfterStart() {
             pipeline.addLast("TestHandler", new HandlerAdapter() {
                 @Override
                 public void handlerAdded(HandlerContext ctx) {
@@ -119,6 +114,21 @@ class PluginsIT {
                 }
             });
             pipeline.processInbound(event2);
+        }
+
+        @Override
+        public void onAfterStop() {
+            // Do nothing
+        }
+
+        @Override
+        public void onBeforeStart() {
+            // Do nothing
+        }
+
+        @Override
+        public void onBeforeStop() {
+            // Do nothing
         }
     }
 }

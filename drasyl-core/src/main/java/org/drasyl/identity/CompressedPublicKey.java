@@ -29,24 +29,44 @@ import java.security.PublicKey;
  */
 public class CompressedPublicKey extends AbstractCompressedKey<PublicKey> {
     /**
-     * @param compressedKey
-     * @throws IllegalArgumentException if string parameter does not conform to a valid key
-     * @throws CryptoException
+     * Creates a new compressed public key from the given string.
+     *
+     * @param compressedKey compressed public key
+     * @throws IllegalArgumentException if string parameter does not conform to a valid hexadecimal
+     *                                  string
+     * @throws CryptoException          if the string parameter does not conform to a valid key
      */
     public CompressedPublicKey(String compressedKey) throws CryptoException {
         super(compressedKey);
     }
 
+    /**
+     * Creates a new compressed public key from the given public key.
+     *
+     * @param key compressed public key
+     * @throws IllegalArgumentException if parameter does not conform to a valid hexadecimal string
+     * @throws CryptoException          if the parameter does not conform to a valid key
+     */
     public CompressedPublicKey(PublicKey key) throws CryptoException {
         this(HexUtil.bytesToHex(Crypto.compressedKey(key)), key);
     }
 
+    /**
+     * Creates a new compressed public key from the given string and public key.
+     *
+     * @param compressedKey compressed public key
+     * @param key           public key
+     */
     CompressedPublicKey(String compressedKey, PublicKey key) {
         super(compressedKey, key);
     }
 
     /**
-     * @throws IllegalArgumentException if string parameter does not conform to a valid key
+     * Returns the {@link PublicKey} object of this compressed public key.
+     *
+     * @throws IllegalArgumentException if string parameter does not conform to a valid hexadecimal
+     *                                  string
+     * @throws CryptoException          if the string parameter does not conform to a valid key
      */
     @Override
     public PublicKey toUncompressedKey() throws CryptoException {
@@ -61,7 +81,9 @@ public class CompressedPublicKey extends AbstractCompressedKey<PublicKey> {
      *
      * @param compressedKey compressed key as String
      * @return {@link CompressedPublicKey}
-     * @throws IllegalArgumentException if string parameter does not conform to a valid key
+     * @throws CryptoException          if string parameter does not conform to a valid key
+     * @throws IllegalArgumentException if string parameter does not conform to a valid hexadecimal
+     *                                  string
      */
     public static CompressedPublicKey of(String compressedKey) throws CryptoException {
         return new CompressedPublicKey(compressedKey);
@@ -72,6 +94,9 @@ public class CompressedPublicKey extends AbstractCompressedKey<PublicKey> {
      *
      * @param key public key
      * @return {@link CompressedPublicKey}
+     * @throws CryptoException          if string parameter does not conform to a valid key
+     * @throws IllegalArgumentException if string parameter does not conform to a valid hexadecimal
+     *                                  string
      */
     public static CompressedPublicKey of(PublicKey key) throws CryptoException {
         return new CompressedPublicKey(key);

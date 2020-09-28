@@ -11,6 +11,7 @@ import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.pipeline.DrasylPipeline;
+import org.drasyl.plugins.PluginManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -35,7 +36,7 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class SendingWormholeNodeTest {
     private final String password = "123";
-    private AtomicBoolean sent = new AtomicBoolean();
+    private final AtomicBoolean sent = new AtomicBoolean();
     private final CompletableFuture<Void> startSequence = new CompletableFuture<>();
     private final CompletableFuture<Void> shutdownSequence = new CompletableFuture<>();
     private ByteArrayOutputStream outputStream;
@@ -62,13 +63,15 @@ class SendingWormholeNodeTest {
     private AtomicBoolean acceptNewConnections;
     @Mock
     private List<DrasylNodeComponent> components;
+    @Mock
+    private PluginManager pluginManager;
     private SendingWormholeNode underTest;
 
     @BeforeEach
     void setUp() {
         outputStream = new ByteArrayOutputStream();
         printStream = new PrintStream(outputStream, true);
-        underTest = new SendingWormholeNode(doneFuture, printStream, password, sent, config, identity, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, components, started, startSequence, shutdownSequence);
+        underTest = new SendingWormholeNode(doneFuture, printStream, password, sent, config, identity, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, components, pluginManager, started, startSequence, shutdownSequence);
     }
 
     @Nested
