@@ -29,12 +29,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.lang.reflect.Constructor;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
@@ -56,7 +56,7 @@ class PluginManagerTest {
     @Test
     void shouldNotLoadAnyPluginOnEmptyList() throws DrasylException {
         PluginManager manager = new PluginManager(pipeline, config, plugins, constructorFunction);
-        manager.open();
+        manager.beforeStart();
 
         verifyNoInteractions(plugins);
     }
@@ -71,7 +71,7 @@ class PluginManagerTest {
         manager.add(plugin);
 
         verify(plugins).put(plugin.name(), plugin);
-        verify(plugin).onAdded();
+        verify(plugin).onBeforeStart();
     }
 
     @Test
@@ -85,29 +85,15 @@ class PluginManagerTest {
     }
 
     @Test
-    void shouldRemovePlugin() {
-        DrasylPlugin plugin = mock(DrasylPlugin.class);
-        when(plugin.name()).thenReturn("PluginName");
-        when(plugins.remove(plugin.name())).thenReturn(plugin);
-
-        PluginManager manager = new PluginManager(pipeline, config, plugins, constructorFunction);
-
-        manager.remove(plugin.name());
-
-        verify(plugins).remove(eq(plugin.name()));
-        verify(plugin).onRemove();
-    }
-
-    @Test
     void shouldRemovePluginsOnStop() {
         DrasylPlugin plugin = mock(DrasylPlugin.class);
         when(plugins.values()).thenReturn(List.of(plugin));
 
         PluginManager manager = new PluginManager(pipeline, config, plugins, constructorFunction);
 
-        manager.close();
+        manager.afterStop();
 
-        verify(plugin).onRemove();
+        verify(plugin).onAfterStop();
         verify(plugins).clear();
     }
 
@@ -121,7 +107,7 @@ class PluginManagerTest {
         constructorFunction = clazz -> clazz.getConstructor(Pipeline.class, DrasylConfig.class, PluginEnvironment.class);
 
         PluginManager manager = new PluginManager(pipeline, config, plugins, constructorFunction);
-        manager.open();
+        manager.beforeStart();
 
         verify(plugins).put(isA(String.class), isA(TestPlugin.class));
     }
@@ -169,6 +155,61 @@ class PluginManagerTest {
         }
     }
 
+    @Nested
+    class OnEvent {
+        @Test
+        void shouldEmitEvenOnBeforeStart() throws DrasylException {
+            PluginManager manager = new PluginManager(pipeline, config, new HashMap<>(), constructorFunction);
+
+            DrasylPlugin plugin = mock(DrasylPlugin.class);
+            when(plugin.name()).thenReturn("PluginName");
+
+            manager.add(plugin);
+            manager.beforeStart();
+
+            verify(plugin).onBeforeStart();
+        }
+
+        @Test
+        void shouldEmitEvenOnBeforeStop() throws DrasylException {
+            PluginManager manager = new PluginManager(pipeline, config, new HashMap<>(), constructorFunction);
+
+            DrasylPlugin plugin = mock(DrasylPlugin.class);
+            when(plugin.name()).thenReturn("PluginName");
+
+            manager.add(plugin);
+            manager.beforeStop();
+
+            verify(plugin).onBeforeStop();
+        }
+
+        @Test
+        void shouldEmitEvenOnAfterStart() throws DrasylException {
+            PluginManager manager = new PluginManager(pipeline, config, new HashMap<>(), constructorFunction);
+
+            DrasylPlugin plugin = mock(DrasylPlugin.class);
+            when(plugin.name()).thenReturn("PluginName");
+
+            manager.add(plugin);
+            manager.afterStart();
+
+            verify(plugin).onAfterStart();
+        }
+
+        @Test
+        void shouldEmitEvenOnAfterStop() throws DrasylException {
+            PluginManager manager = new PluginManager(pipeline, config, new HashMap<>(), constructorFunction);
+
+            DrasylPlugin plugin = mock(DrasylPlugin.class);
+            when(plugin.name()).thenReturn("PluginName");
+
+            manager.add(plugin);
+            manager.afterStop();
+
+            verify(plugin).onAfterStop();
+        }
+    }
+
     public static class TestPlugin extends AutoloadablePlugin {
         public TestPlugin(Pipeline pipeline,
                           DrasylConfig config,
@@ -182,12 +223,22 @@ class PluginManagerTest {
         }
 
         @Override
-        public void onRemove() {
+        public void onAfterStart() {
             // Do nothing
         }
 
         @Override
-        public void onAdded() {
+        public void onAfterStop() {
+            // Do nothing
+        }
+
+        @Override
+        public void onBeforeStart() {
+            // Do nothing
+        }
+
+        @Override
+        public void onBeforeStop() {
             // Do nothing
         }
     }

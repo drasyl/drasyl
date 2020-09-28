@@ -48,7 +48,7 @@ public class ObservableDrasylNode extends DrasylNode {
     }
 
     public static void main(String[] args) throws DrasylException {
-        ObservableDrasylNode node = new ObservableDrasylNode();
+        ObservableDrasylNode node = new ObservableDrasylNode(DrasylConfig.newBuilder().localHostDiscoveryEnabled(false).serverExposeEnabled(false).build());
         node.events().subscribeOn(DrasylScheduler.getInstanceLight()).subscribe(System.out::println, System.err::println); // NOSONAR
         node.start().join();
     }

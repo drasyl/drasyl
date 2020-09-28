@@ -64,6 +64,11 @@ class HeadContext extends AbstractEndHandler {
                       CompressedPublicKey recipient,
                       Object msg,
                       CompletableFuture<Void> future) {
+        if (msg instanceof AutoSwallow) {
+            future.complete(null);
+            return;
+        }
+
         if (future.isDone()) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Message `{}` has arrived at the end of the pipeline and was already completed.", msg);

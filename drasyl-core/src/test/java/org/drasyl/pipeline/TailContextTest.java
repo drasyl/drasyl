@@ -36,6 +36,7 @@ import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -169,6 +170,18 @@ class TailContextTest {
 
             verifyNoInteractions(eventConsumer);
             verify(future, never()).complete(null);
+        }
+
+        @Test
+        void shouldCompleteFutureAndNothingElseOnAutoSwallow() {
+            TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
+            CompressedPublicKey recipient = mock(CompressedPublicKey.class);
+            AutoSwallow msg = new AutoSwallow() {};
+
+            tailContext.read(ctx, recipient, msg, future);
+
+            verify(future, never()).completeExceptionally(any());
+            verify(future).complete(null);
         }
     }
 }

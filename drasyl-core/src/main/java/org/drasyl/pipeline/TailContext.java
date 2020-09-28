@@ -69,6 +69,11 @@ class TailContext extends AbstractEndHandler {
                      CompressedPublicKey sender,
                      Object msg,
                      CompletableFuture<Void> future) {
+        if (msg instanceof AutoSwallow) {
+            future.complete(null);
+            return;
+        }
+
         // Pass message to Application
         if (future.isDone()) {
             if (LOG.isWarnEnabled()) {

@@ -20,7 +20,6 @@ package org.drasyl.plugins;
 
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
-import org.drasyl.DrasylNodeComponent;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.util.DrasylFunction;
 import org.slf4j.Logger;
@@ -30,12 +29,17 @@ import java.lang.reflect.Constructor;
 import java.util.HashMap;
 import java.util.Map;
 
-public class PluginManager implements DrasylNodeComponent {
+public class PluginManager {
     private static final Logger LOG = LoggerFactory.getLogger(PluginManager.class);
     private final Map<String, DrasylPlugin> plugins;
     private final Pipeline pipeline;
     private final DrasylConfig config;
     private final DrasylFunction<Class<? extends AutoloadablePlugin>, Constructor<?>, Exception> constructorFunction;
+
+    public PluginManager(Pipeline pipeline,
+                         DrasylConfig config) {
+        this(pipeline, config, new HashMap<>(), clazz -> clazz.getConstructor(Pipeline.class, DrasylConfig.class, PluginEnvironment.class));
+    }
 
     PluginManager(Pipeline pipeline,
                   DrasylConfig config,
@@ -47,16 +51,37 @@ public class PluginManager implements DrasylNodeComponent {
         this.constructorFunction = constructorFunction;
     }
 
-    public PluginManager(Pipeline pipeline,
-                         DrasylConfig config) {
-        this(pipeline, config, new HashMap<>(), clazz -> clazz.getConstructor(Pipeline.class, DrasylConfig.class, PluginEnvironment.class));
+    /**
+     * This method gets called after the drasyl node was started.
+     */
+    public synchronized void afterStart() {
+        for (DrasylPlugin plugin : plugins.values()) {
+            plugin.onAfterStart();
+        }
     }
 
     /**
-     * Automatically loads all plugins that are defined in the corresponding {@link DrasylConfig}.
+     * This method gets called after the drasyl node was stopped and will be remove all plugins from
+     * the internal plugin list. <br />
+     * <b>At this point, no communication channel is alive.</b>
      */
-    @Override
-    public synchronized void open() throws DrasylException {
+    public synchronized void afterStop() {
+        LOG.debug("Stop Plugins...");
+
+        for (DrasylPlugin plugin : plugins.values()) {
+            plugin.onAfterStop();
+        }
+
+        plugins.clear();
+        LOG.debug("Plugins stopped");
+    }
+
+    /**
+     * This method gets called before the drasyl node is started and automatically loads all plugins
+     * that are defined in the corresponding {@link DrasylConfig}. <br />
+     * <b>At this point, no communication channel is alive.</b>
+     */
+    public synchronized void beforeStart() throws DrasylException {
         LOG.debug("Start Plugins...");
         for (PluginEnvironment pluginEnvironment : config.getPluginEnvironments()) {
             AutoloadablePlugin plugin = loadPlugin(pluginEnvironment);
@@ -89,40 +114,15 @@ public class PluginManager implements DrasylNodeComponent {
     }
 
     /**
-     * Stops all plugins and removes them from the plugin list.
-     */
-    @Override
-    public synchronized void close() {
-        LOG.debug("Stop Plugins...");
-        for (DrasylPlugin plugin : plugins.values()) {
-            plugin.onRemove();
-        }
-
-        plugins.clear();
-        LOG.debug("Plugins stopped");
-    }
-
-    /**
      * Adds a {@link DrasylPlugin} to the {@link PluginManager} and also to the {@link
      * org.drasyl.pipeline.Pipeline}.
      *
      * @param plugin the plugin that should be added
      */
-    public synchronized void add(DrasylPlugin plugin) throws DrasylException {
+    void add(DrasylPlugin plugin) throws DrasylException {
         duplicateCheck(plugin.name());
         plugins.put(plugin.name(), plugin);
-        plugin.onAdded();
-    }
-
-    /**
-     * Removes a {@link DrasylPlugin}  from the {@link PluginManager} and also from the {@link
-     * org.drasyl.pipeline.Pipeline}.
-     *
-     * @param name the plugin that should be removed
-     */
-    public synchronized void remove(String name) {
-        DrasylPlugin plugin = plugins.remove(name);
-        plugin.onRemove();
+        plugin.onBeforeStart();
     }
 
     /**
@@ -134,6 +134,15 @@ public class PluginManager implements DrasylNodeComponent {
     private void duplicateCheck(String name) throws DrasylException {
         if (plugins.containsKey(name)) {
             throw new DrasylException("Can't add the '" + name + "' plugin twice.");
+        }
+    }
+
+    /**
+     * This method get called before the drasyl node is stopped.
+     */
+    public synchronized void beforeStop() {
+        for (DrasylPlugin plugin : plugins.values()) {
+            plugin.onBeforeStop();
         }
     }
 }
