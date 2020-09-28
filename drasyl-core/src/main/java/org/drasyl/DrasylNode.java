@@ -387,7 +387,7 @@ public abstract class DrasylNode {
             onInternalEvent(new NodeDownEvent(Node.of(identity, endpoints)));
             LOG.info("Shutdown drasyl Node with Identity '{}'...", identity);
             shutdownSequence = new CompletableFuture<>();
-            pluginManager.beforeStop();
+            pluginManager.beforeShutdown();
 
             startSequence.whenComplete((t, exp) -> getInstanceHeavy().scheduleDirect(() -> {
                 rejectNewConnections();
@@ -401,7 +401,7 @@ public abstract class DrasylNode {
                 LOG.info("drasyl Node with Identity '{}' has shut down", identity);
                 shutdownSequence.complete(null);
                 INSTANCES.remove(DrasylNode.this);
-                pluginManager.afterStop();
+                pluginManager.afterShutdown();
             }));
         }
 
@@ -456,7 +456,7 @@ public abstract class DrasylNode {
                     onInternalEvent(new NodeUnrecoverableErrorEvent(Node.of(identity, endpoints), e));
                     LOG.info("Could not start drasyl Node: {}", e.getMessage());
                     LOG.info("Stop all running components...");
-                    pluginManager.beforeStop();
+                    pluginManager.beforeShutdown();
 
                     rejectNewConnections();
                     closeConnections();
@@ -468,7 +468,7 @@ public abstract class DrasylNode {
                     started.set(false);
                     startSequence.completeExceptionally(e);
                     INSTANCES.remove(DrasylNode.this);
-                    pluginManager.afterStop();
+                    pluginManager.afterShutdown();
                 }
             }));
         }

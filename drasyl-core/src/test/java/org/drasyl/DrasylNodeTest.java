@@ -199,7 +199,7 @@ class DrasylNodeTest {
             startSequence.complete(null);
             underTest.shutdown().join();
 
-            verify(pluginManager).afterStop();
+            verify(pluginManager).afterShutdown();
         }
     }
 

@@ -30,24 +30,24 @@ public interface DrasylPlugin {
     String name();
 
     /**
-     * This method gets called after the drasyl node was started.
-     */
-    void onAfterStart();
-
-    /**
-     * This method gets called after the drasyl node was stopped. <br />
-     * <b>At this point, no communication channel is alive.</b>
-     */
-    void onAfterStop();
-
-    /**
      * This method gets called before the drasyl node is started. <br />
      * <b>At this point, no communication channel is alive.</b>
      */
     void onBeforeStart();
 
     /**
-     * This method get called before the drasyl node is stopped.
+     * This method gets called after the drasyl node was started.
      */
-    void onBeforeStop();
+    void onAfterStart();
+
+    /**
+     * This method get called before the drasyl node is shut down.
+     */
+    void onBeforeShutdown();
+
+    /**
+     * This method gets called after the drasyl node was shut down. <br />
+     * <b>At this point, no communication channel is alive.</b>
+     */
+    void onAfterShutdown();
 }

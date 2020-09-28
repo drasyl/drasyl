@@ -52,31 +52,6 @@ public class PluginManager {
     }
 
     /**
-     * This method gets called after the drasyl node was started.
-     */
-    public synchronized void afterStart() {
-        for (DrasylPlugin plugin : plugins.values()) {
-            plugin.onAfterStart();
-        }
-    }
-
-    /**
-     * This method gets called after the drasyl node was stopped and will be remove all plugins from
-     * the internal plugin list. <br />
-     * <b>At this point, no communication channel is alive.</b>
-     */
-    public synchronized void afterStop() {
-        LOG.debug("Stop Plugins...");
-
-        for (DrasylPlugin plugin : plugins.values()) {
-            plugin.onAfterStop();
-        }
-
-        plugins.clear();
-        LOG.debug("Plugins stopped");
-    }
-
-    /**
      * This method gets called before the drasyl node is started and automatically loads all plugins
      * that are defined in the corresponding {@link DrasylConfig}. <br />
      * <b>At this point, no communication channel is alive.</b>
@@ -88,6 +63,40 @@ public class PluginManager {
             add(plugin);
         }
         LOG.debug("Plugins started.");
+    }
+
+    /**
+     * This method gets called after the drasyl node was started.
+     */
+    public synchronized void afterStart() {
+        for (DrasylPlugin plugin : plugins.values()) {
+            plugin.onAfterStart();
+        }
+    }
+
+    /**
+     * This method get called before the drasyl node is shut down.
+     */
+    public synchronized void beforeShutdown() {
+        for (DrasylPlugin plugin : plugins.values()) {
+            plugin.onBeforeShutdown();
+        }
+    }
+
+    /**
+     * This method gets called after the drasyl node was shut down and will be remove all plugins from
+     * the internal plugin list. <br />
+     * <b>At this point, no communication channel is alive.</b>
+     */
+    public synchronized void afterShutdown() {
+        LOG.debug("Stop Plugins...");
+
+        for (DrasylPlugin plugin : plugins.values()) {
+            plugin.onAfterShutdown();
+        }
+
+        plugins.clear();
+        LOG.debug("Plugins stopped");
     }
 
     AutoloadablePlugin loadPlugin(PluginEnvironment pluginEnvironment) throws DrasylException {
@@ -134,15 +143,6 @@ public class PluginManager {
     private void duplicateCheck(String name) throws DrasylException {
         if (plugins.containsKey(name)) {
             throw new DrasylException("Can't add the '" + name + "' plugin twice.");
-        }
-    }
-
-    /**
-     * This method get called before the drasyl node is stopped.
-     */
-    public synchronized void beforeStop() {
-        for (DrasylPlugin plugin : plugins.values()) {
-            plugin.onBeforeStop();
         }
     }
 }

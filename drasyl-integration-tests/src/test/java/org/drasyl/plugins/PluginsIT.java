@@ -117,7 +117,7 @@ class PluginsIT {
         }
 
         @Override
-        public void onAfterStop() {
+        public void onAfterShutdown() {
             // Do nothing
         }
 
@@ -127,7 +127,7 @@ class PluginsIT {
         }
 
         @Override
-        public void onBeforeStop() {
+        public void onBeforeShutdown() {
             // Do nothing
         }
     }

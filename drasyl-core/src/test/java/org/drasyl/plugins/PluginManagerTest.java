@@ -85,15 +85,15 @@ class PluginManagerTest {
     }
 
     @Test
-    void shouldRemovePluginsOnStop() {
+    void shouldRemovePluginsOnShutdown() {
         DrasylPlugin plugin = mock(DrasylPlugin.class);
         when(plugins.values()).thenReturn(List.of(plugin));
 
         PluginManager manager = new PluginManager(pipeline, config, plugins, constructorFunction);
 
-        manager.afterStop();
+        manager.afterShutdown();
 
-        verify(plugin).onAfterStop();
+        verify(plugin).onAfterShutdown();
         verify(plugins).clear();
     }
 
@@ -171,16 +171,16 @@ class PluginManagerTest {
         }
 
         @Test
-        void shouldEmitEvenOnBeforeStop() throws DrasylException {
+        void shouldEmitEvenOnBeforeShutdown() throws DrasylException {
             PluginManager manager = new PluginManager(pipeline, config, new HashMap<>(), constructorFunction);
 
             DrasylPlugin plugin = mock(DrasylPlugin.class);
             when(plugin.name()).thenReturn("PluginName");
 
             manager.add(plugin);
-            manager.beforeStop();
+            manager.beforeShutdown();
 
-            verify(plugin).onBeforeStop();
+            verify(plugin).onBeforeShutdown();
         }
 
         @Test
@@ -204,9 +204,9 @@ class PluginManagerTest {
             when(plugin.name()).thenReturn("PluginName");
 
             manager.add(plugin);
-            manager.afterStop();
+            manager.afterShutdown();
 
-            verify(plugin).onAfterStop();
+            verify(plugin).onAfterShutdown();
         }
     }
 
@@ -228,7 +228,7 @@ class PluginManagerTest {
         }
 
         @Override
-        public void onAfterStop() {
+        public void onAfterShutdown() {
             // Do nothing
         }
 
@@ -238,7 +238,7 @@ class PluginManagerTest {
         }
 
         @Override
-        public void onBeforeStop() {
+        public void onBeforeShutdown() {
             // Do nothing
         }
     }
