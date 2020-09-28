@@ -103,7 +103,7 @@ Example:
 ...
 public void onEvent(Event event) {
     if (event instanceof MessageEvent) {
-        Pair message = event.getMessage();
+        MessageEvent message = (MessageEvent) event;
         System.out.println("Message received from " + message.getSender() + " with payload " + message.getPayload());
     }
 }
