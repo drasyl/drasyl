@@ -36,4 +36,24 @@ public abstract class AutoloadablePlugin implements DrasylPlugin {
         this.config = config;
         this.environment = environment;
     }
+
+    @Override
+    public void onBeforeStart() {
+        // do nothing
+    }
+
+    @Override
+    public void onAfterStart() {
+        // do nothing
+    }
+
+    @Override
+    public void onBeforeShutdown() {
+        // do nothing
+    }
+
+    @Override
+    public void onAfterShutdown() {
+        // do nothing
+    }
 }
