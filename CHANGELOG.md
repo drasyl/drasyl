@@ -82,7 +82,7 @@ peers use the same network ID. The main network has ID 1 (see configuration `dra
 -
 -
 -
--
+- All-new plugin interface.
 -
 -
 -

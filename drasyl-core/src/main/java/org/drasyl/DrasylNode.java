@@ -204,7 +204,7 @@ public abstract class DrasylNode {
                 this.components.add(new Monitoring(config, peersManager, identity.getPublicKey(), pipeline));
             }
 
-            this.pluginManager = new PluginManager(pipeline, config);
+            this.pluginManager = new PluginManager(config, pipeline);
             this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = completedFuture(null);

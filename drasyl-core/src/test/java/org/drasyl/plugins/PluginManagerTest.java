@@ -19,227 +19,73 @@
 package org.drasyl.plugins;
 
 import org.drasyl.DrasylConfig;
-import org.drasyl.DrasylException;
 import org.drasyl.pipeline.Pipeline;
-import org.drasyl.util.DrasylFunction;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.lang.reflect.Constructor;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.Set;
 
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.isA;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class PluginManagerTest {
     @Mock
-    private Map<String, DrasylPlugin> plugins;
-    @Mock
-    private Pipeline pipeline;
-    @Mock
     private DrasylConfig config;
     @Mock
-    private DrasylFunction<Class<? extends AutoloadablePlugin>, Constructor<?>, Exception> constructorFunction;
-
-    @Test
-    void shouldNotLoadAnyPluginOnEmptyList() throws DrasylException {
-        PluginManager manager = new PluginManager(pipeline, config, plugins, constructorFunction);
-        manager.beforeStart();
-
-        verifyNoInteractions(plugins);
-    }
-
-    @Test
-    void shouldAddPlugin() throws DrasylException {
-        PluginManager manager = new PluginManager(pipeline, config, plugins, constructorFunction);
-
-        DrasylPlugin plugin = mock(DrasylPlugin.class);
-        when(plugin.name()).thenReturn("PluginName");
-
-        manager.add(plugin);
-
-        verify(plugins).put(plugin.name(), plugin);
-        verify(plugin).onBeforeStart();
-    }
-
-    @Test
-    void shouldThrowExceptionOnDuplicatePlugin() {
-        PluginManager manager = new PluginManager(pipeline, config, plugins, constructorFunction);
-        DrasylPlugin plugin = mock(DrasylPlugin.class);
-        when(plugin.name()).thenReturn("PluginName");
-        when(plugins.containsKey(plugin.name())).thenReturn(true);
-
-        assertThrows(DrasylException.class, () -> manager.add(plugin));
-    }
-
-    @Test
-    void shouldRemovePluginsOnShutdown() {
-        DrasylPlugin plugin = mock(DrasylPlugin.class);
-        when(plugins.values()).thenReturn(List.of(plugin));
-
-        PluginManager manager = new PluginManager(pipeline, config, plugins, constructorFunction);
-
-        manager.afterShutdown();
-
-        verify(plugin).onAfterShutdown();
-        verify(plugins).clear();
-    }
-
-    @Test
-    void shouldLoadAllPluginsThatAreDefinedInTheDrasylConfig() throws DrasylException {
-        PluginEnvironment env = mock(PluginEnvironment.class);
-
-        when(config.getPluginEnvironments()).thenReturn(List.of(env));
-        doReturn(PluginManagerTest.TestPlugin.class).when(env).getClazz();
-
-        constructorFunction = clazz -> clazz.getConstructor(Pipeline.class, DrasylConfig.class, PluginEnvironment.class);
-
-        PluginManager manager = new PluginManager(pipeline, config, plugins, constructorFunction);
-        manager.beforeStart();
-
-        verify(plugins).put(isA(String.class), isA(TestPlugin.class));
-    }
+    private Pipeline pipeline;
+    @InjectMocks
+    private PluginManager underTest;
 
     @Nested
-    class ExceptionRethrowing {
+    class BeforeStart {
         @Test
-        void rethrowNoSuchMethodException() throws Exception {
-            PluginEnvironment env = mock(PluginEnvironment.class);
-            doReturn(PluginManagerTest.TestPlugin.class).when(env).getClazz();
-            when(constructorFunction.apply(any())).thenThrow(NoSuchMethodException.class);
+        void shouldCallOnBeforeStartOfEveryPlugin(@Mock DrasylPlugin plugin) {
+            when(config.getPlugins()).thenReturn(Set.of(plugin));
 
-            PluginManager manager = new PluginManager(pipeline, config, plugins, constructorFunction);
-            assertThrows(DrasylException.class, () -> manager.loadPlugin(env));
-        }
+            underTest.beforeStart();
 
-        @Test
-        void rethrowIllegalAccessException() throws Exception {
-            PluginEnvironment env = mock(PluginEnvironment.class);
-            doReturn(PluginManagerTest.TestPlugin.class).when(env).getClazz();
-            when(constructorFunction.apply(any())).thenThrow(IllegalAccessException.class);
-
-            PluginManager manager = new PluginManager(pipeline, config, plugins, constructorFunction);
-            assertThrows(DrasylException.class, () -> manager.loadPlugin(env));
-        }
-
-        @Test
-        void rethrowInstantiationException() throws Exception {
-            PluginEnvironment env = mock(PluginEnvironment.class);
-            doReturn(PluginManagerTest.TestPlugin.class).when(env).getClazz();
-            when(constructorFunction.apply(any())).thenThrow(InstantiationException.class);
-
-            PluginManager manager = new PluginManager(pipeline, config, plugins, constructorFunction);
-            assertThrows(DrasylException.class, () -> manager.loadPlugin(env));
-        }
-
-        @Test
-        void rethrowExceptionn() throws Exception {
-            PluginEnvironment env = mock(PluginEnvironment.class);
-            doReturn(PluginManagerTest.TestPlugin.class).when(env).getClazz();
-            when(constructorFunction.apply(any())).thenThrow(Exception.class);
-
-            PluginManager manager = new PluginManager(pipeline, config, plugins, constructorFunction);
-            assertThrows(DrasylException.class, () -> manager.loadPlugin(env));
+            verify(plugin).onBeforeStart(new PluginEnvironment(config, pipeline));
         }
     }
 
     @Nested
-    class OnEvent {
+    class AfterStart {
         @Test
-        void shouldEmitEvenOnBeforeStart() throws DrasylException {
-            PluginManager manager = new PluginManager(pipeline, config, new HashMap<>(), constructorFunction);
+        void shouldCallOnAfterStartOfEveryPlugin(@Mock DrasylPlugin plugin) {
+            when(config.getPlugins()).thenReturn(Set.of(plugin));
 
-            DrasylPlugin plugin = mock(DrasylPlugin.class);
-            when(plugin.name()).thenReturn("PluginName");
+            underTest.afterStart();
 
-            manager.add(plugin);
-            manager.beforeStart();
-
-            verify(plugin).onBeforeStart();
-        }
-
-        @Test
-        void shouldEmitEvenOnBeforeShutdown() throws DrasylException {
-            PluginManager manager = new PluginManager(pipeline, config, new HashMap<>(), constructorFunction);
-
-            DrasylPlugin plugin = mock(DrasylPlugin.class);
-            when(plugin.name()).thenReturn("PluginName");
-
-            manager.add(plugin);
-            manager.beforeShutdown();
-
-            verify(plugin).onBeforeShutdown();
-        }
-
-        @Test
-        void shouldEmitEvenOnAfterStart() throws DrasylException {
-            PluginManager manager = new PluginManager(pipeline, config, new HashMap<>(), constructorFunction);
-
-            DrasylPlugin plugin = mock(DrasylPlugin.class);
-            when(plugin.name()).thenReturn("PluginName");
-
-            manager.add(plugin);
-            manager.afterStart();
-
-            verify(plugin).onAfterStart();
-        }
-
-        @Test
-        void shouldEmitEvenOnAfterStop() throws DrasylException {
-            PluginManager manager = new PluginManager(pipeline, config, new HashMap<>(), constructorFunction);
-
-            DrasylPlugin plugin = mock(DrasylPlugin.class);
-            when(plugin.name()).thenReturn("PluginName");
-
-            manager.add(plugin);
-            manager.afterShutdown();
-
-            verify(plugin).onAfterShutdown();
+            verify(plugin).onAfterStart(new PluginEnvironment(config, pipeline));
         }
     }
 
-    public static class TestPlugin extends AutoloadablePlugin {
-        public TestPlugin(Pipeline pipeline,
-                          DrasylConfig config,
-                          PluginEnvironment environment) {
-            super(pipeline, config, environment);
-        }
+    @Nested
+    class BeforeShutdown {
+        @Test
+        void shouldCallOnBeforeShutdownOfEveryPlugin(@Mock DrasylPlugin plugin) {
+            when(config.getPlugins()).thenReturn(Set.of(plugin));
 
-        @Override
-        public String name() {
-            return "PluginManagerTest.TestPlugin";
-        }
+            underTest.beforeShutdown();
 
-        @Override
-        public void onAfterStart() {
-            // Do nothing
+            verify(plugin).onBeforeShutdown(new PluginEnvironment(config, pipeline));
         }
+    }
 
-        @Override
-        public void onAfterShutdown() {
-            // Do nothing
-        }
+    @Nested
+    class AfterShutdown {
+        @Test
+        void shouldCallOnAfterShutdownOfEveryPlugin(@Mock DrasylPlugin plugin) {
+            when(config.getPlugins()).thenReturn(Set.of(plugin));
 
-        @Override
-        public void onBeforeStart() {
-            // Do nothing
-        }
+            underTest.afterShutdown();
 
-        @Override
-        public void onBeforeShutdown() {
-            // Do nothing
+            verify(plugin).onAfterShutdown(new PluginEnvironment(config, pipeline));
         }
     }
 }

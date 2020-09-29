@@ -31,11 +31,11 @@ import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.pipeline.HandlerAdapter;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.Pipeline;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static org.mockito.Mockito.mock;
@@ -51,16 +51,11 @@ class PluginsIT {
     void setup() throws CryptoException, DrasylException {
         receivedEvents = PublishSubject.create();
 
-        Identity identity = Identity.of(169092, "030a59784f88c74dcd64258387f9126739c3aeb7965f36bb501ff01f5036b3d72b", "0f1e188d5e3b98daf2266d7916d2e1179ae6209faa7477a2a66d4bb61dab4399");
+        final Identity identity = Identity.of(169092, "030a59784f88c74dcd64258387f9126739c3aeb7965f36bb501ff01f5036b3d72b", "0f1e188d5e3b98daf2266d7916d2e1179ae6209faa7477a2a66d4bb61dab4399");
 
-        Config pluginConfig = ConfigFactory.parseString("drasyl.plugins {\n" +
-                " test-plugin {\n" +
-                "  class = \"org.drasyl.plugins.PluginsIT$TestPlugin\"\n" +
-                "  enabled = true\n" +
-                " }\n" +
-                "}");
-
-        config = new DrasylConfig(ConfigFactory.load().withFallback(pluginConfig));
+        config = DrasylConfig.newBuilder()
+                .plugins(Set.of(new TestPlugin(ConfigFactory.empty())))
+                .build();
 
         config = DrasylConfig.newBuilder(config)
                 .identityProofOfWork(identity.getProofOfWork())
@@ -72,7 +67,7 @@ class PluginsIT {
 
         node = new DrasylNode(config) {
             @Override
-            public void onEvent(Event event) {
+            public void onEvent(final Event event) {
                 receivedEvents.onNext(event);
             }
         };
@@ -80,12 +75,14 @@ class PluginsIT {
 
     @AfterEach
     void shutdown() {
-        node.shutdown();
+        if (node != null) {
+            node.shutdown();
+        }
     }
 
     @Test
     void pluginShouldBeLoadedAndAlsoCorrespondingHandlers() {
-        TestObserver<Event> events = receivedEvents.filter(e -> e instanceof MessageEvent).test();
+        final TestObserver<Event> events = receivedEvents.filter(e -> e instanceof MessageEvent).test();
 
         node.start();
 
@@ -93,42 +90,20 @@ class PluginsIT {
         events.assertValues(event1, event2);
     }
 
-    public static class TestPlugin extends AutoloadablePlugin {
-        public TestPlugin(Pipeline pipeline,
-                          DrasylConfig config,
-                          PluginEnvironment environment) {
-            super(pipeline, config, environment);
+    public static class TestPlugin implements DrasylPlugin {
+        public TestPlugin(final Config config) {
+            // do nothing
         }
 
         @Override
-        public String name() {
-            return "PluginsIT.TestPlugin";
-        }
-
-        @Override
-        public void onAfterStart() {
-            pipeline.addLast("TestHandler", new HandlerAdapter() {
+        public void onAfterStart(final PluginEnvironment environment) {
+            environment.getPipeline().addLast("TestHandler", new HandlerAdapter() {
                 @Override
-                public void handlerAdded(HandlerContext ctx) {
+                public void handlerAdded(final HandlerContext ctx) {
                     ctx.fireEventTriggered(event1, new CompletableFuture<>());
                 }
             });
-            pipeline.processInbound(event2);
-        }
-
-        @Override
-        public void onAfterShutdown() {
-            // Do nothing
-        }
-
-        @Override
-        public void onBeforeStart() {
-            // Do nothing
-        }
-
-        @Override
-        public void onBeforeShutdown() {
-            // Do nothing
+            environment.getPipeline().processInbound(event2);
         }
     }
 }

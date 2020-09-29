@@ -18,36 +18,50 @@
  */
 package org.drasyl.plugins;
 
+import com.typesafe.config.Config;
+
 /**
  * This interface is implemented by all drasyl plugins.
+ * <br>
+ * <b>Every drasyl plugin must implement a constructor with the {@link Config} as only
+ * parameter.</b>
  */
 public interface DrasylPlugin {
     /**
-     * The plugin name must be unique.
-     *
-     * @return the plugin name
-     */
-    String name();
-
-    /**
      * This method gets called before the drasyl node is started. <br />
      * <b>At this point, no communication channel is alive.</b>
+     *
+     * @param environment the plugin environment
      */
-    void onBeforeStart();
+    default void onBeforeStart(final PluginEnvironment environment) {
+        // do nothing
+    }
 
     /**
      * This method gets called after the drasyl node was started.
+     *
+     * @param environment the plugin environment
      */
-    void onAfterStart();
+    default void onAfterStart(final PluginEnvironment environment) {
+        // do nothing
+    }
 
     /**
      * This method get called before the drasyl node is shut down.
+     *
+     * @param environment the plugin environment
      */
-    void onBeforeShutdown();
+    default void onBeforeShutdown(final PluginEnvironment environment) {
+        // do nothing
+    }
 
     /**
      * This method gets called after the drasyl node was shut down. <br />
      * <b>At this point, no communication channel is alive.</b>
+     *
+     * @param environment the plugin environment
      */
-    void onAfterShutdown();
+    default void onAfterShutdown(final PluginEnvironment environment) {
+        // do nothing
+    }
 }

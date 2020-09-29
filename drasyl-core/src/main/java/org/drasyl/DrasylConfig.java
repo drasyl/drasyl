@@ -29,16 +29,18 @@ import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
-import org.drasyl.plugins.AutoloadablePlugin;
-import org.drasyl.plugins.PluginEnvironment;
+import org.drasyl.plugins.DrasylPlugin;
 
 import java.io.File;
+import java.lang.reflect.Constructor;
+import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
@@ -147,7 +149,7 @@ public class DrasylConfig {
     private final String monitoringInfluxPassword;
     private final String monitoringInfluxDatabase;
     private final Duration monitoringInfluxReportingFrequency;
-    private final List<PluginEnvironment> pluginEnvironments;
+    private final Set<DrasylPlugin> pluginSet;
     private final List<String> marshallingAllowedTypes;
     private final boolean marshallingAllowAllPrimitives;
     private final boolean marshallingAllowArrayOfDefinedTypes;
@@ -162,7 +164,7 @@ public class DrasylConfig {
      *
      * @param config config to be loaded
      */
-    public DrasylConfig(Config config) {
+    public DrasylConfig(final Config config) {
         config.checkValid(ConfigFactory.defaultReference(), "drasyl");
 
         this.networkId = config.getInt(NETWORK_ID);
@@ -244,7 +246,7 @@ public class DrasylConfig {
         monitoringInfluxReportingFrequency = config.getDuration(MONITORING_INFLUX_REPORTING_FREQUENCY);
 
         // Load plugins
-        this.pluginEnvironments = List.copyOf(getPluginEnvironmentList(config, PLUGINS));
+        this.pluginSet = Set.copyOf(getPlugins(config, PLUGINS));
 
         // Load marshalling config
         this.marshallingAllowedTypes = config.getStringList(MARSHALLING_ALLOWED_TYPES);
@@ -264,12 +266,12 @@ public class DrasylConfig {
      * @throws ConfigException.WrongType if value is not convertible to a {@link ProofOfWork}
      */
     @SuppressWarnings({ "java:S1192" })
-    private ProofOfWork getProofOfWork(Config config, String path) {
+    private ProofOfWork getProofOfWork(final Config config, final String path) {
         try {
-            int intValue = config.getInt(path);
+            final int intValue = config.getInt(path);
             return new ProofOfWork(intValue);
         }
-        catch (IllegalArgumentException e) {
+        catch (final IllegalArgumentException e) {
             throw new ConfigException.WrongType(config.getValue(path).origin(), path, "proof of work", "invalid-value: " + e.getMessage());
         }
     }
@@ -285,12 +287,12 @@ public class DrasylConfig {
      * @throws ConfigException.WrongType if value is not convertible to a {@link CompressedPublicKey}
      */
     @SuppressWarnings({ "java:S1192" })
-    private CompressedPublicKey getPublicKey(Config config, String path) {
+    private CompressedPublicKey getPublicKey(final Config config, final String path) {
         try {
-            String stringValue = config.getString(path);
+            final String stringValue = config.getString(path);
             return CompressedPublicKey.of(stringValue);
         }
-        catch (CryptoException | IllegalArgumentException e) {
+        catch (final CryptoException | IllegalArgumentException e) {
             throw new ConfigException.WrongType(config.getValue(path).origin(), path, "compressed public key", "invalid-value: " + e.getMessage());
         }
     }
@@ -306,17 +308,17 @@ public class DrasylConfig {
      * @throws ConfigException.WrongType if value is not convertible to a {@link CompressedPrivateKey}
      */
     @SuppressWarnings({ "java:S1192" })
-    private CompressedPrivateKey getPrivateKey(Config config, String path) {
+    private CompressedPrivateKey getPrivateKey(final Config config, final String path) {
         try {
-            String stringValue = config.getString(path);
+            final String stringValue = config.getString(path);
             return CompressedPrivateKey.of(stringValue);
         }
-        catch (CryptoException | IllegalArgumentException e) {
+        catch (final CryptoException | IllegalArgumentException e) {
             throw new ConfigException.WrongType(config.getValue(path).origin(), path, "compressed private key", "invalid-value: " + e.getMessage());
         }
     }
 
-    private Path getPath(Config config, String path) {
+    private Path getPath(final Config config, final String path) {
         return Paths.get(config.getString(path));
     }
 
@@ -330,8 +332,8 @@ public class DrasylConfig {
      * @throws ConfigException.Missing   if value is absent or null
      * @throws ConfigException.WrongType if value is not convertible to a short
      */
-    private static short getShort(Config config, String path) {
-        int integerValue = config.getInt(path);
+    private static short getShort(final Config config, final String path) {
+        final int integerValue = config.getInt(path);
         if (integerValue > Short.MAX_VALUE || integerValue < Short.MIN_VALUE) {
             throw new ConfigException.WrongType(config.getValue(path).origin(), path, "short", "out-of-range-value " + integerValue);
         }
@@ -339,112 +341,138 @@ public class DrasylConfig {
         return (short) integerValue;
     }
 
-    private List<Endpoint> getEndpointList(Config config, String path) {
-        List<String> stringListValue = config.getStringList(path);
-        List<Endpoint> endpointList = new ArrayList<>();
+    private List<Endpoint> getEndpointList(final Config config, final String path) {
+        final List<String> stringListValue = config.getStringList(path);
+        final List<Endpoint> endpointList = new ArrayList<>();
         try {
-            for (String stringValue : stringListValue) {
+            for (final String stringValue : stringListValue) {
                 endpointList.add(Endpoint.of(stringValue));
             }
         }
-        catch (IllegalArgumentException e) {
+        catch (final IllegalArgumentException e) {
             throw new ConfigException.WrongType(config.getValue(path).origin(), path, "url", "invalid-value: " + e.getMessage());
         }
         return endpointList;
     }
 
     @SuppressWarnings("unchecked")
-    private Class<ChannelInitializer<SocketChannel>> getChannelInitializer(Config config,
-                                                                           String path) {
-        String className = config.getString(path);
+    private Class<ChannelInitializer<SocketChannel>> getChannelInitializer(final Config config,
+                                                                           final String path) {
+        final String className = config.getString(path);
         try {
             return (Class<ChannelInitializer<SocketChannel>>) Class.forName(className);
         }
-        catch (ClassNotFoundException e) {
+        catch (final ClassNotFoundException e) {
             throw new ConfigException.WrongType(config.getValue(path).origin(), path, "socket channel", "class-not-found: " + e.getMessage());
         }
     }
 
-    private List<PluginEnvironment> getPluginEnvironmentList(Config config, String path) {
-        List<PluginEnvironment> environments = new ArrayList<>();
+    private Set<DrasylPlugin> getPlugins(final Config config, final String path) {
+        final Set<DrasylPlugin> plugins = new HashSet<>();
 
-        for (Map.Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
-            final String key = entry.getKey();
-            final Config plugin = entry.getValue().atKey(key);
+        for (final Map.Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
+            final String clazzName = entry.getKey();
+            /*
+             * Here a key is intentionally used and immediately deleted. atPath() could throw an
+             * exception if the class name contains a $ character for an inner class.
+             */
+            final Config pluginConfig = entry.getValue().atKey("plugin").getConfig("plugin"); // NOSONAR
 
-            if (plugin.getBoolean(key + ".enabled")) {
-                try {
-                    @SuppressWarnings("unchecked")
-                    Class<? extends AutoloadablePlugin> clazz = (Class<? extends AutoloadablePlugin>) Class.forName(plugin.getString(key + ".class"));
-                    environments.add(new PluginEnvironment(plugin, clazz));
-                }
-                catch (ClassNotFoundException e) {
-                    throw new ConfigException.WrongType(plugin.origin(), "class", "autoloadable plugin", "class-not-found: " + e.getMessage());
-                }
+            if (pluginConfig.getBoolean("enabled")) {
+                final DrasylPlugin plugin = initiatePlugin(path, clazzName, pluginConfig);
+                plugins.add(plugin);
             }
         }
-        return environments;
+        return plugins;
     }
 
-    private static InetAddress getInetAddress(Config config, String path) {
-        String stringValue = config.getString(path);
+    @SuppressWarnings({ "java:S1192" })
+    private DrasylPlugin initiatePlugin(final String path,
+                                        final String clazzName,
+                                        final Config pluginConfig) {
+        try {
+            @SuppressWarnings("unchecked") final Class<? extends DrasylPlugin> clazz = (Class<? extends DrasylPlugin>) Class.forName(clazzName);
+            final Constructor<? extends DrasylPlugin> constructor = clazz.getConstructor(Config.class);
+            constructor.setAccessible(true); // NOSONAR
+
+            return constructor.newInstance(pluginConfig);
+        }
+        catch (final ClassNotFoundException e) {
+            throw new ConfigException.WrongType(pluginConfig.origin(), path, "plugin", "class-not-found: " + e.getMessage());
+        }
+        catch (final NoSuchMethodException e) {
+            throw new ConfigException.WrongType(pluginConfig.origin(), path, "plugin", "no-such-method: " + e.getMessage());
+        }
+        catch (final IllegalAccessException e) {
+            throw new ConfigException.WrongType(pluginConfig.origin(), path, "plugin", "illegal-access: " + e.getMessage());
+        }
+        catch (final InstantiationException e) {
+            throw new ConfigException.WrongType(pluginConfig.origin(), path, "plugin", "instantiation: " + e.getMessage());
+        }
+        catch (final InvocationTargetException e) {
+            throw new ConfigException.WrongType(pluginConfig.origin(), path, "plugin", "invocation-target: " + e.getMessage());
+        }
+    }
+
+    private static InetAddress getInetAddress(final Config config, final String path) {
+        final String stringValue = config.getString(path);
         try {
             return InetAddress.getByName(stringValue);
         }
-        catch (UnknownHostException e) {
+        catch (final UnknownHostException e) {
             throw new ConfigException.WrongType(config.getValue(path).origin(), path, "inet address", "unknown-host: " + e.getMessage());
         }
     }
 
     @SuppressWarnings({ "java:S107" })
-    DrasylConfig(int networkId,
-                 ProofOfWork identityProofOfWork,
-                 CompressedPublicKey identityPublicKey,
-                 CompressedPrivateKey identityPrivateKey,
-                 Path identityPath,
-                 InetAddress serverBindHost,
-                 boolean serverEnabled,
-                 int serverBindPort,
-                 short serverIdleRetries,
-                 Duration serverIdleTimeout,
-                 int flushBufferSize,
-                 boolean serverSSLEnabled,
-                 Set<String> serverSSLProtocols,
-                 Duration serverHandshakeTimeout,
-                 Set<Endpoint> serverEndpoints,
-                 Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer,
-                 boolean serverExposeEnabled,
-                 int messageMaxContentLength,
-                 short messageHopLimit,
-                 Duration messageComposedMessageTransferTimeout,
-                 boolean superPeerEnabled,
-                 Set<Endpoint> superPeerEndpoints,
-                 List<Duration> superPeerRetryDelays,
-                 Duration superPeerHandshakeTimeout,
-                 Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer,
-                 short superPeerIdleRetries,
-                 Duration superPeerIdleTimeout,
-                 boolean intraVmDiscoveryEnabled,
-                 boolean localHostDiscoveryEnabled,
-                 Path localHostDiscoveryPath,
-                 Duration localHostDiscoveryLeaseTime, boolean directConnectionsEnabled,
-                 int directConnectionsMaxConcurrentConnections,
-                 List<Duration> directConnectionsRetryDelays,
-                 Duration directConnectionsHandshakeTimeout,
-                 Class<? extends ChannelInitializer<SocketChannel>> directConnectionsChannelInitializer,
-                 short directConnectionsIdleRetries,
-                 Duration directConnectionsIdleTimeout,
-                 boolean monitoringEnabled,
-                 String monitoringInfluxUri,
-                 String monitoringInfluxUser,
-                 String monitoringInfluxPassword,
-                 String monitoringInfluxDatabase,
-                 Duration monitoringInfluxReportingFrequency,
-                 List<PluginEnvironment> pluginEnvironments,
-                 List<String> marshallingAllowedTypes,
-                 boolean marshallingAllowAllPrimitives,
-                 boolean marshallingAllowArrayOfDefinedTypes,
-                 List<String> marshallingAllowedPackages) {
+    DrasylConfig(final int networkId,
+                 final ProofOfWork identityProofOfWork,
+                 final CompressedPublicKey identityPublicKey,
+                 final CompressedPrivateKey identityPrivateKey,
+                 final Path identityPath,
+                 final InetAddress serverBindHost,
+                 final boolean serverEnabled,
+                 final int serverBindPort,
+                 final short serverIdleRetries,
+                 final Duration serverIdleTimeout,
+                 final int flushBufferSize,
+                 final boolean serverSSLEnabled,
+                 final Set<String> serverSSLProtocols,
+                 final Duration serverHandshakeTimeout,
+                 final Set<Endpoint> serverEndpoints,
+                 final Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer,
+                 final boolean serverExposeEnabled,
+                 final int messageMaxContentLength,
+                 final short messageHopLimit,
+                 final Duration messageComposedMessageTransferTimeout,
+                 final boolean superPeerEnabled,
+                 final Set<Endpoint> superPeerEndpoints,
+                 final List<Duration> superPeerRetryDelays,
+                 final Duration superPeerHandshakeTimeout,
+                 final Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer,
+                 final short superPeerIdleRetries,
+                 final Duration superPeerIdleTimeout,
+                 final boolean intraVmDiscoveryEnabled,
+                 final boolean localHostDiscoveryEnabled,
+                 final Path localHostDiscoveryPath,
+                 final Duration localHostDiscoveryLeaseTime, final boolean directConnectionsEnabled,
+                 final int directConnectionsMaxConcurrentConnections,
+                 final List<Duration> directConnectionsRetryDelays,
+                 final Duration directConnectionsHandshakeTimeout,
+                 final Class<? extends ChannelInitializer<SocketChannel>> directConnectionsChannelInitializer,
+                 final short directConnectionsIdleRetries,
+                 final Duration directConnectionsIdleTimeout,
+                 final boolean monitoringEnabled,
+                 final String monitoringInfluxUri,
+                 final String monitoringInfluxUser,
+                 final String monitoringInfluxPassword,
+                 final String monitoringInfluxDatabase,
+                 final Duration monitoringInfluxReportingFrequency,
+                 final Set<DrasylPlugin> pluginSet,
+                 final List<String> marshallingAllowedTypes,
+                 final boolean marshallingAllowAllPrimitives,
+                 final boolean marshallingAllowArrayOfDefinedTypes,
+                 final List<String> marshallingAllowedPackages) {
         this.networkId = networkId;
         this.identityProofOfWork = identityProofOfWork;
         this.identityPublicKey = identityPublicKey;
@@ -489,7 +517,7 @@ public class DrasylConfig {
         this.monitoringInfluxPassword = monitoringInfluxPassword;
         this.monitoringInfluxDatabase = monitoringInfluxDatabase;
         this.monitoringInfluxReportingFrequency = monitoringInfluxReportingFrequency;
-        this.pluginEnvironments = pluginEnvironments;
+        this.pluginSet = pluginSet;
         this.marshallingAllowedTypes = marshallingAllowedTypes;
         this.marshallingAllowAllPrimitives = marshallingAllowAllPrimitives;
         this.marshallingAllowArrayOfDefinedTypes = marshallingAllowArrayOfDefinedTypes;
@@ -664,8 +692,8 @@ public class DrasylConfig {
         return directConnectionsRetryDelays;
     }
 
-    public List<PluginEnvironment> getPluginEnvironments() {
-        return pluginEnvironments;
+    public Set<DrasylPlugin> getPlugins() {
+        return pluginSet;
     }
 
     public Class<? extends ChannelInitializer<SocketChannel>> getDirectConnectionsChannelInitializer
@@ -709,20 +737,20 @@ public class DrasylConfig {
                 directConnectionsChannelInitializer, directConnectionsIdleRetries,
                 directConnectionsIdleTimeout, monitoringEnabled, monitoringInfluxUri,
                 monitoringInfluxUser, monitoringInfluxPassword, monitoringInfluxDatabase,
-                monitoringInfluxReportingFrequency, pluginEnvironments, marshallingAllowedTypes,
+                monitoringInfluxReportingFrequency, pluginSet, marshallingAllowedTypes,
                 marshallingAllowAllPrimitives, marshallingAllowArrayOfDefinedTypes,
                 marshallingAllowedPackages);
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        DrasylConfig that = (DrasylConfig) o;
+        final DrasylConfig that = (DrasylConfig) o;
         return networkId == that.networkId &&
                 serverEnabled == that.serverEnabled &&
                 serverBindPort == that.serverBindPort &&
@@ -767,7 +795,7 @@ public class DrasylConfig {
                 Objects.equals(monitoringInfluxPassword, that.monitoringInfluxPassword) &&
                 Objects.equals(monitoringInfluxDatabase, that.monitoringInfluxDatabase) &&
                 Objects.equals(monitoringInfluxReportingFrequency, that.monitoringInfluxReportingFrequency) &&
-                Objects.equals(pluginEnvironments, that.pluginEnvironments) &&
+                Objects.equals(pluginSet, that.pluginSet) &&
                 Objects.equals(marshallingAllowedTypes, that.marshallingAllowedTypes) &&
                 Objects.equals(marshallingAllowAllPrimitives, that.marshallingAllowAllPrimitives) &&
                 Objects.equals(marshallingAllowArrayOfDefinedTypes, that.marshallingAllowArrayOfDefinedTypes) &&
@@ -821,7 +849,7 @@ public class DrasylConfig {
                 ", monitoringInfluxPassword='" + maskSecret(identityPrivateKey) + '\'' +
                 ", monitoringInfluxDatabase='" + monitoringInfluxDatabase + '\'' +
                 ", monitoringInfluxReportingFrequency=" + monitoringInfluxReportingFrequency +
-                ", pluginEnvironments=" + pluginEnvironments +
+                ", plugins=" + pluginSet +
                 ", marshallingAllowedTypes=" + marshallingAllowedTypes +
                 ", marshallingAllowAllPrimitives=" + marshallingAllowAllPrimitives +
                 ", marshallingAllowArrayOfDefinedTypes=" + marshallingAllowArrayOfDefinedTypes +
@@ -829,7 +857,7 @@ public class DrasylConfig {
                 '}';
     }
 
-    public static DrasylConfig parseFile(File file) {
+    public static DrasylConfig parseFile(final File file) {
         return new DrasylConfig(ConfigFactory.parseFile(file).withFallback(ConfigFactory.load()));
     }
 
@@ -837,7 +865,7 @@ public class DrasylConfig {
         return newBuilder(DEFAULT);
     }
 
-    public static Builder newBuilder(DrasylConfig config) {
+    public static Builder newBuilder(final DrasylConfig config) {
         return new Builder(
                 config.networkId,
                 config.identityProofOfWork,
@@ -883,7 +911,7 @@ public class DrasylConfig {
                 config.monitoringInfluxPassword,
                 config.monitoringInfluxDatabase,
                 config.monitoringInfluxReportingFrequency,
-                config.pluginEnvironments,
+                config.pluginSet,
                 config.marshallingAllowedTypes,
                 config.marshallingAllowAllPrimitives,
                 config.marshallingAllowArrayOfDefinedTypes,
@@ -940,62 +968,62 @@ public class DrasylConfig {
         private String monitoringInfluxPassword;
         private String monitoringInfluxDatabase;
         private Duration monitoringInfluxReportingFrequency;
-        private List<PluginEnvironment> pluginEnvironments;
+        private Set<DrasylPlugin> plugins;
         private List<String> marshallingAllowedTypes;
         private boolean marshallingAllowAllPrimitives;
         private boolean marshallingAllowArrayOfDefinedTypes;
         private List<String> marshallingAllowedPackages;
 
         @SuppressWarnings({ "java:S107" })
-        private Builder(int networkId,
-                        ProofOfWork identityProofOfWork,
-                        CompressedPublicKey identityPublicKey,
-                        CompressedPrivateKey identityPrivateKey,
-                        Path identityPath,
-                        InetAddress serverBindHost,
-                        boolean serverEnabled,
-                        int serverBindPort,
-                        short serverIdleRetries,
-                        Duration serverIdleTimeout,
-                        int flushBufferSize,
-                        boolean serverSSLEnabled,
-                        Set<String> serverSSLProtocols,
-                        Duration serverHandshakeTimeout,
-                        Set<Endpoint> serverEndpoints,
-                        Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer,
-                        boolean serverExposeEnabled,
-                        int messageMaxContentLength,
-                        short messageHopLimit,
-                        Duration messageComposedMessageTransferTimeout,
-                        boolean superPeerEnabled,
-                        Set<Endpoint> superPeerEndpoints,
-                        List<Duration> superPeerRetryDelays,
-                        Duration superPeerHandshakeTimeout,
-                        Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer,
-                        short superPeerIdleRetries,
-                        Duration superPeerIdleTimeout,
-                        boolean intraVmDiscoveryEnabled,
-                        boolean localHostDiscoveryEnabled,
-                        Path localHostDiscoveryPath,
-                        Duration localHostDiscoveryLeaseTime,
-                        boolean directConnectionsEnabled,
-                        int directConnectionsMaxConcurrentConnections,
-                        List<Duration> directConnectionsRetryDelays,
-                        Duration directConnectionsHandshakeTimeout,
-                        Class<? extends ChannelInitializer<SocketChannel>> directConnectionsChannelInitializer,
-                        short directConnectionsIdleRetries,
-                        Duration directConnectionsIdleTimeout,
-                        boolean monitoringEnabled,
-                        String monitoringInfluxUri,
-                        String monitoringInfluxUser,
-                        String monitoringInfluxPassword,
-                        String monitoringInfluxDatabase,
-                        Duration monitoringInfluxReportingFrequency,
-                        List<PluginEnvironment> pluginEnvironments,
-                        List<String> marshallingAllowedTypes,
-                        boolean marshallingAllowAllPrimitives,
-                        boolean marshallingAllowArrayOfDefinedTypes,
-                        List<String> marshallingAllowedPackages) {
+        private Builder(final int networkId,
+                        final ProofOfWork identityProofOfWork,
+                        final CompressedPublicKey identityPublicKey,
+                        final CompressedPrivateKey identityPrivateKey,
+                        final Path identityPath,
+                        final InetAddress serverBindHost,
+                        final boolean serverEnabled,
+                        final int serverBindPort,
+                        final short serverIdleRetries,
+                        final Duration serverIdleTimeout,
+                        final int flushBufferSize,
+                        final boolean serverSSLEnabled,
+                        final Set<String> serverSSLProtocols,
+                        final Duration serverHandshakeTimeout,
+                        final Set<Endpoint> serverEndpoints,
+                        final Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer,
+                        final boolean serverExposeEnabled,
+                        final int messageMaxContentLength,
+                        final short messageHopLimit,
+                        final Duration messageComposedMessageTransferTimeout,
+                        final boolean superPeerEnabled,
+                        final Set<Endpoint> superPeerEndpoints,
+                        final List<Duration> superPeerRetryDelays,
+                        final Duration superPeerHandshakeTimeout,
+                        final Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer,
+                        final short superPeerIdleRetries,
+                        final Duration superPeerIdleTimeout,
+                        final boolean intraVmDiscoveryEnabled,
+                        final boolean localHostDiscoveryEnabled,
+                        final Path localHostDiscoveryPath,
+                        final Duration localHostDiscoveryLeaseTime,
+                        final boolean directConnectionsEnabled,
+                        final int directConnectionsMaxConcurrentConnections,
+                        final List<Duration> directConnectionsRetryDelays,
+                        final Duration directConnectionsHandshakeTimeout,
+                        final Class<? extends ChannelInitializer<SocketChannel>> directConnectionsChannelInitializer,
+                        final short directConnectionsIdleRetries,
+                        final Duration directConnectionsIdleTimeout,
+                        final boolean monitoringEnabled,
+                        final String monitoringInfluxUri,
+                        final String monitoringInfluxUser,
+                        final String monitoringInfluxPassword,
+                        final String monitoringInfluxDatabase,
+                        final Duration monitoringInfluxReportingFrequency,
+                        final Set<DrasylPlugin> plugins,
+                        final List<String> marshallingAllowedTypes,
+                        final boolean marshallingAllowAllPrimitives,
+                        final boolean marshallingAllowArrayOfDefinedTypes,
+                        final List<String> marshallingAllowedPackages) {
             this.networkId = networkId;
             this.identityProofOfWork = identityProofOfWork;
             this.identityPublicKey = identityPublicKey;
@@ -1039,7 +1067,7 @@ public class DrasylConfig {
             this.monitoringInfluxPassword = monitoringInfluxPassword;
             this.monitoringInfluxDatabase = monitoringInfluxDatabase;
             this.monitoringInfluxReportingFrequency = monitoringInfluxReportingFrequency;
-            this.pluginEnvironments = pluginEnvironments;
+            this.plugins = plugins;
             this.marshallingAllowedTypes = marshallingAllowedTypes;
             this.marshallingAllowAllPrimitives = marshallingAllowAllPrimitives;
             this.marshallingAllowArrayOfDefinedTypes = marshallingAllowArrayOfDefinedTypes;
@@ -1047,242 +1075,242 @@ public class DrasylConfig {
             this.serverExposeEnabled = serverExposeEnabled;
         }
 
-        public Builder networkId(int networkId) {
+        public Builder networkId(final int networkId) {
             this.networkId = networkId;
             return this;
         }
 
-        public Builder identityProofOfWork(ProofOfWork identityProofOfWork) {
+        public Builder identityProofOfWork(final ProofOfWork identityProofOfWork) {
             this.identityProofOfWork = identityProofOfWork;
             return this;
         }
 
-        public Builder identityPublicKey(CompressedPublicKey identityPublicKey) {
+        public Builder identityPublicKey(final CompressedPublicKey identityPublicKey) {
             this.identityPublicKey = identityPublicKey;
             return this;
         }
 
-        public Builder identityPrivateKey(CompressedPrivateKey identityPrivateKey) {
+        public Builder identityPrivateKey(final CompressedPrivateKey identityPrivateKey) {
             this.identityPrivateKey = identityPrivateKey;
             return this;
         }
 
-        public Builder identityPath(Path identityPath) {
+        public Builder identityPath(final Path identityPath) {
             this.identityPath = identityPath;
             return this;
         }
 
-        public Builder serverBindHost(InetAddress serverBindHost) {
+        public Builder serverBindHost(final InetAddress serverBindHost) {
             this.serverBindHost = serverBindHost;
             return this;
         }
 
-        public Builder serverEnabled(boolean serverEnabled) {
+        public Builder serverEnabled(final boolean serverEnabled) {
             this.serverEnabled = serverEnabled;
             return this;
         }
 
-        public Builder serverBindPort(int serverBindPort) {
+        public Builder serverBindPort(final int serverBindPort) {
             this.serverBindPort = serverBindPort;
             return this;
         }
 
-        public Builder serverIdleRetries(short serverIdleRetries) {
+        public Builder serverIdleRetries(final short serverIdleRetries) {
             this.serverIdleRetries = serverIdleRetries;
             return this;
         }
 
-        public Builder serverIdleTimeout(Duration serverIdleTimeout) {
+        public Builder serverIdleTimeout(final Duration serverIdleTimeout) {
             this.serverIdleTimeout = serverIdleTimeout;
             return this;
         }
 
-        public Builder flushBufferSize(int flushBufferSize) {
+        public Builder flushBufferSize(final int flushBufferSize) {
             this.flushBufferSize = flushBufferSize;
             return this;
         }
 
-        public Builder serverSSLEnabled(boolean serverSSLEnabled) {
+        public Builder serverSSLEnabled(final boolean serverSSLEnabled) {
             this.serverSSLEnabled = serverSSLEnabled;
             return this;
         }
 
-        public Builder serverSSLProtocols(Set<String> serverSSLProtocols) {
+        public Builder serverSSLProtocols(final Set<String> serverSSLProtocols) {
             this.serverSSLProtocols = serverSSLProtocols;
             return this;
         }
 
-        public Builder serverHandshakeTimeout(Duration serverHandshakeTimeout) {
+        public Builder serverHandshakeTimeout(final Duration serverHandshakeTimeout) {
             this.serverHandshakeTimeout = serverHandshakeTimeout;
             return this;
         }
 
-        public Builder serverEndpoints(Set<Endpoint> serverEndpoints) {
+        public Builder serverEndpoints(final Set<Endpoint> serverEndpoints) {
             this.serverEndpoints = serverEndpoints;
             return this;
         }
 
-        public Builder serverChannelInitializer(Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer) {
+        public Builder serverChannelInitializer(final Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer) {
             this.serverChannelInitializer = serverChannelInitializer;
             return this;
         }
 
-        public Builder messageMaxContentLength(int messageMaxContentLength) {
+        public Builder messageMaxContentLength(final int messageMaxContentLength) {
             this.messageMaxContentLength = messageMaxContentLength;
             return this;
         }
 
-        public Builder messageHopLimit(short messageHopLimit) {
+        public Builder messageHopLimit(final short messageHopLimit) {
             this.messageHopLimit = messageHopLimit;
             return this;
         }
 
-        public Builder messageComposedMessageTransferTimeout(Duration composedMessageTransferTimeout) {
+        public Builder messageComposedMessageTransferTimeout(final Duration composedMessageTransferTimeout) {
             this.messageComposedMessageTransferTimeout = composedMessageTransferTimeout;
             return this;
         }
 
-        public Builder superPeerEnabled(boolean superPeerEnabled) {
+        public Builder superPeerEnabled(final boolean superPeerEnabled) {
             this.superPeerEnabled = superPeerEnabled;
             return this;
         }
 
-        public Builder superPeerEndpoints(Set<Endpoint> superPeerEndpoints) {
+        public Builder superPeerEndpoints(final Set<Endpoint> superPeerEndpoints) {
             this.superPeerEndpoints = superPeerEndpoints;
             return this;
         }
 
-        public Builder superPeerRetryDelays(List<Duration> superPeerRetryDelays) {
+        public Builder superPeerRetryDelays(final List<Duration> superPeerRetryDelays) {
             this.superPeerRetryDelays = superPeerRetryDelays;
             return this;
         }
 
-        public Builder superPeerHandshakeTimeout(Duration superPeerHandshakeTimeout) {
+        public Builder superPeerHandshakeTimeout(final Duration superPeerHandshakeTimeout) {
             this.superPeerHandshakeTimeout = superPeerHandshakeTimeout;
             return this;
         }
 
-        public Builder superPeerChannelInitializer(Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer) {
+        public Builder superPeerChannelInitializer(final Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer) {
             this.superPeerChannelInitializer = superPeerChannelInitializer;
             return this;
         }
 
-        public Builder superPeerIdleRetries(short superPeerIdleRetries) {
+        public Builder superPeerIdleRetries(final short superPeerIdleRetries) {
             this.superPeerIdleRetries = superPeerIdleRetries;
             return this;
         }
 
-        public Builder superPeerIdleTimeout(Duration superPeerIdleTimeout) {
+        public Builder superPeerIdleTimeout(final Duration superPeerIdleTimeout) {
             this.superPeerIdleTimeout = superPeerIdleTimeout;
             return this;
         }
 
-        public Builder intraVmDiscoveryEnabled(boolean intraVmDiscoveryEnabled) {
+        public Builder intraVmDiscoveryEnabled(final boolean intraVmDiscoveryEnabled) {
             this.intraVmDiscoveryEnabled = intraVmDiscoveryEnabled;
             return this;
         }
 
-        public Builder localHostDiscoveryEnabled(boolean localHostDiscoveryEnabled) {
+        public Builder localHostDiscoveryEnabled(final boolean localHostDiscoveryEnabled) {
             this.localHostDiscoveryEnabled = localHostDiscoveryEnabled;
             return this;
         }
 
-        public Builder localHostDiscoveryLeaseTime(Duration localHostDiscoveryLeaseTime) {
+        public Builder localHostDiscoveryLeaseTime(final Duration localHostDiscoveryLeaseTime) {
             this.localHostDiscoveryLeaseTime = localHostDiscoveryLeaseTime;
             return this;
         }
 
-        public Builder directConnectionsEnabled(boolean directConnectionsEnabled) {
+        public Builder directConnectionsEnabled(final boolean directConnectionsEnabled) {
             this.directConnectionsEnabled = directConnectionsEnabled;
             return this;
         }
 
-        public Builder directConnectionsMaxConcurrentConnections(int directConnectionsMaxConcurrentConnections) {
+        public Builder directConnectionsMaxConcurrentConnections(final int directConnectionsMaxConcurrentConnections) {
             this.directConnectionsMaxConcurrentConnections = directConnectionsMaxConcurrentConnections;
             return this;
         }
 
-        public Builder directConnectionsRetryDelays(List<Duration> directConnectionsRetryDelays) {
+        public Builder directConnectionsRetryDelays(final List<Duration> directConnectionsRetryDelays) {
             this.directConnectionsRetryDelays = directConnectionsRetryDelays;
             return this;
         }
 
-        public Builder directConnectionsHandshakeTimeout(Duration directConnectionsHandshakeTimeout) {
+        public Builder directConnectionsHandshakeTimeout(final Duration directConnectionsHandshakeTimeout) {
             this.directConnectionsHandshakeTimeout = directConnectionsHandshakeTimeout;
             return this;
         }
 
-        public Builder directConnectionsChannelInitializer(Class<? extends ChannelInitializer<SocketChannel>> directConnectionsChannelInitializer) {
+        public Builder directConnectionsChannelInitializer(final Class<? extends ChannelInitializer<SocketChannel>> directConnectionsChannelInitializer) {
             this.directConnectionsChannelInitializer = directConnectionsChannelInitializer;
             return this;
         }
 
-        public Builder directConnectionsIdleRetries(short directConnectionsIdleRetries) {
+        public Builder directConnectionsIdleRetries(final short directConnectionsIdleRetries) {
             this.directConnectionsIdleRetries = directConnectionsIdleRetries;
             return this;
         }
 
-        public Builder directConnectionsIdleTimeout(Duration directConnectionsIdleTimeout) {
+        public Builder directConnectionsIdleTimeout(final Duration directConnectionsIdleTimeout) {
             this.directConnectionsIdleTimeout = directConnectionsIdleTimeout;
             return this;
         }
 
-        public Builder monitoringEnabled(boolean monitoringEnabled) {
+        public Builder monitoringEnabled(final boolean monitoringEnabled) {
             this.monitoringEnabled = monitoringEnabled;
             return this;
         }
 
-        public Builder monitoringInfluxUri(String monitoringInfluxUri) {
+        public Builder monitoringInfluxUri(final String monitoringInfluxUri) {
             this.monitoringInfluxUri = monitoringInfluxUri;
             return this;
         }
 
-        public Builder monitoringInfluxUser(String monitoringInfluxUser) {
+        public Builder monitoringInfluxUser(final String monitoringInfluxUser) {
             this.monitoringInfluxUser = monitoringInfluxUser;
             return this;
         }
 
-        public Builder monitoringInfluxPassword(String monitoringInfluxPassword) {
+        public Builder monitoringInfluxPassword(final String monitoringInfluxPassword) {
             this.monitoringInfluxPassword = monitoringInfluxPassword;
             return this;
         }
 
-        public Builder monitoringInfluxDatabase(String monitoringInfluxDatabase) {
+        public Builder monitoringInfluxDatabase(final String monitoringInfluxDatabase) {
             this.monitoringInfluxDatabase = monitoringInfluxDatabase;
             return this;
         }
 
-        public Builder monitoringInfluxReportingFrequency(Duration monitoringInfluxReportingFrequency) {
+        public Builder monitoringInfluxReportingFrequency(final Duration monitoringInfluxReportingFrequency) {
             this.monitoringInfluxReportingFrequency = monitoringInfluxReportingFrequency;
             return this;
         }
 
-        public Builder pluginEnvironments(List<PluginEnvironment> pluginEnvironments) {
-            this.pluginEnvironments = pluginEnvironments;
+        public Builder plugins(final Set<DrasylPlugin> plugins) {
+            this.plugins = plugins;
             return this;
         }
 
-        public Builder marshallingAllowedTypes(List<String> marshallingAllowedTypes) {
+        public Builder marshallingAllowedTypes(final List<String> marshallingAllowedTypes) {
             this.marshallingAllowedTypes = marshallingAllowedTypes;
             return this;
         }
 
-        public Builder marshallingAllowAllPrimitives(boolean marshallingAllowAllPrimitives) {
+        public Builder marshallingAllowAllPrimitives(final boolean marshallingAllowAllPrimitives) {
             this.marshallingAllowAllPrimitives = marshallingAllowAllPrimitives;
             return this;
         }
 
-        public Builder marshallingAllowArrayOfDefinedTypes(boolean marshallingAllowArrayOfDefinedTypes) {
+        public Builder marshallingAllowArrayOfDefinedTypes(final boolean marshallingAllowArrayOfDefinedTypes) {
             this.marshallingAllowArrayOfDefinedTypes = marshallingAllowArrayOfDefinedTypes;
             return this;
         }
 
-        public Builder marshallingAllowedPackages(List<String> marshallingAllowedPackages) {
+        public Builder marshallingAllowedPackages(final List<String> marshallingAllowedPackages) {
             this.marshallingAllowedPackages = marshallingAllowedPackages;
             return this;
         }
 
-        public Builder serverExposeEnabled(boolean serverExposeEnabled) {
+        public Builder serverExposeEnabled(final boolean serverExposeEnabled) {
             this.serverExposeEnabled = serverExposeEnabled;
             return this;
         }
@@ -1303,7 +1331,7 @@ public class DrasylConfig {
                     directConnectionsIdleRetries, directConnectionsIdleTimeout, monitoringEnabled,
                     monitoringInfluxUri, monitoringInfluxUser, monitoringInfluxPassword,
                     monitoringInfluxDatabase, monitoringInfluxReportingFrequency,
-                    pluginEnvironments, marshallingAllowedTypes, marshallingAllowAllPrimitives,
+                    plugins, marshallingAllowedTypes, marshallingAllowAllPrimitives,
                     marshallingAllowArrayOfDefinedTypes, marshallingAllowedPackages
             );
         }
