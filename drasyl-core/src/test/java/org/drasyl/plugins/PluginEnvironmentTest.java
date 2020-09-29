@@ -1,48 +1,44 @@
-/*
- * Copyright (c) 2020.
- *
- * This file is part of drasyl.
- *
- *  drasyl is free software: you can redistribute it and/or modify
- *  it under the terms of the GNU Lesser General Public License as published by
- *  the Free Software Foundation, either version 3 of the License, or
- *  (at your option) any later version.
- *
- *  drasyl is distributed in the hope that it will be useful,
- *  but WITHOUT ANY WARRANTY; without even the implied warranty of
- *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
- *  GNU Lesser General Public License for more details.
- *
- *  You should have received a copy of the GNU Lesser General Public License
- *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
- */
 package org.drasyl.plugins;
 
-import com.typesafe.config.Config;
+import org.drasyl.DrasylConfig;
+import org.drasyl.pipeline.Pipeline;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
-import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
-@ExtendWith(MockitoExtension.class)
 class PluginEnvironmentTest {
-    @Mock
-    private Config options;
-    private final Class<? extends AutoloadablePlugin> clazz = AutoloadablePlugin.class;
+    @Nested
+    class Equals {
+        @Mock
+        private Pipeline pipeline;
 
-    @Test
-    void shouldReturnCorrectOptions() {
-        PluginEnvironment env = new PluginEnvironment(options, clazz);
+        @Test
+        void notSameBecauseOfDifferentConfig() {
+            PluginEnvironment environment1 = new PluginEnvironment(DrasylConfig.newBuilder().build(), pipeline);
+            PluginEnvironment environment2 = new PluginEnvironment(DrasylConfig.newBuilder().build(), pipeline);
+            PluginEnvironment environment3 = new PluginEnvironment(DrasylConfig.newBuilder().serverEnabled(false).build(), pipeline);
 
-        assertEquals(options, env.getOptions().getConfig());
+            assertEquals(environment1, environment2);
+            assertNotEquals(environment2, environment3);
+        }
     }
 
-    @Test
-    void shouldReturnCorrectClass() {
-        PluginEnvironment env = new PluginEnvironment(options, clazz);
+    @Nested
+    class HashCode {
+        @Mock
+        private Pipeline pipeline;
 
-        assertEquals(clazz, env.getClazz());
+        @Test
+        void notSameBecauseOfDifferentConfig() {
+            PluginEnvironment environment1 = new PluginEnvironment(DrasylConfig.newBuilder().build(), pipeline);
+            PluginEnvironment environment2 = new PluginEnvironment(DrasylConfig.newBuilder().build(), pipeline);
+            PluginEnvironment environment3 = new PluginEnvironment(DrasylConfig.newBuilder().serverEnabled(false).build(), pipeline);
+
+            assertEquals(environment1.hashCode(), environment2.hashCode());
+            assertNotEquals(environment2.hashCode(), environment3.hashCode());
+        }
     }
 }

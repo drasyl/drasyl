@@ -18,62 +18,46 @@
  */
 package org.drasyl.plugins;
 
-import com.typesafe.config.Config;
+import org.drasyl.DrasylConfig;
+import org.drasyl.pipeline.Pipeline;
 
 import java.util.Objects;
 
 /**
- * Models environment information of a {@link DrasylPlugin} that are required by the plugin or the
- * {@link PluginManager} to automatically load the plugin.
+ * Models environment information of a {@link DrasylPlugin} that are required by the plugin.
  */
 public class PluginEnvironment {
-    private final PluginOptions options;
-    private final Class<? extends AutoloadablePlugin> clazz;
+    private final DrasylConfig config;
+    private final Pipeline pipeline;
 
-    public PluginEnvironment(Config options,
-                             Class<? extends AutoloadablePlugin> clazz) {
-        this(new DefaultPluginOptions(options), clazz);
+    public PluginEnvironment(final DrasylConfig config, final Pipeline pipeline) {
+        this.config = config;
+        this.pipeline = pipeline;
     }
 
-    public PluginEnvironment(PluginOptions options,
-                             Class<? extends AutoloadablePlugin> clazz) {
-        this.options = options;
-        this.clazz = clazz;
+    public DrasylConfig getConfig() {
+        return config;
     }
 
-    /**
-     * Returns the {@link PluginOptions} of the corresponding plugin.
-     *
-     * @return the {@link PluginOptions} of the corresponding plugin
-     */
-    public PluginOptions getOptions() {
-        return options;
-    }
-
-    /**
-     * Returns the class of the corresponding plugin.
-     *
-     * @return the class of the corresponding plugin
-     */
-    public Class<? extends AutoloadablePlugin> getClazz() {
-        return clazz;
+    public Pipeline getPipeline() {
+        return pipeline;
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(options, clazz);
-    }
-
-    @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        PluginEnvironment that = (PluginEnvironment) o;
-        return Objects.equals(options, that.options) &&
-                Objects.equals(clazz, that.clazz);
+        final PluginEnvironment that = (PluginEnvironment) o;
+        return Objects.equals(config, that.config) &&
+                Objects.equals(pipeline, that.pipeline);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(config, pipeline);
     }
 }

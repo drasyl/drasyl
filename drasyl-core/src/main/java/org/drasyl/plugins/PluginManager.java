@@ -19,130 +19,69 @@
 package org.drasyl.plugins;
 
 import org.drasyl.DrasylConfig;
-import org.drasyl.DrasylException;
 import org.drasyl.pipeline.Pipeline;
-import org.drasyl.util.DrasylFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.lang.reflect.Constructor;
-import java.util.HashMap;
-import java.util.Map;
-
+/**
+ * The {@code PluginManager} notifies all enabled plugins about specific node events (like startup
+ * or shutdown).
+ */
 public class PluginManager {
     private static final Logger LOG = LoggerFactory.getLogger(PluginManager.class);
-    private final Map<String, DrasylPlugin> plugins;
-    private final Pipeline pipeline;
     private final DrasylConfig config;
-    private final DrasylFunction<Class<? extends AutoloadablePlugin>, Constructor<?>, Exception> constructorFunction;
+    private final Pipeline pipeline;
 
-    public PluginManager(Pipeline pipeline,
-                         DrasylConfig config) {
-        this(pipeline, config, new HashMap<>(), clazz -> clazz.getConstructor(Pipeline.class, DrasylConfig.class, PluginEnvironment.class));
-    }
-
-    PluginManager(Pipeline pipeline,
-                  DrasylConfig config,
-                  Map<String, DrasylPlugin> plugins,
-                  DrasylFunction<Class<? extends AutoloadablePlugin>, Constructor<?>, Exception> constructorFunction) {
-        this.pipeline = pipeline;
+    public PluginManager(final DrasylConfig config, final Pipeline pipeline) {
         this.config = config;
-        this.plugins = plugins;
-        this.constructorFunction = constructorFunction;
+        this.pipeline = pipeline;
     }
 
     /**
-     * This method gets called before the drasyl node is started and automatically loads all plugins
-     * that are defined in the corresponding {@link DrasylConfig}. <br />
-     * <b>At this point, no communication channel is alive.</b>
+     * This method is called first when the {@link org.drasyl.DrasylNode} is started.
      */
-    public synchronized void beforeStart() throws DrasylException {
-        LOG.debug("Start Plugins...");
-        for (PluginEnvironment pluginEnvironment : config.getPluginEnvironments()) {
-            AutoloadablePlugin plugin = loadPlugin(pluginEnvironment);
-            add(plugin);
-        }
-        LOG.debug("Plugins started.");
-    }
-
-    /**
-     * This method gets called after the drasyl node was started.
-     */
-    public synchronized void afterStart() {
-        for (DrasylPlugin plugin : plugins.values()) {
-            plugin.onAfterStart();
+    public void beforeStart() {
+        if (!config.getPlugins().isEmpty()) {
+            LOG.debug("Execute onBeforeStart listeners for all plugins...");
+            final PluginEnvironment environment = new PluginEnvironment(config, pipeline);
+            config.getPlugins().forEach(plugin -> plugin.onBeforeStart(environment));
+            LOG.debug("All onBeforeStart listeners executed");
         }
     }
 
     /**
-     * This method get called before the drasyl node is shut down.
+     * This method is called last when the {@link org.drasyl.DrasylNode} is started.
      */
-    public synchronized void beforeShutdown() {
-        for (DrasylPlugin plugin : plugins.values()) {
-            plugin.onBeforeShutdown();
+    public void afterStart() {
+        if (!config.getPlugins().isEmpty()) {
+            LOG.debug("Execute onAfterStart listeners for all plugins...");
+            final PluginEnvironment environment = new PluginEnvironment(config, pipeline);
+            config.getPlugins().forEach(plugin -> plugin.onAfterStart(environment));
+            LOG.debug("All onAfterStart listeners executed");
         }
     }
 
     /**
-     * This method gets called after the drasyl node was shut down and will be remove all plugins from
-     * the internal plugin list. <br />
-     * <b>At this point, no communication channel is alive.</b>
+     * This method get called first when the {@link org.drasyl.DrasylNode} is shut down.
      */
-    public synchronized void afterShutdown() {
-        LOG.debug("Stop Plugins...");
-
-        for (DrasylPlugin plugin : plugins.values()) {
-            plugin.onAfterShutdown();
-        }
-
-        plugins.clear();
-        LOG.debug("Plugins stopped");
-    }
-
-    AutoloadablePlugin loadPlugin(PluginEnvironment pluginEnvironment) throws DrasylException {
-        try {
-            Constructor<?> constructor = constructorFunction.apply(pluginEnvironment.getClazz());
-            return (AutoloadablePlugin) constructor.newInstance(pipeline, config, pluginEnvironment);
-        }
-        catch (NoSuchMethodException e) {
-            LOG.error("", e);
-            throw new DrasylException("The given plugin `" + pluginEnvironment.getClazz().getSimpleName() + "` has not the correct signature");
-        }
-        catch (IllegalAccessException e) {
-            LOG.error("", e);
-            throw new DrasylException("Can't access the given plugin `" + pluginEnvironment.getClazz().getSimpleName() + "`");
-        }
-        catch (InstantiationException e) {
-            LOG.error("", e);
-            throw new DrasylException("Can't invoke the given plugin `" + pluginEnvironment.getClazz().getSimpleName() + "`");
-        }
-        catch (Exception e) {
-            LOG.error("", e);
-            throw new DrasylException("Can't instantiate the given plugin `" + pluginEnvironment.getClazz().getSimpleName() + "`");
+    public void beforeShutdown() {
+        if (!config.getPlugins().isEmpty()) {
+            LOG.debug("Execute onBeforeShutdown listeners for all plugins...");
+            final PluginEnvironment environment = new PluginEnvironment(config, pipeline);
+            config.getPlugins().forEach(plugin -> plugin.onBeforeShutdown(environment));
+            LOG.debug("All onBeforeShutdown listeners executed");
         }
     }
 
     /**
-     * Adds a {@link DrasylPlugin} to the {@link PluginManager} and also to the {@link
-     * org.drasyl.pipeline.Pipeline}.
-     *
-     * @param plugin the plugin that should be added
+     * This method get called last when the {@link org.drasyl.DrasylNode} is shut down.
      */
-    void add(DrasylPlugin plugin) throws DrasylException {
-        duplicateCheck(plugin.name());
-        plugins.put(plugin.name(), plugin);
-        plugin.onBeforeStart();
-    }
-
-    /**
-     * Checks if the plugin is already added and throws an exception in this case.
-     *
-     * @param name the plugin name
-     * @throws DrasylException if plugin is already added
-     */
-    private void duplicateCheck(String name) throws DrasylException {
-        if (plugins.containsKey(name)) {
-            throw new DrasylException("Can't add the '" + name + "' plugin twice.");
+    public void afterShutdown() {
+        if (!config.getPlugins().isEmpty()) {
+            LOG.debug("Execute onAfterShutdown listeners for all plugins...");
+            final PluginEnvironment environment = new PluginEnvironment(config, pipeline);
+            config.getPlugins().forEach(plugin -> plugin.onAfterShutdown(environment));
+            LOG.debug("All onAfterShutdown listeners executed");
         }
     }
 }
