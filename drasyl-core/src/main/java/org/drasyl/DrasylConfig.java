@@ -254,12 +254,14 @@ public class DrasylConfig {
     }
 
     /**
-     * Gets the proof of work at the given path. Similar to {@link Config}, an exception is thrown
-     * for an invalid value.
+     * Gets the {@link ProofOfWork} at the given path. Similar to {@link Config}, an exception is
+     * thrown for an invalid value.
      *
-     * @param config
-     * @param path
-     * @return
+     * @param config the application's portion of the configuration
+     * @param path   path expression
+     * @return the {@link ProofOfWork} value at the requested path
+     * @throws ConfigException.Missing   if value is absent or null
+     * @throws ConfigException.WrongType if value is not convertible to a {@link ProofOfWork}
      */
     @SuppressWarnings({ "java:S1192" })
     private ProofOfWork getProofOfWork(Config config, String path) {
@@ -273,12 +275,14 @@ public class DrasylConfig {
     }
 
     /**
-     * Gets the compressed public key at the given path. Similar to {@link Config}, an exception is
-     * thrown for an invalid value.
+     * Gets the {@link CompressedPublicKey} at the given path. Similar to {@link Config}, an
+     * exception is thrown for an invalid value.
      *
-     * @param config
-     * @param path
-     * @return
+     * @param config the application's portion of the configuration
+     * @param path   path expression
+     * @return the {@link CompressedPublicKey} value at the requested path
+     * @throws ConfigException.Missing   if value is absent or null
+     * @throws ConfigException.WrongType if value is not convertible to a {@link CompressedPublicKey}
      */
     @SuppressWarnings({ "java:S1192" })
     private CompressedPublicKey getPublicKey(Config config, String path) {
@@ -292,12 +296,14 @@ public class DrasylConfig {
     }
 
     /**
-     * Gets the compressed private key at the given path. Similar to {@link Config}, an exception is
-     * thrown for an invalid value.
+     * Gets the {@link CompressedPrivateKey} at the given path. Similar to {@link Config}, an
+     * exception is thrown for an invalid value.
      *
-     * @param config
-     * @param path
-     * @return
+     * @param config the application's portion of the configuration
+     * @param path   path expression
+     * @return the {@link CompressedPrivateKey} value at the requested path
+     * @throws ConfigException.Missing   if value is absent or null
+     * @throws ConfigException.WrongType if value is not convertible to a {@link CompressedPrivateKey}
      */
     @SuppressWarnings({ "java:S1192" })
     private CompressedPrivateKey getPrivateKey(Config config, String path) {
@@ -318,9 +324,11 @@ public class DrasylConfig {
      * Gets the short at the given path. Similar to {@link Config}, an exception is thrown for an
      * out-of-range value.
      *
-     * @param config
-     * @param path
-     * @return
+     * @param config the application's portion of the configuration
+     * @param path   path expression
+     * @return the short value at the requested path
+     * @throws ConfigException.Missing   if value is absent or null
+     * @throws ConfigException.WrongType if value is not convertible to a short
      */
     private static short getShort(Config config, String path) {
         int integerValue = config.getInt(path);
@@ -345,6 +353,7 @@ public class DrasylConfig {
         return endpointList;
     }
 
+    @SuppressWarnings("unchecked")
     private Class<ChannelInitializer<SocketChannel>> getChannelInitializer(Config config,
                                                                            String path) {
         String className = config.getString(path);
@@ -365,6 +374,7 @@ public class DrasylConfig {
 
             if (plugin.getBoolean(key + ".enabled")) {
                 try {
+                    @SuppressWarnings("unchecked")
                     Class<? extends AutoloadablePlugin> clazz = (Class<? extends AutoloadablePlugin>) Class.forName(plugin.getString(key + ".class"));
                     environments.add(new PluginEnvironment(plugin, clazz));
                 }

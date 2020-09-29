@@ -388,6 +388,7 @@ class DrasylConfigTest {
                     .superPeerIdleRetries(DEFAULT.getSuperPeerIdleRetries())
                     .superPeerIdleTimeout(DEFAULT.getSuperPeerIdleTimeout())
                     .intraVmDiscoveryEnabled(DEFAULT.isIntraVmDiscoveryEnabled())
+                    .localHostDiscoveryLeaseTime(DEFAULT.getLocalHostDiscoveryLeaseTime())
                     .directConnectionsEnabled(DEFAULT.areDirectConnectionsEnabled())
                     .directConnectionsRetryDelays(DEFAULT.getDirectConnectionsRetryDelays())
                     .directConnectionsHandshakeTimeout(DEFAULT.getDirectConnectionsHandshakeTimeout())
