@@ -30,6 +30,8 @@ import static java.util.Objects.requireNonNull;
 /**
  * This class models the proof of work for a given public key. Hence, identity creation becomes an
  * expensive operation and sybil attacks should be made more difficult.
+ * <p>
+ * This is an immutable object.
  */
 public class ProofOfWork {
     private static final Logger LOG = LoggerFactory.getLogger(ProofOfWork.class);

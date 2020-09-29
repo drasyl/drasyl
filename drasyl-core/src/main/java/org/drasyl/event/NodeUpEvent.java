@@ -2,6 +2,8 @@ package org.drasyl.event;
 
 /**
  * This event signals that the node has been started.
+ * <p>
+ * This is an immutable object.
  */
 public class NodeUpEvent extends AbstractNodeEvent {
     public NodeUpEvent(Node node) {

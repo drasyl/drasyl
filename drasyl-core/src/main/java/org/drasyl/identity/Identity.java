@@ -29,6 +29,8 @@ import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
 /**
  * Represents the private identity of a peer (includes the proof of work, the public and private
  * key). Should be kept secret!.
+ * <p>
+ * This is an immutable object.
  */
 public class Identity {
     private final ProofOfWork proofOfWork;

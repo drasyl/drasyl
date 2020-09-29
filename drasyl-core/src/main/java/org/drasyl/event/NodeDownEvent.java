@@ -2,6 +2,8 @@ package org.drasyl.event;
 
 /**
  * This event signals that the node is shut down.
+ * <p>
+ * This is an immutable object.
  */
 public class NodeDownEvent extends AbstractNodeEvent {
     public NodeDownEvent(Node node) {

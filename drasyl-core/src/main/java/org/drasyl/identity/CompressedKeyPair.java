@@ -33,6 +33,8 @@ import static org.drasyl.util.SecretUtil.maskSecret;
  * This class is a simple holder for a compressed key pair (a {@link CompressedPublicKey} and a
  * {@link CompressedPrivateKey}). It does not enforce any security, and, when initialized, should be
  * treated like a {@link CompressedPrivateKey}.
+ * <p>
+ * This is an immutable object.
  */
 public class CompressedKeyPair {
     private final CompressedPublicKey publicKey;

@@ -6,6 +6,8 @@ import java.util.Objects;
 
 /**
  * This event signals that the node has received a message addressed to it.
+ * <p>
+ * This is an immutable object.
  */
 public class MessageEvent implements Event {
     private final CompressedPublicKey sender;

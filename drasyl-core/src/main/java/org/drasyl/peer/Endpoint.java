@@ -18,6 +18,8 @@ import static org.drasyl.util.WebSocketUtil.webSocketPort;
 /**
  * Represents an endpoint of a drasyl node. This is a {@link URI} that must use the WebSocket
  * (Secure) protocol.
+ * <p>
+ * This is an immutable object.
  */
 public class Endpoint implements Comparable<Endpoint> {
     private final URI uri;

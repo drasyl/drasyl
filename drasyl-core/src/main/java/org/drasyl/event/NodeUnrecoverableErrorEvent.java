@@ -4,6 +4,8 @@ import java.util.Objects;
 
 /**
  * This events signals that the node encountered an unrecoverable error.
+ * <p>
+ * This is an immutable object.
  */
 public class NodeUnrecoverableErrorEvent extends AbstractNodeEvent {
     private final Throwable error;

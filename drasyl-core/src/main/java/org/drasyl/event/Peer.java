@@ -23,8 +23,10 @@ import org.drasyl.identity.CompressedPublicKey;
 import java.util.Objects;
 
 /**
- * Used by {@link Event} to describe an event related to a Peer (e.g. {@link
- * PeerRelayEvent}, {@link PeerDirectEvent}).
+ * Used by {@link Event} to describe an event related to a Peer (e.g. {@link PeerRelayEvent}, {@link
+ * PeerDirectEvent}).
+ * <p>
+ * This is an immutable object.
  */
 public class Peer {
     private final CompressedPublicKey publicKey;

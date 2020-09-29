@@ -26,6 +26,8 @@ import java.security.PublicKey;
 
 /**
  * This interface models a compressed key that can be converted into a string and vice versa.
+ * <p>
+ * This is an immutable object.
  */
 public class CompressedPublicKey extends AbstractCompressedKey<PublicKey> {
     /**

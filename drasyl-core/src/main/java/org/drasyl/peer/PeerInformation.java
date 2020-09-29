@@ -26,6 +26,8 @@ import java.util.Set;
 
 /**
  * Contains information on a specific peer (e.g. known endpoints).
+ * <p>
+ * This is an immutable object.
  */
 public class PeerInformation {
     protected final Set<Endpoint> endpoints;

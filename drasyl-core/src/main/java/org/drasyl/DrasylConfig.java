@@ -49,6 +49,8 @@ import static org.drasyl.util.SecretUtil.maskSecret;
 /**
  * This class represents the configuration for a {@link DrasylNode}. For example, it defines the
  * identity and the Super Peer.
+ * <p>
+ * This is an immutable object.
  */
 public class DrasylConfig {
     static final DrasylConfig DEFAULT = new DrasylConfig(ConfigFactory.defaultReference());

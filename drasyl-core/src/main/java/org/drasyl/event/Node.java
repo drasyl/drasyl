@@ -25,8 +25,10 @@ import java.util.Objects;
 import java.util.Set;
 
 /**
- * Used by {@link Event} to describe an event related to the local Node (e.g. {@link
- * NodeUpEvent}, {@link NodeOnlineEvent}).
+ * Used by {@link Event} to describe an event related to the local Node (e.g. {@link NodeUpEvent},
+ * {@link NodeOnlineEvent}).
+ * <p>
+ * This is an immutable object.
  */
 public class Node {
     private final Identity identity;
