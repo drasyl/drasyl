@@ -33,7 +33,7 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * This is an immutable object.
  */
-public class GroupWelcomeMessage extends GroupActionMessage {
+public class GroupWelcomeMessage extends GroupActionMessage implements GroupsServerMessage {
     private final Set<CompressedPublicKey> members;
 
     @JsonCreator

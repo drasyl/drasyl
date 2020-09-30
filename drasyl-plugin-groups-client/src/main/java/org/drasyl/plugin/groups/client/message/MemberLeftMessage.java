@@ -28,7 +28,7 @@ import org.drasyl.plugin.groups.client.Group;
  * <p>
  * This is an immutable object.
  */
-public class MemberLeftMessage extends MemberActionMessage {
+public class MemberLeftMessage extends MemberActionMessage implements GroupsServerMessage {
     @JsonCreator
     public MemberLeftMessage(@JsonProperty("member") final CompressedPublicKey member,
                              @JsonProperty("group") final Group group) {
