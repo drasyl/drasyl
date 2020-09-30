@@ -62,32 +62,36 @@ class SimpleInboundHandlerTest {
 
     @Test
     void shouldTriggerOnMatchedMessage() throws JsonProcessingException {
-        SimpleInboundHandler<byte[], Event> handler = new SimpleInboundHandler<>() {
+        final SimpleInboundHandler<byte[], Event> handler = new SimpleInboundHandler<>() {
             @Override
-            protected void matchedEventTriggered(HandlerContext ctx,
-                                                 Event event,
-                                                 CompletableFuture<Void> future) {
+            protected void matchedEventTriggered(final HandlerContext ctx,
+                                                 final Event event,
+                                                 final CompletableFuture<Void> future) {
                 super.eventTriggered(ctx, event, future);
             }
 
             @Override
-            protected void matchedRead(HandlerContext ctx,
-                                       CompressedPublicKey sender,
-                                       byte[] msg,
-                                       CompletableFuture<Void> future) {
+            protected void matchedRead(final HandlerContext ctx,
+                                       final CompressedPublicKey sender,
+                                       final byte[] msg,
+                                       final CompletableFuture<Void> future) {
                 // Emit this message as outbound message to test
                 ctx.pipeline().processOutbound(sender, msg);
             }
         };
 
-        EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, handler);
-        TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
-        TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
-        TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                identity,
+                TypeValidator.ofInboundValidator(config),
+                TypeValidator.ofOutboundValidator(config),
+                ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, handler);
+        final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
+        final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
+        final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-        CompressedPublicKey sender = mock(CompressedPublicKey.class);
+        final CompressedPublicKey sender = mock(CompressedPublicKey.class);
         when(identity.getPublicKey()).thenReturn(sender);
-        byte[] msg = JSONUtil.JACKSON_WRITER.writeValueAsBytes(new byte[]{});
+        final byte[] msg = JSONUtil.JACKSON_WRITER.writeValueAsBytes(new byte[]{});
         pipeline.processInbound(new ApplicationMessage(sender, sender, msg));
 
         outboundMessageTestObserver.awaitCount(1);
@@ -98,31 +102,35 @@ class SimpleInboundHandlerTest {
 
     @Test
     void shouldPassthroughsNotMatchingMessage() {
-        SimpleInboundHandler<List, Event> handler = new SimpleInboundHandler<>() {
+        final SimpleInboundHandler<List, Event> handler = new SimpleInboundHandler<>() {
             @Override
-            protected void matchedEventTriggered(HandlerContext ctx,
-                                                 Event event,
-                                                 CompletableFuture<Void> future) {
+            protected void matchedEventTriggered(final HandlerContext ctx,
+                                                 final Event event,
+                                                 final CompletableFuture<Void> future) {
                 ctx.fireEventTriggered(event, future);
             }
 
             @Override
-            protected void matchedRead(HandlerContext ctx,
-                                       CompressedPublicKey sender,
-                                       List msg,
-                                       CompletableFuture<Void> future) {
+            protected void matchedRead(final HandlerContext ctx,
+                                       final CompressedPublicKey sender,
+                                       final List msg,
+                                       final CompletableFuture<Void> future) {
                 // Emit this message as outbound message to test
                 ctx.pipeline().processOutbound(sender, msg);
             }
         };
 
-        EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, handler);
-        TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
-        TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
-        TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                identity,
+                TypeValidator.ofInboundValidator(config),
+                TypeValidator.ofOutboundValidator(config),
+                ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, handler);
+        final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
+        final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
+        final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-        byte[] payload = new byte[]{ 0x01 };
-        ApplicationMessage msg = mock(ApplicationMessage.class);
+        final byte[] payload = new byte[]{ 0x01 };
+        final ApplicationMessage msg = mock(ApplicationMessage.class);
 
         when(msg.getPayload()).thenReturn(payload);
         doReturn(payload.getClass().getName()).when(msg).getHeader(ObjectHolder.CLASS_KEY_NAME);
@@ -138,27 +146,27 @@ class SimpleInboundHandlerTest {
 
     @Test
     void shouldTriggerOnMatchedEvent() throws InterruptedException {
-        SimpleInboundHandler<ApplicationMessage, NodeUpEvent> handler = new SimpleInboundHandler<>(ApplicationMessage.class, NodeUpEvent.class) {
+        final SimpleInboundHandler<ApplicationMessage, NodeUpEvent> handler = new SimpleInboundHandler<>(ApplicationMessage.class, NodeUpEvent.class) {
             @Override
-            protected void matchedEventTriggered(HandlerContext ctx,
-                                                 NodeUpEvent event,
-                                                 CompletableFuture<Void> future) {
+            protected void matchedEventTriggered(final HandlerContext ctx,
+                                                 final NodeUpEvent event,
+                                                 final CompletableFuture<Void> future) {
                 // Do nothing
             }
 
             @Override
-            protected void matchedRead(HandlerContext ctx,
-                                       CompressedPublicKey sender,
-                                       ApplicationMessage msg,
-                                       CompletableFuture<Void> future) {
+            protected void matchedRead(final HandlerContext ctx,
+                                       final CompressedPublicKey sender,
+                                       final ApplicationMessage msg,
+                                       final CompletableFuture<Void> future) {
                 ctx.fireRead(sender, msg, future);
             }
         };
 
-        EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, mock(TypeValidator.class), handler);
-        TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, mock(TypeValidator.class), mock(TypeValidator.class), handler);
+        final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-        NodeUpEvent event = mock(NodeUpEvent.class);
+        final NodeUpEvent event = mock(NodeUpEvent.class);
         pipeline.processInbound(event);
 
         eventTestObserver.await(1, TimeUnit.SECONDS);
@@ -167,27 +175,27 @@ class SimpleInboundHandlerTest {
 
     @Test
     void shouldPassthroughsNotMatchingEvents() {
-        SimpleInboundHandler<ChunkedMessage, NodeUpEvent> handler = new SimpleInboundHandler<>() {
+        final SimpleInboundHandler<ChunkedMessage, NodeUpEvent> handler = new SimpleInboundHandler<>() {
             @Override
-            protected void matchedEventTriggered(HandlerContext ctx,
-                                                 NodeUpEvent event,
-                                                 CompletableFuture<Void> future) {
+            protected void matchedEventTriggered(final HandlerContext ctx,
+                                                 final NodeUpEvent event,
+                                                 final CompletableFuture<Void> future) {
                 // Do nothing
             }
 
             @Override
-            protected void matchedRead(HandlerContext ctx,
-                                       CompressedPublicKey sender,
-                                       ChunkedMessage msg,
-                                       CompletableFuture<Void> future) {
+            protected void matchedRead(final HandlerContext ctx,
+                                       final CompressedPublicKey sender,
+                                       final ChunkedMessage msg,
+                                       final CompletableFuture<Void> future) {
                 ctx.fireRead(sender, msg, future);
             }
         };
 
-        EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, mock(TypeValidator.class), handler);
-        TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, mock(TypeValidator.class), mock(TypeValidator.class), handler);
+        final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-        Event event = mock(Event.class);
+        final Event event = mock(Event.class);
         pipeline.processInbound(event);
 
         eventTestObserver.awaitCount(1);

@@ -59,7 +59,9 @@ class TailContextTest {
     @Mock
     private Identity identity;
     @Mock
-    private TypeValidator validator;
+    private TypeValidator inboundValidator;
+    @Mock
+    private TypeValidator outboundValidator;
     @Mock
     private CompletableFuture<Void> future;
 
@@ -67,14 +69,14 @@ class TailContextTest {
     class InGeneral {
         @Test
         void shouldReturnSelfAsHandler() {
-            TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
+            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
 
             assertEquals(tailContext, tailContext.handler());
         }
 
         @Test
         void shouldDoNothingOnHandlerAdded() {
-            TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
+            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
 
             tailContext.handlerAdded(ctx);
 
@@ -83,7 +85,7 @@ class TailContextTest {
 
         @Test
         void shouldDoNothingOnHandlerRemoved() {
-            TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
+            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
 
             tailContext.handlerRemoved(ctx);
 
@@ -95,9 +97,9 @@ class TailContextTest {
     class OnWrite {
         @Test
         void shouldPassthroughsOnWrite() {
-            TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
-            CompressedPublicKey recipient = mock(CompressedPublicKey.class);
-            Object msg = mock(Object.class);
+            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
+            final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
+            final Object msg = mock(Object.class);
 
             tailContext.write(ctx, recipient, msg, future);
 
@@ -109,8 +111,8 @@ class TailContextTest {
     class OnException {
         @Test
         void shouldThrowException() {
-            TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
-            Exception exception = mock(Exception.class);
+            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
+            final Exception exception = mock(Exception.class);
 
             assertThrows(Exception.class, () -> tailContext.exceptionCaught(ctx, exception));
             verifyNoInteractions(ctx);
@@ -121,8 +123,8 @@ class TailContextTest {
     class OnEvent {
         @Test
         void shouldPassEventToConsumer() {
-            TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
-            Event event = mock(Event.class);
+            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
+            final Event event = mock(Event.class);
 
             tailContext.eventTriggered(ctx, event, future);
 
@@ -132,8 +134,8 @@ class TailContextTest {
 
         @Test
         void shouldNotWriteToConsumerWhenFutureIsDone() {
-            TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
-            Event event = mock(Event.class);
+            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
+            final Event event = mock(Event.class);
 
             when(future.isDone()).thenReturn(true);
 
@@ -148,9 +150,9 @@ class TailContextTest {
     class OnRead {
         @Test
         void shouldPassMessageToApplication() {
-            TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
-            CompressedPublicKey sender = mock(CompressedPublicKey.class);
-            Object msg = mock(Object.class);
+            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
+            final CompressedPublicKey sender = mock(CompressedPublicKey.class);
+            final Object msg = mock(Object.class);
 
             tailContext.read(ctx, sender, msg, future);
 
@@ -160,9 +162,9 @@ class TailContextTest {
 
         @Test
         void shouldNotWriteToConsumerWhenFutureIsDone() {
-            TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
-            CompressedPublicKey sender = mock(CompressedPublicKey.class);
-            Object msg = mock(Object.class);
+            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
+            final CompressedPublicKey sender = mock(CompressedPublicKey.class);
+            final Object msg = mock(Object.class);
 
             when(future.isDone()).thenReturn(true);
 
@@ -174,9 +176,10 @@ class TailContextTest {
 
         @Test
         void shouldCompleteFutureAndNothingElseOnAutoSwallow() {
-            TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, validator);
-            CompressedPublicKey recipient = mock(CompressedPublicKey.class);
-            AutoSwallow msg = new AutoSwallow() {};
+            final TailContext tailContext = new TailContext(eventConsumer, config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
+            final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
+            final AutoSwallow msg = new AutoSwallow() {
+            };
 
             tailContext.read(ctx, recipient, msg, future);
 

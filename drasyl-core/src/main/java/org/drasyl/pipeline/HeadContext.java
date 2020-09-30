@@ -37,33 +37,34 @@ class HeadContext extends AbstractEndHandler {
     public static final String DRASYL_HEAD_HANDLER = "DRASYL_HEAD_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(HeadContext.class);
 
-    public HeadContext(DrasylConfig config,
-                       Pipeline pipeline,
-                       Scheduler scheduler,
-                       Identity identity,
-                       TypeValidator validator) {
-        super(DRASYL_HEAD_HANDLER, config, pipeline, scheduler, identity, validator);
+    public HeadContext(final DrasylConfig config,
+                       final Pipeline pipeline,
+                       final Scheduler scheduler,
+                       final Identity identity,
+                       final TypeValidator inboundValidator,
+                       final TypeValidator outboundValidator) {
+        super(DRASYL_HEAD_HANDLER, config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
     }
 
     @Override
-    public void handlerAdded(HandlerContext ctx) {
+    public void handlerAdded(final HandlerContext ctx) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Pipeline head was added.");
         }
     }
 
     @Override
-    public void handlerRemoved(HandlerContext ctx) {
+    public void handlerRemoved(final HandlerContext ctx) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Pipeline head was removed.");
         }
     }
 
     @Override
-    public void write(HandlerContext ctx,
-                      CompressedPublicKey recipient,
-                      Object msg,
-                      CompletableFuture<Void> future) {
+    public void write(final HandlerContext ctx,
+                      final CompressedPublicKey recipient,
+                      final Object msg,
+                      final CompletableFuture<Void> future) {
         if (msg instanceof AutoSwallow) {
             future.complete(null);
             return;

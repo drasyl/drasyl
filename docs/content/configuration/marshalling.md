@@ -2,12 +2,16 @@
 
 drasyl can automatically (un-) marshall given objects. To prevent security risks through unrestricted marshalling, types and packages can be defined in the config that are handled automatically.
 
-## [`allowed-types`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.Builder.html#marshallingAllowedTypes(java.util.List))
+!!! info
+
+    Since version 3, drasyl differs between in- and outbound messages. 
+
+## [`marshalling.inbound.allowed-types`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.Builder.html#marshallingInboundAllowedTypes(java.util.List)) / [`marshalling.outbound.allowed-types`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.Builder.html#marshallingOutboundAllowedTypes(java.util.List))
 
 This property is a list of all types that are supported by the codec for the drasyl pipeline.
 
 With this list, a developer guarantees that all classes are secure and cannot be misused as a deserialization gadget in the context of the marshaller.
-A reckless implementation of this interface can leave the entire application and all executing machines vulnerable to remote code execution.
+A reckless implementation of a permitted class can leave the entire application and all executing machines vulnerable to remote code execution.
 
 !!! info 
 
@@ -27,7 +31,7 @@ A reckless implementation of this interface can leave the entire application and
     * [Automated Discovery of Deserialization Gadget Chains by Ian Haken](https://i.blackhat.com/us-18/Thu-August-9/us-18-Haken-Automated-Discovery-of-Deserialization-Gadget-Chains-wp.pdf)
     * [Marshalling Pickles by Chris Frohoff and Garbriel Lawrence](https://frohoff.github.io/appseccali-marshalling-pickles/)
 
-## [`allow-all-primitives`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.Builder.html#marshallingAllowAllPrimitives(boolean))
+## [`marshalling.inbound.allow-all-primitives`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.Builder.html#marshallingInboundAllowAllPrimitives(boolean)) / [`marshalling.outbound.allow-all-primitives`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.Builder.html#marshallingOutboundAllowAllPrimitives(boolean))
 
 Whether Java's primitive data types should automatically be allowed. If this setting is activated, drasyl automatically (de-)serializes the types: 
 
@@ -50,11 +54,11 @@ Whether Java's primitive data types should automatically be allowed. If this set
 * `java.lang.Double#TYPE`
 * `java.lang.Void#TYPE`
 
-## [`allow-array-of-defined-types`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.Builder.html#marshallingAllowArrayOfDefinedTypes(boolean))
+## [`marshalling.inbound.allow-array-of-defined-types`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.Builder.html#marshallingOutboundAllowArrayOfDefinedTypes(boolean)) / [`marshalling.outbound.allow-array-of-defined-types`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.Builder.html#marshallingOutboundAllowArrayOfDefinedTypes(boolean))
 
 Whether of all allowed data types their array representations should be allowed automatically.
 
-## [`allowed-packages`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.Builder.html#marshallingAllowedPackages(java.util.List))
+## [`marshalling.inbound.allowed-packages`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.Builder.html#marshallingInboundAllowedPackages(java.util.List)) / [`marshalling.outbound.allowed-packages`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.Builder.html#marshallingOutboundAllowedPackages(java.util.List))
 
 A list of all packages whose classes automatically supported by the default codec of drasyl.
 

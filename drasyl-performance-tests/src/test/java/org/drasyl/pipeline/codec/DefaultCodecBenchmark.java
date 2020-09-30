@@ -45,14 +45,15 @@ public class DefaultCodecBenchmark {
 
     public DefaultCodecBenchmark() {
         ctx = mock(HandlerContext.class, Answers.RETURNS_DEEP_STUBS);
-        when(ctx.validator()).thenReturn(TypeValidator.of(DrasylConfig.newBuilder().build()));
-        byte[] bytes = new byte[1024];
+        when(ctx.inboundValidator()).thenReturn(TypeValidator.ofInboundValidator(DrasylConfig.newBuilder().build()));
+        when(ctx.outboundValidator()).thenReturn(TypeValidator.ofOutboundValidator(DrasylConfig.newBuilder().build()));
+        final byte[] bytes = new byte[1024];
         new Random().nextBytes(bytes);
         msg = new String(bytes);
         try {
             msgEncoded = ObjectHolder.of(msg.getClass(), JSONUtil.JACKSON_WRITER.writeValueAsBytes(msg));
         }
-        catch (JsonProcessingException e) {
+        catch (final JsonProcessingException e) {
             e.printStackTrace();
         }
     }

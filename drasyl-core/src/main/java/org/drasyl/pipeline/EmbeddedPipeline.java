@@ -48,27 +48,33 @@ public class EmbeddedPipeline extends DefaultPipeline {
      * Creates a new embedded pipeline and adds all given handler to it. Handler are added with
      * their simple class name.
      *
-     * @param handlers the handlers
+     * @param identity          the identity
+     * @param inboundValidator  the inbound validator
+     * @param outboundValidator the outbound validator
+     * @param handlers          the handlers
      */
-    public EmbeddedPipeline(Identity identity,
-                            TypeValidator validator,
-                            Handler... handlers) {
-        this(identity, validator);
+    public EmbeddedPipeline(final Identity identity,
+                            final TypeValidator inboundValidator,
+                            final TypeValidator outboundValidator,
+                            final Handler... handlers) {
+        this(identity, inboundValidator, outboundValidator);
         List.of(handlers).forEach(handler -> addLast(handler.getClass().getSimpleName() + Crypto.randomString(8), handler));
     }
 
-    public EmbeddedPipeline(Identity identity, TypeValidator validator) {
+    public EmbeddedPipeline(final Identity identity,
+                            final TypeValidator inboundValidator,
+                            final TypeValidator outboundValidator) {
         inboundMessages = ReplaySubject.create();
         inboundEvents = ReplaySubject.create();
         outboundMessages = ReplaySubject.create();
 
         this.handlerNames = new ConcurrentHashMap<>();
-        this.head = new AbstractEndHandler(HeadContext.DRASYL_HEAD_HANDLER, config, this, DrasylScheduler.getInstanceHeavy(), identity, validator) {
+        this.head = new AbstractEndHandler(HeadContext.DRASYL_HEAD_HANDLER, config, this, DrasylScheduler.getInstanceHeavy(), identity, inboundValidator, outboundValidator) {
             @Override
-            public void write(HandlerContext ctx,
-                              CompressedPublicKey recipient,
-                              Object msg,
-                              CompletableFuture<Void> future) {
+            public void write(final HandlerContext ctx,
+                              final CompressedPublicKey recipient,
+                              final Object msg,
+                              final CompletableFuture<Void> future) {
                 if (msg instanceof ApplicationMessage) {
                     outboundMessages.onNext((ApplicationMessage) msg);
                     future.complete(null);
@@ -78,12 +84,12 @@ public class EmbeddedPipeline extends DefaultPipeline {
                 }
             }
         };
-        this.tail = new TailContext(inboundEvents::onNext, config, this, DrasylScheduler.getInstanceHeavy(), identity, validator) {
+        this.tail = new TailContext(inboundEvents::onNext, config, this, DrasylScheduler.getInstanceHeavy(), identity, inboundValidator, outboundValidator) {
             @Override
-            public void read(HandlerContext ctx,
-                             CompressedPublicKey sender,
-                             Object msg,
-                             CompletableFuture<Void> future) {
+            public void read(final HandlerContext ctx,
+                             final CompressedPublicKey sender,
+                             final Object msg,
+                             final CompletableFuture<Void> future) {
                 inboundEvents.onNext(new MessageEvent(sender, msg));
                 inboundMessages.onNext(Pair.of(sender, msg));
                 future.complete(null);
@@ -91,7 +97,8 @@ public class EmbeddedPipeline extends DefaultPipeline {
         };
         this.scheduler = DrasylScheduler.getInstanceLight();
         this.identity = identity;
-        this.validator = validator;
+        this.inboundValidator = inboundValidator;
+        this.outboundValidator = outboundValidator;
 
         initPointer();
     }

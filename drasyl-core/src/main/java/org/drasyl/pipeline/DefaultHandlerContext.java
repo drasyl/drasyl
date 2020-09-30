@@ -26,28 +26,31 @@ import org.drasyl.pipeline.codec.TypeValidator;
 /**
  * The default handler context implementation.
  */
+@SuppressWarnings({ "java:S107" })
 public class DefaultHandlerContext extends AbstractHandlerContext {
     private final Handler handler;
 
     /**
      * Generates a new default handler context for the given {@code handler}.
      *
-     * @param name      the name of the handler
-     * @param handler   the handler
-     * @param config    the config of the drasyl node
-     * @param pipeline  the corresponding pipeline object
-     * @param scheduler the corresponding scheduler
-     * @param identity  the identity of the corresponding node
-     * @param validator the validator of the pipeline
+     * @param name              the name of the handler
+     * @param handler           the handler
+     * @param config            the config of the drasyl node
+     * @param pipeline          the corresponding pipeline object
+     * @param scheduler         the corresponding scheduler
+     * @param identity          the identity of the corresponding node
+     * @param inboundValidator  the inbound validator of the pipeline
+     * @param outboundValidator the outbound validator of the pipeline
      */
-    public DefaultHandlerContext(String name,
-                                 Handler handler,
-                                 DrasylConfig config,
-                                 Pipeline pipeline,
-                                 Scheduler scheduler,
-                                 Identity identity,
-                                 TypeValidator validator) {
-        super(name, config, pipeline, scheduler, identity, validator);
+    public DefaultHandlerContext(final String name,
+                                 final Handler handler,
+                                 final DrasylConfig config,
+                                 final Pipeline pipeline,
+                                 final Scheduler scheduler,
+                                 final Identity identity,
+                                 final TypeValidator inboundValidator,
+                                 final TypeValidator outboundValidator) {
+        super(name, config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
         this.handler = handler;
     }
 

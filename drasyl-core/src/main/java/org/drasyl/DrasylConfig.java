@@ -102,10 +102,14 @@ public class DrasylConfig {
     static final String MONITORING_INFLUX_DATABASE = "drasyl.monitoring.influx.database";
     static final String MONITORING_INFLUX_REPORTING_FREQUENCY = "drasyl.monitoring.influx.reporting-frequency";
     static final String PLUGINS = "drasyl.plugins";
-    static final String MARSHALLING_ALLOWED_TYPES = "drasyl.marshalling.allowed-types";
-    static final String MARSHALLING_ALLOW_ALL_PRIMITIVES = "drasyl.marshalling.allow-all-primitives";
-    static final String MARSHALLING_ALLOW_ARRAY_OF_DEFINED_TYPES = "drasyl.marshalling.allow-array-of-defined-types";
-    static final String MARSHALLING_ALLOWED_PACKAGES = "drasyl.marshalling.allowed-packages";
+    static final String MARSHALLING_INBOUND_ALLOWED_TYPES = "drasyl.marshalling.inbound.allowed-types";
+    static final String MARSHALLING_INBOUND_ALLOW_ALL_PRIMITIVES = "drasyl.marshalling.inbound.allow-all-primitives";
+    static final String MARSHALLING_INBOUND_ALLOW_ARRAY_OF_DEFINED_TYPES = "drasyl.marshalling.inbound.allow-array-of-defined-types";
+    static final String MARSHALLING_INBOUND_ALLOWED_PACKAGES = "drasyl.marshalling.inbound.allowed-packages";
+    static final String MARSHALLING_OUTBOUND_ALLOWED_TYPES = "drasyl.marshalling.outbound.allowed-types";
+    static final String MARSHALLING_OUTBOUND_ALLOW_ALL_PRIMITIVES = "drasyl.marshalling.outbound.allow-all-primitives";
+    static final String MARSHALLING_OUTBOUND_ALLOW_ARRAY_OF_DEFINED_TYPES = "drasyl.marshalling.outbound.allow-array-of-defined-types";
+    static final String MARSHALLING_OUTBOUND_ALLOWED_PACKAGES = "drasyl.marshalling.outbound.allowed-packages";
     //======================================= Config Values ========================================
     private final int networkId;
     private final ProofOfWork identityProofOfWork;
@@ -152,10 +156,14 @@ public class DrasylConfig {
     private final String monitoringInfluxDatabase;
     private final Duration monitoringInfluxReportingFrequency;
     private final Set<DrasylPlugin> pluginSet;
-    private final List<String> marshallingAllowedTypes;
-    private final boolean marshallingAllowAllPrimitives;
-    private final boolean marshallingAllowArrayOfDefinedTypes;
-    private final List<String> marshallingAllowedPackages;
+    private final List<String> marshallingInboundAllowedTypes;
+    private final boolean marshallingInboundAllowAllPrimitives;
+    private final boolean marshallingInboundAllowArrayOfDefinedTypes;
+    private final List<String> marshallingInboundAllowedPackages;
+    private final List<String> marshallingOutboundAllowedTypes;
+    private final boolean marshallingOutboundAllowAllPrimitives;
+    private final boolean marshallingOutboundAllowArrayOfDefinedTypes;
+    private final List<String> marshallingOutboundAllowedPackages;
 
     public DrasylConfig() {
         this(ConfigFactory.load());
@@ -251,10 +259,14 @@ public class DrasylConfig {
         this.pluginSet = Set.copyOf(getPlugins(config, PLUGINS));
 
         // Load marshalling config
-        this.marshallingAllowedTypes = config.getStringList(MARSHALLING_ALLOWED_TYPES);
-        this.marshallingAllowAllPrimitives = config.getBoolean(MARSHALLING_ALLOW_ALL_PRIMITIVES);
-        this.marshallingAllowArrayOfDefinedTypes = config.getBoolean(MARSHALLING_ALLOW_ARRAY_OF_DEFINED_TYPES);
-        this.marshallingAllowedPackages = config.getStringList(MARSHALLING_ALLOWED_PACKAGES);
+        this.marshallingInboundAllowedTypes = config.getStringList(MARSHALLING_INBOUND_ALLOWED_TYPES);
+        this.marshallingInboundAllowAllPrimitives = config.getBoolean(MARSHALLING_INBOUND_ALLOW_ALL_PRIMITIVES);
+        this.marshallingInboundAllowArrayOfDefinedTypes = config.getBoolean(MARSHALLING_INBOUND_ALLOW_ARRAY_OF_DEFINED_TYPES);
+        this.marshallingInboundAllowedPackages = config.getStringList(MARSHALLING_INBOUND_ALLOWED_PACKAGES);
+        this.marshallingOutboundAllowedTypes = config.getStringList(MARSHALLING_OUTBOUND_ALLOWED_TYPES);
+        this.marshallingOutboundAllowAllPrimitives = config.getBoolean(MARSHALLING_OUTBOUND_ALLOW_ALL_PRIMITIVES);
+        this.marshallingOutboundAllowArrayOfDefinedTypes = config.getBoolean(MARSHALLING_OUTBOUND_ALLOW_ARRAY_OF_DEFINED_TYPES);
+        this.marshallingOutboundAllowedPackages = config.getStringList(MARSHALLING_OUTBOUND_ALLOWED_PACKAGES);
     }
 
     /**
@@ -471,10 +483,14 @@ public class DrasylConfig {
                  final String monitoringInfluxDatabase,
                  final Duration monitoringInfluxReportingFrequency,
                  final Set<DrasylPlugin> pluginSet,
-                 final List<String> marshallingAllowedTypes,
-                 final boolean marshallingAllowAllPrimitives,
-                 final boolean marshallingAllowArrayOfDefinedTypes,
-                 final List<String> marshallingAllowedPackages) {
+                 final List<String> marshallingInboundAllowedTypes,
+                 final boolean marshallingInboundAllowAllPrimitives,
+                 final boolean marshallingInboundAllowArrayOfDefinedTypes,
+                 final List<String> marshallingInboundAllowedPackages,
+                 final List<String> marshallingOutboundAllowedTypes,
+                 final boolean marshallingOutboundAllowAllPrimitives,
+                 final boolean marshallingOutboundAllowArrayOfDefinedTypes,
+                 final List<String> marshallingOutboundAllowedPackages) {
         this.networkId = networkId;
         this.identityProofOfWork = identityProofOfWork;
         this.identityPublicKey = identityPublicKey;
@@ -520,10 +536,14 @@ public class DrasylConfig {
         this.monitoringInfluxDatabase = monitoringInfluxDatabase;
         this.monitoringInfluxReportingFrequency = monitoringInfluxReportingFrequency;
         this.pluginSet = pluginSet;
-        this.marshallingAllowedTypes = marshallingAllowedTypes;
-        this.marshallingAllowAllPrimitives = marshallingAllowAllPrimitives;
-        this.marshallingAllowArrayOfDefinedTypes = marshallingAllowArrayOfDefinedTypes;
-        this.marshallingAllowedPackages = marshallingAllowedPackages;
+        this.marshallingInboundAllowedTypes = marshallingInboundAllowedTypes;
+        this.marshallingInboundAllowAllPrimitives = marshallingInboundAllowAllPrimitives;
+        this.marshallingInboundAllowArrayOfDefinedTypes = marshallingInboundAllowArrayOfDefinedTypes;
+        this.marshallingInboundAllowedPackages = marshallingInboundAllowedPackages;
+        this.marshallingOutboundAllowedTypes = marshallingOutboundAllowedTypes;
+        this.marshallingOutboundAllowAllPrimitives = marshallingOutboundAllowAllPrimitives;
+        this.marshallingOutboundAllowArrayOfDefinedTypes = marshallingOutboundAllowArrayOfDefinedTypes;
+        this.marshallingOutboundAllowedPackages = marshallingOutboundAllowedPackages;
     }
 
     public int getNetworkId() {
@@ -703,20 +723,36 @@ public class DrasylConfig {
         return getSuperPeerChannelInitializer();
     }
 
-    public List<String> getMarshallingAllowedTypes() {
-        return marshallingAllowedTypes;
+    public List<String> getMarshallingInboundAllowedTypes() {
+        return marshallingInboundAllowedTypes;
     }
 
-    public boolean isMarshallingAllowAllPrimitives() {
-        return marshallingAllowAllPrimitives;
+    public boolean isMarshallingInboundAllowAllPrimitives() {
+        return marshallingInboundAllowAllPrimitives;
     }
 
-    public boolean isMarshallingAllowArrayOfDefinedTypes() {
-        return marshallingAllowArrayOfDefinedTypes;
+    public boolean isMarshallingInboundAllowArrayOfDefinedTypes() {
+        return marshallingInboundAllowArrayOfDefinedTypes;
     }
 
-    public List<String> getMarshallingAllowedPackages() {
-        return marshallingAllowedPackages;
+    public List<String> getMarshallingInboundAllowedPackages() {
+        return marshallingInboundAllowedPackages;
+    }
+
+    public List<String> getMarshallingOutboundAllowedTypes() {
+        return marshallingOutboundAllowedTypes;
+    }
+
+    public boolean isMarshallingOutboundAllowAllPrimitives() {
+        return marshallingOutboundAllowAllPrimitives;
+    }
+
+    public boolean isMarshallingOutboundAllowArrayOfDefinedTypes() {
+        return marshallingOutboundAllowArrayOfDefinedTypes;
+    }
+
+    public List<String> getMarshallingOutboundAllowedPackages() {
+        return marshallingOutboundAllowedPackages;
     }
 
     public boolean isServerExposeEnabled() {
@@ -739,9 +775,11 @@ public class DrasylConfig {
                 directConnectionsChannelInitializer, directConnectionsIdleRetries,
                 directConnectionsIdleTimeout, monitoringEnabled, monitoringInfluxUri,
                 monitoringInfluxUser, monitoringInfluxPassword, monitoringInfluxDatabase,
-                monitoringInfluxReportingFrequency, pluginSet, marshallingAllowedTypes,
-                marshallingAllowAllPrimitives, marshallingAllowArrayOfDefinedTypes,
-                marshallingAllowedPackages);
+                monitoringInfluxReportingFrequency, pluginSet, marshallingInboundAllowedTypes,
+                marshallingInboundAllowAllPrimitives, marshallingInboundAllowArrayOfDefinedTypes,
+                marshallingInboundAllowedPackages, marshallingOutboundAllowedTypes,
+                marshallingOutboundAllowAllPrimitives, marshallingOutboundAllowArrayOfDefinedTypes,
+                marshallingOutboundAllowedPackages);
     }
 
     @Override
@@ -798,10 +836,14 @@ public class DrasylConfig {
                 Objects.equals(monitoringInfluxDatabase, that.monitoringInfluxDatabase) &&
                 Objects.equals(monitoringInfluxReportingFrequency, that.monitoringInfluxReportingFrequency) &&
                 Objects.equals(pluginSet, that.pluginSet) &&
-                Objects.equals(marshallingAllowedTypes, that.marshallingAllowedTypes) &&
-                Objects.equals(marshallingAllowAllPrimitives, that.marshallingAllowAllPrimitives) &&
-                Objects.equals(marshallingAllowArrayOfDefinedTypes, that.marshallingAllowArrayOfDefinedTypes) &&
-                Objects.equals(marshallingAllowedPackages, that.marshallingAllowedPackages);
+                Objects.equals(marshallingInboundAllowedTypes, that.marshallingInboundAllowedTypes) &&
+                Objects.equals(marshallingInboundAllowAllPrimitives, that.marshallingInboundAllowAllPrimitives) &&
+                Objects.equals(marshallingInboundAllowArrayOfDefinedTypes, that.marshallingInboundAllowArrayOfDefinedTypes) &&
+                Objects.equals(marshallingInboundAllowedPackages, that.marshallingInboundAllowedPackages) &&
+                Objects.equals(marshallingOutboundAllowedTypes, that.marshallingOutboundAllowedTypes) &&
+                Objects.equals(marshallingOutboundAllowAllPrimitives, that.marshallingOutboundAllowAllPrimitives) &&
+                Objects.equals(marshallingOutboundAllowArrayOfDefinedTypes, that.marshallingOutboundAllowArrayOfDefinedTypes) &&
+                Objects.equals(marshallingOutboundAllowedPackages, that.marshallingOutboundAllowedPackages);
     }
 
     @Override
@@ -852,10 +894,14 @@ public class DrasylConfig {
                 ", monitoringInfluxDatabase='" + monitoringInfluxDatabase + '\'' +
                 ", monitoringInfluxReportingFrequency=" + monitoringInfluxReportingFrequency +
                 ", plugins=" + pluginSet +
-                ", marshallingAllowedTypes=" + marshallingAllowedTypes +
-                ", marshallingAllowAllPrimitives=" + marshallingAllowAllPrimitives +
-                ", marshallingAllowArrayOfDefinedTypes=" + marshallingAllowArrayOfDefinedTypes +
-                ", marshallingAllowedPackages=" + marshallingAllowedPackages +
+                ", marshallingInboundAllowedTypes=" + marshallingInboundAllowedTypes +
+                ", marshallingInboundAllowAllPrimitives=" + marshallingInboundAllowAllPrimitives +
+                ", marshallingInboundAllowArrayOfDefinedTypes=" + marshallingInboundAllowArrayOfDefinedTypes +
+                ", marshallingInboundAllowedPackages=" + marshallingInboundAllowedPackages +
+                ", marshallingOutboundAllowedTypes=" + marshallingOutboundAllowedTypes +
+                ", marshallingOutboundAllowAllPrimitives=" + marshallingOutboundAllowAllPrimitives +
+                ", marshallingOutboundAllowArrayOfDefinedTypes=" + marshallingOutboundAllowArrayOfDefinedTypes +
+                ", marshallingOutboundAllowedPackages=" + marshallingOutboundAllowedPackages +
                 '}';
     }
 
@@ -914,10 +960,14 @@ public class DrasylConfig {
                 config.monitoringInfluxDatabase,
                 config.monitoringInfluxReportingFrequency,
                 config.pluginSet,
-                config.marshallingAllowedTypes,
-                config.marshallingAllowAllPrimitives,
-                config.marshallingAllowArrayOfDefinedTypes,
-                config.marshallingAllowedPackages
+                config.marshallingInboundAllowedTypes,
+                config.marshallingInboundAllowAllPrimitives,
+                config.marshallingInboundAllowArrayOfDefinedTypes,
+                config.marshallingInboundAllowedPackages,
+                config.marshallingOutboundAllowedTypes,
+                config.marshallingOutboundAllowAllPrimitives,
+                config.marshallingOutboundAllowArrayOfDefinedTypes,
+                config.marshallingOutboundAllowedPackages
         );
     }
 
@@ -971,10 +1021,14 @@ public class DrasylConfig {
         private String monitoringInfluxDatabase;
         private Duration monitoringInfluxReportingFrequency;
         private Set<DrasylPlugin> plugins;
-        private List<String> marshallingAllowedTypes;
-        private boolean marshallingAllowAllPrimitives;
-        private boolean marshallingAllowArrayOfDefinedTypes;
-        private List<String> marshallingAllowedPackages;
+        private List<String> marshallingInboundAllowedTypes;
+        private boolean marshallingInboundAllowAllPrimitives;
+        private boolean marshallingInboundAllowArrayOfDefinedTypes;
+        private List<String> marshallingInboundAllowedPackages;
+        private List<String> marshallingOutboundAllowedTypes;
+        private boolean marshallingOutboundAllowAllPrimitives;
+        private boolean marshallingOutboundAllowArrayOfDefinedTypes;
+        private List<String> marshallingOutboundAllowedPackages;
 
         @SuppressWarnings({ "java:S107" })
         private Builder(final int networkId,
@@ -1022,10 +1076,14 @@ public class DrasylConfig {
                         final String monitoringInfluxDatabase,
                         final Duration monitoringInfluxReportingFrequency,
                         final Set<DrasylPlugin> plugins,
-                        final List<String> marshallingAllowedTypes,
-                        final boolean marshallingAllowAllPrimitives,
-                        final boolean marshallingAllowArrayOfDefinedTypes,
-                        final List<String> marshallingAllowedPackages) {
+                        final List<String> marshallingInboundAllowedTypes,
+                        final boolean marshallingInboundAllowAllPrimitives,
+                        final boolean marshallingInboundAllowArrayOfDefinedTypes,
+                        final List<String> marshallingInboundAllowedPackages,
+                        final List<String> marshallingOutboundAllowedTypes,
+                        final boolean marshallingOutboundAllowAllPrimitives,
+                        final boolean marshallingOutboundAllowArrayOfDefinedTypes,
+                        final List<String> marshallingOutboundAllowedPackages) {
             this.networkId = networkId;
             this.identityProofOfWork = identityProofOfWork;
             this.identityPublicKey = identityPublicKey;
@@ -1070,10 +1128,14 @@ public class DrasylConfig {
             this.monitoringInfluxDatabase = monitoringInfluxDatabase;
             this.monitoringInfluxReportingFrequency = monitoringInfluxReportingFrequency;
             this.plugins = plugins;
-            this.marshallingAllowedTypes = marshallingAllowedTypes;
-            this.marshallingAllowAllPrimitives = marshallingAllowAllPrimitives;
-            this.marshallingAllowArrayOfDefinedTypes = marshallingAllowArrayOfDefinedTypes;
-            this.marshallingAllowedPackages = marshallingAllowedPackages;
+            this.marshallingInboundAllowedTypes = marshallingInboundAllowedTypes;
+            this.marshallingInboundAllowAllPrimitives = marshallingInboundAllowAllPrimitives;
+            this.marshallingInboundAllowArrayOfDefinedTypes = marshallingInboundAllowArrayOfDefinedTypes;
+            this.marshallingInboundAllowedPackages = marshallingInboundAllowedPackages;
+            this.marshallingOutboundAllowedTypes = marshallingOutboundAllowedTypes;
+            this.marshallingOutboundAllowAllPrimitives = marshallingOutboundAllowAllPrimitives;
+            this.marshallingOutboundAllowArrayOfDefinedTypes = marshallingOutboundAllowArrayOfDefinedTypes;
+            this.marshallingOutboundAllowedPackages = marshallingOutboundAllowedPackages;
             this.serverExposeEnabled = serverExposeEnabled;
         }
 
@@ -1292,23 +1354,43 @@ public class DrasylConfig {
             return this;
         }
 
-        public Builder marshallingAllowedTypes(final List<String> marshallingAllowedTypes) {
-            this.marshallingAllowedTypes = marshallingAllowedTypes;
+        public Builder marshallingInboundAllowedTypes(final List<String> marshallingInboundAllowedTypes) {
+            this.marshallingInboundAllowedTypes = marshallingInboundAllowedTypes;
             return this;
         }
 
-        public Builder marshallingAllowAllPrimitives(final boolean marshallingAllowAllPrimitives) {
-            this.marshallingAllowAllPrimitives = marshallingAllowAllPrimitives;
+        public Builder marshallingInboundAllowAllPrimitives(final boolean marshallingInboundAllowAllPrimitives) {
+            this.marshallingInboundAllowAllPrimitives = marshallingInboundAllowAllPrimitives;
             return this;
         }
 
-        public Builder marshallingAllowArrayOfDefinedTypes(final boolean marshallingAllowArrayOfDefinedTypes) {
-            this.marshallingAllowArrayOfDefinedTypes = marshallingAllowArrayOfDefinedTypes;
+        public Builder marshallingInboundAllowArrayOfDefinedTypes(final boolean marshallingInboundAllowArrayOfDefinedTypes) {
+            this.marshallingInboundAllowArrayOfDefinedTypes = marshallingInboundAllowArrayOfDefinedTypes;
             return this;
         }
 
-        public Builder marshallingAllowedPackages(final List<String> marshallingAllowedPackages) {
-            this.marshallingAllowedPackages = marshallingAllowedPackages;
+        public Builder marshallingInboundAllowedPackages(final List<String> marshallingInboundAllowedPackages) {
+            this.marshallingInboundAllowedPackages = marshallingInboundAllowedPackages;
+            return this;
+        }
+
+        public Builder marshallingOutboundAllowedTypes(final List<String> marshallingOutboundAllowedTypes) {
+            this.marshallingOutboundAllowedTypes = marshallingOutboundAllowedTypes;
+            return this;
+        }
+
+        public Builder marshallingOutboundAllowAllPrimitives(final boolean marshallingOutboundAllowAllPrimitives) {
+            this.marshallingOutboundAllowAllPrimitives = marshallingOutboundAllowAllPrimitives;
+            return this;
+        }
+
+        public Builder marshallingOutboundAllowArrayOfDefinedTypes(final boolean marshallingOutboundAllowArrayOfDefinedTypes) {
+            this.marshallingOutboundAllowArrayOfDefinedTypes = marshallingOutboundAllowArrayOfDefinedTypes;
+            return this;
+        }
+
+        public Builder marshallingOutboundAllowedPackages(final List<String> marshallingOutboundAllowedPackages) {
+            this.marshallingOutboundAllowedPackages = marshallingOutboundAllowedPackages;
             return this;
         }
 
@@ -1333,8 +1415,10 @@ public class DrasylConfig {
                     directConnectionsIdleRetries, directConnectionsIdleTimeout, monitoringEnabled,
                     monitoringInfluxUri, monitoringInfluxUser, monitoringInfluxPassword,
                     monitoringInfluxDatabase, monitoringInfluxReportingFrequency,
-                    plugins, marshallingAllowedTypes, marshallingAllowAllPrimitives,
-                    marshallingAllowArrayOfDefinedTypes, marshallingAllowedPackages
+                    plugins, marshallingInboundAllowedTypes, marshallingInboundAllowAllPrimitives,
+                    marshallingInboundAllowArrayOfDefinedTypes, marshallingInboundAllowedPackages,
+                    marshallingOutboundAllowedTypes, marshallingOutboundAllowAllPrimitives,
+                    marshallingOutboundAllowArrayOfDefinedTypes, marshallingOutboundAllowedPackages
             );
         }
     }

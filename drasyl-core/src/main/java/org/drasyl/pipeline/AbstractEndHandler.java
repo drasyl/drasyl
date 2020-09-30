@@ -32,13 +32,14 @@ import java.util.concurrent.CompletableFuture;
  */
 @SuppressWarnings({ "common-java:DuplicatedBlocks" })
 public abstract class AbstractEndHandler extends AbstractHandlerContext implements Handler {
-    public AbstractEndHandler(String name,
-                              DrasylConfig config,
-                              Pipeline pipeline,
-                              Scheduler scheduler,
-                              Identity identity,
-                              TypeValidator validator) {
-        super(name, config, pipeline, scheduler, identity, validator);
+    public AbstractEndHandler(final String name,
+                              final DrasylConfig config,
+                              final Pipeline pipeline,
+                              final Scheduler scheduler,
+                              final Identity identity,
+                              final TypeValidator inboundValidator,
+                              final TypeValidator outboundValidator) {
+        super(name, config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
     }
 
     @Override
@@ -47,41 +48,41 @@ public abstract class AbstractEndHandler extends AbstractHandlerContext implemen
     }
 
     @Override
-    public void handlerAdded(HandlerContext ctx) {
+    public void handlerAdded(final HandlerContext ctx) {
         // skip
     }
 
     @Override
-    public void handlerRemoved(HandlerContext ctx) {
+    public void handlerRemoved(final HandlerContext ctx) {
         // skip
     }
 
     @Override
-    public void read(HandlerContext ctx,
-                     CompressedPublicKey sender,
-                     Object msg,
-                     CompletableFuture<Void> future) {
+    public void read(final HandlerContext ctx,
+                     final CompressedPublicKey sender,
+                     final Object msg,
+                     final CompletableFuture<Void> future) {
         // skip
         ctx.fireRead(sender, msg, future);
     }
 
     @Override
-    public void eventTriggered(HandlerContext ctx, Event event, CompletableFuture<Void> future) {
+    public void eventTriggered(final HandlerContext ctx, final Event event, final CompletableFuture<Void> future) {
         // skip
         ctx.fireEventTriggered(event, future);
     }
 
     @Override
-    public void exceptionCaught(HandlerContext ctx, Exception cause) {
+    public void exceptionCaught(final HandlerContext ctx, final Exception cause) {
         //skip
         ctx.fireExceptionCaught(cause);
     }
 
     @Override
-    public void write(HandlerContext ctx,
-                      CompressedPublicKey recipient,
-                      Object msg,
-                      CompletableFuture<Void> future) {
+    public void write(final HandlerContext ctx,
+                      final CompressedPublicKey recipient,
+                      final Object msg,
+                      final CompletableFuture<Void> future) {
         // skip
         ctx.write(recipient, msg, future);
     }

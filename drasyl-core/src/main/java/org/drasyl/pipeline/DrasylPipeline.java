@@ -35,13 +35,14 @@ import java.util.function.Consumer;
  * The default {@link Pipeline} implementation. Used to implement plugins for drasyl.
  */
 public class DrasylPipeline extends DefaultPipeline {
-    public DrasylPipeline(Consumer<Event> eventConsumer,
-                          DrasylConfig config,
-                          Identity identity) {
+    public DrasylPipeline(final Consumer<Event> eventConsumer,
+                          final DrasylConfig config,
+                          final Identity identity) {
         this.handlerNames = new ConcurrentHashMap<>();
-        this.validator = TypeValidator.of(config);
-        this.head = new HeadContext(config, this, DrasylScheduler.getInstanceHeavy(), identity, validator);
-        this.tail = new TailContext(eventConsumer, config, this, DrasylScheduler.getInstanceHeavy(), identity, validator);
+        this.inboundValidator = TypeValidator.ofInboundValidator(config);
+        this.outboundValidator = TypeValidator.ofOutboundValidator(config);
+        this.head = new HeadContext(config, this, DrasylScheduler.getInstanceHeavy(), identity, inboundValidator, outboundValidator);
+        this.tail = new TailContext(eventConsumer, config, this, DrasylScheduler.getInstanceHeavy(), identity, inboundValidator, outboundValidator);
         this.scheduler = DrasylScheduler.getInstanceLight();
         this.config = config;
         this.identity = identity;
@@ -53,12 +54,12 @@ public class DrasylPipeline extends DefaultPipeline {
         addFirst(ObjectHolder2ApplicationMessageHandler.OBJECT_HOLDER2APP_MSG, ObjectHolder2ApplicationMessageHandler.INSTANCE);
     }
 
-    DrasylPipeline(Map<String, AbstractHandlerContext> handlerNames,
-                   AbstractEndHandler head,
-                   AbstractEndHandler tail,
-                   Scheduler scheduler,
-                   DrasylConfig config,
-                   Identity identity) {
+    DrasylPipeline(final Map<String, AbstractHandlerContext> handlerNames,
+                   final AbstractEndHandler head,
+                   final AbstractEndHandler tail,
+                   final Scheduler scheduler,
+                   final DrasylConfig config,
+                   final Identity identity) {
         this.handlerNames = handlerNames;
         this.head = head;
         this.tail = tail;
