@@ -39,27 +39,30 @@ abstract class AbstractHandlerContext implements HandlerContext {
     private final Pipeline pipeline;
     private final Scheduler scheduler;
     private final Identity identity;
-    private final TypeValidator validator;
+    private final TypeValidator inboundValidator;
+    private final TypeValidator outboundValidator;
     private volatile AbstractHandlerContext prev;
     private volatile AbstractHandlerContext next;
 
-    public AbstractHandlerContext(String name,
-                                  DrasylConfig config,
-                                  Pipeline pipeline,
-                                  Scheduler scheduler,
-                                  Identity identity,
-                                  TypeValidator validator) {
-        this(null, null, name, config, pipeline, scheduler, identity, validator);
+    public AbstractHandlerContext(final String name,
+                                  final DrasylConfig config,
+                                  final Pipeline pipeline,
+                                  final Scheduler scheduler,
+                                  final Identity identity,
+                                  final TypeValidator inboundValidator,
+                                  final TypeValidator outboundValidator) {
+        this(null, null, name, config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
     }
 
-    AbstractHandlerContext(AbstractHandlerContext prev,
-                           AbstractHandlerContext next,
-                           String name,
-                           DrasylConfig config,
-                           Pipeline pipeline,
-                           Scheduler scheduler,
-                           Identity identity,
-                           TypeValidator validator) {
+    AbstractHandlerContext(final AbstractHandlerContext prev,
+                           final AbstractHandlerContext next,
+                           final String name,
+                           final DrasylConfig config,
+                           final Pipeline pipeline,
+                           final Scheduler scheduler,
+                           final Identity identity,
+                           final TypeValidator inboundValidator,
+                           final TypeValidator outboundValidator) {
         this.prev = prev;
         this.next = next;
         this.name = name;
@@ -67,16 +70,17 @@ abstract class AbstractHandlerContext implements HandlerContext {
         this.pipeline = pipeline;
         this.scheduler = scheduler;
         this.identity = identity;
-        this.validator = validator;
+        this.inboundValidator = inboundValidator;
+        this.outboundValidator = outboundValidator;
     }
 
-    void setPrevHandlerContext(AbstractHandlerContext prev) {
+    void setPrevHandlerContext(final AbstractHandlerContext prev) {
         synchronized (this.prevLock) {
             this.prev = prev;
         }
     }
 
-    void setNextHandlerContext(AbstractHandlerContext next) {
+    void setNextHandlerContext(final AbstractHandlerContext next) {
         synchronized (this.nextLock) {
             this.next = next;
         }
@@ -96,26 +100,26 @@ abstract class AbstractHandlerContext implements HandlerContext {
     }
 
     @Override
-    public HandlerContext fireExceptionCaught(Exception cause) {
+    public HandlerContext fireExceptionCaught(final Exception cause) {
         invokeExceptionCaught(cause);
 
         return this;
     }
 
-    private void invokeExceptionCaught(Exception cause) {
+    private void invokeExceptionCaught(final Exception cause) {
         if (cause instanceof PipelineException) {
             throw (PipelineException) cause;
         }
 
-        AbstractHandlerContext inboundCtx = findNextInbound();
+        final AbstractHandlerContext inboundCtx = findNextInbound();
 
         try {
             inboundCtx.handler().exceptionCaught(inboundCtx, cause);
         }
-        catch (PipelineException e) {
+        catch (final PipelineException e) {
             throw e;
         }
-        catch (Exception e) {
+        catch (final Exception e) {
             if (LOG.isWarnEnabled()) {
                 LOG.warn("Failed to invoke exceptionCaught() on next handler `{}` do to the following error: ", inboundCtx.name(), e);
             }
@@ -147,20 +151,20 @@ abstract class AbstractHandlerContext implements HandlerContext {
     }
 
     @Override
-    public CompletableFuture<Void> fireRead(CompressedPublicKey sender,
-                                            Object msg,
-                                            CompletableFuture<Void> future) {
+    public CompletableFuture<Void> fireRead(final CompressedPublicKey sender,
+                                            final Object msg,
+                                            final CompletableFuture<Void> future) {
         return invokeRead(sender, msg, future);
     }
 
-    private CompletableFuture<Void> invokeRead(CompressedPublicKey sender,
-                                               Object msg,
-                                               CompletableFuture<Void> future) {
-        AbstractHandlerContext inboundCtx = findNextInbound();
+    private CompletableFuture<Void> invokeRead(final CompressedPublicKey sender,
+                                               final Object msg,
+                                               final CompletableFuture<Void> future) {
+        final AbstractHandlerContext inboundCtx = findNextInbound();
         try {
             inboundCtx.handler().read(inboundCtx, sender, msg, future);
         }
-        catch (Exception e) {
+        catch (final Exception e) {
             if (LOG.isWarnEnabled()) {
                 LOG.warn("Failed to invoke read() on next handler `{}` do to the following error: ", inboundCtx.name(), e);
             }
@@ -172,18 +176,19 @@ abstract class AbstractHandlerContext implements HandlerContext {
     }
 
     @Override
-    public CompletableFuture<Void> fireEventTriggered(Event event, CompletableFuture<Void> future) {
+    public CompletableFuture<Void> fireEventTriggered(final Event event,
+                                                      final CompletableFuture<Void> future) {
         return invokeEventTriggered(event, future);
     }
 
-    private CompletableFuture<Void> invokeEventTriggered(Event event,
-                                                         CompletableFuture<Void> future) {
-        AbstractHandlerContext inboundCtx = findNextInbound();
+    private CompletableFuture<Void> invokeEventTriggered(final Event event,
+                                                         final CompletableFuture<Void> future) {
+        final AbstractHandlerContext inboundCtx = findNextInbound();
 
         try {
             inboundCtx.handler().eventTriggered(inboundCtx, event, future);
         }
-        catch (Exception e) {
+        catch (final Exception e) {
             if (LOG.isWarnEnabled()) {
                 LOG.warn("Failed to invoke eventTriggered() on next handler `{}` do to the following error: ", inboundCtx.name(), e);
             }
@@ -195,21 +200,21 @@ abstract class AbstractHandlerContext implements HandlerContext {
     }
 
     @Override
-    public CompletableFuture<Void> write(CompressedPublicKey recipient,
-                                         Object msg,
-                                         CompletableFuture<Void> future) {
+    public CompletableFuture<Void> write(final CompressedPublicKey recipient,
+                                         final Object msg,
+                                         final CompletableFuture<Void> future) {
         return invokeWrite(recipient, msg, future);
     }
 
-    private CompletableFuture<Void> invokeWrite(CompressedPublicKey recipient,
-                                                Object msg,
-                                                CompletableFuture<Void> future) {
-        AbstractHandlerContext outboundCtx = findPrevOutbound();
+    private CompletableFuture<Void> invokeWrite(final CompressedPublicKey recipient,
+                                                final Object msg,
+                                                final CompletableFuture<Void> future) {
+        final AbstractHandlerContext outboundCtx = findPrevOutbound();
 
         try {
             outboundCtx.handler().write(outboundCtx, recipient, msg, future);
         }
-        catch (Exception e) {
+        catch (final Exception e) {
             if (LOG.isWarnEnabled()) {
                 LOG.warn("Failed to invoke write() on next handler `{}` do to the following error: ", outboundCtx.name(), e);
             }
@@ -241,7 +246,12 @@ abstract class AbstractHandlerContext implements HandlerContext {
     }
 
     @Override
-    public TypeValidator validator() {
-        return this.validator;
+    public TypeValidator inboundValidator() {
+        return this.inboundValidator;
+    }
+
+    @Override
+    public TypeValidator outboundValidator() {
+        return this.outboundValidator;
     }
 }

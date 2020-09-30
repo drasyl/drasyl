@@ -68,7 +68,11 @@ public class ReceivingWormholeNode extends DrasylNode {
 
     public ReceivingWormholeNode(DrasylConfig config,
                                  PrintStream printStream) throws DrasylException {
-        super(DrasylConfig.newBuilder(config).serverBindPort(0).marshallingAllowedTypes(List.of(WormholeMessage.class.getName())).build());
+        super(DrasylConfig.newBuilder(config)
+                .serverBindPort(0)
+                .marshallingInboundAllowedTypes(List.of(WormholeMessage.class.getName()))
+                .marshallingOutboundAllowedTypes(List.of(WormholeMessage.class.getName()))
+                .build());
         this.doneFuture = new CompletableFuture<>();
         this.printStream = printStream;
         this.received = new AtomicBoolean();

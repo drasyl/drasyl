@@ -38,13 +38,13 @@ import static org.mockito.Mockito.verifyNoInteractions;
 class TypeValidatorTest {
     @Test
     void shouldAllowPrimitivesAutomatically() {
-        TypeValidator validator = TypeValidator.of(DrasylConfig.newBuilder().build());
+        final TypeValidator validator = TypeValidator.ofInboundValidator(DrasylConfig.newBuilder().build());
 
-        for (Class<?> clazz : Primitives.allPrimitiveTypes()) {
+        for (final Class<?> clazz : Primitives.allPrimitiveTypes()) {
             assertTrue(validator.validate(clazz));
         }
 
-        for (Class<?> clazz : Primitives.allWrapperTypes()) {
+        for (final Class<?> clazz : Primitives.allWrapperTypes()) {
             assertTrue(validator.validate(clazz));
         }
 
@@ -53,13 +53,13 @@ class TypeValidatorTest {
 
     @Test
     void shouldNotAllowPrimitivesAutomatically() {
-        TypeValidator validator = new TypeValidator(List.of(), List.of(), false, false, () -> null);
+        final TypeValidator validator = new TypeValidator(List.of(), List.of(), false, false, () -> null);
 
-        for (Class<?> clazz : Primitives.allPrimitiveTypes()) {
+        for (final Class<?> clazz : Primitives.allPrimitiveTypes()) {
             assertFalse(validator.validate(clazz));
         }
 
-        for (Class<?> clazz : Primitives.allWrapperTypes()) {
+        for (final Class<?> clazz : Primitives.allWrapperTypes()) {
             assertFalse(validator.validate(clazz));
         }
 
@@ -68,7 +68,7 @@ class TypeValidatorTest {
 
     @Test
     void shouldAllowType() {
-        TypeValidator validator = new TypeValidator(List.of(String.class), List.of(), false, false, () -> null);
+        final TypeValidator validator = new TypeValidator(List.of(String.class), List.of(), false, false, () -> null);
 
         assertTrue(validator.validate(String.class));
         assertFalse(validator.validate(String[].class));
@@ -76,14 +76,14 @@ class TypeValidatorTest {
 
     @Test
     void shouldAllowTypeAsArray() {
-        TypeValidator validator = new TypeValidator(List.of(String.class), List.of(), false, true, () -> null);
+        final TypeValidator validator = new TypeValidator(List.of(String.class), List.of(), false, true, () -> null);
 
         assertTrue(validator.validate(String[].class));
     }
 
     @Test
     void shouldAllowPackage() {
-        TypeValidator validator = new TypeValidator(List.of(), List.of("java.lang"), false, false, () -> null);
+        final TypeValidator validator = new TypeValidator(List.of(), List.of("java.lang"), false, false, () -> null);
 
         assertTrue(validator.validate(String.class));
         assertFalse(validator.validate(String[].class));
@@ -91,7 +91,7 @@ class TypeValidatorTest {
 
     @Test
     void shouldAllowPackageAsArray() {
-        TypeValidator validator = new TypeValidator(List.of(String.class), List.of(), false, true, () -> null);
+        final TypeValidator validator = new TypeValidator(List.of(String.class), List.of(), false, true, () -> null);
 
         assertTrue(validator.validate(String[].class));
     }
@@ -100,10 +100,10 @@ class TypeValidatorTest {
     class ListOperations {
         @Test
         void addType() {
-            List<Class<?>> classes = mock(List.class);
-            List<String> packages = mock(List.class);
+            final List<Class<?>> classes = mock(List.class);
+            final List<String> packages = mock(List.class);
 
-            TypeValidator validator = new TypeValidator(classes, packages, false, false, () -> null);
+            final TypeValidator validator = new TypeValidator(classes, packages, false, false, () -> null);
             validator.addClass(String.class);
 
             verify(classes).addAll(eq(List.of(String.class)));
@@ -112,10 +112,10 @@ class TypeValidatorTest {
 
         @Test
         void addPackage() {
-            List<Class<?>> classes = mock(List.class);
-            List<String> packages = mock(List.class);
+            final List<Class<?>> classes = mock(List.class);
+            final List<String> packages = mock(List.class);
 
-            TypeValidator validator = new TypeValidator(classes, packages, false, false, () -> null);
+            final TypeValidator validator = new TypeValidator(classes, packages, false, false, () -> null);
             validator.addPackage("java.lang");
 
             verify(packages).add(eq("java.lang"));
@@ -124,10 +124,10 @@ class TypeValidatorTest {
 
         @Test
         void removeType() {
-            List<Class<?>> classes = mock(List.class);
-            List<String> packages = mock(List.class);
+            final List<Class<?>> classes = mock(List.class);
+            final List<String> packages = mock(List.class);
 
-            TypeValidator validator = new TypeValidator(classes, packages, false, false, () -> null);
+            final TypeValidator validator = new TypeValidator(classes, packages, false, false, () -> null);
             validator.removeClass(String.class);
 
             verify(classes).remove(eq(String.class));
@@ -136,10 +136,10 @@ class TypeValidatorTest {
 
         @Test
         void removePackage() {
-            List<Class<?>> classes = mock(List.class);
-            List<String> packages = mock(List.class);
+            final List<Class<?>> classes = mock(List.class);
+            final List<String> packages = mock(List.class);
 
-            TypeValidator validator = new TypeValidator(classes, packages, false, false, () -> null);
+            final TypeValidator validator = new TypeValidator(classes, packages, false, false, () -> null);
             validator.removePackage("java.lang");
 
             verify(packages).remove(eq("java.lang"));

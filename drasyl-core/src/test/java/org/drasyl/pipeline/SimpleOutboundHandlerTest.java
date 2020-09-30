@@ -54,25 +54,29 @@ class SimpleOutboundHandlerTest {
 
     @Test
     void shouldTriggerOnMatchedMessage() {
-        CompressedPublicKey sender = mock(CompressedPublicKey.class);
+        final CompressedPublicKey sender = mock(CompressedPublicKey.class);
         when(identity.getPublicKey()).thenReturn(sender);
-        byte[] payload = new byte[]{};
-        CompressedPublicKey recipient = mock(CompressedPublicKey.class);
+        final byte[] payload = new byte[]{};
+        final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
 
-        SimpleOutboundHandler<byte[]> handler = new SimpleOutboundHandler<>() {
+        final SimpleOutboundHandler<byte[]> handler = new SimpleOutboundHandler<>() {
             @Override
-            protected void matchedWrite(HandlerContext ctx,
-                                        CompressedPublicKey recipient,
-                                        byte[] msg,
-                                        CompletableFuture<Void> future) {
+            protected void matchedWrite(final HandlerContext ctx,
+                                        final CompressedPublicKey recipient,
+                                        final byte[] msg,
+                                        final CompletableFuture<Void> future) {
                 // Emit this message as inbound message to test
                 ctx.pipeline().processInbound(new ApplicationMessage(identity.getPublicKey(), recipient, msg));
             }
         };
 
-        EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, handler);
-        TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
-        TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                identity,
+                TypeValidator.ofInboundValidator(config),
+                TypeValidator.ofOutboundValidator(config),
+                ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, handler);
+        final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
+        final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
 
         pipeline.processOutbound(recipient, payload);
 
@@ -83,25 +87,29 @@ class SimpleOutboundHandlerTest {
 
     @Test
     void shouldPassthroughsNotMatchingMessage() {
-        SimpleOutboundHandler<ChunkedMessage> handler = new SimpleOutboundHandler<>(ChunkedMessage.class) {
+        final SimpleOutboundHandler<ChunkedMessage> handler = new SimpleOutboundHandler<>(ChunkedMessage.class) {
             @Override
-            protected void matchedWrite(HandlerContext ctx,
-                                        CompressedPublicKey recipient,
-                                        ChunkedMessage msg,
-                                        CompletableFuture<Void> future) {
+            protected void matchedWrite(final HandlerContext ctx,
+                                        final CompressedPublicKey recipient,
+                                        final ChunkedMessage msg,
+                                        final CompletableFuture<Void> future) {
                 // Emit this message as inbound message to test
                 ctx.pipeline().processInbound(msg);
             }
         };
 
-        EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, handler);
-        TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
-        TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                identity,
+                TypeValidator.ofInboundValidator(config),
+                TypeValidator.ofOutboundValidator(config),
+                ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, handler);
+        final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
+        final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
 
-        CompressedPublicKey sender = mock(CompressedPublicKey.class);
-        CompressedPublicKey recipient = mock(CompressedPublicKey.class);
+        final CompressedPublicKey sender = mock(CompressedPublicKey.class);
+        final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
         when(identity.getPublicKey()).thenReturn(sender);
-        byte[] payload = new byte[]{};
+        final byte[] payload = new byte[]{};
         pipeline.processOutbound(recipient, payload);
 
         outboundMessageTestObserver.awaitCount(1);

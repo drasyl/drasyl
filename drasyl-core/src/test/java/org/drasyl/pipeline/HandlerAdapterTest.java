@@ -48,20 +48,22 @@ class HandlerAdapterTest {
     @Mock
     private Identity identity;
     @Mock
-    private TypeValidator validator;
+    private TypeValidator inboundValidator;
+    @Mock
+    private TypeValidator outboundValidator;
     @Mock
     private CompletableFuture<Void> future;
 
     @Test
     void shouldDoNothing() {
-        HandlerAdapter adapter = new HandlerAdapter() {
+        final HandlerAdapter adapter = new HandlerAdapter() {
             @Override
-            public void handlerAdded(HandlerContext ctx) {
+            public void handlerAdded(final HandlerContext ctx) {
                 super.handlerAdded(ctx);
             }
 
             @Override
-            public void handlerRemoved(HandlerContext ctx) {
+            public void handlerRemoved(final HandlerContext ctx) {
                 super.handlerRemoved(ctx);
             }
         };
@@ -76,10 +78,10 @@ class HandlerAdapterTest {
     class Outbound {
         @Test
         void shouldPassthroughsOnWrite() {
-            HandlerAdapter duplexHandler = new HandlerAdapter();
+            final HandlerAdapter duplexHandler = new HandlerAdapter();
 
-            CompressedPublicKey recipient = mock(CompressedPublicKey.class);
-            Object msg = mock(Object.class);
+            final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
+            final Object msg = mock(Object.class);
 
             duplexHandler.write(ctx, recipient, msg, future);
 
@@ -91,10 +93,10 @@ class HandlerAdapterTest {
     class Inbound {
         @Test
         void shouldPassthroughsOnRead() {
-            HandlerAdapter duplexHandler = new HandlerAdapter();
+            final HandlerAdapter duplexHandler = new HandlerAdapter();
 
-            CompressedPublicKey sender = mock(CompressedPublicKey.class);
-            Object msg = mock(Object.class);
+            final CompressedPublicKey sender = mock(CompressedPublicKey.class);
+            final Object msg = mock(Object.class);
 
             duplexHandler.read(ctx, sender, msg, future);
 
@@ -103,9 +105,9 @@ class HandlerAdapterTest {
 
         @Test
         void shouldPassthroughsOnEventTriggered() {
-            HandlerAdapter duplexHandler = new HandlerAdapter();
+            final HandlerAdapter duplexHandler = new HandlerAdapter();
 
-            Event event = mock(Event.class);
+            final Event event = mock(Event.class);
 
             duplexHandler.eventTriggered(ctx, event, future);
 
@@ -114,9 +116,9 @@ class HandlerAdapterTest {
 
         @Test
         void shouldPassthroughsOnExceptionCaught() {
-            HandlerAdapter duplexHandler = new HandlerAdapter();
+            final HandlerAdapter duplexHandler = new HandlerAdapter();
 
-            Exception exception = mock(Exception.class);
+            final Exception exception = mock(Exception.class);
 
             duplexHandler.exceptionCaught(ctx, exception);
 
@@ -125,10 +127,10 @@ class HandlerAdapterTest {
 
         @Test
         void shouldPassthroughsOnEventTriggeredWithMultipleHandler() {
-            EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, validator, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new));
-            TestObserver<Event> events = pipeline.inboundEvents().test();
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, inboundValidator, outboundValidator, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new));
+            final TestObserver<Event> events = pipeline.inboundEvents().test();
 
-            Event event = mock(Event.class);
+            final Event event = mock(Event.class);
             pipeline.processInbound(event);
 
             events.awaitCount(1);
@@ -137,11 +139,11 @@ class HandlerAdapterTest {
 
         @Test
         void shouldPassthroughsOnReadWithMultipleHandler() {
-            EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, validator, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new));
-            TestObserver<Pair<CompressedPublicKey, Object>> events = pipeline.inboundMessages().test();
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, inboundValidator, outboundValidator, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new));
+            final TestObserver<Pair<CompressedPublicKey, Object>> events = pipeline.inboundMessages().test();
 
-            CompressedPublicKey sender = mock(CompressedPublicKey.class);
-            ApplicationMessage msg = mock(ApplicationMessage.class);
+            final CompressedPublicKey sender = mock(CompressedPublicKey.class);
+            final ApplicationMessage msg = mock(ApplicationMessage.class);
             when(msg.getSender()).thenReturn(sender);
             when(msg.getPayload()).thenReturn(new byte[]{});
             when(msg.getHeader(ObjectHolder.CLASS_KEY_NAME)).thenReturn(byte[].class.getName());

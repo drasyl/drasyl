@@ -45,7 +45,8 @@ public abstract class DefaultPipeline implements Pipeline {
     protected Scheduler scheduler;
     protected DrasylConfig config;
     protected Identity identity;
-    protected TypeValidator validator;
+    protected TypeValidator inboundValidator;
+    protected TypeValidator outboundValidator;
 
     protected void initPointer() {
         this.head.setPrevHandlerContext(this.head);
@@ -55,13 +56,13 @@ public abstract class DefaultPipeline implements Pipeline {
             this.head.handler().handlerAdded(this.head);
             this.tail.handler().handlerAdded(this.head);
         }
-        catch (Exception e) {
+        catch (final Exception e) {
             this.head.fireExceptionCaught(e);
         }
     }
 
     @Override
-    public Pipeline addFirst(String name, Handler handler) {
+    public Pipeline addFirst(final String name, final Handler handler) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(handler);
         final AbstractHandlerContext newCtx;
@@ -69,7 +70,7 @@ public abstract class DefaultPipeline implements Pipeline {
         synchronized (this) {
             collisionCheck(name);
 
-            newCtx = new DefaultHandlerContext(name, handler, config, this, scheduler, identity, validator);
+            newCtx = new DefaultHandlerContext(name, handler, config, this, scheduler, identity, inboundValidator, outboundValidator);
             // Set correct pointer on new context
             newCtx.setPrevHandlerContext(this.head);
             newCtx.setNextHandlerContext(this.head.getNext());
@@ -91,13 +92,13 @@ public abstract class DefaultPipeline implements Pipeline {
      * @param name handler name
      * @throws IllegalArgumentException if handler is already registered
      */
-    private void collisionCheck(String name) {
+    private void collisionCheck(final String name) {
         if (handlerNames.containsKey(name)) {
             throw new IllegalArgumentException("A handler with this name is already registered");
         }
     }
 
-    private void registerNewHandler(String name, AbstractHandlerContext handlerCtx) {
+    private void registerNewHandler(final String name, final AbstractHandlerContext handlerCtx) {
         // Add to handlerName list
         handlerNames.put(name, handlerCtx);
 
@@ -105,7 +106,7 @@ public abstract class DefaultPipeline implements Pipeline {
         try {
             handlerCtx.handler().handlerAdded(handlerCtx);
         }
-        catch (Exception e) {
+        catch (final Exception e) {
             handlerCtx.fireExceptionCaught(e);
             if (LOG.isWarnEnabled()) {
                 LOG.warn("Error on adding handler `{}`: ", handlerCtx.name(), e);
@@ -114,7 +115,7 @@ public abstract class DefaultPipeline implements Pipeline {
     }
 
     @Override
-    public Pipeline addLast(String name, Handler handler) {
+    public Pipeline addLast(final String name, final Handler handler) {
         Objects.requireNonNull(name);
         Objects.requireNonNull(handler);
         final AbstractHandlerContext newCtx;
@@ -122,7 +123,7 @@ public abstract class DefaultPipeline implements Pipeline {
         synchronized (this) {
             collisionCheck(name);
 
-            newCtx = new DefaultHandlerContext(name, handler, config, this, scheduler, identity, validator);
+            newCtx = new DefaultHandlerContext(name, handler, config, this, scheduler, identity, inboundValidator, outboundValidator);
             // Set correct pointer on new context
             newCtx.setPrevHandlerContext(this.tail.getPrev());
             newCtx.setNextHandlerContext(this.tail);
@@ -138,7 +139,7 @@ public abstract class DefaultPipeline implements Pipeline {
     }
 
     @Override
-    public Pipeline addBefore(String baseName, String name, Handler handler) {
+    public Pipeline addBefore(final String baseName, final String name, final Handler handler) {
         Objects.requireNonNull(baseName);
         Objects.requireNonNull(name);
         Objects.requireNonNull(handler);
@@ -147,10 +148,10 @@ public abstract class DefaultPipeline implements Pipeline {
         synchronized (this) {
             collisionCheck(name);
 
-            AbstractHandlerContext baseCtx = handlerNames.get(baseName);
+            final AbstractHandlerContext baseCtx = handlerNames.get(baseName);
             Objects.requireNonNull(baseCtx);
 
-            newCtx = new DefaultHandlerContext(name, handler, config, this, scheduler, identity, validator);
+            newCtx = new DefaultHandlerContext(name, handler, config, this, scheduler, identity, inboundValidator, outboundValidator);
             // Set correct pointer on new context
             newCtx.setPrevHandlerContext(baseCtx.getPrev());
             newCtx.setNextHandlerContext(baseCtx);
@@ -166,7 +167,7 @@ public abstract class DefaultPipeline implements Pipeline {
     }
 
     @Override
-    public Pipeline addAfter(String baseName, String name, Handler handler) {
+    public Pipeline addAfter(final String baseName, final String name, final Handler handler) {
         Objects.requireNonNull(baseName);
         Objects.requireNonNull(name);
         Objects.requireNonNull(handler);
@@ -175,10 +176,10 @@ public abstract class DefaultPipeline implements Pipeline {
         synchronized (this) {
             collisionCheck(name);
 
-            AbstractHandlerContext baseCtx = handlerNames.get(baseName);
+            final AbstractHandlerContext baseCtx = handlerNames.get(baseName);
             Objects.requireNonNull(baseCtx);
 
-            newCtx = new DefaultHandlerContext(name, handler, config, this, scheduler, identity, validator);
+            newCtx = new DefaultHandlerContext(name, handler, config, this, scheduler, identity, inboundValidator, outboundValidator);
             // Set correct pointer on new context
             newCtx.setPrevHandlerContext(baseCtx);
             newCtx.setNextHandlerContext(baseCtx.getNext());
@@ -194,11 +195,11 @@ public abstract class DefaultPipeline implements Pipeline {
     }
 
     @Override
-    public Pipeline remove(String name) {
+    public Pipeline remove(final String name) {
         Objects.requireNonNull(name);
 
         synchronized (this) {
-            AbstractHandlerContext ctx = handlerNames.remove(name);
+            final AbstractHandlerContext ctx = handlerNames.remove(name);
             if (ctx == null) {
                 throw new NoSuchElementException("There is no handler with this name in the pipeline");
             }
@@ -206,8 +207,8 @@ public abstract class DefaultPipeline implements Pipeline {
             // call remove action
             removeHandlerAction(ctx);
 
-            AbstractHandlerContext prev = ctx.getPrev();
-            AbstractHandlerContext next = ctx.getNext();
+            final AbstractHandlerContext prev = ctx.getPrev();
+            final AbstractHandlerContext next = ctx.getNext();
             prev.setNextHandlerContext(next);
             next.setPrevHandlerContext(prev);
         }
@@ -215,12 +216,12 @@ public abstract class DefaultPipeline implements Pipeline {
         return this;
     }
 
-    private void removeHandlerAction(AbstractHandlerContext ctx) {
+    private void removeHandlerAction(final AbstractHandlerContext ctx) {
         // call remove action
         try {
             ctx.handler().handlerRemoved(ctx);
         }
-        catch (Exception e) {
+        catch (final Exception e) {
             ctx.fireExceptionCaught(e);
             if (LOG.isWarnEnabled()) {
                 LOG.warn("Error on adding handler `{}`: ", ctx.name(), e);
@@ -229,7 +230,7 @@ public abstract class DefaultPipeline implements Pipeline {
     }
 
     @Override
-    public Pipeline replace(String oldName, String newName, Handler newHandler) {
+    public Pipeline replace(final String oldName, final String newName, final Handler newHandler) {
         Objects.requireNonNull(oldName);
         Objects.requireNonNull(newName);
         Objects.requireNonNull(newHandler);
@@ -240,14 +241,14 @@ public abstract class DefaultPipeline implements Pipeline {
                 collisionCheck(newName);
             }
 
-            AbstractHandlerContext oldCtx = handlerNames.remove(oldName);
-            AbstractHandlerContext prev = oldCtx.getPrev();
-            AbstractHandlerContext next = oldCtx.getNext();
+            final AbstractHandlerContext oldCtx = handlerNames.remove(oldName);
+            final AbstractHandlerContext prev = oldCtx.getPrev();
+            final AbstractHandlerContext next = oldCtx.getNext();
 
             // call remove action
             removeHandlerAction(oldCtx);
 
-            newCtx = new DefaultHandlerContext(newName, newHandler, config, this, scheduler, identity, validator);
+            newCtx = new DefaultHandlerContext(newName, newHandler, config, this, scheduler, identity, inboundValidator, outboundValidator);
             // Set correct pointer on new context
             newCtx.setPrevHandlerContext(prev);
             newCtx.setNextHandlerContext(next);
@@ -263,7 +264,7 @@ public abstract class DefaultPipeline implements Pipeline {
     }
 
     @Override
-    public Handler get(String name) {
+    public Handler get(final String name) {
         Objects.requireNonNull(name);
 
         if (handlerNames.containsKey(name)) {
@@ -274,15 +275,15 @@ public abstract class DefaultPipeline implements Pipeline {
     }
 
     @Override
-    public HandlerContext context(String name) {
+    public HandlerContext context(final String name) {
         Objects.requireNonNull(name);
 
         return handlerNames.get(name);
     }
 
     @Override
-    public CompletableFuture<Void> processInbound(ApplicationMessage msg) {
-        CompletableFuture<Void> rtn = new CompletableFuture<>();
+    public CompletableFuture<Void> processInbound(final ApplicationMessage msg) {
+        final CompletableFuture<Void> rtn = new CompletableFuture<>();
 
         this.scheduler.scheduleDirect(() -> this.head.fireRead(msg.getSender(), ObjectHolder.of(msg.getHeader(ObjectHolder.CLASS_KEY_NAME), msg.getPayload()), rtn));
 
@@ -290,8 +291,8 @@ public abstract class DefaultPipeline implements Pipeline {
     }
 
     @Override
-    public CompletableFuture<Void> processInbound(Event event) {
-        CompletableFuture<Void> rtn = new CompletableFuture<>();
+    public CompletableFuture<Void> processInbound(final Event event) {
+        final CompletableFuture<Void> rtn = new CompletableFuture<>();
 
         this.scheduler.scheduleDirect(() -> this.head.fireEventTriggered(event, rtn));
 
@@ -299,8 +300,8 @@ public abstract class DefaultPipeline implements Pipeline {
     }
 
     @Override
-    public CompletableFuture<Void> processOutbound(CompressedPublicKey recipient, Object msg) {
-        CompletableFuture<Void> rtn = new CompletableFuture<>();
+    public CompletableFuture<Void> processOutbound(final CompressedPublicKey recipient, final Object msg) {
+        final CompletableFuture<Void> rtn = new CompletableFuture<>();
 
         this.scheduler.scheduleDirect(() -> this.tail.write(recipient, msg, rtn));
 

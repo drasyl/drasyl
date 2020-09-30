@@ -64,10 +64,14 @@ import static org.drasyl.DrasylConfig.INTRA_VM_DISCOVERY_ENABLED;
 import static org.drasyl.DrasylConfig.LOCAL_HOST_DISCOVERY_ENABLED;
 import static org.drasyl.DrasylConfig.LOCAL_HOST_DISCOVERY_LEASE_TIME;
 import static org.drasyl.DrasylConfig.LOCAL_HOST_DISCOVERY_PATH;
-import static org.drasyl.DrasylConfig.MARSHALLING_ALLOWED_PACKAGES;
-import static org.drasyl.DrasylConfig.MARSHALLING_ALLOWED_TYPES;
-import static org.drasyl.DrasylConfig.MARSHALLING_ALLOW_ALL_PRIMITIVES;
-import static org.drasyl.DrasylConfig.MARSHALLING_ALLOW_ARRAY_OF_DEFINED_TYPES;
+import static org.drasyl.DrasylConfig.MARSHALLING_INBOUND_ALLOWED_PACKAGES;
+import static org.drasyl.DrasylConfig.MARSHALLING_INBOUND_ALLOWED_TYPES;
+import static org.drasyl.DrasylConfig.MARSHALLING_INBOUND_ALLOW_ALL_PRIMITIVES;
+import static org.drasyl.DrasylConfig.MARSHALLING_INBOUND_ALLOW_ARRAY_OF_DEFINED_TYPES;
+import static org.drasyl.DrasylConfig.MARSHALLING_OUTBOUND_ALLOWED_PACKAGES;
+import static org.drasyl.DrasylConfig.MARSHALLING_OUTBOUND_ALLOWED_TYPES;
+import static org.drasyl.DrasylConfig.MARSHALLING_OUTBOUND_ALLOW_ALL_PRIMITIVES;
+import static org.drasyl.DrasylConfig.MARSHALLING_OUTBOUND_ALLOW_ARRAY_OF_DEFINED_TYPES;
 import static org.drasyl.DrasylConfig.MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT;
 import static org.drasyl.DrasylConfig.MESSAGE_HOP_LIMIT;
 import static org.drasyl.DrasylConfig.MESSAGE_MAX_CONTENT_LENGTH;
@@ -107,6 +111,9 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.WARN)
 class DrasylConfigTest {
+    private final Set<String> serverSSLProtocols = Set.of("TLSv1.3", "TLSv1.2");
+    private final List<Duration> superPeerRetryDelays = List.of(ofSeconds(0), ofSeconds(1), ofSeconds(2), ofSeconds(4), ofSeconds(8));
+    private final List<Duration> directConnectionsRetryDelays = List.of(ofSeconds(0), ofSeconds(1), ofSeconds(2), ofSeconds(4), ofSeconds(8));
     private int networkId;
     @Mock
     private ProofOfWork proofOfWork;
@@ -123,7 +130,6 @@ class DrasylConfigTest {
     private Duration serverIdleTimeout;
     private int flushBufferSize;
     private boolean serverSSLEnabled;
-    private final Set<String> serverSSLProtocols = Set.of("TLSv1.3", "TLSv1.2");
     private Duration serverHandshakeTimeout;
     private Set<Endpoint> serverEndpoints;
     private Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer;
@@ -134,7 +140,6 @@ class DrasylConfigTest {
     private Set<Endpoint> superPeerEndpoints;
     @Mock
     private CompressedPublicKey superPeerPublicKey;
-    private final List<Duration> superPeerRetryDelays = List.of(ofSeconds(0), ofSeconds(1), ofSeconds(2), ofSeconds(4), ofSeconds(8));
     private Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer;
     private short superPeerIdleRetries;
     private Duration superPeerIdleTimeout;
@@ -150,7 +155,6 @@ class DrasylConfigTest {
     private Duration localHostDiscoveryLeaseTime;
     private boolean directConnectionsEnabled;
     private int directConnectionsMaxConcurrentConnections;
-    private final List<Duration> directConnectionsRetryDelays = List.of(ofSeconds(0), ofSeconds(1), ofSeconds(2), ofSeconds(4), ofSeconds(8));
     private Duration directConnectionsHandshakeTimeout;
     private Class<? extends ChannelInitializer<SocketChannel>> directConnectionsChannelInitializer;
     private short directConnectionsIdleRetries;
@@ -163,10 +167,14 @@ class DrasylConfigTest {
     private String monitoringInfluxDatabase;
     private Duration monitoringInfluxReportingFrequency;
     private Set<DrasylPlugin> plugins;
-    private List<String> marshallingAllowedTypes;
-    private boolean marshallingAllowAllPrimitives;
-    private boolean marshallingAllowArrayOfDefinedTypes;
-    private List<String> marshallingAllowedPackages;
+    private List<String> marshallingInboundAllowedTypes;
+    private boolean marshallingInboundAllowAllPrimitives;
+    private boolean marshallingInboundAllowArrayOfDefinedTypes;
+    private List<String> marshallingInboundAllowedPackages;
+    private List<String> marshallingOutboundAllowedTypes;
+    private boolean marshallingOutboundAllowAllPrimitives;
+    private boolean marshallingOutboundAllowArrayOfDefinedTypes;
+    private List<String> marshallingOutboundAllowedPackages;
 
     @BeforeEach
     void setUp() {
@@ -209,10 +217,14 @@ class DrasylConfigTest {
         monitoringInfluxDatabase = "drasyl";
         monitoringInfluxReportingFrequency = ofSeconds(60);
         plugins = Set.of();
-        marshallingAllowedTypes = List.of();
-        marshallingAllowAllPrimitives = true;
-        marshallingAllowArrayOfDefinedTypes = true;
-        marshallingAllowedPackages = List.of();
+        marshallingInboundAllowedTypes = List.of();
+        marshallingInboundAllowAllPrimitives = true;
+        marshallingInboundAllowArrayOfDefinedTypes = true;
+        marshallingInboundAllowedPackages = List.of();
+        marshallingOutboundAllowedTypes = List.of();
+        marshallingOutboundAllowAllPrimitives = true;
+        marshallingOutboundAllowArrayOfDefinedTypes = true;
+        marshallingOutboundAllowedPackages = List.of();
     }
 
     @Nested
@@ -259,12 +271,16 @@ class DrasylConfigTest {
             when(typesafeConfig.getString(MONITORING_INFLUX_DATABASE)).thenReturn(monitoringInfluxDatabase);
             when(typesafeConfig.getDuration(MONITORING_INFLUX_REPORTING_FREQUENCY)).thenReturn(monitoringInfluxReportingFrequency);
             when(typesafeConfig.getObject(PLUGINS)).thenReturn(mock(ConfigObject.class));
-            when(typesafeConfig.getStringList(MARSHALLING_ALLOWED_TYPES)).thenReturn(marshallingAllowedTypes);
-            when(typesafeConfig.getBoolean(MARSHALLING_ALLOW_ALL_PRIMITIVES)).thenReturn(marshallingAllowAllPrimitives);
-            when(typesafeConfig.getBoolean(MARSHALLING_ALLOW_ARRAY_OF_DEFINED_TYPES)).thenReturn(marshallingAllowArrayOfDefinedTypes);
-            when(typesafeConfig.getStringList(MARSHALLING_ALLOWED_PACKAGES)).thenReturn(marshallingAllowedPackages);
+            when(typesafeConfig.getStringList(MARSHALLING_INBOUND_ALLOWED_TYPES)).thenReturn(marshallingInboundAllowedTypes);
+            when(typesafeConfig.getBoolean(MARSHALLING_INBOUND_ALLOW_ALL_PRIMITIVES)).thenReturn(marshallingInboundAllowAllPrimitives);
+            when(typesafeConfig.getBoolean(MARSHALLING_INBOUND_ALLOW_ARRAY_OF_DEFINED_TYPES)).thenReturn(marshallingInboundAllowArrayOfDefinedTypes);
+            when(typesafeConfig.getStringList(MARSHALLING_INBOUND_ALLOWED_PACKAGES)).thenReturn(marshallingInboundAllowedPackages);
+            when(typesafeConfig.getStringList(MARSHALLING_OUTBOUND_ALLOWED_TYPES)).thenReturn(marshallingOutboundAllowedTypes);
+            when(typesafeConfig.getBoolean(MARSHALLING_OUTBOUND_ALLOW_ALL_PRIMITIVES)).thenReturn(marshallingOutboundAllowAllPrimitives);
+            when(typesafeConfig.getBoolean(MARSHALLING_OUTBOUND_ALLOW_ARRAY_OF_DEFINED_TYPES)).thenReturn(marshallingOutboundAllowArrayOfDefinedTypes);
+            when(typesafeConfig.getStringList(MARSHALLING_OUTBOUND_ALLOWED_PACKAGES)).thenReturn(marshallingOutboundAllowedPackages);
 
-            DrasylConfig config = new DrasylConfig(typesafeConfig);
+            final DrasylConfig config = new DrasylConfig(typesafeConfig);
 
             assertEquals(networkId, config.getNetworkId());
             assertEquals(serverBindHost, config.getServerBindHost());
@@ -305,10 +321,14 @@ class DrasylConfigTest {
             assertEquals(monitoringInfluxPassword, config.getMonitoringInfluxPassword());
             assertEquals(monitoringInfluxDatabase, config.getMonitoringInfluxDatabase());
             assertEquals(monitoringInfluxReportingFrequency, config.getMonitoringInfluxReportingFrequency());
-            assertEquals(marshallingAllowedTypes, config.getMarshallingAllowedTypes());
-            assertEquals(marshallingAllowAllPrimitives, config.isMarshallingAllowAllPrimitives());
-            assertEquals(marshallingAllowArrayOfDefinedTypes, config.isMarshallingAllowArrayOfDefinedTypes());
-            assertEquals(marshallingAllowedPackages, config.getMarshallingAllowedPackages());
+            assertEquals(marshallingInboundAllowedTypes, config.getMarshallingInboundAllowedTypes());
+            assertEquals(marshallingInboundAllowAllPrimitives, config.isMarshallingInboundAllowAllPrimitives());
+            assertEquals(marshallingInboundAllowArrayOfDefinedTypes, config.isMarshallingInboundAllowArrayOfDefinedTypes());
+            assertEquals(marshallingInboundAllowedPackages, config.getMarshallingInboundAllowedPackages());
+            assertEquals(marshallingOutboundAllowedTypes, config.getMarshallingOutboundAllowedTypes());
+            assertEquals(marshallingOutboundAllowAllPrimitives, config.isMarshallingOutboundAllowAllPrimitives());
+            assertEquals(marshallingOutboundAllowArrayOfDefinedTypes, config.isMarshallingOutboundAllowArrayOfDefinedTypes());
+            assertEquals(marshallingOutboundAllowedPackages, config.getMarshallingOutboundAllowedPackages());
         }
     }
 
@@ -318,7 +338,7 @@ class DrasylConfigTest {
         void shouldMaskSecrets() throws CryptoException {
             identityPrivateKey = CompressedPrivateKey.of("07e98a2f8162a4002825f810c0fbd69b0c42bd9cb4f74a21bc7807bc5acb4f5f");
 
-            DrasylConfig config = new DrasylConfig(networkId, proofOfWork, identityPublicKey, identityPrivateKey, identityPath,
+            final DrasylConfig config = new DrasylConfig(networkId, proofOfWork, identityPublicKey, identityPrivateKey, identityPath,
                     serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize,
                     serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer,
                     serverExposeEnabled, messageMaxContentLength, messageHopLimit, composedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints,
@@ -328,7 +348,8 @@ class DrasylConfigTest {
                     directConnectionsRetryDelays, directConnectionsHandshakeTimeout, directConnectionsChannelInitializer,
                     directConnectionsIdleRetries, directConnectionsIdleTimeout, monitoringEnabled, monitoringInfluxUri, monitoringInfluxUser,
                     monitoringInfluxPassword, monitoringInfluxDatabase, monitoringInfluxReportingFrequency, plugins,
-                    marshallingAllowedTypes, marshallingAllowAllPrimitives, marshallingAllowArrayOfDefinedTypes, marshallingAllowedPackages);
+                    marshallingInboundAllowedTypes, marshallingInboundAllowAllPrimitives, marshallingInboundAllowArrayOfDefinedTypes, marshallingInboundAllowedPackages,
+                    marshallingOutboundAllowedTypes, marshallingOutboundAllowAllPrimitives, marshallingOutboundAllowArrayOfDefinedTypes, marshallingOutboundAllowedPackages);
 
             assertThat(config.toString(), not(containsString(identityPrivateKey.getCompressedKey())));
         }
@@ -338,8 +359,8 @@ class DrasylConfigTest {
     class Equals {
         @Test
         void shouldReturnTrue() {
-            DrasylConfig config1 = DrasylConfig.newBuilder().build();
-            DrasylConfig config2 = DrasylConfig.newBuilder().build();
+            final DrasylConfig config1 = DrasylConfig.newBuilder().build();
+            final DrasylConfig config2 = DrasylConfig.newBuilder().build();
 
             assertEquals(config1, config2);
         }
@@ -349,8 +370,8 @@ class DrasylConfigTest {
     class HashCode {
         @Test
         void shouldReturnTrue() {
-            DrasylConfig config1 = DrasylConfig.newBuilder().build();
-            DrasylConfig config2 = DrasylConfig.newBuilder().build();
+            final DrasylConfig config1 = DrasylConfig.newBuilder().build();
+            final DrasylConfig config2 = DrasylConfig.newBuilder().build();
 
             assertEquals(config1.hashCode(), config2.hashCode());
         }
@@ -360,7 +381,7 @@ class DrasylConfigTest {
     class Builder {
         @Test
         void shouldCreateCorrectConfig() {
-            DrasylConfig config = DrasylConfig.newBuilder()
+            final DrasylConfig config = DrasylConfig.newBuilder()
                     .networkId(DEFAULT.getNetworkId())
                     .identityProofOfWork(DEFAULT.getIdentityProofOfWork())
                     .identityPublicKey(DEFAULT.getIdentityPublicKey())
@@ -403,10 +424,14 @@ class DrasylConfigTest {
                     .monitoringInfluxDatabase(DEFAULT.getMonitoringInfluxDatabase())
                     .monitoringInfluxReportingFrequency(DEFAULT.getMonitoringInfluxReportingFrequency())
                     .plugins(DEFAULT.getPlugins())
-                    .marshallingAllowedTypes(DEFAULT.getMarshallingAllowedTypes())
-                    .marshallingAllowAllPrimitives(DEFAULT.isMarshallingAllowAllPrimitives())
-                    .marshallingAllowArrayOfDefinedTypes(DEFAULT.isMarshallingAllowArrayOfDefinedTypes())
-                    .marshallingAllowedPackages(DEFAULT.getMarshallingAllowedPackages())
+                    .marshallingInboundAllowedTypes(DEFAULT.getMarshallingInboundAllowedTypes())
+                    .marshallingInboundAllowAllPrimitives(DEFAULT.isMarshallingInboundAllowAllPrimitives())
+                    .marshallingInboundAllowArrayOfDefinedTypes(DEFAULT.isMarshallingInboundAllowArrayOfDefinedTypes())
+                    .marshallingInboundAllowedPackages(DEFAULT.getMarshallingInboundAllowedPackages())
+                    .marshallingOutboundAllowedTypes(DEFAULT.getMarshallingOutboundAllowedTypes())
+                    .marshallingOutboundAllowAllPrimitives(DEFAULT.isMarshallingOutboundAllowAllPrimitives())
+                    .marshallingOutboundAllowArrayOfDefinedTypes(DEFAULT.isMarshallingOutboundAllowArrayOfDefinedTypes())
+                    .marshallingOutboundAllowedPackages(DEFAULT.getMarshallingOutboundAllowedPackages())
                     .build();
 
             assertEquals(DEFAULT, config);

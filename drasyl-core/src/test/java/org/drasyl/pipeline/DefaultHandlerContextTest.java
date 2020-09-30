@@ -42,11 +42,13 @@ class DefaultHandlerContextTest {
     @Mock
     private Identity identity;
     @Mock
-    private TypeValidator validator;
+    private TypeValidator inboundValidator;
+    @Mock
+    private TypeValidator outboundValidator;
 
     @Test
     void shouldCreateDefaultHandler() {
-        DefaultHandlerContext ctx = new DefaultHandlerContext("ctx", handler, config, pipeline, scheduler, identity, validator);
+        final DefaultHandlerContext ctx = new DefaultHandlerContext("ctx", handler, config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
 
         assertEquals(handler, ctx.handler());
     }

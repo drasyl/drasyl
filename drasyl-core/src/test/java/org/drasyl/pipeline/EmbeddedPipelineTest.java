@@ -36,6 +36,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.mockito.Mockito.doReturn;
@@ -55,13 +56,17 @@ class EmbeddedPipelineTest {
 
     @Test
     void shouldReturnInboundMessagesAndEvents() {
-        EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, new HandlerAdapter(), new HandlerAdapter());
-        TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
-        TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
-        TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                identity,
+                TypeValidator.ofInboundValidator(config),
+                TypeValidator.of(List.of(), List.of(), false, false),
+                ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, new HandlerAdapter(), new HandlerAdapter());
+        final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
+        final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
+        final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-        CompressedPublicKey sender = mock(CompressedPublicKey.class);
-        ApplicationMessage msg = mock(ApplicationMessage.class);
+        final CompressedPublicKey sender = mock(CompressedPublicKey.class);
+        final ApplicationMessage msg = mock(ApplicationMessage.class);
 
         when(msg.getSender()).thenReturn(sender);
         doReturn(String.class.getName()).when(msg).getHeader(ObjectHolder.CLASS_KEY_NAME);
@@ -92,15 +97,19 @@ class EmbeddedPipelineTest {
 
     @Test
     void shouldReturnOutboundMessages() {
-        EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, new HandlerAdapter(), new HandlerAdapter());
-        TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
-        TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
-        TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                identity,
+                TypeValidator.of(List.of(), List.of(), false, false),
+                TypeValidator.ofOutboundValidator(config),
+                ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, new HandlerAdapter(), new HandlerAdapter());
+        final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
+        final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
+        final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-        CompressedPublicKey sender = mock(CompressedPublicKey.class);
-        CompressedPublicKey recipient = mock(CompressedPublicKey.class);
+        final CompressedPublicKey sender = mock(CompressedPublicKey.class);
+        final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
         when(identity.getPublicKey()).thenReturn(sender);
-        byte[] msg = new byte[]{};
+        final byte[] msg = new byte[]{};
         pipeline.processOutbound(recipient, msg);
 
         outboundMessageTestObserver.awaitCount(1);

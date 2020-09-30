@@ -40,35 +40,36 @@ class TailContext extends AbstractEndHandler {
     private static final Logger LOG = LoggerFactory.getLogger(TailContext.class);
     private final Consumer<Event> eventConsumer;
 
-    public TailContext(Consumer<Event> eventConsumer,
-                       DrasylConfig config,
-                       Pipeline pipeline,
-                       Scheduler scheduler,
-                       Identity identity,
-                       TypeValidator validator) {
-        super(DRASYL_TAIL_HANDLER, config, pipeline, scheduler, identity, validator);
+    public TailContext(final Consumer<Event> eventConsumer,
+                       final DrasylConfig config,
+                       final Pipeline pipeline,
+                       final Scheduler scheduler,
+                       final Identity identity,
+                       final TypeValidator inboundValidator,
+                       final TypeValidator outboundValidator) {
+        super(DRASYL_TAIL_HANDLER, config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
         this.eventConsumer = eventConsumer;
     }
 
     @Override
-    public void handlerAdded(HandlerContext ctx) {
+    public void handlerAdded(final HandlerContext ctx) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Pipeline tail was added.");
         }
     }
 
     @Override
-    public void handlerRemoved(HandlerContext ctx) {
+    public void handlerRemoved(final HandlerContext ctx) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("Pipeline tail was removed.");
         }
     }
 
     @Override
-    public void read(HandlerContext ctx,
-                     CompressedPublicKey sender,
-                     Object msg,
-                     CompletableFuture<Void> future) {
+    public void read(final HandlerContext ctx,
+                     final CompressedPublicKey sender,
+                     final Object msg,
+                     final CompletableFuture<Void> future) {
         if (msg instanceof AutoSwallow) {
             future.complete(null);
             return;
@@ -81,7 +82,7 @@ class TailContext extends AbstractEndHandler {
             }
         }
         else {
-            MessageEvent event = new MessageEvent(sender, msg);
+            final MessageEvent event = new MessageEvent(sender, msg);
             eventConsumer.accept(event);
             future.complete(null);
 
@@ -92,7 +93,7 @@ class TailContext extends AbstractEndHandler {
     }
 
     @Override
-    public void eventTriggered(HandlerContext ctx, Event event, CompletableFuture<Void> future) {
+    public void eventTriggered(final HandlerContext ctx, final Event event, final CompletableFuture<Void> future) {
         // Pass event to Application
         if (future.isDone()) {
             if (LOG.isWarnEnabled()) {
@@ -110,7 +111,7 @@ class TailContext extends AbstractEndHandler {
     }
 
     @Override
-    public void exceptionCaught(HandlerContext ctx, Exception cause) {
+    public void exceptionCaught(final HandlerContext ctx, final Exception cause) {
         throw new PipelineException(cause);
     }
 }

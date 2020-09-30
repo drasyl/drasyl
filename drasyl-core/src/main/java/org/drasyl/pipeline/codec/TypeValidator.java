@@ -37,20 +37,20 @@ public class TypeValidator {
     private final boolean allowArrayOfTypes;
 
     @SuppressWarnings("java:S1172")
-    TypeValidator(List<Class<?>> classes,
-                  List<String> packages,
-                  boolean allowAllPrimitives,
-                  boolean allowArrayOfTypes, Supplier<Void> signatureExtender) {
+    TypeValidator(final List<Class<?>> classes,
+                  final List<String> packages,
+                  final boolean allowAllPrimitives,
+                  final boolean allowArrayOfTypes, final Supplier<Void> signatureExtender) {
         this.classes = classes;
         this.packages = packages;
         this.allowAllPrimitives = allowAllPrimitives;
         this.allowArrayOfTypes = allowArrayOfTypes;
     }
 
-    private TypeValidator(List<String> classes,
-                          List<String> packages,
-                          boolean allowAllPrimitives,
-                          boolean allowArrayOfTypes) {
+    private TypeValidator(final List<String> classes,
+                          final List<String> packages,
+                          final boolean allowAllPrimitives,
+                          final boolean allowArrayOfTypes) {
         this.classes = Collections.synchronizedList(string2Class(classes));
         this.packages = Collections.synchronizedList(packages);
         this.allowAllPrimitives = allowAllPrimitives;
@@ -61,15 +61,15 @@ public class TypeValidator {
         this.classes.add(byte[].class);
     }
 
-    private List<Class<?>> string2Class(List<String> classes) {
-        List<Class<?>> transformedClasses = new ArrayList<>();
+    private List<Class<?>> string2Class(final List<String> classes) {
+        final List<Class<?>> transformedClasses = new ArrayList<>();
 
-        for (String c : classes) {
+        for (final String c : classes) {
             try {
-                Class<?> clazz = Class.forName(c);
+                final Class<?> clazz = Class.forName(c);
                 transformedClasses.add(clazz);
             }
-            catch (ClassNotFoundException e) {
+            catch (final ClassNotFoundException e) {
                 // ignore
             }
         }
@@ -82,7 +82,7 @@ public class TypeValidator {
      *
      * @param clazz class that should be added
      */
-    public void addClass(Class<?>... clazz) {
+    public void addClass(final Class<?>... clazz) {
         synchronized (classes) {
             classes.addAll(List.of(clazz));
         }
@@ -93,7 +93,7 @@ public class TypeValidator {
      *
      * @param p package that should be added
      */
-    public void addPackage(String p) {
+    public void addPackage(final String p) {
         synchronized (packages) {
             packages.add(p);
         }
@@ -104,7 +104,7 @@ public class TypeValidator {
      *
      * @param clazz class that should be removed
      */
-    public void removeClass(Class<?> clazz) {
+    public void removeClass(final Class<?> clazz) {
         synchronized (classes) {
             classes.remove(clazz);
         }
@@ -115,34 +115,10 @@ public class TypeValidator {
      *
      * @param p package that should be removed
      */
-    public void removePackage(String p) {
+    public void removePackage(final String p) {
         synchronized (packages) {
             packages.remove(p);
         }
-    }
-
-    /**
-     * Returns the Class representing the component type of an array. If this class does not
-     * represent an array class this method returns the {@code clazzToUnwrap}.
-     *
-     * @param clazzToUnwrap class that should be unwrapped
-     * @return the {@code Class} representing the component type of this class if this class is an
-     * array, otherwise the input is returned
-     */
-    public static Class<?> unwrapArrayComponentType(Class<?> clazzToUnwrap) {
-        if (clazzToUnwrap.isArray()) {
-            return clazzToUnwrap.getComponentType();
-        }
-
-        return clazzToUnwrap;
-    }
-
-    private Class<?> unwrap(Class<?> clazz, boolean shouldBeUnwrapped) {
-        if (shouldBeUnwrapped) {
-            return unwrapArrayComponentType(clazz);
-        }
-
-        return clazz;
     }
 
     /**
@@ -159,21 +135,29 @@ public class TypeValidator {
             return true;
         }
 
-        for (Class<?> clazz : classes) {
+        for (final Class<?> clazz : classes) {
             if (isTypeOf(clazzToTest, clazz)) {
                 return true;
             }
         }
 
         // Check if the class is inside an allowed package
-        for (String p : packages) {
-            Package pck = clazzToTest.getPackage();
+        for (final String p : packages) {
+            final Package pck = clazzToTest.getPackage();
             if (pck != null && pck.getName().startsWith(p)) {
                 return true;
             }
         }
 
         return false;
+    }
+
+    private Class<?> unwrap(final Class<?> clazz, final boolean shouldBeUnwrapped) {
+        if (shouldBeUnwrapped) {
+            return unwrapArrayComponentType(clazz);
+        }
+
+        return clazz;
     }
 
     /**
@@ -183,18 +167,44 @@ public class TypeValidator {
      * @param superClass the superclass
      * @return if clazz is a subclass of superClass true, otherwise false
      */
-    public static boolean isTypeOf(Class<?> clazz, Class<?> superClass) {
+    public static boolean isTypeOf(final Class<?> clazz, final Class<?> superClass) {
         return superClass.isAssignableFrom(clazz);
     }
 
-    public static TypeValidator of(List<String> classes,
-                                   List<String> packages,
-                                   boolean allowAllPrimitives,
-                                   boolean allowArrayOfTypes) {
+    /**
+     * Returns the Class representing the component type of an array. If this class does not
+     * represent an array class this method returns the {@code clazzToUnwrap}.
+     *
+     * @param clazzToUnwrap class that should be unwrapped
+     * @return the {@code Class} representing the component type of this class if this class is an
+     * array, otherwise the input is returned
+     */
+    public static Class<?> unwrapArrayComponentType(final Class<?> clazzToUnwrap) {
+        if (clazzToUnwrap.isArray()) {
+            return clazzToUnwrap.getComponentType();
+        }
+
+        return clazzToUnwrap;
+    }
+
+    public static TypeValidator ofInboundValidator(final DrasylConfig config) {
+        return of(config.getMarshallingInboundAllowedTypes(),
+                config.getMarshallingInboundAllowedPackages(),
+                config.isMarshallingInboundAllowAllPrimitives(),
+                config.isMarshallingInboundAllowArrayOfDefinedTypes());
+    }
+
+    public static TypeValidator of(final List<String> classes,
+                                   final List<String> packages,
+                                   final boolean allowAllPrimitives,
+                                   final boolean allowArrayOfTypes) {
         return new TypeValidator(classes, packages, allowAllPrimitives, allowArrayOfTypes);
     }
 
-    public static TypeValidator of(DrasylConfig config) {
-        return of(config.getMarshallingAllowedTypes(), config.getMarshallingAllowedPackages(), config.isMarshallingAllowAllPrimitives(), config.isMarshallingAllowArrayOfDefinedTypes());
+    public static TypeValidator ofOutboundValidator(final DrasylConfig config) {
+        return of(config.getMarshallingOutboundAllowedTypes(),
+                config.getMarshallingOutboundAllowedPackages(),
+                config.isMarshallingOutboundAllowAllPrimitives(),
+                config.isMarshallingOutboundAllowArrayOfDefinedTypes());
     }
 }

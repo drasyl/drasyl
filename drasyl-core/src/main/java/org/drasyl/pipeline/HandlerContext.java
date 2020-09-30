@@ -126,9 +126,16 @@ public interface HandlerContext {
     Identity identity();
 
     /**
-     * Returns the type of this pipeline.
+     * Returns the inbound type validator of this pipeline.
      *
-     * @return the type validator
+     * @return the inbound type validator
      */
-    TypeValidator validator();
+    TypeValidator inboundValidator();
+
+    /**
+     * Returns the outbound type validator of this pipeline.
+     *
+     * @return the outbound type validator
+     */
+    TypeValidator outboundValidator();
 }

@@ -65,39 +65,43 @@ class SimpleDuplexHandlerTest {
     class OutboundTest {
         @Test
         void shouldTriggerOnMatchedMessage() {
-            CompressedPublicKey sender = mock(CompressedPublicKey.class);
+            final CompressedPublicKey sender = mock(CompressedPublicKey.class);
             when(identity.getPublicKey()).thenReturn(sender);
-            byte[] payload = new byte[]{};
-            CompressedPublicKey recipient = mock(CompressedPublicKey.class);
+            final byte[] payload = new byte[]{};
+            final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
 
-            SimpleDuplexHandler<Object, Event, byte[]> handler = new SimpleDuplexHandler<>() {
+            final SimpleDuplexHandler<Object, Event, byte[]> handler = new SimpleDuplexHandler<>() {
                 @Override
-                protected void matchedEventTriggered(HandlerContext ctx, Event event,
-                                                     CompletableFuture<Void> future) {
+                protected void matchedEventTriggered(final HandlerContext ctx, final Event event,
+                                                     final CompletableFuture<Void> future) {
                     ctx.fireEventTriggered(event, future);
                 }
 
                 @Override
-                protected void matchedRead(HandlerContext ctx,
-                                           CompressedPublicKey sender,
-                                           Object msg,
-                                           CompletableFuture<Void> future) {
+                protected void matchedRead(final HandlerContext ctx,
+                                           final CompressedPublicKey sender,
+                                           final Object msg,
+                                           final CompletableFuture<Void> future) {
                     ctx.fireRead(sender, msg, future);
                 }
 
                 @Override
-                protected void matchedWrite(HandlerContext ctx,
-                                            CompressedPublicKey recipient,
-                                            byte[] msg,
-                                            CompletableFuture<Void> future) {
+                protected void matchedWrite(final HandlerContext ctx,
+                                            final CompressedPublicKey recipient,
+                                            final byte[] msg,
+                                            final CompletableFuture<Void> future) {
                     // Emit this message as inbound message to test
                     ctx.pipeline().processInbound(new ApplicationMessage(identity.getPublicKey(), recipient, msg));
                 }
             };
 
-            EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), DefaultCodec.INSTANCE, handler);
-            TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
-            TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                    identity,
+                    TypeValidator.ofInboundValidator(config),
+                    TypeValidator.ofOutboundValidator(config),
+                    DefaultCodec.INSTANCE, handler);
+            final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
+            final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
             pipeline.processOutbound(recipient, payload);
 
             inboundMessageTestObserver.awaitCount(1);
@@ -107,40 +111,44 @@ class SimpleDuplexHandlerTest {
 
         @Test
         void shouldPassthroughsNotMatchingMessage() {
-            SimpleDuplexHandler<Object, Event, ChunkedMessage> handler = new SimpleDuplexHandler<>(Object.class, Event.class, ChunkedMessage.class) {
+            final SimpleDuplexHandler<Object, Event, ChunkedMessage> handler = new SimpleDuplexHandler<>(Object.class, Event.class, ChunkedMessage.class) {
                 @Override
-                protected void matchedEventTriggered(HandlerContext ctx,
-                                                     Event event,
-                                                     CompletableFuture<Void> future) {
+                protected void matchedEventTriggered(final HandlerContext ctx,
+                                                     final Event event,
+                                                     final CompletableFuture<Void> future) {
                     ctx.fireEventTriggered(event, future);
                 }
 
                 @Override
-                protected void matchedRead(HandlerContext ctx,
-                                           CompressedPublicKey sender,
-                                           Object msg,
-                                           CompletableFuture<Void> future) {
+                protected void matchedRead(final HandlerContext ctx,
+                                           final CompressedPublicKey sender,
+                                           final Object msg,
+                                           final CompletableFuture<Void> future) {
                     ctx.fireRead(sender, msg, future);
                 }
 
                 @Override
-                protected void matchedWrite(HandlerContext ctx,
-                                            CompressedPublicKey recipient,
-                                            ChunkedMessage msg,
-                                            CompletableFuture<Void> future) {
+                protected void matchedWrite(final HandlerContext ctx,
+                                            final CompressedPublicKey recipient,
+                                            final ChunkedMessage msg,
+                                            final CompletableFuture<Void> future) {
                     // Emit this message as inbound message to test
                     ctx.pipeline().processInbound(msg);
                 }
             };
 
-            EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, handler);
-            TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
-            TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                    identity,
+                    TypeValidator.ofInboundValidator(config),
+                    TypeValidator.ofOutboundValidator(config),
+                    ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, handler);
+            final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
+            final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
 
-            CompressedPublicKey sender = mock(CompressedPublicKey.class);
-            CompressedPublicKey recipient = mock(CompressedPublicKey.class);
+            final CompressedPublicKey sender = mock(CompressedPublicKey.class);
+            final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
             when(identity.getPublicKey()).thenReturn(sender);
-            byte[] payload = new byte[]{};
+            final byte[] payload = new byte[]{};
             pipeline.processOutbound(recipient, payload);
 
             outboundMessageTestObserver.awaitCount(1);
@@ -153,40 +161,44 @@ class SimpleDuplexHandlerTest {
     class InboundTest {
         @Test
         void shouldTriggerOnMatchedMessage() throws JsonProcessingException {
-            SimpleDuplexHandler<byte[], Event, Object> handler = new SimpleDuplexHandler<>() {
+            final SimpleDuplexHandler<byte[], Event, Object> handler = new SimpleDuplexHandler<>() {
                 @Override
-                protected void matchedWrite(HandlerContext ctx,
-                                            CompressedPublicKey recipient,
-                                            Object msg,
-                                            CompletableFuture<Void> future) {
+                protected void matchedWrite(final HandlerContext ctx,
+                                            final CompressedPublicKey recipient,
+                                            final Object msg,
+                                            final CompletableFuture<Void> future) {
                     ctx.write(recipient, msg, future);
                 }
 
                 @Override
-                protected void matchedEventTriggered(HandlerContext ctx,
-                                                     Event event,
-                                                     CompletableFuture<Void> future) {
+                protected void matchedEventTriggered(final HandlerContext ctx,
+                                                     final Event event,
+                                                     final CompletableFuture<Void> future) {
                     super.eventTriggered(ctx, event, future);
                 }
 
                 @Override
-                protected void matchedRead(HandlerContext ctx,
-                                           CompressedPublicKey sender,
-                                           byte[] msg,
-                                           CompletableFuture<Void> future) {
+                protected void matchedRead(final HandlerContext ctx,
+                                           final CompressedPublicKey sender,
+                                           final byte[] msg,
+                                           final CompletableFuture<Void> future) {
                     // Emit this message as outbound message to test
                     ctx.pipeline().processOutbound(sender, msg);
                 }
             };
 
-            EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, handler);
-            TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
-            TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
-            TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                    identity,
+                    TypeValidator.ofInboundValidator(config),
+                    TypeValidator.ofOutboundValidator(config),
+                    ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, handler);
+            final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
+            final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
+            final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-            CompressedPublicKey sender = mock(CompressedPublicKey.class);
+            final CompressedPublicKey sender = mock(CompressedPublicKey.class);
             when(identity.getPublicKey()).thenReturn(sender);
-            byte[] msg = JSONUtil.JACKSON_WRITER.writeValueAsBytes(new byte[]{});
+            final byte[] msg = JSONUtil.JACKSON_WRITER.writeValueAsBytes(new byte[]{});
             pipeline.processInbound(new ApplicationMessage(sender, sender, msg));
 
             outboundMessageTestObserver.awaitCount(1);
@@ -197,39 +209,43 @@ class SimpleDuplexHandlerTest {
 
         @Test
         void shouldPassthroughsNotMatchingMessage() {
-            SimpleDuplexHandler<List, Event, Object> handler = new SimpleDuplexHandler<>() {
+            final SimpleDuplexHandler<List, Event, Object> handler = new SimpleDuplexHandler<>() {
                 @Override
-                protected void matchedWrite(HandlerContext ctx,
-                                            CompressedPublicKey recipient,
-                                            Object msg,
-                                            CompletableFuture<Void> future) {
+                protected void matchedWrite(final HandlerContext ctx,
+                                            final CompressedPublicKey recipient,
+                                            final Object msg,
+                                            final CompletableFuture<Void> future) {
                     ctx.write(recipient, msg, future);
                 }
 
                 @Override
-                protected void matchedEventTriggered(HandlerContext ctx,
-                                                     Event event,
-                                                     CompletableFuture<Void> future) {
+                protected void matchedEventTriggered(final HandlerContext ctx,
+                                                     final Event event,
+                                                     final CompletableFuture<Void> future) {
                     ctx.fireEventTriggered(event, future);
                 }
 
                 @Override
-                protected void matchedRead(HandlerContext ctx,
-                                           CompressedPublicKey sender,
-                                           List msg,
-                                           CompletableFuture<Void> future) {
+                protected void matchedRead(final HandlerContext ctx,
+                                           final CompressedPublicKey sender,
+                                           final List msg,
+                                           final CompletableFuture<Void> future) {
                     // Emit this message as outbound message to test
                     ctx.pipeline().processOutbound(sender, msg);
                 }
             };
 
-            EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, TypeValidator.of(config), ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, handler);
-            TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
-            TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
-            TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                    identity,
+                    TypeValidator.ofInboundValidator(config),
+                    TypeValidator.ofOutboundValidator(config),
+                    ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, handler);
+            final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
+            final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
+            final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-            byte[] payload = new byte[]{ 0x01 };
-            ApplicationMessage msg = mock(ApplicationMessage.class);
+            final byte[] payload = new byte[]{ 0x01 };
+            final ApplicationMessage msg = mock(ApplicationMessage.class);
 
             when(msg.getPayload()).thenReturn(payload);
             doReturn(payload.getClass().getName()).when(msg).getHeader(ObjectHolder.CLASS_KEY_NAME);
@@ -245,35 +261,35 @@ class SimpleDuplexHandlerTest {
 
         @Test
         void shouldTriggerOnMatchedEvent() throws InterruptedException {
-            SimpleDuplexHandler<ApplicationMessage, NodeUpEvent, Object> handler = new SimpleDuplexHandler<>(ApplicationMessage.class, NodeUpEvent.class, Object.class) {
+            final SimpleDuplexHandler<ApplicationMessage, NodeUpEvent, Object> handler = new SimpleDuplexHandler<>(ApplicationMessage.class, NodeUpEvent.class, Object.class) {
                 @Override
-                protected void matchedWrite(HandlerContext ctx,
-                                            CompressedPublicKey recipient,
-                                            Object msg,
-                                            CompletableFuture<Void> future) {
+                protected void matchedWrite(final HandlerContext ctx,
+                                            final CompressedPublicKey recipient,
+                                            final Object msg,
+                                            final CompletableFuture<Void> future) {
                     ctx.write(recipient, msg, future);
                 }
 
                 @Override
-                protected void matchedEventTriggered(HandlerContext ctx,
-                                                     NodeUpEvent event,
-                                                     CompletableFuture<Void> future) {
+                protected void matchedEventTriggered(final HandlerContext ctx,
+                                                     final NodeUpEvent event,
+                                                     final CompletableFuture<Void> future) {
                     // Do nothing
                 }
 
                 @Override
-                protected void matchedRead(HandlerContext ctx,
-                                           CompressedPublicKey sender,
-                                           ApplicationMessage msg,
-                                           CompletableFuture<Void> future) {
+                protected void matchedRead(final HandlerContext ctx,
+                                           final CompressedPublicKey sender,
+                                           final ApplicationMessage msg,
+                                           final CompletableFuture<Void> future) {
                     ctx.fireRead(sender, msg, future);
                 }
             };
 
-            EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, mock(TypeValidator.class), handler);
-            TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, mock(TypeValidator.class), mock(TypeValidator.class), handler);
+            final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-            NodeUpEvent event = mock(NodeUpEvent.class);
+            final NodeUpEvent event = mock(NodeUpEvent.class);
             pipeline.processInbound(event);
 
             eventTestObserver.await(1, TimeUnit.SECONDS);
@@ -282,35 +298,35 @@ class SimpleDuplexHandlerTest {
 
         @Test
         void shouldPassthroughsNotMatchingEvents() {
-            SimpleDuplexHandler<ChunkedMessage, NodeUpEvent, Object> handler = new SimpleDuplexHandler<>() {
+            final SimpleDuplexHandler<ChunkedMessage, NodeUpEvent, Object> handler = new SimpleDuplexHandler<>() {
                 @Override
-                protected void matchedWrite(HandlerContext ctx,
-                                            CompressedPublicKey recipient,
-                                            Object msg,
-                                            CompletableFuture<Void> future) {
+                protected void matchedWrite(final HandlerContext ctx,
+                                            final CompressedPublicKey recipient,
+                                            final Object msg,
+                                            final CompletableFuture<Void> future) {
                     ctx.write(recipient, msg, future);
                 }
 
                 @Override
-                protected void matchedEventTriggered(HandlerContext ctx,
-                                                     NodeUpEvent event,
-                                                     CompletableFuture<Void> future) {
+                protected void matchedEventTriggered(final HandlerContext ctx,
+                                                     final NodeUpEvent event,
+                                                     final CompletableFuture<Void> future) {
                     // Do nothing
                 }
 
                 @Override
-                protected void matchedRead(HandlerContext ctx,
-                                           CompressedPublicKey sender,
-                                           ChunkedMessage msg,
-                                           CompletableFuture<Void> future) {
+                protected void matchedRead(final HandlerContext ctx,
+                                           final CompressedPublicKey sender,
+                                           final ChunkedMessage msg,
+                                           final CompletableFuture<Void> future) {
                     ctx.fireRead(sender, msg, future);
                 }
             };
 
-            EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, mock(TypeValidator.class), handler);
-            TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, mock(TypeValidator.class), mock(TypeValidator.class), handler);
+            final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
-            Event event = mock(Event.class);
+            final Event event = mock(Event.class);
             pipeline.processInbound(event);
 
             eventTestObserver.awaitCount(1);
