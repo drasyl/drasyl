@@ -466,9 +466,9 @@ public abstract class DrasylNode {
 
                     LOG.info("All components stopped");
                     started.set(false);
-                    startSequence.completeExceptionally(e);
-                    INSTANCES.remove(DrasylNode.this);
                     pluginManager.afterShutdown();
+                    INSTANCES.remove(DrasylNode.this);
+                    startSequence.completeExceptionally(e);
                 }
             }));
         }
