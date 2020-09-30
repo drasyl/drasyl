@@ -67,7 +67,7 @@ class DrasylNodeIT {
     private List<DrasylNode> nodes;
 
     @BeforeEach
-    void setup(TestInfo info) {
+    void setup(final TestInfo info) {
         System.setProperty("io.netty.leakDetection.level", "PARANOID");
 
         colorizedPrintln("STARTING " + info.getDisplayName(), COLOR_CYAN, STYLE_REVERSED);
@@ -75,22 +75,22 @@ class DrasylNodeIT {
     }
 
     @AfterEach
-    void cleanUp(TestInfo info) {
+    void cleanUp(final TestInfo info) {
         nodes.forEach(n -> n.shutdown().join());
         colorizedPrintln("FINISHED " + info.getDisplayName(), COLOR_CYAN, STYLE_REVERSED);
     }
 
-    private Pair<DrasylNode, Observable<Event>> createStartedNode(DrasylConfig config) throws DrasylException {
-        Pair<DrasylNode, Observable<Event>> pair = createNode(config);
+    private Pair<DrasylNode, Observable<Event>> createStartedNode(final DrasylConfig config) throws DrasylException {
+        final Pair<DrasylNode, Observable<Event>> pair = createNode(config);
         pair.first().start();
         return pair;
     }
 
-    private Pair<DrasylNode, Observable<Event>> createNode(DrasylConfig config) throws DrasylException {
-        Subject<Event> subject = ReplaySubject.<Event>create().toSerialized();
-        DrasylNode node = new DrasylNode(config) {
+    private Pair<DrasylNode, Observable<Event>> createNode(final DrasylConfig config) throws DrasylException {
+        final Subject<Event> subject = ReplaySubject.<Event>create().toSerialized();
+        final DrasylNode node = new DrasylNode(config) {
             @Override
-            public void onEvent(Event event) {
+            public void onEvent(final Event event) {
                 subject.onNext(event);
                 if (event instanceof NodeNormalTerminationEvent) {
                     subject.onComplete();
@@ -147,8 +147,8 @@ class DrasylNodeIT {
                         .localHostDiscoveryEnabled(false)
                         .build();
                 superPeer = createStartedNode(config);
-                NodeEvent superPeerNodeUp = (NodeEvent) superPeer.second().filter(e -> e instanceof NodeUpEvent).firstElement().blockingGet();
-                int superPeerPort = superPeerNodeUp.getNode().getEndpoints().iterator().next().getPort();
+                final NodeEvent superPeerNodeUp = (NodeEvent) superPeer.second().filter(e -> e instanceof NodeUpEvent).firstElement().blockingGet();
+                final int superPeerPort = superPeerNodeUp.getNode().getEndpoints().iterator().next().getPort();
                 colorizedPrintln("CREATED superPeer", COLOR_CYAN, STYLE_REVERSED);
 
                 // client1
@@ -197,9 +197,9 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void applicationMessagesShouldBeDelivered() {
-                TestObserver<Event> superPeerMessages = superPeer.second().filter(e -> e instanceof MessageEvent).test();
-                TestObserver<Event> client1Messages = client1.second().filter(e -> e instanceof MessageEvent).test();
-                TestObserver<Event> client2Messages = client2.second().filter(e -> e instanceof MessageEvent).test();
+                final TestObserver<Event> superPeerMessages = superPeer.second().filter(e -> e instanceof MessageEvent).test();
+                final TestObserver<Event> client1Messages = client1.second().filter(e -> e instanceof MessageEvent).test();
+                final TestObserver<Event> client2Messages = client2.second().filter(e -> e instanceof MessageEvent).test();
 
 //        superPeer.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("SP: " + e));
 //        client1.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("C1: " + e));
@@ -208,10 +208,10 @@ class DrasylNodeIT {
                 //
                 // send messages
                 //
-                Set<String> identities = Set.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22",
+                final Set<String> identities = Set.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22",
                         "025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4",
                         "025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e");
-                for (String recipient : identities) {
+                for (final String recipient : identities) {
                     superPeer.first().send(recipient, "Hallo Welt");
                     client1.first().send(recipient, "Hallo Welt");
                     client2.first().send(recipient, "Hallo Welt");
@@ -235,9 +235,9 @@ class DrasylNodeIT {
                 //
                 // send messages
                 //
-                TestObserver<Event> superPeerEvents = superPeer.second().filter(e -> e instanceof PeerDirectEvent).test();
-                TestObserver<Event> client1Events = client1.second().filter(e -> e instanceof PeerDirectEvent).test();
-                TestObserver<Event> client2Events = client2.second().filter(e -> e instanceof PeerDirectEvent).test();
+                final TestObserver<Event> superPeerEvents = superPeer.second().filter(e -> e instanceof PeerDirectEvent).test();
+                final TestObserver<Event> client1Events = client1.second().filter(e -> e instanceof PeerDirectEvent).test();
+                final TestObserver<Event> client2Events = client2.second().filter(e -> e instanceof PeerDirectEvent).test();
 
 //            superPeer.second().subscribe(e -> System.err.println("SP: " + e));
 //            client1.second().subscribe(e -> System.err.println("C1: " + e));
@@ -258,8 +258,8 @@ class DrasylNodeIT {
                 //
                 // send messages
                 //
-                TestObserver<Event> client1Events = client1.second().filter(e -> e instanceof NodeOfflineEvent).test();
-                TestObserver<Event> client2Events = client2.second().filter(e -> e instanceof NodeOfflineEvent).test();
+                final TestObserver<Event> client1Events = client1.second().filter(e -> e instanceof NodeOfflineEvent).test();
+                final TestObserver<Event> client2Events = client2.second().filter(e -> e instanceof NodeOfflineEvent).test();
 
                 superPeer.first().shutdown().join();
 
@@ -313,8 +313,8 @@ class DrasylNodeIT {
                         .localHostDiscoveryEnabled(false)
                         .build();
                 superPeer = createStartedNode(config);
-                NodeEvent superPeerNodeUp = (NodeEvent) superPeer.second().filter(e -> e instanceof NodeUpEvent).firstElement().blockingGet();
-                int superPeerPort = superPeerNodeUp.getNode().getEndpoints().iterator().next().getPort();
+                final NodeEvent superPeerNodeUp = (NodeEvent) superPeer.second().filter(e -> e instanceof NodeUpEvent).firstElement().blockingGet();
+                final int superPeerPort = superPeerNodeUp.getNode().getEndpoints().iterator().next().getPort();
                 colorizedPrintln("CREATED superPeer", COLOR_CYAN, STYLE_REVERSED);
 
                 // client1
@@ -359,18 +359,18 @@ class DrasylNodeIT {
              */
             @Test
             void shouldEstablishDirectConnectionToOtherPeer() throws CryptoException {
-                TestObserver<Event> client1RelayEvents = client1.second().filter(e -> e instanceof PeerEvent && ((PeerEvent) e).getPeer().getPublicKey().equals(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))).test();
-                TestObserver<Event> client2RelayEvents = client2.second().filter(e -> e instanceof PeerEvent && ((PeerEvent) e).getPeer().getPublicKey().equals(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4")) || e instanceof MessageEvent).test();
+                final TestObserver<Event> client1RelayEvents = client1.second().filter(e -> e instanceof PeerEvent && ((PeerEvent) e).getPeer().getPublicKey().equals(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))).test();
+                final TestObserver<Event> client2RelayEvents = client2.second().filter(e -> e instanceof PeerEvent && ((PeerEvent) e).getPeer().getPublicKey().equals(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4")) || e instanceof MessageEvent).test();
 
                 client1.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", "Hallo Welt");
 
                 client1RelayEvents.awaitCount(2);
-                client1RelayEvents.assertValueAt(0, new PeerRelayEvent(new Peer(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))));
-                client1RelayEvents.assertValueAt(1, new PeerDirectEvent(new Peer(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))));
+                client1RelayEvents.assertValueAt(0, new PeerRelayEvent(Peer.of(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))));
+                client1RelayEvents.assertValueAt(1, new PeerDirectEvent(Peer.of(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))));
                 client2RelayEvents.awaitCount(3);
-                client2RelayEvents.assertValueAt(0, new PeerRelayEvent(new Peer(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))));
+                client2RelayEvents.assertValueAt(0, new PeerRelayEvent(Peer.of(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))));
                 client2RelayEvents.assertValueAt(1, e -> e instanceof MessageEvent);
-                client2RelayEvents.assertValueAt(2, new PeerDirectEvent(new Peer(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))));
+                client2RelayEvents.assertValueAt(2, new PeerDirectEvent(Peer.of(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))));
             }
         }
     }
@@ -468,10 +468,10 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void applicationMessagesShouldBeDelivered() {
-                TestObserver<Event> node1Messages = node1.second().filter(e -> e instanceof MessageEvent).test();
-                TestObserver<Event> nodes2Messages = node2.second().filter(e -> e instanceof MessageEvent).test();
-                TestObserver<Event> node3Messages = node3.second().filter(e -> e instanceof MessageEvent).test();
-                TestObserver<Event> node4Messages = node4.second().filter(e -> e instanceof MessageEvent).test();
+                final TestObserver<Event> node1Messages = node1.second().filter(e -> e instanceof MessageEvent).test();
+                final TestObserver<Event> nodes2Messages = node2.second().filter(e -> e instanceof MessageEvent).test();
+                final TestObserver<Event> node3Messages = node3.second().filter(e -> e instanceof MessageEvent).test();
+                final TestObserver<Event> node4Messages = node4.second().filter(e -> e instanceof MessageEvent).test();
 
 //        superPeer.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("SSP: " + e));
 //        superPeer.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("SP: " + e));
@@ -481,11 +481,11 @@ class DrasylNodeIT {
                 //
                 // send messages
                 //
-                Set<String> identities = Set.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a",
+                final Set<String> identities = Set.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a",
                         "030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22",
                         "025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4",
                         "025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e");
-                for (String recipient : identities) {
+                for (final String recipient : identities) {
                     node1.first().send(recipient, "Hallo Welt");
                     node2.first().send(recipient, "Hallo Welt");
                     node3.first().send(recipient, "Hallo Welt");
@@ -508,10 +508,10 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void correctPeerEventsShouldBeEmitted() {
-                TestObserver<Event> node1Events = node1.second().filter(e -> e instanceof PeerDirectEvent).test();
-                TestObserver<Event> node2Events = node2.second().filter(e -> e instanceof PeerDirectEvent).test();
-                TestObserver<Event> node3Events = node3.second().filter(e -> e instanceof PeerDirectEvent).test();
-                TestObserver<Event> node4Events = node4.second().filter(e -> e instanceof PeerDirectEvent).test();
+                final TestObserver<Event> node1Events = node1.second().filter(e -> e instanceof PeerDirectEvent).test();
+                final TestObserver<Event> node2Events = node2.second().filter(e -> e instanceof PeerDirectEvent).test();
+                final TestObserver<Event> node3Events = node3.second().filter(e -> e instanceof PeerDirectEvent).test();
+                final TestObserver<Event> node4Events = node4.second().filter(e -> e instanceof PeerDirectEvent).test();
 
                 node1Events.awaitCount(3);
                 node2Events.awaitCount(3);
@@ -627,10 +627,10 @@ class DrasylNodeIT {
                  * TODO: Fix this test by using the PeerDirectEvent.
                  * Therefore we need a PeerInformation onChange listener in the PeersManager.
                  */
-                TestObserver<Event> node1Events = node1.second().filter(e -> e instanceof PeerDirectEvent).test();
-                TestObserver<Event> node2Events = node2.second().filter(e -> e instanceof PeerDirectEvent).test();
-                TestObserver<Event> node3Events = node3.second().filter(e -> e instanceof PeerDirectEvent).test();
-                TestObserver<Event> node4Events = node4.second().filter(e -> e instanceof PeerDirectEvent).test();
+                final TestObserver<Event> node1Events = node1.second().filter(e -> e instanceof PeerDirectEvent).test();
+                final TestObserver<Event> node2Events = node2.second().filter(e -> e instanceof PeerDirectEvent).test();
+                final TestObserver<Event> node3Events = node3.second().filter(e -> e instanceof PeerDirectEvent).test();
+                final TestObserver<Event> node4Events = node4.second().filter(e -> e instanceof PeerDirectEvent).test();
 
                 await().atMost(ofSeconds(60)).until(() -> {
                     // since LocalHostDiscovery only performs a discovery on communication, we have to simulate a constant communication
@@ -663,7 +663,7 @@ class DrasylNodeIT {
             //
             // create nodes
             //
-            DrasylConfig config;
+            final DrasylConfig config;
 
             // node1
             config = DrasylConfig.newBuilder()
@@ -690,7 +690,7 @@ class DrasylNodeIT {
         @Test
         @Timeout(value = TIMEOUT, unit = MILLISECONDS)
         void applicationMessagesShouldBeDelivered() {
-            TestObserver<Event> node1Messages = node1.second().filter(e -> e instanceof MessageEvent).test();
+            final TestObserver<Event> node1Messages = node1.second().filter(e -> e instanceof MessageEvent).test();
 
             node1.first().send("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a", "Hallo Welt");
 
@@ -718,7 +718,7 @@ class DrasylNodeIT {
                 //
                 // create nodes
                 //
-                DrasylConfig config = DrasylConfig.newBuilder()
+                final DrasylConfig config = DrasylConfig.newBuilder()
                         .networkId(0)
                         .identityProofOfWork(ProofOfWork.of(33957767))
                         .identityPublicKey(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))

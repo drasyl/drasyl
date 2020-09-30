@@ -31,7 +31,7 @@ import java.util.Objects;
 public class Peer {
     private final CompressedPublicKey publicKey;
 
-    public Peer(CompressedPublicKey publicKey) {
+    Peer(final CompressedPublicKey publicKey) {
         this.publicKey = publicKey;
     }
 
@@ -45,14 +45,14 @@ public class Peer {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        Peer peer = (Peer) o;
+        final Peer peer = (Peer) o;
         return Objects.equals(publicKey, peer.publicKey);
     }
 
@@ -61,5 +61,9 @@ public class Peer {
         return "Peer{" +
                 "identity=" + publicKey +
                 '}';
+    }
+
+    public static Peer of(final CompressedPublicKey publicKey) {
+        return new Peer(publicKey);
     }
 }

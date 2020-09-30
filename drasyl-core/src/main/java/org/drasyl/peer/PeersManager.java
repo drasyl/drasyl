@@ -59,16 +59,16 @@ public class PeersManager {
     private final Consumer<Event> eventConsumer;
     private CompressedPublicKey superPeer;
 
-    public PeersManager(Consumer<Event> eventConsumer) {
+    public PeersManager(final Consumer<Event> eventConsumer) {
         this(new ReentrantReadWriteLock(true), new HashMap<>(), HashMultimap.create(), new HashSet<>(), null, eventConsumer);
     }
 
-    PeersManager(ReadWriteLock lock,
-                 Map<CompressedPublicKey, PeerInformation> peers,
-                 SetMultimap<CompressedPublicKey, Path> paths,
-                 Set<CompressedPublicKey> children,
-                 CompressedPublicKey superPeer,
-                 Consumer<Event> eventConsumer) {
+    PeersManager(final ReadWriteLock lock,
+                 final Map<CompressedPublicKey, PeerInformation> peers,
+                 final SetMultimap<CompressedPublicKey, Path> paths,
+                 final Set<CompressedPublicKey> children,
+                 final CompressedPublicKey superPeer,
+                 final Consumer<Event> eventConsumer) {
         this.lock = lock;
         this.peers = peers;
         this.paths = paths;
@@ -131,7 +131,7 @@ public class PeersManager {
                 return null;
             }
             else {
-                PeerInformation peerInformation = peers.getOrDefault(superPeer, PeerInformation.of());
+                final PeerInformation peerInformation = peers.getOrDefault(superPeer, PeerInformation.of());
                 return Triple.of(superPeer, peerInformation, paths.get(superPeer));
             }
         }
@@ -162,14 +162,14 @@ public class PeersManager {
         }
     }
 
-    public Pair<PeerInformation, Set<Path>> getPeer(CompressedPublicKey publicKey) {
+    public Pair<PeerInformation, Set<Path>> getPeer(final CompressedPublicKey publicKey) {
         requireNonNull(publicKey);
 
         try {
             lock.readLock().lock();
 
-            PeerInformation peerInformation = peers.get(publicKey);
-            Set<Path> myPaths = Set.copyOf(this.paths.get(publicKey));
+            final PeerInformation peerInformation = peers.get(publicKey);
+            final Set<Path> myPaths = Set.copyOf(this.paths.get(publicKey));
 
             return Pair.of(Objects.requireNonNullElseGet(peerInformation, PeerInformation::of), myPaths);
         }
@@ -178,9 +178,9 @@ public class PeersManager {
         }
     }
 
-    public void setPeerInformationAndAddPath(CompressedPublicKey publicKey,
-                                             PeerInformation peerInformation,
-                                             Path path) {
+    public void setPeerInformationAndAddPath(final CompressedPublicKey publicKey,
+                                             final PeerInformation peerInformation,
+                                             final Path path) {
         requireNonNull(publicKey);
         requireNonNull(peerInformation);
 
@@ -200,34 +200,34 @@ public class PeersManager {
         }
     }
 
-    private void handlePeerStateTransition(CompressedPublicKey publicKey,
-                                           PeerInformation existingInformation,
-                                           Set<Path> existingPaths,
-                                           PeerInformation newInformation,
-                                           Set<Path> newPaths) {
-        int existingPathCount;
+    private void handlePeerStateTransition(final CompressedPublicKey publicKey,
+                                           final PeerInformation existingInformation,
+                                           final Set<Path> existingPaths,
+                                           final PeerInformation newInformation,
+                                           final Set<Path> newPaths) {
+        final int existingPathCount;
         if (existingInformation == null) {
             existingPathCount = 0;
         }
         else {
             existingPathCount = existingPaths.size();
         }
-        int newPathCount = newPaths.size();
+        final int newPathCount = newPaths.size();
         peers.put(publicKey, PeerInformation.of(newInformation.getEndpoints()));
         paths.replaceValues(publicKey, newPaths);
 
         if (existingPathCount == 0 && newPathCount > 0) {
-            eventConsumer.accept(new PeerDirectEvent(new Peer(publicKey)));
+            eventConsumer.accept(new PeerDirectEvent(Peer.of(publicKey)));
         }
         else if ((existingInformation == null || existingPathCount > 0) && newPathCount == 0 &&
                 ((!publicKey.equals(superPeer) && superPeer != null) ||
                         children.contains(publicKey))) {
-                eventConsumer.accept(new PeerRelayEvent(new Peer(publicKey)));
+            eventConsumer.accept(new PeerRelayEvent(Peer.of(publicKey)));
         }
     }
 
-    public void setPeerInformation(CompressedPublicKey publicKey,
-                                   PeerInformation peerInformation) {
+    public void setPeerInformation(final CompressedPublicKey publicKey,
+                                   final PeerInformation peerInformation) {
         requireNonNull(publicKey);
         requireNonNull(peerInformation);
 
@@ -247,13 +247,13 @@ public class PeersManager {
         }
     }
 
-    public void addPeer(CompressedPublicKey publicKey) {
+    public void addPeer(final CompressedPublicKey publicKey) {
         requireNonNull(publicKey);
 
         try {
             lock.writeLock().lock();
 
-            PeerInformation existingInformation = peers.get(publicKey);
+            final PeerInformation existingInformation = peers.get(publicKey);
             if (existingInformation == null) {
                 handlePeerStateTransition(
                         publicKey,
@@ -269,7 +269,7 @@ public class PeersManager {
         }
     }
 
-    public void removePath(CompressedPublicKey publicKey, Path path) {
+    public void removePath(final CompressedPublicKey publicKey, final Path path) {
         requireNonNull(publicKey);
         requireNonNull(path);
 
@@ -300,7 +300,7 @@ public class PeersManager {
         }
     }
 
-    public void unsetSuperPeerAndRemovePath(Path path) {
+    public void unsetSuperPeerAndRemovePath(final Path path) {
         requireNonNull(path);
 
         try {
@@ -324,9 +324,9 @@ public class PeersManager {
         }
     }
 
-    public void setPeerInformationAndAddPathAndSetSuperPeer(CompressedPublicKey publicKey,
-                                                            PeerInformation peerInformation,
-                                                            Path path) {
+    public void setPeerInformationAndAddPathAndSetSuperPeer(final CompressedPublicKey publicKey,
+                                                            final PeerInformation peerInformation,
+                                                            final Path path) {
         requireNonNull(publicKey);
         requireNonNull(peerInformation);
         requireNonNull(path);
@@ -348,8 +348,8 @@ public class PeersManager {
         }
     }
 
-    public void removeChildrenAndPath(CompressedPublicKey publicKey,
-                                      Path path) {
+    public void removeChildrenAndPath(final CompressedPublicKey publicKey,
+                                      final Path path) {
         requireNonNull(publicKey);
         requireNonNull(path);
 
@@ -370,9 +370,9 @@ public class PeersManager {
         }
     }
 
-    public void setPeerInformationAndAddPathAndChildren(CompressedPublicKey publicKey,
-                                                        PeerInformation peerInformation,
-                                                        Path path) {
+    public void setPeerInformationAndAddPathAndChildren(final CompressedPublicKey publicKey,
+                                                        final PeerInformation peerInformation,
+                                                        final Path path) {
         requireNonNull(publicKey);
         requireNonNull(peerInformation);
         requireNonNull(path);
