@@ -28,12 +28,15 @@ And get hacking.
 
 Make sure you
 
-  * Use the [drasyl code style](.editorconfig).
+  * Use the drasyl code style:
+    * [.editorconfig](.editorconfig)
+    * Use `final` keyword where possible.
   * Add [changelog](./CHANGELOG.md) entry
   * Add documentation for a new feature.
   * Add tests for a new feature.
   * squash commits down to one per feature.
   * rebase to master with `git rebase master`
+  * keep your pull request/merge request as small as possible.
 
 When ready - run the tests
 
