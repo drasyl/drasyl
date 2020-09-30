@@ -35,7 +35,7 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * This is an immutable object.
  */
-public class GroupJoinFailedMessage extends GroupActionMessage {
+public class GroupJoinFailedMessage extends GroupActionMessage implements GroupsServerMessage {
     private final Error reason;
 
     @JsonCreator

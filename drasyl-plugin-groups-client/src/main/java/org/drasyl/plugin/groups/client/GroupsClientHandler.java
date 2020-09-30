@@ -34,7 +34,8 @@ import org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage;
 import org.drasyl.plugin.groups.client.message.GroupJoinMessage;
 import org.drasyl.plugin.groups.client.message.GroupLeaveMessage;
 import org.drasyl.plugin.groups.client.message.GroupWelcomeMessage;
-import org.drasyl.plugin.groups.client.message.GroupsPluginMessage;
+import org.drasyl.plugin.groups.client.message.GroupsClientMessage;
+import org.drasyl.plugin.groups.client.message.GroupsServerMessage;
 import org.drasyl.plugin.groups.client.message.MemberJoinedMessage;
 import org.drasyl.plugin.groups.client.message.MemberLeftMessage;
 import org.slf4j.Logger;
@@ -50,9 +51,8 @@ import java.util.concurrent.CompletableFuture;
 import java.util.stream.Collectors;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error.ERROR_UNKNOWN;
 
-public class GroupsClientHandler extends SimpleInboundHandler<GroupsPluginMessage, Event> {
+public class GroupsClientHandler extends SimpleInboundHandler<GroupsServerMessage, Event> {
     private static final Logger LOG = LoggerFactory.getLogger(GroupsClientHandler.class);
     private final Map<Group, GroupURI> groups;
     private final List<Disposable> renewTasks;
@@ -68,7 +68,8 @@ public class GroupsClientHandler extends SimpleInboundHandler<GroupsPluginMessag
 
     @Override
     public void handlerAdded(final HandlerContext ctx) {
-        ctx.validator().addClass(GroupsPluginMessage.class);
+        ctx.inboundValidator().addClass(GroupsServerMessage.class);
+        ctx.outboundValidator().addClass(GroupsClientMessage.class);
     }
 
     @Override
@@ -85,8 +86,8 @@ public class GroupsClientHandler extends SimpleInboundHandler<GroupsPluginMessag
          * channel before the leave messages are sent.
          */
         for (final Entry<Group, GroupURI> entry : groups.entrySet()) {
-            Group group = entry.getKey();
-            GroupURI groupURI = entry.getValue();
+            final Group group = entry.getKey();
+            final GroupURI groupURI = entry.getValue();
             try {
                 ctx.pipeline().processOutbound(groupURI.getManager(), new GroupLeaveMessage(group)).join();
             }
@@ -111,7 +112,7 @@ public class GroupsClientHandler extends SimpleInboundHandler<GroupsPluginMessag
     @Override
     protected void matchedRead(final HandlerContext ctx,
                                final CompressedPublicKey sender,
-                               final GroupsPluginMessage msg,
+                               final GroupsServerMessage msg,
                                final CompletableFuture<Void> future) {
         if (msg instanceof MemberJoinedMessage) {
             ctx.scheduler().scheduleDirect(() -> onMemberJoined(ctx, (MemberJoinedMessage) msg, future));
@@ -124,9 +125,6 @@ public class GroupsClientHandler extends SimpleInboundHandler<GroupsPluginMessag
         }
         else if (msg instanceof GroupJoinFailedMessage) {
             ctx.scheduler().scheduleDirect(() -> onJoinFailed(ctx, (GroupJoinFailedMessage) msg, future));
-        }
-        else {
-            ctx.fireRead(sender, msg, future);
         }
     }
 
@@ -220,11 +218,6 @@ public class GroupsClientHandler extends SimpleInboundHandler<GroupsPluginMessag
         final ProofOfWork proofOfWork = ctx.identity().getProofOfWork();
         final CompressedPublicKey groupManager = group.getManager();
 
-        ctx.pipeline().processOutbound(groupManager, new GroupJoinMessage(group.getGroup(), group.getCredentials(), proofOfWork)).exceptionally(e -> {
-            // FIXME: remove recursive joinGroup() call
-            ctx.pipeline().processInbound(new GroupJoinFailedEvent(group.getGroup(), ERROR_UNKNOWN, () -> this.joinGroup(ctx, group)));
-
-            return null;
-        });
+        ctx.pipeline().processOutbound(groupManager, new GroupJoinMessage(group.getGroup(), group.getCredentials(), proofOfWork));
     }
 }
