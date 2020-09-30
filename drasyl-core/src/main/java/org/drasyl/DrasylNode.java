@@ -399,9 +399,9 @@ public abstract class DrasylNode {
 
                 onInternalEvent(new NodeNormalTerminationEvent(Node.of(identity, endpoints)));
                 LOG.info("drasyl Node with Identity '{}' has shut down", identity);
-                shutdownSequence.complete(null);
-                INSTANCES.remove(DrasylNode.this);
                 pluginManager.afterShutdown();
+                INSTANCES.remove(DrasylNode.this);
+                shutdownSequence.complete(null);
             }));
         }
 
