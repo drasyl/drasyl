@@ -315,8 +315,6 @@ public class PeersManager {
                         SetUtil.difference(paths.get(superPeer), path)
                 );
                 superPeer = null;
-
-                // TODO: send PeerRelayEvent for all peers without direct connection? (https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/72)
             }
         }
         finally {
