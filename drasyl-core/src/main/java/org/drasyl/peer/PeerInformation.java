@@ -20,6 +20,7 @@ package org.drasyl.peer;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.drasyl.util.InternPool;
 
 import java.util.Objects;
 import java.util.Set;
@@ -30,10 +31,11 @@ import java.util.Set;
  * This is an immutable object.
  */
 public class PeerInformation {
+    public static final InternPool<PeerInformation> POOL = new InternPool<>();
     protected final Set<Endpoint> endpoints;
 
     @JsonCreator
-    protected PeerInformation(@JsonProperty("endpoints") Set<Endpoint> endpoints) {
+    protected PeerInformation(@JsonProperty("endpoints") final Set<Endpoint> endpoints) {
         this.endpoints = endpoints;
     }
 
@@ -43,14 +45,14 @@ public class PeerInformation {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        PeerInformation that = (PeerInformation) o;
+        final PeerInformation that = (PeerInformation) o;
         return Objects.equals(endpoints, that.endpoints);
     }
 
@@ -61,12 +63,19 @@ public class PeerInformation {
                 '}';
     }
 
+    /**
+     * See {@link InternPool#intern(Object)}
+     */
+    public PeerInformation intern() {
+        return POOL.intern(this);
+    }
+
     public Set<Endpoint> getEndpoints() {
         return endpoints;
     }
 
-    public static PeerInformation of(Set<Endpoint> endpoints) {
-        return new PeerInformation(Set.copyOf(endpoints));
+    public static PeerInformation of(final Set<Endpoint> endpoints) {
+        return new PeerInformation(Set.copyOf(endpoints)).intern();
     }
 
     public static PeerInformation of() {
