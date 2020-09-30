@@ -21,7 +21,6 @@ package org.drasyl.peer.connection.handler;
 import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
-import org.drasyl.peer.connection.message.AbstractMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.MessageId;
 import org.junit.jupiter.api.BeforeEach;
@@ -35,14 +34,9 @@ class MessageEncoderTest {
 
     @BeforeEach
     void setUp() {
-        message = new AbstractMessage() {
-            @Override
-            public MessageId getId() {
-                return new MessageId("d8bc65cf7dc1951e96313055");
-            }
-        };
+        message = new MyMessage();
 
-        ChannelHandler handler = MessageEncoder.INSTANCE;
+        final ChannelHandler handler = MessageEncoder.INSTANCE;
         channel = new EmbeddedChannel(handler);
     }
 
@@ -51,7 +45,7 @@ class MessageEncoderTest {
         channel.writeOutbound(message);
         channel.flush();
 
-        byte[] binary = new byte[]{
+        final byte[] binary = new byte[]{
                 123,
                 34,
                 64,
@@ -81,7 +75,15 @@ class MessageEncoderTest {
                 115,
                 116,
                 36,
-                49,
+                77,
+                121,
+                77,
+                101,
+                115,
+                115,
+                97,
+                103,
+                101,
                 34,
                 44,
                 34,
@@ -118,14 +120,21 @@ class MessageEncoderTest {
                 125
         };
 
-        BinaryWebSocketFrame frame = channel.readOutbound();
+        final BinaryWebSocketFrame frame = channel.readOutbound();
 
-        byte[] actual = new byte[frame.content().readableBytes()];
+        final byte[] actual = new byte[frame.content().readableBytes()];
         frame.content().readBytes(actual);
 
         assertArrayEquals(binary, actual);
 
         // Important: release the ByteBuf after testing, otherwise the ResourceLeakDetector raises alarms for tests
         frame.release();
+    }
+
+    private static class MyMessage implements Message {
+        @Override
+        public MessageId getId() {
+            return new MessageId("d8bc65cf7dc1951e96313055");
+        }
     }
 }

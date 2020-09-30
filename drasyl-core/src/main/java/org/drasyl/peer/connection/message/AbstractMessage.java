@@ -26,14 +26,14 @@ import static org.drasyl.peer.connection.message.MessageId.randomMessageId;
 /**
  * Message that represents a message from one node to another one.
  */
-public abstract class AbstractMessage implements Message {
+abstract class AbstractMessage implements Message {
     protected final MessageId id;
 
     public AbstractMessage() {
         this(randomMessageId());
     }
 
-    protected AbstractMessage(MessageId id) {
+    protected AbstractMessage(final MessageId id) {
         this.id = requireNonNull(id);
     }
 
@@ -48,7 +48,7 @@ public abstract class AbstractMessage implements Message {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         return o != null && getClass() == o.getClass();
     }
 
