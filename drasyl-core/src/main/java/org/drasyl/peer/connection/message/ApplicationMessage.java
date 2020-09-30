@@ -35,6 +35,8 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * A message that is sent by an application running on drasyl.
+ * <p>
+ * This is an immutable object.
  */
 public class ApplicationMessage extends RelayableMessage implements RequestMessage {
     protected final CompressedPublicKey sender;

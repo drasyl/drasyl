@@ -31,6 +31,8 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * A message representing a termination of a connection.
+ * <p>
+ * This is an immutable object.
  */
 public class QuitMessage extends AbstractMessage implements RequestMessage {
     @JsonInclude(JsonInclude.Include.NON_NULL)

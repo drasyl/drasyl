@@ -28,7 +28,9 @@ import java.util.Objects;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A message representing the welcome message of the node server, including fallback information..
+ * A message representing the welcome message of the node server, including fallback information.
+ * <p>
+ * This is an immutable object.
  */
 public class WelcomeMessage extends AbstractMessageWithUserAgent implements ResponseMessage<JoinMessage> {
     private final PeerInformation peerInformation;

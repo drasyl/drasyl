@@ -8,6 +8,8 @@ import java.util.Objects;
 
 /**
  * A {@link Message} is uniquely identified by its 24 lower-case hex digit identifier.
+ * <p>
+ * This is an immutable object.
  */
 public class MessageId {
     @JsonValue

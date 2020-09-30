@@ -37,6 +37,8 @@ import java.util.Optional;
  * #hopCount}, {@link #id} and {@link #payload}
  * <br> n. ChunkedMessage {@link #recipient}, {@link #sender}, {@link #hopCount}, {@link #id} and
  * {@link #payload payload := new byte[]{}}
+ * <p>
+ * This is an immutable object.
  */
 public class ChunkedMessage extends ApplicationMessage {
     /*

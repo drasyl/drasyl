@@ -23,6 +23,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * A message representing a PONG response.
+ * <p>
+ * This is an immutable object.
  */
 public class PongMessage extends AbstractResponseMessage<PingMessage> {
     @JsonCreator

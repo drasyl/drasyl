@@ -29,6 +29,8 @@ import static java.util.Objects.requireNonNull;
 /**
  * This message is used as response to a {@link WhoAreYouMessage} and contains the public key of
  * this peer.
+ * <p>
+ * This is an immutable object.
  */
 public class IamMessage extends AbstractMessage implements ResponseMessage<WhoAreYouMessage> {
     private final CompressedPublicKey publicKey;

@@ -29,6 +29,8 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * A message representing a join to the node server.
+ * <p>
+ * This is an immutable object.
  */
 public class JoinMessage extends AbstractMessageWithUserAgent implements RequestMessage {
     private final ProofOfWork proofOfWork;

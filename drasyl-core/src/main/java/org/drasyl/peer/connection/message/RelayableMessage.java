@@ -26,6 +26,8 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * Includes messages that can be relayed to their recipient via multiple hops.
+ * <p>
+ * This is an immutable object.
  */
 public abstract class RelayableMessage extends AbstractMessage {
     protected final CompressedPublicKey recipient;

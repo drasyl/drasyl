@@ -20,6 +20,8 @@ package org.drasyl.peer.connection.message;
 
 /**
  * A message representing a PING request.
+ * <p>
+ * This is an immutable object.
  */
 public class PingMessage extends AbstractMessage implements RequestMessage {
     @Override

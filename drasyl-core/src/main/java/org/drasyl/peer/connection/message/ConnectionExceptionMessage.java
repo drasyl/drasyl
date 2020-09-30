@@ -32,6 +32,8 @@ import static java.util.Objects.requireNonNull;
 /**
  * A message representing an exception that refers to a connection. The connection should be
  * terminated after such a message. Such an exception should always be handled.
+ * <p>
+ * This is an immutable object.
  */
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class ConnectionExceptionMessage extends AbstractMessage implements RequestMessage {

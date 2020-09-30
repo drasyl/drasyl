@@ -41,6 +41,8 @@ import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
  * #payload}, but only guarantees that the {@link #payload} was sent by the identity with the {@link
  * #kid public key} (as the last node in a relay chain).
  * </b>
+ * <p>
+ * This is an immutable object.
  */
 public class SignedMessage implements Message, Signable {
     private final Message payload;

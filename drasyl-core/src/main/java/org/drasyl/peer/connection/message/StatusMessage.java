@@ -74,6 +74,8 @@ import static java.util.Objects.requireNonNull;
  * request</i></li>
  * </ul>
  * </p>
+ * <p>
+ * This is an immutable object.
  */
 public class StatusMessage extends AbstractResponseMessage<RequestMessage> {
     private final Code code;

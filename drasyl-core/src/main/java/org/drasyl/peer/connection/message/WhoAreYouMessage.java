@@ -23,6 +23,8 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 /**
  * This message is used to request information the public key of the current communication partner.
+ * <p>
+ * This is an immutable object.
  */
 public class WhoAreYouMessage extends AbstractMessage implements RequestMessage {
     @JsonCreator

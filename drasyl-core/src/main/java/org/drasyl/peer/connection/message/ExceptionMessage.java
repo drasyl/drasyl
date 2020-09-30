@@ -31,6 +31,8 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * A message representing an exception. Such an exception should always be handled.
+ * <p>
+ * This is an immutable object.
  */
 @SuppressWarnings({ "squid:S2166", "common-java:DuplicatedBlocks" })
 public class ExceptionMessage extends AbstractMessage {

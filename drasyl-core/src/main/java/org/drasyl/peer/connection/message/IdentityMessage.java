@@ -30,6 +30,8 @@ import static java.util.Objects.requireNonNull;
 /**
  * This message is used as a response to a {@link WhoisMessage} and contains information about a
  * peer (like public key and endpoints).
+ * <p>
+ * This is an immutable object.
  */
 public class IdentityMessage extends RelayableMessage implements ResponseMessage<WhoisMessage> {
     private final CompressedPublicKey publicKey;

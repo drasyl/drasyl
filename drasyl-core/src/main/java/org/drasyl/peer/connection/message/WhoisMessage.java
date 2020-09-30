@@ -30,6 +30,8 @@ import static java.util.Objects.requireNonNull;
 /**
  * This message is used to request information (like public key and endpoints) for a specific
  * identity.
+ * <p>
+ * This is an immutable object.
  */
 public class WhoisMessage extends RelayableMessage implements RequestMessage {
     private final CompressedPublicKey requester;
