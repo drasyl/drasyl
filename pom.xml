@@ -87,6 +87,7 @@
         <module>drasyl-integration-tests</module>
         <module>drasyl-examples</module>
         <module>drasyl-performance-tests</module>
+        <module>drasyl-plugin-groups-client</module>
     </modules>
 
     <distributionManagement>
