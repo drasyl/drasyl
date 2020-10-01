@@ -166,7 +166,7 @@ class DrasylConfigTest {
     private Duration directConnectionsIdleTimeout;
     private Duration composedMessageTransferTimeout;
     private boolean monitoringEnabled;
-    private String monitoringInfluxUri;
+    private URI monitoringInfluxUri;
     private String monitoringInfluxUser;
     private String monitoringInfluxPassword;
     private String monitoringInfluxDatabase;
@@ -216,7 +216,7 @@ class DrasylConfigTest {
         directConnectionsChannelInitializer = DefaultClientChannelInitializer.class;
         composedMessageTransferTimeout = ofSeconds(60);
         monitoringEnabled = true;
-        monitoringInfluxUri = "http://localhost:8086";
+        monitoringInfluxUri = URI.create("http://localhost:8086");
         monitoringInfluxUser = "";
         monitoringInfluxPassword = "";
         monitoringInfluxDatabase = "drasyl";
@@ -270,7 +270,7 @@ class DrasylConfigTest {
             when(typesafeConfig.getString(DIRECT_CONNECTIONS_CHANNEL_INITIALIZER)).thenReturn(directConnectionsChannelInitializer.getCanonicalName());
             when(typesafeConfig.getDuration(MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT)).thenReturn(composedMessageTransferTimeout);
             when(typesafeConfig.getBoolean(MONITORING_ENABLED)).thenReturn(monitoringEnabled);
-            when(typesafeConfig.getString(MONITORING_INFLUX_URI)).thenReturn(monitoringInfluxUri);
+            when(typesafeConfig.getString(MONITORING_INFLUX_URI)).thenReturn(monitoringInfluxUri.toString());
             when(typesafeConfig.getString(MONITORING_INFLUX_USER)).thenReturn(monitoringInfluxUser);
             when(typesafeConfig.getString(MONITORING_INFLUX_PASSWORD)).thenReturn(monitoringInfluxPassword);
             when(typesafeConfig.getString(MONITORING_INFLUX_DATABASE)).thenReturn(monitoringInfluxDatabase);

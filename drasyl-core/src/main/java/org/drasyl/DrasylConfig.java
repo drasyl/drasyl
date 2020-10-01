@@ -153,7 +153,7 @@ public class DrasylConfig {
     private final short directConnectionsIdleRetries;
     private final Duration directConnectionsIdleTimeout;
     private final boolean monitoringEnabled;
-    private final String monitoringInfluxUri;
+    private final URI monitoringInfluxUri;
     private final String monitoringInfluxUser;
     private final String monitoringInfluxPassword;
     private final String monitoringInfluxDatabase;
@@ -252,7 +252,7 @@ public class DrasylConfig {
 
         // Init monitoring config
         monitoringEnabled = config.getBoolean(MONITORING_ENABLED);
-        monitoringInfluxUri = config.getString(MONITORING_INFLUX_URI);
+        monitoringInfluxUri = getURI(config, MONITORING_INFLUX_URI);
         monitoringInfluxUser = config.getString(MONITORING_INFLUX_USER);
         monitoringInfluxPassword = config.getString(MONITORING_INFLUX_PASSWORD);
         monitoringInfluxDatabase = config.getString(MONITORING_INFLUX_DATABASE);
@@ -526,7 +526,7 @@ public class DrasylConfig {
                  final short directConnectionsIdleRetries,
                  final Duration directConnectionsIdleTimeout,
                  final boolean monitoringEnabled,
-                 final String monitoringInfluxUri,
+                 final URI monitoringInfluxUri,
                  final String monitoringInfluxUser,
                  final String monitoringInfluxPassword,
                  final String monitoringInfluxDatabase,
@@ -603,7 +603,7 @@ public class DrasylConfig {
         return monitoringEnabled;
     }
 
-    public String getMonitoringInfluxUri() {
+    public URI getMonitoringInfluxUri() {
         return monitoringInfluxUri;
     }
 
@@ -1064,7 +1064,7 @@ public class DrasylConfig {
         private short directConnectionsIdleRetries;
         private Duration directConnectionsIdleTimeout;
         private boolean monitoringEnabled;
-        private String monitoringInfluxUri;
+        private URI monitoringInfluxUri;
         private String monitoringInfluxUser;
         private String monitoringInfluxPassword;
         private String monitoringInfluxDatabase;
@@ -1119,7 +1119,7 @@ public class DrasylConfig {
                         final short directConnectionsIdleRetries,
                         final Duration directConnectionsIdleTimeout,
                         final boolean monitoringEnabled,
-                        final String monitoringInfluxUri,
+                        final URI monitoringInfluxUri,
                         final String monitoringInfluxUser,
                         final String monitoringInfluxPassword,
                         final String monitoringInfluxDatabase,
@@ -1373,7 +1373,7 @@ public class DrasylConfig {
             return this;
         }
 
-        public Builder monitoringInfluxUri(final String monitoringInfluxUri) {
+        public Builder monitoringInfluxUri(final URI monitoringInfluxUri) {
             this.monitoringInfluxUri = monitoringInfluxUri;
             return this;
         }

@@ -51,7 +51,7 @@ public class Monitoring implements DrasylNodeComponent {
                 () -> new InfluxMeterRegistry(new InfluxConfig() {
                     @Override
                     public String uri() {
-                        return config.getMonitoringInfluxUri();
+                        return config.getMonitoringInfluxUri().toString();
                     }
 
                     @Override
