@@ -19,6 +19,8 @@
 package org.drasyl;
 
 import com.typesafe.config.Config;
+import com.typesafe.config.ConfigException;
+import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigMemorySize;
 import com.typesafe.config.ConfigObject;
 import io.netty.channel.ChannelInitializer;
@@ -41,6 +43,7 @@ import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
 import java.net.InetAddress;
+import java.net.URI;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -99,12 +102,14 @@ import static org.drasyl.DrasylConfig.SUPER_PEER_ENABLED;
 import static org.drasyl.DrasylConfig.SUPER_PEER_ENDPOINTS;
 import static org.drasyl.DrasylConfig.SUPER_PEER_HANDSHAKE_TIMEOUT;
 import static org.drasyl.DrasylConfig.SUPER_PEER_RETRY_DELAYS;
+import static org.drasyl.DrasylConfig.getURI;
 import static org.drasyl.util.NetworkUtil.createInetAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -374,6 +379,23 @@ class DrasylConfigTest {
             final DrasylConfig config2 = DrasylConfig.newBuilder().build();
 
             assertEquals(config1.hashCode(), config2.hashCode());
+        }
+    }
+
+    @Nested
+    class GetUri {
+        @Test
+        void shouldReturnUriAtPath() {
+            Config config = ConfigFactory.parseString("foo.bar = \"http://localhost.de\"");
+
+            assertEquals(URI.create("http://localhost.de"), getURI(config, "foo.bar"));
+        }
+
+        @Test
+        void shouldThrowExceptionForInvalidValue() {
+            Config config = ConfigFactory.parseString("foo.bar = \"hallo world\"");
+
+            assertThrows(ConfigException.class, () -> getURI(config, "foo.bar"));
         }
     }
 

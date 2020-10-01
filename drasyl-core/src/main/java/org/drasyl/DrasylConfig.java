@@ -35,7 +35,10 @@ import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
+import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.UnknownHostException;
+import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.time.Duration;
@@ -280,7 +283,7 @@ public class DrasylConfig {
      * @throws ConfigException.WrongType if value is not convertible to a {@link ProofOfWork}
      */
     @SuppressWarnings({ "java:S1192" })
-    private ProofOfWork getProofOfWork(final Config config, final String path) {
+    public static ProofOfWork getProofOfWork(final Config config, final String path) {
         try {
             final int intValue = config.getInt(path);
             return new ProofOfWork(intValue);
@@ -301,7 +304,7 @@ public class DrasylConfig {
      * @throws ConfigException.WrongType if value is not convertible to a {@link CompressedPublicKey}
      */
     @SuppressWarnings({ "java:S1192" })
-    private CompressedPublicKey getPublicKey(final Config config, final String path) {
+    public static CompressedPublicKey getPublicKey(final Config config, final String path) {
         try {
             final String stringValue = config.getString(path);
             return CompressedPublicKey.of(stringValue);
@@ -322,7 +325,7 @@ public class DrasylConfig {
      * @throws ConfigException.WrongType if value is not convertible to a {@link CompressedPrivateKey}
      */
     @SuppressWarnings({ "java:S1192" })
-    private CompressedPrivateKey getPrivateKey(final Config config, final String path) {
+    public static CompressedPrivateKey getPrivateKey(final Config config, final String path) {
         try {
             final String stringValue = config.getString(path);
             return CompressedPrivateKey.of(stringValue);
@@ -332,8 +335,21 @@ public class DrasylConfig {
         }
     }
 
-    private Path getPath(final Config config, final String path) {
-        return Paths.get(config.getString(path));
+    /**
+     * Gets the {@link Path} at the given path.
+     *
+     * @param config the application's portion of the configuration
+     * @param path   path expression
+     * @return the {@link Path} value at the requested path
+     * @throws ConfigException if value at path is invalid
+     */
+    public static Path getPath(final Config config, final String path) {
+        try {
+            return Paths.get(config.getString(path));
+        }
+        catch (InvalidPathException e) {
+            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "path", "invalid: " + e.getMessage());
+        }
     }
 
     /**
@@ -346,7 +362,7 @@ public class DrasylConfig {
      * @throws ConfigException.Missing   if value is absent or null
      * @throws ConfigException.WrongType if value is not convertible to a short
      */
-    private static short getShort(final Config config, final String path) {
+    public static short getShort(final Config config, final String path) {
         final int integerValue = config.getInt(path);
         if (integerValue > Short.MAX_VALUE || integerValue < Short.MIN_VALUE) {
             throw new ConfigException.WrongType(config.getValue(path).origin(), path, "short", "out-of-range-value " + integerValue);
@@ -355,7 +371,10 @@ public class DrasylConfig {
         return (short) integerValue;
     }
 
-    private List<Endpoint> getEndpointList(final Config config, final String path) {
+    /**
+     * @throws ConfigException if value at path is invalid
+     */
+    public static List<Endpoint> getEndpointList(final Config config, final String path) {
         final List<String> stringListValue = config.getStringList(path);
         final List<Endpoint> endpointList = new ArrayList<>();
         try {
@@ -369,9 +388,12 @@ public class DrasylConfig {
         return endpointList;
     }
 
+    /**
+     * @throws ConfigException if value at path is invalid
+     */
     @SuppressWarnings("unchecked")
-    private Class<ChannelInitializer<SocketChannel>> getChannelInitializer(final Config config,
-                                                                           final String path) {
+    public static Class<ChannelInitializer<SocketChannel>> getChannelInitializer(final Config config,
+                                                                                 final String path) {
         final String className = config.getString(path);
         try {
             return (Class<ChannelInitializer<SocketChannel>>) Class.forName(className);
@@ -381,7 +403,10 @@ public class DrasylConfig {
         }
     }
 
-    private Set<DrasylPlugin> getPlugins(final Config config, final String path) {
+    /**
+     * @throws ConfigException if value at path is invalid
+     */
+    public static Set<DrasylPlugin> getPlugins(final Config config, final String path) {
         final Set<DrasylPlugin> plugins = new HashSet<>();
 
         for (final Map.Entry<String, ConfigValue> entry : config.getObject(path).entrySet()) {
@@ -401,9 +426,9 @@ public class DrasylConfig {
     }
 
     @SuppressWarnings({ "java:S1192" })
-    private DrasylPlugin initiatePlugin(final String path,
-                                        final String clazzName,
-                                        final Config pluginConfig) {
+    private static DrasylPlugin initiatePlugin(final String path,
+                                               final String clazzName,
+                                               final Config pluginConfig) {
         try {
             @SuppressWarnings("unchecked") final Class<? extends DrasylPlugin> clazz = (Class<? extends DrasylPlugin>) Class.forName(clazzName);
             final Constructor<? extends DrasylPlugin> constructor = clazz.getConstructor(Config.class);
@@ -428,13 +453,37 @@ public class DrasylConfig {
         }
     }
 
-    private static InetAddress getInetAddress(final Config config, final String path) {
+    /**
+     * @throws ConfigException if value at path is invalid
+     */
+    public static InetAddress getInetAddress(final Config config, final String path) {
         final String stringValue = config.getString(path);
         try {
             return InetAddress.getByName(stringValue);
         }
         catch (final UnknownHostException e) {
             throw new ConfigException.WrongType(config.getValue(path).origin(), path, "inet address", "unknown-host: " + e.getMessage());
+        }
+    }
+
+    /**
+     * Gets the {@link URI} at the given path.
+     *
+     * @param config the application's portion of the configuration
+     * @param path   path expression
+     * @return the {@link URI} value at the requested path
+     * @throws ConfigException if value at path is invalid
+     */
+    public static URI getURI(final Config config, final String path) {
+        final String stringValue = config.getString(path);
+        try {
+            return new URI(stringValue);
+        }
+        catch (final NullPointerException e) {
+            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "uri", "null");
+        }
+        catch (URISyntaxException e) {
+            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "inet address", "violates RFC 2396: " + e.getMessage());
         }
     }
 
