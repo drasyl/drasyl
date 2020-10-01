@@ -127,8 +127,8 @@ public class LocalHostDiscovery implements DrasylNodeComponent {
                 LOG.warn("Discovery directory '{}' not accessible.", discoveryPath.toAbsolutePath());
             }
             else {
-                scan();
                 tryWatchDirectory();
+                scan();
                 keepOwnInformationUpToDate();
                 communicationObserver = communicationOccurred.subscribe(publicKey -> {
                     // A scan only happens if a change in the directory was monitored or the time of last poll is too old.
@@ -223,11 +223,8 @@ public class LocalHostDiscovery implements DrasylNodeComponent {
         LOG.trace("Post own Peer Information to {}", filePath);
         File file = filePath.toFile();
         try {
-            if (peerInformation.equals(postedPeerInformation)) {
-                // information has not changed. Just touch file
-                file.setLastModified(System.currentTimeMillis()); // NOSONAR
-            }
-            else {
+            // (re)write file on information change. otherwise just touch
+            if (!(peerInformation.equals(postedPeerInformation) && file.setLastModified(System.currentTimeMillis()))) {
                 JACKSON_WRITER.writeValue(file, peerInformation);
                 file.deleteOnExit();
             }
