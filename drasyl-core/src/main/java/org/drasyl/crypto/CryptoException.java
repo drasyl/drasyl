@@ -22,11 +22,11 @@ package org.drasyl.crypto;
  * A CryptoException is thrown by {@link Crypto} when errors occur.
  */
 public class CryptoException extends Exception {
-    public CryptoException(String message, Exception cause) {
+    public CryptoException(final String message, final Exception cause) {
         super(message, cause);
     }
 
-    public CryptoException(Exception wrapped) {
+    public CryptoException(final Exception wrapped) {
         super(wrapped);
     }
 }

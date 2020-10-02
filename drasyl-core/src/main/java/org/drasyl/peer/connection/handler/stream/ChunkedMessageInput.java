@@ -49,15 +49,15 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
     private long progress;
     private boolean sentLastChuck;
 
-    ChunkedMessageInput(CompressedPublicKey sender,
-                        CompressedPublicKey recipient,
-                        int contentLength,
-                        String checksum,
-                        Queue<ByteBuf> chunks,
-                        ByteBuf sourcePayload,
-                        MessageId msgID,
-                        long progress,
-                        boolean sentLastChuck) {
+    ChunkedMessageInput(final CompressedPublicKey sender,
+                        final CompressedPublicKey recipient,
+                        final int contentLength,
+                        final String checksum,
+                        final Queue<ByteBuf> chunks,
+                        final ByteBuf sourcePayload,
+                        final MessageId msgID,
+                        final long progress,
+                        final boolean sentLastChuck) {
         this.sender = sender;
         this.recipient = recipient;
         this.contentLength = contentLength;
@@ -76,7 +76,7 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
      * @param msg       the message that should be sent in chunks
      * @param chunkSize the size of each chunk
      */
-    public ChunkedMessageInput(ApplicationMessage msg, int chunkSize) {
+    public ChunkedMessageInput(final ApplicationMessage msg, final int chunkSize) {
         this(msg.getSender(), msg.getRecipient(), msg.payloadAsByteBuf().readableBytes(),
                 Hashing.murmur3x64Hex(msg.getPayload()), new LinkedList<>(),
                 msg.payloadAsByteBuf(),
@@ -115,7 +115,7 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
      * return {@code true}.
      */
     @Override
-    public ChunkedMessage readChunk(ChannelHandlerContext ctx) {
+    public ChunkedMessage readChunk(final ChannelHandlerContext ctx) {
         return readChunk(ctx.alloc());
     }
 
@@ -130,7 +130,7 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
      * slow stream, the next chunk might be unavailable just momentarily.
      */
     @Override
-    public ChunkedMessage readChunk(ByteBufAllocator allocator) {
+    public ChunkedMessage readChunk(final ByteBufAllocator allocator) {
         if (chunks.isEmpty()) {
             if (sentLastChuck) {
                 return null;
@@ -144,9 +144,9 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
         else {
             boolean release = true;
             try {
-                ByteBuf byteBuf = chunks.poll();
-                ChunkedMessage chunkedMessage;
-                int readableBytes = byteBuf.readableBytes();
+                final ByteBuf byteBuf = chunks.poll();
+                final ChunkedMessage chunkedMessage;
+                final int readableBytes = byteBuf.readableBytes();
 
                 if (progress == 0) {
                     // Send first chunk for this input
@@ -198,7 +198,7 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
      * @param source    the source {@link ByteBuf}
      * @param chunkSize the chunk size
      */
-    void chunkedArray(Queue<ByteBuf> buffer, ByteBuf source, int chunkSize) {
+    void chunkedArray(final Queue<ByteBuf> buffer, final ByteBuf source, final int chunkSize) {
         int offset = 0;
         while (offset < source.readableBytes()) {
             boolean release = true;

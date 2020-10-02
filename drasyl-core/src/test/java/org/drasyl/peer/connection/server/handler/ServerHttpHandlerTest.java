@@ -46,11 +46,11 @@ class ServerHttpHandlerTest {
 
     @Test
     void shouldPassThroughWebsocketRequests() {
-        DefaultHttpHeaders headers = new DefaultHttpHeaders();
+        final DefaultHttpHeaders headers = new DefaultHttpHeaders();
         headers.add("upgrade", "websocket");
-        DefaultHttpRequest httpRequest = new DefaultFullHttpRequest(HTTP_1_1, GET, "/", Unpooled.buffer(), headers, new DefaultHttpHeaders(true));
+        final DefaultHttpRequest httpRequest = new DefaultFullHttpRequest(HTTP_1_1, GET, "/", Unpooled.buffer(), headers, new DefaultHttpHeaders(true));
 
-        EmbeddedChannel channel = new EmbeddedChannel(underTest);
+        final EmbeddedChannel channel = new EmbeddedChannel(underTest);
         channel.writeInbound(httpRequest);
 
         assertEquals(httpRequest, channel.readInbound());
@@ -58,12 +58,12 @@ class ServerHttpHandlerTest {
 
     @Test
     void shouldReturnNodeInformationOnHeadRequest() {
-        DefaultFullHttpRequest httpRequest = new DefaultFullHttpRequest(HTTP_1_1, HEAD, "/");
+        final DefaultFullHttpRequest httpRequest = new DefaultFullHttpRequest(HTTP_1_1, HEAD, "/");
 
-        EmbeddedChannel channel = new EmbeddedChannel(underTest);
+        final EmbeddedChannel channel = new EmbeddedChannel(underTest);
         channel.writeInbound(httpRequest);
 
-        FullHttpResponse httpResponse = channel.readOutbound();
+        final FullHttpResponse httpResponse = channel.readOutbound();
 
         assertEquals(OK, httpResponse.status());
         assertEquals("drasyl/" + DrasylNode.getVersion(), httpResponse.headers().get("server"));
@@ -75,12 +75,12 @@ class ServerHttpHandlerTest {
 
     @Test
     void shouldBlockNonGetMethods() {
-        DefaultFullHttpRequest httpRequest = new DefaultFullHttpRequest(HTTP_1_1, POST, "/");
+        final DefaultFullHttpRequest httpRequest = new DefaultFullHttpRequest(HTTP_1_1, POST, "/");
 
-        EmbeddedChannel channel = new EmbeddedChannel(underTest);
+        final EmbeddedChannel channel = new EmbeddedChannel(underTest);
         channel.writeInbound(httpRequest);
 
-        FullHttpResponse httpResponse = channel.readOutbound();
+        final FullHttpResponse httpResponse = channel.readOutbound();
 
         assertEquals(FORBIDDEN, httpResponse.status());
 
@@ -90,13 +90,13 @@ class ServerHttpHandlerTest {
 
     @Test
     void shouldDisplayMissingUpgradeIndexPage() {
-        DefaultFullHttpRequest httpRequest = new DefaultFullHttpRequest(HTTP_1_1, GET, "/");
+        final DefaultFullHttpRequest httpRequest = new DefaultFullHttpRequest(HTTP_1_1, GET, "/");
 
-        EmbeddedChannel channel = new EmbeddedChannel(underTest);
+        final EmbeddedChannel channel = new EmbeddedChannel(underTest);
         channel.writeInbound(httpRequest);
 
-        FullHttpResponse httpResponse = channel.readOutbound();
-        String content = httpResponse.content().toString(CharsetUtil.UTF_8);
+        final FullHttpResponse httpResponse = channel.readOutbound();
+        final String content = httpResponse.content().toString(CharsetUtil.UTF_8);
 
         assertEquals(BAD_REQUEST, httpResponse.status());
         assertThat(content, containsString("Bad Request"));
@@ -107,13 +107,13 @@ class ServerHttpHandlerTest {
 
     @Test
     void shouldDisplayPeersPage() {
-        DefaultFullHttpRequest httpRequest = new DefaultFullHttpRequest(HTTP_1_1, GET, "/peers.json");
+        final DefaultFullHttpRequest httpRequest = new DefaultFullHttpRequest(HTTP_1_1, GET, "/peers.json");
 
-        EmbeddedChannel channel = new EmbeddedChannel(underTest);
+        final EmbeddedChannel channel = new EmbeddedChannel(underTest);
         channel.writeInbound(httpRequest);
 
-        FullHttpResponse httpResponse = channel.readOutbound();
-        String content = httpResponse.content().toString(CharsetUtil.UTF_8);
+        final FullHttpResponse httpResponse = channel.readOutbound();
+        final String content = httpResponse.content().toString(CharsetUtil.UTF_8);
 
         assertEquals(OK, httpResponse.status());
         assertThatJson(content)
@@ -126,12 +126,12 @@ class ServerHttpHandlerTest {
 
     @Test
     void shouldDisplayNotFoundForAllOtherPaths() {
-        DefaultFullHttpRequest httpRequest = new DefaultFullHttpRequest(HTTP_1_1, GET, "/foo/bar.html");
+        final DefaultFullHttpRequest httpRequest = new DefaultFullHttpRequest(HTTP_1_1, GET, "/foo/bar.html");
 
-        EmbeddedChannel channel = new EmbeddedChannel(underTest);
+        final EmbeddedChannel channel = new EmbeddedChannel(underTest);
         channel.writeInbound(httpRequest);
 
-        FullHttpResponse httpResponse = channel.readOutbound();
+        final FullHttpResponse httpResponse = channel.readOutbound();
 
         assertEquals(NOT_FOUND, httpResponse.status());
 

@@ -61,25 +61,25 @@ public class ServerConnectionHandler extends AbstractThreeWayHandshakeServerHand
     private static final Logger LOG = LoggerFactory.getLogger(ServerConnectionHandler.class);
     private final ServerEnvironment environment;
 
-    public ServerConnectionHandler(ServerEnvironment environment) {
+    public ServerConnectionHandler(final ServerEnvironment environment) {
         super(environment.getConfig().getServerHandshakeTimeout(), environment.getMessenger());
         this.environment = environment;
     }
 
-    ServerConnectionHandler(ServerEnvironment environment,
-                            Duration timeout,
-                            Messenger messenger,
-                            CompletableFuture<Void> handshakeFuture,
-                            ScheduledFuture<?> timeoutFuture,
-                            JoinMessage requestMessage,
-                            WelcomeMessage offerMessage) {
+    ServerConnectionHandler(final ServerEnvironment environment,
+                            final Duration timeout,
+                            final Messenger messenger,
+                            final CompletableFuture<Void> handshakeFuture,
+                            final ScheduledFuture<?> timeoutFuture,
+                            final JoinMessage requestMessage,
+                            final WelcomeMessage offerMessage) {
         super(timeout, messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         this.environment = environment;
     }
 
     @Override
-    protected ConnectionExceptionMessage.Error validateSessionRequest(JoinMessage requestMessage) {
-        CompressedPublicKey clientPublicKey = requestMessage.getPublicKey();
+    protected ConnectionExceptionMessage.Error validateSessionRequest(final JoinMessage requestMessage) {
+        final CompressedPublicKey clientPublicKey = requestMessage.getPublicKey();
 
         if (!requestMessage.getProofOfWork().isValid(requestMessage.getPublicKey(),
                 IdentityManager.POW_DIFFICULTY)) {
@@ -100,18 +100,18 @@ public class ServerConnectionHandler extends AbstractThreeWayHandshakeServerHand
     }
 
     @Override
-    protected WelcomeMessage offerSession(ChannelHandlerContext ctx,
-                                          JoinMessage requestMessage) {
+    protected WelcomeMessage offerSession(final ChannelHandlerContext ctx,
+                                          final JoinMessage requestMessage) {
         return new WelcomeMessage(PeerInformation.of(environment.getEndpoints()), requestMessage.getId());
     }
 
     @Override
-    protected void createConnection(ChannelHandlerContext ctx,
-                                    JoinMessage requestMessage) {
-        CompressedPublicKey clientPublicKey = requestMessage.getPublicKey();
-        Channel channel = ctx.channel();
-        PeerInformation clientInformation = PeerInformation.of();
-        Path path = msg -> FutureUtil.toFuture(ctx.writeAndFlush(msg));
+    protected void createConnection(final ChannelHandlerContext ctx,
+                                    final JoinMessage requestMessage) {
+        final CompressedPublicKey clientPublicKey = requestMessage.getPublicKey();
+        final Channel channel = ctx.channel();
+        final PeerInformation clientInformation = PeerInformation.of();
+        final Path path = msg -> FutureUtil.toFuture(ctx.writeAndFlush(msg));
 
         environment.getChannelGroup().add(clientPublicKey, channel);
 

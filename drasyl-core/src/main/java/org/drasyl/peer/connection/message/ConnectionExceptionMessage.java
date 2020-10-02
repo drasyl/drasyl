@@ -41,8 +41,8 @@ public class ConnectionExceptionMessage extends AbstractMessage implements Reque
     private final Error error;
 
     @JsonCreator
-    private ConnectionExceptionMessage(@JsonProperty("id") MessageId id,
-                                       @JsonProperty("error") Error error) {
+    private ConnectionExceptionMessage(@JsonProperty("id") final MessageId id,
+                                       @JsonProperty("error") final Error error) {
         super(id);
         this.error = requireNonNull(error);
     }
@@ -52,7 +52,7 @@ public class ConnectionExceptionMessage extends AbstractMessage implements Reque
      *
      * @param error the exception type
      */
-    public ConnectionExceptionMessage(Error error) {
+    public ConnectionExceptionMessage(final Error error) {
         this.error = requireNonNull(error);
     }
 
@@ -69,7 +69,7 @@ public class ConnectionExceptionMessage extends AbstractMessage implements Reque
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -79,7 +79,7 @@ public class ConnectionExceptionMessage extends AbstractMessage implements Reque
         if (!super.equals(o)) {
             return false;
         }
-        ConnectionExceptionMessage that = (ConnectionExceptionMessage) o;
+        final ConnectionExceptionMessage that = (ConnectionExceptionMessage) o;
         return Objects.equals(error, that.error);
     }
 
@@ -108,14 +108,14 @@ public class ConnectionExceptionMessage extends AbstractMessage implements Reque
         private static final Map<String, Error> errors = new HashMap<>();
 
         static {
-            for (Error description : values()) {
+            for (final Error description : values()) {
                 errors.put(description.getDescription(), description);
             }
         }
 
         private final String description;
 
-        Error(String description) {
+        Error(final String description) {
             this.description = description;
         }
 
@@ -128,7 +128,7 @@ public class ConnectionExceptionMessage extends AbstractMessage implements Reque
         }
 
         @JsonCreator
-        public static Error from(String description) {
+        public static Error from(final String description) {
             return errors.get(description);
         }
     }

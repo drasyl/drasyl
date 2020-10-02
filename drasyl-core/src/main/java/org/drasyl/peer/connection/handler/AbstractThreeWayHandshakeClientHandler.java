@@ -41,33 +41,32 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 public abstract class AbstractThreeWayHandshakeClientHandler<R extends RequestMessage, O extends ResponseMessage<?>> extends AbstractThreeWayHandshakeHandler {
     private final R requestMessage;
 
-    protected AbstractThreeWayHandshakeClientHandler(Duration timeout,
-                                                     Messenger messenger,
-                                                     R requestMessage) {
+    protected AbstractThreeWayHandshakeClientHandler(final Duration timeout,
+                                                     final Messenger messenger,
+                                                     final R requestMessage) {
         super(timeout, messenger);
         this.requestMessage = requestMessage;
     }
 
-    protected AbstractThreeWayHandshakeClientHandler(Duration timeout,
-                                                     Messenger messenger,
-                                                     CompletableFuture<Void> handshakeFuture,
-                                                     ScheduledFuture<?> timeoutFuture,
-                                                     R requestMessage) {
+    protected AbstractThreeWayHandshakeClientHandler(final Duration timeout,
+                                                     final Messenger messenger,
+                                                     final CompletableFuture<Void> handshakeFuture,
+                                                     final ScheduledFuture<?> timeoutFuture,
+                                                     final R requestMessage) {
         super(timeout, messenger, handshakeFuture, timeoutFuture);
         this.requestMessage = requestMessage;
     }
 
     @Override
-    protected void doHandshake(ChannelHandlerContext ctx, Message message) {
+    protected void doHandshake(final ChannelHandlerContext ctx, final Message message) {
         if (message instanceof ResponseMessage && ((ResponseMessage) message).getCorrespondingId().equals(requestMessage.getId())) {
             if (message instanceof StatusMessage && ((StatusMessage) message).getCode() != STATUS_OK) {
                 requestFailed(ctx, ((StatusMessage) message).getCode());
             }
             else {
                 try {
-                    @SuppressWarnings("unchecked")
-                    O offerMessage = (O) message;
-                    ConnectionExceptionMessage.Error error = validateSessionOffer(offerMessage);
+                    @SuppressWarnings("unchecked") final O offerMessage = (O) message;
+                    final ConnectionExceptionMessage.Error error = validateSessionOffer(offerMessage);
                     if (error == null) {
                         confirmSession(ctx, offerMessage);
 
@@ -78,7 +77,7 @@ public abstract class AbstractThreeWayHandshakeClientHandler<R extends RequestMe
                         rejectSession(ctx, error);
                     }
                 }
-                catch (ClassCastException e) {
+                catch (final ClassCastException e) {
                     processUnexpectedMessageDuringHandshake(ctx, message);
                 }
             }
@@ -89,21 +88,21 @@ public abstract class AbstractThreeWayHandshakeClientHandler<R extends RequestMe
     }
 
     @Override
-    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+    public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
         super.handlerAdded(ctx);
 
         startTimeoutGuard(ctx);
         requestSession(ctx);
     }
 
-    protected void requestSession(ChannelHandlerContext ctx) {
+    protected void requestSession(final ChannelHandlerContext ctx) {
         if (getLogger().isTraceEnabled()) {
             getLogger().trace("[{}]: Send request message to Super Peer.", ctx.channel().id().asShortText());
         }
         ctx.writeAndFlush(requestMessage);
     }
 
-    private void requestFailed(ChannelHandlerContext ctx, StatusMessage.Code code) {
+    private void requestFailed(final ChannelHandlerContext ctx, final StatusMessage.Code code) {
         if (getLogger().isTraceEnabled()) {
             getLogger().trace("[{}]: Session request has been rejected: {}", ctx.channel().id().asShortText(), code);
         }
@@ -123,7 +122,7 @@ public abstract class AbstractThreeWayHandshakeClientHandler<R extends RequestMe
      */
     protected abstract ConnectionExceptionMessage.Error validateSessionOffer(O offerMessage);
 
-    protected void confirmSession(ChannelHandlerContext ctx, O offerMessage) {
+    protected void confirmSession(final ChannelHandlerContext ctx, final O offerMessage) {
         if (getLogger().isTraceEnabled()) {
             getLogger().trace("[{}]: Create new Connection from Channel {}", ctx.channel().id().asShortText(), ctx.channel().id());
         }

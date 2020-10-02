@@ -62,16 +62,16 @@ public class ServerHttpHandler extends SimpleChannelInboundHandler<FullHttpReque
     private final CompressedPublicKey publicKey;
     private final PeersManager peersManager;
 
-    public ServerHttpHandler(int networkId,
-                             CompressedPublicKey publicKey,
-                             PeersManager peersManager) {
+    public ServerHttpHandler(final int networkId,
+                             final CompressedPublicKey publicKey,
+                             final PeersManager peersManager) {
         this.networkId = networkId;
         this.publicKey = publicKey;
         this.peersManager = peersManager;
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, FullHttpRequest req) {
+    protected void channelRead0(final ChannelHandlerContext ctx, final FullHttpRequest req) {
         // pass through websocket request
         if (req.headers().containsValue(HttpHeaderNames.CONNECTION, HttpHeaderValues.UPGRADE, true)
                 || HttpHeaderValues.WEBSOCKET.contentEqualsIgnoreCase(req.headers().get(HttpHeaderNames.UPGRADE))) {
@@ -97,7 +97,7 @@ public class ServerHttpHandler extends SimpleChannelInboundHandler<FullHttpReque
             generateHeaders(ctx, req, networkId, publicKey, BAD_REQUEST);
         }
         else if ("/peers.json".equals(req.uri())) {
-            DefaultFullHttpResponse res = new DefaultFullHttpResponse(req.protocolVersion(), OK,
+            final DefaultFullHttpResponse res = new DefaultFullHttpResponse(req.protocolVersion(), OK,
                     getPeers(peersManager));
             res.headers().set("x-network-id", networkId);
             res.headers().set("x-public-key", publicKey);
@@ -111,13 +111,13 @@ public class ServerHttpHandler extends SimpleChannelInboundHandler<FullHttpReque
         }
     }
 
-    private static void generateHeaders(ChannelHandlerContext ctx,
-                                        FullHttpRequest req,
-                                        int networkId,
-                                        CompressedPublicKey publicKey,
-                                        HttpResponseStatus status) {
-        ByteBuf content = getContent(networkId, publicKey);
-        FullHttpResponse res = new DefaultFullHttpResponse(req.protocolVersion(), status, content);
+    private static void generateHeaders(final ChannelHandlerContext ctx,
+                                        final FullHttpRequest req,
+                                        final int networkId,
+                                        final CompressedPublicKey publicKey,
+                                        final HttpResponseStatus status) {
+        final ByteBuf content = getContent(networkId, publicKey);
+        final FullHttpResponse res = new DefaultFullHttpResponse(req.protocolVersion(), status, content);
         res.headers().set("x-network-id", networkId);
         res.headers().set("x-public-key", publicKey);
         res.headers().set(CONTENT_TYPE, "text/html; charset=UTF-8");
@@ -125,32 +125,32 @@ public class ServerHttpHandler extends SimpleChannelInboundHandler<FullHttpReque
         sendHttpResponse(ctx, res);
     }
 
-    private static void sendHttpResponse(ChannelHandlerContext ctx,
-                                         FullHttpResponse res) {
+    private static void sendHttpResponse(final ChannelHandlerContext ctx,
+                                         final FullHttpResponse res) {
         res.headers().set(SERVER, "drasyl/" + DrasylNode.getVersion());
 
         // add http code reason phrase if content is empty
         if (res.content().readableBytes() == 0) {
-            HttpResponseStatus responseStatus = res.status();
+            final HttpResponseStatus responseStatus = res.status();
             ByteBufUtil.writeUtf8(res.content(), responseStatus.toString());
             HttpUtil.setContentLength(res, res.content().readableBytes());
         }
         // Send the response and close the connection
-        ChannelFuture future = ctx.writeAndFlush(res);
+        final ChannelFuture future = ctx.writeAndFlush(res);
         future.addListener(ChannelFutureListener.CLOSE);
     }
 
-    public static ByteBuf getPeers(PeersManager peersManager) {
+    public static ByteBuf getPeers(final PeersManager peersManager) {
         try {
             return Unpooled.copiedBuffer(JACKSON_WRITER.writeValueAsString(new PeersStatus(peersManager)), CharsetUtil.UTF_8);
         }
-        catch (JsonProcessingException e) {
+        catch (final JsonProcessingException e) {
             LOG.error("Unable to create peers list:", e);
             return Unpooled.copiedBuffer("{\"error\":\"Unable to create peers list.\"}", CharsetUtil.UTF_8);
         }
     }
 
-    public static ByteBuf getContent(int networkId, CompressedPublicKey publicKey) {
+    public static ByteBuf getContent(final int networkId, final CompressedPublicKey publicKey) {
         return Unpooled.copiedBuffer(
                 "<!DOCTYPE HTML PUBLIC \"-//IETF//DTD HTML 2.0//EN\">\n" +
                         "<html><head>\n" +
@@ -167,15 +167,15 @@ public class ServerHttpHandler extends SimpleChannelInboundHandler<FullHttpReque
         private final Set<CompressedPublicKey> children;
         private final CompressedPublicKey superPeer;
 
-        public PeersStatus(PeersManager peersManager) {
+        public PeersStatus(final PeersManager peersManager) {
             this(
                     peersManager.getChildrenKeys(),
                     peersManager.getSuperPeerKey()
             );
         }
 
-        PeersStatus(Set<CompressedPublicKey> children,
-                    CompressedPublicKey superPeer) {
+        PeersStatus(final Set<CompressedPublicKey> children,
+                    final CompressedPublicKey superPeer) {
             this.children = children;
             this.superPeer = superPeer;
         }

@@ -40,8 +40,8 @@ class RelayableMessageGuardTest {
     void shouldPassMessagesThatHaveNotReachedTheirHopCountLimitAndIncrementHopCount() {
         when(applicationMessage.getHopCount()).thenReturn((short) 1);
 
-        RelayableMessageGuard handler = new RelayableMessageGuard((short) 2);
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final RelayableMessageGuard handler = new RelayableMessageGuard((short) 2);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeOutbound(applicationMessage);
         channel.flush();
@@ -54,8 +54,8 @@ class RelayableMessageGuardTest {
     void shouldDiscardMessagesThatHaveReachedTheirHopCountLimit() {
         when(applicationMessage.getHopCount()).thenReturn((short) 1);
 
-        RelayableMessageGuard handler = new RelayableMessageGuard((short) 1);
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final RelayableMessageGuard handler = new RelayableMessageGuard((short) 1);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeOutbound(applicationMessage);
         channel.flush();

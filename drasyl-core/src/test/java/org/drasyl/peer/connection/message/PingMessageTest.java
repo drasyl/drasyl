@@ -36,7 +36,7 @@ class PingMessageTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException {
-            String json = "{\"@type\":\"" + PingMessage.class.getSimpleName() + "\",\"id\":\"89ba3cd9efb7570eb3126d11\"}";
+            final String json = "{\"@type\":\"" + PingMessage.class.getSimpleName() + "\",\"id\":\"89ba3cd9efb7570eb3126d11\"}";
 
             assertEquals(new PingMessage(), JACKSON_READER.readValue(json, Message.class));
         }
@@ -46,7 +46,7 @@ class PingMessageTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException {
-            PingMessage message = new PingMessage();
+            final PingMessage message = new PingMessage();
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
@@ -59,8 +59,8 @@ class PingMessageTest {
     class Equals {
         @Test
         void shouldReturnTrue() {
-            PingMessage message1 = new PingMessage();
-            PingMessage message2 = new PingMessage();
+            final PingMessage message1 = new PingMessage();
+            final PingMessage message2 = new PingMessage();
 
             assertEquals(message1, message2);
         }
@@ -70,8 +70,8 @@ class PingMessageTest {
     class HashCode {
         @Test
         void shouldReturnTrue() {
-            PingMessage message1 = new PingMessage();
-            PingMessage message2 = new PingMessage();
+            final PingMessage message1 = new PingMessage();
+            final PingMessage message2 = new PingMessage();
 
             assertEquals(message1.hashCode(), message2.hashCode());
         }

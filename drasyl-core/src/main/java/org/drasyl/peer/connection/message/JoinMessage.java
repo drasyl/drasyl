@@ -39,12 +39,12 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
     private final int networkId;
 
     @JsonCreator
-    private JoinMessage(@JsonProperty("id") MessageId id,
-                        @JsonProperty("userAgent") String userAgent,
-                        @JsonProperty("proofOfWork") ProofOfWork proofOfWork,
-                        @JsonProperty("publicKey") CompressedPublicKey publicKey,
-                        @JsonProperty("childrenJoin") boolean childrenJoin,
-                        @JsonProperty("networkId") int networkId) {
+    private JoinMessage(@JsonProperty("id") final MessageId id,
+                        @JsonProperty("userAgent") final String userAgent,
+                        @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
+                        @JsonProperty("publicKey") final CompressedPublicKey publicKey,
+                        @JsonProperty("childrenJoin") final boolean childrenJoin,
+                        @JsonProperty("networkId") final int networkId) {
         super(id, userAgent);
         this.proofOfWork = requireNonNull(proofOfWork);
         this.publicKey = requireNonNull(publicKey);
@@ -59,9 +59,9 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
      * @param publicKey   the identity of the joining node
      * @param networkId   the network of the joining node
      */
-    public JoinMessage(ProofOfWork proofOfWork,
-                       CompressedPublicKey publicKey,
-                       int networkId) {
+    public JoinMessage(final ProofOfWork proofOfWork,
+                       final CompressedPublicKey publicKey,
+                       final int networkId) {
         this(proofOfWork, publicKey, true, networkId);
     }
 
@@ -73,10 +73,10 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
      * @param childrenJoin join peer as children
      * @param networkId    the network of the joining node
      */
-    public JoinMessage(ProofOfWork proofOfWork,
-                       CompressedPublicKey publicKey,
-                       boolean childrenJoin,
-                       int networkId) {
+    public JoinMessage(final ProofOfWork proofOfWork,
+                       final CompressedPublicKey publicKey,
+                       final boolean childrenJoin,
+                       final int networkId) {
         this.proofOfWork = requireNonNull(proofOfWork);
         this.publicKey = requireNonNull(publicKey);
         this.childrenJoin = childrenJoin;
@@ -105,7 +105,7 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -115,7 +115,7 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
         if (!super.equals(o)) {
             return false;
         }
-        JoinMessage that = (JoinMessage) o;
+        final JoinMessage that = (JoinMessage) o;
         return childrenJoin == that.childrenJoin &&
                 Objects.equals(proofOfWork, that.proofOfWork) &&
                 Objects.equals(publicKey, that.publicKey) &&

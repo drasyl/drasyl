@@ -28,9 +28,9 @@ import java.time.Duration;
  * server.
  */
 public abstract class ServerChannelInitializer extends DefaultSessionInitializer {
-    protected ServerChannelInitializer(int flushBufferSize,
-                                       Duration readIdleTimeout,
-                                       short pingPongRetries) {
+    protected ServerChannelInitializer(final int flushBufferSize,
+                                       final Duration readIdleTimeout,
+                                       final short pingPongRetries) {
         super(flushBufferSize, readIdleTimeout, pingPongRetries);
     }
 }

@@ -80,16 +80,16 @@ public class Server implements DrasylNodeComponent {
     private InetSocketAddress socketAddress;
     private Set<PortMapping> portMappings;
 
-    Server(Identity identity,
-           DrasylConfig config,
-           ServerBootstrap serverBootstrap,
-           AtomicBoolean opened,
-           InetSocketAddress socketAddress,
-           Channel channel,
-           Set<Endpoint> actualEndpoints,
-           Set<Endpoint> nodeEndpoints,
-           Scheduler scheduler,
-           Function<InetSocketAddress, Set<PortMapping>> portExposer) {
+    Server(final Identity identity,
+           final DrasylConfig config,
+           final ServerBootstrap serverBootstrap,
+           final AtomicBoolean opened,
+           final InetSocketAddress socketAddress,
+           final Channel channel,
+           final Set<Endpoint> actualEndpoints,
+           final Set<Endpoint> nodeEndpoints,
+           final Scheduler scheduler,
+           final Function<InetSocketAddress, Set<PortMapping>> portExposer) {
         this.identity = identity;
         this.config = config;
         this.channel = channel;
@@ -102,15 +102,15 @@ public class Server implements DrasylNodeComponent {
         this.portExposer = portExposer;
     }
 
-    public Server(Identity identity,
-                  Messenger messenger,
-                  PeersManager peersManager,
-                  DrasylConfig config,
-                  PeerChannelGroup channelGroup,
-                  EventLoopGroup workerGroup,
-                  EventLoopGroup bossGroup,
-                  Set<Endpoint> nodeEndpoints,
-                  BooleanSupplier acceptNewConnectionsSupplier) throws ServerException {
+    public Server(final Identity identity,
+                  final Messenger messenger,
+                  final PeersManager peersManager,
+                  final DrasylConfig config,
+                  final PeerChannelGroup channelGroup,
+                  final EventLoopGroup workerGroup,
+                  final EventLoopGroup bossGroup,
+                  final Set<Endpoint> nodeEndpoints,
+                  final BooleanSupplier acceptNewConnectionsSupplier) throws ServerException {
         this(identity, messenger, peersManager, config, channelGroup, workerGroup, bossGroup, new AtomicBoolean(false), acceptNewConnectionsSupplier, nodeEndpoints);
     }
 
@@ -127,16 +127,16 @@ public class Server implements DrasylNodeComponent {
      * @param acceptNewConnectionsSupplier the accept new connections supplier
      * @param nodeEndpoints                the node endpoints
      */
-    public Server(Identity identity,
-                  Messenger messenger,
-                  PeersManager peersManager,
-                  DrasylConfig config,
-                  PeerChannelGroup channelGroup,
-                  EventLoopGroup workerGroup,
-                  EventLoopGroup bossGroup,
-                  AtomicBoolean opened,
-                  BooleanSupplier acceptNewConnectionsSupplier,
-                  Set<Endpoint> nodeEndpoints) throws ServerException {
+    public Server(final Identity identity,
+                  final Messenger messenger,
+                  final PeersManager peersManager,
+                  final DrasylConfig config,
+                  final PeerChannelGroup channelGroup,
+                  final EventLoopGroup workerGroup,
+                  final EventLoopGroup bossGroup,
+                  final AtomicBoolean opened,
+                  final BooleanSupplier acceptNewConnectionsSupplier,
+                  final Set<Endpoint> nodeEndpoints) throws ServerException {
         this(
                 identity,
                 config,
@@ -170,7 +170,7 @@ public class Server implements DrasylNodeComponent {
         if (opened.compareAndSet(false, true)) {
             LOG.debug("Start Server...");
             try {
-                ChannelFuture channelFuture = serverBootstrap
+                final ChannelFuture channelFuture = serverBootstrap
                         .bind(config.getServerBindHost(), config.getServerBindPort());
                 channelFuture.awaitUninterruptibly();
 
@@ -198,7 +198,7 @@ public class Server implements DrasylNodeComponent {
                     throw new ServerException("Unable to bind server to address " + config.getServerBindHost() + ":" + config.getServerBindPort() + ": " + channelFuture.cause().getMessage());
                 }
             }
-            catch (IllegalArgumentException e) {
+            catch (final IllegalArgumentException e) {
                 throw new ServerException("Unable to get channel: " + e.getMessage());
             }
         }
@@ -219,34 +219,33 @@ public class Server implements DrasylNodeComponent {
         }
     }
 
-    void exposeEndpoints(InetSocketAddress socketAddress) {
+    void exposeEndpoints(final InetSocketAddress socketAddress) {
         scheduler.scheduleDirect(() -> {
             // create port mappings
             portMappings = portExposer.apply(socketAddress);
 
             // we need to observe these mappings because they can change or fail over time
-            List<Observable<Optional<InetSocketAddress>>> externalAddressObservables = portMappings.stream().map(PortMapping::externalAddress).collect(Collectors.toList());
-            @SuppressWarnings("unchecked")
-            Observable<Set<InetSocketAddress>> allExternalAddressesObservable = Observable.combineLatest(
+            final List<Observable<Optional<InetSocketAddress>>> externalAddressObservables = portMappings.stream().map(PortMapping::externalAddress).collect(Collectors.toList());
+            @SuppressWarnings("unchecked") final Observable<Set<InetSocketAddress>> allExternalAddressesObservable = Observable.combineLatest(
                     externalAddressObservables,
                     newMappings -> Arrays.stream(newMappings).map(o -> (Optional<InetSocketAddress>) o).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toSet())
             );
-            Observable<Pair<Set<InetSocketAddress>, Set<InetSocketAddress>>> allExternalAddressesChangesObservable = pairWithPreviousObservable(allExternalAddressesObservable);
+            final Observable<Pair<Set<InetSocketAddress>, Set<InetSocketAddress>>> allExternalAddressesChangesObservable = pairWithPreviousObservable(allExternalAddressesObservable);
 
-            String scheme = config.getServerSSLEnabled() ? "wss" : "ws";
+            final String scheme = config.getServerSSLEnabled() ? "wss" : "ws";
             allExternalAddressesChangesObservable.subscribe(pair -> {
-                Set<InetSocketAddress> currentAddresses = pair.first();
-                Set<InetSocketAddress> previousAddresses = Optional.ofNullable(pair.second()).orElse(Set.of());
+                final Set<InetSocketAddress> currentAddresses = pair.first();
+                final Set<InetSocketAddress> previousAddresses = Optional.ofNullable(pair.second()).orElse(Set.of());
 
-                Set<InetSocketAddress> addressesToRemove = SetUtil.difference(previousAddresses, currentAddresses);
-                Set<Endpoint> endpointsToRemove = addressesToRemove.stream()
+                final Set<InetSocketAddress> addressesToRemove = SetUtil.difference(previousAddresses, currentAddresses);
+                final Set<Endpoint> endpointsToRemove = addressesToRemove.stream()
                         .map(address -> createUri(scheme, address.getHostName(), address.getPort()))
                         .map(address -> Endpoint.of(address, identity.getPublicKey()))
                         .collect(Collectors.toSet());
                 nodeEndpoints.removeAll(endpointsToRemove);
 
-                Set<InetSocketAddress> addressesToAdd = SetUtil.difference(currentAddresses, previousAddresses);
-                Set<Endpoint> endpointsToAdd = addressesToAdd.stream()
+                final Set<InetSocketAddress> addressesToAdd = SetUtil.difference(currentAddresses, previousAddresses);
+                final Set<Endpoint> endpointsToAdd = addressesToAdd.stream()
                         .map(address -> createUri(scheme, address.getHostName(), address.getPort()))
                         .map(address -> Endpoint.of(address, identity.getPublicKey()))
                         .collect(Collectors.toSet());
@@ -265,30 +264,30 @@ public class Server implements DrasylNodeComponent {
     }
 
     private static ServerChannelInitializer initiateChannelInitializer(
-            ServerEnvironment environment,
-            Class<? extends ChannelInitializer<SocketChannel>> clazz) throws ServerException {
+            final ServerEnvironment environment,
+            final Class<? extends ChannelInitializer<SocketChannel>> clazz) throws ServerException {
         try {
-            Constructor<?> constructor = clazz.getConstructor(ServerEnvironment.class);
+            final Constructor<?> constructor = clazz.getConstructor(ServerEnvironment.class);
             return (ServerChannelInitializer) constructor.newInstance(environment);
         }
-        catch (NoSuchMethodException e) {
+        catch (final NoSuchMethodException e) {
             throw new ServerException("The given channel initializer has not the correct signature: '" + clazz + "'");
         }
-        catch (IllegalAccessException e) {
+        catch (final IllegalAccessException e) {
             throw new ServerException("Can't access the given channel initializer: '" + clazz + "'");
         }
-        catch (InvocationTargetException e) {
+        catch (final InvocationTargetException e) {
             throw new ServerException("Can't invoke the given channel initializer: '" + clazz + "'");
         }
-        catch (InstantiationException e) {
+        catch (final InstantiationException e) {
             throw new ServerException("Can't instantiate the given channel initializer: '" + clazz + "'");
         }
     }
 
-    static Set<Endpoint> determineActualEndpoints(Identity identity,
-                                                  DrasylConfig config,
-                                                  InetSocketAddress listenAddress) {
-        Set<Endpoint> configEndpoints = config.getServerEndpoints();
+    static Set<Endpoint> determineActualEndpoints(final Identity identity,
+                                                  final DrasylConfig config,
+                                                  final InetSocketAddress listenAddress) {
+        final Set<Endpoint> configEndpoints = config.getServerEndpoints();
         if (!configEndpoints.isEmpty()) {
             // read endpoints from config
             return configEndpoints.stream().map(endpoint -> {
@@ -299,7 +298,7 @@ public class Server implements DrasylNodeComponent {
             }).collect(Collectors.toSet());
         }
 
-        Set<InetAddress> addresses;
+        final Set<InetAddress> addresses;
         if (listenAddress.getAddress().isAnyLocalAddress()) {
             // use all available addresses
             addresses = getAddresses();
@@ -308,7 +307,7 @@ public class Server implements DrasylNodeComponent {
             // use given host
             addresses = Set.of(listenAddress.getAddress());
         }
-        String scheme = config.getServerSSLEnabled() ? "wss" : "ws";
+        final String scheme = config.getServerSSLEnabled() ? "wss" : "ws";
         return addresses.stream()
                 .map(address -> createUri(scheme, address.getHostAddress(), listenAddress.getPort()))
                 .map(address -> Endpoint.of(address, identity.getPublicKey()))

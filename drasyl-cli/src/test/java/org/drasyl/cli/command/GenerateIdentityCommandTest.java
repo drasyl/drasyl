@@ -38,7 +38,7 @@ class GenerateIdentityCommandTest {
         void shouldPrintHelp() {
             underTest.help(cmd);
 
-            String output = outputStream.toString();
+            final String output = outputStream.toString();
             assertThat(output, containsString("Generate and output new Identity in JSON format."));
             assertThat(output, containsString("Usage:" + System.lineSeparator()));
             assertThat(output, containsString("drasyl genidentity [flags]" + System.lineSeparator()));

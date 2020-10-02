@@ -36,7 +36,7 @@ class WhoAreYouMessageTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException {
-            String json = "{\"@type\":\"" + WhoAreYouMessage.class.getSimpleName() + "\",\"id\":\"89ba3cd9efb7570eb3126d11\"}";
+            final String json = "{\"@type\":\"" + WhoAreYouMessage.class.getSimpleName() + "\",\"id\":\"89ba3cd9efb7570eb3126d11\"}";
 
             assertEquals(new WhoAreYouMessage(), JACKSON_READER.readValue(json, Message.class));
         }
@@ -46,7 +46,7 @@ class WhoAreYouMessageTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException {
-            WhoAreYouMessage message = new WhoAreYouMessage();
+            final WhoAreYouMessage message = new WhoAreYouMessage();
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
@@ -59,8 +59,8 @@ class WhoAreYouMessageTest {
     class Equals {
         @Test
         void shouldReturnTrue() {
-            WhoAreYouMessage message1 = new WhoAreYouMessage();
-            WhoAreYouMessage message2 = new WhoAreYouMessage();
+            final WhoAreYouMessage message1 = new WhoAreYouMessage();
+            final WhoAreYouMessage message2 = new WhoAreYouMessage();
 
             assertEquals(message1, message2);
         }
@@ -70,8 +70,8 @@ class WhoAreYouMessageTest {
     class HashCode {
         @Test
         void shouldReturnTrue() {
-            WhoAreYouMessage message1 = new WhoAreYouMessage();
-            WhoAreYouMessage message2 = new WhoAreYouMessage();
+            final WhoAreYouMessage message1 = new WhoAreYouMessage();
+            final WhoAreYouMessage message2 = new WhoAreYouMessage();
 
             assertEquals(message1.hashCode(), message2.hashCode());
         }

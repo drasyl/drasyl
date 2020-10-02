@@ -17,7 +17,7 @@ import static java.time.Duration.ofSeconds;
 public class SuperPeerStressTesting {
     private final Cache<CompressedPublicKey, DrasylNode> clients;
 
-    public SuperPeerStressTesting(long maxClients, Duration shutdownAfter) {
+    public SuperPeerStressTesting(final long maxClients, final Duration shutdownAfter) {
         clients = CacheBuilder.newBuilder()
                 .maximumSize(maxClients)
                 .expireAfterWrite(shutdownAfter)
@@ -25,31 +25,31 @@ public class SuperPeerStressTesting {
                 .build();
     }
 
-    public static void main(String[] args) throws DrasylException {
-        DrasylConfig baseConfig = DrasylConfig.newBuilder()
+    public static void main(final String[] args) throws DrasylException {
+        final DrasylConfig baseConfig = DrasylConfig.newBuilder()
                 .superPeerEndpoints(Set.of(Endpoint.of("wss://review-monitoring-md6yhe.env.drasyl.org")))
                 .serverEnabled(false)
                 .build();
 
-        SuperPeerStressTesting creator = new SuperPeerStressTesting(100, ofSeconds(300));
+        final SuperPeerStressTesting creator = new SuperPeerStressTesting(100, ofSeconds(300));
 
         while (true) {
             creator.create(baseConfig).start();
         }
     }
 
-    public DrasylNode create(DrasylConfig baseConfig) throws DrasylException {
-        Identity identity = IdentityManager.generateIdentity();
+    public DrasylNode create(final DrasylConfig baseConfig) throws DrasylException {
+        final Identity identity = IdentityManager.generateIdentity();
 
-        DrasylConfig config = DrasylConfig.newBuilder(baseConfig)
+        final DrasylConfig config = DrasylConfig.newBuilder(baseConfig)
                 .identityPublicKey(identity.getPublicKey())
                 .identityPrivateKey(identity.getPrivateKey())
                 .identityProofOfWork(identity.getProofOfWork())
                 .intraVmDiscoveryEnabled(false)
                 .build();
-        DrasylNode node = new DrasylNode(config) {
+        final DrasylNode node = new DrasylNode(config) {
             @Override
-            public void onEvent(Event event) {
+            public void onEvent(final Event event) {
                 System.out.println(event);
             }
         };

@@ -18,7 +18,7 @@ class PeerDirectEventTest {
     class GetMessage {
         @Test
         void shouldReturnMessage() {
-            PeerDirectEvent event = new PeerDirectEvent(peer);
+            final PeerDirectEvent event = new PeerDirectEvent(peer);
 
             assertEquals(peer, event.getPeer());
         }
@@ -31,9 +31,9 @@ class PeerDirectEventTest {
 
         @Test
         void notSameBecauseOfDifferentMessage() {
-            PeerDirectEvent event1 = new PeerDirectEvent(peer);
-            PeerDirectEvent event2 = new PeerDirectEvent(peer);
-            PeerDirectEvent event3 = new PeerDirectEvent(peer2);
+            final PeerDirectEvent event1 = new PeerDirectEvent(peer);
+            final PeerDirectEvent event2 = new PeerDirectEvent(peer);
+            final PeerDirectEvent event3 = new PeerDirectEvent(peer2);
 
             assertEquals(event1, event2);
             assertNotEquals(event1, event3);
@@ -47,9 +47,9 @@ class PeerDirectEventTest {
 
         @Test
         void notSameBecauseOfDifferentMessage() {
-            PeerDirectEvent event1 = new PeerDirectEvent(peer);
-            PeerDirectEvent event2 = new PeerDirectEvent(peer);
-            PeerDirectEvent event3 = new PeerDirectEvent(peer2);
+            final PeerDirectEvent event1 = new PeerDirectEvent(peer);
+            final PeerDirectEvent event2 = new PeerDirectEvent(peer);
+            final PeerDirectEvent event3 = new PeerDirectEvent(peer2);
 
             assertEquals(event1.hashCode(), event2.hashCode());
             assertNotEquals(event1.hashCode(), event3.hashCode());

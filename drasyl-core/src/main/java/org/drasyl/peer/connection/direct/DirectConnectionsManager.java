@@ -77,17 +77,17 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
     private final Set<Endpoint> endpoints;
     private final int maxConnections;
 
-    public DirectConnectionsManager(DrasylConfig config,
-                                    Identity identity,
-                                    PeersManager peersManager,
-                                    Messenger messenger,
-                                    DrasylPipeline pipeline,
-                                    PeerChannelGroup channelGroup,
-                                    EventLoopGroup workerGroup,
-                                    Consumer<Event> eventConsumer,
-                                    BooleanSupplier acceptNewConnectionsSupplier,
-                                    Set<Endpoint> endpoints,
-                                    Observable<CompressedPublicKey> communicationOccurred) {
+    public DirectConnectionsManager(final DrasylConfig config,
+                                    final Identity identity,
+                                    final PeersManager peersManager,
+                                    final Messenger messenger,
+                                    final DrasylPipeline pipeline,
+                                    final PeerChannelGroup channelGroup,
+                                    final EventLoopGroup workerGroup,
+                                    final Consumer<Event> eventConsumer,
+                                    final BooleanSupplier acceptNewConnectionsSupplier,
+                                    final Set<Endpoint> endpoints,
+                                    final Observable<CompressedPublicKey> communicationOccurred) {
         this(
                 config,
                 identity,
@@ -108,21 +108,21 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
         communicationOccurred.subscribe(this::communicationOccurred);
     }
 
-    DirectConnectionsManager(DrasylConfig config,
-                             Identity identity,
-                             PeersManager peersManager,
-                             AtomicBoolean opened,
-                             Messenger messenger,
-                             DrasylPipeline pipeline,
-                             PeerChannelGroup channelGroup,
-                             EventLoopGroup workerGroup,
-                             Consumer<Event> eventConsumer,
-                             Set<Endpoint> endpoints,
-                             DirectConnectionDemandsCache directConnectionDemandsCache,
-                             RequestPeerInformationCache requestPeerInformationCache,
-                             Map<CompressedPublicKey, DirectClient> clients,
-                             BooleanSupplier acceptNewConnectionsSupplier,
-                             int maxConnections) {
+    DirectConnectionsManager(final DrasylConfig config,
+                             final Identity identity,
+                             final PeersManager peersManager,
+                             final AtomicBoolean opened,
+                             final Messenger messenger,
+                             final DrasylPipeline pipeline,
+                             final PeerChannelGroup channelGroup,
+                             final EventLoopGroup workerGroup,
+                             final Consumer<Event> eventConsumer,
+                             final Set<Endpoint> endpoints,
+                             final DirectConnectionDemandsCache directConnectionDemandsCache,
+                             final RequestPeerInformationCache requestPeerInformationCache,
+                             final Map<CompressedPublicKey, DirectClient> clients,
+                             final BooleanSupplier acceptNewConnectionsSupplier,
+                             final int maxConnections) {
         this.config = config;
         this.identity = identity;
         this.peersManager = peersManager;
@@ -147,12 +147,12 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
             // add handler to the pipeline that listens for {@link PeerRelayEvent}s.
             pipeline.addLast(DIRECT_CONNECTIONS_MANAGER, new HandlerAdapter() {
                 @Override
-                public void eventTriggered(HandlerContext ctx,
-                                           Event event,
-                                           CompletableFuture<Void> future) {
+                public void eventTriggered(final HandlerContext ctx,
+                                           final Event event,
+                                           final CompletableFuture<Void> future) {
                     if (opened.get() && event instanceof PeerRelayEvent) {
-                        PeerRelayEvent peerRelayEvent = (PeerRelayEvent) event;
-                        CompressedPublicKey publicKey = peerRelayEvent.getPeer().getPublicKey();
+                        final PeerRelayEvent peerRelayEvent = (PeerRelayEvent) event;
+                        final CompressedPublicKey publicKey = peerRelayEvent.getPeer().getPublicKey();
 
                         // Important: We don't want to create direct connections to ourselves
                         if (!publicKey.equals(identity.getPublicKey())) {
@@ -173,11 +173,11 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
      *
      * @param publicKey the public key
      */
-    void communicationOccurred(CompressedPublicKey publicKey) {
+    void communicationOccurred(final CompressedPublicKey publicKey) {
         if (opened.get() && !publicKey.equals(identity.getPublicKey())) {
             directConnectionDemandsCache.add(publicKey);
-            Pair<PeerInformation, Set<Path>> peer = peersManager.getPeer(publicKey);
-            Set<Path> paths = peer.second();
+            final Pair<PeerInformation, Set<Path>> peer = peersManager.getPeer(publicKey);
+            final Set<Path> paths = peer.second();
             if (paths.isEmpty()) {
                 requestPeerInformation(publicKey);
             }
@@ -199,9 +199,9 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
             directConnectionDemandsCache.clear();
 
             // close and remove all client connections
-            for (Map.Entry<CompressedPublicKey, DirectClient> entry : new HashSet<>(clients.entrySet())) {
-                CompressedPublicKey publicKey = entry.getKey();
-                DirectClient client = entry.getValue();
+            for (final Map.Entry<CompressedPublicKey, DirectClient> entry : new HashSet<>(clients.entrySet())) {
+                final CompressedPublicKey publicKey = entry.getKey();
+                final DirectClient client = entry.getValue();
 
                 clients.remove(publicKey);
                 client.close();
@@ -217,7 +217,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
      *
      * @param publicKey the public key
      */
-    private void requestPeerInformation(CompressedPublicKey publicKey) {
+    private void requestPeerInformation(final CompressedPublicKey publicKey) {
         if (requestPeerInformationCache.add(publicKey)) {
             LOG.debug("Request information for Peer '{}'", publicKey);
             messenger.send(new WhoisMessage(publicKey, identity.getPublicKey(), PeerInformation.of(endpoints))).whenComplete((done, e) -> {
@@ -239,17 +239,17 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
      *
      * @param publicKey the public key
      */
-    private void initiateDirectConnectionOnDemand(CompressedPublicKey publicKey) {
+    private void initiateDirectConnectionOnDemand(final CompressedPublicKey publicKey) {
         if (directConnectionDemandsCache.contains(publicKey)) {
-            Supplier<Set<Endpoint>> endpointsSupplier = () -> {
-                Pair<PeerInformation, Set<Path>> peer = peersManager.getPeer(publicKey);
-                PeerInformation peerInformation = peer.first();
+            final Supplier<Set<Endpoint>> endpointsSupplier = () -> {
+                final Pair<PeerInformation, Set<Path>> peer = peersManager.getPeer(publicKey);
+                final PeerInformation peerInformation = peer.first();
                 return peerInformation.getEndpoints();
             };
 
             synchronized (this) {
                 if ((maxConnections == 0 || maxConnections > clients.size()) && !clients.containsKey(publicKey) && !endpointsSupplier.get().isEmpty()) {
-                    DirectClient client = new DirectClient(
+                    final DirectClient client = new DirectClient(
                             config,
                             identity,
                             peersManager,

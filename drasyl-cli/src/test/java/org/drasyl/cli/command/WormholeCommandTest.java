@@ -57,7 +57,7 @@ class WormholeCommandTest {
         void shouldPrintHelp() {
             underTest.help(cmd);
 
-            String output = outputStream.toString();
+            final String output = outputStream.toString();
             assertThat(output, containsString("Transfer a text message from one node to another, safely."));
             assertThat(output, containsString("Usage:" + System.lineSeparator()));
             assertThat(output, containsString("drasyl wormhole [flags]" + System.lineSeparator()));
@@ -72,7 +72,7 @@ class WormholeCommandTest {
         private CommandLine cmd;
 
         @Test
-        void shouldStartSendingNode(@Mock(answer = Answers.RETURNS_DEEP_STUBS) SendingWormholeNode node) throws CliException, DrasylException {
+        void shouldStartSendingNode(@Mock(answer = Answers.RETURNS_DEEP_STUBS) final SendingWormholeNode node) throws CliException, DrasylException {
             when(cmd.getArgList().size()).thenReturn(2);
             when(cmd.getArgList().get(1)).thenReturn("send");
             when(scannerSupplier.get()).thenReturn(new Scanner("Hallo Welt"));
@@ -84,7 +84,7 @@ class WormholeCommandTest {
         }
 
         @Test
-        void shouldStartReceivingNode(@Mock(answer = Answers.RETURNS_DEEP_STUBS) ReceivingWormholeNode node) throws CliException, DrasylException {
+        void shouldStartReceivingNode(@Mock(answer = Answers.RETURNS_DEEP_STUBS) final ReceivingWormholeNode node) throws CliException, DrasylException {
             when(cmd.getArgList().size()).thenReturn(3);
             when(cmd.getArgList().get(1)).thenReturn("receive");
             when(cmd.getArgList().get(2)).thenReturn("022e170caf9292de6af36562d2773e62d573e33d09550e1620b9cae75b1a3a98281ff73f2346d55195d0cd274c101c4775");
@@ -109,7 +109,7 @@ class WormholeCommandTest {
 
             underTest.execute(cmd);
 
-            String output = outputStream.toString();
+            final String output = outputStream.toString();
             assertThat(output, containsString("Transfer a text message from one node to another, safely."));
         }
     }

@@ -39,7 +39,7 @@ class RequestPeerInformationCacheTest {
     }
 
     @Test
-    void shouldExpireKeysAfterSomeTime(@Mock CompressedPublicKey publicKey) {
+    void shouldExpireKeysAfterSomeTime(@Mock final CompressedPublicKey publicKey) {
         underTest = new RequestPeerInformationCache(10, ofMillis(100));
         assertTrue(underTest.add(publicKey));
 
@@ -47,8 +47,8 @@ class RequestPeerInformationCacheTest {
     }
 
     @Test
-    void shouldEvictEntriesWhenLimitIsExceeded(@Mock CompressedPublicKey publicKey1,
-                                               @Mock CompressedPublicKey publicKey2) {
+    void shouldEvictEntriesWhenLimitIsExceeded(@Mock final CompressedPublicKey publicKey1,
+                                               @Mock final CompressedPublicKey publicKey2) {
         underTest = new RequestPeerInformationCache(1, ofSeconds(1));
         underTest.add(publicKey1);
         underTest.add(publicKey2);

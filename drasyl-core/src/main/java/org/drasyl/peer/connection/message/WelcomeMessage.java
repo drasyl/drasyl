@@ -38,10 +38,10 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
     private final MessageId correspondingId;
 
     @JsonCreator
-    private WelcomeMessage(@JsonProperty("id") MessageId id,
-                           @JsonProperty("userAgent") String userAgent,
-                           @JsonProperty("peerInformation") PeerInformation peerInformation,
-                           @JsonProperty("correspondingId") MessageId correspondingId) {
+    private WelcomeMessage(@JsonProperty("id") final MessageId id,
+                           @JsonProperty("userAgent") final String userAgent,
+                           @JsonProperty("peerInformation") final PeerInformation peerInformation,
+                           @JsonProperty("correspondingId") final MessageId correspondingId) {
         super(id, userAgent);
         this.peerInformation = requireNonNull(peerInformation);
         this.correspondingId = requireNonNull(correspondingId);
@@ -53,8 +53,8 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
      * @param peerInformation the peer information of the node server
      * @param correspondingId the corresponding id of the previous join message
      */
-    public WelcomeMessage(PeerInformation peerInformation,
-                          MessageId correspondingId) {
+    public WelcomeMessage(final PeerInformation peerInformation,
+                          final MessageId correspondingId) {
         this.peerInformation = requireNonNull(peerInformation);
         this.correspondingId = requireNonNull(correspondingId);
     }
@@ -74,7 +74,7 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -84,7 +84,7 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
         if (!super.equals(o)) {
             return false;
         }
-        WelcomeMessage that = (WelcomeMessage) o;
+        final WelcomeMessage that = (WelcomeMessage) o;
         return Objects.equals(peerInformation, that.peerInformation) &&
                 Objects.equals(correspondingId, that.correspondingId);
     }

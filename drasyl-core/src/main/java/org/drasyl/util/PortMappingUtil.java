@@ -55,16 +55,16 @@ public class PortMappingUtil {
      * @param address address to be exposed
      * @return List of port mappings.
      */
-    public static Set<PortMapping> expose(InetSocketAddress address) {
+    public static Set<PortMapping> expose(final InetSocketAddress address) {
         // discover available port mapping devices
-        List<PortMapper> mappers = discoverMappers(address.getAddress());
+        final List<PortMapper> mappers = discoverMappers(address.getAddress());
 
-        Set<PortMapping> mappings = new HashSet<>();
-        for (PortMapper mapper : mappers) {
+        final Set<PortMapping> mappings = new HashSet<>();
+        for (final PortMapper mapper : mappers) {
             try {
                 mappings.add(new PortMapping(mapper, address));
             }
-            catch (IllegalStateException e) {
+            catch (final IllegalStateException e) {
                 if (LOG.isDebugEnabled()) {
                     LOG.debug(e.getMessage());
                 }
@@ -84,18 +84,18 @@ public class PortMappingUtil {
      * @return list of routers that are in the same network as {@code address}.
      */
     private static synchronized List<PortMapper> discoverMappers(
-            InetAddress address) {
+            final InetAddress address) {
         if (mappersSupplier == null) {
-            Bus networkBus = NetworkGateway.create().getBus();
-            Bus processBus = ProcessGateway.create().getBus();
+            final Bus networkBus = NetworkGateway.create().getBus();
+            final Bus processBus = ProcessGateway.create().getBus();
             mappersSupplier = Suppliers.memoizeWithExpiration(() -> {
                 try {
                     LOG.debug("Search for PCP, NAT-PMP, or UPNP-IGD enabled routers on all available network interfaces...");
-                    List<PortMapper> mappers = PortMapperFactory.discover(networkBus, processBus);
+                    final List<PortMapper> mappers = PortMapperFactory.discover(networkBus, processBus);
                     LOG.debug("{} router(s) discovered.", mappers.size());
                     return mappers;
                 }
-                catch (InterruptedException e) {
+                catch (final InterruptedException e) {
                     Thread.currentThread().interrupt();
                     return List.of();
                 }
@@ -104,7 +104,7 @@ public class PortMappingUtil {
 
         // filter out mappers that are not in same network
         if (!address.isAnyLocalAddress()) {
-            short networkPrefixLength = NetworkUtil.getNetworkPrefixLength(address);
+            final short networkPrefixLength = NetworkUtil.getNetworkPrefixLength(address);
             return mappersSupplier.get()
                     .stream().filter(m -> NetworkUtil.sameNetwork(address, m.getSourceAddress(), networkPrefixLength))
                     .collect(Collectors.toList());
@@ -125,12 +125,12 @@ public class PortMappingUtil {
         private MappedPort mappedPort;
         private Disposable refreshDisposable;
 
-        PortMapping(PortMapper mapper,
-                    InetSocketAddress address,
-                    Subject<Optional<InetSocketAddress>> externalAddressObservable,
-                    Scheduler scheduler,
-                    MappedPort mappedPort,
-                    Disposable refreshDisposable) {
+        PortMapping(final PortMapper mapper,
+                    final InetSocketAddress address,
+                    final Subject<Optional<InetSocketAddress>> externalAddressObservable,
+                    final Scheduler scheduler,
+                    final MappedPort mappedPort,
+                    final Disposable refreshDisposable) {
             this.mapper = mapper;
             this.address = address;
             this.externalAddressObservable = externalAddressObservable;
@@ -139,16 +139,16 @@ public class PortMappingUtil {
             this.refreshDisposable = refreshDisposable;
         }
 
-        PortMapping(PortMapper mapper,
-                    InetSocketAddress address,
-                    Subject<Optional<InetSocketAddress>> externalAddressObservable,
-                    Scheduler scheduler) {
+        PortMapping(final PortMapper mapper,
+                    final InetSocketAddress address,
+                    final Subject<Optional<InetSocketAddress>> externalAddressObservable,
+                    final Scheduler scheduler) {
             this(mapper, address, externalAddressObservable, scheduler, null, null);
 
             try {
                 createMapping();
             }
-            catch (IllegalStateException e) {
+            catch (final IllegalStateException e) {
                 throw new IllegalStateException(mappingMethod() + " router " + mapper.getSourceAddress() + " was unable to create port mapping for " + address + ": " + e.getMessage());
             }
         }
@@ -160,8 +160,8 @@ public class PortMappingUtil {
          * @param address address to be exposed
          * @throws IllegalStateException if the port could not be mapped for any reason
          */
-        public PortMapping(PortMapper mapper,
-                           InetSocketAddress address) {
+        public PortMapping(final PortMapper mapper,
+                           final InetSocketAddress address) {
             this(mapper, address, BehaviorSubject.createDefault(Optional.empty()), DrasylScheduler.getInstanceLight());
         }
 
@@ -178,12 +178,12 @@ public class PortMappingUtil {
                     refreshDisposable = null;
                     mapper.unmapPort(mappedPort);
                 }
-                catch (IllegalStateException e) {
+                catch (final IllegalStateException e) {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("Unable to close port mapping on {} router for {}: {}", mappingMethod(), address, e.getMessage());
                     }
                 }
-                catch (InterruptedException e) {
+                catch (final InterruptedException e) {
                     Thread.currentThread().interrupt();
                 }
                 finally {
@@ -227,12 +227,12 @@ public class PortMappingUtil {
             return externalAddressObservable.distinctUntilChanged().subscribeOn(scheduler);
         }
 
-        private void scheduleMappingRefresh(Duration delay) {
+        private void scheduleMappingRefresh(final Duration delay) {
             refreshDisposable = scheduler.scheduleDirect(() -> {
                 try {
                     createMapping();
                 }
-                catch (IllegalStateException e) {
+                catch (final IllegalStateException e) {
                     if (LOG.isDebugEnabled()) {
                         LOG.debug("Unable to refresh {} port mapping on {} router for {}. Retry in {}ms", mappedPort.getPortType(), mappingMethod(), address, RETRY_DELAY.toMillis());
                     }
@@ -245,7 +245,7 @@ public class PortMappingUtil {
         private void createMapping() {
             try {
                 mappedPort = mapper.mapPort(PortType.TCP, address.getPort(), address.getPort(), PORT_LIFETIME.getSeconds());
-                InetSocketAddress externalAdded = new InetSocketAddress(mappedPort.getExternalAddress().getHostName(), mappedPort.getExternalPort());
+                final InetSocketAddress externalAdded = new InetSocketAddress(mappedPort.getExternalAddress().getHostName(), mappedPort.getExternalPort());
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("{} router has created {} port mapping {} -> {} (lifetime: {}s)", mappingMethod(), mappedPort.getPortType(), externalAdded, address, mappedPort.getLifetime());
                 }
@@ -258,7 +258,7 @@ public class PortMappingUtil {
                     throw new IllegalStateException("Non-positive lifetime (" + mappedPort.getLifetime() + "s) received from " + mappingMethod() + " router for " + mappedPort.getPortType() + " port mapping " + externalAdded + " -> " + address);
                 }
             }
-            catch (InterruptedException e) {
+            catch (final InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
         }

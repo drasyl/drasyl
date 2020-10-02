@@ -64,7 +64,7 @@ public class ChatGUI extends Application {
 
     @SuppressWarnings({ "java:S112" })
     @Override
-    public void start(Stage stage) {
+    public void start(final Stage stage) {
         try {
             this.stage = stage;
             stage.setTitle("Drasyl Chat");
@@ -73,10 +73,10 @@ public class ChatGUI extends Application {
             chatScene = buildChatScene();
             chatScene.getStylesheets().add("drasyl.css");
 
-            CompletableFuture<Void> online = new CompletableFuture<>();
+            final CompletableFuture<Void> online = new CompletableFuture<>();
             node = new DrasylNode() {
                 @Override
-                public void onEvent(Event event) {
+                public void onEvent(final Event event) {
                     if (event instanceof MessageEvent) {
                         parseMessage(((MessageEvent) event).getPayload());
                     }
@@ -95,13 +95,13 @@ public class ChatGUI extends Application {
             node.start().join();
             online.join();
 
-            Scene initScene = buildInitScene();
+            final Scene initScene = buildInitScene();
             initScene.getStylesheets().add("drasyl.css");
 
             stage.setScene(initScene);
             stage.show();
         }
-        catch (Exception e) {
+        catch (final Exception e) {
             throw new RuntimeException(e);
         }
     }
@@ -115,10 +115,10 @@ public class ChatGUI extends Application {
     }
 
     private Scene buildChatScene() {
-        VBox vBox = new VBox();
-        HBox hBox = new HBox();
+        final VBox vBox = new VBox();
+        final HBox hBox = new HBox();
 
-        ScrollPane scrollPane = new ScrollPane();
+        final ScrollPane scrollPane = new ScrollPane();
         txtArea = new TextArea();
         txtArea.setEditable(false);
         scrollPane.setContent(txtArea);
@@ -138,38 +138,38 @@ public class ChatGUI extends Application {
         return new Scene(vBox, 800, 600);
     }
 
-    private void parseMessage(Object obj) {
+    private void parseMessage(final Object obj) {
         if (obj instanceof Message) {
-            Message msg = (Message) obj;
+            final Message msg = (Message) obj;
 
             txtArea.appendText("[" + msg.getUsername() + "]: " + msg.getMsg() + "\n");
         }
     }
 
     private Scene buildInitScene() {
-        GridPane grid = new GridPane();
+        final GridPane grid = new GridPane();
         grid.setPadding(new Insets(10, 10, 10, 10));
         grid.setVgap(8);
         grid.setHgap(10);
         grid.setAlignment(Pos.CENTER);
 
-        Label myIDLabel = new Label("Your ID is: ");
+        final Label myIDLabel = new Label("Your ID is: ");
         GridPane.setConstraints(myIDLabel, 0, 0);
-        TextField myIDTextField = new TextField(myID.toString());
+        final TextField myIDTextField = new TextField(myID.toString());
         myIDTextField.setEditable(false);
         GridPane.setConstraints(myIDTextField, 1, 0);
 
-        Label usernameLabel = new Label("Your username: ");
+        final Label usernameLabel = new Label("Your username: ");
         GridPane.setConstraints(usernameLabel, 0, 1);
         usernameInput = new TextField("");
         GridPane.setConstraints(usernameInput, 1, 1);
 
-        Label recipientIDLabel = new Label("Recipient ID: ");
+        final Label recipientIDLabel = new Label("Recipient ID: ");
         GridPane.setConstraints(recipientIDLabel, 0, 2);
         recipientIDInput = new TextField("");
         GridPane.setConstraints(recipientIDInput, 1, 2);
 
-        Button startButton = new Button("Start chatting");
+        final Button startButton = new Button("Start chatting");
         startButton.setOnAction(this::initAction);
         GridPane.setConstraints(startButton, 1, 3);
         grid.getChildren().addAll(myIDLabel, myIDTextField, usernameLabel, usernameInput, recipientIDLabel, recipientIDInput, startButton);
@@ -177,7 +177,7 @@ public class ChatGUI extends Application {
         return new Scene(grid, 325, 225);
     }
 
-    private void newInputAction(ActionEvent actionEvent) {
+    private void newInputAction(final ActionEvent actionEvent) {
         if (validateInput(chatField, s -> !s.isEmpty())) {
             try {
                 final String msg = chatField.getText();
@@ -196,7 +196,7 @@ public class ChatGUI extends Application {
     }
 
     @SuppressWarnings({ "java:S112" })
-    private void initAction(ActionEvent actionEvent) {
+    private void initAction(final ActionEvent actionEvent) {
         if (validateInput(usernameInput, s -> !s.isEmpty())
 //                && validateInput(recipientIDInput, Address::isValid)
         ) {
@@ -205,7 +205,7 @@ public class ChatGUI extends Application {
             try {
                 recipient = CompressedPublicKey.of(recipientIDInput.getText());
             }
-            catch (CryptoException e) {
+            catch (final CryptoException e) {
                 throw new RuntimeException(e);
             }
 
@@ -213,8 +213,8 @@ public class ChatGUI extends Application {
         }
     }
 
-    private boolean validateInput(TextField textField,
-                                  Function<String, Boolean> validation) { //NOSONAR
+    private boolean validateInput(final TextField textField,
+                                  final Function<String, Boolean> validation) { //NOSONAR
         if (validation.apply(textField.getText())) { //NOSONAR
             textField.getStyleClass().remove(ERROR_CSS);
 
@@ -227,7 +227,7 @@ public class ChatGUI extends Application {
         }
     }
 
-    public static void main(String[] args) {
+    public static void main(final String[] args) {
         launch(args);
     }
 }

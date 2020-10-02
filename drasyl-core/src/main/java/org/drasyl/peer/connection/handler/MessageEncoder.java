@@ -50,7 +50,7 @@ public class MessageEncoder extends MessageToMessageEncoder<Message> {
 
     @Override
     @SuppressWarnings("java:S2093")
-    protected void encode(ChannelHandlerContext ctx, Message msg, List<Object> out) {
+    protected void encode(final ChannelHandlerContext ctx, final Message msg, final List<Object> out) {
         if (LOG.isTraceEnabled()) {
             LOG.trace("[{}]: Send Message '{}'", ctx.channel().id().asShortText(), msg);
         }
@@ -58,13 +58,13 @@ public class MessageEncoder extends MessageToMessageEncoder<Message> {
         BinaryWebSocketFrame frame = null;
         try {
             frame = new BinaryWebSocketFrame(PooledByteBufAllocator.DEFAULT.buffer());
-            ByteBufOutputStream outputStream = new ByteBufOutputStream(frame.content());
+            final ByteBufOutputStream outputStream = new ByteBufOutputStream(frame.content());
             JACKSON_WRITER.writeValue((OutputStream) outputStream, msg);
 
             outputStream.close();
             out.add(frame.retain());
         }
-        catch (IOException e) {
+        catch (final IOException e) {
             LOG.error("[{}]: Unable to serialize '{}'", ctx.channel().id().asShortText(), LoggingUtil.sanitizeLogArg(msg));
             throw new IllegalArgumentException("Message could not be serialized. This could indicate a bug in drasyl: " + e.getMessage());
         }

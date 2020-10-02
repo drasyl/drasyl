@@ -46,7 +46,7 @@ class NetworkUtilTest {
     class GetExternalIPv4Address {
         @Test
         void shouldReturnExternalIPv4Address() {
-            InetAddress address = NetworkUtil.getExternalIPv4Address();
+            final InetAddress address = NetworkUtil.getExternalIPv4Address();
 
             if (address != null) {
                 assertThat(address, instanceOf(Inet4Address.class));
@@ -58,7 +58,7 @@ class NetworkUtilTest {
     class GetExternalIPv6Address {
         @Test
         void shouldReturnExternalIPv6Address() {
-            InetAddress address = NetworkUtil.getExternalIPv6Address();
+            final InetAddress address = NetworkUtil.getExternalIPv6Address();
 
             if (address != null) {
                 assertThat(address, instanceOf(Inet6Address.class));
@@ -70,10 +70,10 @@ class NetworkUtilTest {
     class Available {
         @Test
         void shouldReturnCorrectValue() {
-            try (ServerSocket socket = new ServerSocket(5555)) {
+            try (final ServerSocket socket = new ServerSocket(5555)) {
                 assertFalse(NetworkUtil.available(5555));
             }
-            catch (IOException e) {
+            catch (final IOException e) {
             }
 
             assertTrue(NetworkUtil.available(4444));
@@ -90,10 +90,10 @@ class NetworkUtilTest {
     class Alive {
         @Test
         void shouldReturnCorrectValue() {
-            try (ServerSocket socket = new ServerSocket(2222)) {
+            try (final ServerSocket socket = new ServerSocket(2222)) {
                 assertTrue(NetworkUtil.alive("127.0.0.1", 2222));
             }
-            catch (IOException e) {
+            catch (final IOException e) {
             }
 
             assertFalse(NetworkUtil.alive("127.0.0.1", 3333));
@@ -142,7 +142,7 @@ class NetworkUtilTest {
     class GetNetworkPrefixLength {
         @Test
         void shouldNotThrowException() {
-            for (InetAddress address : getAddresses()) {
+            for (final InetAddress address : getAddresses()) {
                 assertDoesNotThrow(() -> getNetworkPrefixLength(address));
             }
         }
@@ -152,16 +152,16 @@ class NetworkUtilTest {
     class Cidr2Netmask {
         @Test
         void shouldConvertToCorrectNetmaskForIPv4() throws UnknownHostException {
-            InetAddress mask = InetAddress.getByName("255.255.255.0");
-            short cidr = 24;
+            final InetAddress mask = InetAddress.getByName("255.255.255.0");
+            final short cidr = 24;
 
             assertArrayEquals(mask.getAddress(), NetworkUtil.cidr2Netmask(cidr, 4));
         }
 
         @Test
         void shouldConvertToCorrectNetmaskForIPv6() throws UnknownHostException {
-            InetAddress mask = InetAddress.getByName("ffff:ffff:ffff:ff80::");
-            short cidr = 57;
+            final InetAddress mask = InetAddress.getByName("ffff:ffff:ffff:ff80::");
+            final short cidr = 57;
 
             assertArrayEquals(mask.getAddress(), NetworkUtil.cidr2Netmask(cidr, 16));
         }
@@ -177,14 +177,14 @@ class NetworkUtilTest {
     class SameNetwork {
         @Test
         void shouldWorkForSameNetworkIPv4() throws UnknownHostException {
-            InetAddress currentIP = InetAddress.getByName("192.168.1.129");
-            InetAddress firstIP = InetAddress.getByName("192.168.1.0");
-            InetAddress lastIP = InetAddress.getByName("192.168.1.255");
-            InetAddress lastNotIncludedIP = InetAddress.getByName("192.168.0.255");
-            InetAddress firstNotIncludedIP = InetAddress.getByName("192.168.2.0");
-            short netmask = (short) 24;
+            final InetAddress currentIP = InetAddress.getByName("192.168.1.129");
+            final InetAddress firstIP = InetAddress.getByName("192.168.1.0");
+            final InetAddress lastIP = InetAddress.getByName("192.168.1.255");
+            final InetAddress lastNotIncludedIP = InetAddress.getByName("192.168.0.255");
+            final InetAddress firstNotIncludedIP = InetAddress.getByName("192.168.2.0");
+            final short netmask = (short) 24;
 
-            byte[] currentIPBytes = currentIP.getAddress();
+            final byte[] currentIPBytes = currentIP.getAddress();
 
             assertTrue(NetworkUtil.sameNetwork(firstIP, currentIP, netmask));
             assertTrue(NetworkUtil.sameNetwork(lastIP, currentIP, netmask));
@@ -203,7 +203,7 @@ class NetworkUtilTest {
 
         @Test
         void shouldThrowExceptionOnNull() throws UnknownHostException {
-            InetAddress address = InetAddress.getByName("192.168.1.129");
+            final InetAddress address = InetAddress.getByName("192.168.1.129");
 
             assertThrows(NullPointerException.class, () -> NetworkUtil.sameNetwork(address, null, (short) 24));
             assertThrows(NullPointerException.class, () -> NetworkUtil.sameNetwork(null, address, (short) 24));
@@ -211,14 +211,14 @@ class NetworkUtilTest {
 
         @Test
         void shouldWorkForSameNetworkIPv6() throws UnknownHostException {
-            InetAddress currentIP = InetAddress.getByName("2001:0db8:85a3:08d3:1319:8a2e:0370:7347");
-            InetAddress firstIP = InetAddress.getByName("2001:0db8:85a3:0880:0000:0000:0000:0000");
-            InetAddress lastIP = InetAddress.getByName("2001:0db8:85a3:08ff:ffff:ffff:ffff:ffff");
-            InetAddress lastNotIncludedIP = InetAddress.getByName("2001:0db8:85a3:07ff:ffff:ffff:ffff:ffff");
-            InetAddress firstNotIncludedIP = InetAddress.getByName("2001:0db8:85a3:0980:0000:0000:0000:0000");
-            short netmask = (short) 57;
+            final InetAddress currentIP = InetAddress.getByName("2001:0db8:85a3:08d3:1319:8a2e:0370:7347");
+            final InetAddress firstIP = InetAddress.getByName("2001:0db8:85a3:0880:0000:0000:0000:0000");
+            final InetAddress lastIP = InetAddress.getByName("2001:0db8:85a3:08ff:ffff:ffff:ffff:ffff");
+            final InetAddress lastNotIncludedIP = InetAddress.getByName("2001:0db8:85a3:07ff:ffff:ffff:ffff:ffff");
+            final InetAddress firstNotIncludedIP = InetAddress.getByName("2001:0db8:85a3:0980:0000:0000:0000:0000");
+            final short netmask = (short) 57;
 
-            byte[] currentIPBytes = currentIP.getAddress();
+            final byte[] currentIPBytes = currentIP.getAddress();
 
             assertTrue(NetworkUtil.sameNetwork(firstIP, currentIP, netmask));
             assertTrue(NetworkUtil.sameNetwork(lastIP, currentIP, netmask));

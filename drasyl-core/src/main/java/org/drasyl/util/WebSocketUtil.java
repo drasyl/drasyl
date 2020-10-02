@@ -38,8 +38,8 @@ public class WebSocketUtil {
      * @throws IllegalArgumentException if no port could be determined
      * @throws NullPointerException     if {@code uri} is {@code null}
      */
-    public static int webSocketPort(URI uri) {
-        int port = uri.getPort();
+    public static int webSocketPort(final URI uri) {
+        final int port = uri.getPort();
 
         // port was included in URI
         if (port != -1) {
@@ -47,7 +47,7 @@ public class WebSocketUtil {
         }
 
         // Fallback: Use protocol standard ports
-        String scheme = uri.getScheme();
+        final String scheme = uri.getScheme();
         if (scheme != null) {
             if (scheme.equals("ws")) {
                 return WS_PORT;
@@ -66,7 +66,7 @@ public class WebSocketUtil {
      * <code>false</code>
      * @throws NullPointerException if {@code uri} is {@code null}
      */
-    public static boolean isWebSocketSecureURI(URI uri) {
+    public static boolean isWebSocketSecureURI(final URI uri) {
         return uri.getScheme() != null && uri.getScheme().equals("wss");
     }
 
@@ -76,7 +76,7 @@ public class WebSocketUtil {
      * returns <code>false</code>
      * @throws NullPointerException if {@code uri} is {@code null}
      */
-    public static boolean isWebSocketNonSecureURI(URI uri) {
+    public static boolean isWebSocketNonSecureURI(final URI uri) {
         return uri.getScheme() != null && uri.getScheme().equals("ws");
     }
 
@@ -86,7 +86,7 @@ public class WebSocketUtil {
      * <code>false</code>
      * @throws NullPointerException if {@code uri} is {@code null}
      */
-    public static boolean isWebSocketURI(URI uri) {
+    public static boolean isWebSocketURI(final URI uri) {
         return isWebSocketNonSecureURI(uri) || isWebSocketSecureURI(uri);
     }
 }

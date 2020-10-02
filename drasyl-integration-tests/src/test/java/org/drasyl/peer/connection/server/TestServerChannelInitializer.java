@@ -29,7 +29,7 @@ public class TestServerChannelInitializer extends DefaultServerChannelInitialize
     private final PublishSubject<Message> sentMessages;
     private final PublishSubject<Message> receivedMessages;
 
-    public TestServerChannelInitializer(ServerEnvironment environment) {
+    public TestServerChannelInitializer(final ServerEnvironment environment) {
         super(environment);
         sentMessages = PublishSubject.create();
         receivedMessages = PublishSubject.create();
@@ -44,26 +44,26 @@ public class TestServerChannelInitializer extends DefaultServerChannelInitialize
     }
 
     @Override
-    protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
+    protected void afterPojoMarshalStage(final ChannelPipeline pipeline) {
         super.afterPojoMarshalStage(pipeline);
         pipeline.addLast(new SimpleChannelDuplexHandler<Message, Message>(false, false, false) {
             @Override
-            protected void channelRead0(ChannelHandlerContext ctx,
-                                        Message msg) {
+            protected void channelRead0(final ChannelHandlerContext ctx,
+                                        final Message msg) {
                 receivedMessages.onNext(msg);
                 ctx.fireChannelRead(msg);
             }
 
             @Override
-            protected void channelWrite0(ChannelHandlerContext ctx,
-                                         Message msg,
-                                         ChannelPromise promise) {
+            protected void channelWrite0(final ChannelHandlerContext ctx,
+                                         final Message msg,
+                                         final ChannelPromise promise) {
                 sentMessages.onNext(msg);
                 ctx.write(msg, promise);
             }
 
             @Override
-            public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
+            public void channelUnregistered(final ChannelHandlerContext ctx) throws Exception {
                 sentMessages.onComplete();
                 receivedMessages.onComplete();
                 super.channelUnregistered(ctx);

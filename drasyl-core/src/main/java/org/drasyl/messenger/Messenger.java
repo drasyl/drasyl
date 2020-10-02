@@ -47,23 +47,23 @@ public class Messenger {
     private final MessageSink channelGroupSink;
     private MessageSink intraVmSink;
 
-    public Messenger(MessageSink loopbackSink,
-                     PeersManager peersManager,
-                     PeerChannelGroup channelGroup) {
+    public Messenger(final MessageSink loopbackSink,
+                     final PeersManager peersManager,
+                     final PeerChannelGroup channelGroup) {
         this(PublishSubject.create(), loopbackSink, null, message -> {
-            CompressedPublicKey recipient = message.getRecipient();
+            final CompressedPublicKey recipient = message.getRecipient();
 
             try {
                 return toFuture(channelGroup.writeAndFlush(recipient, message));
             }
-            catch (IllegalArgumentException e) {
-                CompressedPublicKey superPeer = peersManager.getSuperPeerKey();
+            catch (final IllegalArgumentException e) {
+                final CompressedPublicKey superPeer = peersManager.getSuperPeerKey();
                 if (superPeer != null && recipient != superPeer) {
                     // no direct connection, send message to super peer
                     try {
                         return toFuture(channelGroup.writeAndFlush(superPeer, message));
                     }
-                    catch (IllegalArgumentException e2) {
+                    catch (final IllegalArgumentException e2) {
                         return failedFuture(new NoPathToPublicKeyException(recipient));
                     }
                 }
@@ -74,10 +74,10 @@ public class Messenger {
         });
     }
 
-    Messenger(Subject<CompressedPublicKey> communicationOccurred,
-              MessageSink loopbackSink,
-              MessageSink intraVmSink,
-              MessageSink channelGroupSink) {
+    Messenger(final Subject<CompressedPublicKey> communicationOccurred,
+              final MessageSink loopbackSink,
+              final MessageSink intraVmSink,
+              final MessageSink channelGroupSink) {
         this.communicationOccurred = requireNonNull(communicationOccurred);
         this.loopbackSink = requireNonNull(loopbackSink);
         this.intraVmSink = intraVmSink;
@@ -97,24 +97,24 @@ public class Messenger {
      * @return a completed future if the message was successfully processed, otherwise an
      * exceptionally future
      */
-    public CompletableFuture<Void> send(RelayableMessage message) {
+    public CompletableFuture<Void> send(final RelayableMessage message) {
         LOG.trace("Send Message: {}", message);
 
         communicationOccurred.onNext(message.getRecipient());
 
-        LinkedList<MessageSink> messageSinks = new LinkedList<>();
+        final LinkedList<MessageSink> messageSinks = new LinkedList<>();
         messageSinks.add(loopbackSink);
         messageSinks.add(intraVmSink);
         messageSinks.add(channelGroupSink);
 
-        CompletableFuture<Void> result = new CompletableFuture<>();
+        final CompletableFuture<Void> result = new CompletableFuture<>();
         sendWithMessageSinks(message, messageSinks, result);
         return result;
     }
 
-    private void sendWithMessageSinks(RelayableMessage message,
-                                      LinkedList<MessageSink> messageSinks,
-                                      CompletableFuture<Void> result) {
+    private void sendWithMessageSinks(final RelayableMessage message,
+                                      final LinkedList<MessageSink> messageSinks,
+                                      final CompletableFuture<Void> result) {
         try {
             // get next non-null MessageSink
             MessageSink messageSink;
@@ -135,13 +135,13 @@ public class Messenger {
                 }
             });
         }
-        catch (NoSuchElementException e) {
+        catch (final NoSuchElementException e) {
             // no MessageSinks remaining
             result.completeExceptionally(new NoPathToPublicKeyException(message.getRecipient()));
         }
     }
 
-    public void setIntraVmSink(MessageSink intraVmSink) {
+    public void setIntraVmSink(final MessageSink intraVmSink) {
         this.intraVmSink = intraVmSink;
     }
 

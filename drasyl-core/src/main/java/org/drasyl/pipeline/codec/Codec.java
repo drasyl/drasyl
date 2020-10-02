@@ -27,27 +27,27 @@ import java.util.function.Consumer;
  */
 public abstract class Codec<E, D> extends SimpleDuplexHandler<E, Event, D> {
     @Override
-    protected void matchedEventTriggered(HandlerContext ctx,
-                                         Event event,
-                                         CompletableFuture<Void> future) {
+    protected void matchedEventTriggered(final HandlerContext ctx,
+                                         final Event event,
+                                         final CompletableFuture<Void> future) {
         // Skip
         ctx.fireEventTriggered(event, future);
     }
 
     @Override
-    protected void matchedRead(HandlerContext ctx,
-                               CompressedPublicKey sender,
-                               E msg,
-                               CompletableFuture<Void> future) {
+    protected void matchedRead(final HandlerContext ctx,
+                               final CompressedPublicKey sender,
+                               final E msg,
+                               final CompletableFuture<Void> future) {
         if (future.isDone()) {
             ctx.fireRead(sender, msg, future);
             return;
         }
 
-        ArrayList<CompletableFuture<?>> futures = new ArrayList<>();
+        final ArrayList<CompletableFuture<?>> futures = new ArrayList<>();
 
         decode(ctx, msg, decodedMessage -> {
-            CompletableFuture<Void> dependingFuture = new CompletableFuture<>();
+            final CompletableFuture<Void> dependingFuture = new CompletableFuture<>();
             futures.add(dependingFuture);
 
             ctx.fireRead(sender, decodedMessage, dependingFuture);
@@ -57,19 +57,19 @@ public abstract class Codec<E, D> extends SimpleDuplexHandler<E, Event, D> {
     }
 
     @Override
-    protected void matchedWrite(HandlerContext ctx,
-                                CompressedPublicKey recipient,
-                                D msg,
-                                CompletableFuture<Void> future) {
+    protected void matchedWrite(final HandlerContext ctx,
+                                final CompressedPublicKey recipient,
+                                final D msg,
+                                final CompletableFuture<Void> future) {
         if (future.isDone()) {
             ctx.write(recipient, msg, future);
             return;
         }
 
-        ArrayList<CompletableFuture<?>> futures = new ArrayList<>();
+        final ArrayList<CompletableFuture<?>> futures = new ArrayList<>();
 
         encode(ctx, msg, encodedMessage -> {
-            CompletableFuture<Void> dependingFuture = new CompletableFuture<>();
+            final CompletableFuture<Void> dependingFuture = new CompletableFuture<>();
             futures.add(dependingFuture);
 
             ctx.write(recipient, encodedMessage, dependingFuture);

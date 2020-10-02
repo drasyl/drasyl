@@ -20,22 +20,22 @@ public class GenerateIdentityCommand extends AbstractCommand {
         this(System.out); // NOSONAR
     }
 
-    GenerateIdentityCommand(PrintStream printStream) {
+    GenerateIdentityCommand(final PrintStream printStream) {
         super(printStream);
     }
 
     @Override
-    protected void help(CommandLine cmd) {
+    protected void help(final CommandLine cmd) {
         helpTemplate("genidentity", "Generate and output new Identity in JSON format.");
     }
 
     @Override
-    protected void execute(CommandLine cmd) throws CliException {
+    protected void execute(final CommandLine cmd) throws CliException {
         try {
-            Identity identity = IdentityManager.generateIdentity();
+            final Identity identity = IdentityManager.generateIdentity();
             JACKSON_WRITER.with(new DefaultPrettyPrinter()).writeValue(printStream, identity);
         }
-        catch (IdentityManagerException | IOException e) {
+        catch (final IdentityManagerException | IOException e) {
             throw new CliException(e);
         }
     }

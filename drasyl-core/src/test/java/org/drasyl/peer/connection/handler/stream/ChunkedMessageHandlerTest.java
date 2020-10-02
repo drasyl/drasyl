@@ -76,10 +76,10 @@ class ChunkedMessageHandlerTest {
 
     @Test
     void shouldRelayingChunkedMessage() {
-        ChunkedMessageHandler handler = new ChunkedMessageHandler(chunks, maxContentLength, identity.getPublicKey(), transferTimeout);
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final ChunkedMessageHandler handler = new ChunkedMessageHandler(chunks, maxContentLength, identity.getPublicKey(), transferTimeout);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        ChunkedMessage message = mock(ChunkedMessage.class);
+        final ChunkedMessage message = mock(ChunkedMessage.class);
         when(message.getRecipient()).thenReturn(mockedPublicKey);
 
         assertTrue(channel.writeInbound(message));
@@ -89,10 +89,10 @@ class ChunkedMessageHandlerTest {
 
     @Test
     void shouldCreateChunkedMessageOutputOnFirstChunk() {
-        ChunkedMessageHandler handler = new ChunkedMessageHandler(chunks, maxContentLength, identity.getPublicKey(), transferTimeout);
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final ChunkedMessageHandler handler = new ChunkedMessageHandler(chunks, maxContentLength, identity.getPublicKey(), transferTimeout);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        ChunkedMessage message = mock(ChunkedMessage.class);
+        final ChunkedMessage message = mock(ChunkedMessage.class);
         when(message.getRecipient()).thenReturn(identity.getPublicKey());
         when(message.getChecksum()).thenReturn("checksum");
         when(message.isInitialChunk()).thenReturn(true);
@@ -108,10 +108,10 @@ class ChunkedMessageHandlerTest {
 
     @Test
     void shouldAddChunkToChunkedMessageOutput() {
-        ChunkedMessageHandler handler = new ChunkedMessageHandler(chunks, maxContentLength, identity.getPublicKey(), transferTimeout);
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final ChunkedMessageHandler handler = new ChunkedMessageHandler(chunks, maxContentLength, identity.getPublicKey(), transferTimeout);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        ChunkedMessage message = mock(ChunkedMessage.class);
+        final ChunkedMessage message = mock(ChunkedMessage.class);
         when(message.getRecipient()).thenReturn(identity.getPublicKey());
         when(message.isInitialChunk()).thenReturn(false);
         when(message.getId()).thenReturn(msgID);
@@ -127,10 +127,10 @@ class ChunkedMessageHandlerTest {
 
     @Test
     void shouldNotAddChunkIfFirstChunkIsMissing() {
-        ChunkedMessageHandler handler = new ChunkedMessageHandler(chunks, maxContentLength, identity.getPublicKey(), transferTimeout);
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final ChunkedMessageHandler handler = new ChunkedMessageHandler(chunks, maxContentLength, identity.getPublicKey(), transferTimeout);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        ChunkedMessage message = mock(ChunkedMessage.class);
+        final ChunkedMessage message = mock(ChunkedMessage.class);
         when(message.getRecipient()).thenReturn(identity.getPublicKey());
         when(message.isInitialChunk()).thenReturn(false);
         when(message.getId()).thenReturn(msgID);
@@ -147,13 +147,13 @@ class ChunkedMessageHandlerTest {
 
     @Test
     void shouldDropToBigMessage() {
-        byte[] payload = new byte[maxContentLength + 1];
+        final byte[] payload = new byte[maxContentLength + 1];
         new Random().nextBytes(payload);
 
-        ChunkedMessageHandler handler = new ChunkedMessageHandler(maxContentLength, identity.getPublicKey(), transferTimeout);
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final ChunkedMessageHandler handler = new ChunkedMessageHandler(maxContentLength, identity.getPublicKey(), transferTimeout);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        ApplicationMessage message = mock(ApplicationMessage.class);
+        final ApplicationMessage message = mock(ApplicationMessage.class);
         when(message.getPayload()).thenReturn(payload);
         when(message.getId()).thenReturn(msgID);
 
@@ -163,13 +163,13 @@ class ChunkedMessageHandlerTest {
 
     @Test
     void shouldSkipMessageWithWrongPayloadSize() {
-        byte[] payload = new byte[maxContentLength];
+        final byte[] payload = new byte[maxContentLength];
         new Random().nextBytes(payload);
 
-        ChunkedMessageHandler handler = new ChunkedMessageHandler(maxContentLength, identity.getPublicKey(), transferTimeout);
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final ChunkedMessageHandler handler = new ChunkedMessageHandler(maxContentLength, identity.getPublicKey(), transferTimeout);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        ApplicationMessage message = mock(ApplicationMessage.class);
+        final ApplicationMessage message = mock(ApplicationMessage.class);
         when(message.getPayload()).thenReturn(payload);
 
         assertTrue(channel.writeOutbound(message));
@@ -178,13 +178,13 @@ class ChunkedMessageHandlerTest {
 
     @Test
     void shouldSplittMessageWithPayloadGreaterThanChunkSize() {
-        byte[] payload = new byte[ChunkedMessageHandler.CHUNK_SIZE + 1];
+        final byte[] payload = new byte[ChunkedMessageHandler.CHUNK_SIZE + 1];
         new Random().nextBytes(payload);
 
-        ChunkedMessageHandler handler = new ChunkedMessageHandler(payload.length + 1, identity.getPublicKey(), transferTimeout);
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final ChunkedMessageHandler handler = new ChunkedMessageHandler(payload.length + 1, identity.getPublicKey(), transferTimeout);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        ApplicationMessage message = mock(ApplicationMessage.class);
+        final ApplicationMessage message = mock(ApplicationMessage.class);
         when(message.getPayload()).thenReturn(payload);
         when(message.payloadAsByteBuf()).thenReturn(Unpooled.wrappedBuffer(payload));
 

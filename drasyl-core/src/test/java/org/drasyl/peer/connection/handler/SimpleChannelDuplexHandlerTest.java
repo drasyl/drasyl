@@ -55,16 +55,16 @@ class SimpleChannelDuplexHandlerTest {
 
     @Test
     void testWrite0AndRead0() throws Exception {
-        SimpleChannelDuplexHandler handler = new SimpleChannelDuplexHandler<Integer, String>() {
+        final SimpleChannelDuplexHandler handler = new SimpleChannelDuplexHandler<Integer, String>() {
             @Override
-            protected void channelRead0(ChannelHandlerContext ctx, Integer msg) {
+            protected void channelRead0(final ChannelHandlerContext ctx, final Integer msg) {
                 assertEquals(i, msg);
             }
 
             @Override
-            protected void channelWrite0(ChannelHandlerContext ctx,
-                                         String msg,
-                                         ChannelPromise promise) {
+            protected void channelWrite0(final ChannelHandlerContext ctx,
+                                         final String msg,
+                                         final ChannelPromise promise) {
                 assertEquals(o, msg);
             }
         };
@@ -77,17 +77,17 @@ class SimpleChannelDuplexHandlerTest {
 
     @Test
     void testNoMatch() throws Exception {
-        SimpleChannelDuplexHandler<Exception, Number> handler = new SimpleChannelDuplexHandler<>(Exception.class,
+        final SimpleChannelDuplexHandler<Exception, Number> handler = new SimpleChannelDuplexHandler<>(Exception.class,
                 Number.class) {
             @Override
-            protected void channelRead0(ChannelHandlerContext ctx, Exception msg) {
+            protected void channelRead0(final ChannelHandlerContext ctx, final Exception msg) {
                 fail("this should not be triggered!");
             }
 
             @Override
-            protected void channelWrite0(ChannelHandlerContext ctx,
-                                         Number msg,
-                                         ChannelPromise promise) {
+            protected void channelWrite0(final ChannelHandlerContext ctx,
+                                         final Number msg,
+                                         final ChannelPromise promise) {
                 fail("this should not be triggered!");
             }
         };

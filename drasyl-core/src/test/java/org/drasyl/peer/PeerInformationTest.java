@@ -13,9 +13,9 @@ class PeerInformationTest {
     class Equals {
         @Test
         void notSameBecauseOfText() {
-            PeerInformation information1 = PeerInformation.of(Set.of(Endpoint.of("ws://example.com")));
-            PeerInformation information2 = PeerInformation.of(Set.of(Endpoint.of("ws://example.com")));
-            PeerInformation information3 = PeerInformation.of(Set.of(Endpoint.of("ws://example.de")));
+            final PeerInformation information1 = PeerInformation.of(Set.of(Endpoint.of("ws://example.com")));
+            final PeerInformation information2 = PeerInformation.of(Set.of(Endpoint.of("ws://example.com")));
+            final PeerInformation information3 = PeerInformation.of(Set.of(Endpoint.of("ws://example.de")));
 
             assertEquals(information1, information2);
             assertNotEquals(information2, information3);
@@ -26,9 +26,9 @@ class PeerInformationTest {
     class HashCode {
         @Test
         void notSameBecauseOfText() {
-            PeerInformation information1 = PeerInformation.of(Set.of(Endpoint.of("ws://example.com")));
-            PeerInformation information2 = PeerInformation.of(Set.of(Endpoint.of("ws://example.com")));
-            PeerInformation information3 = PeerInformation.of(Set.of(Endpoint.of("ws://example.de")));
+            final PeerInformation information1 = PeerInformation.of(Set.of(Endpoint.of("ws://example.com")));
+            final PeerInformation information2 = PeerInformation.of(Set.of(Endpoint.of("ws://example.com")));
+            final PeerInformation information3 = PeerInformation.of(Set.of(Endpoint.of("ws://example.de")));
 
             assertEquals(information1.hashCode(), information2.hashCode());
             assertNotEquals(information2.hashCode(), information3.hashCode());

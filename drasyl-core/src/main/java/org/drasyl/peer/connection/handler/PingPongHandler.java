@@ -52,22 +52,22 @@ public class PingPongHandler extends SimpleChannelInboundHandler<Message> {
     /**
      * PingPongHandler with {@code retries} retries, until channel is closed.
      */
-    public PingPongHandler(short maxRetries) {
+    public PingPongHandler(final short maxRetries) {
         this(maxRetries, new AtomicInteger(0));
     }
 
-    PingPongHandler(short maxRetries, AtomicInteger retries) {
+    PingPongHandler(final short maxRetries, final AtomicInteger retries) {
         this.maxRetries = maxRetries;
         this.retries = retries;
     }
 
     @Override
-    public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+    public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) throws Exception {
         super.userEventTriggered(ctx, evt);
 
         // only send pings if channel is idle
         if (evt instanceof IdleStateEvent) {
-            IdleStateEvent e = (IdleStateEvent) evt;
+            final IdleStateEvent e = (IdleStateEvent) evt;
             if (e.state() == IdleState.READER_IDLE) {
                 if (retries.getAndIncrement() > maxRetries) {
                     // threshold reached, mark connection as unhealthy and close connection
@@ -82,7 +82,7 @@ public class PingPongHandler extends SimpleChannelInboundHandler<Message> {
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Message msg) {
+    protected void channelRead0(final ChannelHandlerContext ctx, final Message msg) {
         if (msg instanceof PingMessage) {
             // reply to received ping with pong message
             ctx.writeAndFlush(new PongMessage(msg.getId()));

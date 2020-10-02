@@ -38,7 +38,7 @@ class HelpCommandTest {
         void shouldPrintHelp() {
             underTest.help(cmd);
 
-            String output = outputStream.toString();
+            final String output = outputStream.toString();
             assertThat(output, containsString("drasyl is an general purpose transport overlay network."));
             assertThat(output, containsString("Usage:" + System.lineSeparator()));
             assertThat(output, containsString("drasyl help [flags]" + System.lineSeparator()));
@@ -55,7 +55,7 @@ class HelpCommandTest {
         void shouldPrintAvailableCommands() {
             underTest.execute(cmd);
 
-            String output = outputStream.toString();
+            final String output = outputStream.toString();
             assertThat(output, containsString("Usage:" + System.lineSeparator()));
             assertThat(output, containsString("drasyl [flags]" + System.lineSeparator()));
             assertThat(output, containsString("drasyl [command]" + System.lineSeparator()));

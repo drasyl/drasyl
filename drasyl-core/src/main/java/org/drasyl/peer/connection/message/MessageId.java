@@ -16,7 +16,7 @@ public class MessageId {
     private final String id;
 
     @JsonCreator
-    public MessageId(String id) {
+    public MessageId(final String id) {
         if (!isValidMessageId(id)) {
             throw new IllegalArgumentException("ID must be a 24 lower-case hex digit string: " + id);
         }
@@ -29,14 +29,14 @@ public class MessageId {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        MessageId messageId = (MessageId) o;
+        final MessageId messageId = (MessageId) o;
         return Objects.equals(id, messageId.id);
     }
 
@@ -60,7 +60,7 @@ public class MessageId {
      * @param id string to be validated
      * @return {@code true} if valid. Otherwise {@code false}
      */
-    public static boolean isValidMessageId(CharSequence id) {
+    public static boolean isValidMessageId(final CharSequence id) {
         if (id == null) {
             return false;
         }

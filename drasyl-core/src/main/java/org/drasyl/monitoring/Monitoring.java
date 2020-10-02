@@ -40,10 +40,10 @@ public class Monitoring implements DrasylNodeComponent {
     private final Supplier<MeterRegistry> registrySupplier;
     private MeterRegistry registry;
 
-    public Monitoring(DrasylConfig config,
-                      PeersManager peersManager,
-                      CompressedPublicKey publicKey,
-                      DrasylPipeline pipeline) {
+    public Monitoring(final DrasylConfig config,
+                      final PeersManager peersManager,
+                      final CompressedPublicKey publicKey,
+                      final DrasylPipeline pipeline) {
         this(
                 peersManager,
                 publicKey,
@@ -80,7 +80,7 @@ public class Monitoring implements DrasylNodeComponent {
                     }
 
                     @Override
-                    public String get(String key) {
+                    public String get(final String key) {
                         return null;
                     }
                 }, Clock.SYSTEM), new AtomicBoolean(),
@@ -88,12 +88,12 @@ public class Monitoring implements DrasylNodeComponent {
         );
     }
 
-    Monitoring(PeersManager peersManager,
-               CompressedPublicKey publicKey,
-               DrasylPipeline pipeline,
-               Supplier<MeterRegistry> registrySupplier,
-               AtomicBoolean opened,
-               MeterRegistry registry) {
+    Monitoring(final PeersManager peersManager,
+               final CompressedPublicKey publicKey,
+               final DrasylPipeline pipeline,
+               final Supplier<MeterRegistry> registrySupplier,
+               final AtomicBoolean opened,
+               final MeterRegistry registry) {
         this.peersManager = peersManager;
         this.publicKey = publicKey;
         this.pipeline = pipeline;
@@ -124,33 +124,33 @@ public class Monitoring implements DrasylNodeComponent {
                 private final Map<String, Counter> counters = new HashMap<>();
 
                 @Override
-                protected void matchedEventTriggered(HandlerContext ctx,
-                                                     Event event,
-                                                     CompletableFuture<Void> future) {
+                protected void matchedEventTriggered(final HandlerContext ctx,
+                                                     final Event event,
+                                                     final CompletableFuture<Void> future) {
                     ctx.scheduler().scheduleDirect(() -> incrementObjectTypeCounter("pipeline.events", event));
                     ctx.fireEventTriggered(event, future);
                 }
 
                 @Override
-                protected void matchedRead(HandlerContext ctx,
-                                           CompressedPublicKey sender,
-                                           Object msg,
-                                           CompletableFuture<Void> future) {
+                protected void matchedRead(final HandlerContext ctx,
+                                           final CompressedPublicKey sender,
+                                           final Object msg,
+                                           final CompletableFuture<Void> future) {
                     ctx.scheduler().scheduleDirect(() -> incrementObjectTypeCounter("pipeline.inbound_messages", msg));
                     ctx.fireRead(sender, msg, future);
                 }
 
                 @Override
-                protected void matchedWrite(HandlerContext ctx,
-                                            CompressedPublicKey recipient,
-                                            Object msg,
-                                            CompletableFuture<Void> future) {
+                protected void matchedWrite(final HandlerContext ctx,
+                                            final CompressedPublicKey recipient,
+                                            final Object msg,
+                                            final CompletableFuture<Void> future) {
                     ctx.scheduler().scheduleDirect(() -> incrementObjectTypeCounter("pipeline.outbound_messages", msg));
                     ctx.write(recipient, msg, future);
                 }
 
-                private void incrementObjectTypeCounter(String metric, Object o) {
-                    Counter counter = counters.computeIfAbsent(o.getClass().getSimpleName(), clazz -> Counter.builder(metric).tag("clazz", clazz).register(registry));
+                private void incrementObjectTypeCounter(final String metric, final Object o) {
+                    final Counter counter = counters.computeIfAbsent(o.getClass().getSimpleName(), clazz -> Counter.builder(metric).tag("clazz", clazz).register(registry));
                     counter.increment();
                 }
             });

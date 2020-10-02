@@ -40,7 +40,7 @@ class IntraVmDiscoveryTest {
     class Open {
         @Test
         void shouldSetMessageSink() {
-            try (IntraVmDiscovery underTest = new IntraVmDiscovery(publicKey, messenger, peersManager, path, peerInformation, new AtomicBoolean(false))) {
+            try (final IntraVmDiscovery underTest = new IntraVmDiscovery(publicKey, messenger, peersManager, path, peerInformation, new AtomicBoolean(false))) {
                 underTest.open();
 
                 verify(messenger).setIntraVmSink(any());
@@ -49,7 +49,7 @@ class IntraVmDiscoveryTest {
 
         @Test
         void shouldAddToDiscoveries() {
-            try (IntraVmDiscovery underTest = new IntraVmDiscovery(publicKey, messenger, peersManager, path, peerInformation, new AtomicBoolean(false))) {
+            try (final IntraVmDiscovery underTest = new IntraVmDiscovery(publicKey, messenger, peersManager, path, peerInformation, new AtomicBoolean(false))) {
                 underTest.open();
 
                 assertThat(IntraVmDiscovery.discoveries, aMapWithSize(1));
@@ -61,7 +61,7 @@ class IntraVmDiscoveryTest {
     class Close {
         @Test
         void shouldRemoveMessageSink() {
-            try (IntraVmDiscovery underTest = new IntraVmDiscovery(publicKey, messenger, peersManager, path, peerInformation, new AtomicBoolean(true))) {
+            try (final IntraVmDiscovery underTest = new IntraVmDiscovery(publicKey, messenger, peersManager, path, peerInformation, new AtomicBoolean(true))) {
                 underTest.close();
 
                 verify(messenger).unsetIntraVmSink();
@@ -70,7 +70,7 @@ class IntraVmDiscoveryTest {
 
         @Test
         void shouldRemovePeerInformation() {
-            try (IntraVmDiscovery underTest = new IntraVmDiscovery(publicKey, messenger, peersManager, path, peerInformation, new AtomicBoolean(true))) {
+            try (final IntraVmDiscovery underTest = new IntraVmDiscovery(publicKey, messenger, peersManager, path, peerInformation, new AtomicBoolean(true))) {
                 underTest.close();
 
                 assertThat(IntraVmDiscovery.discoveries, aMapWithSize(0));
@@ -81,15 +81,15 @@ class IntraVmDiscoveryTest {
     @Nested
     class MessageSink {
         @Test
-        void shouldThrowExceptionForUnknownRecipient(@Mock RelayableMessage message) {
+        void shouldThrowExceptionForUnknownRecipient(@Mock final RelayableMessage message) {
             assertThrows(ExecutionException.class, () -> MESSAGE_SINK.send(message).get());
         }
 
         @Test
-        void shouldPassMessageToPathForKnownRecipient(@Mock RelayableMessage message) {
+        void shouldPassMessageToPathForKnownRecipient(@Mock final RelayableMessage message) {
             when(message.getRecipient()).thenReturn(publicKey);
 
-            try (IntraVmDiscovery underTest = new IntraVmDiscovery(publicKey, messenger, peersManager, path, peerInformation, new AtomicBoolean(false))) {
+            try (final IntraVmDiscovery underTest = new IntraVmDiscovery(publicKey, messenger, peersManager, path, peerInformation, new AtomicBoolean(false))) {
                 underTest.open();
                 MESSAGE_SINK.send(message);
 

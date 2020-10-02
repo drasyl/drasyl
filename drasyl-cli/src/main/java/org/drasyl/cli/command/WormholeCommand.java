@@ -34,10 +34,10 @@ public class WormholeCommand extends AbstractCommand {
         );
     }
 
-    WormholeCommand(PrintStream printStream,
-                    Supplier<Scanner> scannerSupplier,
-                    DrasylBiFunction<DrasylConfig, PrintStream, SendingWormholeNode, DrasylException> sendingNodeSupplier,
-                    DrasylBiFunction<DrasylConfig, PrintStream, ReceivingWormholeNode, DrasylException> receivingNodeSupplier) {
+    WormholeCommand(final PrintStream printStream,
+                    final Supplier<Scanner> scannerSupplier,
+                    final DrasylBiFunction<DrasylConfig, PrintStream, SendingWormholeNode, DrasylException> sendingNodeSupplier,
+                    final DrasylBiFunction<DrasylConfig, PrintStream, ReceivingWormholeNode, DrasylException> receivingNodeSupplier) {
         super(printStream);
         this.scannerSupplier = scannerSupplier;
         this.sendingNodeSupplier = sendingNodeSupplier;
@@ -50,7 +50,7 @@ public class WormholeCommand extends AbstractCommand {
     }
 
     @Override
-    protected void help(CommandLine cmd) {
+    protected void help(final CommandLine cmd) {
         helpTemplate(
                 "wormhole",
                 "Transfer a text message from one node to another, safely.",
@@ -63,10 +63,10 @@ public class WormholeCommand extends AbstractCommand {
     }
 
     @Override
-    protected void execute(CommandLine cmd) throws CliException {
-        List<String> argList = cmd.getArgList();
+    protected void execute(final CommandLine cmd) throws CliException {
+        final List<String> argList = cmd.getArgList();
         if (argList.size() >= 2) {
-            String subcommand = argList.get(1);
+            final String subcommand = argList.get(1);
             switch (subcommand) {
                 case "send":
                     send(cmd);
@@ -83,7 +83,7 @@ public class WormholeCommand extends AbstractCommand {
         }
     }
 
-    private void send(CommandLine cmd) throws CliException {
+    private void send(final CommandLine cmd) throws CliException {
         SendingWormholeNode node = null;
         try {
             // prepare node
@@ -92,19 +92,19 @@ public class WormholeCommand extends AbstractCommand {
 
             // obtain text
             printStream.print("Text to send: ");
-            String text = scannerSupplier.get().nextLine();
+            final String text = scannerSupplier.get().nextLine();
             node.setText(text);
 
             // wait for node to finish
             node.doneFuture().get();
         }
-        catch (DrasylException e) {
+        catch (final DrasylException e) {
             throw new CliException("Unable to create/run sending wormhole node: " + e.getMessage());
         }
-        catch (InterruptedException e) {
+        catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        catch (ExecutionException e) {
+        catch (final ExecutionException e) {
             throw new CliException(e.getCause().getMessage());
         }
         finally {
@@ -114,7 +114,7 @@ public class WormholeCommand extends AbstractCommand {
         }
     }
 
-    private void receive(CommandLine cmd) throws CliException {
+    private void receive(final CommandLine cmd) throws CliException {
         ReceivingWormholeNode node = null;
         try {
             // prepare node
@@ -122,8 +122,8 @@ public class WormholeCommand extends AbstractCommand {
             node.start();
 
             // obtain code
-            List<String> argList = cmd.getArgList();
-            String code;
+            final List<String> argList = cmd.getArgList();
+            final String code;
             if (argList.size() < 3) {
                 printStream.print("Enter wormhole code: ");
                 code = scannerSupplier.get().nextLine().strip();
@@ -133,26 +133,26 @@ public class WormholeCommand extends AbstractCommand {
             }
 
             // request text
-            CompressedPublicKey sender = CompressedPublicKey.of(code.substring(0, 66));
-            String password = code.substring(66);
+            final CompressedPublicKey sender = CompressedPublicKey.of(code.substring(0, 66));
+            final String password = code.substring(66);
             node.requestText(sender, password);
 
             // wait for node to finish
             node.doneFuture().get();
         }
-        catch (CryptoException | IllegalArgumentException e) {
+        catch (final CryptoException | IllegalArgumentException e) {
             throw new CliException("Invalid wormhole code supplied: " + e.getMessage());
         }
-        catch (StringIndexOutOfBoundsException e) {
+        catch (final StringIndexOutOfBoundsException e) {
             throw new CliException("Invalid wormhole code supplied: must be at least 64 characters long");
         }
-        catch (DrasylException e) {
+        catch (final DrasylException e) {
             throw new CliException("Unable to create/run receiving wormhole node: " + e.getMessage());
         }
-        catch (InterruptedException e) {
+        catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        catch (ExecutionException e) {
+        catch (final ExecutionException e) {
             throw new CliException(e.getCause().getMessage());
         }
         finally {

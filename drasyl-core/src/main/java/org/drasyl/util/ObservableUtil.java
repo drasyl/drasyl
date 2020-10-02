@@ -48,7 +48,7 @@ public class ObservableUtil {
      * @param <T>        the common element type
      * @return the new {@code Observable} instance
      */
-    public static <T> Observable<Pair<T, T>> pairWithPreviousObservable(Observable<T> observable) {
+    public static <T> Observable<Pair<T, T>> pairWithPreviousObservable(final Observable<T> observable) {
         return observable.scan(Pair.of(null, null), (Pair<T, T> accumulator, T current) -> Pair.of(current, accumulator.first())).skip(1);
     }
 }

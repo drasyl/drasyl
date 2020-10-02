@@ -35,7 +35,7 @@ public class Signature {
      *
      * @param sig the signature as byte array
      */
-    public Signature(byte[] sig) {
+    public Signature(final byte[] sig) {
         bytes = sig;
     }
 
@@ -45,9 +45,9 @@ public class Signature {
     }
 
     @Override
-    public boolean equals(Object obj) {
+    public boolean equals(final Object obj) {
         if (obj instanceof Signature) {
-            Signature sig2 = (Signature) obj;
+            final Signature sig2 = (Signature) obj;
             if (sig2.getBytes().length == bytes.length) {
                 for (int i = 0; i < bytes.length; i++) {
                     if (bytes[i] != sig2.getBytes()[i]) {

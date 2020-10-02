@@ -80,8 +80,8 @@ class ServerTest {
             when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).isSuccess()).thenReturn(true);
             when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
-            AtomicBoolean opened = new AtomicBoolean(false);
-            try (Server server = new Server(
+            final AtomicBoolean opened = new AtomicBoolean(false);
+            try (final Server server = new Server(
                     identity, config, serverBootstrap, opened, null, serverChannel,
                     new HashSet<>(), new HashSet<>(), scheduler, portExposer)) {
                 server.open();
@@ -92,7 +92,7 @@ class ServerTest {
 
         @Test
         void shouldDoNothingIfServerHasAlreadyBeenStarted() throws ServerException {
-            try (Server server = new Server(
+            try (final Server server = new Server(
                     identity, config, serverBootstrap, new AtomicBoolean(true), null, serverChannel,
                     new HashSet<>(), new HashSet<>(), scheduler, portExposer)) {
                 server.open();
@@ -109,7 +109,7 @@ class ServerTest {
             when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).isSuccess()).thenReturn(true);
             when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
-            try (Server server = new Server(
+            try (final Server server = new Server(
                     identity, config, serverBootstrap, new AtomicBoolean(), null, serverChannel,
                     new HashSet<>(), new HashSet<>(), scheduler, portExposer)) {
                 server.open();
@@ -126,7 +126,7 @@ class ServerTest {
             when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).isSuccess()).thenReturn(true);
             when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
-            try (Server server = new Server(
+            try (final Server server = new Server(
                     identity, config, serverBootstrap, new AtomicBoolean(), null, serverChannel,
                     new HashSet<>(), new HashSet<>(), scheduler, portExposer)) {
                 server.open();
@@ -140,7 +140,7 @@ class ServerTest {
     class Close {
         @Test
         void shouldDoNothingIfServerHasAlreadyBeenShutDown() {
-            Server server = new Server(
+            final Server server = new Server(
                     identity, config, serverBootstrap, new AtomicBoolean(false), null, serverChannel,
                     new HashSet<>(), new HashSet<>(), scheduler, portExposer);
 
@@ -161,7 +161,7 @@ class ServerTest {
             when(config.getServerEndpoints()).thenReturn(Set.of(Endpoint.of("ws://localhost:22527/")));
             when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).channel().localAddress()).thenReturn(new InetSocketAddress(22527));
             when(scheduler.scheduleDirect(any())).then(invocation -> {
-                Runnable argument = invocation.getArgument(0, Runnable.class);
+                final Runnable argument = invocation.getArgument(0, Runnable.class);
                 argument.run();
                 return null;
             });
@@ -170,8 +170,8 @@ class ServerTest {
 
         @Test
         void shouldExposeEndpoints() {
-            InetSocketAddress address = new InetSocketAddress(22527);
-            try (Server server = new Server(identity, config, serverBootstrap, new AtomicBoolean(), null, serverChannel,
+            final InetSocketAddress address = new InetSocketAddress(22527);
+            try (final Server server = new Server(identity, config, serverBootstrap, new AtomicBoolean(), null, serverChannel,
                     new HashSet<>(), new HashSet<>(), scheduler, portExposer)) {
                 server.exposeEndpoints(address);
 
@@ -194,7 +194,7 @@ class ServerTest {
 
         @Test
         void shouldReturnEndpointForSpecificAddressesIfServerIsBoundToSpecificInterfaces() {
-            InetAddress firstAddress = NetworkUtil.getAddresses().iterator().next();
+            final InetAddress firstAddress = NetworkUtil.getAddresses().iterator().next();
             if (firstAddress != null) {
                 when(config.getServerEndpoints().isEmpty()).thenReturn(true);
 

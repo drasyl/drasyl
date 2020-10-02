@@ -66,11 +66,11 @@ public class LocalHostDiscovery implements DrasylNodeComponent {
     private Disposable communicationObserver;
     private PeerInformation postedPeerInformation;
 
-    public LocalHostDiscovery(DrasylConfig config,
-                              CompressedPublicKey ownPublicKey,
-                              PeersManager peersManager,
-                              Set<Endpoint> endpoints,
-                              Observable<CompressedPublicKey> communicationOccurred) {
+    public LocalHostDiscovery(final DrasylConfig config,
+                              final CompressedPublicKey ownPublicKey,
+                              final PeersManager peersManager,
+                              final Set<Endpoint> endpoints,
+                              final Observable<CompressedPublicKey> communicationOccurred) {
         this(
                 config.getLocalHostDiscoveryPath(),
                 config.getLocalHostDiscoveryLeaseTime(),
@@ -88,18 +88,18 @@ public class LocalHostDiscovery implements DrasylNodeComponent {
     }
 
     @SuppressWarnings({ "java:S107" })
-    LocalHostDiscovery(Path discoveryPath,
-                       Duration leaseTime,
-                       CompressedPublicKey ownPublicKey,
-                       PeersManager peersManager,
-                       Set<Endpoint> endpoints,
-                       Observable<CompressedPublicKey> communicationOccurred,
-                       AtomicBoolean opened,
-                       AtomicBoolean doScan,
-                       Scheduler scheduler,
-                       Disposable watchDisposable,
-                       Disposable postDisposable,
-                       Disposable communicationObserver) {
+    LocalHostDiscovery(final Path discoveryPath,
+                       final Duration leaseTime,
+                       final CompressedPublicKey ownPublicKey,
+                       final PeersManager peersManager,
+                       final Set<Endpoint> endpoints,
+                       final Observable<CompressedPublicKey> communicationOccurred,
+                       final AtomicBoolean opened,
+                       final AtomicBoolean doScan,
+                       final Scheduler scheduler,
+                       final Disposable watchDisposable,
+                       final Disposable postDisposable,
+                       final Disposable communicationObserver) {
         this.discoveryPath = discoveryPath;
         this.leaseTime = leaseTime;
         this.ownPublicKey = ownPublicKey;
@@ -119,7 +119,7 @@ public class LocalHostDiscovery implements DrasylNodeComponent {
     public void open() {
         if (opened.compareAndSet(false, true)) {
             LOG.debug("Start Local Host Discovery...");
-            File directory = discoveryPath.toFile();
+            final File directory = discoveryPath.toFile();
             if (!directory.exists() && !directory.mkdir()) {
                 LOG.warn("Discovery directory '{}' could not be created.", discoveryPath.toAbsolutePath());
             }
@@ -147,8 +147,8 @@ public class LocalHostDiscovery implements DrasylNodeComponent {
      */
     private void tryWatchDirectory() {
         try {
-            File directory = discoveryPath.toFile();
-            FileSystem fileSystem = discoveryPath.getFileSystem();
+            final File directory = discoveryPath.toFile();
+            final FileSystem fileSystem = discoveryPath.getFileSystem();
             watchService = fileSystem.newWatchService();
             discoveryPath.register(watchService, ENTRY_CREATE, ENTRY_MODIFY, ENTRY_DELETE);
             LOG.debug("Watch service for directory '{}' registered", directory);
@@ -159,7 +159,7 @@ public class LocalHostDiscovery implements DrasylNodeComponent {
                 }
             }, 0, 5, SECONDS);
         }
-        catch (IOException e) {
+        catch (final IOException e) {
             LOG.debug("Unable to register watch service. Use polling as fallback: ", e);
 
             // use polling as fallback
@@ -171,7 +171,7 @@ public class LocalHostDiscovery implements DrasylNodeComponent {
      * Writes periodically the actual own information to {@link #discoveryPath}.
      */
     private void keepOwnInformationUpToDate() {
-        Duration refreshInterval;
+        final Duration refreshInterval;
         if (leaseTime.toSeconds() > 5) {
             refreshInterval = leaseTime.minus(ofSeconds(5));
         }
@@ -192,21 +192,21 @@ public class LocalHostDiscovery implements DrasylNodeComponent {
      */
     void scan() {
         LOG.debug("Scan directory {} for new peers.", discoveryPath);
-        String ownPublicKeyString = this.ownPublicKey.toString();
-        long maxAge = System.currentTimeMillis() - leaseTime.toMillis();
-        File[] files = discoveryPath.toFile().listFiles();
+        final String ownPublicKeyString = this.ownPublicKey.toString();
+        final long maxAge = System.currentTimeMillis() - leaseTime.toMillis();
+        final File[] files = discoveryPath.toFile().listFiles();
         if (files != null) {
-            for (File file : files) {
+            for (final File file : files) {
                 try {
-                    String fileName = file.getName();
+                    final String fileName = file.getName();
                     if (file.lastModified() >= maxAge && fileName.length() == 71 && fileName.endsWith(".json") && !fileName.startsWith(ownPublicKeyString)) {
-                        CompressedPublicKey publicKey = CompressedPublicKey.of(fileName.replace(".json", ""));
-                        PeerInformation peerInformation = JACKSON_READER.readValue(file, PeerInformation.class);
+                        final CompressedPublicKey publicKey = CompressedPublicKey.of(fileName.replace(".json", ""));
+                        final PeerInformation peerInformation = JACKSON_READER.readValue(file, PeerInformation.class);
                         LOG.trace("Information for peer {} discovered by file '{}'", publicKey, fileName);
                         peersManager.setPeerInformation(publicKey, peerInformation);
                     }
                 }
-                catch (CryptoException | IOException e) {
+                catch (final CryptoException | IOException e) {
                     LOG.warn("Unable to read peer information from '{}': ", file.getAbsolutePath(), e);
                 }
             }
@@ -217,11 +217,11 @@ public class LocalHostDiscovery implements DrasylNodeComponent {
      * Posts own {@link PeerInformation} to {@link #discoveryPath}.
      */
     private void postInformation() {
-        PeerInformation peerInformation = PeerInformation.of(endpoints);
+        final PeerInformation peerInformation = PeerInformation.of(endpoints);
 
-        Path filePath = discoveryPath.resolve(ownPublicKey.toString() + ".json");
+        final Path filePath = discoveryPath.resolve(ownPublicKey.toString() + ".json");
         LOG.trace("Post own Peer Information to {}", filePath);
-        File file = filePath.toFile();
+        final File file = filePath.toFile();
         try {
             // (re)write file on information change. otherwise just touch
             if (!(peerInformation.equals(postedPeerInformation) && file.setLastModified(System.currentTimeMillis()))) {
@@ -231,7 +231,7 @@ public class LocalHostDiscovery implements DrasylNodeComponent {
 
             postedPeerInformation = peerInformation;
         }
-        catch (IOException e) {
+        catch (final IOException e) {
             LOG.warn("Unable to write peer information to '{}': {}", filePath.toAbsolutePath(), e.getMessage());
         }
     }

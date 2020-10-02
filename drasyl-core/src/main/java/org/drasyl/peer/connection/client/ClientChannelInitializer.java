@@ -52,19 +52,19 @@ public abstract class ClientChannelInitializer extends DefaultSessionInitializer
      *                        value is 1, max 32767
      * @param target          the target URI
      */
-    public ClientChannelInitializer(int flushBufferSize,
-                                    Duration readIdleTimeout,
-                                    short pingPongRetries,
-                                    Endpoint target) {
+    public ClientChannelInitializer(final int flushBufferSize,
+                                    final Duration readIdleTimeout,
+                                    final short pingPongRetries,
+                                    final Endpoint target) {
         super(flushBufferSize, readIdleTimeout, pingPongRetries);
         this.target = target;
     }
 
     @Override
-    protected void beforeMarshalStage(ChannelPipeline pipeline) {
+    protected void beforeMarshalStage(final ChannelPipeline pipeline) {
         pipeline.addLast(new HttpClientCodec());
         pipeline.addLast(new HttpObjectAggregator(65536));
-        WebSocketClientHandshaker webSocketHandshaker = WebSocketClientHandshakerFactory.newHandshaker(target.getURI(), WebSocketVersion.V13, null, false, new DefaultHttpHeaders());
+        final WebSocketClientHandshaker webSocketHandshaker = WebSocketClientHandshakerFactory.newHandshaker(target.getURI(), WebSocketVersion.V13, null, false, new DefaultHttpHeaders());
         pipeline.addLast(new WebSocketClientProtocolHandler(webSocketHandshaker, false, false));
     }
 }

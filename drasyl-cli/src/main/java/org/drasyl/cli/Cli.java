@@ -50,24 +50,24 @@ public class Cli {
         this(COMMANDS);
     }
 
-    Cli(Map<String, Command> myCommands) {
+    Cli(final Map<String, Command> myCommands) {
         this.myCommands = myCommands;
     }
 
-    public static void main(String[] args) {
-        Cli cli = new Cli();
+    public static void main(final String[] args) {
+        final Cli cli = new Cli();
         try {
             cli.run(args);
             System.exit(0);
         }
-        catch (CliException e) {
+        catch (final CliException e) {
             System.out.println("Error: " + e.getMessage()); // NOSONAR
             System.exit(1);
         }
     }
 
-    public void run(String[] args) throws CliException {
-        String commandName;
+    public void run(final String[] args) throws CliException {
+        final String commandName;
         if (args.length > 0) {
             commandName = args[0];
         }
@@ -75,7 +75,7 @@ public class Cli {
             commandName = "help";
         }
 
-        Command command = myCommands.get(commandName);
+        final Command command = myCommands.get(commandName);
         if (command == null) {
             throw new CommandNotFoundCliException(commandName);
         }

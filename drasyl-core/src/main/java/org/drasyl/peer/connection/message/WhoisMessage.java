@@ -38,19 +38,19 @@ public class WhoisMessage extends RelayableMessage implements RequestMessage {
     private final PeerInformation peerInformation;
 
     @JsonCreator
-    private WhoisMessage(@JsonProperty("id") MessageId id,
-                         @JsonProperty("hopCount") short hopCount,
-                         @JsonProperty("recipient") CompressedPublicKey recipient,
-                         @JsonProperty("requester") CompressedPublicKey requester,
-                         @JsonProperty("peerInformation") PeerInformation peerInformation) {
+    private WhoisMessage(@JsonProperty("id") final MessageId id,
+                         @JsonProperty("hopCount") final short hopCount,
+                         @JsonProperty("recipient") final CompressedPublicKey recipient,
+                         @JsonProperty("requester") final CompressedPublicKey requester,
+                         @JsonProperty("peerInformation") final PeerInformation peerInformation) {
         super(id, recipient, hopCount);
         this.requester = requireNonNull(requester);
         this.peerInformation = requireNonNull(peerInformation);
     }
 
-    public WhoisMessage(CompressedPublicKey recipient,
-                        CompressedPublicKey requester,
-                        PeerInformation peerInformation) {
+    public WhoisMessage(final CompressedPublicKey recipient,
+                        final CompressedPublicKey requester,
+                        final PeerInformation peerInformation) {
         super(recipient);
         this.requester = requireNonNull(requester);
         this.peerInformation = requireNonNull(peerInformation);
@@ -70,7 +70,7 @@ public class WhoisMessage extends RelayableMessage implements RequestMessage {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -80,7 +80,7 @@ public class WhoisMessage extends RelayableMessage implements RequestMessage {
         if (!super.equals(o)) {
             return false;
         }
-        WhoisMessage that = (WhoisMessage) o;
+        final WhoisMessage that = (WhoisMessage) o;
         return Objects.equals(requester, that.requester) &&
                 Objects.equals(peerInformation, that.peerInformation);
     }

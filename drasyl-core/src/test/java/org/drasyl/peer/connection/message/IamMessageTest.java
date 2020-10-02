@@ -45,14 +45,14 @@ class IamMessageTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
-            String json = "{\"@type\":\"" + IamMessage.class.getSimpleName() + "\",\"id\":\"412176952b5b81fd13f84a7c\",\"publicKey\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
+            final String json = "{\"@type\":\"" + IamMessage.class.getSimpleName() + "\",\"id\":\"412176952b5b81fd13f84a7c\",\"publicKey\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
 
             assertEquals(new IamMessage(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), new MessageId("412176952b5b81fd13f84a7c")), JACKSON_READER.readValue(json, Message.class));
         }
 
         @Test
         void shouldRejectIncompleteData() {
-            String json = "{\"@type\":\"" + IamMessage.class.getSimpleName() + "\",\"id\":\"412176952b5b81fd13f84a7c\",\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
+            final String json = "{\"@type\":\"" + IamMessage.class.getSimpleName() + "\",\"id\":\"412176952b5b81fd13f84a7c\",\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
 
             assertThrows(ValueInstantiationException.class, () -> JACKSON_READER.readValue(json, Message.class));
         }
@@ -62,7 +62,7 @@ class IamMessageTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException {
-            IamMessage message = new IamMessage(publicKey, correspondingId);
+            final IamMessage message = new IamMessage(publicKey, correspondingId);
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
@@ -75,8 +75,8 @@ class IamMessageTest {
     class Equals {
         @Test
         void shouldReturnTrue() {
-            IamMessage message1 = new IamMessage(publicKey, correspondingId);
-            IamMessage message2 = new IamMessage(publicKey, correspondingId);
+            final IamMessage message1 = new IamMessage(publicKey, correspondingId);
+            final IamMessage message2 = new IamMessage(publicKey, correspondingId);
 
             assertEquals(message1, message2);
 
@@ -89,8 +89,8 @@ class IamMessageTest {
     class HashCode {
         @Test
         void shouldReturnTrue() {
-            IamMessage message1 = new IamMessage(publicKey, correspondingId);
-            IamMessage message2 = new IamMessage(publicKey, correspondingId);
+            final IamMessage message1 = new IamMessage(publicKey, correspondingId);
+            final IamMessage message2 = new IamMessage(publicKey, correspondingId);
 
             assertEquals(message1.hashCode(), message2.hashCode());
         }

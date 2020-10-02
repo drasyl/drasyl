@@ -58,15 +58,15 @@ class IdentityManagerTest {
             when(config.getIdentityProofOfWork()).thenReturn(ProofOfWork.of(15405649));
             when(config.getIdentityPrivateKey()).thenReturn(CompressedPrivateKey.of("0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d"));
 
-            IdentityManager identityManager = new IdentityManager(identityGenerator, config, null);
+            final IdentityManager identityManager = new IdentityManager(identityGenerator, config, null);
             identityManager.loadOrCreateIdentity();
 
             assertEquals(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), identityManager.getPublicKey());
         }
 
         @Test
-        void shouldLoadIdentityIfConfigContainsNoKeysAndFileIsPresent(@TempDir Path dir) throws IOException, IdentityManagerException, CryptoException {
-            Path path = Paths.get(dir.toString(), "my-identity.json");
+        void shouldLoadIdentityIfConfigContainsNoKeysAndFileIsPresent(@TempDir final Path dir) throws IOException, IdentityManagerException, CryptoException {
+            final Path path = Paths.get(dir.toString(), "my-identity.json");
             when(config.getIdentityPath()).thenReturn(path);
 
             // create existing file with identity
@@ -76,7 +76,7 @@ class IdentityManagerTest {
                     "  \"privateKey\" : \"0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d\"\n" +
                     "}", StandardOpenOption.CREATE);
 
-            IdentityManager identityManager = new IdentityManager(identityGenerator, config, null);
+            final IdentityManager identityManager = new IdentityManager(identityGenerator, config, null);
             identityManager.loadOrCreateIdentity();
 
             assertEquals(
@@ -90,8 +90,8 @@ class IdentityManagerTest {
         }
 
         @Test
-        void shouldCreateNewIdentityIfConfigContainsNoKeysAndFileIsAbsent(@TempDir Path dir) throws IdentityManagerException, CryptoException {
-            Path path = Paths.get(dir.toString(), "my-identity.json");
+        void shouldCreateNewIdentityIfConfigContainsNoKeysAndFileIsAbsent(@TempDir final Path dir) throws IdentityManagerException, CryptoException {
+            final Path path = Paths.get(dir.toString(), "my-identity.json");
             when(config.getIdentityPath()).thenReturn(path);
             when(identityGenerator.get()).thenReturn(Identity.of(
                     ProofOfWork.of(15405649),
@@ -99,7 +99,7 @@ class IdentityManagerTest {
                     "0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d"
             ));
 
-            IdentityManager identityManager = new IdentityManager(identityGenerator, config, null);
+            final IdentityManager identityManager = new IdentityManager(identityGenerator, config, null);
             identityManager.loadOrCreateIdentity();
 
             verify(identityGenerator).get();
@@ -112,13 +112,13 @@ class IdentityManagerTest {
             when(config.getIdentityProofOfWork()).thenReturn(ProofOfWork.of(42));
             when(config.getIdentityPrivateKey()).thenReturn(CompressedPrivateKey.of("0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d"));
 
-            IdentityManager identityManager = new IdentityManager(identityGenerator, config, null);
+            final IdentityManager identityManager = new IdentityManager(identityGenerator, config, null);
             assertThrows(IdentityManagerException.class, identityManager::loadOrCreateIdentity);
         }
 
         @Test
-        void shouldThrowExceptionIfIdentityFromFileIsInvalid(@TempDir Path dir) throws IOException {
-            Path path = Paths.get(dir.toString(), "my-identity.json");
+        void shouldThrowExceptionIfIdentityFromFileIsInvalid(@TempDir final Path dir) throws IOException {
+            final Path path = Paths.get(dir.toString(), "my-identity.json");
             when(config.getIdentityPath()).thenReturn(path);
 
             // create existing file with invalid identity
@@ -128,7 +128,7 @@ class IdentityManagerTest {
                     "  \"privateKey\" : \"0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d\"\n" +
                     "}", StandardOpenOption.CREATE);
 
-            IdentityManager identityManager = new IdentityManager(identityGenerator, config, null);
+            final IdentityManager identityManager = new IdentityManager(identityGenerator, config, null);
             assertThrows(IdentityManagerException.class, identityManager::loadOrCreateIdentity);
         }
     }
@@ -136,8 +136,8 @@ class IdentityManagerTest {
     @Nested
     class DeleteIdentityFile {
         @Test
-        void shouldDeleteFile(@TempDir Path dir) throws IdentityManagerException, IOException {
-            Path path = Paths.get(dir.toString(), "my-identity.json");
+        void shouldDeleteFile(@TempDir final Path dir) throws IdentityManagerException, IOException {
+            final Path path = Paths.get(dir.toString(), "my-identity.json");
             path.toFile().createNewFile();
 
             IdentityManager.deleteIdentityFile(path);

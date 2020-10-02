@@ -62,20 +62,19 @@ public abstract class SimpleInboundHandler<I, E> extends HandlerAdapter {
      * @param inboundMessageType the type of messages to match
      * @param inboundEventType   the type of events to match
      */
-    protected SimpleInboundHandler(Class<? extends I> inboundMessageType,
-                                   Class<? extends E> inboundEventType) {
+    protected SimpleInboundHandler(final Class<? extends I> inboundMessageType,
+                                   final Class<? extends E> inboundEventType) {
         matcherMessage = TypeParameterMatcher.get(inboundMessageType);
         matcherEvent = TypeParameterMatcher.get(inboundEventType);
     }
 
     @Override
-    public void read(HandlerContext ctx,
-                     CompressedPublicKey sender,
-                     Object msg,
-                     CompletableFuture<Void> future) {
+    public void read(final HandlerContext ctx,
+                     final CompressedPublicKey sender,
+                     final Object msg,
+                     final CompletableFuture<Void> future) {
         if (acceptInbound(msg)) {
-            @SuppressWarnings("unchecked")
-            I castedMsg = (I) msg;
+            @SuppressWarnings("unchecked") final I castedMsg = (I) msg;
             matchedRead(ctx, sender, castedMsg, future);
         }
         else {
@@ -84,10 +83,9 @@ public abstract class SimpleInboundHandler<I, E> extends HandlerAdapter {
     }
 
     @Override
-    public void eventTriggered(HandlerContext ctx, Event event, CompletableFuture<Void> future) {
+    public void eventTriggered(final HandlerContext ctx, final Event event, final CompletableFuture<Void> future) {
         if (acceptEvent(event)) {
-            @SuppressWarnings("unchecked")
-            E castedEvent = (E) event;
+            @SuppressWarnings("unchecked") final E castedEvent = (E) event;
             matchedEventTriggered(ctx, castedEvent, future);
         }
         else {
@@ -99,7 +97,7 @@ public abstract class SimpleInboundHandler<I, E> extends HandlerAdapter {
      * Returns {@code true} if the given event should be handled. If {@code false} it will be passed
      * to the next {@link Handler} in the {@link Pipeline}.
      */
-    protected boolean acceptEvent(Event msg) {
+    protected boolean acceptEvent(final Event msg) {
         return matcherEvent.match(msg);
     }
 
@@ -118,7 +116,7 @@ public abstract class SimpleInboundHandler<I, E> extends HandlerAdapter {
      * Returns {@code true} if the given message should be handled. If {@code false} it will be
      * passed to the next {@link Handler} in the {@link Pipeline}.
      */
-    protected boolean acceptInbound(Object msg) {
+    protected boolean acceptInbound(final Object msg) {
         return matcherMessage.match(msg);
     }
 

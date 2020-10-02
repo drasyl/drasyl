@@ -36,7 +36,7 @@ public final class HexUtil {
      * @throws IllegalArgumentException if string parameter does not conform to lexical value space
      *                                  defined in XML Schema Part 2: Datatypes for xsd:hexBinary.
      */
-    public static byte[] fromString(String hexString) {
+    public static byte[] fromString(final String hexString) {
         return parseHexBinary(hexString);
     }
 
@@ -48,7 +48,7 @@ public final class HexUtil {
      * @throws IllegalArgumentException if string parameter does not conform to lexical value space
      *                                  defined in XML Schema Part 2: Datatypes for xsd:hexBinary.
      */
-    public static byte[] parseHexBinary(String lexicalXSDHexBinary) {
+    public static byte[] parseHexBinary(final String lexicalXSDHexBinary) {
         final int length = lexicalXSDHexBinary.length();
 
         // "111" is not a valid hex encoding.
@@ -56,11 +56,11 @@ public final class HexUtil {
             throw new IllegalArgumentException("hexBinary needs to be even-length: " + lexicalXSDHexBinary);
         }
 
-        byte[] out = new byte[length / 2];
+        final byte[] out = new byte[length / 2];
 
         for (int i = 0; i < length; i += 2) {
-            int h = hexToBin(lexicalXSDHexBinary.charAt(i));
-            int l = hexToBin(lexicalXSDHexBinary.charAt(i + 1));
+            final int h = hexToBin(lexicalXSDHexBinary.charAt(i));
+            final int l = hexToBin(lexicalXSDHexBinary.charAt(i + 1));
             if (h == -1 || l == -1) {
                 throw new IllegalArgumentException("contains illegal character for hexBinary: " + lexicalXSDHexBinary);
             }
@@ -71,7 +71,7 @@ public final class HexUtil {
         return out;
     }
 
-    private static int hexToBin(char ch) {
+    private static int hexToBin(final char ch) {
         if ('0' <= ch && ch <= '9') {
             return ch - '0';
         }
@@ -90,7 +90,7 @@ public final class HexUtil {
      * @param byteArray e.g {AB,34}
      * @return string "AB34"
      */
-    public static String toString(byte[] byteArray) {
+    public static String toString(final byte[] byteArray) {
         return bytesToHex(byteArray);
     }
 
@@ -100,10 +100,10 @@ public final class HexUtil {
      * @param bytes an array of bytes
      * @return A string hex representation of the byte array
      */
-    public static String bytesToHex(byte[] bytes) {
-        char[] hexChars = new char[bytes.length * 2];
+    public static String bytesToHex(final byte[] bytes) {
+        final char[] hexChars = new char[bytes.length * 2];
         for (int j = 0; j < bytes.length; j++) {
-            int v = bytes[j] & 0xFF;
+            final int v = bytes[j] & 0xFF;
             hexChars[j * 2] = HEX_ARRAY[v >>> 4];
             hexChars[j * 2 + 1] = HEX_ARRAY[v & 0x0F];
         }

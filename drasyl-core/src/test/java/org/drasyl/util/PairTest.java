@@ -34,7 +34,7 @@ class PairTest {
     class First {
         @Test
         void shouldReturnFirstElement() {
-            Pair<Integer, String> pair = Pair.of(10, "beers");
+            final Pair<Integer, String> pair = Pair.of(10, "beers");
 
             assertEquals(10, pair.first());
         }
@@ -44,7 +44,7 @@ class PairTest {
     class Second {
         @Test
         void shouldReturnSecondElement() {
-            Pair<Integer, String> pair = Pair.of(10, "beers");
+            final Pair<Integer, String> pair = Pair.of(10, "beers");
 
             assertEquals("beers", pair.second());
         }
@@ -54,9 +54,9 @@ class PairTest {
     class Equals {
         @Test
         void shouldRecognizeEqualPairs() {
-            Pair<Integer, String> pairA = Pair.of(5, "beers");
-            Pair<Integer, String> pairB = Pair.of(5, "beers");
-            Pair<Integer, String> pairC = Pair.of(null, "shots");
+            final Pair<Integer, String> pairA = Pair.of(5, "beers");
+            final Pair<Integer, String> pairB = Pair.of(5, "beers");
+            final Pair<Integer, String> pairC = Pair.of(null, "shots");
 
             assertEquals(pairA, pairA);
             assertEquals(pairA, pairB);
@@ -71,9 +71,9 @@ class PairTest {
     class HashCode {
         @Test
         void shouldRecognizeEqualPairs() {
-            Pair pairA = Pair.of(5, "beers");
-            Pair pairB = Pair.of(5, "beers");
-            Pair pairC = Pair.of(10, "shots");
+            final Pair pairA = Pair.of(5, "beers");
+            final Pair pairB = Pair.of(5, "beers");
+            final Pair pairC = Pair.of(10, "shots");
 
             assertEquals(pairA.hashCode(), pairB.hashCode());
             assertNotEquals(pairA.hashCode(), pairC.hashCode());
@@ -85,7 +85,7 @@ class PairTest {
     class ToString {
         @Test
         void shouldReturnCorrectString() {
-            String string = Pair.of(5, "beers").toString();
+            final String string = Pair.of(5, "beers").toString();
 
             assertEquals("Pair{first=5, second=beers}", string);
         }
@@ -95,7 +95,7 @@ class PairTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException {
-            String json = "[5, \"beers\"]";
+            final String json = "[5, \"beers\"]";
 
             assertEquals(Pair.of(5, "beers"), JACKSON_READER.readValue(json, Pair.class));
         }
@@ -105,7 +105,7 @@ class PairTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException {
-            Pair pair = Pair.of(5, "beers");
+            final Pair pair = Pair.of(5, "beers");
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(pair))
                     .isArray()

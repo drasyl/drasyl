@@ -72,8 +72,8 @@ public abstract class SimpleChannelOutboundHandler<O> extends ChannelOutboundHan
      * @param autoFulfillPromise  {@code true} if handled promise should be released automatically
      *                            by calling {@link ChannelPromise#setSuccess()}.
      */
-    protected SimpleChannelOutboundHandler(boolean outboundAutoRelease,
-                                           boolean autoFulfillPromise) {
+    protected SimpleChannelOutboundHandler(final boolean outboundAutoRelease,
+                                           final boolean autoFulfillPromise) {
         this.outboundAutoRelease = outboundAutoRelease;
         this.autoFulfillPromise = autoFulfillPromise;
         this.outboundMatcher = TypeParameterMatcher.find(this, SimpleChannelOutboundHandler.class, "O");
@@ -83,7 +83,7 @@ public abstract class SimpleChannelOutboundHandler<O> extends ChannelOutboundHan
      * see {@link #SimpleChannelOutboundHandler(Class, boolean, boolean)} with {@code false} as
      * boolean parameters.
      */
-    protected SimpleChannelOutboundHandler(Class<? extends O> outboundMessageType) {
+    protected SimpleChannelOutboundHandler(final Class<? extends O> outboundMessageType) {
         this(outboundMessageType, false, false);
     }
 
@@ -96,23 +96,22 @@ public abstract class SimpleChannelOutboundHandler<O> extends ChannelOutboundHan
      * @param autoFulfillPromise  {@code true} if handled promise should be released automatically
      *                            by calling {@link ChannelPromise#setSuccess()}.
      */
-    protected SimpleChannelOutboundHandler(Class<? extends O> outboundMessageType,
-                                           boolean outboundAutoRelease,
-                                           boolean autoFulfillPromise) {
+    protected SimpleChannelOutboundHandler(final Class<? extends O> outboundMessageType,
+                                           final boolean outboundAutoRelease,
+                                           final boolean autoFulfillPromise) {
         this.outboundAutoRelease = outboundAutoRelease;
         this.autoFulfillPromise = autoFulfillPromise;
         this.outboundMatcher = TypeParameterMatcher.get(outboundMessageType);
     }
 
     @Override
-    public void write(ChannelHandlerContext ctx,
-                      Object msg,
-                      ChannelPromise promise) throws Exception {
+    public void write(final ChannelHandlerContext ctx,
+                      final Object msg,
+                      final ChannelPromise promise) throws Exception {
         boolean release = true;
         try {
             if (acceptOutboundMessage(msg)) {
-                @SuppressWarnings("unchecked")
-                O omsg = (O) msg;
+                @SuppressWarnings("unchecked") final O omsg = (O) msg;
                 channelWrite0(ctx, omsg, promise);
             }
             else {
@@ -136,7 +135,7 @@ public abstract class SimpleChannelOutboundHandler<O> extends ChannelOutboundHan
      * Returns {@code true} if the given message should be handled. If {@code false} it will be
      * passed to the next {@link ChannelOutboundHandler} in the {@link ChannelPipeline}.
      */
-    public boolean acceptOutboundMessage(Object msg) {
+    public boolean acceptOutboundMessage(final Object msg) {
         return outboundMatcher.match(msg);
     }
 

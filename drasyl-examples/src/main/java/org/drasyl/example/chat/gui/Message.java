@@ -30,7 +30,7 @@ public class Message {
         this.msg = null;
     }
 
-    public Message(String msg, String username) {
+    public Message(final String msg, final String username) {
         this.username = username;
         this.msg = msg;
     }

@@ -70,10 +70,10 @@ public class IntraVmDiscovery implements DrasylNodeComponent {
     private final AtomicBoolean opened;
 
     @SuppressWarnings({ "java:S1905" })
-    public IntraVmDiscovery(CompressedPublicKey publicKey,
-                            Messenger messenger,
-                            PeersManager peersManager,
-                            Pipeline pipeline) {
+    public IntraVmDiscovery(final CompressedPublicKey publicKey,
+                            final Messenger messenger,
+                            final PeersManager peersManager,
+                            final Pipeline pipeline) {
         this(
                 publicKey,
                 messenger,
@@ -83,7 +83,7 @@ public class IntraVmDiscovery implements DrasylNodeComponent {
                         throw new IllegalArgumentException("IntraVmDiscovery.messageSink can only handle messages of type " + ApplicationMessage.class.getSimpleName());
                     }
 
-                    ApplicationMessage applicationMessage = (ApplicationMessage) message;
+                    final ApplicationMessage applicationMessage = (ApplicationMessage) message;
                     pipeline.processInbound(applicationMessage);
 
                     return completedFuture(null);
@@ -91,19 +91,19 @@ public class IntraVmDiscovery implements DrasylNodeComponent {
         );
     }
 
-    public IntraVmDiscovery(CompressedPublicKey publicKey,
-                            Messenger messenger,
-                            PeersManager peersManager,
-                            Path path) {
+    public IntraVmDiscovery(final CompressedPublicKey publicKey,
+                            final Messenger messenger,
+                            final PeersManager peersManager,
+                            final Path path) {
         this(publicKey, messenger, peersManager, path, PeerInformation.of(), new AtomicBoolean(false));
     }
 
-    IntraVmDiscovery(CompressedPublicKey publicKey,
-                     Messenger messenger,
-                     PeersManager peersManager,
-                     Path path,
-                     PeerInformation peerInformation,
-                     AtomicBoolean opened) {
+    IntraVmDiscovery(final CompressedPublicKey publicKey,
+                     final Messenger messenger,
+                     final PeersManager peersManager,
+                     final Path path,
+                     final PeerInformation peerInformation,
+                     final AtomicBoolean opened) {
         this.publicKey = publicKey;
         this.peersManager = peersManager;
         this.opened = opened;

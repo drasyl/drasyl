@@ -33,7 +33,7 @@ public final class TestHelper {
      * @param msg   message to print
      * @param color color of the message
      */
-    public static void colorizedPrintln(String msg, AnsiColor color) {
+    public static void colorizedPrintln(final String msg, final AnsiColor color) {
         LOG.debug(color.getColor() + DIVIDER + msg + DIVIDER + COLOR_RESET.getColor());
     }
 
@@ -44,7 +44,7 @@ public final class TestHelper {
      * @param color color of the message
      * @param style style of the message
      */
-    public static void colorizedPrintln(String msg, AnsiColor color, AnsiColor style) {
+    public static void colorizedPrintln(final String msg, final AnsiColor color, final AnsiColor style) {
         LOG.debug(color.getColor() + style.getColor() + DIVIDER + " " + msg + " " + DIVIDER + COLOR_RESET.getColor());
     }
 }

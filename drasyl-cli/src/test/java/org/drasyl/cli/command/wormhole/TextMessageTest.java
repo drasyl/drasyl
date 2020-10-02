@@ -11,9 +11,9 @@ class TextMessageTest {
     class Equals {
         @Test
         void notSameBecauseOfText() {
-            TextMessage message1 = new TextMessage("foo");
-            TextMessage message2 = new TextMessage("foo");
-            TextMessage message3 = new TextMessage("bar");
+            final TextMessage message1 = new TextMessage("foo");
+            final TextMessage message2 = new TextMessage("foo");
+            final TextMessage message3 = new TextMessage("bar");
 
             assertEquals(message1, message2);
             assertNotEquals(message2, message3);
@@ -24,9 +24,9 @@ class TextMessageTest {
     class HashCode {
         @Test
         void notSameBecauseOfText() {
-            TextMessage message1 = new TextMessage("foo");
-            TextMessage message2 = new TextMessage("foo");
-            TextMessage message3 = new TextMessage("bar");
+            final TextMessage message1 = new TextMessage("foo");
+            final TextMessage message2 = new TextMessage("foo");
+            final TextMessage message3 = new TextMessage("bar");
 
             assertEquals(message1.hashCode(), message2.hashCode());
             assertNotEquals(message2.hashCode(), message3.hashCode());

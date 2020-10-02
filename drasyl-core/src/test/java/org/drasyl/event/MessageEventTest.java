@@ -21,7 +21,7 @@ class MessageEventTest {
     class GetMessage {
         @Test
         void shouldReturnMessage() {
-            MessageEvent event = new MessageEvent(sender, message);
+            final MessageEvent event = new MessageEvent(sender, message);
 
             assertEquals(message, event.getPayload());
         }
@@ -34,9 +34,9 @@ class MessageEventTest {
 
         @Test
         void notSameBecauseOfDifferentMessage() {
-            MessageEvent event1 = new MessageEvent(sender, message);
-            MessageEvent event2 = new MessageEvent(sender, message);
-            MessageEvent event3 = new MessageEvent(sender, message2);
+            final MessageEvent event1 = new MessageEvent(sender, message);
+            final MessageEvent event2 = new MessageEvent(sender, message);
+            final MessageEvent event3 = new MessageEvent(sender, message2);
 
             assertEquals(event1, event2);
             assertNotEquals(event1, event3);
@@ -50,9 +50,9 @@ class MessageEventTest {
 
         @Test
         void notSameBecauseOfDifferentMessage() {
-            MessageEvent event1 = new MessageEvent(sender, message);
-            MessageEvent event2 = new MessageEvent(sender, message);
-            MessageEvent event3 = new MessageEvent(sender, message2);
+            final MessageEvent event1 = new MessageEvent(sender, message);
+            final MessageEvent event2 = new MessageEvent(sender, message);
+            final MessageEvent event3 = new MessageEvent(sender, message2);
 
             assertEquals(event1.hashCode(), event2.hashCode());
             assertNotEquals(event1.hashCode(), event3.hashCode());

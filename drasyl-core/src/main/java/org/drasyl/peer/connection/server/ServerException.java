@@ -24,11 +24,11 @@ import org.drasyl.DrasylException;
  * A ServerException is thrown by the {@link Server} when errors occur.
  */
 public class ServerException extends DrasylException {
-    public ServerException(Throwable cause) {
+    public ServerException(final Throwable cause) {
         super(cause);
     }
 
-    public ServerException(String cause) {
+    public ServerException(final String cause) {
         super(cause);
     }
 }

@@ -98,7 +98,7 @@ class SuperPeerClientIT {
     private int networkId;
 
     @BeforeEach
-    void setup(TestInfo info) throws DrasylException, CryptoException {
+    void setup(final TestInfo info) throws DrasylException, CryptoException {
 //        ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.drasyl");
 //        root.setLevel(Level.TRACE);
 
@@ -190,7 +190,7 @@ class SuperPeerClientIT {
     }
 
     @AfterEach
-    void cleanUp(TestInfo info) throws IdentityManagerException {
+    void cleanUp(final TestInfo info) throws IdentityManagerException {
         server.close();
 
         IdentityManager.deleteIdentityFile(config.getIdentityPath());
@@ -203,10 +203,10 @@ class SuperPeerClientIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldSendJoinMessageOnConnect() {
-        TestObserver<Message> receivedMessages = server.receivedMessages().test();
+        final TestObserver<Message> receivedMessages = server.receivedMessages().test();
 
         // start client
-        try (SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, event -> {
+        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, event -> {
         }, () -> true)) {
             client.open();
 
@@ -219,11 +219,11 @@ class SuperPeerClientIT {
     @Disabled("Race Condition error")
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldSendQuitMessageOnClientSideDisconnect() {
-        TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof QuitMessage).test();
-        TestObserver<Event> emittedEvents = emittedEventsSubject.test();
+        final TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof QuitMessage).test();
+        final TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
-        SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true);
+        final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true);
         client.open();
 
         // wait for node to become online, before closing it
@@ -238,10 +238,10 @@ class SuperPeerClientIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldEmitNodeOfflineEventOnClientSideDisconnect() {
-        TestObserver<Event> emittedEvents = emittedEventsSubject.test();
+        final TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
-        SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true);
+        final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true);
         client.open();
 
         // wait for node to become online, before closing it
@@ -256,11 +256,11 @@ class SuperPeerClientIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldRespondToPingMessageWithPongMessage() {
-        PingMessage request = new PingMessage();
-        TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof PongMessage && ((PongMessage) m).getCorrespondingId().equals(request.getId())).test();
+        final PingMessage request = new PingMessage();
+        final TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof PongMessage && ((PongMessage) m).getCorrespondingId().equals(request.getId())).test();
 
         // start client
-        try (SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, event -> {
+        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, event -> {
         }, () -> true)) {
             client.open();
             server.awaitClient(identityManager.getPublicKey());
@@ -277,16 +277,16 @@ class SuperPeerClientIT {
     @Disabled("disabled, because StatusMessage is currently not used and therefore has been removed.")
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldRespondToApplicationMessageWithStatusOk() {
-        TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof StatusMessage).test();
+        final TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof StatusMessage).test();
 
         // start client
-        try (SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, event -> {
+        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, event -> {
         }, () -> true)) {
             client.open();
             server.awaitClient(identityManager.getPublicKey());
 
             // send message
-            ApplicationMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), new byte[]{
+            final ApplicationMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), new byte[]{
                     0x00,
                     0x01
             });
@@ -301,11 +301,11 @@ class SuperPeerClientIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldEmitNodeOfflineEventAfterReceivingQuitMessage() {
-        TestObserver<Event> emittedEvents = emittedEventsSubject.test();
+        final TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
-        DrasylConfig noRetryConfig = DrasylConfig.newBuilder(config).superPeerRetryDelays(List.of()).build();
-        try (SuperPeerClient client = new SuperPeerClient(noRetryConfig, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
+        final DrasylConfig noRetryConfig = DrasylConfig.newBuilder(config).superPeerRetryDelays(List.of()).build();
+        try (final SuperPeerClient client = new SuperPeerClient(noRetryConfig, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
             client.open();
             server.awaitClient(identityManager.getPublicKey());
 
@@ -321,10 +321,10 @@ class SuperPeerClientIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldEmitNodeOnlineEventAfterReceivingWelcomeMessage() {
-        TestObserver<Event> emittedEvents = emittedEventsSubject.test();
+        final TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
-        try (SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
+        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
             client.open();
 
             // verify emitted events
@@ -336,12 +336,12 @@ class SuperPeerClientIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldEmitNodeOnlineAlsoWithoutSuperPeerPubKeyInConfig() {
-        TestObserver<Event> emittedEvents = emittedEventsSubject.test();
+        final TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
-        DrasylConfig config1 = DrasylConfig.newBuilder(config).build();
+        final DrasylConfig config1 = DrasylConfig.newBuilder(config).build();
 
         // start client
-        try (SuperPeerClient client = new SuperPeerClient(config1, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
+        try (final SuperPeerClient client = new SuperPeerClient(config1, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
             client.open();
 
             // verify emitted events
@@ -353,12 +353,12 @@ class SuperPeerClientIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldReconnectOnDisconnect() {
-        TestObserver<Event> emittedEvents = emittedEventsSubject.test();
+        final TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
-        DrasylConfig config1 = DrasylConfig.newBuilder(config).build();
+        final DrasylConfig config1 = DrasylConfig.newBuilder(config).build();
 
         // start client
-        try (SuperPeerClient client = new SuperPeerClient(config1, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
+        try (final SuperPeerClient client = new SuperPeerClient(config1, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
             client.open();
             server.awaitClient(identityManager.getPublicKey());
 
@@ -376,20 +376,20 @@ class SuperPeerClientIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void messageExceedingMaxSizeShouldNotBeSend() {
-        TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof StatusMessage).test();
-        TestObserver<Event> emittedEvents = emittedEventsSubject.filter(e -> e instanceof MessageEvent).test();
+        final TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof StatusMessage).test();
+        final TestObserver<Event> emittedEvents = emittedEventsSubject.filter(e -> e instanceof MessageEvent).test();
 
         // start client
-        try (SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
+        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
             client.open();
             server.awaitClient(identityManager.getPublicKey());
 
             // create message with exceeded payload size of the client, but not of the server
-            byte[] bigPayload = new byte[serverConfig.getMessageMaxContentLength()];
+            final byte[] bigPayload = new byte[serverConfig.getMessageMaxContentLength()];
             new Random().nextBytes(bigPayload);
 
             // send message
-            RequestMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), bigPayload);
+            final RequestMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), bigPayload);
             server.sendMessage(identityManager.getPublicKey(), request);
 
             receivedMessages.awaitCount(2);
@@ -402,16 +402,16 @@ class SuperPeerClientIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void messageExceedingMaxSizeShouldOnSendShouldThrowException() {
         // start client
-        try (SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
+        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
             client.open();
             server.awaitClient(identityManager.getPublicKey());
 
             // create message with exceeded payload size of client and server
-            byte[] bigPayload = new byte[serverConfig.getMessageMaxContentLength() + 1];
+            final byte[] bigPayload = new byte[serverConfig.getMessageMaxContentLength() + 1];
             new Random().nextBytes(bigPayload);
 
             // send message
-            RequestMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), bigPayload);
+            final RequestMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManager.getPublicKey(), bigPayload);
             assertThrows(ExecutionException.class, () -> server.sendMessage(identityManager.getPublicKey(), request).get());
         }
     }

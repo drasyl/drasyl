@@ -47,17 +47,17 @@ public class ClientEnvironment {
     private final Duration handshakeTimeout;
 
     @SuppressWarnings({ "java:S107" })
-    public ClientEnvironment(DrasylConfig config,
-                             Identity identity,
-                             Endpoint endpoint,
-                             Messenger messenger,
-                             PeerChannelGroup channelGroup,
-                             PeersManager peersManager,
-                             Consumer<Event> eventConsumer,
-                             boolean joinAsChildren,
-                             short idleRetries,
-                             Duration idleTimeout,
-                             Duration handshakeTimeout) {
+    public ClientEnvironment(final DrasylConfig config,
+                             final Identity identity,
+                             final Endpoint endpoint,
+                             final Messenger messenger,
+                             final PeerChannelGroup channelGroup,
+                             final PeersManager peersManager,
+                             final Consumer<Event> eventConsumer,
+                             final boolean joinAsChildren,
+                             final short idleRetries,
+                             final Duration idleTimeout,
+                             final Duration handshakeTimeout) {
         this.config = config;
         this.identity = identity;
         this.endpoint = endpoint;

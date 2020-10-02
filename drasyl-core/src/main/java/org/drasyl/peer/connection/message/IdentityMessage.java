@@ -38,10 +38,10 @@ public class IdentityMessage extends RelayableMessage implements ResponseMessage
     private final PeerInformation peerInformation;
     private final MessageId correspondingId;
 
-    public IdentityMessage(CompressedPublicKey recipient,
-                           CompressedPublicKey publicKey,
-                           PeerInformation peerInformation,
-                           MessageId correspondingId) {
+    public IdentityMessage(final CompressedPublicKey recipient,
+                           final CompressedPublicKey publicKey,
+                           final PeerInformation peerInformation,
+                           final MessageId correspondingId) {
         super(recipient);
         this.publicKey = requireNonNull(publicKey);
         this.peerInformation = requireNonNull(peerInformation);
@@ -49,12 +49,12 @@ public class IdentityMessage extends RelayableMessage implements ResponseMessage
     }
 
     @JsonCreator
-    private IdentityMessage(@JsonProperty("id") MessageId id,
-                            @JsonProperty("recipient") CompressedPublicKey recipient,
-                            @JsonProperty("publicKey") CompressedPublicKey publicKey,
-                            @JsonProperty("peerInformation") PeerInformation peerInformation,
-                            @JsonProperty("correspondingId") MessageId correspondingId,
-                            @JsonProperty("hopCount") short hopCount) {
+    private IdentityMessage(@JsonProperty("id") final MessageId id,
+                            @JsonProperty("recipient") final CompressedPublicKey recipient,
+                            @JsonProperty("publicKey") final CompressedPublicKey publicKey,
+                            @JsonProperty("peerInformation") final PeerInformation peerInformation,
+                            @JsonProperty("correspondingId") final MessageId correspondingId,
+                            @JsonProperty("hopCount") final short hopCount) {
         super(id, recipient, hopCount);
         this.publicKey = requireNonNull(publicKey);
         this.peerInformation = requireNonNull(peerInformation);
@@ -80,7 +80,7 @@ public class IdentityMessage extends RelayableMessage implements ResponseMessage
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -90,7 +90,7 @@ public class IdentityMessage extends RelayableMessage implements ResponseMessage
         if (!super.equals(o)) {
             return false;
         }
-        IdentityMessage that = (IdentityMessage) o;
+        final IdentityMessage that = (IdentityMessage) o;
         return Objects.equals(publicKey, that.publicKey) &&
                 Objects.equals(peerInformation, that.peerInformation) &&
                 Objects.equals(correspondingId, that.correspondingId);

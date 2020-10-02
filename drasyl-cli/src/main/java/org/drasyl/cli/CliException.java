@@ -22,11 +22,11 @@ package org.drasyl.cli;
  * A org.drasyl.cli.CliException is thrown by the {@link Cli} when errors occur.
  */
 public class CliException extends Exception {
-    public CliException(String message) {
+    public CliException(final String message) {
         super(message);
     }
 
-    public CliException(Throwable cause) {
+    public CliException(final Throwable cause) {
         super(cause);
     }
 }

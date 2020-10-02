@@ -38,7 +38,7 @@ public class CompressedPrivateKey extends AbstractCompressedKey<PrivateKey> {
      *                                  string
      * @throws CryptoException          if the string parameter does not conform to a valid key
      */
-    public CompressedPrivateKey(String compressedKey) throws CryptoException {
+    public CompressedPrivateKey(final String compressedKey) throws CryptoException {
         super(compressedKey);
     }
 
@@ -49,7 +49,7 @@ public class CompressedPrivateKey extends AbstractCompressedKey<PrivateKey> {
      * @throws IllegalArgumentException if parameter does not conform to a valid hexadecimal string
      * @throws CryptoException          if the parameter does not conform to a valid key
      */
-    public CompressedPrivateKey(PrivateKey key) throws CryptoException {
+    public CompressedPrivateKey(final PrivateKey key) throws CryptoException {
         this(HexUtil.bytesToHex(Crypto.compressedKey(key)), key);
     }
 
@@ -59,7 +59,7 @@ public class CompressedPrivateKey extends AbstractCompressedKey<PrivateKey> {
      * @param compressedKey compressed private key
      * @param key           private key
      */
-    CompressedPrivateKey(String compressedKey, PrivateKey key) {
+    CompressedPrivateKey(final String compressedKey, final PrivateKey key) {
         super(compressedKey, key);
     }
 
@@ -87,7 +87,7 @@ public class CompressedPrivateKey extends AbstractCompressedKey<PrivateKey> {
      * @throws IllegalArgumentException if string parameter does not conform to a valid hexadecimal
      *                                  string
      */
-    public static CompressedPrivateKey of(String compressedKey) throws CryptoException {
+    public static CompressedPrivateKey of(final String compressedKey) throws CryptoException {
         return new CompressedPrivateKey(compressedKey);
     }
 
@@ -100,7 +100,7 @@ public class CompressedPrivateKey extends AbstractCompressedKey<PrivateKey> {
      * @throws IllegalArgumentException if string parameter does not conform to a valid hexadecimal
      *                                  string
      */
-    public static CompressedPrivateKey of(PrivateKey key) throws CryptoException {
+    public static CompressedPrivateKey of(final PrivateKey key) throws CryptoException {
         return new CompressedPrivateKey(key);
     }
 }

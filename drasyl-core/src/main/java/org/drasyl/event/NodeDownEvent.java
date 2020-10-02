@@ -6,7 +6,7 @@ package org.drasyl.event;
  * This is an immutable object.
  */
 public class NodeDownEvent extends AbstractNodeEvent {
-    public NodeDownEvent(Node node) {
+    public NodeDownEvent(final Node node) {
         super(node);
     }
 

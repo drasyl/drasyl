@@ -32,7 +32,7 @@ class DirectConnectionDemandsCacheTest {
     }
 
     @Test
-    void shouldExpireNonPersistentDemandsAfterSomeTime(@Mock CompressedPublicKey publicKey) {
+    void shouldExpireNonPersistentDemandsAfterSomeTime(@Mock final CompressedPublicKey publicKey) {
         underTest = new DirectConnectionDemandsCache(10, ofSeconds(1));
         underTest.add(publicKey);
 
@@ -40,7 +40,7 @@ class DirectConnectionDemandsCacheTest {
     }
 
     @Test
-    void shouldKeepPersistentDemandsAfterSomeTime(@Mock CompressedPublicKey publicKey) throws InterruptedException {
+    void shouldKeepPersistentDemandsAfterSomeTime(@Mock final CompressedPublicKey publicKey) throws InterruptedException {
         underTest = new DirectConnectionDemandsCache(10, ofMillis(100));
         for (int i = 0; i < 10; i++) {
             underTest.add(publicKey);
@@ -51,8 +51,8 @@ class DirectConnectionDemandsCacheTest {
     }
 
     @Test
-    void shouldEvictEntriesWhenLimitIsExceeded(@Mock CompressedPublicKey publicKey1,
-                                               @Mock CompressedPublicKey publicKey2) {
+    void shouldEvictEntriesWhenLimitIsExceeded(@Mock final CompressedPublicKey publicKey1,
+                                               @Mock final CompressedPublicKey publicKey2) {
         underTest = new DirectConnectionDemandsCache(1, ofSeconds(1));
         underTest.add(publicKey1);
         underTest.add(publicKey2);

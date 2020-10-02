@@ -41,7 +41,7 @@ abstract class MemberActionMessage extends GroupActionMessage {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }

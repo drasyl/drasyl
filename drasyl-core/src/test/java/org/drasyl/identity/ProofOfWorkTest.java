@@ -31,8 +31,8 @@ class ProofOfWorkTest {
     class Equals {
         @Test
         void shouldReturnTrueOnSameProof() {
-            ProofOfWork proof1 = ProofOfWork.of(1);
-            ProofOfWork proof2 = ProofOfWork.of(1);
+            final ProofOfWork proof1 = ProofOfWork.of(1);
+            final ProofOfWork proof2 = ProofOfWork.of(1);
 
             assertEquals(proof1, proof2);
             assertEquals(proof1.hashCode(), proof2.hashCode());
@@ -49,10 +49,10 @@ class ProofOfWorkTest {
 
         @Test
         void shouldGenerateCorrectProof() throws CryptoException {
-            short difficulty = 1;
-            CompressedPublicKey publicKey = CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9");
-            ProofOfWork proof1 = ProofOfWork.of(publicKey, difficulty);
-            ProofOfWork proof2 = ProofOfWork.of(publicKey, difficulty);
+            final short difficulty = 1;
+            final CompressedPublicKey publicKey = CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9");
+            final ProofOfWork proof1 = ProofOfWork.of(publicKey, difficulty);
+            final ProofOfWork proof2 = ProofOfWork.of(publicKey, difficulty);
 
             assertTrue(proof1.isValid(publicKey, difficulty));
             assertTrue(proof2.isValid(publicKey, difficulty));
@@ -64,7 +64,7 @@ class ProofOfWorkTest {
     class IncNonce {
         @Test
         void shouldIncNonce() {
-            ProofOfWork proof = ProofOfWork.of(1);
+            final ProofOfWork proof = ProofOfWork.of(1);
             assertEquals(1, proof.getNonce());
 
             proof.incNonce();

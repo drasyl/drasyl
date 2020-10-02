@@ -56,7 +56,7 @@ class ApplicationMessageTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
-            String json = "{\"@type\":\"" + ApplicationMessage.class.getSimpleName() + "\",\"id\":\"412176952b5b81fd13f84a7c\",\"sender\":\"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\"recipient\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"headers\":{\"clazz\":\"[B\"},\"payload\":\"AAEC\"}";
+            final String json = "{\"@type\":\"" + ApplicationMessage.class.getSimpleName() + "\",\"id\":\"412176952b5b81fd13f84a7c\",\"sender\":\"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\"recipient\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"headers\":{\"clazz\":\"[B\"},\"payload\":\"AAEC\"}";
 
             assertEquals(new ApplicationMessage(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), Map.of("clazz", byte[].class.getName()), new byte[]{
                     0x00,
@@ -67,7 +67,7 @@ class ApplicationMessageTest {
 
         @Test
         void shouldDeserializeJsonWithoutHeadersToCorrectObject() throws IOException, CryptoException {
-            String json = "{\"@type\":\"" + ApplicationMessage.class.getSimpleName() + "\",\"id\":\"412176952b5b81fd13f84a7c\",\"sender\":\"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\"recipient\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"payload\":\"AAEC\"}";
+            final String json = "{\"@type\":\"" + ApplicationMessage.class.getSimpleName() + "\",\"id\":\"412176952b5b81fd13f84a7c\",\"sender\":\"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\"recipient\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"payload\":\"AAEC\"}";
 
             assertEquals(new ApplicationMessage(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), new byte[]{
                     0x00,
@@ -78,7 +78,7 @@ class ApplicationMessageTest {
 
         @Test
         void shouldRejectIncompleteData() {
-            String json = "{\"@type\":\"" + ApplicationMessage.class.getSimpleName() + "\",\"id\":\"412176952b5b81fd13f84a7c\",\"recipient\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"payload\":\"AAEC\"}";
+            final String json = "{\"@type\":\"" + ApplicationMessage.class.getSimpleName() + "\",\"id\":\"412176952b5b81fd13f84a7c\",\"recipient\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"payload\":\"AAEC\"}";
 
             assertThrows(ValueInstantiationException.class, () -> JACKSON_READER.readValue(json, Message.class));
         }
@@ -88,7 +88,7 @@ class ApplicationMessageTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException {
-            ApplicationMessage message = new ApplicationMessage(sender, recipient, Map.of("clazz", byte[].class.getName()), new byte[]{
+            final ApplicationMessage message = new ApplicationMessage(sender, recipient, Map.of("clazz", byte[].class.getName()), new byte[]{
                     0x00,
                     0x01,
                     0x02
@@ -119,17 +119,17 @@ class ApplicationMessageTest {
     class Equals {
         @Test
         void notSameBecauseOfDifferentPayload() {
-            ApplicationMessage message1 = new ApplicationMessage(sender, recipient, new byte[]{
+            final ApplicationMessage message1 = new ApplicationMessage(sender, recipient, new byte[]{
                     0x00,
                     0x01,
                     0x02
             });
-            ApplicationMessage message2 = new ApplicationMessage(sender, recipient, new byte[]{
+            final ApplicationMessage message2 = new ApplicationMessage(sender, recipient, new byte[]{
                     0x00,
                     0x01,
                     0x02
             });
-            ApplicationMessage message3 = new ApplicationMessage(sender, recipient, new byte[]{
+            final ApplicationMessage message3 = new ApplicationMessage(sender, recipient, new byte[]{
                     0x03,
                     0x02,
                     0x01
@@ -144,17 +144,17 @@ class ApplicationMessageTest {
     class HashCode {
         @Test
         void notSameBecauseOfDifferentPayload() {
-            ApplicationMessage message1 = new ApplicationMessage(id, sender, recipient, new byte[]{
+            final ApplicationMessage message1 = new ApplicationMessage(id, sender, recipient, new byte[]{
                     0x00,
                     0x01,
                     0x02
             }, hopCount);
-            ApplicationMessage message2 = new ApplicationMessage(id, sender, recipient, new byte[]{
+            final ApplicationMessage message2 = new ApplicationMessage(id, sender, recipient, new byte[]{
                     0x00,
                     0x01,
                     0x02
             }, hopCount);
-            ApplicationMessage message3 = new ApplicationMessage(id, sender, recipient, new byte[]{
+            final ApplicationMessage message3 = new ApplicationMessage(id, sender, recipient, new byte[]{
                     0x03,
                     0x02,
                     0x01
@@ -170,7 +170,7 @@ class ApplicationMessageTest {
     class IncrementHopCount {
         @Test
         void shouldIncrementHopCountByOne() {
-            ApplicationMessage message = new ApplicationMessage(sender, recipient, new byte[]{});
+            final ApplicationMessage message = new ApplicationMessage(sender, recipient, new byte[]{});
 
             message.incrementHopCount();
 

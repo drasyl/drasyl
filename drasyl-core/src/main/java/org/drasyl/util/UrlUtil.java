@@ -32,11 +32,11 @@ public class UrlUtil {
      *                                  fails to comply with the specific syntax of the associated
      *                                  protocol.
      */
-    public static URL createUrl(String str) {
+    public static URL createUrl(final String str) {
         try {
             return new URL(str);
         }
-        catch (MalformedURLException x) {
+        catch (final MalformedURLException x) {
             throw new IllegalArgumentException(x.getMessage(), x);
         }
     }

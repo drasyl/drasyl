@@ -14,11 +14,11 @@ class DrasylExceptionTest {
     class Equals {
         @Test
         void shouldRecognizeEqualExceptionsWithCause() {
-            Exception causeA = new Exception();
-            Exception causeB = new Exception();
-            DrasylException exceptionA = new DrasylException(causeA);
-            DrasylException exceptionB = new DrasylException(causeA);
-            DrasylException exceptionC = new DrasylException(causeB);
+            final Exception causeA = new Exception();
+            final Exception causeB = new Exception();
+            final DrasylException exceptionA = new DrasylException(causeA);
+            final DrasylException exceptionB = new DrasylException(causeA);
+            final DrasylException exceptionC = new DrasylException(causeB);
 
             assertEquals(exceptionA, exceptionA);
             assertEquals(exceptionA, exceptionB);
@@ -30,9 +30,9 @@ class DrasylExceptionTest {
 
         @Test
         void shouldRecognizeEqualExceptionsWithMessage() {
-            DrasylException exceptionA = new DrasylException("foo");
-            DrasylException exceptionB = new DrasylException("foo");
-            DrasylException exceptionC = new DrasylException("bar");
+            final DrasylException exceptionA = new DrasylException("foo");
+            final DrasylException exceptionB = new DrasylException("foo");
+            final DrasylException exceptionC = new DrasylException("bar");
 
             assertEquals(exceptionA, exceptionA);
             assertEquals(exceptionA, exceptionB);
@@ -47,11 +47,11 @@ class DrasylExceptionTest {
     class HashCode {
         @Test
         void shouldRecognizeEqualExceptionsWithCause() {
-            Exception causeA = new Exception();
-            Exception causeB = new Exception();
-            DrasylException exceptionA = new DrasylException(causeA);
-            DrasylException exceptionB = new DrasylException(causeA);
-            DrasylException exceptionC = new DrasylException(causeB);
+            final Exception causeA = new Exception();
+            final Exception causeB = new Exception();
+            final DrasylException exceptionA = new DrasylException(causeA);
+            final DrasylException exceptionB = new DrasylException(causeA);
+            final DrasylException exceptionC = new DrasylException(causeB);
 
             assertEquals(exceptionA.hashCode(), exceptionB.hashCode());
             assertNotEquals(exceptionA.hashCode(), exceptionC.hashCode());
@@ -60,9 +60,9 @@ class DrasylExceptionTest {
 
         @Test
         void shouldRecognizeEqualExceptionsWithMessage() {
-            DrasylException exceptionA = new DrasylException("foo");
-            DrasylException exceptionB = new DrasylException("foo");
-            DrasylException exceptionC = new DrasylException("bar");
+            final DrasylException exceptionA = new DrasylException("foo");
+            final DrasylException exceptionB = new DrasylException("foo");
+            final DrasylException exceptionC = new DrasylException("bar");
 
             assertEquals(exceptionA.hashCode(), exceptionB.hashCode());
             assertNotEquals(exceptionA.hashCode(), exceptionC.hashCode());

@@ -62,13 +62,13 @@ class SignatureHandlerTest {
 
     @Test
     void shouldSignUnsignedMessage() throws CryptoException {
-        SignatureHandler handler = new SignatureHandler(identity);
-        QuitMessage message = new QuitMessage();
+        final SignatureHandler handler = new SignatureHandler(identity);
+        final QuitMessage message = new QuitMessage();
 
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
         assertTrue(channel.writeOutbound(message));
 
-        SignedMessage signedMessage = channel.readOutbound();
+        final SignedMessage signedMessage = channel.readOutbound();
 
         assertTrue(Crypto.verifySignature(signedMessage.getKid().toUncompressedKey(), signedMessage));
         assertEquals(identity.getPublicKey(), signedMessage.getKid());
@@ -80,46 +80,46 @@ class SignatureHandlerTest {
         when(mockedIdentity.getPrivateKey()).thenReturn(mockedPrivateKey);
         when(mockedPrivateKey.toUncompressedKey()).thenThrow(CryptoException.class);
 
-        SignatureHandler handler = new SignatureHandler(mockedIdentity);
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
-        QuitMessage message = new QuitMessage();
+        final SignatureHandler handler = new SignatureHandler(mockedIdentity);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final QuitMessage message = new QuitMessage();
 
         assertThrows(CryptoException.class, () -> channel.writeOutbound(message));
     }
 
     @Test
     void shouldVerifyIncomingMessage() throws CryptoException {
-        SignatureHandler handler = new SignatureHandler(identity);
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final SignatureHandler handler = new SignatureHandler(identity);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        CompressedPublicKey identity2 = CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458");
+        final CompressedPublicKey identity2 = CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458");
         channel.attr(ATTRIBUTE_PUBLIC_KEY).set(identity2);
 
-        QuitMessage message = new QuitMessage();
-        SignedMessage signedMessage = new SignedMessage(message, identity2);
+        final QuitMessage message = new QuitMessage();
+        final SignedMessage signedMessage = new SignedMessage(message, identity2);
 
-        Identity privateIdentity2 = Identity.of(ProofOfWork.of(36558946), "0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458", "00ea42e42240e0f6e0f9bee7058118aa149ce72de25cde574523ff9199ec2660");
+        final Identity privateIdentity2 = Identity.of(ProofOfWork.of(36558946), "0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458", "00ea42e42240e0f6e0f9bee7058118aa149ce72de25cde574523ff9199ec2660");
         Crypto.sign(privateIdentity2.getPrivateKey().toUncompressedKey(), signedMessage);
 
         assertNotNull(signedMessage.getKid());
         assertNotNull(signedMessage.getSignature());
 
         assertTrue(channel.writeInbound(signedMessage));
-        QuitMessage out = channel.readInbound();
+        final QuitMessage out = channel.readInbound();
 
         assertEquals(message, out);
     }
 
     @Test
     void shouldNotPassthroughsMessageWhenSignatureIsInvalid() throws CryptoException {
-        SignatureHandler handler = new SignatureHandler(identity);
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final SignatureHandler handler = new SignatureHandler(identity);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        CompressedPublicKey identity2 = CompressedPublicKey.of("0248b7221b49775dcae85b02fdc9df41fbed6236c72c5c0356b59961190d3f8a13");
+        final CompressedPublicKey identity2 = CompressedPublicKey.of("0248b7221b49775dcae85b02fdc9df41fbed6236c72c5c0356b59961190d3f8a13");
         channel.attr(ATTRIBUTE_PUBLIC_KEY).set(identity2);
 
-        QuitMessage message = new QuitMessage();
-        SignedMessage signedMessage = new SignedMessage(message, identity2);
+        final QuitMessage message = new QuitMessage();
+        final SignedMessage signedMessage = new SignedMessage(message, identity2);
         Crypto.sign(identity.getPrivateKey().toUncompressedKey(), signedMessage);
 
         assertNotNull(signedMessage.getKid());
@@ -131,9 +131,9 @@ class SignatureHandlerTest {
 
     @Test
     void shouldNotPassthroughsMessageWhenPublicKeyCantBeExtracted() {
-        SignatureHandler handler = new SignatureHandler(identity);
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
-        QuitMessage message = new QuitMessage();
+        final SignatureHandler handler = new SignatureHandler(identity);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final QuitMessage message = new QuitMessage();
 
         assertFalse(channel.writeInbound(message));
         assertNull(channel.readInbound());
@@ -141,9 +141,9 @@ class SignatureHandlerTest {
 
     @Test
     void shouldNotPassthroughsWhenMessageIsNotSigned() {
-        SignatureHandler handler = new SignatureHandler(identity);
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
-        QuitMessage message = new QuitMessage();
+        final SignatureHandler handler = new SignatureHandler(identity);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final QuitMessage message = new QuitMessage();
 
         assertFalse(channel.writeInbound(message));
         assertNull(channel.readInbound());
@@ -151,16 +151,16 @@ class SignatureHandlerTest {
 
     @Test
     void shouldNotPassthroughsMessageWhenKeysNotIdenticallyToChannelKey() throws CryptoException {
-        SignatureHandler handler = new SignatureHandler(identity);
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final SignatureHandler handler = new SignatureHandler(identity);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
         channel.attr(ATTRIBUTE_PUBLIC_KEY).set(identity.getPublicKey());
 
-        CompressedPublicKey identity2 = CompressedPublicKey.of("026786e52addf59f0e40d5f6a4c1d2873afc04a6460a85b0becd04eb86f1e7116d");
+        final CompressedPublicKey identity2 = CompressedPublicKey.of("026786e52addf59f0e40d5f6a4c1d2873afc04a6460a85b0becd04eb86f1e7116d");
 
-        QuitMessage message = new QuitMessage();
-        SignedMessage signedMessage = new SignedMessage(message, identity2);
+        final QuitMessage message = new QuitMessage();
+        final SignedMessage signedMessage = new SignedMessage(message, identity2);
 
-        Identity privateIdentity2 = Identity.of(ProofOfWork.of(2096201), "026786e52addf59f0e40d5f6a4c1d2873afc04a6460a85b0becd04eb86f1e7116d", "02c43ebf22f27add698de3d5a534d4df88616b5acf164850aa56b7f4e8dbfbe2");
+        final Identity privateIdentity2 = Identity.of(ProofOfWork.of(2096201), "026786e52addf59f0e40d5f6a4c1d2873afc04a6460a85b0becd04eb86f1e7116d", "02c43ebf22f27add698de3d5a534d4df88616b5acf164850aa56b7f4e8dbfbe2");
         Crypto.sign(privateIdentity2.getPrivateKey().toUncompressedKey(), signedMessage);
 
         assertNotNull(signedMessage.getKid());
@@ -174,10 +174,10 @@ class SignatureHandlerTest {
     void shouldNotPassthroughsMessageWhenPublicKeyCantBeExtracted2() throws CryptoException {
         when(mockedPublicKey.toUncompressedKey()).thenThrow(CryptoException.class);
 
-        SignatureHandler handler = new SignatureHandler(identity);
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
-        QuitMessage message = new QuitMessage();
-        SignedMessage signedMessage = new SignedMessage(message, mockedPublicKey);
+        final SignatureHandler handler = new SignatureHandler(identity);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final QuitMessage message = new QuitMessage();
+        final SignedMessage signedMessage = new SignedMessage(message, mockedPublicKey);
         signedMessage.setSignature(signature);
 
         assertFalse(channel.writeInbound(signedMessage));

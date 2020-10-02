@@ -84,32 +84,32 @@ class ReceivingWormholeNodeTest {
     @Nested
     class OnEvent {
         @Test
-        void shouldCompleteExceptionallyOnError(@Mock NodeUnrecoverableErrorEvent event) {
+        void shouldCompleteExceptionallyOnError(@Mock final NodeUnrecoverableErrorEvent event) {
             underTest.onEvent(event);
 
             verify(doneFuture).completeExceptionally(any());
         }
 
         @Test
-        void shouldCompleteOnTerminationEvent(@Mock NodeNormalTerminationEvent event) {
+        void shouldCompleteOnTerminationEvent(@Mock final NodeNormalTerminationEvent event) {
             underTest.onEvent(event);
 
             verify(doneFuture).complete(null);
         }
 
         @Test
-        void shouldPrintTextOnTextMessage(@Mock(answer = RETURNS_DEEP_STUBS) MessageEvent event) {
+        void shouldPrintTextOnTextMessage(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event) {
             when(event.getPayload()).thenReturn(new TextMessage("Hi"));
             when(event.getSender()).thenReturn(sender);
 
             underTest.onEvent(event);
 
-            String output = outputStream.toString();
+            final String output = outputStream.toString();
             assertThat(output, containsString("Hi"));
         }
 
         @Test
-        void shouldFailOnWrongPasswordMessage(@Mock(answer = RETURNS_DEEP_STUBS) MessageEvent event) {
+        void shouldFailOnWrongPasswordMessage(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event) {
             when(event.getPayload()).thenReturn(new WrongPasswordMessage());
             when(event.getSender()).thenReturn(sender);
 

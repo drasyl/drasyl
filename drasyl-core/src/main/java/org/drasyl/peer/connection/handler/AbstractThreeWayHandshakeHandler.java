@@ -45,14 +45,14 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
     protected final Messenger messenger;
     protected ScheduledFuture<?> timeoutFuture;
 
-    protected AbstractThreeWayHandshakeHandler(Duration timeout, Messenger messenger) {
+    protected AbstractThreeWayHandshakeHandler(final Duration timeout, final Messenger messenger) {
         this(timeout, messenger, new CompletableFuture<>(), null);
     }
 
-    protected AbstractThreeWayHandshakeHandler(Duration timeout,
-                                               Messenger messenger,
-                                               CompletableFuture<Void> handshakeFuture,
-                                               ScheduledFuture<?> timeoutFuture) {
+    protected AbstractThreeWayHandshakeHandler(final Duration timeout,
+                                               final Messenger messenger,
+                                               final CompletableFuture<Void> handshakeFuture,
+                                               final ScheduledFuture<?> timeoutFuture) {
         super(true, false, false);
         this.timeout = timeout;
         this.messenger = messenger;
@@ -60,8 +60,8 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
         this.timeoutFuture = timeoutFuture;
     }
 
-    protected void processUnexpectedMessageDuringHandshake(ChannelHandlerContext ctx,
-                                                           Message message) {
+    protected void processUnexpectedMessageDuringHandshake(final ChannelHandlerContext ctx,
+                                                           final Message message) {
         if (getLogger().isTraceEnabled()) {
             getLogger().trace("[{}] Handshake is not completed. Inbound message was rejected: '{}'", ctx.channel().id().asShortText(), message);
         }
@@ -72,7 +72,7 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
     protected abstract Logger getLogger();
 
     @Override
-    public void channelRead0(ChannelHandlerContext ctx, Message msg) {
+    public void channelRead0(final ChannelHandlerContext ctx, final Message msg) {
         ctx.executor().submit(() -> {
             if (!handshakeFuture.isDone()) {
                 doHandshake(ctx, msg);
@@ -84,7 +84,7 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
                 processMessageAfterHandshake(ctx, msg);
             }
         }).addListener(future -> {
-            Throwable cause = future.cause();
+            final Throwable cause = future.cause();
             if (cause != null) {
                 exceptionCaught(ctx, cause);
             }
@@ -92,7 +92,7 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
     }
 
     @Override
-    public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+    public void close(final ChannelHandlerContext ctx, final ChannelPromise promise) throws Exception {
         if (timeoutFuture != null) {
             timeoutFuture.cancel(true);
         }
@@ -100,13 +100,13 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
     }
 
     @Override
-    protected void channelWrite0(ChannelHandlerContext ctx,
-                                 Message msg, ChannelPromise promise) {
+    protected void channelWrite0(final ChannelHandlerContext ctx,
+                                 final Message msg, final ChannelPromise promise) {
         if (handshakeFuture.isDone() && !handshakeFuture.isCompletedExceptionally()) {
             ctx.write(msg, promise);
         }
         else {
-            IllegalStateException exception = new IllegalStateException("Handshake is not done yet. Outbound message was dropped: '" + msg + "'");
+            final IllegalStateException exception = new IllegalStateException("Handshake is not done yet. Outbound message was dropped: '" + msg + "'");
             ReferenceCountUtil.release(msg);
             promise.setFailure(exception);
             throw exception;
@@ -115,7 +115,7 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
 
     protected abstract void doHandshake(ChannelHandlerContext ctx, Message message);
 
-    private void quitSession(ChannelHandlerContext ctx, QuitMessage quitMessage) {
+    private void quitSession(final ChannelHandlerContext ctx, final QuitMessage quitMessage) {
         if (getLogger().isTraceEnabled()) {
             getLogger().trace("[{}]: received {}. Close channel for reason '{}'", ctx.channel().id().asShortText(), QuitMessage.class.getSimpleName(), quitMessage.getReason());
         }
@@ -124,9 +124,9 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
     }
 
     @SuppressWarnings({ "java:S1172" })
-    protected void processMessageAfterHandshake(ChannelHandlerContext ctx, Message message) {
+    protected void processMessageAfterHandshake(final ChannelHandlerContext ctx, final Message message) {
         if (message instanceof RelayableMessage) {
-            RelayableMessage relayableMessage = (RelayableMessage) message;
+            final RelayableMessage relayableMessage = (RelayableMessage) message;
             messenger.send(relayableMessage).whenComplete((done, e) -> {
                 if (e != null) {
                     getLogger().trace("Unable to send Message {}: {}", relayableMessage, e.getMessage());
@@ -139,13 +139,13 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
     }
 
     @Override
-    public void channelActive(ChannelHandlerContext ctx) throws Exception {
+    public void channelActive(final ChannelHandlerContext ctx) throws Exception {
         startTimeoutGuard(ctx);
 
         super.channelActive(ctx);
     }
 
-    protected void startTimeoutGuard(ChannelHandlerContext ctx) {
+    protected void startTimeoutGuard(final ChannelHandlerContext ctx) {
         if (timeoutFuture == null) {
             // schedule connection error if handshake did not take place within timeout
             timeoutFuture = ctx.executor().schedule(() -> {
@@ -156,9 +156,9 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
         }
     }
 
-    protected void rejectSession(ChannelHandlerContext ctx,
-                                 ConnectionExceptionMessage.Error error) {
-        String errorDescription = error.getDescription();
+    protected void rejectSession(final ChannelHandlerContext ctx,
+                                 final ConnectionExceptionMessage.Error error) {
+        final String errorDescription = error.getDescription();
         if (getLogger().isTraceEnabled()) {
             getLogger().trace("[{}]: {}", ctx.channel().id().asShortText(), errorDescription);
         }
@@ -168,7 +168,7 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+    public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) {
         if (!handshakeFuture.isDone()) {
             if (getLogger().isWarnEnabled()) {
                 getLogger().info("[{}]: Exception during handshake occurred: {}", ctx.channel().id().asShortText(), cause.getMessage());

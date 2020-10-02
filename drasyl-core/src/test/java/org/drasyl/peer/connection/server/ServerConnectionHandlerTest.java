@@ -104,16 +104,16 @@ class ServerConnectionHandlerTest {
 
     @Test
     void shouldSendExceptionMessageIfHandshakeIsNotDoneInTime() {
-        ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(0), messenger, handshakeFuture, null, requestMessage, offerMessage);
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(0), messenger, handshakeFuture, null, requestMessage, offerMessage);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         assertEquals(new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE_TIMEOUT), channel.readOutbound());
     }
 
     @Test
     void closeBeforeTimeoutShouldNotSendHandshakeTimeoutExceptionMessage() {
-        ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
         channel.close();
 
         assertNull(channel.readOutbound());
@@ -125,8 +125,8 @@ class ServerConnectionHandlerTest {
         when(joinMessage.getPublicKey()).thenReturn(publicKey0);
         when(joinMessage.getProofOfWork().isValid(any(), anyShort())).thenReturn(true);
 
-        ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, null, offerMessage);
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, null, offerMessage);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(joinMessage);
         channel.flush();
@@ -140,8 +140,8 @@ class ServerConnectionHandlerTest {
         when(joinMessage.getNetworkId()).thenReturn(32);
         when(joinMessage.getProofOfWork().isValid(any(), anyShort())).thenReturn(true);
 
-        ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, null, offerMessage);
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, null, offerMessage);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(joinMessage);
         channel.flush();
@@ -153,8 +153,8 @@ class ServerConnectionHandlerTest {
     void shouldRejectUnexpectedMessagesDuringHandshake() {
         when(applicationMessage.getId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
 
-        ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(applicationMessage);
 
@@ -168,7 +168,7 @@ class ServerConnectionHandlerTest {
         when(ctx.channel()).thenReturn(nettyChannel);
         when(nettyChannel.id()).thenReturn(channelId);
 
-        ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
+        final ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         handler.exceptionCaught(ctx, cause);
 
         verify(ctx).writeAndFlush(any(ConnectionExceptionMessage.class));
@@ -179,8 +179,8 @@ class ServerConnectionHandlerTest {
     void shouldCloseChannelOnQuitMessage() {
         when(handshakeFuture.isDone()).thenReturn(true);
 
-        ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(quitMessage);
         channel.flush();
@@ -200,8 +200,8 @@ class ServerConnectionHandlerTest {
             when(statusMessage.getCorrespondingId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
             when(statusMessage.getCode()).thenReturn(STATUS_OK);
 
-            ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
-            EmbeddedChannel channel = new EmbeddedChannel(handler);
+            final ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             channel.attr(ATTRIBUTE_PUBLIC_KEY).set(publicKey0);
 
             channel.writeInbound(statusMessage);
@@ -222,8 +222,8 @@ class ServerConnectionHandlerTest {
             when(joinMessage.isChildrenJoin()).thenReturn(true);
             when(joinMessage.getProofOfWork().isValid(any(), anyShort())).thenReturn(true);
 
-            ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, null, offerMessage);
-            EmbeddedChannel channel = new EmbeddedChannel(handler);
+            final ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, null, offerMessage);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
             channel.writeInbound(joinMessage);
             channel.flush();
@@ -244,8 +244,8 @@ class ServerConnectionHandlerTest {
             when(statusMessage.getCorrespondingId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
             when(statusMessage.getCode()).thenReturn(STATUS_OK);
 
-            ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
-            EmbeddedChannel channel = new EmbeddedChannel(handler);
+            final ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
+            final EmbeddedChannel channel = new EmbeddedChannel(handler);
             channel.attr(ATTRIBUTE_PUBLIC_KEY).set(publicKey0);
 
             channel.writeInbound(statusMessage);

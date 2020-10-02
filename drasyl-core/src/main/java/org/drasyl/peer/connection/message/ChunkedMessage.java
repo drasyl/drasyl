@@ -68,23 +68,23 @@ public class ChunkedMessage extends ApplicationMessage {
      * @param contentLength the final content length
      * @param checksum      the final checksum
      */
-    ChunkedMessage(CompressedPublicKey sender,
-                   CompressedPublicKey recipient,
-                   MessageId id,
-                   byte[] payload,
-                   int contentLength,
-                   String checksum) {
+    ChunkedMessage(final CompressedPublicKey sender,
+                   final CompressedPublicKey recipient,
+                   final MessageId id,
+                   final byte[] payload,
+                   final int contentLength,
+                   final String checksum) {
         this(sender, recipient, payload, id, contentLength, checksum, (short) 0);
     }
 
     @JsonCreator
-    private ChunkedMessage(@JsonProperty("sender") CompressedPublicKey sender,
-                           @JsonProperty("recipient") CompressedPublicKey recipient,
-                           @JsonProperty("payload") byte[] payload,
-                           @JsonProperty("id") MessageId id,
-                           @JsonProperty("contentLength") int contentLength,
-                           @JsonProperty("checksum") String checksum,
-                           @JsonProperty("hopCount") short hopCount) {
+    private ChunkedMessage(@JsonProperty("sender") final CompressedPublicKey sender,
+                           @JsonProperty("recipient") final CompressedPublicKey recipient,
+                           @JsonProperty("payload") final byte[] payload,
+                           @JsonProperty("id") final MessageId id,
+                           @JsonProperty("contentLength") final int contentLength,
+                           @JsonProperty("checksum") final String checksum,
+                           @JsonProperty("hopCount") final short hopCount) {
         super(id, sender, recipient, payload, hopCount);
         this.contentLength = contentLength;
         this.checksum = checksum;
@@ -106,7 +106,7 @@ public class ChunkedMessage extends ApplicationMessage {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -116,7 +116,7 @@ public class ChunkedMessage extends ApplicationMessage {
         if (!super.equals(o)) {
             return false;
         }
-        ChunkedMessage that = (ChunkedMessage) o;
+        final ChunkedMessage that = (ChunkedMessage) o;
         return contentLength == that.contentLength &&
                 Arrays.equals(payload, that.payload) &&
                 Objects.equals(sender, that.sender) &&
@@ -150,12 +150,12 @@ public class ChunkedMessage extends ApplicationMessage {
      * @param contentLength the final content length
      * @param checksum      the final checksum
      */
-    public static ChunkedMessage createFirstChunk(CompressedPublicKey sender,
-                                                  CompressedPublicKey recipient,
-                                                  MessageId msgID,
-                                                  byte[] payload,
-                                                  int contentLength,
-                                                  String checksum) {
+    public static ChunkedMessage createFirstChunk(final CompressedPublicKey sender,
+                                                  final CompressedPublicKey recipient,
+                                                  final MessageId msgID,
+                                                  final byte[] payload,
+                                                  final int contentLength,
+                                                  final String checksum) {
         return new ChunkedMessage(sender, recipient, msgID, payload, contentLength, checksum);
     }
 
@@ -167,10 +167,10 @@ public class ChunkedMessage extends ApplicationMessage {
      * @param msgID     the id of this message (must be the same as the initial chunk)
      * @param payload   the chunk
      */
-    public static ChunkedMessage createFollowChunk(CompressedPublicKey sender,
-                                                   CompressedPublicKey recipient,
-                                                   MessageId msgID,
-                                                   byte[] payload) {
+    public static ChunkedMessage createFollowChunk(final CompressedPublicKey sender,
+                                                   final CompressedPublicKey recipient,
+                                                   final MessageId msgID,
+                                                   final byte[] payload) {
         return new ChunkedMessage(sender, recipient, msgID, payload, 0, null);
     }
 
@@ -181,9 +181,9 @@ public class ChunkedMessage extends ApplicationMessage {
      * @param recipient the recipient of the message
      * @param msgID     the id of this message (must be the same as the initial chunk)
      */
-    public static ChunkedMessage createLastChunk(CompressedPublicKey sender,
-                                                 CompressedPublicKey recipient,
-                                                 MessageId msgID) {
+    public static ChunkedMessage createLastChunk(final CompressedPublicKey sender,
+                                                 final CompressedPublicKey recipient,
+                                                 final MessageId msgID) {
         return new ChunkedMessage(sender, recipient, msgID, new byte[]{}, 0, null);
     }
 }

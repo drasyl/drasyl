@@ -88,12 +88,12 @@ class DirectConnectionsManagerTest {
         }
 
         @Test
-        void shouldAddHandlerToPipelineAndListenOnPeerRelayEvents(@Mock(answer = RETURNS_DEEP_STUBS) PeerRelayEvent event,
-                                                                  @Mock CompressedPublicKey publicKey) {
+        void shouldAddHandlerToPipelineAndListenOnPeerRelayEvents(@Mock(answer = RETURNS_DEEP_STUBS) final PeerRelayEvent event,
+                                                                  @Mock final CompressedPublicKey publicKey) {
             when(event.getPeer().getPublicKey()).thenReturn(publicKey);
             when(directConnectionDemandsCache.contains(publicKey)).thenReturn(true);
             when(pipeline.addLast(eq(DIRECT_CONNECTIONS_MANAGER), any())).then(invocation -> {
-                HandlerAdapter handler = invocation.getArgument(1);
+                final HandlerAdapter handler = invocation.getArgument(1);
                 handler.eventTriggered(mock(HandlerContext.class), event, mock(CompletableFuture.class));
                 return invocation.getMock();
             });
@@ -127,8 +127,8 @@ class DirectConnectionsManagerTest {
         }
 
         @Test
-        void shouldCloseAndRemoveAllClients(@Mock CompressedPublicKey publicKey,
-                                            @Mock DirectClient client) {
+        void shouldCloseAndRemoveAllClients(@Mock final CompressedPublicKey publicKey,
+                                            @Mock final DirectClient client) {
             clients = new ConcurrentHashMap(Map.of(publicKey, client));
             underTest = new DirectConnectionsManager(config, identity, peersManager, new AtomicBoolean(true), messenger, pipeline, channelGroup, workerGroup, eventConsumer, endpoints, directConnectionDemandsCache, requestPeerInformationCache, clients, acceptNewConnectionsSupplier, maxConnections);
 

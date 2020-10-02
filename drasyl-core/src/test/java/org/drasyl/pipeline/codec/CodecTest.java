@@ -43,20 +43,20 @@ class CodecTest {
 
     @Test
     void shouldSkipDoneFutures() {
-        Codec<Object, Object> codec = new Codec<>() {
+        final Codec<Object, Object> codec = new Codec<>() {
             @Override
-            void encode(HandlerContext ctx, Object msg, Consumer<Object> passOnConsumer) {
+            void encode(final HandlerContext ctx, final Object msg, final Consumer<Object> passOnConsumer) {
                 passOnConsumer.accept(msg);
             }
 
             @Override
-            void decode(HandlerContext ctx, Object msg, Consumer<Object> passOnConsumer) {
+            void decode(final HandlerContext ctx, final Object msg, final Consumer<Object> passOnConsumer) {
                 passOnConsumer.accept(msg);
             }
         };
 
-        Object msg = mock(Object.class);
-        CompletableFuture<Void> future = CompletableFuture.completedFuture(null);
+        final Object msg = mock(Object.class);
+        final CompletableFuture<Void> future = CompletableFuture.completedFuture(null);
 
         codec.matchedWrite(ctx, recipient, msg, future);
 
@@ -65,21 +65,21 @@ class CodecTest {
 
     @Test
     void shouldCompleteParentFutureExceptionallyOnChildError() {
-        Codec<Object, Object> codec = new Codec<>() {
+        final Codec<Object, Object> codec = new Codec<>() {
             @Override
-            void encode(HandlerContext ctx, Object msg, Consumer<Object> passOnConsumer) {
+            void encode(final HandlerContext ctx, final Object msg, final Consumer<Object> passOnConsumer) {
                 passOnConsumer.accept(msg);
             }
 
             @Override
-            void decode(HandlerContext ctx, Object msg, Consumer<Object> passOnConsumer) {
+            void decode(final HandlerContext ctx, final Object msg, final Consumer<Object> passOnConsumer) {
                 passOnConsumer.accept(msg);
             }
         };
 
-        Object msg = mock(Object.class);
-        CompletableFuture<Void> future = new CompletableFuture<>();
-        ArgumentCaptor<CompletableFuture> captor = ArgumentCaptor.forClass(CompletableFuture.class);
+        final Object msg = mock(Object.class);
+        final CompletableFuture<Void> future = new CompletableFuture<>();
+        final ArgumentCaptor<CompletableFuture> captor = ArgumentCaptor.forClass(CompletableFuture.class);
 
         codec.matchedWrite(ctx, recipient, msg, future);
 

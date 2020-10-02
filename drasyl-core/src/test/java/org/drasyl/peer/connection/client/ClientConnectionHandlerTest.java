@@ -77,7 +77,7 @@ class ClientConnectionHandlerTest {
     void shouldCloseChannelOnQuitMessage() {
         when(handshakeFuture.isDone()).thenReturn(true);
 
-        ClientConnectionHandler handler = new ClientConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage);
+        final ClientConnectionHandler handler = new ClientConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage);
         channel = new EmbeddedChannel(handler);
         channel.readOutbound(); // join message
         channel.flush();
@@ -95,7 +95,7 @@ class ClientConnectionHandlerTest {
         when(statusMessage.getCorrespondingId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
         when(statusMessage.getCode()).thenReturn(STATUS_SERVICE_UNAVAILABLE);
 
-        ClientConnectionHandler handler = new ClientConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage);
+        final ClientConnectionHandler handler = new ClientConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage);
         channel = new EmbeddedChannel(handler);
         channel.readOutbound(); // join message
         channel.flush();
@@ -115,7 +115,7 @@ class ClientConnectionHandlerTest {
             when(environment.getPeersManager()).thenReturn(peersManager);
             when(environment.joinAsChildren()).thenReturn(true);
 
-            ClientConnectionHandler handler = new ClientConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage);
+            final ClientConnectionHandler handler = new ClientConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage);
             channel = new EmbeddedChannel(handler);
             channel.attr(ATTRIBUTE_PUBLIC_KEY).set(publicKey);
 
@@ -143,7 +143,7 @@ class ClientConnectionHandlerTest {
             when(environment.getPeersManager()).thenReturn(peersManager);
             when(environment.joinAsChildren()).thenReturn(false);
 
-            ClientConnectionHandler handler = new ClientConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage);
+            final ClientConnectionHandler handler = new ClientConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage);
             channel = new EmbeddedChannel(handler);
             channel.attr(ATTRIBUTE_PUBLIC_KEY).set(publicKey);
 

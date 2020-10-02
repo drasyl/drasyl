@@ -26,7 +26,7 @@ import org.drasyl.identity.CompressedPublicKey;
  */
 @SuppressWarnings({ "java:S110" })
 public class NoPathToPublicKeyException extends MessageSinkException {
-    public NoPathToPublicKeyException(CompressedPublicKey identity) {
+    public NoPathToPublicKeyException(final CompressedPublicKey identity) {
         super("No Path to " + identity);
     }
 }

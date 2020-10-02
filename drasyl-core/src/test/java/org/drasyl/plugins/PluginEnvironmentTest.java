@@ -17,9 +17,9 @@ class PluginEnvironmentTest {
 
         @Test
         void notSameBecauseOfDifferentConfig() {
-            PluginEnvironment environment1 = new PluginEnvironment(DrasylConfig.newBuilder().build(), pipeline);
-            PluginEnvironment environment2 = new PluginEnvironment(DrasylConfig.newBuilder().build(), pipeline);
-            PluginEnvironment environment3 = new PluginEnvironment(DrasylConfig.newBuilder().serverEnabled(false).build(), pipeline);
+            final PluginEnvironment environment1 = new PluginEnvironment(DrasylConfig.newBuilder().build(), pipeline);
+            final PluginEnvironment environment2 = new PluginEnvironment(DrasylConfig.newBuilder().build(), pipeline);
+            final PluginEnvironment environment3 = new PluginEnvironment(DrasylConfig.newBuilder().serverEnabled(false).build(), pipeline);
 
             assertEquals(environment1, environment2);
             assertNotEquals(environment2, environment3);
@@ -33,9 +33,9 @@ class PluginEnvironmentTest {
 
         @Test
         void notSameBecauseOfDifferentConfig() {
-            PluginEnvironment environment1 = new PluginEnvironment(DrasylConfig.newBuilder().build(), pipeline);
-            PluginEnvironment environment2 = new PluginEnvironment(DrasylConfig.newBuilder().build(), pipeline);
-            PluginEnvironment environment3 = new PluginEnvironment(DrasylConfig.newBuilder().serverEnabled(false).build(), pipeline);
+            final PluginEnvironment environment1 = new PluginEnvironment(DrasylConfig.newBuilder().build(), pipeline);
+            final PluginEnvironment environment2 = new PluginEnvironment(DrasylConfig.newBuilder().build(), pipeline);
+            final PluginEnvironment environment3 = new PluginEnvironment(DrasylConfig.newBuilder().serverEnabled(false).build(), pipeline);
 
             assertEquals(environment1.hashCode(), environment2.hashCode());
             assertNotEquals(environment2.hashCode(), environment3.hashCode());

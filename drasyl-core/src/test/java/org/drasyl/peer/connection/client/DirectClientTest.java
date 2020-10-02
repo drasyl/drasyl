@@ -62,7 +62,7 @@ class DirectClientTest {
             when(bootstrapSupplier.apply(any())).thenReturn(bootstrap);
             when(endpointsSupplier.get()).thenReturn(Set.of(Endpoint.of("ws://localhost")));
 
-            try (DirectClient client = new DirectClient(retryDelays, workerGroup, endpointsSupplier, new AtomicBoolean(), () -> false, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, channel, directConnectionDemand, onFailure)) {
+            try (final DirectClient client = new DirectClient(retryDelays, workerGroup, endpointsSupplier, new AtomicBoolean(), () -> false, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, channel, directConnectionDemand, onFailure)) {
                 client.open();
 
                 verify(bootstrapSupplier).apply(any());
@@ -71,7 +71,7 @@ class DirectClientTest {
 
         @Test
         void shouldNotConnectIfClientIsAlreadyOpen() throws ClientException {
-            try (DirectClient client = new DirectClient(retryDelays, workerGroup, endpointsSupplier, new AtomicBoolean(true), () -> true, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, channel, directConnectionDemand, onFailure)) {
+            try (final DirectClient client = new DirectClient(retryDelays, workerGroup, endpointsSupplier, new AtomicBoolean(true), () -> true, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, channel, directConnectionDemand, onFailure)) {
                 client.open();
 
                 verify(bootstrapSupplier, never()).apply(any());
@@ -86,7 +86,7 @@ class DirectClientTest {
             when(directConnectionDemand.getAsBoolean()).thenReturn(true);
             when(retryDelays.get(anyInt())).thenReturn(ofSeconds(1));
 
-            try (DirectClient client = new DirectClient(retryDelays, workerGroup, endpointsSupplier, new AtomicBoolean(true), () -> true, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, channel, directConnectionDemand, onFailure)) {
+            try (final DirectClient client = new DirectClient(retryDelays, workerGroup, endpointsSupplier, new AtomicBoolean(true), () -> true, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, channel, directConnectionDemand, onFailure)) {
                 client.conditionalScheduledReconnect();
 
                 verify(workerGroup).schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
@@ -97,7 +97,7 @@ class DirectClientTest {
         void shouldNotReconnectIfClientIsOpenAndSuperPeerRetryDelaysIsNotEmptyAndNoDemandExists() {
             when(directConnectionDemand.getAsBoolean()).thenReturn(false);
 
-            try (DirectClient client = new DirectClient(retryDelays, workerGroup, endpointsSupplier, new AtomicBoolean(true), () -> true, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, channel, directConnectionDemand, onFailure)) {
+            try (final DirectClient client = new DirectClient(retryDelays, workerGroup, endpointsSupplier, new AtomicBoolean(true), () -> true, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, channel, directConnectionDemand, onFailure)) {
                 client.conditionalScheduledReconnect();
 
                 verify(workerGroup, never()).schedule(any(Runnable.class), anyLong(), any(TimeUnit.class));
@@ -109,8 +109,8 @@ class DirectClientTest {
     class Close {
         @Test
         void shouldSetOpenedToFalseIfClientIsOpen() {
-            AtomicBoolean opened = new AtomicBoolean(true);
-            DirectClient client = new DirectClient(retryDelays, workerGroup, endpointsSupplier, opened, () -> true, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, channel, directConnectionDemand, onFailure);
+            final AtomicBoolean opened = new AtomicBoolean(true);
+            final DirectClient client = new DirectClient(retryDelays, workerGroup, endpointsSupplier, opened, () -> true, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, channel, directConnectionDemand, onFailure);
 
             client.close();
 
@@ -119,7 +119,7 @@ class DirectClientTest {
 
         @Test
         void shouldNotCloseConnectionIfClientIsNotOpen() {
-            DirectClient client = new DirectClient(retryDelays, workerGroup, endpointsSupplier, new AtomicBoolean(false), () -> false, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, channel, directConnectionDemand, onFailure);
+            final DirectClient client = new DirectClient(retryDelays, workerGroup, endpointsSupplier, new AtomicBoolean(false), () -> false, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, channel, directConnectionDemand, onFailure);
 
             client.close();
 

@@ -45,9 +45,9 @@ class CompressedPublicKeyTest {
     class Of {
         @Test
         void shouldReturnCorrectKeys() throws CryptoException {
-            CompressedPublicKey compressedPublicKey1 = publicKey;
-            CompressedPublicKey compressedPublicKey2 = CompressedPublicKey.of(compressedPublicKey1.getCompressedKey());
-            CompressedPublicKey compressedPublicKey3 = CompressedPublicKey.of(compressedPublicKey2.toUncompressedKey());
+            final CompressedPublicKey compressedPublicKey1 = publicKey;
+            final CompressedPublicKey compressedPublicKey2 = CompressedPublicKey.of(compressedPublicKey1.getCompressedKey());
+            final CompressedPublicKey compressedPublicKey3 = CompressedPublicKey.of(compressedPublicKey2.toUncompressedKey());
 
             assertEquals(compressedPublicKey1, compressedPublicKey2);
             assertEquals(compressedPublicKey1, compressedPublicKey3);
@@ -62,7 +62,7 @@ class CompressedPublicKeyTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException {
-            String json = "\"0340A4F2ADBDDEEDC8F9ACE30E3F18713A3405F43F4871B4BAC9624FE80D2056A7\"";
+            final String json = "\"0340A4F2ADBDDEEDC8F9ACE30E3F18713A3405F43F4871B4BAC9624FE80D2056A7\"";
 
             assertThat(JACKSON_READER.readValue(json, CompressedPublicKey.class), instanceOf(CompressedPublicKey.class));
         }

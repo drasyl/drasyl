@@ -39,7 +39,7 @@ public class ConnectionExceptionMessageHandler extends SimpleChannelInboundHandl
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, ConnectionExceptionMessage msg) {
+    protected void channelRead0(final ChannelHandlerContext ctx, final ConnectionExceptionMessage msg) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("[{}]: received {}. Close channel", ctx.channel().id().asShortText(), msg);
         }

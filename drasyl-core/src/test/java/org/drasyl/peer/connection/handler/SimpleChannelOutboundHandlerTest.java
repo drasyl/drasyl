@@ -46,11 +46,11 @@ class SimpleChannelOutboundHandlerTest {
 
     @Test
     void testWrite0() throws Exception {
-        SimpleChannelOutboundHandler<String> handler = new SimpleChannelOutboundHandler<>() {
+        final SimpleChannelOutboundHandler<String> handler = new SimpleChannelOutboundHandler<>() {
             @Override
-            protected void channelWrite0(ChannelHandlerContext ctx,
-                                         String msg,
-                                         ChannelPromise promise) throws Exception {
+            protected void channelWrite0(final ChannelHandlerContext ctx,
+                                         final String msg,
+                                         final ChannelPromise promise) throws Exception {
                 assertEquals(o, msg);
             }
         };
@@ -62,11 +62,11 @@ class SimpleChannelOutboundHandlerTest {
 
     @Test
     void testWrite0WithRelease() throws Exception {
-        SimpleChannelOutboundHandler<String> handler = new SimpleChannelOutboundHandler<>(true, true) {
+        final SimpleChannelOutboundHandler<String> handler = new SimpleChannelOutboundHandler<>(true, true) {
             @Override
-            protected void channelWrite0(ChannelHandlerContext ctx,
-                                         String msg,
-                                         ChannelPromise promise) {
+            protected void channelWrite0(final ChannelHandlerContext ctx,
+                                         final String msg,
+                                         final ChannelPromise promise) {
                 assertEquals(o, msg);
             }
         };
@@ -78,11 +78,11 @@ class SimpleChannelOutboundHandlerTest {
 
     @Test
     void testNoMatch() throws Exception {
-        SimpleChannelOutboundHandler<Number> handler = new SimpleChannelOutboundHandler<>(Number.class) {
+        final SimpleChannelOutboundHandler<Number> handler = new SimpleChannelOutboundHandler<>(Number.class) {
             @Override
-            protected void channelWrite0(ChannelHandlerContext ctx,
-                                         Number msg,
-                                         ChannelPromise promise) {
+            protected void channelWrite0(final ChannelHandlerContext ctx,
+                                         final Number msg,
+                                         final ChannelPromise promise) {
                 fail("this should not be triggered!");
             }
         };

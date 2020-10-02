@@ -48,33 +48,33 @@ public class PublicKeyExchangeHandler extends SimpleChannelInboundHandler<IamMes
     private MessageId requestID;
     protected ScheduledFuture<?> timeoutFuture;
 
-    PublicKeyExchangeHandler(CompressedPublicKey serverPublicKey,
-                             Duration timeout,
-                             MessageId requestID,
-                             ScheduledFuture<?> timeoutFuture) {
+    PublicKeyExchangeHandler(final CompressedPublicKey serverPublicKey,
+                             final Duration timeout,
+                             final MessageId requestID,
+                             final ScheduledFuture<?> timeoutFuture) {
         this.serverPublicKey = serverPublicKey;
         this.timeout = timeout;
         this.requestID = requestID;
         this.timeoutFuture = timeoutFuture;
     }
 
-    public PublicKeyExchangeHandler(CompressedPublicKey serverPublicKey, Duration timeout) {
+    public PublicKeyExchangeHandler(final CompressedPublicKey serverPublicKey, final Duration timeout) {
         this(serverPublicKey, timeout, null, null);
     }
 
     @Override
-    public void handlerAdded(ChannelHandlerContext ctx) {
+    public void handlerAdded(final ChannelHandlerContext ctx) {
         this.timeoutFuture = ctx.executor().schedule(() ->
                         ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE_TIMEOUT))
                 , timeout.toMillis(), MILLISECONDS);
 
         // Request identity
-        WhoAreYouMessage request = new WhoAreYouMessage();
+        final WhoAreYouMessage request = new WhoAreYouMessage();
         requestID = request.getId();
         ctx.writeAndFlush(request);
     }
 
-    private void attachIdentityToChannel(ChannelHandlerContext ctx, CompressedPublicKey identity) {
+    private void attachIdentityToChannel(final ChannelHandlerContext ctx, final CompressedPublicKey identity) {
         // attach identity to channel (this information is required for validation signatures of incoming messages)
         ctx.channel().attr(ATTRIBUTE_PUBLIC_KEY).set(identity);
         // emit event
@@ -84,8 +84,8 @@ public class PublicKeyExchangeHandler extends SimpleChannelInboundHandler<IamMes
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx,
-                                IamMessage msg) {
+    protected void channelRead0(final ChannelHandlerContext ctx,
+                                final IamMessage msg) {
         if (msg.getCorrespondingId().equals(requestID)) {
             timeoutFuture.cancel(true);
             if (serverPublicKey != null && !serverPublicKey.equals(msg.getPublicKey())) {

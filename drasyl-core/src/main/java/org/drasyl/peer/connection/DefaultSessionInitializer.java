@@ -54,17 +54,17 @@ public abstract class DefaultSessionInitializer extends ChannelInitializer<Socke
     private final Duration readIdleTimeout;
     private final short pingPongRetries;
 
-    protected DefaultSessionInitializer(int flushBufferSize,
-                                        Duration readIdleTimeout,
-                                        short pingPongRetries) {
+    protected DefaultSessionInitializer(final int flushBufferSize,
+                                        final Duration readIdleTimeout,
+                                        final short pingPongRetries) {
         this.flushBufferSize = flushBufferSize;
         this.readIdleTimeout = readIdleTimeout;
         this.pingPongRetries = pingPongRetries;
     }
 
     @Override
-    protected void initChannel(SocketChannel ch) throws DrasylException {
-        ChannelPipeline pipeline = ch.pipeline();
+    protected void initChannel(final SocketChannel ch) throws DrasylException {
+        final ChannelPipeline pipeline = ch.pipeline();
 
         beforeBufferStage(pipeline);
         bufferStage(pipeline);
@@ -97,7 +97,7 @@ public abstract class DefaultSessionInitializer extends ChannelInitializer<Socke
         afterExceptionStage(pipeline);
     }
 
-    protected void beforeSslStage(SocketChannel ch) {
+    protected void beforeSslStage(final SocketChannel ch) {
     }
 
     /**
@@ -105,19 +105,19 @@ public abstract class DefaultSessionInitializer extends ChannelInitializer<Socke
      *
      * @param ch the {@link SocketChannel}
      */
-    protected void sslStage(SocketChannel ch) throws DrasylException {
-        SslHandler sslHandler = generateSslContext(ch);
+    protected void sslStage(final SocketChannel ch) throws DrasylException {
+        final SslHandler sslHandler = generateSslContext(ch);
 
         if (sslHandler != null) {
             ch.pipeline().addLast("sslHandler", sslHandler);
         }
     }
 
-    protected void afterSslStage(SocketChannel ch) {
+    protected void afterSslStage(final SocketChannel ch) {
 
     }
 
-    protected void beforeBufferStage(ChannelPipeline pipeline) {
+    protected void beforeBufferStage(final ChannelPipeline pipeline) {
     }
 
     /**
@@ -125,13 +125,13 @@ public abstract class DefaultSessionInitializer extends ChannelInitializer<Socke
      *
      * @param pipeline the {@link ChannelPipeline}
      */
-    protected void bufferStage(ChannelPipeline pipeline) {
+    protected void bufferStage(final ChannelPipeline pipeline) {
         // Use buffer for better IO performance
         pipeline.addLast(
                 new FlushConsolidationHandler(Math.max(1, flushBufferSize), true));
     }
 
-    protected void afterBufferStage(ChannelPipeline pipeline) {
+    protected void afterBufferStage(final ChannelPipeline pipeline) {
     }
 
     protected abstract void beforeMarshalStage(ChannelPipeline pipeline);
@@ -141,14 +141,14 @@ public abstract class DefaultSessionInitializer extends ChannelInitializer<Socke
      *
      * @param pipeline the {@link ChannelPipeline}
      */
-    protected void marshalStage(ChannelPipeline pipeline) {
+    protected void marshalStage(final ChannelPipeline pipeline) {
 
     }
 
-    protected void afterMarshalStage(ChannelPipeline pipeline) {
+    protected void afterMarshalStage(final ChannelPipeline pipeline) {
     }
 
-    protected void beforeFilterStage(ChannelPipeline pipeline) {
+    protected void beforeFilterStage(final ChannelPipeline pipeline) {
     }
 
     /**
@@ -156,13 +156,13 @@ public abstract class DefaultSessionInitializer extends ChannelInitializer<Socke
      *
      * @param pipeline the {@link ChannelPipeline}
      */
-    protected void filterStage(ChannelPipeline pipeline) {
+    protected void filterStage(final ChannelPipeline pipeline) {
     }
 
-    protected void afterFilterStage(ChannelPipeline pipeline) {
+    protected void afterFilterStage(final ChannelPipeline pipeline) {
     }
 
-    protected void beforePojoMarshalStage(ChannelPipeline pipeline) {
+    protected void beforePojoMarshalStage(final ChannelPipeline pipeline) {
     }
 
     /**
@@ -170,16 +170,16 @@ public abstract class DefaultSessionInitializer extends ChannelInitializer<Socke
      *
      * @param pipeline the {@link ChannelPipeline}
      */
-    protected void pojoMarshalStage(ChannelPipeline pipeline) {
+    protected void pojoMarshalStage(final ChannelPipeline pipeline) {
         // From String to Message
         pipeline.addLast(MESSAGE_DECODER, MessageDecoder.INSTANCE);
         pipeline.addLast(MESSAGE_ENCODER, MessageEncoder.INSTANCE);
     }
 
-    protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
+    protected void afterPojoMarshalStage(final ChannelPipeline pipeline) {
     }
 
-    protected void beforeIdleStage(ChannelPipeline pipeline) {
+    protected void beforeIdleStage(final ChannelPipeline pipeline) {
     }
 
     /**
@@ -187,7 +187,7 @@ public abstract class DefaultSessionInitializer extends ChannelInitializer<Socke
      *
      * @param pipeline the {@link ChannelPipeline}
      */
-    protected void idleStage(ChannelPipeline pipeline) {
+    protected void idleStage(final ChannelPipeline pipeline) {
         // Add handler to emit idle event for ping/pong requests
         if (!readIdleTimeout.isZero()) {
             pipeline.addLast(IDLE_EVENT, new IdleStateHandler(readIdleTimeout.toMillis(), 0, 0, TimeUnit.MILLISECONDS));
@@ -195,7 +195,7 @@ public abstract class DefaultSessionInitializer extends ChannelInitializer<Socke
         pipeline.addLast(PingPongHandler.PING_PONG_HANDLER, new PingPongHandler(pingPongRetries));
     }
 
-    protected void afterIdleStage(ChannelPipeline pipeline) {
+    protected void afterIdleStage(final ChannelPipeline pipeline) {
     }
 
     /**
@@ -206,7 +206,7 @@ public abstract class DefaultSessionInitializer extends ChannelInitializer<Socke
      */
     protected abstract void customStage(ChannelPipeline pipeline);
 
-    protected void beforeExceptionStage(ChannelPipeline pipeline) {
+    protected void beforeExceptionStage(final ChannelPipeline pipeline) {
     }
 
     /**
@@ -214,7 +214,7 @@ public abstract class DefaultSessionInitializer extends ChannelInitializer<Socke
      *
      * @param pipeline the {@link ChannelPipeline}
      */
-    protected void exceptionStage(ChannelPipeline pipeline) {
+    protected void exceptionStage(final ChannelPipeline pipeline) {
     }
 
     /**
@@ -223,7 +223,7 @@ public abstract class DefaultSessionInitializer extends ChannelInitializer<Socke
      *
      * @param pipeline the {@link ChannelPipeline}
      */
-    protected void afterExceptionStage(ChannelPipeline pipeline) {
+    protected void afterExceptionStage(final ChannelPipeline pipeline) {
     }
 
     /**

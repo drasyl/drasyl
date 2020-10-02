@@ -58,7 +58,7 @@ class PingPongHandlerTest {
         when(evt.state()).thenReturn(IdleState.READER_IDLE);
         when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
 
-        PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
+        final PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
         handler.userEventTriggered(ctx, evt);
 
         verify(ctx).writeAndFlush(any(PingMessage.class));
@@ -69,7 +69,7 @@ class PingPongHandlerTest {
         when(evt.state()).thenReturn(IdleState.READER_IDLE);
         when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
 
-        PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(2));
+        final PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(2));
         handler.userEventTriggered(ctx, evt);
 
         verify(ctx).writeAndFlush(any(ConnectionExceptionMessage.class));
@@ -81,7 +81,7 @@ class PingPongHandlerTest {
         when(evt.state()).thenReturn(IdleState.READER_IDLE);
         when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
 
-        PingPongHandler handler = new PingPongHandler((short) 2, new AtomicInteger(0));
+        final PingPongHandler handler = new PingPongHandler((short) 2, new AtomicInteger(0));
 
         for (int i = 0; i < 3; i++) {
             handler.userEventTriggered(ctx, evt);
@@ -96,7 +96,7 @@ class PingPongHandlerTest {
         when(evt.state()).thenReturn(IdleState.READER_IDLE);
         when(evt.state()).thenReturn(IdleState.WRITER_IDLE);
 
-        PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
+        final PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
         handler.userEventTriggered(ctx, evt);
 
         verify(ctx, never()).writeAndFlush(any());
@@ -104,10 +104,10 @@ class PingPongHandlerTest {
 
     @Test
     void shouldReplyWithPongMessageToPingMessage() {
-        PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        PingMessage pingMessage = new PingMessage();
+        final PingMessage pingMessage = new PingMessage();
         channel.writeInbound(pingMessage);
         channel.flush();
 
@@ -116,8 +116,8 @@ class PingPongHandlerTest {
 
     @Test
     void shouldResetCounterIfPingMessageReceived() {
-        PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(new PongMessage(new MessageId("412176952b5b81fd13f84a7c")));
         channel.flush();
@@ -127,10 +127,10 @@ class PingPongHandlerTest {
 
     @Test
     void shouldPassThroughAllUnrelatedMessages() {
-        PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        QuitMessage quitMessage = new QuitMessage();
+        final QuitMessage quitMessage = new QuitMessage();
         channel.writeInbound(quitMessage);
         channel.flush();
 

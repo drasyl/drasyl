@@ -80,8 +80,8 @@ class PublicKeyExchangeHandlerTest {
 
     @Test
     void shouldSendRequestOnHandlerAdded() {
-        PublicKeyExchangeHandler handler = new PublicKeyExchangeHandler(mockedPublicKey, timeout, requestID, timeoutFuture);
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final PublicKeyExchangeHandler handler = new PublicKeyExchangeHandler(mockedPublicKey, timeout, requestID, timeoutFuture);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         assertEquals(new WhoAreYouMessage(), channel.readOutbound());
     }
@@ -92,9 +92,9 @@ class PublicKeyExchangeHandlerTest {
         when(mockedChannel.attr(ATTRIBUTE_PUBLIC_KEY)).thenReturn(mockedAttribute);
         when(ctx.pipeline()).thenReturn(pipeline);
 
-        PublicKeyExchangeHandler handler = new PublicKeyExchangeHandler(mockedPublicKey, timeout, requestID, timeoutFuture);
+        final PublicKeyExchangeHandler handler = new PublicKeyExchangeHandler(mockedPublicKey, timeout, requestID, timeoutFuture);
 
-        IamMessage msg = new IamMessage(mockedPublicKey, requestID);
+        final IamMessage msg = new IamMessage(mockedPublicKey, requestID);
         handler.channelRead0(ctx, msg);
 
         verify(pipeline).fireUserEventTriggered(eq(PublicKeyExchangeHandler.PublicKeyExchangeState.KEY_AVAILABLE));
@@ -107,9 +107,9 @@ class PublicKeyExchangeHandlerTest {
         when(mockedChannel.attr(ATTRIBUTE_PUBLIC_KEY)).thenReturn(mockedAttribute);
         when(ctx.pipeline()).thenReturn(pipeline);
 
-        PublicKeyExchangeHandler handler = new PublicKeyExchangeHandler(null, timeout, requestID, timeoutFuture);
+        final PublicKeyExchangeHandler handler = new PublicKeyExchangeHandler(null, timeout, requestID, timeoutFuture);
 
-        IamMessage msg = new IamMessage(mockedPublicKey, requestID);
+        final IamMessage msg = new IamMessage(mockedPublicKey, requestID);
         handler.channelRead0(ctx, msg);
 
         verify(pipeline).fireUserEventTriggered(eq(PublicKeyExchangeHandler.PublicKeyExchangeState.KEY_AVAILABLE));
@@ -120,9 +120,9 @@ class PublicKeyExchangeHandlerTest {
     void shouldCloseConnectionOnWrongKey() {
         when(ctx.writeAndFlush(any())).thenReturn(mock(ChannelFuture.class));
 
-        PublicKeyExchangeHandler handler = new PublicKeyExchangeHandler(mock(CompressedPublicKey.class), timeout, requestID, timeoutFuture);
+        final PublicKeyExchangeHandler handler = new PublicKeyExchangeHandler(mock(CompressedPublicKey.class), timeout, requestID, timeoutFuture);
 
-        IamMessage msg = new IamMessage(mockedPublicKey, requestID);
+        final IamMessage msg = new IamMessage(mockedPublicKey, requestID);
         handler.channelRead0(ctx, msg);
 
         verify(ctx).writeAndFlush(eq(new ConnectionExceptionMessage(CONNECTION_ERROR_WRONG_PUBLIC_KEY)));
@@ -132,9 +132,9 @@ class PublicKeyExchangeHandlerTest {
 
     @Test
     void shouldNotMatchingMessagePassOn() {
-        PublicKeyExchangeHandler handler = new PublicKeyExchangeHandler(mock(CompressedPublicKey.class), timeout, requestID, timeoutFuture);
+        final PublicKeyExchangeHandler handler = new PublicKeyExchangeHandler(mock(CompressedPublicKey.class), timeout, requestID, timeoutFuture);
 
-        IamMessage msg = new IamMessage(mockedPublicKey, new MessageId("6d1a9c2d27fa8281a4933a60"));
+        final IamMessage msg = new IamMessage(mockedPublicKey, new MessageId("6d1a9c2d27fa8281a4933a60"));
         handler.channelRead0(ctx, msg);
 
         verify(ctx).fireChannelRead(msg);
@@ -148,7 +148,7 @@ class PublicKeyExchangeHandlerTest {
         final ArgumentCaptor<Callable> captor = ArgumentCaptor.forClass(Callable.class);
         when(ctx.executor()).thenReturn(eventExecutor);
 
-        PublicKeyExchangeHandler handler = new PublicKeyExchangeHandler(mockedPublicKey, timeout);
+        final PublicKeyExchangeHandler handler = new PublicKeyExchangeHandler(mockedPublicKey, timeout);
         handler.handlerAdded(ctx);
 
         verify(eventExecutor).schedule(captor.capture(), eq(timeout.toMillis()), eq(TimeUnit.MILLISECONDS));

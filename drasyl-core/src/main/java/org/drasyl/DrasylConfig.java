@@ -347,7 +347,7 @@ public class DrasylConfig {
         try {
             return Paths.get(config.getString(path));
         }
-        catch (InvalidPathException e) {
+        catch (final InvalidPathException e) {
             throw new ConfigException.WrongType(config.getValue(path).origin(), path, "path", "invalid: " + e.getMessage());
         }
     }
@@ -482,7 +482,7 @@ public class DrasylConfig {
         catch (final NullPointerException e) {
             throw new ConfigException.WrongType(config.getValue(path).origin(), path, "uri", "null");
         }
-        catch (URISyntaxException e) {
+        catch (final URISyntaxException e) {
             throw new ConfigException.WrongType(config.getValue(path).origin(), path, "inet address", "violates RFC 2396: " + e.getMessage());
         }
     }

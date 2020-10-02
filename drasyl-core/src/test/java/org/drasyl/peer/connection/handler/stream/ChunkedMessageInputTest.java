@@ -80,7 +80,7 @@ class ChunkedMessageInputTest {
         contentLength = 4;
         checksum = "5a93d52bc11ab74c7057c5690f9381a3";
 
-        ChunkedMessageInput input = new ChunkedMessageInput(sender, recipient, contentLength, checksum, chunks, sourcePayload, msgID, progress, sentLastChunk);
+        final ChunkedMessageInput input = new ChunkedMessageInput(sender, recipient, contentLength, checksum, chunks, sourcePayload, msgID, progress, sentLastChunk);
 
         input.chunkedArray(chunks, Unpooled.wrappedBuffer(payload), chunkSize);
         verify(chunks, times(4)).add(isA(ByteBuf.class));
@@ -103,7 +103,7 @@ class ChunkedMessageInputTest {
         contentLength = 5;
         checksum = "5d6d29bd1a2d27159acb9447042cd997";
 
-        ChunkedMessageInput input = new ChunkedMessageInput(sender, recipient, contentLength, checksum, chunks, sourcePayload, msgID, progress, sentLastChunk);
+        final ChunkedMessageInput input = new ChunkedMessageInput(sender, recipient, contentLength, checksum, chunks, sourcePayload, msgID, progress, sentLastChunk);
 
         input.chunkedArray(chunks, Unpooled.wrappedBuffer(payload), chunkSize);
         verify(chunks, times(3)).add(isA(ByteBuf.class));
@@ -114,15 +114,15 @@ class ChunkedMessageInputTest {
 
     @Test
     void shouldProduceFirstChunkedMessage() {
-        ByteBuf chunk = Unpooled.wrappedBuffer(new byte[]{ 63, -38 });
+        final ByteBuf chunk = Unpooled.wrappedBuffer(new byte[]{ 63, -38 });
         when(chunks.poll()).thenReturn(chunk);
         chunkSize = 1;
         contentLength = 2;
         checksum = "5a93d52bc11ab74c7057c5690f9381a3";
 
-        ChunkedMessageInput input = new ChunkedMessageInput(sender, recipient, contentLength, checksum, chunks, sourcePayload, msgID, progress, sentLastChunk);
+        final ChunkedMessageInput input = new ChunkedMessageInput(sender, recipient, contentLength, checksum, chunks, sourcePayload, msgID, progress, sentLastChunk);
 
-        ChunkedMessage expectedChunk = ChunkedMessage.createFirstChunk(sender, recipient, msgID, chunk.array(), contentLength, checksum);
+        final ChunkedMessage expectedChunk = ChunkedMessage.createFirstChunk(sender, recipient, msgID, chunk.array(), contentLength, checksum);
         assertEquals(expectedChunk, input.readChunk(mock(ByteBufAllocator.class)));
         assertEquals(progress + contentLength, input.progress());
         assertEquals(contentLength, input.length());
@@ -131,16 +131,16 @@ class ChunkedMessageInputTest {
 
     @Test
     void shouldProduceFollowingChunkedMessage() {
-        ByteBuf chunk = Unpooled.wrappedBuffer(new byte[]{ 63, -38 });
+        final ByteBuf chunk = Unpooled.wrappedBuffer(new byte[]{ 63, -38 });
         when(chunks.poll()).thenReturn(chunk);
         chunkSize = 1;
         contentLength = 2;
         checksum = "5a93d52bc11ab74c7057c5690f9381a3";
         progress = 1;
 
-        ChunkedMessageInput input = new ChunkedMessageInput(sender, recipient, contentLength, checksum, chunks, sourcePayload, msgID, progress, sentLastChunk);
+        final ChunkedMessageInput input = new ChunkedMessageInput(sender, recipient, contentLength, checksum, chunks, sourcePayload, msgID, progress, sentLastChunk);
 
-        ChunkedMessage expectedChunk = ChunkedMessage.createFollowChunk(sender, recipient, msgID, chunk.array());
+        final ChunkedMessage expectedChunk = ChunkedMessage.createFollowChunk(sender, recipient, msgID, chunk.array());
         assertEquals(expectedChunk, input.readChunk(mock(ByteBufAllocator.class)));
         assertEquals(progress + contentLength, input.progress());
         assertEquals(contentLength, input.length());
@@ -155,9 +155,9 @@ class ChunkedMessageInputTest {
         checksum = "5a93d52bc11ab74c7057c5690f9381a3";
         progress = 2;
 
-        ChunkedMessageInput input = new ChunkedMessageInput(sender, recipient, contentLength, checksum, chunks, sourcePayload, msgID, progress, sentLastChunk);
+        final ChunkedMessageInput input = new ChunkedMessageInput(sender, recipient, contentLength, checksum, chunks, sourcePayload, msgID, progress, sentLastChunk);
 
-        ChunkedMessage expectedChunk = ChunkedMessage.createLastChunk(sender, recipient, msgID);
+        final ChunkedMessage expectedChunk = ChunkedMessage.createLastChunk(sender, recipient, msgID);
         assertEquals(expectedChunk, input.readChunk(mock(ChannelHandlerContext.class)));
         assertEquals(progress, input.progress());
         assertEquals(contentLength, input.length());
@@ -166,7 +166,7 @@ class ChunkedMessageInputTest {
 
     @Test
     void closeShouldClearPayloadAndChunks() {
-        ChunkedMessageInput input = new ChunkedMessageInput(sender, recipient, contentLength, checksum, chunks, sourcePayload, msgID, progress, sentLastChunk);
+        final ChunkedMessageInput input = new ChunkedMessageInput(sender, recipient, contentLength, checksum, chunks, sourcePayload, msgID, progress, sentLastChunk);
 
         input.close();
 
@@ -176,7 +176,7 @@ class ChunkedMessageInputTest {
 
     @Test
     void shouldCreateFromApplicationMessage() {
-        ApplicationMessage message = mock(ApplicationMessage.class);
+        final ApplicationMessage message = mock(ApplicationMessage.class);
         when(message.getSender()).thenReturn(sender);
         when(message.getRecipient()).thenReturn(recipient);
         when(message.payloadAsByteBuf()).thenReturn(sourcePayload);

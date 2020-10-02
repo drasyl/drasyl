@@ -54,7 +54,7 @@ class SignedMessageTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
-            String json = "{\"@type\":\"SignedMessage\",\"payload\":{\"@type\":\"PingMessage\",\"id\":\"05155f021bed10398c4ca71c\"},\"kid\":\"0313c96bed7252c22218972dd21d611fec413d76e9eaac2717ed76889dcd357edf\",\"signature\":{\"bytes\":\"MEQCIAESpHbepeb9cRDA5Hd0GErCQnpSj+GN2bQIFEO2AgN5AiAGJwpL9G2BEki8c+VdCcnvKloYXKCDYJSTYt3e5VTylw==\"}}\n";
+            final String json = "{\"@type\":\"SignedMessage\",\"payload\":{\"@type\":\"PingMessage\",\"id\":\"05155f021bed10398c4ca71c\"},\"kid\":\"0313c96bed7252c22218972dd21d611fec413d76e9eaac2717ed76889dcd357edf\",\"signature\":{\"bytes\":\"MEQCIAESpHbepeb9cRDA5Hd0GErCQnpSj+GN2bQIFEO2AgN5AiAGJwpL9G2BEki8c+VdCcnvKloYXKCDYJSTYt3e5VTylw==\"}}\n";
 
             assertEquals(new SignedMessage(new PingMessage(), CompressedPublicKey.of("0313c96bed7252c22218972dd21d611fec413d76e9eaac2717ed76889dcd357edf"), new Signature(new byte[]{
                     0x30,
@@ -132,7 +132,7 @@ class SignedMessageTest {
 
         @Test
         void shouldRejectIncompleteData() {
-            String json = "{\"@type\":\"SignedMessage\",\"kid\":\"0313c96bed7252c22218972dd21d611fec413d76e9eaac2717ed76889dcd357edf\",\"signature\":{\"bytes\":\"MEQCIAESpHbepeb9cRDA5Hd0GErCQnpSj+GN2bQIFEO2AgN5AiAGJwpL9G2BEki8c+VdCcnvKloYXKCDYJSTYt3e5VTylw==\"}}\n";
+            final String json = "{\"@type\":\"SignedMessage\",\"kid\":\"0313c96bed7252c22218972dd21d611fec413d76e9eaac2717ed76889dcd357edf\",\"signature\":{\"bytes\":\"MEQCIAESpHbepeb9cRDA5Hd0GErCQnpSj+GN2bQIFEO2AgN5AiAGJwpL9G2BEki8c+VdCcnvKloYXKCDYJSTYt3e5VTylw==\"}}\n";
 
             assertThrows(ValueInstantiationException.class, () -> JACKSON_READER.readValue(json, Message.class));
         }
@@ -142,7 +142,7 @@ class SignedMessageTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException {
-            SignedMessage message = new SignedMessage(new PingMessage(), publicKey);
+            final SignedMessage message = new SignedMessage(new PingMessage(), publicKey);
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
@@ -155,9 +155,9 @@ class SignedMessageTest {
     class Equals {
         @Test
         void shouldReturnTrue() throws CryptoException {
-            PingMessage message = new PingMessage();
-            SignedMessage signedMessage1 = new SignedMessage(message, CompressedPublicKey.of(keyPair.getPublic()));
-            SignedMessage signedMessage2 = new SignedMessage(message, CompressedPublicKey.of(keyPair.getPublic()));
+            final PingMessage message = new PingMessage();
+            final SignedMessage signedMessage1 = new SignedMessage(message, CompressedPublicKey.of(keyPair.getPublic()));
+            final SignedMessage signedMessage2 = new SignedMessage(message, CompressedPublicKey.of(keyPair.getPublic()));
 
             assertEquals(signedMessage1, signedMessage2);
         }
@@ -167,9 +167,9 @@ class SignedMessageTest {
     class HashCode {
         @Test
         void shouldReturnTrue() throws CryptoException {
-            PingMessage message = new PingMessage();
-            SignedMessage signedMessage1 = new SignedMessage(message, CompressedPublicKey.of(keyPair.getPublic()));
-            SignedMessage signedMessage2 = new SignedMessage(message, CompressedPublicKey.of(keyPair.getPublic()));
+            final PingMessage message = new PingMessage();
+            final SignedMessage signedMessage1 = new SignedMessage(message, CompressedPublicKey.of(keyPair.getPublic()));
+            final SignedMessage signedMessage2 = new SignedMessage(message, CompressedPublicKey.of(keyPair.getPublic()));
 
             assertEquals(signedMessage1.hashCode(), signedMessage2.hashCode());
         }

@@ -27,9 +27,9 @@ public class Triple<A, B, C> implements Serializable {
      * @param third  third object
      */
     @JsonCreator
-    private Triple(@JsonProperty("first") A first,
-                   @JsonProperty("second") B second,
-                   @JsonProperty("third") C third) {
+    private Triple(@JsonProperty("first") final A first,
+                   @JsonProperty("second") final B second,
+                   @JsonProperty("third") final C third) {
         this.first = first;
         this.second = second;
         this.third = third;
@@ -41,14 +41,14 @@ public class Triple<A, B, C> implements Serializable {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        Triple<?, ?, ?> triple = (Triple<?, ?, ?>) o;
+        final Triple<?, ?, ?> triple = (Triple<?, ?, ?>) o;
         return Objects.equals(first, triple.first) &&
                 Objects.equals(second, triple.second) &&
                 Objects.equals(third, triple.third);
@@ -104,7 +104,7 @@ public class Triple<A, B, C> implements Serializable {
      * @param third  the third element, may be null
      * @return a triple formed from the three parameters, not null
      */
-    public static <A, B, C> Triple<A, B, C> of(A first, B second, C third) {
+    public static <A, B, C> Triple<A, B, C> of(final A first, final B second, final C third) {
         return new Triple<>(first, second, third);
     }
 }

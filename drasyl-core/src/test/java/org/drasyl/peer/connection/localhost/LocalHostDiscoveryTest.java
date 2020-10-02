@@ -114,8 +114,8 @@ class LocalHostDiscoveryTest {
         }
 
         @Test
-        void scheduledTasksShouldPollWatchServiceAndPostOwnInformationToFileSystem(@TempDir Path dir) throws IOException {
-            Path path = Paths.get(dir.toString(), "03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a.json");
+        void scheduledTasksShouldPollWatchServiceAndPostOwnInformationToFileSystem(@TempDir final Path dir) throws IOException {
+            final Path path = Paths.get(dir.toString(), "03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a.json");
             when(discoveryPath.toFile().exists()).thenReturn(true);
             when(discoveryPath.toFile().isDirectory()).thenReturn(true);
             when(discoveryPath.toFile().canRead()).thenReturn(true);
@@ -166,9 +166,9 @@ class LocalHostDiscoveryTest {
     @Nested
     class Scan {
         @Test
-        void shouldScanDirectory(@TempDir Path dir) throws IOException, CryptoException {
+        void shouldScanDirectory(@TempDir final Path dir) throws IOException, CryptoException {
             when(discoveryPath.toFile()).thenReturn(dir.toFile());
-            Path path = Paths.get(dir.toString(), "03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a.json");
+            final Path path = Paths.get(dir.toString(), "03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a.json");
             Files.writeString(path, "{\"endpoints\":[\"ws://localhost:123\"]}", StandardOpenOption.CREATE);
 
             underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, Set.of(Endpoint.of("ws://localhost:123")), communicationOccurred, new AtomicBoolean(true), new AtomicBoolean(true), scheduler, watchDisposable, postDisposable, communicationObserver);

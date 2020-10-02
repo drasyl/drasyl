@@ -51,14 +51,14 @@ public class TestServer extends Server {
     private final PeerChannelGroup channelGroup;
     private final TestServerChannelInitializer channelInitializer;
 
-    public TestServer(Identity identity,
-                      Messenger messenger,
-                      PeersManager peersManager,
-                      DrasylConfig config,
-                      PeerChannelGroup channelGroup,
-                      EventLoopGroup workerGroup,
-                      EventLoopGroup bossGroup,
-                      Set<Endpoint> endpoints) {
+    public TestServer(final Identity identity,
+                      final Messenger messenger,
+                      final PeersManager peersManager,
+                      final DrasylConfig config,
+                      final PeerChannelGroup channelGroup,
+                      final EventLoopGroup workerGroup,
+                      final EventLoopGroup bossGroup,
+                      final Set<Endpoint> endpoints) {
         this(identity, config, channelGroup, workerGroup, bossGroup, new TestServerChannelInitializer(new ServerEnvironment(
                 config,
                 identity,
@@ -70,13 +70,13 @@ public class TestServer extends Server {
         )), endpoints);
     }
 
-    TestServer(Identity identity,
-               DrasylConfig config,
-               PeerChannelGroup channelGroup,
-               EventLoopGroup workerGroup,
-               EventLoopGroup bossGroup,
-               TestServerChannelInitializer channelInitializer,
-               Set<Endpoint> endpoints) {
+    TestServer(final Identity identity,
+               final DrasylConfig config,
+               final PeerChannelGroup channelGroup,
+               final EventLoopGroup workerGroup,
+               final EventLoopGroup bossGroup,
+               final TestServerChannelInitializer channelInitializer,
+               final Set<Endpoint> endpoints) {
         super(
                 identity,
                 config,
@@ -103,15 +103,15 @@ public class TestServer extends Server {
         return channelInitializer.sentMessages();
     }
 
-    public CompletableFuture<Void> sendMessage(CompressedPublicKey recipient, Message message) {
-        ChannelFuture future = channelGroup.writeAndFlush(recipient, message).awaitUninterruptibly();
+    public CompletableFuture<Void> sendMessage(final CompressedPublicKey recipient, final Message message) {
+        final ChannelFuture future = channelGroup.writeAndFlush(recipient, message).awaitUninterruptibly();
         return FutureUtil.toFuture(future);
     }
 
-    public void closeClient(CompressedPublicKey client) {
-        Channel channel = channelGroup.find(client);
+    public void closeClient(final CompressedPublicKey client) {
+        final Channel channel = channelGroup.find(client);
         if (channel != null) {
-            ChannelFuture future = channel.close().awaitUninterruptibly();
+            final ChannelFuture future = channel.close().awaitUninterruptibly();
             if (!future.isSuccess()) {
                 throw new RuntimeException(future.cause());
             }
@@ -121,7 +121,7 @@ public class TestServer extends Server {
         }
     }
 
-    public void awaitClient(CompressedPublicKey client) {
+    public void awaitClient(final CompressedPublicKey client) {
         await().until(() -> channelGroup.find(client) != null);
     }
 

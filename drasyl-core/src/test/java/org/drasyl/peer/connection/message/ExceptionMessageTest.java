@@ -38,7 +38,7 @@ class ExceptionMessageTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException {
-            String json = "{\"@type\":\"" + ExceptionMessage.class.getSimpleName() + "\",\"id\":\"89ba3cd9efb7570eb3126d11\"," +
+            final String json = "{\"@type\":\"" + ExceptionMessage.class.getSimpleName() + "\",\"id\":\"89ba3cd9efb7570eb3126d11\"," +
                     "\"error\":\"" + ERROR_INTERNAL.getDescription() + "\"}";
 
             assertEquals(new ExceptionMessage(ERROR_INTERNAL), JACKSON_READER.readValue(json, Message.class));
@@ -46,7 +46,7 @@ class ExceptionMessageTest {
 
         @Test
         void shouldRejectIncompleteData() {
-            String json = "{\"@type\":\"" + ExceptionMessage.class.getSimpleName() + "\",\"id\":\"89ba3cd9efb7570eb3126d11\"}";
+            final String json = "{\"@type\":\"" + ExceptionMessage.class.getSimpleName() + "\",\"id\":\"89ba3cd9efb7570eb3126d11\"}";
 
             assertThrows(ValueInstantiationException.class, () -> JACKSON_READER.readValue(json, Message.class));
         }
@@ -56,7 +56,7 @@ class ExceptionMessageTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException {
-            ExceptionMessage message = new ExceptionMessage(ERROR_INTERNAL);
+            final ExceptionMessage message = new ExceptionMessage(ERROR_INTERNAL);
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
@@ -77,9 +77,9 @@ class ExceptionMessageTest {
     class Equals {
         @Test
         void notSameBecauseOfDifferentError() {
-            ExceptionMessage message1 = new ExceptionMessage(ERROR_INTERNAL);
-            ExceptionMessage message2 = new ExceptionMessage(ERROR_INTERNAL);
-            ExceptionMessage message3 = new ExceptionMessage(ERROR_FORMAT);
+            final ExceptionMessage message1 = new ExceptionMessage(ERROR_INTERNAL);
+            final ExceptionMessage message2 = new ExceptionMessage(ERROR_INTERNAL);
+            final ExceptionMessage message3 = new ExceptionMessage(ERROR_FORMAT);
 
             assertEquals(message1, message2);
             assertNotEquals(message2, message3);
@@ -90,9 +90,9 @@ class ExceptionMessageTest {
     class HashCode {
         @Test
         void notSameBecauseOfDifferentError() {
-            ExceptionMessage message1 = new ExceptionMessage(ERROR_INTERNAL);
-            ExceptionMessage message2 = new ExceptionMessage(ERROR_INTERNAL);
-            ExceptionMessage message3 = new ExceptionMessage(ERROR_FORMAT);
+            final ExceptionMessage message1 = new ExceptionMessage(ERROR_INTERNAL);
+            final ExceptionMessage message2 = new ExceptionMessage(ERROR_INTERNAL);
+            final ExceptionMessage message3 = new ExceptionMessage(ERROR_FORMAT);
 
             assertEquals(message1.hashCode(), message2.hashCode());
             assertNotEquals(message2.hashCode(), message3.hashCode());

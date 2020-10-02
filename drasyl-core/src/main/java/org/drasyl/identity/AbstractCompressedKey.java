@@ -35,12 +35,12 @@ abstract class AbstractCompressedKey<K> {
         key = null;
     }
 
-    protected AbstractCompressedKey(String compressedKey) throws CryptoException {
+    protected AbstractCompressedKey(final String compressedKey) throws CryptoException {
         this.compressedKey = compressedKey;
         this.key = toUncompressedKey();
     }
 
-    protected AbstractCompressedKey(String compressedKey, K key) {
+    protected AbstractCompressedKey(final String compressedKey, final K key) {
         this.compressedKey = compressedKey;
         this.key = key;
     }
@@ -57,14 +57,14 @@ abstract class AbstractCompressedKey<K> {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        AbstractCompressedKey<?> that = (AbstractCompressedKey<?>) o;
+        final AbstractCompressedKey<?> that = (AbstractCompressedKey<?>) o;
         return Objects.equals(compressedKey, that.compressedKey);
     }
 
