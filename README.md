@@ -26,13 +26,13 @@ Maven:
 <dependency>
     <groupId>org.drasyl</groupId>
     <artifactId>drasyl-core</artifactId>
-    <version>0.3.0</version>
+    <version>0.2.0</version>
 </dependency>
 ```
 
 Gradle:
 
-```compile group: 'org.drasyl', name: 'drasyl-core', version: '0.3.0'```
+```compile group: 'org.drasyl', name: 'drasyl-core', version: '0.2.0'```
 
 ## Standalone Command Line Interface
 
