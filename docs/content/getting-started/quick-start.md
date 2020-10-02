@@ -32,14 +32,14 @@ Maven:
 <dependency>
     <groupId>org.drasyl</groupId>
     <artifactId>drasyl-core</artifactId>
-    <version>0.2.1-SNAPSHOT</version>
+    <version>0.3.0-SNAPSHOT</version>
 </dependency>
 ```
 
 Gradle:
 
 ```gradle
-compile group: 'org.drasyl', name: 'drasyl-core', version: '0.2.1-SNAPSHOT'
+compile group: 'org.drasyl', name: 'drasyl-core', version: '0.3.0-SNAPSHOT'
 ```
 
 ## Implementing `DrasylNode`
