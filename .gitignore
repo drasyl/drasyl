@@ -90,3 +90,4 @@ Temporary Items
 .project
 .gradle
 *.identity.json
+*.sqlite3

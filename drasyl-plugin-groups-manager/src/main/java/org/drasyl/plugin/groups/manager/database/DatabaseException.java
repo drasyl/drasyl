@@ -14,30 +14,22 @@
  *  GNU Lesser General Public License for more details.
  *
  *  You should have received a copy of the GNU Lesser General Public License
- *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
+ *  along with drasyl.  If not, see <http://www.gnu.org/licenses />.
  */
-package org.drasyl;
+package org.drasyl.plugin.groups.manager.database;
 
-import java.util.Objects;
+import org.drasyl.DrasylException;
 
 /**
- * All checked exceptions in drasyl inherit from this exception class.
+ * This exception signals an error occurred during execution in {@link DatabaseAdapter}
+ * implementations.
  */
-public class DrasylException extends Exception {
-    /**
-     * @param cause the cause (which is saved for later retrieval by the {@link #getCause()}
-     *              method).  (A {@code null} value is permitted, and indicates that the cause is
-     *              nonexistent or unknown.)
-     */
-    public DrasylException(Throwable cause) {
-        super(cause);
-    }
-
+public class DatabaseException extends DrasylException {
     /**
      * @param message the detail message. The detail message is saved for later retrieval by the
      *                {@link #getMessage()} method.
      */
-    public DrasylException(String message) {
+    public DatabaseException(final String message) {
         super(message);
     }
 
@@ -48,25 +40,7 @@ public class DrasylException extends Exception {
      *                method).  (A {@code null} value is permitted, and indicates that the cause is
      *                nonexistent or unknown.)
      */
-    public DrasylException(final String message, final Throwable cause) {
+    public DatabaseException(final String message, final Throwable cause) {
         super(message, cause);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(getCause(), getMessage());
-    }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        DrasylException that = (DrasylException) o;
-        return Objects.equals(getCause(), that.getCause()) &&
-                Objects.equals(getMessage(), that.getMessage());
     }
 }

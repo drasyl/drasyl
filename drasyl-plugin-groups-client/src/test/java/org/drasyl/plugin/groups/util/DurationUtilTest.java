@@ -16,9 +16,8 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses />.
  */
-package org.drasyl.plugin.client.util;
+package org.drasyl.plugin.groups.util;
 
-import org.drasyl.plugin.groups.util.DurationUtil;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -68,8 +67,11 @@ class DurationUtilTest {
                     ofSeconds(15),
                     max(ofSeconds(15), ofSeconds(15))
             );
-            assertThrows(NullPointerException.class, () -> max(null, ofSeconds(15)));
-            assertThrows(NullPointerException.class, () -> max(ofSeconds(15), null));
+
+            final Duration d = ofSeconds(15);
+
+            assertThrows(NullPointerException.class, () -> max(null, d));
+            assertThrows(NullPointerException.class, () -> max(d, null));
             assertThrows(NullPointerException.class, () -> max(null, null));
         }
     }

@@ -77,7 +77,7 @@ class DefaultCodecTest {
                     TypeValidator.ofOutboundValidator(config),
                     TypeValidator.of(List.of(), List.of(), false, false),
                     ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE);
-            final TestObserver<ApplicationMessage> testObserver = pipeline.outboundMessages().test();
+            final TestObserver<ApplicationMessage> testObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
 
             when(identity.getPublicKey()).thenReturn(sender);
             pipeline.processOutbound(recipient, msg);
@@ -118,7 +118,7 @@ class DefaultCodecTest {
                     TypeValidator.of(List.of(), List.of(), false, false),
                     TypeValidator.ofOutboundValidator(config),
                     ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE);
-            final TestObserver<ApplicationMessage> testObserver = pipeline.outboundMessages().test();
+            final TestObserver<ApplicationMessage> testObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
 
             when(identity.getPublicKey()).thenReturn(sender);
             final CompletableFuture<Void> future = pipeline.processOutbound(recipient, msg);

@@ -24,6 +24,7 @@ import org.drasyl.util.UriUtil;
 
 import java.net.URI;
 import java.time.Duration;
+import java.util.Map;
 import java.util.Objects;
 
 import static java.util.Optional.ofNullable;
@@ -141,13 +142,14 @@ public class GroupURI {
         try {
             final CompressedPublicKey manager = CompressedPublicKey.of(uri.getHost());
             final String credentials = ofNullable(uri.getUserInfo()).orElse("");
+            final Map<String, String> queryMap = UriUtil.getQueryMap(uri);
 
             long timeoutSeconds = MIN_TIMEOUT;
-            if (uri.getQuery() != null && uri.getQuery().contains("timeout=")) {
-                timeoutSeconds = Long.parseLong(uri.getQuery().replace("timeout=", ""));
+            if (queryMap.containsKey("timeout")) {
+                timeoutSeconds = Long.parseLong(queryMap.get("timeout"));
             }
             if (timeoutSeconds < MIN_TIMEOUT) {
-                throw new IllegalArgumentException("Timeout must not be less than " + MIN_TIMEOUT + "s liegen.");
+                throw new IllegalArgumentException("Timeout must be greater than " + MIN_TIMEOUT + "s.");
             }
             final Duration timeout = Duration.ofSeconds(timeoutSeconds);
 
