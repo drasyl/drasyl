@@ -18,12 +18,15 @@
  */
 package org.drasyl.util;
 
+import org.hamcrest.collection.IsMapContaining;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.net.URI;
+import java.util.Map;
 
 import static org.drasyl.util.UriUtil.createUri;
+import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
@@ -64,6 +67,31 @@ class UriUtilTest {
         @Test
         void shouldReturnURIWithoutFragment() {
             assertEquals(URI.create("ws://example.com:22527"), UriUtil.removeFragment(URI.create("ws://example.com:22527#hello-world")));
+        }
+    }
+
+    @Nested
+    class GetQueryMap {
+        @Test
+        void shouldReturnQueryMap() {
+            final URI uri = URI.create("schema://host/path?param1=a&param2=b");
+            final Map<String, String> queryMap = UriUtil.getQueryMap(uri);
+
+            assertThat(queryMap, IsMapContaining.hasEntry("param1", "a"));
+            assertThat(queryMap, IsMapContaining.hasEntry("param2", "b"));
+        }
+
+        @Test
+        void shouldReturnEmptyMapOnNullQuery() {
+            final URI uri = URI.create("schema://host/path");
+            final Map<String, String> queryMap = UriUtil.getQueryMap(uri);
+
+            assertEquals(0, queryMap.size());
+        }
+
+        @Test
+        void shouldThrowExceptionOnNull() {
+            assertThrows(NullPointerException.class, () -> UriUtil.getQueryMap(null));
         }
     }
 }

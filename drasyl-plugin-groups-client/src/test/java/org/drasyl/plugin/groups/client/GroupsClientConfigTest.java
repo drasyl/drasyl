@@ -31,6 +31,7 @@ import java.util.Set;
 
 import static org.drasyl.plugin.groups.client.GroupsClientConfig.GROUPS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -53,6 +54,9 @@ class GroupsClientConfigTest {
             final GroupsClientConfig config = new GroupsClientConfig(typesafeConfig);
 
             assertEquals(groups, config.getGroups());
+
+            // ignore toString()
+            config.toString();
         }
 
         @Test
@@ -60,6 +64,48 @@ class GroupsClientConfigTest {
             final GroupsClientConfig config = GroupsClientConfig.builder().addGroupOptions(groups.iterator().next()).build();
 
             assertEquals(groups, config.getGroups());
+        }
+    }
+
+    @Nested
+    class Equals {
+        @Test
+        void shouldBeEquals() {
+            final GroupsClientConfig config1 = GroupsClientConfig.builder().addGroupOptions(groups.iterator().next()).build();
+            final GroupsClientConfig config2 = GroupsClientConfig.builder().addGroupOptions(groups.iterator().next()).build();
+
+            assertEquals(config1, config2);
+        }
+
+        @Test
+        void shouldNotBeEquals() {
+            final GroupsClientConfig config1 = GroupsClientConfig.builder().addGroupOptions(
+                    GroupURI.of("groups://secret@03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group1?timeout=60")).build();
+            final GroupsClientConfig config2 = GroupsClientConfig.builder().addGroupOptions(
+                    GroupURI.of("groups://secret@03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group2?timeout=60")).build();
+
+            assertNotEquals(config1, config2);
+        }
+    }
+
+    @Nested
+    class HashCode {
+        @Test
+        void shouldBeEquals() {
+            final GroupsClientConfig config1 = GroupsClientConfig.builder().addGroupOptions(groups.iterator().next()).build();
+            final GroupsClientConfig config2 = GroupsClientConfig.builder().addGroupOptions(groups.iterator().next()).build();
+
+            assertEquals(config1.hashCode(), config2.hashCode());
+        }
+
+        @Test
+        void shouldNotBeEquals() {
+            final GroupsClientConfig config1 = GroupsClientConfig.builder().addGroupOptions(
+                    GroupURI.of("groups://secret@03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group1?timeout=60")).build();
+            final GroupsClientConfig config2 = GroupsClientConfig.builder().addGroupOptions(
+                    GroupURI.of("groups://secret@03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group2?timeout=60")).build();
+
+            assertNotEquals(config1.hashCode(), config2.hashCode());
         }
     }
 }

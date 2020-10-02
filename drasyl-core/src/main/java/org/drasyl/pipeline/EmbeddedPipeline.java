@@ -26,7 +26,6 @@ import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.DrasylScheduler;
 import org.drasyl.util.Pair;
@@ -42,7 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class EmbeddedPipeline extends DefaultPipeline {
     private final Subject<Pair<CompressedPublicKey, Object>> inboundMessages;
     private final Subject<Event> inboundEvents;
-    private final Subject<ApplicationMessage> outboundMessages;
+    private final Subject<Object> outboundMessages;
 
     /**
      * Creates a new embedded pipeline and adds all given handler to it. Handler are added with
@@ -75,13 +74,8 @@ public class EmbeddedPipeline extends DefaultPipeline {
                               final CompressedPublicKey recipient,
                               final Object msg,
                               final CompletableFuture<Void> future) {
-                if (msg instanceof ApplicationMessage) {
-                    outboundMessages.onNext((ApplicationMessage) msg);
-                    future.complete(null);
-                }
-                else {
-                    future.completeExceptionally(new IllegalArgumentException("Message must be of type ApplicationMessage at the end of the pipeline"));
-                }
+                outboundMessages.onNext(msg);
+                future.complete(null);
             }
         };
         this.tail = new TailContext(inboundEvents::onNext, config, this, DrasylScheduler.getInstanceHeavy(), identity, inboundValidator, outboundValidator) {
@@ -120,7 +114,22 @@ public class EmbeddedPipeline extends DefaultPipeline {
     /**
      * @return all messages that passes the pipeline until the end
      */
-    public Observable<ApplicationMessage> outboundMessages() {
-        return outboundMessages;
+    public <T> Observable<T> outboundMessages(final Class<T> clazz) {
+        return (Observable<T>) outboundMessages.filter(clazz::isInstance);
+    }
+
+    /**
+     * Processes an inbound message by the pipeline.
+     *
+     * @param sender the sender of the message
+     * @param msg    the inbound message
+     */
+    public CompletableFuture<Void> processInbound(final CompressedPublicKey sender,
+                                                  final Object msg) {
+        final CompletableFuture<Void> rtn = new CompletableFuture<>();
+
+        this.scheduler.scheduleDirect(() -> this.head.fireRead(sender, msg, rtn));
+
+        return rtn;
     }
 }

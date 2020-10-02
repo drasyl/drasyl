@@ -20,6 +20,8 @@ package org.drasyl.plugin.groups.util;
 
 import java.time.Duration;
 
+import static java.time.Duration.ofSeconds;
+
 public class DurationUtil {
     private DurationUtil() {
         // util class
@@ -32,7 +34,7 @@ public class DurationUtil {
      * @return the normalized duration
      */
     public static Duration normalize(final Duration duration) {
-        return Duration.ofMillis(Math.max(60000, duration.toMillis()));
+        return max(ofSeconds(60), duration);
     }
 
     /**
@@ -43,7 +45,7 @@ public class DurationUtil {
      * @return the larger of {@code a} and {@code b}.
      * @throws NullPointerException if one or both values are {@code null}
      */
-    public static Duration max(Duration a, Duration b) {
+    public static Duration max(final Duration a, final Duration b) {
         if (a.compareTo(b) > 0) {
             return a;
         }

@@ -62,7 +62,7 @@ class EmbeddedPipelineTest {
                 TypeValidator.of(List.of(), List.of(), false, false),
                 ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, new HandlerAdapter(), new HandlerAdapter());
         final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
-        final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
+        final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
         final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
         final CompressedPublicKey sender = mock(CompressedPublicKey.class);
@@ -103,7 +103,7 @@ class EmbeddedPipelineTest {
                 TypeValidator.ofOutboundValidator(config),
                 ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, new HandlerAdapter(), new HandlerAdapter());
         final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
-        final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
+        final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
         final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
         final CompressedPublicKey sender = mock(CompressedPublicKey.class);

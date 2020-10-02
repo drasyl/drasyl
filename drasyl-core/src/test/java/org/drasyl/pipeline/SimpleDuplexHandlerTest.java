@@ -101,7 +101,7 @@ class SimpleDuplexHandlerTest {
                     TypeValidator.ofOutboundValidator(config),
                     DefaultCodec.INSTANCE, handler);
             final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
-            final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
+            final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
             pipeline.processOutbound(recipient, payload);
 
             inboundMessageTestObserver.awaitCount(1);
@@ -143,7 +143,7 @@ class SimpleDuplexHandlerTest {
                     TypeValidator.ofOutboundValidator(config),
                     ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, handler);
             final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
-            final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
+            final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
 
             final CompressedPublicKey sender = mock(CompressedPublicKey.class);
             final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
@@ -193,7 +193,7 @@ class SimpleDuplexHandlerTest {
                     TypeValidator.ofOutboundValidator(config),
                     ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, handler);
             final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
-            final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
+            final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
             final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
             final CompressedPublicKey sender = mock(CompressedPublicKey.class);
@@ -241,7 +241,7 @@ class SimpleDuplexHandlerTest {
                     TypeValidator.ofOutboundValidator(config),
                     ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, handler);
             final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
-            final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
+            final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
             final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
             final byte[] payload = new byte[]{ 0x01 };

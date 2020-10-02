@@ -76,7 +76,7 @@ class SimpleOutboundHandlerTest {
                 TypeValidator.ofOutboundValidator(config),
                 ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, handler);
         final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
-        final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
+        final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
 
         pipeline.processOutbound(recipient, payload);
 
@@ -104,7 +104,7 @@ class SimpleOutboundHandlerTest {
                 TypeValidator.ofOutboundValidator(config),
                 ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, handler);
         final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
-        final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages().test();
+        final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
 
         final CompressedPublicKey sender = mock(CompressedPublicKey.class);
         final CompressedPublicKey recipient = mock(CompressedPublicKey.class);

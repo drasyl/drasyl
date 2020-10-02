@@ -27,7 +27,7 @@ import java.util.Set;
 import static java.util.Objects.requireNonNull;
 
 /**
- * This class models the options of the groups slave plugin.
+ * This class represents the configuration for the {@link GroupsClientPlugin}.
  * <p>
  * This is an immutable object.
  */
@@ -61,7 +61,14 @@ public class GroupsClientConfig {
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), groupsSet);
+        return Objects.hash(groupsSet);
+    }
+
+    @Override
+    public String toString() {
+        return "GroupsClientConfig{" +
+                "groups=" + groupsSet +
+                '}';
     }
 
     @Override
@@ -72,18 +79,8 @@ public class GroupsClientConfig {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        if (!super.equals(o)) {
-            return false;
-        }
-        final GroupsClientConfig config = (GroupsClientConfig) o;
-        return Objects.equals(groupsSet, config.groupsSet);
-    }
-
-    @Override
-    public String toString() {
-        return "GroupsClientConfig{" +
-                "groups=" + groupsSet +
-                '}';
+        final GroupsClientConfig that = (GroupsClientConfig) o;
+        return Objects.equals(groupsSet, that.groupsSet);
     }
 
     //======================================= Config Builder =======================================

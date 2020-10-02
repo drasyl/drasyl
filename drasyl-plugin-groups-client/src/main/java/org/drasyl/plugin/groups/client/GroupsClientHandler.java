@@ -204,7 +204,7 @@ public class GroupsClientHandler extends SimpleInboundHandler<GroupsServerMessag
                 new GroupJoinedEvent(
                         group,
                         msg.getMembers(),
-                        () -> ctx.pipeline().processOutbound(sender, new GroupLeaveMessage(msg.getGroup()))));
+                        () -> ctx.pipeline().processOutbound(sender, new GroupLeaveMessage(group))));
         future.complete(null);
     }
 

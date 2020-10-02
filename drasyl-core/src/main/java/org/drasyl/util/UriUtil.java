@@ -18,8 +18,13 @@
  */
 package org.drasyl.util;
 
+import com.google.common.base.Splitter;
+
 import java.net.URI;
 import java.net.URISyntaxException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.Optional;
 
 /**
  * Utility class for operations on {@link URI}s.
@@ -51,11 +56,11 @@ public class UriUtil {
      * @throws IllegalArgumentException If the URI constructed from the given components violates
      *                                  RFC&nbsp;2396
      */
-    public static URI createUri(String scheme, String host, int port) {
+    public static URI createUri(final String scheme, final String host, final int port) {
         try {
             return new URI(scheme, null, host, port, null, null, null);
         }
-        catch (URISyntaxException x) {
+        catch (final URISyntaxException x) {
             throw new IllegalArgumentException(x.getMessage(), x);
         }
     }
@@ -85,16 +90,16 @@ public class UriUtil {
      * @throws IllegalArgumentException If the URI constructed from the given components violates
      *                                  RFC&nbsp;2396
      */
-    public static URI createUri(String scheme,
-                                String userInfo,
-                                String host,
-                                int port,
-                                String path,
-                                String query) {
+    public static URI createUri(final String scheme,
+                                final String userInfo,
+                                final String host,
+                                final int port,
+                                final String path,
+                                final String query) {
         try {
             return new URI(scheme, userInfo, host, port, path, query, null);
         }
-        catch (URISyntaxException x) {
+        catch (final URISyntaxException x) {
             throw new IllegalArgumentException(x.getMessage(), x);
         }
     }
@@ -108,11 +113,11 @@ public class UriUtil {
      * @return a combined URI and port URI
      * @throws IllegalArgumentException if resulting URI violates RFC&nbsp;2396
      */
-    public static URI overridePort(URI uri, int port) {
+    public static URI overridePort(final URI uri, final int port) {
         try {
             return new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), port, uri.getPath(), uri.getQuery(), uri.getFragment());
         }
-        catch (URISyntaxException e) {
+        catch (final URISyntaxException e) {
             throw new IllegalArgumentException(e.getMessage(), e);
         }
     }
@@ -126,11 +131,11 @@ public class UriUtil {
      * @return a combined URI and fragment URI
      * @throws IllegalArgumentException if resulting URI violates RFC&nbsp;2396
      */
-    public static URI overrideFragment(URI uri, String fragment) {
+    public static URI overrideFragment(final URI uri, final String fragment) {
         try {
             return new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), uri.getPath(), uri.getQuery(), fragment);
         }
-        catch (URISyntaxException e) {
+        catch (final URISyntaxException e) {
             throw new IllegalArgumentException(e.getMessage(), e);
         }
     }
@@ -142,17 +147,38 @@ public class UriUtil {
      * @return URI without fragment
      * @throws IllegalArgumentException if resulting URI violates RFC&nbsp;2396
      */
-    public static URI removeFragment(URI uri) {
+    public static URI removeFragment(final URI uri) {
         if (uri.getFragment() != null) {
             try {
                 return new URI(uri.getScheme(), uri.getUserInfo(), uri.getHost(), uri.getPort(), uri.getPath(), uri.getQuery(), null);
             }
-            catch (URISyntaxException e) {
+            catch (final URISyntaxException e) {
                 throw new IllegalArgumentException(e.getMessage(), e);
             }
         }
         else {
             return uri;
         }
+    }
+
+    /**
+     * Returns the query parameters of the given {@code uri} or an empty map if the query is {@code
+     * null}.
+     *
+     * @param uri the URI
+     * @return query parameters as map
+     * @see <a href="https://stackoverflow.com/a/11733697">https://stackoverflow.com/a/11733697</a>
+     */
+    public static Map<String, String> getQueryMap(final URI uri) {
+        final String query = Optional.ofNullable(uri.getQuery()).orElse("");
+        final Map<String, String> map = new HashMap<>();
+
+        for (final String param : Splitter.on("&").omitEmptyStrings().split(query)) {
+            final String name = param.split("=")[0];
+            final String value = param.split("=")[1];
+            map.put(name, value);
+        }
+
+        return map;
     }
 }
