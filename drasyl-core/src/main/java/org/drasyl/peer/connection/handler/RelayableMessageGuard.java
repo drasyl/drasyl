@@ -35,13 +35,13 @@ public class RelayableMessageGuard extends SimpleChannelOutboundHandler<Relayabl
     private static final Logger LOG = LoggerFactory.getLogger(RelayableMessageGuard.class);
     private final short messageHopLimit;
 
-    public RelayableMessageGuard(short messageHopLimit) {
+    public RelayableMessageGuard(final short messageHopLimit) {
         this.messageHopLimit = messageHopLimit;
     }
 
     @Override
-    protected void channelWrite0(ChannelHandlerContext ctx,
-                                 RelayableMessage msg, ChannelPromise promise) {
+    protected void channelWrite0(final ChannelHandlerContext ctx,
+                                 final RelayableMessage msg, final ChannelPromise promise) {
         if (msg.getHopCount() < messageHopLimit) {
             // route message to next hop (node)
             msg.incrementHopCount();

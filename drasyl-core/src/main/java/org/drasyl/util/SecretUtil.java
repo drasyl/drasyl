@@ -34,9 +34,9 @@ public class SecretUtil {
      * @param secret the secret to be masked
      * @return a masked secret
      */
-    public static String maskSecret(Object secret) {
+    public static String maskSecret(final Object secret) {
         if (secret != null) {
-            String secretStr = secret.toString();
+            final String secretStr = secret.toString();
             if (secretStr != null) {
                 return "*".repeat(secretStr.length());
             }

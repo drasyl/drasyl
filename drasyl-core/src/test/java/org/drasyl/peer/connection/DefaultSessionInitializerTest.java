@@ -56,7 +56,7 @@ class DefaultSessionInitializerTest {
 
     @BeforeEach
     void setUp() throws IllegalAccessException, NoSuchFieldException {
-        Field field = DefaultSessionInitializer.class.getDeclaredField("readIdleTimeout");
+        final Field field = DefaultSessionInitializer.class.getDeclaredField("readIdleTimeout");
         field.setAccessible(true);
         field.set(classUnderTest, Duration.ZERO);
     }
@@ -137,19 +137,19 @@ class DefaultSessionInitializerTest {
 
     @Test
     void testIdleStage() {
-        DefaultSessionInitializer classUnderTest = new DefaultSessionInitializer(1, Duration.ofMillis(1L), (short) 1) {
+        final DefaultSessionInitializer classUnderTest = new DefaultSessionInitializer(1, Duration.ofMillis(1L), (short) 1) {
             @Override
-            protected void beforeMarshalStage(ChannelPipeline pipeline) {
+            protected void beforeMarshalStage(final ChannelPipeline pipeline) {
 
             }
 
             @Override
-            protected void customStage(ChannelPipeline pipeline) {
+            protected void customStage(final ChannelPipeline pipeline) {
 
             }
 
             @Override
-            protected SslHandler generateSslContext(SocketChannel ch) {
+            protected SslHandler generateSslContext(final SocketChannel ch) {
                 return null;
             }
         };

@@ -44,8 +44,8 @@ public class ExceptionHandler extends ChannelDuplexHandler {
     private final boolean rethrowExceptions;
     Throwable handledCause;
 
-    ExceptionHandler(ChannelExceptionListener exceptionListener, Throwable handledCause,
-                     boolean rethrowExceptions) {
+    ExceptionHandler(final ChannelExceptionListener exceptionListener, final Throwable handledCause,
+                     final boolean rethrowExceptions) {
         this.exceptionListener = exceptionListener;
         this.handledCause = handledCause;
         this.rethrowExceptions = rethrowExceptions;
@@ -65,48 +65,48 @@ public class ExceptionHandler extends ChannelDuplexHandler {
      *
      * @param rethrowExceptions if {@code true} re-throws to next channel in the pipeline
      */
-    public ExceptionHandler(boolean rethrowExceptions) {
+    public ExceptionHandler(final boolean rethrowExceptions) {
         this.exceptionListener = new ChannelExceptionListener();
         this.handledCause = null;
         this.rethrowExceptions = rethrowExceptions;
     }
 
     @Override
-    public void bind(ChannelHandlerContext ctx, SocketAddress localAddress,
-                     ChannelPromise promise) throws Exception {
+    public void bind(final ChannelHandlerContext ctx, final SocketAddress localAddress,
+                     final ChannelPromise promise) throws Exception {
         ctx.bind(localAddress, exceptionListener.getListener(promise, ctx));
     }
 
     @Override
-    public void connect(ChannelHandlerContext ctx,
-                        SocketAddress remoteAddress,
-                        SocketAddress localAddress,
-                        ChannelPromise promise) {
+    public void connect(final ChannelHandlerContext ctx,
+                        final SocketAddress remoteAddress,
+                        final SocketAddress localAddress,
+                        final ChannelPromise promise) {
         ctx.connect(remoteAddress, localAddress, exceptionListener.getListener(promise, ctx));
     }
 
     @Override
-    public void disconnect(ChannelHandlerContext ctx, ChannelPromise promise) {
+    public void disconnect(final ChannelHandlerContext ctx, final ChannelPromise promise) {
         ctx.disconnect(exceptionListener.getListener(promise, ctx));
     }
 
     @Override
-    public void close(ChannelHandlerContext ctx, ChannelPromise promise) {
+    public void close(final ChannelHandlerContext ctx, final ChannelPromise promise) {
         ctx.close(exceptionListener.getListener(promise, ctx));
     }
 
     @Override
-    public void deregister(ChannelHandlerContext ctx, ChannelPromise promise) {
+    public void deregister(final ChannelHandlerContext ctx, final ChannelPromise promise) {
         ctx.deregister(exceptionListener.getListener(promise, ctx));
     }
 
     @Override
-    public void write(ChannelHandlerContext ctx, Object msg, ChannelPromise promise) {
+    public void write(final ChannelHandlerContext ctx, final Object msg, final ChannelPromise promise) {
         ctx.write(msg, exceptionListener.getListener(promise, ctx));
     }
 
     @Override
-    public void exceptionCaught(ChannelHandlerContext ctx, Throwable cause) {
+    public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) {
         sendException(ctx, cause);
 
         if (rethrowExceptions) {
@@ -120,7 +120,7 @@ public class ExceptionHandler extends ChannelDuplexHandler {
      * @param ctx the channel handler context
      * @param e   the exception
      */
-    private void sendException(ChannelHandlerContext ctx, Throwable e) {
+    private void sendException(final ChannelHandlerContext ctx, final Throwable e) {
         if (e instanceof ClosedChannelException
                 || handledCause != null && Objects.equals(handledCause.getMessage(), e.getMessage()) || Objects.equals("SSLEngine closed already", e.getMessage())) {
             return;
@@ -129,7 +129,7 @@ public class ExceptionHandler extends ChannelDuplexHandler {
         handledCause = e;
 
         if (ctx.channel().isWritable()) {
-            ExceptionMessage msg;
+            final ExceptionMessage msg;
             if (e instanceof DecoderException) {
                 msg = new ExceptionMessage(ERROR_FORMAT);
             }
@@ -142,7 +142,7 @@ public class ExceptionHandler extends ChannelDuplexHandler {
     }
 
     class ChannelExceptionListener {
-        ChannelPromise getListener(ChannelPromise promise, ChannelHandlerContext ctx) {
+        ChannelPromise getListener(final ChannelPromise promise, final ChannelHandlerContext ctx) {
             return promise.addListener(future -> {
                 if (!future.isSuccess()) {
                     sendException(ctx, future.cause());

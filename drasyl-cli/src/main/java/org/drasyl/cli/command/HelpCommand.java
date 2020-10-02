@@ -16,12 +16,12 @@ public class HelpCommand extends AbstractCommand {
         this(System.out); // NOSONAR
     }
 
-    HelpCommand(PrintStream printStream) {
+    HelpCommand(final PrintStream printStream) {
         super(printStream);
     }
 
     @Override
-    protected void help(CommandLine cmd) {
+    protected void help(final CommandLine cmd) {
         helpTemplate(
                 "help",
                 String.format("drasyl is an general purpose transport overlay network.%n" +
@@ -32,7 +32,7 @@ public class HelpCommand extends AbstractCommand {
     }
 
     @Override
-    public void execute(CommandLine cmd) {
+    public void execute(final CommandLine cmd) {
         helpTemplate(
                 "",
                 "",

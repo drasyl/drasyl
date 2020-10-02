@@ -28,53 +28,53 @@ class FutureUtilTest {
     @Nested
     class ToFuture {
         @Test
-        void shouldTranslateSucceededPromise(@Mock EventExecutor executor) {
-            DefaultPromise<Object> promise = new DefaultPromise<>(executor);
+        void shouldTranslateSucceededPromise(@Mock final EventExecutor executor) {
+            final DefaultPromise<Object> promise = new DefaultPromise<>(executor);
             promise.setSuccess("Hallo");
 
-            CompletableFuture<Object> future = toFuture(promise);
+            final CompletableFuture<Object> future = toFuture(promise);
 
             assertTrue(future.isDone());
             assertEquals("Hallo", future.getNow(null));
         }
 
         @Test
-        void shouldTranslateFailedPromise(@Mock EventExecutor executor, @Mock Throwable throwable) {
-            DefaultPromise<Object> promise = new DefaultPromise<>(executor);
+        void shouldTranslateFailedPromise(@Mock final EventExecutor executor, @Mock final Throwable throwable) {
+            final DefaultPromise<Object> promise = new DefaultPromise<>(executor);
             promise.setFailure(throwable);
 
-            CompletableFuture<Object> future = toFuture(promise);
+            final CompletableFuture<Object> future = toFuture(promise);
 
             assertTrue(future.isCompletedExceptionally());
             assertThrows(CompletionException.class, () -> future.getNow(null));
         }
 
         @Test
-        void shouldTranslateSucceedingPromise(@Mock Promise promise) {
+        void shouldTranslateSucceedingPromise(@Mock final Promise promise) {
             when(promise.addListener(any())).then(invocation -> {
-                GenericFutureListener listener = invocation.getArgument(0, GenericFutureListener.class);
+                final GenericFutureListener listener = invocation.getArgument(0, GenericFutureListener.class);
                 when(promise.isSuccess()).thenReturn(true);
                 when(promise.getNow()).thenReturn("Hallo");
                 listener.operationComplete(promise);
                 return null;
             });
 
-            CompletableFuture<Object> future = toFuture(promise);
+            final CompletableFuture<Object> future = toFuture(promise);
 
             assertTrue(future.isDone());
             assertEquals("Hallo", future.getNow(null));
         }
 
         @Test
-        void shouldTranslateFailingPromise(@Mock Promise promise, @Mock Throwable throwable) {
+        void shouldTranslateFailingPromise(@Mock final Promise promise, @Mock final Throwable throwable) {
             when(promise.addListener(any())).then(invocation -> {
-                GenericFutureListener listener = invocation.getArgument(0, GenericFutureListener.class);
+                final GenericFutureListener listener = invocation.getArgument(0, GenericFutureListener.class);
                 when(promise.cause()).thenReturn(throwable);
                 listener.operationComplete(promise);
                 return null;
             });
 
-            CompletableFuture<Object> future = toFuture(promise);
+            final CompletableFuture<Object> future = toFuture(promise);
             promise.setFailure(throwable);
 
             assertTrue(future.isCompletedExceptionally());
@@ -86,10 +86,10 @@ class FutureUtilTest {
     class CompleteOnAnyOfExceptionally {
         @Test
         void shouldCompleteFutureIfAnyFutureInCollectionCompletesExceptionally() {
-            CompletableFuture<?> future1 = new CompletableFuture<>();
-            CompletableFuture<?> future2 = new CompletableFuture<>();
-            CompletableFuture<Void> futureToComplete = new CompletableFuture<>();
-            Collection<CompletableFuture<?>> futures = List.of(future1, future2);
+            final CompletableFuture<?> future1 = new CompletableFuture<>();
+            final CompletableFuture<?> future2 = new CompletableFuture<>();
+            final CompletableFuture<Void> futureToComplete = new CompletableFuture<>();
+            final Collection<CompletableFuture<?>> futures = List.of(future1, future2);
 
             FutureUtil.completeOnAnyOfExceptionally(futureToComplete, futures);
 
@@ -106,7 +106,7 @@ class FutureUtilTest {
 
         @Test
         void shouldReturnImmediatelyWhenListIsEmpty() {
-            CompletableFuture<Void> futureToComplete = new CompletableFuture<>();
+            final CompletableFuture<Void> futureToComplete = new CompletableFuture<>();
 
             FutureUtil.completeOnAnyOfExceptionally(futureToComplete);
 
@@ -117,7 +117,7 @@ class FutureUtilTest {
         }
 
         @Test
-        void shouldThrowExceptionIfParamIsNull(@Mock CompletableFuture<Void> future) {
+        void shouldThrowExceptionIfParamIsNull(@Mock final CompletableFuture<Void> future) {
             assertThrows(NullPointerException.class, () -> FutureUtil.completeOnAnyOfExceptionally(future, (CompletableFuture<?>) null));
             assertThrows(NullPointerException.class, () -> FutureUtil.completeOnAnyOfExceptionally(null));
             assertThrows(NullPointerException.class, () -> FutureUtil.completeOnAnyOfExceptionally(null, (Collection<CompletableFuture<?>>) null));
@@ -128,11 +128,11 @@ class FutureUtilTest {
     class CompleteOnAllOf {
         @Test
         void shouldCompleteFutureIfAnyFutureInCollectionCompletesExceptionally() {
-            CompletableFuture<?> future1 = new CompletableFuture<>();
-            CompletableFuture<?> future2 = new CompletableFuture<>();
-            Collection<CompletableFuture<?>> futures = List.of(future1, future2);
+            final CompletableFuture<?> future1 = new CompletableFuture<>();
+            final CompletableFuture<?> future2 = new CompletableFuture<>();
+            final Collection<CompletableFuture<?>> futures = List.of(future1, future2);
 
-            CompletableFuture<Void> futureToComplete = FutureUtil.getCompleteOnAllOf(futures);
+            final CompletableFuture<Void> futureToComplete = FutureUtil.getCompleteOnAllOf(futures);
 
             future1.completeExceptionally(new Exception());
 
@@ -147,11 +147,11 @@ class FutureUtilTest {
 
         @Test
         void shouldCompleteFutureIfAllFuturesInCollectionCompletesNormally() {
-            CompletableFuture<Void> future1 = new CompletableFuture<>();
-            CompletableFuture<Object> future2 = new CompletableFuture<>();
-            Collection<CompletableFuture<?>> futures = List.of(future1, future2);
+            final CompletableFuture<Void> future1 = new CompletableFuture<>();
+            final CompletableFuture<Object> future2 = new CompletableFuture<>();
+            final Collection<CompletableFuture<?>> futures = List.of(future1, future2);
 
-            CompletableFuture<Void> futureToComplete = FutureUtil.getCompleteOnAllOf(futures);
+            final CompletableFuture<Void> futureToComplete = FutureUtil.getCompleteOnAllOf(futures);
 
             future1.complete(null);
             future2.complete(new Object());
@@ -166,11 +166,11 @@ class FutureUtilTest {
 
         @Test
         void shouldNotCompleteFutureIfAnyFuturesInCollectionIsNotCompleted() {
-            CompletableFuture<Void> future1 = new CompletableFuture<>();
-            CompletableFuture<Object> future2 = new CompletableFuture<>();
-            Collection<CompletableFuture<?>> futures = List.of(future1, future2);
+            final CompletableFuture<Void> future1 = new CompletableFuture<>();
+            final CompletableFuture<Object> future2 = new CompletableFuture<>();
+            final Collection<CompletableFuture<?>> futures = List.of(future1, future2);
 
-            CompletableFuture<Void> futureToComplete = FutureUtil.getCompleteOnAllOf(futures);
+            final CompletableFuture<Void> futureToComplete = FutureUtil.getCompleteOnAllOf(futures);
 
             future1.complete(null);
 
@@ -182,7 +182,7 @@ class FutureUtilTest {
 
         @Test
         void shouldReturnImmediatelyWhenListIsEmpty() {
-            CompletableFuture<Void> futureToComplete = FutureUtil.getCompleteOnAllOf();
+            final CompletableFuture<Void> futureToComplete = FutureUtil.getCompleteOnAllOf();
 
             futureToComplete.complete(null);
 
@@ -191,7 +191,7 @@ class FutureUtilTest {
         }
 
         @Test
-        void shouldThrowExceptionIfParamIsNull(@Mock CompletableFuture<Void> future) {
+        void shouldThrowExceptionIfParamIsNull(@Mock final CompletableFuture<Void> future) {
             assertThrows(NullPointerException.class, () -> FutureUtil.completeOnAllOf(future, (CompletableFuture<?>) null));
             assertThrows(NullPointerException.class, () -> FutureUtil.completeOnAllOf(null));
             assertThrows(NullPointerException.class, () -> FutureUtil.completeOnAllOf(null, (Collection<CompletableFuture<?>>) null));

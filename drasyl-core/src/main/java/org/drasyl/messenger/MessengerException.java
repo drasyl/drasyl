@@ -24,11 +24,11 @@ import org.drasyl.DrasylException;
  * A MessengerException is thrown by the {@link Messenger} when errors occur.
  */
 public class MessengerException extends DrasylException {
-    public MessengerException(Throwable cause) {
+    public MessengerException(final Throwable cause) {
         super(cause);
     }
 
-    public MessengerException(String cause) {
+    public MessengerException(final String cause) {
         super(cause);
     }
 }

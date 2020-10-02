@@ -28,14 +28,14 @@ public class TestClientChannelInitializer extends DefaultClientChannelInitialize
     private final boolean doPingPong;
     private final boolean doJoin;
 
-    public TestClientChannelInitializer(ClientEnvironment environment, boolean doPingPong, boolean doJoin) {
+    public TestClientChannelInitializer(final ClientEnvironment environment, final boolean doPingPong, final boolean doJoin) {
         super(environment);
         this.doPingPong = doPingPong;
         this.doJoin = doJoin;
     }
 
     @Override
-    protected void idleStage(ChannelPipeline pipeline) {
+    protected void idleStage(final ChannelPipeline pipeline) {
         super.idleStage(pipeline);
 
         if (!doPingPong) {
@@ -44,7 +44,7 @@ public class TestClientChannelInitializer extends DefaultClientChannelInitialize
     }
 
     @Override
-    protected void customStage(ChannelPipeline pipeline) {
+    protected void customStage(final ChannelPipeline pipeline) {
         super.customStage(pipeline);
 
         if (!doJoin) {

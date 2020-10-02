@@ -56,13 +56,13 @@ import static org.drasyl.peer.connection.server.handler.WhoAmIHandler.WHO_AM_I;
 public class DefaultServerChannelInitializer extends ServerChannelInitializer {
     protected final ServerEnvironment environment;
 
-    public DefaultServerChannelInitializer(ServerEnvironment environment) {
+    public DefaultServerChannelInitializer(final ServerEnvironment environment) {
         super(environment.getConfig().getFlushBufferSize(), environment.getConfig().getServerIdleTimeout(), environment.getConfig().getServerIdleRetries());
         this.environment = environment;
     }
 
     @Override
-    protected void beforeMarshalStage(ChannelPipeline pipeline) {
+    protected void beforeMarshalStage(final ChannelPipeline pipeline) {
         pipeline.addLast(new HttpServerCodec());
         pipeline.addLast(new HttpObjectAggregator(65536));
         pipeline.addLast(new WebSocketServerCompressionHandler());
@@ -71,7 +71,7 @@ public class DefaultServerChannelInitializer extends ServerChannelInitializer {
     }
 
     @Override
-    protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
+    protected void afterPojoMarshalStage(final ChannelPipeline pipeline) {
         pipeline.addLast(SIGNATURE_HANDLER, new SignatureHandler(environment.getIdentity()));
         pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(environment.getConfig().getMessageHopLimit()));
         pipeline.addLast(CONNECTION_GUARD, new ServerNewConnectionsGuard(environment.getAcceptNewConnectionsSupplier()));
@@ -81,26 +81,26 @@ public class DefaultServerChannelInitializer extends ServerChannelInitializer {
     }
 
     @Override
-    protected void customStage(ChannelPipeline pipeline) {
+    protected void customStage(final ChannelPipeline pipeline) {
         pipeline.addLast(EXCEPTION_MESSAGE_HANDLER, ConnectionExceptionMessageHandler.INSTANCE);
         pipeline.addLast(SERVER_CONNECTION_HANDLER, new ServerConnectionHandler(environment));
     }
 
     @Override
-    protected void exceptionStage(ChannelPipeline pipeline) {
+    protected void exceptionStage(final ChannelPipeline pipeline) {
         pipeline.addLast(EXCEPTION_HANDLER, new ExceptionHandler());
     }
 
     @Override
-    protected SslHandler generateSslContext(SocketChannel ch) throws ServerException {
+    protected SslHandler generateSslContext(final SocketChannel ch) throws ServerException {
         if (environment.getConfig().getServerSSLEnabled()) {
             try {
-                SelfSignedCertificate ssc = new SelfSignedCertificate();
+                final SelfSignedCertificate ssc = new SelfSignedCertificate();
 
                 return SslContextBuilder.forServer(ssc.certificate(), ssc.privateKey())
                         .protocols(environment.getConfig().getServerSSLProtocols()).build().newHandler(ch.alloc());
             }
-            catch (SSLException | CertificateException e) {
+            catch (final SSLException | CertificateException e) {
                 throw new ServerException(e);
             }
         }

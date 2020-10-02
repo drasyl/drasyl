@@ -45,21 +45,21 @@ abstract class AbstractClient implements DrasylNodeComponent {
     protected BooleanSupplier acceptNewConnectionsSupplier;
 
     @SuppressWarnings({ "java:S107" })
-    protected AbstractClient(List<Duration> retryDelays,
-                             EventLoopGroup workerGroup,
-                             Supplier<Set<Endpoint>> endpointsSupplier,
-                             BooleanSupplier acceptNewConnectionsSupplier,
-                             Identity identity,
-                             Messenger messenger,
-                             PeersManager peersManager,
-                             DrasylConfig config,
-                             PeerChannelGroup channelGroup,
-                             short idleRetries,
-                             Duration idleTimeout,
-                             Duration handshakeTimeout,
-                             Consumer<Event> eventConsumer,
-                             boolean joinsAsChildren,
-                             Class<? extends ChannelInitializer<SocketChannel>> channelInitializerClazz) {
+    protected AbstractClient(final List<Duration> retryDelays,
+                             final EventLoopGroup workerGroup,
+                             final Supplier<Set<Endpoint>> endpointsSupplier,
+                             final BooleanSupplier acceptNewConnectionsSupplier,
+                             final Identity identity,
+                             final Messenger messenger,
+                             final PeersManager peersManager,
+                             final DrasylConfig config,
+                             final PeerChannelGroup channelGroup,
+                             final short idleRetries,
+                             final Duration idleTimeout,
+                             final Duration handshakeTimeout,
+                             final Consumer<Event> eventConsumer,
+                             final boolean joinsAsChildren,
+                             final Class<? extends ChannelInitializer<SocketChannel>> channelInitializerClazz) {
         this(
                 retryDelays,
                 workerGroup,
@@ -86,11 +86,11 @@ abstract class AbstractClient implements DrasylNodeComponent {
         );
     }
 
-    protected AbstractClient(List<Duration> retryDelays,
-                             EventLoopGroup workerGroup,
-                             Supplier<Set<Endpoint>> endpointsSupplier,
-                             BooleanSupplier acceptNewConnectionsSupplier,
-                             DrasylFunction<Endpoint, Bootstrap, ClientException> bootstrapSupplier) {
+    protected AbstractClient(final List<Duration> retryDelays,
+                             final EventLoopGroup workerGroup,
+                             final Supplier<Set<Endpoint>> endpointsSupplier,
+                             final BooleanSupplier acceptNewConnectionsSupplier,
+                             final DrasylFunction<Endpoint, Bootstrap, ClientException> bootstrapSupplier) {
         this(
                 retryDelays,
                 workerGroup,
@@ -105,15 +105,15 @@ abstract class AbstractClient implements DrasylNodeComponent {
     }
 
     @SuppressWarnings({ "java:S107" })
-    protected AbstractClient(List<Duration> retryDelays,
-                             EventLoopGroup workerGroup,
-                             Supplier<Set<Endpoint>> endpointsSupplier,
-                             AtomicBoolean opened,
-                             BooleanSupplier acceptNewConnectionsSupplier,
-                             AtomicInteger nextEndpointPointer,
-                             AtomicInteger nextRetryDelayPointer,
-                             DrasylFunction<Endpoint, Bootstrap, ClientException> bootstrapSupplier,
-                             Channel channel) {
+    protected AbstractClient(final List<Duration> retryDelays,
+                             final EventLoopGroup workerGroup,
+                             final Supplier<Set<Endpoint>> endpointsSupplier,
+                             final AtomicBoolean opened,
+                             final BooleanSupplier acceptNewConnectionsSupplier,
+                             final AtomicInteger nextEndpointPointer,
+                             final AtomicInteger nextRetryDelayPointer,
+                             final DrasylFunction<Endpoint, Bootstrap, ClientException> bootstrapSupplier,
+                             final Channel channel) {
         this.retryDelays = retryDelays;
         this.workerGroup = workerGroup;
         this.endpointsSupplier = endpointsSupplier;
@@ -134,7 +134,7 @@ abstract class AbstractClient implements DrasylNodeComponent {
         }
     }
 
-    void connect(Endpoint endpoint) {
+    void connect(final Endpoint endpoint) {
         if (endpoint == null) {
             getLogger().debug("No endpoint present. Permanently unable to connect to Server.");
             failed();
@@ -159,7 +159,7 @@ abstract class AbstractClient implements DrasylNodeComponent {
                         }
                     });
         }
-        catch (DrasylException | IllegalArgumentException e) {
+        catch (final DrasylException | IllegalArgumentException e) {
             getLogger().warn("Unable to create channel initializer:", e);
             conditionalScheduledReconnect();
         }
@@ -170,12 +170,12 @@ abstract class AbstractClient implements DrasylNodeComponent {
      */
     Endpoint nextEndpoint() {
         try {
-            Set<Endpoint> endpoints = endpointsSupplier.get();
-            Endpoint endpoint = SetUtil.nthElement(endpoints, nextEndpointPointer.get());
+            final Set<Endpoint> endpoints = endpointsSupplier.get();
+            final Endpoint endpoint = SetUtil.nthElement(endpoints, nextEndpointPointer.get());
             nextEndpointPointer.updateAndGet(p -> (p + 1) % endpoints.size());
             return endpoint;
         }
-        catch (IndexOutOfBoundsException e) {
+        catch (final IndexOutOfBoundsException e) {
             return null;
         }
     }
@@ -186,7 +186,7 @@ abstract class AbstractClient implements DrasylNodeComponent {
      */
     void conditionalScheduledReconnect() {
         if (shouldRetry()) {
-            Duration duration = nextRetryDelay();
+            final Duration duration = nextRetryDelay();
             getLogger().debug("Wait {}ms before reconnect", duration.toMillis());
             workerGroup.schedule(() -> {
                 if (opened.get()) {
@@ -222,7 +222,7 @@ abstract class AbstractClient implements DrasylNodeComponent {
      * @throws IllegalArgumentException if list is empty
      */
     Duration nextRetryDelay() {
-        Duration retryDelay = retryDelays.get(nextRetryDelayPointer.get());
+        final Duration retryDelay = retryDelays.get(nextRetryDelayPointer.get());
         nextRetryDelayPointer.updateAndGet(p -> Math.min(p + 1, retryDelays.size() - 1));
         return retryDelay;
     }
@@ -239,22 +239,22 @@ abstract class AbstractClient implements DrasylNodeComponent {
     }
 
     protected static ClientChannelInitializer initiateChannelInitializer(
-            ClientEnvironment environment,
-            Class<? extends ChannelInitializer<SocketChannel>> clazz) throws ClientException {
+            final ClientEnvironment environment,
+            final Class<? extends ChannelInitializer<SocketChannel>> clazz) throws ClientException {
         try {
-            Constructor<?> constructor = clazz.getConstructor(ClientEnvironment.class);
+            final Constructor<?> constructor = clazz.getConstructor(ClientEnvironment.class);
             return (ClientChannelInitializer) constructor.newInstance(environment);
         }
-        catch (NoSuchMethodException e) {
+        catch (final NoSuchMethodException e) {
             throw new ClientException("The given channel initializer has not the correct signature: '" + clazz + "'");
         }
-        catch (IllegalAccessException e) {
+        catch (final IllegalAccessException e) {
             throw new ClientException("Can't access the given channel initializer: '" + clazz + "'");
         }
-        catch (InvocationTargetException e) {
+        catch (final InvocationTargetException e) {
             throw new ClientException("Can't invoke the given channel initializer: '" + clazz + "'");
         }
-        catch (InstantiationException e) {
+        catch (final InstantiationException e) {
             throw new ClientException("Can't instantiate the given channel initializer: '" + clazz + "'");
         }
     }

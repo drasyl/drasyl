@@ -25,11 +25,11 @@ import org.drasyl.DrasylException;
  * A ClientException is thrown by the {@link AbstractClient} when errors occur.
  */
 public class ClientException extends DrasylException {
-    public ClientException(Throwable cause) {
+    public ClientException(final Throwable cause) {
         super(cause);
     }
 
-    public ClientException(String cause) {
+    public ClientException(final String cause) {
         super(cause);
     }
 }

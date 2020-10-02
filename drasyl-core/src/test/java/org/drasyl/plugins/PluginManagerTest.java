@@ -44,7 +44,7 @@ class PluginManagerTest {
     @Nested
     class BeforeStart {
         @Test
-        void shouldCallOnBeforeStartOfEveryPlugin(@Mock DrasylPlugin plugin) {
+        void shouldCallOnBeforeStartOfEveryPlugin(@Mock final DrasylPlugin plugin) {
             when(config.getPlugins()).thenReturn(Set.of(plugin));
 
             underTest.beforeStart();
@@ -56,7 +56,7 @@ class PluginManagerTest {
     @Nested
     class AfterStart {
         @Test
-        void shouldCallOnAfterStartOfEveryPlugin(@Mock DrasylPlugin plugin) {
+        void shouldCallOnAfterStartOfEveryPlugin(@Mock final DrasylPlugin plugin) {
             when(config.getPlugins()).thenReturn(Set.of(plugin));
 
             underTest.afterStart();
@@ -68,7 +68,7 @@ class PluginManagerTest {
     @Nested
     class BeforeShutdown {
         @Test
-        void shouldCallOnBeforeShutdownOfEveryPlugin(@Mock DrasylPlugin plugin) {
+        void shouldCallOnBeforeShutdownOfEveryPlugin(@Mock final DrasylPlugin plugin) {
             when(config.getPlugins()).thenReturn(Set.of(plugin));
 
             underTest.beforeShutdown();
@@ -80,7 +80,7 @@ class PluginManagerTest {
     @Nested
     class AfterShutdown {
         @Test
-        void shouldCallOnAfterShutdownOfEveryPlugin(@Mock DrasylPlugin plugin) {
+        void shouldCallOnAfterShutdownOfEveryPlugin(@Mock final DrasylPlugin plugin) {
             when(config.getPlugins()).thenReturn(Set.of(plugin));
 
             underTest.afterShutdown();

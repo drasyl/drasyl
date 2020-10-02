@@ -34,7 +34,7 @@ public class Node {
     private final Identity identity;
     private final Set<Endpoint> endpoints;
 
-    Node(Identity identity, Set<Endpoint> endpoints) {
+    Node(final Identity identity, final Set<Endpoint> endpoints) {
         this.identity = identity;
         this.endpoints = endpoints;
     }
@@ -45,14 +45,14 @@ public class Node {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        Node node = (Node) o;
+        final Node node = (Node) o;
         return Objects.equals(identity, node.identity) &&
                 Objects.equals(endpoints, node.endpoints);
     }
@@ -73,11 +73,11 @@ public class Node {
         return endpoints;
     }
 
-    public static Node of(Identity identity) {
+    public static Node of(final Identity identity) {
         return of(identity, Set.of());
     }
 
-    public static Node of(Identity identity, Set<Endpoint> endpoints) {
+    public static Node of(final Identity identity, final Set<Endpoint> endpoints) {
         return new Node(identity, Set.copyOf(endpoints));
     }
 }

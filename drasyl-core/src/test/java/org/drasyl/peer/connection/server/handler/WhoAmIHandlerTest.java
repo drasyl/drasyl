@@ -37,10 +37,10 @@ class WhoAmIHandlerTest {
 
     @Test
     void shouldSendIamMessageOnWhoAreYouMessage() {
-        WhoAmIHandler handler = new WhoAmIHandler(mockedPublicKey);
-        EmbeddedChannel channel = new EmbeddedChannel(handler);
+        final WhoAmIHandler handler = new WhoAmIHandler(mockedPublicKey);
+        final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        WhoAreYouMessage msg = new WhoAreYouMessage();
+        final WhoAreYouMessage msg = new WhoAreYouMessage();
         assertFalse(channel.writeInbound(msg));
 
         assertEquals(new IamMessage(mockedPublicKey, msg.getId()), channel.readOutbound());

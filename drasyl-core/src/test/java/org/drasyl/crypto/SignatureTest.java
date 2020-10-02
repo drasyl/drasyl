@@ -70,8 +70,8 @@ class SignatureTest {
         when(signable1.getSignableBytes()).thenReturn(new byte[]{ (byte) 0x3a, (byte) 0x22 });
         when(signable2.getSignableBytes()).thenReturn(new byte[]{ (byte) 0x11, (byte) 0x1b });
 
-        ArgumentCaptor<Signature> signature1ArgumentCaptor = ArgumentCaptor.forClass(Signature.class);
-        ArgumentCaptor<Signature> signature2ArgumentCaptor = ArgumentCaptor.forClass(Signature.class);
+        final ArgumentCaptor<Signature> signature1ArgumentCaptor = ArgumentCaptor.forClass(Signature.class);
+        final ArgumentCaptor<Signature> signature2ArgumentCaptor = ArgumentCaptor.forClass(Signature.class);
 
         Crypto.sign(keyPair1.getPrivate(), signable1);
         verify(signable1).setSignature(signature1ArgumentCaptor.capture());
@@ -91,7 +91,7 @@ class SignatureTest {
     void testVerifySignature() throws CryptoException {
         when(signable1.getSignableBytes()).thenReturn(new byte[]{ (byte) 0x3a, (byte) 0x22 });
 
-        ArgumentCaptor<Signature> signature1ArgumentCaptor = ArgumentCaptor.forClass(Signature.class);
+        final ArgumentCaptor<Signature> signature1ArgumentCaptor = ArgumentCaptor.forClass(Signature.class);
 
         Crypto.sign(keyPair1.getPrivate(), signable1);
         verify(signable1).setSignature(signature1ArgumentCaptor.capture());
@@ -100,10 +100,10 @@ class SignatureTest {
 
         assertNotNull(signature1);
         assertNotNull(signable1);
-        boolean verified = Crypto.verifySignature(keyPair1.getPublic(), signable1);
+        final boolean verified = Crypto.verifySignature(keyPair1.getPublic(), signable1);
         assertTrue(verified);
 
-        boolean notVerified = Crypto.verifySignature(keyPair2.getPublic(), signable2);
+        final boolean notVerified = Crypto.verifySignature(keyPair2.getPublic(), signable2);
         assertFalse(notVerified);
     }
 
@@ -112,8 +112,8 @@ class SignatureTest {
         when(signable1.getSignableBytes()).thenReturn(new byte[]{ (byte) 0x3a, (byte) 0x22 });
         when(signable2.getSignableBytes()).thenReturn(new byte[]{ (byte) 0x11, (byte) 0x1b });
 
-        ArgumentCaptor<Signature> signature1ArgumentCaptor = ArgumentCaptor.forClass(Signature.class);
-        ArgumentCaptor<Signature> signature2ArgumentCaptor = ArgumentCaptor.forClass(Signature.class);
+        final ArgumentCaptor<Signature> signature1ArgumentCaptor = ArgumentCaptor.forClass(Signature.class);
+        final ArgumentCaptor<Signature> signature2ArgumentCaptor = ArgumentCaptor.forClass(Signature.class);
 
         Crypto.sign(keyPair1.getPrivate(), signable1);
         verify(signable1).setSignature(signature1ArgumentCaptor.capture());
@@ -127,14 +127,14 @@ class SignatureTest {
 
         assertNotEquals(signature1, signature2);
 
-        boolean verified1 = Crypto.verifySignature(keyPair1.getPublic(), signable1);
+        final boolean verified1 = Crypto.verifySignature(keyPair1.getPublic(), signable1);
         assertTrue(verified1);
-        boolean verified2 = Crypto.verifySignature(keyPair1.getPublic(), signable2);
+        final boolean verified2 = Crypto.verifySignature(keyPair1.getPublic(), signable2);
         assertTrue(verified2);
 
-        boolean notVerified1 = Crypto.verifySignature(keyPair2.getPublic(), signable2);
+        final boolean notVerified1 = Crypto.verifySignature(keyPair2.getPublic(), signable2);
         assertFalse(notVerified1);
-        boolean notVerified2 = Crypto.verifySignature(keyPair2.getPublic(), signable1);
+        final boolean notVerified2 = Crypto.verifySignature(keyPair2.getPublic(), signable1);
         assertFalse(notVerified2);
     }
 
@@ -152,14 +152,14 @@ class SignatureTest {
         when(signable1.getSignableBytes()).thenReturn(new byte[]{ (byte) 0x3a, (byte) 0x22 });
         when(signable2.getSignableBytes()).thenReturn(new byte[]{ (byte) 0x11, (byte) 0x1b });
 
-        ByteArrayOutputStream os1 = new ByteArrayOutputStream();
+        final ByteArrayOutputStream os1 = new ByteArrayOutputStream();
         os1.write(new byte[]{});
         os1.write(new byte[]{
                 0x01,
                 0x02
         });
 
-        ByteArrayOutputStream os2 = new ByteArrayOutputStream();
+        final ByteArrayOutputStream os2 = new ByteArrayOutputStream();
         os2.write(new byte[]{
                 0x01,
                 0x02
@@ -169,8 +169,8 @@ class SignatureTest {
         when(signable1.getSignableBytes()).thenReturn(os1.toByteArray());
         when(signable2.getSignableBytes()).thenReturn(os2.toByteArray());
 
-        ArgumentCaptor<Signature> signature1ArgumentCaptor = ArgumentCaptor.forClass(Signature.class);
-        ArgumentCaptor<Signature> signature2ArgumentCaptor = ArgumentCaptor.forClass(Signature.class);
+        final ArgumentCaptor<Signature> signature1ArgumentCaptor = ArgumentCaptor.forClass(Signature.class);
+        final ArgumentCaptor<Signature> signature2ArgumentCaptor = ArgumentCaptor.forClass(Signature.class);
 
         Crypto.sign(keyPair1.getPrivate(), signable1);
         verify(signable1).setSignature(signature1ArgumentCaptor.capture());

@@ -24,11 +24,11 @@ import org.drasyl.DrasylRuntimeException;
  * RuntimeException thrown by the {@link Pipeline}.
  */
 public class PipelineException extends DrasylRuntimeException {
-    public PipelineException(Throwable cause) {
+    public PipelineException(final Throwable cause) {
         super(cause);
     }
 
-    public PipelineException(String cause) {
+    public PipelineException(final String cause) {
         super(cause);
     }
 }

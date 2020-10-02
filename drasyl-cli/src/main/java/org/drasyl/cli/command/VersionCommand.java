@@ -13,17 +13,17 @@ public class VersionCommand extends AbstractCommand {
         this(System.out); // NOSONAR
     }
 
-    VersionCommand(PrintStream printStream) {
+    VersionCommand(final PrintStream printStream) {
         super(printStream);
     }
 
     @Override
-    protected void help(CommandLine cmd) {
+    protected void help(final CommandLine cmd) {
         helpTemplate("version", "Show the drasyl, os and java version number.");
     }
 
     @Override
-    public void execute(CommandLine cmd) {
+    public void execute(final CommandLine cmd) {
         printStream.println("drasyl v" + DrasylNode.getVersion());
         printStream.println("- os.name " + System.getProperty("os.name"));
         printStream.println("- os.version " + System.getProperty("os.version"));

@@ -33,13 +33,13 @@ public class WhoAmIHandler extends SimpleChannelInboundHandler<WhoAreYouMessage>
     public static final String WHO_AM_I = "whoAmI";
     private final CompressedPublicKey myPublicKey;
 
-    public WhoAmIHandler(CompressedPublicKey myPublicKey) {
+    public WhoAmIHandler(final CompressedPublicKey myPublicKey) {
         this.myPublicKey = myPublicKey;
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx,
-                                WhoAreYouMessage msg) throws Exception {
+    protected void channelRead0(final ChannelHandlerContext ctx,
+                                final WhoAreYouMessage msg) throws Exception {
         ctx.writeAndFlush(new IamMessage(myPublicKey, msg.getId()));
     }
 }

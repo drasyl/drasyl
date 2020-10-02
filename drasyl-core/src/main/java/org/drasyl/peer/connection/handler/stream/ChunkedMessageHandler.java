@@ -47,10 +47,10 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
     private final CompressedPublicKey myIdentity;
     private final Duration transferTimeout;
 
-    ChunkedMessageHandler(HashMap<MessageId, ChunkedMessageOutput> chunks,
-                          int maxContentLength,
-                          CompressedPublicKey myIdentity,
-                          Duration transferTimeout) {
+    ChunkedMessageHandler(final HashMap<MessageId, ChunkedMessageOutput> chunks,
+                          final int maxContentLength,
+                          final CompressedPublicKey myIdentity,
+                          final Duration transferTimeout) {
         super(true, false, false);
         this.chunks = chunks;
         this.maxContentLength = maxContentLength;
@@ -58,15 +58,15 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
         this.transferTimeout = transferTimeout;
     }
 
-    public ChunkedMessageHandler(int maxContentLength,
-                                 CompressedPublicKey myIdentity,
-                                 Duration transferTimeout) {
+    public ChunkedMessageHandler(final int maxContentLength,
+                                 final CompressedPublicKey myIdentity,
+                                 final Duration transferTimeout) {
         this(new HashMap<>(), maxContentLength, myIdentity, transferTimeout);
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx,
-                                ChunkedMessage msg) {
+    protected void channelRead0(final ChannelHandlerContext ctx,
+                                final ChunkedMessage msg) {
         if (!msg.getRecipient().equals(myIdentity)) {
             // Only relaying...
             ReferenceCountUtil.retain(msg);
@@ -104,8 +104,8 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
     }
 
     @Override
-    protected void channelWrite0(ChannelHandlerContext ctx,
-                                 ApplicationMessage msg, ChannelPromise promise) {
+    protected void channelWrite0(final ChannelHandlerContext ctx,
+                                 final ApplicationMessage msg, final ChannelPromise promise) {
         if (msg.getPayload().length > maxContentLength) {
             if (LOG.isWarnEnabled()) {
                 LOG.warn("[{}]: Payload is bigger than max content length. Message with id `{}` was not sent.", ctx.channel().id().asShortText(), msg.getId());
@@ -117,7 +117,7 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
         }
 
         if (msg.getPayload().length > CHUNK_SIZE) {
-            ChunkedMessageInput chunkedMessageInput = new ChunkedMessageInput(msg, CHUNK_SIZE);
+            final ChunkedMessageInput chunkedMessageInput = new ChunkedMessageInput(msg, CHUNK_SIZE);
             ctx.writeAndFlush(chunkedMessageInput, promise);
         }
         else {

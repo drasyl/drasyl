@@ -51,7 +51,7 @@ class JoinMessageTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
-            String json = "{\"@type\":\"" + JoinMessage.class.getSimpleName() + "\",\"id\":\"4ae5cdcd8c21719f8e779f21\",\"userAgent\":\"\",\"proofOfWork\":3556154,\"publicKey\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\",\"networkId\":1337}";
+            final String json = "{\"@type\":\"" + JoinMessage.class.getSimpleName() + "\",\"id\":\"4ae5cdcd8c21719f8e779f21\",\"userAgent\":\"\",\"proofOfWork\":3556154,\"publicKey\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\",\"networkId\":1337}";
 
             assertEquals(new JoinMessage(
                     ProofOfWork.of(3556154),
@@ -62,7 +62,7 @@ class JoinMessageTest {
 
         @Test
         void shouldRejectIncompleteData() {
-            String json = "{\"@type\":\"" + JoinMessage.class.getSimpleName() + "\",\"id\":\"4ae5cdcd8c21719f8e779f21\",\"publicKey\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\"}";
+            final String json = "{\"@type\":\"" + JoinMessage.class.getSimpleName() + "\",\"id\":\"4ae5cdcd8c21719f8e779f21\",\"publicKey\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\"}";
 
             assertThrows(ValueInstantiationException.class, () -> JACKSON_READER.readValue(json, Message.class));
         }
@@ -72,7 +72,7 @@ class JoinMessageTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException {
-            JoinMessage message = new JoinMessage(ProofOfWork.of(1), publicKey, 1337);
+            final JoinMessage message = new JoinMessage(ProofOfWork.of(1), publicKey, 1337);
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
@@ -95,9 +95,9 @@ class JoinMessageTest {
     class Equals {
         @Test
         void notSameBecauseOfDifferentPublicKey() {
-            JoinMessage message1 = new JoinMessage(proofOfWork, publicKey, childrenJoin, 1337);
-            JoinMessage message2 = new JoinMessage(proofOfWork, publicKey, childrenJoin, 1337);
-            JoinMessage message3 = new JoinMessage(proofOfWork, publicKey2, childrenJoin, 1337);
+            final JoinMessage message1 = new JoinMessage(proofOfWork, publicKey, childrenJoin, 1337);
+            final JoinMessage message2 = new JoinMessage(proofOfWork, publicKey, childrenJoin, 1337);
+            final JoinMessage message3 = new JoinMessage(proofOfWork, publicKey2, childrenJoin, 1337);
 
             assertEquals(message1, message2);
             assertNotEquals(message2, message3);
@@ -108,9 +108,9 @@ class JoinMessageTest {
     class HashCode {
         @Test
         void notSameBecauseOfDifferentPublicKey() {
-            JoinMessage message1 = new JoinMessage(proofOfWork, publicKey, childrenJoin, 1337);
-            JoinMessage message2 = new JoinMessage(proofOfWork, publicKey, childrenJoin, 1337);
-            JoinMessage message3 = new JoinMessage(proofOfWork, publicKey2, childrenJoin, 1337);
+            final JoinMessage message1 = new JoinMessage(proofOfWork, publicKey, childrenJoin, 1337);
+            final JoinMessage message2 = new JoinMessage(proofOfWork, publicKey, childrenJoin, 1337);
+            final JoinMessage message3 = new JoinMessage(proofOfWork, publicKey2, childrenJoin, 1337);
 
             assertEquals(message1.hashCode(), message2.hashCode());
             assertNotEquals(message2.hashCode(), message3.hashCode());

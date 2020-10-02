@@ -44,21 +44,21 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
     protected final Map<String, String> headers;
     protected final byte[] payload;
 
-    public ApplicationMessage(MessageId id,
-                              CompressedPublicKey sender,
-                              CompressedPublicKey recipient,
-                              byte[] payload,
-                              short hopCount) {
+    public ApplicationMessage(final MessageId id,
+                              final CompressedPublicKey sender,
+                              final CompressedPublicKey recipient,
+                              final byte[] payload,
+                              final short hopCount) {
         this(id, sender, recipient, Map.of(), payload, hopCount);
     }
 
     @JsonCreator
-    public ApplicationMessage(@JsonProperty("id") MessageId id,
-                              @JsonProperty("sender") CompressedPublicKey sender,
-                              @JsonProperty("recipient") CompressedPublicKey recipient,
-                              @JsonProperty("headers") Map<String, String> headers,
-                              @JsonProperty("payload") byte[] payload,
-                              @JsonProperty("hopCount") short hopCount) {
+    public ApplicationMessage(@JsonProperty("id") final MessageId id,
+                              @JsonProperty("sender") final CompressedPublicKey sender,
+                              @JsonProperty("recipient") final CompressedPublicKey recipient,
+                              @JsonProperty("headers") final Map<String, String> headers,
+                              @JsonProperty("payload") final byte[] payload,
+                              @JsonProperty("hopCount") final short hopCount) {
         super(id, recipient, hopCount);
         this.sender = requireNonNull(sender);
         if (headers != null) {
@@ -78,18 +78,18 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
      * @param recipient The recipient
      * @param payload   The data to be sent
      */
-    public ApplicationMessage(CompressedPublicKey sender,
-                              CompressedPublicKey recipient,
-                              Map<String, String> headers,
-                              byte[] payload) {
+    public ApplicationMessage(final CompressedPublicKey sender,
+                              final CompressedPublicKey recipient,
+                              final Map<String, String> headers,
+                              final byte[] payload) {
         this(sender, recipient, headers, payload, (short) 0);
     }
 
-    ApplicationMessage(CompressedPublicKey sender,
-                       CompressedPublicKey recipient,
-                       Map<String, String> headers,
-                       byte[] payload,
-                       short hopCount) {
+    ApplicationMessage(final CompressedPublicKey sender,
+                       final CompressedPublicKey recipient,
+                       final Map<String, String> headers,
+                       final byte[] payload,
+                       final short hopCount) {
         super(recipient, hopCount);
         this.sender = requireNonNull(sender);
         this.headers = requireNonNull(headers);
@@ -103,9 +103,9 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
      * @param recipient The recipient
      * @param payload   The data to be sent
      */
-    public ApplicationMessage(CompressedPublicKey sender,
-                              CompressedPublicKey recipient,
-                              byte[] payload) {
+    public ApplicationMessage(final CompressedPublicKey sender,
+                              final CompressedPublicKey recipient,
+                              final byte[] payload) {
         this(sender, recipient, Map.of(), payload, (short) 0);
     }
 
@@ -125,7 +125,7 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
      * @return value of header with name <code>name</code>, or {@code null} if this header does not
      * exist
      */
-    public String getHeader(String name) {
+    public String getHeader(final String name) {
         // for backward compatibility
         if (name.equals(ObjectHolder.CLASS_KEY_NAME) && !headers.containsKey(name)) {
             return byte[].class.getName();
@@ -153,7 +153,7 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -163,7 +163,7 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
         if (!super.equals(o)) {
             return false;
         }
-        ApplicationMessage that = (ApplicationMessage) o;
+        final ApplicationMessage that = (ApplicationMessage) o;
         return Objects.equals(sender, that.sender) &&
                 Arrays.equals(payload, that.payload) &&
                 Objects.equals(headers, that.headers);

@@ -75,21 +75,21 @@ class ChunkedMessageIT {
     private static Set<Endpoint> endpoints;
 
     @BeforeEach
-    void setup(TestInfo info) {
+    void setup(final TestInfo info) {
         colorizedPrintln("STARTING " + info.getDisplayName(), COLOR_CYAN, STYLE_REVERSED);
     }
 
     @AfterEach
-    void cleanUp(TestInfo info) {
+    void cleanUp(final TestInfo info) {
         colorizedPrintln("FINISHED " + info.getDisplayName(), AnsiColor.COLOR_CYAN, AnsiColor.STYLE_REVERSED);
     }
 
     @RepeatedTest(5)
     void messageWithMaxSizeShouldArrive() {
-        Observable<Message> receivedMessages = session2.receivedMessages().filter(msg -> msg instanceof ApplicationMessage);
+        final Observable<Message> receivedMessages = session2.receivedMessages().filter(msg -> msg instanceof ApplicationMessage);
 
         // send message
-        RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session2.getPublicKey(), bigPayload);
+        final RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session2.getPublicKey(), bigPayload);
         session2.send(request);
 
         // verify response
@@ -107,10 +107,10 @@ class ChunkedMessageIT {
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
         System.setProperty("io.netty.leakDetection.level", "DISABLED");
 
-        Identity identitySession1 = Identity.of(169092, "030a59784f88c74dcd64258387f9126739c3aeb7965f36bb501ff01f5036b3d72b", "0f1e188d5e3b98daf2266d7916d2e1179ae6209faa7477a2a66d4bb61dab4399");
-        Identity identitySession2 = Identity.of(26778671, "0236fde6a49564a0eaa2a7d6c8f73b97062d5feb36160398c08a5b73f646aa5fe5", "093d1ee70518508cac18eaf90d312f768c14d43de9bfd2618a2794d8df392da0");
+        final Identity identitySession1 = Identity.of(169092, "030a59784f88c74dcd64258387f9126739c3aeb7965f36bb501ff01f5036b3d72b", "0f1e188d5e3b98daf2266d7916d2e1179ae6209faa7477a2a66d4bb61dab4399");
+        final Identity identitySession2 = Identity.of(26778671, "0236fde6a49564a0eaa2a7d6c8f73b97062d5feb36160398c08a5b73f646aa5fe5", "093d1ee70518508cac18eaf90d312f768c14d43de9bfd2618a2794d8df392da0");
 
-        DrasylConfig serverConfig = DrasylConfig.newBuilder()
+        final DrasylConfig serverConfig = DrasylConfig.newBuilder()
                 .networkId(0)
                 .messageMaxContentLength(1024 * 1024 * 100)
                 .identityProofOfWork(ProofOfWork.of(6657650))
@@ -125,11 +125,11 @@ class ChunkedMessageIT {
                 .serverIdleRetries((short) 1)
                 .superPeerEnabled(false)
                 .build();
-        IdentityManager serverIdentityManager = new IdentityManager(serverConfig);
+        final IdentityManager serverIdentityManager = new IdentityManager(serverConfig);
         serverIdentityManager.loadOrCreateIdentity();
-        PeersManager peersManager = new PeersManager(event -> {
+        final PeersManager peersManager = new PeersManager(event -> {
         });
-        Messenger serverMessenger = new Messenger(message -> completedFuture(null), peersManager, channelGroup);
+        final Messenger serverMessenger = new Messenger(message -> completedFuture(null), peersManager, channelGroup);
         channelGroup = new PeerChannelGroup();
         endpoints = new HashSet<>();
 
@@ -163,13 +163,13 @@ class ChunkedMessageIT {
         bossGroup.shutdownGracefully().syncUninterruptibly();
     }
 
-    private static void awaitClientJoin(Identity identity) {
+    private static void awaitClientJoin(final Identity identity) {
         await().until(() -> server.getChannelGroup().find(identity.getPublicKey()) != null);
     }
 
-    private static TestSuperPeerClient clientSessionAfterJoin(DrasylConfig config,
-                                                              Identity identity) {
-        TestSuperPeerClient client = new TestSuperPeerClient(config, identity, workerGroup, true, true, endpoints);
+    private static TestSuperPeerClient clientSessionAfterJoin(final DrasylConfig config,
+                                                              final Identity identity) {
+        final TestSuperPeerClient client = new TestSuperPeerClient(config, identity, workerGroup, true, true, endpoints);
         client.open();
         awaitClientJoin(identity);
         return client;

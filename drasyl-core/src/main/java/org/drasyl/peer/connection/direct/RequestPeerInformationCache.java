@@ -22,7 +22,7 @@ public class RequestPeerInformationCache {
      * @param maximumSize maximum number of entries cache can contain
      * @param expireTime  time after newly added entries will be automatically removed
      */
-    public RequestPeerInformationCache(int maximumSize, Duration expireTime) {
+    public RequestPeerInformationCache(final int maximumSize, final Duration expireTime) {
         cache = CacheBuilder.newBuilder()
                 .maximumSize(maximumSize)
                 .expireAfterWrite(expireTime)
@@ -37,7 +37,7 @@ public class RequestPeerInformationCache {
      * @return <code>true</code> if the key was not already cached, otherwise <code>false</code> is
      * returned
      */
-    public boolean add(CompressedPublicKey publicKey) {
+    public boolean add(final CompressedPublicKey publicKey) {
         return cache.putIfAbsent(publicKey, Boolean.TRUE) == null;
     }
 }

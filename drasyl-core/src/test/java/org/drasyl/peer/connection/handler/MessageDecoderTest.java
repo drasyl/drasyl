@@ -38,13 +38,13 @@ class MessageDecoderTest {
 
     @BeforeEach
     void setUp() {
-        ChannelHandler handler = MessageDecoder.INSTANCE;
+        final ChannelHandler handler = MessageDecoder.INSTANCE;
         channel = new EmbeddedChannel(handler);
     }
 
     @Test
     void shouldDeserializeInboundJsonStringToMessage() throws JsonProcessingException {
-        byte[] binary = JACKSON_WRITER.writeValueAsBytes(new QuitMessage());
+        final byte[] binary = JACKSON_WRITER.writeValueAsBytes(new QuitMessage());
 
         channel.writeInbound(new BinaryWebSocketFrame(Unpooled.wrappedBuffer(binary)));
         channel.flush();
@@ -54,9 +54,9 @@ class MessageDecoderTest {
 
     @Test
     void ShouldThrowExceptionIfInboundJsonStringDeserializationFail() throws JsonProcessingException {
-        byte[] binary = JACKSON_WRITER.writeValueAsBytes("invalid");
+        final byte[] binary = JACKSON_WRITER.writeValueAsBytes("invalid");
 
-        BinaryWebSocketFrame frame = new BinaryWebSocketFrame(Unpooled.wrappedBuffer(binary));
+        final BinaryWebSocketFrame frame = new BinaryWebSocketFrame(Unpooled.wrappedBuffer(binary));
         assertThrows(DecoderException.class, () -> channel.writeInbound(frame));
     }
 }

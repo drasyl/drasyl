@@ -40,11 +40,11 @@ abstract class AbstractMessageWithUserAgent extends AbstractMessage {
         this(userAgentGenerator.get());
     }
 
-    AbstractMessageWithUserAgent(String userAgent) {
+    AbstractMessageWithUserAgent(final String userAgent) {
         this.userAgent = requireNonNull(userAgent);
     }
 
-    public AbstractMessageWithUserAgent(MessageId id, String userAgent) {
+    public AbstractMessageWithUserAgent(final MessageId id, final String userAgent) {
         super(id);
         this.userAgent = requireNonNull(userAgent);
     }
@@ -59,7 +59,7 @@ abstract class AbstractMessageWithUserAgent extends AbstractMessage {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         return super.equals(o);
     }
 }

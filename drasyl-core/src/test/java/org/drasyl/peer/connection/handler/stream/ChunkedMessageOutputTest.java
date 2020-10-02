@@ -83,7 +83,7 @@ class ChunkedMessageOutputTest {
     void shouldRaiseErrorOnTooBigPayload() {
         progress = 4;
         maxContentLength = 4;
-        ChunkedMessageOutput output = new ChunkedMessageOutput(ctx, sender, recipient, contentLength, checksum, msgID, maxContentLength, payload, progress, removeAction);
+        final ChunkedMessageOutput output = new ChunkedMessageOutput(ctx, sender, recipient, contentLength, checksum, msgID, maxContentLength, payload, progress, removeAction);
 
         when(chunk.getPayload()).thenReturn(rawPayload);
         output.addChunk(chunk);
@@ -97,7 +97,7 @@ class ChunkedMessageOutputTest {
     void shouldAddChunk() {
         maxContentLength = 10;
 
-        ChunkedMessageOutput output = new ChunkedMessageOutput(ctx, sender, recipient, contentLength, checksum, msgID, maxContentLength, payload, progress, removeAction);
+        final ChunkedMessageOutput output = new ChunkedMessageOutput(ctx, sender, recipient, contentLength, checksum, msgID, maxContentLength, payload, progress, removeAction);
         when(chunk.getPayload()).thenReturn(rawPayload);
         when(chunk.payloadAsByteBuf()).thenReturn(Unpooled.wrappedBuffer(rawPayload));
 
@@ -111,7 +111,7 @@ class ChunkedMessageOutputTest {
         when(payload.array()).thenReturn(rawPayload);
         checksum = "abc";
 
-        ChunkedMessageOutput output = new ChunkedMessageOutput(ctx, sender, recipient, contentLength, checksum, msgID, maxContentLength, payload, progress, removeAction);
+        final ChunkedMessageOutput output = new ChunkedMessageOutput(ctx, sender, recipient, contentLength, checksum, msgID, maxContentLength, payload, progress, removeAction);
         when(chunk.getPayload()).thenReturn(rawPayload);
         when(chunk.payloadAsByteBuf()).thenReturn(Unpooled.wrappedBuffer(rawPayload));
 
@@ -126,7 +126,7 @@ class ChunkedMessageOutputTest {
 
         when(payload.array()).thenReturn(rawPayload);
 
-        ChunkedMessageOutput output = new ChunkedMessageOutput(ctx, sender, recipient, contentLength, checksum, msgID, maxContentLength, payload, progress, removeAction);
+        final ChunkedMessageOutput output = new ChunkedMessageOutput(ctx, sender, recipient, contentLength, checksum, msgID, maxContentLength, payload, progress, removeAction);
         when(chunk.getPayload()).thenReturn(new byte[]{});
         when(chunk.payloadAsByteBuf()).thenReturn(Unpooled.buffer());
 
@@ -139,7 +139,7 @@ class ChunkedMessageOutputTest {
 
     @Test
     void shouldReleaseOnTimeout() {
-        EventExecutor eventExecutor = mock(EventExecutor.class);
+        final EventExecutor eventExecutor = mock(EventExecutor.class);
         when(ctx.executor()).thenReturn(eventExecutor);
         final ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
 
@@ -153,9 +153,9 @@ class ChunkedMessageOutputTest {
 
     @Test
     void equalsAndHashCodeTest() {
-        ChunkedMessageOutput output1 = new ChunkedMessageOutput(ctx, sender, recipient, contentLength, checksum, msgID, maxContentLength, payload, progress, removeAction);
-        ChunkedMessageOutput output2 = new ChunkedMessageOutput(ctx, sender, recipient, contentLength, checksum, msgID, maxContentLength, payload, progress, removeAction);
-        ChunkedMessageOutput output3 = new ChunkedMessageOutput(ctx, sender, recipient, contentLength, checksum, new MessageId("412176952b5b81fd13f84a7c"), maxContentLength, payload, progress, removeAction);
+        final ChunkedMessageOutput output1 = new ChunkedMessageOutput(ctx, sender, recipient, contentLength, checksum, msgID, maxContentLength, payload, progress, removeAction);
+        final ChunkedMessageOutput output2 = new ChunkedMessageOutput(ctx, sender, recipient, contentLength, checksum, msgID, maxContentLength, payload, progress, removeAction);
+        final ChunkedMessageOutput output3 = new ChunkedMessageOutput(ctx, sender, recipient, contentLength, checksum, new MessageId("412176952b5b81fd13f84a7c"), maxContentLength, payload, progress, removeAction);
 
         assertEquals(output1, output2);
         assertEquals(output1.hashCode(), output2.hashCode());

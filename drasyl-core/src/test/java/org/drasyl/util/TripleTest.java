@@ -17,7 +17,7 @@ class TripleTest {
     class First {
         @Test
         void shouldReturnFirstElement() {
-            Triple<Integer, Boolean, String> triple = Triple.of(10, false, "beers");
+            final Triple<Integer, Boolean, String> triple = Triple.of(10, false, "beers");
 
             assertEquals(10, triple.first());
         }
@@ -27,7 +27,7 @@ class TripleTest {
     class Second {
         @Test
         void shouldReturnSecondElement() {
-            Triple<Integer, Boolean, String> triple = Triple.of(10, false, "beers");
+            final Triple<Integer, Boolean, String> triple = Triple.of(10, false, "beers");
 
             assertFalse(triple.second());
         }
@@ -37,7 +37,7 @@ class TripleTest {
     class Third {
         @Test
         void shouldReturnThirdElement() {
-            Triple<Integer, Boolean, String> triple = Triple.of(10, false, "beers");
+            final Triple<Integer, Boolean, String> triple = Triple.of(10, false, "beers");
 
             assertEquals("beers", triple.third());
         }
@@ -47,9 +47,9 @@ class TripleTest {
     class Equals {
         @Test
         void shouldRecognizeEqualTriples() {
-            Triple<Integer, Boolean, String> tripleA = Triple.of(5, false, "beers");
-            Triple<Integer, Boolean, String> tripleB = Triple.of(5, false, "beers");
-            Triple<Integer, Boolean, String> tripleC = Triple.of(null, false, "shots");
+            final Triple<Integer, Boolean, String> tripleA = Triple.of(5, false, "beers");
+            final Triple<Integer, Boolean, String> tripleB = Triple.of(5, false, "beers");
+            final Triple<Integer, Boolean, String> tripleC = Triple.of(null, false, "shots");
 
             assertEquals(tripleA, tripleA);
             assertEquals(tripleA, tripleB);
@@ -64,9 +64,9 @@ class TripleTest {
     class HashCode {
         @Test
         void shouldRecognizeEqualTriples() {
-            Triple<Integer, Boolean, String> tripleA = Triple.of(5, false, "beers");
-            Triple<Integer, Boolean, String> tripleB = Triple.of(5, false, "beers");
-            Triple<Integer, Boolean, String> tripleC = Triple.of(null, false, "shots");
+            final Triple<Integer, Boolean, String> tripleA = Triple.of(5, false, "beers");
+            final Triple<Integer, Boolean, String> tripleB = Triple.of(5, false, "beers");
+            final Triple<Integer, Boolean, String> tripleC = Triple.of(null, false, "shots");
 
             assertEquals(tripleA.hashCode(), tripleB.hashCode());
             assertNotEquals(tripleA.hashCode(), tripleC.hashCode());
@@ -78,7 +78,7 @@ class TripleTest {
     class ToString {
         @Test
         void shouldReturnCorrectString() {
-            String string = Triple.of(5, false, "beers").toString();
+            final String string = Triple.of(5, false, "beers").toString();
 
             assertEquals("Triple{first=5, second=false, third=beers}", string);
         }
@@ -88,7 +88,7 @@ class TripleTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException {
-            String json = "[5, false, \"beers\"]";
+            final String json = "[5, false, \"beers\"]";
 
             assertEquals(Triple.of(5, false, "beers"), JACKSON_READER.readValue(json, Triple.class));
         }
@@ -98,7 +98,7 @@ class TripleTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException {
-            Triple triple = Triple.of(5, false, "beers");
+            final Triple triple = Triple.of(5, false, "beers");
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(triple))
                     .isArray()

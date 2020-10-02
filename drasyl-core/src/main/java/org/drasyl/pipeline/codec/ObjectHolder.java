@@ -12,7 +12,7 @@ public class ObjectHolder {
     private final String clazz;
     private final byte[] object;
 
-    private ObjectHolder(String clazz, byte[] object) {
+    private ObjectHolder(final String clazz, final byte[] object) {
         this.clazz = clazz;
         this.object = object;
     }
@@ -37,14 +37,14 @@ public class ObjectHolder {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        ObjectHolder that = (ObjectHolder) o;
+        final ObjectHolder that = (ObjectHolder) o;
         return Objects.equals(clazz, that.clazz) &&
                 Arrays.equals(object, that.object);
     }
@@ -57,11 +57,11 @@ public class ObjectHolder {
                 '}';
     }
 
-    public static ObjectHolder of(String clazz, byte[] o) {
+    public static ObjectHolder of(final String clazz, final byte[] o) {
         return new ObjectHolder(clazz, o);
     }
 
-    public static ObjectHolder of(Class<?> clazz, byte[] o) {
+    public static ObjectHolder of(final Class<?> clazz, final byte[] o) {
         return of(clazz.getName(), o);
     }
 }

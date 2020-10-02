@@ -24,7 +24,7 @@ public class FutureUtil {
      * @param <T>    The result type of the future
      * @return The translated {@link CompletableFuture}
      */
-    public static <T> CompletableFuture<T> toFuture(Future<T> future) {
+    public static <T> CompletableFuture<T> toFuture(final Future<T> future) {
         requireNonNull(future);
 
         if (future.isDone() || future.isCancelled()) {
@@ -36,7 +36,7 @@ public class FutureUtil {
             }
         }
 
-        CompletableFuture<T> completableFuture = new CompletableFuture<>();
+        final CompletableFuture<T> completableFuture = new CompletableFuture<>();
         future.addListener(f -> {
             if (f.isSuccess()) {
                 completableFuture.complete((T) f.getNow());
@@ -57,8 +57,8 @@ public class FutureUtil {
      * @param futures futures that should be waited for
      * @throws NullPointerException if {@code future} or {@code futures} is null
      */
-    public static void completeOnAnyOfExceptionally(CompletableFuture<?> future,
-                                                    Collection<CompletableFuture<?>> futures) {
+    public static void completeOnAnyOfExceptionally(final CompletableFuture<?> future,
+                                                    final Collection<CompletableFuture<?>> futures) {
         completeOnAnyOfExceptionally(future, futures.toArray(CompletableFuture[]::new));
     }
 
@@ -70,8 +70,8 @@ public class FutureUtil {
      * @param futures futures that should be waited for
      * @throws NullPointerException if {@code future} or {@code futures} is null
      */
-    public static void completeOnAnyOfExceptionally(CompletableFuture<?> future,
-                                                    CompletableFuture<?>... futures) {
+    public static void completeOnAnyOfExceptionally(final CompletableFuture<?> future,
+                                                    final CompletableFuture<?>... futures) {
         requireNonNull(future);
         requireNonNull(futures);
 
@@ -95,7 +95,7 @@ public class FutureUtil {
      * @param futures futures that should be waited for
      * @throws NullPointerException if {@code futures} is null
      */
-    public static CompletableFuture<Void> getCompleteOnAllOf(Collection<CompletableFuture<?>> futures) {
+    public static CompletableFuture<Void> getCompleteOnAllOf(final Collection<CompletableFuture<?>> futures) {
         return getCompleteOnAllOf(futures.toArray(CompletableFuture[]::new));
     }
 
@@ -108,8 +108,8 @@ public class FutureUtil {
      * @param futures futures that should be waited for
      * @throws NullPointerException if {@code futures} is null
      */
-    public static CompletableFuture<Void> getCompleteOnAllOf(CompletableFuture<?>... futures) {
-        CompletableFuture<Void> future = new CompletableFuture<>();
+    public static CompletableFuture<Void> getCompleteOnAllOf(final CompletableFuture<?>... futures) {
+        final CompletableFuture<Void> future = new CompletableFuture<>();
         completeOnAllOf(future, futures);
 
         return future;
@@ -125,8 +125,8 @@ public class FutureUtil {
      * @param futures futures that should be waited for
      * @throws NullPointerException if {@code future} or {@code futures} is null
      */
-    public static void completeOnAllOf(CompletableFuture<Void> future,
-                                       Collection<CompletableFuture<?>> futures) {
+    public static void completeOnAllOf(final CompletableFuture<Void> future,
+                                       final Collection<CompletableFuture<?>> futures) {
         completeOnAllOf(future, futures.toArray(CompletableFuture[]::new));
     }
 
@@ -140,8 +140,8 @@ public class FutureUtil {
      * @param futures futures that should be waited for
      * @throws NullPointerException if {@code future} or {@code futures} is null
      */
-    public static void completeOnAllOf(CompletableFuture<Void> future,
-                                       CompletableFuture<?>... futures) {
+    public static void completeOnAllOf(final CompletableFuture<Void> future,
+                                       final CompletableFuture<?>... futures) {
         requireNonNull(future);
         requireNonNull(futures);
 

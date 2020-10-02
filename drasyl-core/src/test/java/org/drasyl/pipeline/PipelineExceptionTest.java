@@ -28,15 +28,15 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 @ExtendWith(MockitoExtension.class)
 class PipelineExceptionTest {
     @Test
-    void shouldCreateExceptionWithCause(@Mock Exception cause) {
-        PipelineException exception = new PipelineException(cause);
+    void shouldCreateExceptionWithCause(@Mock final Exception cause) {
+        final PipelineException exception = new PipelineException(cause);
 
         assertEquals(cause, exception.getCause());
     }
 
     @Test
     void shouldCreateExceptionWithMessage() {
-        PipelineException exception = new PipelineException("error");
+        final PipelineException exception = new PipelineException("error");
 
         assertEquals("error", exception.getMessage());
     }

@@ -100,30 +100,29 @@ public final class NetworkUtil {
      *
      * @return the external IP address or {@code null} in case of error
      */
-    private static <T extends InetAddress> T getExternalIPAddress(URL[] providers) {
+    private static <T extends InetAddress> T getExternalIPAddress(final URL[] providers) {
         // distribute requests across all available ip check tools
-        int randomOffset = Crypto.randomNumber(providers.length);
+        final int randomOffset = Crypto.randomNumber(providers.length);
         for (int i = 0; i < providers.length; i++) {
-            URL provider = providers[(i + randomOffset) % providers.length];
+            final URL provider = providers[(i + randomOffset) % providers.length];
 
             try {
-                URLConnection connection = provider.openConnection();
+                final URLConnection connection = provider.openConnection();
                 connection.setConnectTimeout(5000);
                 connection.setReadTimeout(5000);
 
                 LOG.debug("Request external ip address from service '{}'...", provider);
 
-                try (BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
-                    String response = reader.readLine();
-                    @SuppressWarnings("unchecked")
-                    T address = (T) InetAddress.getByName(response);
+                try (final BufferedReader reader = new BufferedReader(new InputStreamReader(connection.getInputStream()))) {
+                    final String response = reader.readLine();
+                    @SuppressWarnings("unchecked") final T address = (T) InetAddress.getByName(response);
                     if (!address.isLoopbackAddress() && !address.isAnyLocalAddress() && !address.isSiteLocalAddress()) {
                         LOG.debug("Got external ip address '{}' from service '{}'", address, provider);
                         return address;
                     }
                 }
             }
-            catch (IOException | ClassCastException e) {
+            catch (final IOException | ClassCastException e) {
                 // do nothing, skip to next provider
             }
         }
@@ -154,17 +153,17 @@ public final class NetworkUtil {
      * @throws IllegalArgumentException is thrown if the port number is out of range
      */
     @SuppressWarnings("java:S4818")
-    public static boolean available(int port) {
+    public static boolean available(final int port) {
         if (!isValidPort(port)) {
             throw new IllegalArgumentException("Invalid port: " + port);
         }
 
-        try (ServerSocket ss = new ServerSocket(port)) {
+        try (final ServerSocket ss = new ServerSocket(port)) {
             ss.setReuseAddress(true);
 
             return true;
         }
-        catch (IOException e) {
+        catch (final IOException e) {
             // Do nothing
         }
 
@@ -177,7 +176,7 @@ public final class NetworkUtil {
      * @param port port that should be validated.
      * @return true if valid, otherwise false
      */
-    public static boolean isValidPort(int port) {
+    public static boolean isValidPort(final int port) {
         return port >= MIN_PORT_NUMBER && port <= MAX_PORT_NUMBER;
     }
 
@@ -189,18 +188,18 @@ public final class NetworkUtil {
      * @return <tt>true</tt> if the host:port is available, or <tt>false</tt> if not
      * @throws IllegalArgumentException is thrown if the port number is out of range
      */
-    public static boolean alive(String host, int port) {
+    public static boolean alive(final String host, final int port) {
         if (!isValidPort(port)) {
             throw new IllegalArgumentException("Invalid port: " + port);
         }
 
-        try (Socket s = new Socket(host, port)) {
-            PrintWriter out = new PrintWriter(s.getOutputStream(), true, StandardCharsets.UTF_8);
+        try (final Socket s = new Socket(host, port)) {
+            final PrintWriter out = new PrintWriter(s.getOutputStream(), true, StandardCharsets.UTF_8);
             out.println("GET / HTTP/1.1");
 
             return true;
         }
-        catch (IOException e) {
+        catch (final IOException e) {
             // Do nothing
         }
 
@@ -216,19 +215,19 @@ public final class NetworkUtil {
      */
     public static Set<InetAddress> getAddresses() {
         try {
-            Set<InetAddress> addresses = new HashSet<>();
+            final Set<InetAddress> addresses = new HashSet<>();
 
-            Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();
+            final Enumeration<NetworkInterface> ifaces = NetworkInterface.getNetworkInterfaces();
             while (ifaces.hasMoreElements()) {
-                NetworkInterface iface = ifaces.nextElement();
+                final NetworkInterface iface = ifaces.nextElement();
 
                 if (!iface.isUp() || iface.isLoopback() || iface.isPointToPoint()) {
                     continue;
                 }
 
-                Enumeration<InetAddress> ifaceAddresses = iface.getInetAddresses();
+                final Enumeration<InetAddress> ifaceAddresses = iface.getInetAddresses();
                 while (ifaceAddresses.hasMoreElements()) {
-                    InetAddress address = ifaceAddresses.nextElement();
+                    final InetAddress address = ifaceAddresses.nextElement();
                     if (isValidNonSpecialIPAddress(address)) {
                         addresses.add(address);
                     }
@@ -237,7 +236,7 @@ public final class NetworkUtil {
 
             return addresses;
         }
-        catch (SocketException e) {
+        catch (final SocketException e) {
             return Set.of(InetAddress.getLoopbackAddress());
         }
     }
@@ -249,10 +248,10 @@ public final class NetworkUtil {
      * @param address the address that should be checked
      * @return true if the address is a normal IP address, false otherwise
      */
-    public static boolean isValidNonSpecialIPAddress(InetAddress address) {
-        boolean hasScope;
+    public static boolean isValidNonSpecialIPAddress(final InetAddress address) {
+        final boolean hasScope;
         if (address instanceof Inet6Address) {
-            Inet6Address inet6Address = (Inet6Address) address;
+            final Inet6Address inet6Address = (Inet6Address) address;
             hasScope = inet6Address.getScopeId() != 0 || inet6Address.getScopedInterface() != null;
         }
         else {
@@ -276,7 +275,7 @@ public final class NetworkUtil {
         try {
             return InetAddress.getLocalHost().getHostName();
         }
-        catch (UnknownHostException e) {
+        catch (final UnknownHostException e) {
             return null;
         }
     }
@@ -301,11 +300,11 @@ public final class NetworkUtil {
      * @throws IllegalArgumentException if no IP address for the {@code str} could be found, or if a
      *                                  scope_id was specified for a global IPv6 address.
      */
-    public static InetAddress createInetAddress(String str) {
+    public static InetAddress createInetAddress(final String str) {
         try {
             return InetAddress.getByName(str);
         }
-        catch (UnknownHostException x) {
+        catch (final UnknownHostException x) {
             throw new IllegalArgumentException(x.getMessage(), x);
         }
     }
@@ -322,11 +321,11 @@ public final class NetworkUtil {
      * {@code -1} if there is no network interface with given IP address.
      * @throws NullPointerException If the specified address is {@code null}.
      */
-    public static short getNetworkPrefixLength(InetAddress address) {
+    public static short getNetworkPrefixLength(final InetAddress address) {
         try {
-            NetworkInterface networkInterface = NetworkInterface.getByInetAddress(address);
+            final NetworkInterface networkInterface = NetworkInterface.getByInetAddress(address);
             if (networkInterface != null) {
-                for (InterfaceAddress ifaceAddress : networkInterface.getInterfaceAddresses()) {
+                for (final InterfaceAddress ifaceAddress : networkInterface.getInterfaceAddresses()) {
                     if (address.equals(ifaceAddress.getAddress())) {
                         return ifaceAddress.getNetworkPrefixLength();
                     }
@@ -336,7 +335,7 @@ public final class NetworkUtil {
             // no network interface with the specified IP address found
             return -1;
         }
-        catch (SocketException e) {
+        catch (final SocketException e) {
             // I/O error occurs
             return -1;
         }
@@ -374,7 +373,7 @@ public final class NetworkUtil {
         }
 
         // converting the CIDR mask to byte array of correct length
-        byte[] mask = cidr2Netmask(cidr, x.length);
+        final byte[] mask = cidr2Netmask(cidr, x.length);
 
         for (int i = 0; i < x.length; i++) {
             if ((x[i] & mask[i]) != (y[i] & mask[i])) {
@@ -393,15 +392,15 @@ public final class NetworkUtil {
      * @return the CIDR as network mask byte array
      * @throws IllegalArgumentException if the {@code byteLength} argument is invalid
      */
-    public static byte[] cidr2Netmask(short cidr, int byteLength) {
+    public static byte[] cidr2Netmask(final short cidr, final int byteLength) {
         if (byteLength != 4 && byteLength != 16) {
             throw new IllegalArgumentException("A valid IP address has always 4 or 16 bytes.");
         }
 
-        boolean[] bitSet = new boolean[byteLength * 8];
+        final boolean[] bitSet = new boolean[byteLength * 8];
         Arrays.fill(bitSet, 0, cidr, true);
 
-        byte[] mask = new byte[byteLength];
+        final byte[] mask = new byte[byteLength];
         for (int i = 0; i < mask.length; i++) {
             byte b = 0;
             for (int j = 0; j < 8; j++) {

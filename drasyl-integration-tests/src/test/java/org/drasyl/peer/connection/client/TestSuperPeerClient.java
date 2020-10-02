@@ -58,33 +58,33 @@ public class TestSuperPeerClient extends SuperPeerClient {
     private final PublishSubject<Message> sentMessages;
     private final PublishSubject<Message> receivedMessages;
 
-    public TestSuperPeerClient(DrasylConfig config,
-                               Identity identity,
-                               EventLoopGroup workerGroup,
-                               boolean doPingPong,
-                               boolean doJoin,
-                               Set<Endpoint> endpoints) {
+    public TestSuperPeerClient(final DrasylConfig config,
+                               final Identity identity,
+                               final EventLoopGroup workerGroup,
+                               final boolean doPingPong,
+                               final boolean doJoin,
+                               final Set<Endpoint> endpoints) {
         this(DrasylConfig.newBuilder(config).superPeerEnabled(true).superPeerEndpoints(endpoints).build(), identity, new PeerChannelGroup(), workerGroup, ReplaySubject.create(), doPingPong, doJoin);
     }
 
-    private TestSuperPeerClient(DrasylConfig config,
-                                Identity identity,
-                                PeerChannelGroup channelGroup,
-                                EventLoopGroup workerGroup,
-                                Subject<Event> receivedEvents,
-                                boolean doPingPong,
-                                boolean doJoin) {
+    private TestSuperPeerClient(final DrasylConfig config,
+                                final Identity identity,
+                                final PeerChannelGroup channelGroup,
+                                final EventLoopGroup workerGroup,
+                                final Subject<Event> receivedEvents,
+                                final boolean doPingPong,
+                                final boolean doJoin) {
         this(config, identity, workerGroup, receivedEvents, new PeersManager(receivedEvents::onNext), channelGroup, doPingPong, doJoin);
     }
 
-    private TestSuperPeerClient(DrasylConfig config,
-                                Identity identity,
-                                EventLoopGroup workerGroup,
-                                Subject<Event> receivedEvents,
-                                PeersManager peersManager,
-                                PeerChannelGroup channelGroup,
-                                boolean doPingPong,
-                                boolean doJoin) {
+    private TestSuperPeerClient(final DrasylConfig config,
+                                final Identity identity,
+                                final EventLoopGroup workerGroup,
+                                final Subject<Event> receivedEvents,
+                                final PeersManager peersManager,
+                                final PeerChannelGroup channelGroup,
+                                final boolean doPingPong,
+                                final boolean doJoin) {
         super(
                 config,
                 workerGroup,
@@ -145,9 +145,9 @@ public class TestSuperPeerClient extends SuperPeerClient {
         return identity;
     }
 
-    public CompletableFuture<ResponseMessage<?>> sendRequest(RequestMessage request) {
-        Observable<ResponseMessage<?>> responses = receivedMessages().filter(m -> m instanceof ResponseMessage<?> && ((ResponseMessage<?>) m).getCorrespondingId().equals(request.getId())).map(m -> (ResponseMessage) m);
-        CompletableFuture<ResponseMessage<?>> future = responses.firstElement().toCompletionStage().toCompletableFuture();
+    public CompletableFuture<ResponseMessage<?>> sendRequest(final RequestMessage request) {
+        final Observable<ResponseMessage<?>> responses = receivedMessages().filter(m -> m instanceof ResponseMessage<?> && ((ResponseMessage<?>) m).getCorrespondingId().equals(request.getId())).map(m -> (ResponseMessage) m);
+        final CompletableFuture<ResponseMessage<?>> future = responses.firstElement().toCompletionStage().toCompletableFuture();
         send(request);
         return future;
     }
@@ -164,17 +164,17 @@ public class TestSuperPeerClient extends SuperPeerClient {
         await().until(() -> channel.pipeline().get("io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandshakeHandler") == null);
     }
 
-    public void send(Message message) {
+    public void send(final Message message) {
         waitUntilHandshakeIsDone();
-        ChannelFuture future = channel.writeAndFlush(message).awaitUninterruptibly();
+        final ChannelFuture future = channel.writeAndFlush(message).awaitUninterruptibly();
         if (!future.isSuccess()) {
             throw new RuntimeException(future.cause());
         }
     }
 
-    public void sendRawBinary(ByteBuf byteBuf) {
+    public void sendRawBinary(final ByteBuf byteBuf) {
         waitUntilHandshakeIsDone();
-        ChannelFuture future = channel.writeAndFlush(new BinaryWebSocketFrame(byteBuf)).awaitUninterruptibly();
+        final ChannelFuture future = channel.writeAndFlush(new BinaryWebSocketFrame(byteBuf)).awaitUninterruptibly();
         if (!future.isSuccess()) {
             throw new RuntimeException(future.cause());
         }
@@ -187,22 +187,22 @@ public class TestSuperPeerClient extends SuperPeerClient {
         await().until(() -> channel != null);
         channel.pipeline().addAfter(CHUNK_HANDLER, "TestSuperPeerClient", new SimpleChannelDuplexHandler<Message, Message>(false, false, false) {
             @Override
-            protected void channelRead0(ChannelHandlerContext ctx,
-                                        Message msg) {
+            protected void channelRead0(final ChannelHandlerContext ctx,
+                                        final Message msg) {
                 receivedMessages.onNext(msg);
                 ctx.fireChannelRead(msg);
             }
 
             @Override
-            protected void channelWrite0(ChannelHandlerContext ctx,
-                                         Message msg,
-                                         ChannelPromise promise) {
+            protected void channelWrite0(final ChannelHandlerContext ctx,
+                                         final Message msg,
+                                         final ChannelPromise promise) {
                 sentMessages.onNext(msg);
                 ctx.write(msg, promise);
             }
 
             @Override
-            public void channelUnregistered(ChannelHandlerContext ctx) throws Exception {
+            public void channelUnregistered(final ChannelHandlerContext ctx) throws Exception {
                 sentMessages.onComplete();
                 receivedMessages.onComplete();
                 super.channelUnregistered(ctx);

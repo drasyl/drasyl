@@ -40,13 +40,13 @@ public class ServerEnvironment {
     private final Set<Endpoint> endpoints;
     private final PeerChannelGroup channelGroup;
 
-    public ServerEnvironment(DrasylConfig config,
-                             Identity identity,
-                             PeersManager peersManager,
-                             Messenger messenger,
-                             Set<Endpoint> endpoints,
-                             PeerChannelGroup channelGroup,
-                             BooleanSupplier acceptedNewConnectionsSupplier) {
+    public ServerEnvironment(final DrasylConfig config,
+                             final Identity identity,
+                             final PeersManager peersManager,
+                             final Messenger messenger,
+                             final Set<Endpoint> endpoints,
+                             final PeerChannelGroup channelGroup,
+                             final BooleanSupplier acceptedNewConnectionsSupplier) {
         this.config = config;
         this.identity = identity;
         this.peersManager = peersManager;

@@ -58,7 +58,7 @@ public class ClientConnectionHandler extends AbstractThreeWayHandshakeClientHand
     private final boolean childrenJoin;
     private ChannelHandlerContext ctx;
 
-    public ClientConnectionHandler(ClientEnvironment environment) {
+    public ClientConnectionHandler(final ClientEnvironment environment) {
         super(
                 environment.getHandshakeTimeout(),
                 environment.getMessenger(),
@@ -72,19 +72,19 @@ public class ClientConnectionHandler extends AbstractThreeWayHandshakeClientHand
     }
 
     @SuppressWarnings({ "java:S107" })
-    ClientConnectionHandler(ClientEnvironment environment,
-                            Duration timeout,
-                            Messenger messenger,
-                            CompletableFuture<Void> handshakeFuture,
-                            ScheduledFuture<?> timeoutFuture,
-                            JoinMessage requestMessage) {
+    ClientConnectionHandler(final ClientEnvironment environment,
+                            final Duration timeout,
+                            final Messenger messenger,
+                            final CompletableFuture<Void> handshakeFuture,
+                            final ScheduledFuture<?> timeoutFuture,
+                            final JoinMessage requestMessage) {
         super(timeout, messenger, handshakeFuture, timeoutFuture, requestMessage);
         this.environment = environment;
         this.childrenJoin = environment.joinAsChildren();
     }
 
     @Override
-    public void handlerAdded(ChannelHandlerContext ctx) throws Exception {
+    public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
         super.handlerAdded(ctx);
         this.ctx = ctx;
     }
@@ -95,7 +95,7 @@ public class ClientConnectionHandler extends AbstractThreeWayHandshakeClientHand
     }
 
     @Override
-    protected ConnectionExceptionMessage.Error validateSessionOffer(WelcomeMessage offerMessage) {
+    protected ConnectionExceptionMessage.Error validateSessionOffer(final WelcomeMessage offerMessage) {
         // Raise error if the public key is equals to my public key
         if (environment.getIdentity().getPublicKey().equals(ctx.channel().attr(ATTRIBUTE_PUBLIC_KEY).get())) {
             return CONNECTION_ERROR_WRONG_PUBLIC_KEY;
@@ -106,11 +106,11 @@ public class ClientConnectionHandler extends AbstractThreeWayHandshakeClientHand
     }
 
     @Override
-    protected void createConnection(ChannelHandlerContext ctx,
-                                    WelcomeMessage offerMessage) {
-        CompressedPublicKey identity = ctx.channel().attr(ATTRIBUTE_PUBLIC_KEY).get();
-        Channel channel = ctx.channel();
-        Path path = msg -> toFuture(ctx.writeAndFlush(msg));
+    protected void createConnection(final ChannelHandlerContext ctx,
+                                    final WelcomeMessage offerMessage) {
+        final CompressedPublicKey identity = ctx.channel().attr(ATTRIBUTE_PUBLIC_KEY).get();
+        final Channel channel = ctx.channel();
+        final Path path = msg -> toFuture(ctx.writeAndFlush(msg));
 
         environment.getChannelGroup().add(identity, channel);
 

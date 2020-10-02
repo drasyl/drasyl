@@ -9,7 +9,7 @@ public class TextMessage implements WormholeMessage {
     private final String text;
 
     @JsonCreator
-    public TextMessage(@JsonProperty("text") String text) {
+    public TextMessage(@JsonProperty("text") final String text) {
         this.text = text;
     }
 
@@ -18,14 +18,14 @@ public class TextMessage implements WormholeMessage {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        TextMessage that = (TextMessage) o;
+        final TextMessage that = (TextMessage) o;
         return Objects.equals(text, that.text);
     }
 

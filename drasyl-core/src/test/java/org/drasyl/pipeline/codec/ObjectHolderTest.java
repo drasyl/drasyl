@@ -29,10 +29,10 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 class ObjectHolderTest {
     @Test
     void shouldReturnCorrectValues() throws ClassNotFoundException {
-        byte[] obj = new byte[]{};
-        Class<Integer> clazz = Integer.class;
+        final byte[] obj = new byte[]{};
+        final Class<Integer> clazz = Integer.class;
 
-        ObjectHolder objectHolder = ObjectHolder.of(clazz, obj);
+        final ObjectHolder objectHolder = ObjectHolder.of(clazz, obj);
 
         assertEquals(obj, objectHolder.getObject());
         assertEquals(clazz, objectHolder.getClazz());
@@ -44,12 +44,12 @@ class ObjectHolderTest {
 
     @Test
     void equalsTest() {
-        byte[] obj = new byte[]{};
-        Class<Integer> clazz = Integer.class;
+        final byte[] obj = new byte[]{};
+        final Class<Integer> clazz = Integer.class;
 
-        ObjectHolder objectHolder1 = ObjectHolder.of(clazz, obj);
-        ObjectHolder objectHolder2 = ObjectHolder.of(clazz, obj);
-        ObjectHolder objectHolder3 = ObjectHolder.of(Boolean.class, obj);
+        final ObjectHolder objectHolder1 = ObjectHolder.of(clazz, obj);
+        final ObjectHolder objectHolder2 = ObjectHolder.of(clazz, obj);
+        final ObjectHolder objectHolder3 = ObjectHolder.of(Boolean.class, obj);
 
         assertEquals(objectHolder1, objectHolder2);
         assertNotEquals(objectHolder1, objectHolder3);
@@ -57,12 +57,12 @@ class ObjectHolderTest {
 
     @Test
     void hashCodeTest() {
-        byte[] obj = new byte[]{};
-        Class<Integer> clazz = Integer.class;
+        final byte[] obj = new byte[]{};
+        final Class<Integer> clazz = Integer.class;
 
-        ObjectHolder objectHolder1 = ObjectHolder.of(clazz, obj);
-        ObjectHolder objectHolder2 = ObjectHolder.of(clazz, obj);
-        ObjectHolder objectHolder3 = ObjectHolder.of(Boolean.class, obj);
+        final ObjectHolder objectHolder1 = ObjectHolder.of(clazz, obj);
+        final ObjectHolder objectHolder2 = ObjectHolder.of(clazz, obj);
+        final ObjectHolder objectHolder3 = ObjectHolder.of(Boolean.class, obj);
 
         assertEquals(objectHolder1.hashCode(), objectHolder2.hashCode());
         assertNotEquals(objectHolder1.hashCode(), objectHolder3.hashCode());

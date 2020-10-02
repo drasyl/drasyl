@@ -81,14 +81,14 @@ public class StatusMessage extends AbstractResponseMessage<RequestMessage> {
     private final Code code;
 
     @JsonCreator
-    private StatusMessage(@JsonProperty("id") MessageId id,
-                          @JsonProperty("code") Code code,
-                          @JsonProperty("correspondingId") MessageId correspondingId) {
+    private StatusMessage(@JsonProperty("id") final MessageId id,
+                          @JsonProperty("code") final Code code,
+                          @JsonProperty("correspondingId") final MessageId correspondingId) {
         super(id, correspondingId);
         this.code = requireNonNull(code);
     }
 
-    public StatusMessage(int code, MessageId correspondingId) {
+    public StatusMessage(final int code, final MessageId correspondingId) {
         this(Code.from(code), correspondingId);
     }
 
@@ -99,7 +99,7 @@ public class StatusMessage extends AbstractResponseMessage<RequestMessage> {
      * @param correspondingId
      * @throws IllegalArgumentException if the code isn't a valid code code
      */
-    public StatusMessage(Code code, MessageId correspondingId) {
+    public StatusMessage(final Code code, final MessageId correspondingId) {
         super(correspondingId);
         this.code = requireNonNull(code);
     }
@@ -119,7 +119,7 @@ public class StatusMessage extends AbstractResponseMessage<RequestMessage> {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -129,7 +129,7 @@ public class StatusMessage extends AbstractResponseMessage<RequestMessage> {
         if (!super.equals(o)) {
             return false;
         }
-        StatusMessage that = (StatusMessage) o;
+        final StatusMessage that = (StatusMessage) o;
         return code == that.code;
     }
 
@@ -194,14 +194,14 @@ public class StatusMessage extends AbstractResponseMessage<RequestMessage> {
         private static final Map<Integer, Code> codes = new HashMap<>();
 
         static {
-            for (Code code : Code.values()) {
+            for (final Code code : Code.values()) {
                 codes.put(code.getNumber(), code);
             }
         }
 
         private final int number;
 
-        Code(int number) {
+        Code(final int number) {
             this.number = number;
         }
 
@@ -211,7 +211,7 @@ public class StatusMessage extends AbstractResponseMessage<RequestMessage> {
         }
 
         @JsonCreator
-        public static Code from(int code) {
+        public static Code from(final int code) {
             return codes.get(code);
         }
     }

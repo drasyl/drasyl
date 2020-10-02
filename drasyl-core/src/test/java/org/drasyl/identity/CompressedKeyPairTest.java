@@ -35,7 +35,7 @@ class CompressedKeyPairTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
-            String json = "{\n" +
+            final String json = "{\n" +
                     "  \"publicKey\": \"02776e53b0c8e9c2c708b674c7929e6c4e445c4f97a4077002cb679c4dd0857609\",\n" +
                     "  \"privateKey\": \"07909fe38c5453109805de40c24a91a5f3e2de48f154b75d8694927f3c804f36\"\n" +
                     "}";
@@ -51,7 +51,7 @@ class CompressedKeyPairTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException, CryptoException {
-            CompressedKeyPair keyPair = CompressedKeyPair.of("02776e53b0c8e9c2c708b674c7929e6c4e445c4f97a4077002cb679c4dd0857609", "07909fe38c5453109805de40c24a91a5f3e2de48f154b75d8694927f3c804f36");
+            final CompressedKeyPair keyPair = CompressedKeyPair.of("02776e53b0c8e9c2c708b674c7929e6c4e445c4f97a4077002cb679c4dd0857609", "07909fe38c5453109805de40c24a91a5f3e2de48f154b75d8694927f3c804f36");
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(keyPair))
                     .when(Option.IGNORING_ARRAY_ORDER)

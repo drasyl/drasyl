@@ -43,8 +43,8 @@ public class Pair<A, B> implements Serializable {
      * @param second second object
      */
     @JsonCreator
-    private Pair(@JsonProperty("first") A first,
-                 @JsonProperty("second") B second) {
+    private Pair(@JsonProperty("first") final A first,
+                 @JsonProperty("second") final B second) {
         this.first = first;
         this.second = second;
     }
@@ -55,14 +55,14 @@ public class Pair<A, B> implements Serializable {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        Pair<?, ?> pair = (Pair<?, ?>) o;
+        final Pair<?, ?> pair = (Pair<?, ?>) o;
 
         return Objects.deepEquals(first, pair.first) &&
                 Objects.deepEquals(second, pair.second);
@@ -107,7 +107,7 @@ public class Pair<A, B> implements Serializable {
      * @param second the second element, may be null
      * @return a pair formed from the two parameters, not null
      */
-    public static <A, B> Pair<A, B> of(A first, B second) {
+    public static <A, B> Pair<A, B> of(final A first, final B second) {
         return new Pair<>(first, second);
     }
 }

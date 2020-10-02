@@ -49,21 +49,21 @@ public class PeerChannelGroup extends DefaultChannelGroup {
         this(new HashMap<>(), GlobalEventExecutor.INSTANCE);
     }
 
-    PeerChannelGroup(Map<CompressedPublicKey, ChannelId> identity2channelId,
-                     EventExecutor executor) {
+    PeerChannelGroup(final Map<CompressedPublicKey, ChannelId> identity2channelId,
+                     final EventExecutor executor) {
         super(executor);
         this.identity2channelId = identity2channelId;
     }
 
-    public PeerChannelGroup(EventExecutor executor) {
+    public PeerChannelGroup(final EventExecutor executor) {
         this(new HashMap<>(), executor);
     }
 
     /**
      * @throws IllegalArgumentException if no channel with given identity could be found
      */
-    public ChannelFuture writeAndFlush(CompressedPublicKey identity, Object message) {
-        Channel existingChannel = find(identity);
+    public ChannelFuture writeAndFlush(final CompressedPublicKey identity, final Object message) {
+        final Channel existingChannel = find(identity);
         if (existingChannel != null) {
             return existingChannel.writeAndFlush(message);
         }
@@ -72,8 +72,8 @@ public class PeerChannelGroup extends DefaultChannelGroup {
         }
     }
 
-    public Channel find(CompressedPublicKey identity) {
-        ChannelId existingChannelId = identity2channelId.get(identity);
+    public Channel find(final CompressedPublicKey identity) {
+        final ChannelId existingChannelId = identity2channelId.get(identity);
         if (existingChannelId != null) {
             return find(existingChannelId);
         }
@@ -83,16 +83,16 @@ public class PeerChannelGroup extends DefaultChannelGroup {
     }
 
     @Override
-    public boolean add(Channel channel) {
-        CompressedPublicKey publicKey = channel.attr(ATTRIBUTE_PUBLIC_KEY).get();
+    public boolean add(final Channel channel) {
+        final CompressedPublicKey publicKey = channel.attr(ATTRIBUTE_PUBLIC_KEY).get();
         return add(publicKey, channel);
     }
 
     @Override
-    public boolean remove(Object o) {
+    public boolean remove(final Object o) {
         if (o instanceof Channel) {
-            Channel channel = (Channel) o;
-            CompressedPublicKey publicKey = channel.attr(ATTRIBUTE_PUBLIC_KEY).get();
+            final Channel channel = (Channel) o;
+            final CompressedPublicKey publicKey = channel.attr(ATTRIBUTE_PUBLIC_KEY).get();
             identity2channelId.remove(publicKey);
         }
         else if (o instanceof ChannelId) {
@@ -108,22 +108,22 @@ public class PeerChannelGroup extends DefaultChannelGroup {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         return this == o;
     }
 
-    public boolean add(CompressedPublicKey identity, Channel channel) {
+    public boolean add(final CompressedPublicKey identity, final Channel channel) {
         requireNonNull(identity);
 
         // close any existing connections with the same peer...
-        Channel existingChannel = find(identity);
+        final Channel existingChannel = find(identity);
         if (existingChannel != null) {
             existingChannel.writeAndFlush(new QuitMessage(REASON_NEW_SESSION)).addListener(ChannelFutureListener.CLOSE);
         }
 
         // ...before adding the new one
         channel.attr(ATTRIBUTE_PUBLIC_KEY).set(identity);
-        boolean added = super.add(channel);
+        final boolean added = super.add(channel);
         identity2channelId.put(identity, channel.id());
 
         if (added) {

@@ -42,7 +42,7 @@ public class ProofOfWork {
         this.nonce = 0;
     }
 
-    public ProofOfWork(int nonce) {
+    public ProofOfWork(final int nonce) {
         if (nonce < 0) {
             throw new IllegalArgumentException("Nonce must be positive.");
         }
@@ -56,14 +56,14 @@ public class ProofOfWork {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        ProofOfWork that = (ProofOfWork) o;
+        final ProofOfWork that = (ProofOfWork) o;
         return nonce == that.nonce;
     }
 
@@ -78,17 +78,17 @@ public class ProofOfWork {
         return this.nonce;
     }
 
-    public static ProofOfWork of(int nonce) {
+    public static ProofOfWork of(final int nonce) {
         return new ProofOfWork(nonce);
     }
 
-    public static ProofOfWork of(CompressedPublicKey publicKey, short difficulty) {
+    public static ProofOfWork of(final CompressedPublicKey publicKey, final short difficulty) {
         return ProofOfWork.generateProofOfWork(publicKey, difficulty);
     }
 
-    public static ProofOfWork generateProofOfWork(CompressedPublicKey publicKey, short difficulty) {
+    public static ProofOfWork generateProofOfWork(final CompressedPublicKey publicKey, final short difficulty) {
         LOG.info("Generate proof of work. This may take a while ...");
-        ProofOfWork pow = new ProofOfWork();
+        final ProofOfWork pow = new ProofOfWork();
 
         while (!pow.isValid(publicKey, difficulty)) {
             pow.incNonce();
@@ -99,20 +99,20 @@ public class ProofOfWork {
         return pow;
     }
 
-    public boolean isValid(CompressedPublicKey publicKey, short difficulty) {
+    public boolean isValid(final CompressedPublicKey publicKey, final short difficulty) {
         requireNonNull(publicKey);
 
-        String hash = generateHash(publicKey, nonce);
+        final String hash = generateHash(publicKey, nonce);
 
         return hash.startsWith("0".repeat(difficulty));
     }
 
-    private static String generateHash(CompressedPublicKey publicKey, int nonce) {
+    private static String generateHash(final CompressedPublicKey publicKey, final int nonce) {
         return Hashing.sha256Hex(publicKey.getCompressedKey() + nonce);
     }
 
-    public static short getDifficulty(ProofOfWork proofOfWork, CompressedPublicKey publicKey) {
-        String hash = generateHash(publicKey, proofOfWork.getNonce());
+    public static short getDifficulty(final ProofOfWork proofOfWork, final CompressedPublicKey publicKey) {
+        final String hash = generateHash(publicKey, proofOfWork.getNonce());
         short i;
 
         for (i = 0; i < hash.length(); i++) {

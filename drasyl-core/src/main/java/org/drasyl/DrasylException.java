@@ -29,7 +29,7 @@ public class DrasylException extends Exception {
      *              method).  (A {@code null} value is permitted, and indicates that the cause is
      *              nonexistent or unknown.)
      */
-    public DrasylException(Throwable cause) {
+    public DrasylException(final Throwable cause) {
         super(cause);
     }
 
@@ -37,7 +37,7 @@ public class DrasylException extends Exception {
      * @param message the detail message. The detail message is saved for later retrieval by the
      *                {@link #getMessage()} method.
      */
-    public DrasylException(String message) {
+    public DrasylException(final String message) {
         super(message);
     }
 
@@ -58,14 +58,14 @@ public class DrasylException extends Exception {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        DrasylException that = (DrasylException) o;
+        final DrasylException that = (DrasylException) o;
         return Objects.equals(getCause(), that.getCause()) &&
                 Objects.equals(getMessage(), that.getMessage());
     }

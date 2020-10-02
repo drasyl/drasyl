@@ -77,21 +77,21 @@ class SendingWormholeNodeTest {
     @Nested
     class OnEvent {
         @Test
-        void shouldCompleteExceptionallyOnError(@Mock NodeUnrecoverableErrorEvent event) {
+        void shouldCompleteExceptionallyOnError(@Mock final NodeUnrecoverableErrorEvent event) {
             underTest.onEvent(event);
 
             verify(doneFuture).completeExceptionally(any());
         }
 
         @Test
-        void shouldCompleteOnTerminationEvent(@Mock NodeNormalTerminationEvent event) {
+        void shouldCompleteOnTerminationEvent(@Mock final NodeNormalTerminationEvent event) {
             underTest.onEvent(event);
 
             verify(doneFuture).complete(null);
         }
 
         @Test
-        void shouldSendTextOnPasswordMessageWithCorrectPassword(@Mock(answer = RETURNS_DEEP_STUBS) MessageEvent event) {
+        void shouldSendTextOnPasswordMessageWithCorrectPassword(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event) {
             when(event.getPayload()).thenReturn(new PasswordMessage("123"));
             underTest.setText("Hi");
 
@@ -101,7 +101,7 @@ class SendingWormholeNodeTest {
         }
 
         @Test
-        void shouldSendTextOnPasswordMessageWithWrongPassword(@Mock(answer = RETURNS_DEEP_STUBS) MessageEvent event) {
+        void shouldSendTextOnPasswordMessageWithWrongPassword(@Mock(answer = RETURNS_DEEP_STUBS) final MessageEvent event) {
             when(event.getPayload()).thenReturn(new PasswordMessage("456"));
             underTest.setText("Hi");
 

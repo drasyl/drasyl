@@ -45,14 +45,14 @@ public class SignatureHandler extends SimpleChannelDuplexHandler<Message, Messag
     private static final Logger LOG = LoggerFactory.getLogger(SignatureHandler.class);
     private final Identity identity;
 
-    public SignatureHandler(Identity identity) {
+    public SignatureHandler(final Identity identity) {
         super(true, true, false);
         this.identity = identity;
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx,
-                                Message msg) {
+    protected void channelRead0(final ChannelHandlerContext ctx,
+                                final Message msg) {
         if (!(msg instanceof SignedMessage) || ((SignedMessage) msg).getKid() == null || ((SignedMessage) msg).getSignature() == null) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("[{}]: Dropped not signed message `{}`", ctx.channel().id().asShortText(), msg);
@@ -69,12 +69,12 @@ public class SignatureHandler extends SimpleChannelDuplexHandler<Message, Messag
      * @param ctx           channel handler context
      * @param signedMessage the signed message
      */
-    private void inboundSafeguards(ChannelHandlerContext ctx, SignedMessage signedMessage) {
-        PublicKey publicKey = extractPublicKey(signedMessage);
+    private void inboundSafeguards(final ChannelHandlerContext ctx, final SignedMessage signedMessage) {
+        final PublicKey publicKey = extractPublicKey(signedMessage);
 
         // Prevent MITM after JoinMessage
         if (ctx.channel().hasAttr(ATTRIBUTE_PUBLIC_KEY)) {
-            CompressedPublicKey channelKey = ctx.channel().attr(ATTRIBUTE_PUBLIC_KEY).get();
+            final CompressedPublicKey channelKey = ctx.channel().attr(ATTRIBUTE_PUBLIC_KEY).get();
 
             if (!channelKey.equals(signedMessage.getKid())) {
                 if (LOG.isInfoEnabled()) {
@@ -90,7 +90,7 @@ public class SignatureHandler extends SimpleChannelDuplexHandler<Message, Messag
                 ctx.fireChannelRead(signedMessage.getPayload());
             }
             else {
-                StatusMessage exceptionMessage = new StatusMessage(StatusMessage.Code.STATUS_INVALID_SIGNATURE, signedMessage.getPayload().getId());
+                final StatusMessage exceptionMessage = new StatusMessage(StatusMessage.Code.STATUS_INVALID_SIGNATURE, signedMessage.getPayload().getId());
                 channelWrite0(ctx, exceptionMessage, ctx.channel().newPromise());
 
                 if (LOG.isInfoEnabled()) {
@@ -109,15 +109,15 @@ public class SignatureHandler extends SimpleChannelDuplexHandler<Message, Messag
      * @param msg message for which the public key is to be determined
      * @return public key or zero if it could not be determined
      */
-    private static PublicKey extractPublicKey(SignedMessage msg) {
-        CompressedPublicKey compressedPublicKey = msg.getKid();
+    private static PublicKey extractPublicKey(final SignedMessage msg) {
+        final CompressedPublicKey compressedPublicKey = msg.getKid();
 
         try {
             if (compressedPublicKey != null) {
                 return compressedPublicKey.toUncompressedKey();
             }
         }
-        catch (CryptoException e) {
+        catch (final CryptoException e) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("Can't decompress public key due to the following error: ", e);
             }
@@ -127,10 +127,10 @@ public class SignatureHandler extends SimpleChannelDuplexHandler<Message, Messag
     }
 
     @Override
-    protected void channelWrite0(ChannelHandlerContext ctx,
-                                 Message msg, ChannelPromise promise) {
+    protected void channelWrite0(final ChannelHandlerContext ctx,
+                                 final Message msg, final ChannelPromise promise) {
         try {
-            SignedMessage signedMessage = new SignedMessage(msg, identity.getPublicKey());
+            final SignedMessage signedMessage = new SignedMessage(msg, identity.getPublicKey());
             Crypto.sign(identity.getPrivateKey().toUncompressedKey(), signedMessage);
 
             ctx.write(signedMessage, promise);
@@ -139,7 +139,7 @@ public class SignatureHandler extends SimpleChannelDuplexHandler<Message, Messag
                 LOG.trace("[{}]: Signed the message `{}`", ctx.channel().id().asShortText(), msg);
             }
         }
-        catch (CryptoException e) {
+        catch (final CryptoException e) {
             promise.setFailure(e);
             if (LOG.isDebugEnabled()) {
                 LOG.debug("[{}]: Can't sign message `{}` due to the following error: ", ctx.channel().id().asShortText(), msg, e);

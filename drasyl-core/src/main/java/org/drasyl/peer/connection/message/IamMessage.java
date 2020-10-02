@@ -37,15 +37,15 @@ public class IamMessage extends AbstractMessage implements ResponseMessage<WhoAr
     private final MessageId correspondingId;
 
     @JsonCreator
-    public IamMessage(@JsonProperty("id") MessageId id,
-                      @JsonProperty("publicKey") CompressedPublicKey publicKey,
-                      @JsonProperty("correspondingId") MessageId correspondingId) {
+    public IamMessage(@JsonProperty("id") final MessageId id,
+                      @JsonProperty("publicKey") final CompressedPublicKey publicKey,
+                      @JsonProperty("correspondingId") final MessageId correspondingId) {
         super(id);
         this.publicKey = requireNonNull(publicKey);
         this.correspondingId = requireNonNull(correspondingId);
     }
 
-    public IamMessage(CompressedPublicKey publicKey, MessageId correspondingId) {
+    public IamMessage(final CompressedPublicKey publicKey, final MessageId correspondingId) {
         this.publicKey = requireNonNull(publicKey);
         this.correspondingId = requireNonNull(correspondingId);
     }
@@ -60,7 +60,7 @@ public class IamMessage extends AbstractMessage implements ResponseMessage<WhoAr
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -70,7 +70,7 @@ public class IamMessage extends AbstractMessage implements ResponseMessage<WhoAr
         if (!super.equals(o)) {
             return false;
         }
-        IamMessage that = (IamMessage) o;
+        final IamMessage that = (IamMessage) o;
         return Objects.equals(publicKey, that.publicKey) &&
                 Objects.equals(correspondingId, that.correspondingId);
     }

@@ -41,8 +41,8 @@ public final class SetUtil {
      * @param <E> the {@code Set}'s element type
      * @return a {@code Set} containing the specified elements
      */
-    public static <E> Set<E> merge(Set<E> a, Set<E> b) {
-        HashSet<E> result = new HashSet<>(a);
+    public static <E> Set<E> merge(final Set<E> a, final Set<E> b) {
+        final HashSet<E> result = new HashSet<>(a);
         result.addAll(b);
         return result;
     }
@@ -58,7 +58,7 @@ public final class SetUtil {
      * @return a {@code Set} containing the specified elements
      */
     @SafeVarargs
-    public static <E> Set<E> merge(Set<E> a, E... b) {
+    public static <E> Set<E> merge(final Set<E> a, final E... b) {
         return merge(a, Set.of(b));
     }
 
@@ -71,8 +71,8 @@ public final class SetUtil {
      * @param <E> the {@code Set}'s element type
      * @return a {@code Set} containing the specified elements
      */
-    public static <E> Set<E> difference(Set<E> a, Collection<E> b) {
-        HashSet<E> result = new HashSet<>(a);
+    public static <E> Set<E> difference(final Set<E> a, final Collection<E> b) {
+        final HashSet<E> result = new HashSet<>(a);
         result.removeAll(b);
         return result;
     }
@@ -86,7 +86,7 @@ public final class SetUtil {
      * @return a {@code Set} containing the specified elements
      */
     @SafeVarargs
-    public static <E> Set<E> difference(Set<E> a, E... b) {
+    public static <E> Set<E> difference(final Set<E> a, final E... b) {
         return difference(a, Set.of(b));
     }
 
@@ -100,14 +100,14 @@ public final class SetUtil {
      * @param <E> the {@code Set}'s element type
      * @return <code>n</code>-th element from set <code>set</code>
      */
-    public static <E> E nthElement(Set<E> set, int n) {
+    public static <E> E nthElement(final Set<E> set, final int n) {
         requireNonNull(set);
         if (n < 0 || n > set.size() - 1) {
             throw new IndexOutOfBoundsException();
         }
 
         int count = 0;
-        for (E element : set) {
+        for (final E element : set) {
             if (n == count++) {
                 return element;
             }

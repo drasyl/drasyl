@@ -69,15 +69,15 @@ public class ChunkedMessageOutput {
      * @param timeout          the timeout for receiving all chunks, after this timeout the {@link
      *                         #removeAction} is called
      */
-    public ChunkedMessageOutput(ChannelHandlerContext ctx,
-                                CompressedPublicKey sender,
-                                CompressedPublicKey recipient,
-                                int contentLength,
-                                String checksum,
-                                MessageId msgID,
-                                int maxContentLength,
-                                Runnable removeAction,
-                                long timeout) {
+    public ChunkedMessageOutput(final ChannelHandlerContext ctx,
+                                final CompressedPublicKey sender,
+                                final CompressedPublicKey recipient,
+                                final int contentLength,
+                                final String checksum,
+                                final MessageId msgID,
+                                final int maxContentLength,
+                                final Runnable removeAction,
+                                final long timeout) {
         this(ctx, sender, recipient, contentLength, checksum, msgID, maxContentLength, Unpooled.buffer(), 0, removeAction);
         this.ctx.executor().schedule(() -> {
             this.ctx.writeAndFlush(new StatusMessage(StatusMessage.Code.STATUS_REQUEST_TIMEOUT, this.msgID));
@@ -88,16 +88,16 @@ public class ChunkedMessageOutput {
         }, timeout, TimeUnit.MILLISECONDS);
     }
 
-    ChunkedMessageOutput(ChannelHandlerContext ctx,
-                         CompressedPublicKey sender,
-                         CompressedPublicKey recipient,
-                         int contentLength,
-                         String checksum,
-                         MessageId msgID,
-                         int maxContentLength,
-                         ByteBuf payload,
-                         int progress,
-                         Runnable removeAction) {
+    ChunkedMessageOutput(final ChannelHandlerContext ctx,
+                         final CompressedPublicKey sender,
+                         final CompressedPublicKey recipient,
+                         final int contentLength,
+                         final String checksum,
+                         final MessageId msgID,
+                         final int maxContentLength,
+                         final ByteBuf payload,
+                         final int progress,
+                         final Runnable removeAction) {
         this.ctx = ctx;
         this.sender = sender;
         this.recipient = recipient;
@@ -115,9 +115,9 @@ public class ChunkedMessageOutput {
      *
      * @param chunk the chunk
      */
-    public synchronized void addChunk(ChunkedMessage chunk) {
+    public synchronized void addChunk(final ChunkedMessage chunk) {
         try {
-            int length = chunk.getPayload().length;
+            final int length = chunk.getPayload().length;
             if ((length + progress) > maxContentLength || (length + progress) > contentLength) {
                 ctx.writeAndFlush(new StatusMessage(StatusMessage.Code.STATUS_PAYLOAD_TOO_LARGE, msgID));
 
@@ -157,21 +157,21 @@ public class ChunkedMessageOutput {
         }
     }
 
-    private void logDebug(String format, ChannelHandlerContext ctx, Object... arguments) {
+    private void logDebug(final String format, final ChannelHandlerContext ctx, final Object... arguments) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("[" + ctx.channel().id().asShortText() + "]:" + format, arguments); // NOSONAR
         }
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        ChunkedMessageOutput that = (ChunkedMessageOutput) o;
+        final ChunkedMessageOutput that = (ChunkedMessageOutput) o;
         return Objects.equals(msgID, that.msgID);
     }
 

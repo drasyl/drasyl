@@ -19,11 +19,11 @@ class IdentityManagerIT {
     private DrasylConfig config;
 
     @Test
-    void shouldThrowExceptionIfConfigContainsNoKeysAndPathDoesNotExist(@TempDir Path dir) {
-        Path path = Paths.get(dir.toString(), "non-existing", "my-identity.json");
+    void shouldThrowExceptionIfConfigContainsNoKeysAndPathDoesNotExist(@TempDir final Path dir) {
+        final Path path = Paths.get(dir.toString(), "non-existing", "my-identity.json");
         when(config.getIdentityPath()).thenReturn(path);
 
-        IdentityManager identityManager = new IdentityManager(config);
+        final IdentityManager identityManager = new IdentityManager(config);
 
         assertThrows(IdentityManagerException.class, identityManager::loadOrCreateIdentity);
     }

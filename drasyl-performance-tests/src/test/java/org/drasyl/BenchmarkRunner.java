@@ -21,7 +21,7 @@ package org.drasyl;
 import org.openjdk.jmh.Main;
 
 public class BenchmarkRunner {
-    public static void main(String[] args) throws Exception {
+    public static void main(final String[] args) throws Exception {
         Main.main(args);
     }
 }

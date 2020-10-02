@@ -10,7 +10,7 @@ import java.util.Objects;
 public class NodeUnrecoverableErrorEvent extends AbstractNodeEvent {
     private final Throwable error;
 
-    public NodeUnrecoverableErrorEvent(Node node, Throwable error) {
+    public NodeUnrecoverableErrorEvent(final Node node, final Throwable error) {
         super(node);
         this.error = error;
     }
@@ -33,7 +33,7 @@ public class NodeUnrecoverableErrorEvent extends AbstractNodeEvent {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -43,7 +43,7 @@ public class NodeUnrecoverableErrorEvent extends AbstractNodeEvent {
         if (!super.equals(o)) {
             return false;
         }
-        NodeUnrecoverableErrorEvent that = (NodeUnrecoverableErrorEvent) o;
+        final NodeUnrecoverableErrorEvent that = (NodeUnrecoverableErrorEvent) o;
         return Objects.equals(error, that.error);
     }
 }

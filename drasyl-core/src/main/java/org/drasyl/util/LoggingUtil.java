@@ -32,7 +32,7 @@ public class LoggingUtil {
      * @param obj the object to be cleaned
      * @return cleaned string
      */
-    public static String sanitizeLogArg(Object obj) {
+    public static String sanitizeLogArg(final Object obj) {
         if (obj != null) {
             return obj.toString()
                     .replace("\n", "\\n")

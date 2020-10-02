@@ -24,11 +24,11 @@ import java.util.Objects;
  * All unchecked exceptions in drasyl inherit from this exception class.
  */
 public class DrasylRuntimeException extends RuntimeException {
-    public DrasylRuntimeException(Throwable cause) {
+    public DrasylRuntimeException(final Throwable cause) {
         super(cause);
     }
 
-    public DrasylRuntimeException(String cause) {
+    public DrasylRuntimeException(final String cause) {
         super(cause);
     }
 
@@ -38,14 +38,14 @@ public class DrasylRuntimeException extends RuntimeException {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        DrasylRuntimeException that = (DrasylRuntimeException) o;
+        final DrasylRuntimeException that = (DrasylRuntimeException) o;
         return Objects.equals(getCause(), that.getCause()) &&
                 Objects.equals(getMessage(), that.getMessage());
     }

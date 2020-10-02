@@ -39,8 +39,8 @@ public class QuitMessage extends AbstractMessage implements RequestMessage {
     private final CloseReason reason;
 
     @JsonCreator
-    private QuitMessage(@JsonProperty("id") MessageId id,
-                        @JsonProperty("reason") CloseReason reason) {
+    private QuitMessage(@JsonProperty("id") final MessageId id,
+                        @JsonProperty("reason") final CloseReason reason) {
         super(id);
         this.reason = requireNonNull(reason);
     }
@@ -49,7 +49,7 @@ public class QuitMessage extends AbstractMessage implements RequestMessage {
         this(CloseReason.REASON_UNDEFINED);
     }
 
-    public QuitMessage(CloseReason reason) {
+    public QuitMessage(final CloseReason reason) {
         this.reason = requireNonNull(reason);
     }
 
@@ -59,7 +59,7 @@ public class QuitMessage extends AbstractMessage implements RequestMessage {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -69,7 +69,7 @@ public class QuitMessage extends AbstractMessage implements RequestMessage {
         if (!super.equals(o)) {
             return false;
         }
-        QuitMessage that = (QuitMessage) o;
+        final QuitMessage that = (QuitMessage) o;
         return Objects.equals(reason, that.reason);
     }
 
@@ -95,14 +95,14 @@ public class QuitMessage extends AbstractMessage implements RequestMessage {
         private static final Map<String, CloseReason> reasons = new HashMap<>();
 
         static {
-            for (CloseReason description : values()) {
+            for (final CloseReason description : values()) {
                 reasons.put(description.getDescription(), description);
             }
         }
 
         private final String description;
 
-        CloseReason(String description) {
+        CloseReason(final String description) {
             this.description = description;
         }
 
@@ -115,7 +115,7 @@ public class QuitMessage extends AbstractMessage implements RequestMessage {
         }
 
         @JsonCreator
-        public static CloseReason from(String description) {
+        public static CloseReason from(final String description) {
             return reasons.get(description);
         }
     }

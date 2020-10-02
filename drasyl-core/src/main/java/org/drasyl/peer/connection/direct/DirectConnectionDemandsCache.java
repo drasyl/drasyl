@@ -22,7 +22,7 @@ public class DirectConnectionDemandsCache {
      * @param maximumSize maximum number of entries cache can contain
      * @param expireTime  time after newly added entries will be automatically removed
      */
-    public DirectConnectionDemandsCache(int maximumSize, Duration expireTime) {
+    public DirectConnectionDemandsCache(final int maximumSize, final Duration expireTime) {
         cache = CacheBuilder.newBuilder()
                 .maximumSize(maximumSize)
                 .expireAfterWrite(expireTime)
@@ -35,7 +35,7 @@ public class DirectConnectionDemandsCache {
      *
      * @param publicKey public key to be added
      */
-    public void add(CompressedPublicKey publicKey) {
+    public void add(final CompressedPublicKey publicKey) {
         cache.put(publicKey, Boolean.TRUE);
     }
 
@@ -44,7 +44,7 @@ public class DirectConnectionDemandsCache {
      * @return <code>true</code>, if <code>publicKey</code> is contained in cache. Otherwise
      * <code>false</code> is returned
      */
-    public boolean contains(CompressedPublicKey publicKey) {
+    public boolean contains(final CompressedPublicKey publicKey) {
         return cache.containsKey(publicKey);
     }
 

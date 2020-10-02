@@ -32,23 +32,23 @@ public class SendingWormholeNode extends DrasylNode {
     private final AtomicBoolean sent;
     private String text;
 
-    SendingWormholeNode(CompletableFuture<Void> doneFuture,
-                        PrintStream printStream,
-                        String password,
-                        AtomicBoolean sent,
-                        DrasylConfig config,
-                        Identity identity,
-                        PeersManager peersManager,
-                        PeerChannelGroup channelGroup,
-                        Messenger messenger,
-                        Set<Endpoint> endpoints,
-                        AtomicBoolean acceptNewConnections,
-                        DrasylPipeline pipeline,
-                        List<DrasylNodeComponent> components,
-                        PluginManager pluginManager,
-                        AtomicBoolean started,
-                        CompletableFuture<Void> startSequence,
-                        CompletableFuture<Void> shutdownSequence) {
+    SendingWormholeNode(final CompletableFuture<Void> doneFuture,
+                        final PrintStream printStream,
+                        final String password,
+                        final AtomicBoolean sent,
+                        final DrasylConfig config,
+                        final Identity identity,
+                        final PeersManager peersManager,
+                        final PeerChannelGroup channelGroup,
+                        final Messenger messenger,
+                        final Set<Endpoint> endpoints,
+                        final AtomicBoolean acceptNewConnections,
+                        final DrasylPipeline pipeline,
+                        final List<DrasylNodeComponent> components,
+                        final PluginManager pluginManager,
+                        final AtomicBoolean started,
+                        final CompletableFuture<Void> startSequence,
+                        final CompletableFuture<Void> shutdownSequence) {
         super(config, identity, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, components, pluginManager, started, startSequence, shutdownSequence);
         this.doneFuture = doneFuture;
         this.printStream = printStream;
@@ -56,8 +56,8 @@ public class SendingWormholeNode extends DrasylNode {
         this.sent = sent;
     }
 
-    public SendingWormholeNode(DrasylConfig config,
-                               PrintStream printStream) throws DrasylException {
+    public SendingWormholeNode(final DrasylConfig config,
+                               final PrintStream printStream) throws DrasylException {
         super(DrasylConfig.newBuilder(config)
                 .serverBindPort(0)
                 .marshallingInboundAllowedTypes(List.of(WormholeMessage.class.getName()))
@@ -70,7 +70,7 @@ public class SendingWormholeNode extends DrasylNode {
     }
 
     @Override
-    public void onEvent(Event event) {
+    public void onEvent(final Event event) {
         if (event instanceof NodeUnrecoverableErrorEvent) {
             doneFuture.completeExceptionally(((NodeUnrecoverableErrorEvent) event).getError());
         }
@@ -78,8 +78,8 @@ public class SendingWormholeNode extends DrasylNode {
             doneFuture.complete(null);
         }
         else if (event instanceof MessageEvent) {
-            CompressedPublicKey receiver = ((MessageEvent) event).getSender();
-            Object message = ((MessageEvent) event).getPayload();
+            final CompressedPublicKey receiver = ((MessageEvent) event).getSender();
+            final Object message = ((MessageEvent) event).getPayload();
 
             if (message instanceof PasswordMessage) {
                 if (text != null && password.equals(((PasswordMessage) message).getPassword()) && sent.compareAndSet(false, true)) {
@@ -92,7 +92,7 @@ public class SendingWormholeNode extends DrasylNode {
         }
     }
 
-    private void sendText(CompressedPublicKey receiver) {
+    private void sendText(final CompressedPublicKey receiver) {
         send(receiver, new TextMessage(text)).whenComplete((result, e) -> {
             if (e != null) {
                 doneFuture.completeExceptionally(e);
@@ -104,7 +104,7 @@ public class SendingWormholeNode extends DrasylNode {
         });
     }
 
-    private void wrongPassword(CompressedPublicKey receiver) {
+    private void wrongPassword(final CompressedPublicKey receiver) {
         send(receiver, new WrongPasswordMessage()).whenComplete((result, e) -> {
             if (e != null) {
                 doneFuture.completeExceptionally(e);
@@ -124,9 +124,9 @@ public class SendingWormholeNode extends DrasylNode {
         return doneFuture;
     }
 
-    public void setText(String text) {
+    public void setText(final String text) {
         this.text = text;
-        String code = identity().getPublicKey().toString() + password;
+        final String code = identity().getPublicKey().toString() + password;
         printStream.println("Wormhole code is: " + code);
         printStream.println("On the other computer, please run:");
         printStream.println();

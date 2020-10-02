@@ -39,10 +39,10 @@ public class NodeCommand extends AbstractCommand {
                 System.out, // NOSONAR
                 config -> {
                     try {
-                        CompletableFuture<Void> running = new CompletableFuture<>();
-                        DrasylNode myNode = new DrasylNode(config) {
+                        final CompletableFuture<Void> running = new CompletableFuture<>();
+                        final DrasylNode myNode = new DrasylNode(config) {
                             @Override
-                            public void onEvent(Event event) {
+                            public void onEvent(final Event event) {
                                 log.info("Event received: {}", event);
                                 if (event instanceof NodeNormalTerminationEvent) {
                                     running.complete(null);
@@ -55,7 +55,7 @@ public class NodeCommand extends AbstractCommand {
                         myNode.start();
                         return Pair.of(myNode, running);
                     }
-                    catch (DrasylException e) {
+                    catch (final DrasylException e) {
                         return Pair.of(null, failedFuture(e));
                     }
                 },
@@ -63,9 +63,9 @@ public class NodeCommand extends AbstractCommand {
         );
     }
 
-    NodeCommand(PrintStream printStream,
-                Function<DrasylConfig, Pair<DrasylNode, CompletableFuture<Void>>> nodeSupplier,
-                DrasylNode node) {
+    NodeCommand(final PrintStream printStream,
+                final Function<DrasylConfig, Pair<DrasylNode, CompletableFuture<Void>>> nodeSupplier,
+                final DrasylNode node) {
         super(printStream);
         this.nodeSupplier = nodeSupplier;
         this.node = node;
@@ -73,7 +73,7 @@ public class NodeCommand extends AbstractCommand {
 
     @SuppressWarnings({ "java:S1192" })
     @Override
-    protected void help(CommandLine cmd) {
+    protected void help(final CommandLine cmd) {
         helpTemplate(
                 "node",
                 "Run a drasyl node in the current directory."
@@ -81,7 +81,7 @@ public class NodeCommand extends AbstractCommand {
     }
 
     @Override
-    public void execute(CommandLine cmd) throws CliException {
+    public void execute(final CommandLine cmd) throws CliException {
         Runtime.getRuntime().addShutdownHook(new Thread(() -> {
             if (node != null) {
                 log.info("Shutdown drasyl Node");
@@ -90,16 +90,16 @@ public class NodeCommand extends AbstractCommand {
         }));
 
         try {
-            DrasylConfig config = getDrasylConfig(cmd);
-            Pair<DrasylNode, CompletableFuture<Void>> pair = nodeSupplier.apply(config);
+            final DrasylConfig config = getDrasylConfig(cmd);
+            final Pair<DrasylNode, CompletableFuture<Void>> pair = nodeSupplier.apply(config);
             node = pair.first();
-            CompletableFuture<Void> running = pair.second();
+            final CompletableFuture<Void> running = pair.second();
             running.get(); // block while node is running
         }
-        catch (InterruptedException e) {
+        catch (final InterruptedException e) {
             Thread.currentThread().interrupt();
         }
-        catch (ExecutionException e) {
+        catch (final ExecutionException e) {
             throw new CliException(e);
         }
     }

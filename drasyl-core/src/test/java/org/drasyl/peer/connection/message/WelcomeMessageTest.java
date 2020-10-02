@@ -46,14 +46,14 @@ class WelcomeMessageTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException {
-            String json = "{\"@type\":\"WelcomeMessage\",\"id\":\"c78fe75d4c93bc07e916e539\",\"userAgent\":\"\",\"peerInformation\":{\"endpoints\":[\"ws://test\"]},\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
+            final String json = "{\"@type\":\"WelcomeMessage\",\"id\":\"c78fe75d4c93bc07e916e539\",\"userAgent\":\"\",\"peerInformation\":{\"endpoints\":[\"ws://test\"]},\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
 
             assertEquals(new WelcomeMessage(PeerInformation.of(Set.of(Endpoint.of("ws://test"))), new MessageId("412176952b5b81fd13f84a7c")), JACKSON_READER.readValue(json, Message.class));
         }
 
         @Test
         void shouldRejectIncompleteData() {
-            String json = "{\"@type\":\"WelcomeMessage\",\"id\":\"c78fe75d4c93bc07e916e539\",\"userAgent\":\"\",\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
+            final String json = "{\"@type\":\"WelcomeMessage\",\"id\":\"c78fe75d4c93bc07e916e539\",\"userAgent\":\"\",\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
 
             assertThrows(ValueInstantiationException.class, () -> JACKSON_READER.readValue(json, Message.class));
         }
@@ -63,7 +63,7 @@ class WelcomeMessageTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException {
-            WelcomeMessage message = new WelcomeMessage(PeerInformation.of(), correspondingId);
+            final WelcomeMessage message = new WelcomeMessage(PeerInformation.of(), correspondingId);
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
@@ -76,8 +76,8 @@ class WelcomeMessageTest {
     class Equals {
         @Test
         void shouldReturnTrue() {
-            WelcomeMessage message1 = new WelcomeMessage(peerInformation, correspondingId);
-            WelcomeMessage message2 = new WelcomeMessage(peerInformation, correspondingId);
+            final WelcomeMessage message1 = new WelcomeMessage(peerInformation, correspondingId);
+            final WelcomeMessage message2 = new WelcomeMessage(peerInformation, correspondingId);
 
             assertEquals(message1, message2);
         }
@@ -87,8 +87,8 @@ class WelcomeMessageTest {
     class HashCode {
         @Test
         void shouldReturnTrue() {
-            WelcomeMessage message1 = new WelcomeMessage(peerInformation, correspondingId);
-            WelcomeMessage message2 = new WelcomeMessage(peerInformation, correspondingId);
+            final WelcomeMessage message1 = new WelcomeMessage(peerInformation, correspondingId);
+            final WelcomeMessage message2 = new WelcomeMessage(peerInformation, correspondingId);
 
             assertEquals(message1.hashCode(), message2.hashCode());
         }

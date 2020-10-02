@@ -13,7 +13,7 @@ public class MessageEvent implements Event {
     private final CompressedPublicKey sender;
     private final Object payload;
 
-    public MessageEvent(CompressedPublicKey sender, Object payload) {
+    public MessageEvent(final CompressedPublicKey sender, final Object payload) {
         this.sender = sender;
         this.payload = payload;
     }
@@ -38,14 +38,14 @@ public class MessageEvent implements Event {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        MessageEvent that = (MessageEvent) o;
+        final MessageEvent that = (MessageEvent) o;
         return Objects.equals(sender, that.sender) &&
                 Objects.equals(payload, that.payload);
     }

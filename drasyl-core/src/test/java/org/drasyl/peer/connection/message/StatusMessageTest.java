@@ -49,14 +49,14 @@ class StatusMessageTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException {
-            String json = "{\"@type\":\"" + StatusMessage.class.getSimpleName() + "\",\"id\":\"c78fe75d4c93bc07e916e539\",\"code\":" + STATUS_OK.getNumber() + ",\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
+            final String json = "{\"@type\":\"" + StatusMessage.class.getSimpleName() + "\",\"id\":\"c78fe75d4c93bc07e916e539\",\"code\":" + STATUS_OK.getNumber() + ",\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
 
             assertEquals(new StatusMessage(STATUS_OK, new MessageId("412176952b5b81fd13f84a7c")), JACKSON_READER.readValue(json, Message.class));
         }
 
         @Test
         void shouldRejectIncompleteData() {
-            String json = "{\"@type\":\"" + StatusMessage.class.getSimpleName() + "\",\"id\":\"c78fe75d4c93bc07e916e539\",\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
+            final String json = "{\"@type\":\"" + StatusMessage.class.getSimpleName() + "\",\"id\":\"c78fe75d4c93bc07e916e539\",\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
 
             assertThrows(ValueInstantiationException.class, () -> JACKSON_READER.readValue(json, Message.class));
         }
@@ -66,7 +66,7 @@ class StatusMessageTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException {
-            StatusMessage message = new StatusMessage(STATUS_OK, correspondingId);
+            final StatusMessage message = new StatusMessage(STATUS_OK, correspondingId);
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
@@ -79,9 +79,9 @@ class StatusMessageTest {
     class Equals {
         @Test
         void shouldReturnTrue() {
-            StatusMessage message1 = new StatusMessage(STATUS_OK, correspondingId);
-            StatusMessage message2 = new StatusMessage(STATUS_OK.getNumber(), correspondingId);
-            StatusMessage message3 = new StatusMessage(STATUS_FORBIDDEN, correspondingId);
+            final StatusMessage message1 = new StatusMessage(STATUS_OK, correspondingId);
+            final StatusMessage message2 = new StatusMessage(STATUS_OK.getNumber(), correspondingId);
+            final StatusMessage message3 = new StatusMessage(STATUS_FORBIDDEN, correspondingId);
 
             assertEquals(message1, message2);
             assertNotEquals(message2, message3);
@@ -92,9 +92,9 @@ class StatusMessageTest {
     class HashCode {
         @Test
         void shouldReturnTrue() {
-            StatusMessage message1 = new StatusMessage(STATUS_OK, correspondingId);
-            StatusMessage message2 = new StatusMessage(STATUS_OK.getNumber(), correspondingId);
-            StatusMessage message3 = new StatusMessage(STATUS_FORBIDDEN, correspondingId);
+            final StatusMessage message1 = new StatusMessage(STATUS_OK, correspondingId);
+            final StatusMessage message2 = new StatusMessage(STATUS_OK.getNumber(), correspondingId);
+            final StatusMessage message3 = new StatusMessage(STATUS_FORBIDDEN, correspondingId);
 
             assertEquals(message1.hashCode(), message2.hashCode());
             assertNotEquals(message2.hashCode(), message3.hashCode());

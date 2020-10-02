@@ -386,14 +386,14 @@ class DrasylConfigTest {
     class GetUri {
         @Test
         void shouldReturnUriAtPath() {
-            Config config = ConfigFactory.parseString("foo.bar = \"http://localhost.de\"");
+            final Config config = ConfigFactory.parseString("foo.bar = \"http://localhost.de\"");
 
             assertEquals(URI.create("http://localhost.de"), getURI(config, "foo.bar"));
         }
 
         @Test
         void shouldThrowExceptionForInvalidValue() {
-            Config config = ConfigFactory.parseString("foo.bar = \"hallo world\"");
+            final Config config = ConfigFactory.parseString("foo.bar = \"hallo world\"");
 
             assertThrows(ConfigException.class, () -> getURI(config, "foo.bar"));
         }

@@ -32,7 +32,7 @@ public class Endpoint implements Comparable<Endpoint> {
      * @throws NullPointerException     if {@code uri} is {@code null}
      * @throws IllegalArgumentException if {@code uri} is an invalid {@code Endpoint}
      */
-    Endpoint(URI uri, CompressedPublicKey publicKey) {
+    Endpoint(final URI uri, final CompressedPublicKey publicKey) {
         if (!isWebSocketURI(uri)) {
             throw new IllegalArgumentException("URI must use the WebSocket (Secure) protocol.");
         }
@@ -60,14 +60,14 @@ public class Endpoint implements Comparable<Endpoint> {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        Endpoint endpoint = (Endpoint) o;
+        final Endpoint endpoint = (Endpoint) o;
         return Objects.equals(uri, endpoint.uri) &&
                 Objects.equals(publicKey, endpoint.publicKey);
     }
@@ -123,7 +123,7 @@ public class Endpoint implements Comparable<Endpoint> {
      * than, equal to, or greater than the given {@code Endpoint}
      */
     @Override
-    public int compareTo(Endpoint that) {
+    public int compareTo(final Endpoint that) {
         return uri.compareTo(that.uri);
     }
 
@@ -136,7 +136,7 @@ public class Endpoint implements Comparable<Endpoint> {
      * @throws NullPointerException     if {@code uri} is {@code null}
      * @throws IllegalArgumentException if {@code uri} and {@code publicKey} creates an invalid {@code Endpoint}
      */
-    public static Endpoint of(URI uri, CompressedPublicKey publicKey) {
+    public static Endpoint of(final URI uri, final CompressedPublicKey publicKey) {
         return new Endpoint(removeFragment(uri), publicKey);
     }
 
@@ -150,11 +150,11 @@ public class Endpoint implements Comparable<Endpoint> {
      * @throws IllegalArgumentException if {@code uri} and {@code publicKey} creates an invalid {@code Endpoint} or violates
      *                                  RFC&nbsp;2396
      */
-    public static Endpoint of(String uri, CompressedPublicKey publicKey) {
+    public static Endpoint of(final String uri, final CompressedPublicKey publicKey) {
         try {
             return of(new URI(uri), publicKey);
         }
-        catch (URISyntaxException x) {
+        catch (final URISyntaxException x) {
             throw new IllegalArgumentException(x.getMessage(), x);
         }
     }
@@ -167,12 +167,12 @@ public class Endpoint implements Comparable<Endpoint> {
      * @throws NullPointerException     if {@code endpoint} is {@code null}
      * @throws IllegalArgumentException if {@code endpoint} is an invalid {@code Endpoint}
      */
-    public static Endpoint of(URI endpoint) {
+    public static Endpoint of(final URI endpoint) {
         if (endpoint.getFragment() != null) {
             try {
                 return of(endpoint, CompressedPublicKey.of(endpoint.getFragment()));
             }
-            catch (CryptoException e) {
+            catch (final CryptoException e) {
                 throw new IllegalArgumentException(e.getMessage(), e);
             }
         }
@@ -191,11 +191,11 @@ public class Endpoint implements Comparable<Endpoint> {
      *                                  violates RFC&nbsp;2396
      */
     @JsonCreator
-    public static Endpoint of(String endpoint) {
+    public static Endpoint of(final String endpoint) {
         try {
             return of(new URI(endpoint));
         }
-        catch (URISyntaxException x) {
+        catch (final URISyntaxException x) {
             throw new IllegalArgumentException(x.getMessage(), x);
         }
     }

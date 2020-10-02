@@ -40,8 +40,8 @@ public class ExceptionMessage extends AbstractMessage {
     private final Error error;
 
     @JsonCreator
-    private ExceptionMessage(@JsonProperty("id") MessageId id,
-                             @JsonProperty("error") Error error) {
+    private ExceptionMessage(@JsonProperty("id") final MessageId id,
+                             @JsonProperty("error") final Error error) {
         super(id);
         this.error = requireNonNull(error);
     }
@@ -51,7 +51,7 @@ public class ExceptionMessage extends AbstractMessage {
      *
      * @param error the error type
      */
-    public ExceptionMessage(Error error) {
+    public ExceptionMessage(final Error error) {
         super();
         this.error = requireNonNull(error);
     }
@@ -69,7 +69,7 @@ public class ExceptionMessage extends AbstractMessage {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -79,7 +79,7 @@ public class ExceptionMessage extends AbstractMessage {
         if (!super.equals(o)) {
             return false;
         }
-        ExceptionMessage that = (ExceptionMessage) o;
+        final ExceptionMessage that = (ExceptionMessage) o;
         return Objects.equals(error, that.error);
     }
 
@@ -100,14 +100,14 @@ public class ExceptionMessage extends AbstractMessage {
         private static final Map<String, Error> errors = new HashMap<>();
 
         static {
-            for (Error description : values()) {
+            for (final Error description : values()) {
                 errors.put(description.getDescription(), description);
             }
         }
 
         private final String description;
 
-        Error(String description) {
+        Error(final String description) {
             this.description = description;
         }
 
@@ -120,7 +120,7 @@ public class ExceptionMessage extends AbstractMessage {
         }
 
         @JsonCreator
-        public static Error from(String description) {
+        public static Error from(final String description) {
             return errors.get(description);
         }
     }

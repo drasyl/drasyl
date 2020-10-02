@@ -56,15 +56,15 @@ class ClientChannelInitializerTest {
 
     @Test
     void beforeMarshalStage() {
-        ClientChannelInitializer initializer = new ClientChannelInitializer(flushBufferSize, readIdleTimeout, pingPongRetries,
+        final ClientChannelInitializer initializer = new ClientChannelInitializer(flushBufferSize, readIdleTimeout, pingPongRetries,
                 endpoint) {
             @Override
-            protected void customStage(ChannelPipeline pipeline) {
+            protected void customStage(final ChannelPipeline pipeline) {
 
             }
 
             @Override
-            protected SslHandler generateSslContext(SocketChannel ch) {
+            protected SslHandler generateSslContext(final SocketChannel ch) {
                 return null;
             }
         };

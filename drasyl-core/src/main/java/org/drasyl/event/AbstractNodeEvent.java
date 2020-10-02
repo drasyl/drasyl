@@ -7,7 +7,7 @@ import static java.util.Objects.requireNonNull;
 abstract class AbstractNodeEvent implements NodeEvent {
     protected final Node node;
 
-    protected AbstractNodeEvent(Node node) {
+    protected AbstractNodeEvent(final Node node) {
         this.node = requireNonNull(node);
     }
 
@@ -22,14 +22,14 @@ abstract class AbstractNodeEvent implements NodeEvent {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        AbstractNodeEvent that = (AbstractNodeEvent) o;
+        final AbstractNodeEvent that = (AbstractNodeEvent) o;
         return Objects.equals(node, that.node);
     }
 }

@@ -48,7 +48,7 @@ class ServerNewConnectionsGuardTest {
 
     @Test
     void shouldFireOnOpenGuard() {
-        ServerNewConnectionsGuard handler = new ServerNewConnectionsGuard(() -> true);
+        final ServerNewConnectionsGuard handler = new ServerNewConnectionsGuard(() -> true);
 
         handler.channelRead0(ctx, message);
 
@@ -61,7 +61,7 @@ class ServerNewConnectionsGuardTest {
         when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
         when(message.getId()).thenReturn(new MessageId("593266d6c03547019e2d01ac"));
 
-        ServerNewConnectionsGuard handler = new ServerNewConnectionsGuard(() -> false);
+        final ServerNewConnectionsGuard handler = new ServerNewConnectionsGuard(() -> false);
 
         handler.channelRead0(ctx, message);
 

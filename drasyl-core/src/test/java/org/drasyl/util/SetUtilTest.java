@@ -33,17 +33,17 @@ class SetUtilTest {
     class Merge {
         @Test
         void shouldReturnSetContainingAllElementsOfBothGivenSets() {
-            Set<String> a = Set.of("apple", "banana");
-            Set<String> b = Set.of("pear", "cherry", "banana");
+            final Set<String> a = Set.of("apple", "banana");
+            final Set<String> b = Set.of("pear", "cherry", "banana");
 
             assertEquals(Set.of("apple", "banana", "pear", "cherry"), SetUtil.merge(a, b));
         }
 
         @Test
         void shouldReturnSetContainingAllElementsOfGivenSetAndElement() {
-            Set<String> a = Set.of("apple", "banana");
-            String b1 = "pear";
-            String b2 = "apple";
+            final Set<String> a = Set.of("apple", "banana");
+            final String b1 = "pear";
+            final String b2 = "apple";
 
             assertEquals(Set.of("apple", "banana", "pear"), SetUtil.merge(a, b1));
             assertEquals(Set.of("apple", "banana"), SetUtil.merge(a, b2));
@@ -54,17 +54,17 @@ class SetUtilTest {
     class Difference {
         @Test
         void shouldReturnSetContainingAllElementsOfSetAThatAreNotInSetB() {
-            Set<String> a = Set.of("apple", "banana");
-            Set<String> b = Set.of("pear", "cherry", "banana");
+            final Set<String> a = Set.of("apple", "banana");
+            final Set<String> b = Set.of("pear", "cherry", "banana");
 
             assertEquals(Set.of("apple"), SetUtil.difference(a, b));
         }
 
         @Test
         void shouldReturnSetContainingAllElementsOfSetAThatAreNotB() {
-            Set<String> a = Set.of("apple", "banana");
-            String b1 = "pear";
-            String b2 = "apple";
+            final Set<String> a = Set.of("apple", "banana");
+            final String b1 = "pear";
+            final String b2 = "apple";
 
             assertEquals(Set.of("apple", "banana"), SetUtil.difference(a, b1));
             assertEquals(Set.of("banana"), SetUtil.difference(a, b2));
@@ -75,7 +75,7 @@ class SetUtilTest {
     class NthElement {
         @Test
         void shouldReturnTheNthElementOfASet() {
-            SortedSet<String> set = new TreeSet<>();
+            final SortedSet<String> set = new TreeSet<>();
             set.add("banana");
             set.add("cherry");
             set.add("pear");
@@ -87,14 +87,14 @@ class SetUtilTest {
 
         @Test
         void shouldThrowExceptionForNegativeN() {
-            Set<String> set = Set.of("pear", "cherry", "banana");
+            final Set<String> set = Set.of("pear", "cherry", "banana");
 
             assertThrows(IndexOutOfBoundsException.class, () -> SetUtil.nthElement(set, -1));
         }
 
         @Test
         void shouldThrowExceptionForTooLargeN() {
-            Set<String> set = Set.of("pear", "cherry", "banana");
+            final Set<String> set = Set.of("pear", "cherry", "banana");
 
             assertThrows(IndexOutOfBoundsException.class, () -> SetUtil.nthElement(set, 3));
         }

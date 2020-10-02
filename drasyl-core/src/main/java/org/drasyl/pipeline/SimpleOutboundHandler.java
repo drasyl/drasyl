@@ -56,18 +56,17 @@ public abstract class SimpleOutboundHandler<O> extends HandlerAdapter {
      *
      * @param outboundMessageType the type of messages to match
      */
-    protected SimpleOutboundHandler(Class<? extends O> outboundMessageType) {
+    protected SimpleOutboundHandler(final Class<? extends O> outboundMessageType) {
         matcherMessage = TypeParameterMatcher.get(outboundMessageType);
     }
 
     @Override
-    public void write(HandlerContext ctx,
-                      CompressedPublicKey recipient,
-                      Object msg,
-                      CompletableFuture<Void> future) {
+    public void write(final HandlerContext ctx,
+                      final CompressedPublicKey recipient,
+                      final Object msg,
+                      final CompletableFuture<Void> future) {
         if (acceptOutbound(msg)) {
-            @SuppressWarnings("unchecked")
-            O castedMsg = (O) msg;
+            @SuppressWarnings("unchecked") final O castedMsg = (O) msg;
             matchedWrite(ctx, recipient, castedMsg, future);
         }
         else {
@@ -79,7 +78,7 @@ public abstract class SimpleOutboundHandler<O> extends HandlerAdapter {
      * Returns {@code true} if the given message should be handled. If {@code false} it will be
      * passed to the next {@link Handler} in the {@link Pipeline}.
      */
-    protected boolean acceptOutbound(Object msg) {
+    protected boolean acceptOutbound(final Object msg) {
         return matcherMessage.match(msg);
     }
 

@@ -85,8 +85,8 @@ public class DrasylScheduler {
      * </p>
      */
     public static CompletableFuture<Void> shutdown() {
-        CompletableFuture<Void> lightSchedulerFuture;
-        CompletableFuture<Void> heavySchedulerFuture;
+        final CompletableFuture<Void> lightSchedulerFuture;
+        final CompletableFuture<Void> heavySchedulerFuture;
 
         if (lightSchedulerCreated) {
             lightSchedulerFuture = LazyLightSchedulerHolder.INSTANCE.shutdown();
@@ -130,8 +130,8 @@ public class DrasylScheduler {
          *
          * @param name the name format for the created threads
          */
-        DrasylExecutor(String name) {
-            ThreadFactory threadFactory = new ThreadFactoryBuilder()
+        DrasylExecutor(final String name) {
+            final ThreadFactory threadFactory = new ThreadFactoryBuilder()
                     .setNameFormat(name)
                     .build();
             this.executor = new ThreadPoolExecutor(
@@ -145,7 +145,7 @@ public class DrasylScheduler {
         }
 
         private CompletableFuture<Void> shutdown() {
-            CompletableFuture<Void> future = new CompletableFuture<>();
+            final CompletableFuture<Void> future = new CompletableFuture<>();
 
             new Thread(() -> {
                 executor.shutdown();
@@ -155,7 +155,7 @@ public class DrasylScheduler {
                         executor.shutdownNow();
                     }
                 }
-                catch (InterruptedException e) {
+                catch (final InterruptedException e) {
                     executor.shutdownNow();
                     LOG.debug("", e);
                     Thread.currentThread().interrupt();

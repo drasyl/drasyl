@@ -38,7 +38,7 @@ class VersionCommandTest {
         void shouldPrintHelp() {
             underTest.help(cmd);
 
-            String output = outputStream.toString();
+            final String output = outputStream.toString();
             assertThat(output, containsString("Show the drasyl, os and java version number."));
             assertThat(output, containsString("Usage:" + System.lineSeparator()));
             assertThat(output, containsString("drasyl version [flags]" + System.lineSeparator()));
@@ -55,7 +55,7 @@ class VersionCommandTest {
         void shouldPrintVersion() {
             underTest.execute(cmd);
 
-            String output = outputStream.toString();
+            final String output = outputStream.toString();
             assertThat(output, containsString("drasyl v"));
         }
     }

@@ -33,7 +33,7 @@ public enum AnsiColor {
     STYLE_UNDERLINE("\u001b[4m");
     private final String color;
 
-    AnsiColor(String color) {
+    AnsiColor(final String color) {
         this.color = color;
     }
 

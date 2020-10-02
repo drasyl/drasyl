@@ -44,8 +44,8 @@ public class Chat {
     private static final Scanner scanner = new Scanner(System.in);
     private static String prompt;
 
-    public static void main(String[] args) throws DrasylException {
-        DrasylConfig config;
+    public static void main(final String[] args) throws DrasylException {
+        final DrasylConfig config;
         if (args.length == 1) {
             config = DrasylConfig.parseFile(new File(args[0]));
         }
@@ -53,13 +53,13 @@ public class Chat {
             config = new DrasylConfig();
         }
 
-        CompletableFuture<Void> online = new CompletableFuture<>();
-        DrasylNode node = new DrasylNode(config) {
+        final CompletableFuture<Void> online = new CompletableFuture<>();
+        final DrasylNode node = new DrasylNode(config) {
             @Override
-            public void onEvent(Event event) {
+            public void onEvent(final Event event) {
                 if (event instanceof MessageEvent) {
-                    CompressedPublicKey sender = ((MessageEvent) event).getSender();
-                    Object message = ((MessageEvent) event).getPayload();
+                    final CompressedPublicKey sender = ((MessageEvent) event).getSender();
+                    final Object message = ((MessageEvent) event).getPayload();
                     if (message instanceof String) {
                         addBeforePrompt("From " + sender + ": " + message);
                     }
@@ -97,11 +97,11 @@ public class Chat {
         online.join();
 
         String recipient = "";
-        AtomicBoolean keepRunning = new AtomicBoolean(true);
+        final AtomicBoolean keepRunning = new AtomicBoolean(true);
         Runtime.getRuntime().addShutdownHook(new Thread(() -> keepRunning.set(false)));
         while (keepRunning.get()) {
             // prompt for recipient
-            String newRecipient = newPrompt("Recipient [" + recipient + "]?");
+            final String newRecipient = newPrompt("Recipient [" + recipient + "]?");
             if (!newRecipient.isBlank()) {
                 recipient = newRecipient;
             }
@@ -128,7 +128,7 @@ public class Chat {
         DrasylScheduler.shutdown();
     }
 
-    static void addBeforePrompt(Object x) {
+    static void addBeforePrompt(final Object x) {
         if (prompt == null) {
             System.out.println(x);
         }
@@ -139,10 +139,10 @@ public class Chat {
         }
     }
 
-    static String newPrompt(String prompt) {
+    static String newPrompt(final String prompt) {
         Chat.prompt = prompt;
         System.out.print(prompt + " ");
-        String result = scanner.nextLine();
+        final String result = scanner.nextLine();
         Chat.prompt = null;
         return result;
     }

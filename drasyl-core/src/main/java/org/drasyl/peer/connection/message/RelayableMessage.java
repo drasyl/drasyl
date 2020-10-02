@@ -33,19 +33,19 @@ public abstract class RelayableMessage extends AbstractMessage {
     protected final CompressedPublicKey recipient;
     protected short hopCount;
 
-    protected RelayableMessage(MessageId id,
-                               CompressedPublicKey recipient,
-                               short hopCount) {
+    protected RelayableMessage(final MessageId id,
+                               final CompressedPublicKey recipient,
+                               final short hopCount) {
         super(id);
         this.recipient = requireNonNull(recipient);
         this.hopCount = hopCount;
     }
 
-    protected RelayableMessage(CompressedPublicKey recipient) {
+    protected RelayableMessage(final CompressedPublicKey recipient) {
         this(recipient, (short) 0);
     }
 
-    protected RelayableMessage(CompressedPublicKey recipient, short hopCount) {
+    protected RelayableMessage(final CompressedPublicKey recipient, final short hopCount) {
         super();
         this.recipient = requireNonNull(recipient);
         this.hopCount = hopCount;
@@ -78,7 +78,7 @@ public abstract class RelayableMessage extends AbstractMessage {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -88,7 +88,7 @@ public abstract class RelayableMessage extends AbstractMessage {
         if (!super.equals(o)) {
             return false;
         }
-        RelayableMessage that = (RelayableMessage) o;
+        final RelayableMessage that = (RelayableMessage) o;
         return hopCount == that.hopCount &&
                 Objects.equals(recipient, that.recipient);
     }

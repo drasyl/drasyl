@@ -9,7 +9,7 @@ public class PasswordMessage implements WormholeMessage {
     private final String password;
 
     @JsonCreator
-    public PasswordMessage(@JsonProperty("password") String password) {
+    public PasswordMessage(@JsonProperty("password") final String password) {
         this.password = password;
     }
 
@@ -18,14 +18,14 @@ public class PasswordMessage implements WormholeMessage {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        PasswordMessage that = (PasswordMessage) o;
+        final PasswordMessage that = (PasswordMessage) o;
         return Objects.equals(password, that.password);
     }
 

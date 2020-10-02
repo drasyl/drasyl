@@ -8,7 +8,7 @@ package org.drasyl.event;
  * This is an immutable object.
  */
 public class NodeOnlineEvent extends AbstractNodeEvent {
-    public NodeOnlineEvent(Node node) {
+    public NodeOnlineEvent(final Node node) {
         super(node);
     }
 

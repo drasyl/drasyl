@@ -31,7 +31,7 @@ public class HandlerAdapter implements Handler {
      * Do nothing by default, sub-classes may override this method.
      */
     @Override
-    public void handlerAdded(HandlerContext ctx) {
+    public void handlerAdded(final HandlerContext ctx) {
         // Do nothing
     }
 
@@ -39,33 +39,33 @@ public class HandlerAdapter implements Handler {
      * Do nothing by default, sub-classes may override this method.
      */
     @Override
-    public void handlerRemoved(HandlerContext ctx) {
+    public void handlerRemoved(final HandlerContext ctx) {
         // Do nothing
     }
 
     @Override
-    public void read(HandlerContext ctx,
-                     CompressedPublicKey sender,
-                     Object msg,
-                     CompletableFuture<Void> future) {
+    public void read(final HandlerContext ctx,
+                     final CompressedPublicKey sender,
+                     final Object msg,
+                     final CompletableFuture<Void> future) {
         ctx.fireRead(sender, msg, future);
     }
 
     @Override
-    public void eventTriggered(HandlerContext ctx, Event event, CompletableFuture<Void> future) {
+    public void eventTriggered(final HandlerContext ctx, final Event event, final CompletableFuture<Void> future) {
         ctx.fireEventTriggered(event, future);
     }
 
     @Override
-    public void exceptionCaught(HandlerContext ctx, Exception cause) {
+    public void exceptionCaught(final HandlerContext ctx, final Exception cause) {
         ctx.fireExceptionCaught(cause);
     }
 
     @Override
-    public void write(HandlerContext ctx,
-                      CompressedPublicKey recipient,
-                      Object msg,
-                      CompletableFuture<Void> future) {
+    public void write(final HandlerContext ctx,
+                      final CompressedPublicKey recipient,
+                      final Object msg,
+                      final CompletableFuture<Void> future) {
         ctx.write(recipient, msg, future);
     }
 }

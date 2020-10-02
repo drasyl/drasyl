@@ -57,7 +57,7 @@ class ExceptionHandlerTest {
     // invoke listener
     @Test
     void write() {
-        ExceptionHandler handler = new ExceptionHandler(listener, null, false);
+        final ExceptionHandler handler = new ExceptionHandler(listener, null, false);
         handler.write(ctx, msg, promise);
 
         verify(ctx).write(msg,
@@ -67,7 +67,7 @@ class ExceptionHandlerTest {
     // invoke listener
     @Test
     void connect() {
-        ExceptionHandler handler = new ExceptionHandler();
+        final ExceptionHandler handler = new ExceptionHandler();
         handler.connect(ctx, address, address, promise);
 
         verify(ctx).connect(address, address,
@@ -81,7 +81,7 @@ class ExceptionHandlerTest {
         when(channel.isWritable()).thenReturn(true);
         when(cause.getMessage()).thenReturn("Exception");
 
-        ExceptionHandler handler = new ExceptionHandler(listener, null, false);
+        final ExceptionHandler handler = new ExceptionHandler(listener, null, false);
         handler.exceptionCaught(ctx, cause);
 
         assertEquals(cause, handler.handledCause);
@@ -91,7 +91,7 @@ class ExceptionHandlerTest {
     // do nothing
     @Test
     void exceptionCaughtClosedChannelException() {
-        ExceptionHandler handler = new ExceptionHandler(listener, null, false);
+        final ExceptionHandler handler = new ExceptionHandler(listener, null, false);
         handler.exceptionCaught(ctx, new ClosedChannelException());
 
         assertNull(handler.handledCause);
@@ -105,7 +105,7 @@ class ExceptionHandlerTest {
         when(channel.isWritable()).thenReturn(true);
         when(cause.getMessage()).thenReturn("Exception");
 
-        ExceptionHandler handler = new ExceptionHandler(listener, null, true);
+        final ExceptionHandler handler = new ExceptionHandler(listener, null, true);
         handler.exceptionCaught(ctx, cause);
 
         assertEquals(cause, handler.handledCause);
@@ -118,7 +118,7 @@ class ExceptionHandlerTest {
     void exceptionCaughtAlreadyHandled() {
         when(cause.getMessage()).thenReturn("Exception");
 
-        ExceptionHandler handler = new ExceptionHandler(listener, cause, true);
+        final ExceptionHandler handler = new ExceptionHandler(listener, cause, true);
         handler.exceptionCaught(ctx, cause);
 
         assertEquals(cause, handler.handledCause);

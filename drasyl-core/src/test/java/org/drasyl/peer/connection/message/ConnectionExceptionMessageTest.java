@@ -38,7 +38,7 @@ class ConnectionExceptionMessageTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException {
-            String json = "{\"@type\":\"" + ConnectionExceptionMessage.class.getSimpleName() + "\",\"id\":\"89ba3cd9efb7570eb3126d11\"," +
+            final String json = "{\"@type\":\"" + ConnectionExceptionMessage.class.getSimpleName() + "\",\"id\":\"89ba3cd9efb7570eb3126d11\"," +
                     "\"error\":\"" + CONNECTION_ERROR_PING_PONG.getDescription() + "\"}";
 
             assertEquals(new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG), JACKSON_READER.readValue(json, Message.class));
@@ -46,7 +46,7 @@ class ConnectionExceptionMessageTest {
 
         @Test
         void shouldRejectIncompleteData() {
-            String json = "{\"@type\":\"" + ConnectionExceptionMessage.class.getSimpleName() + "\",\"id\":\"89ba3cd9efb7570eb3126d11\"}";
+            final String json = "{\"@type\":\"" + ConnectionExceptionMessage.class.getSimpleName() + "\",\"id\":\"89ba3cd9efb7570eb3126d11\"}";
 
             assertThrows(ValueInstantiationException.class, () -> JACKSON_READER.readValue(json, Message.class));
         }
@@ -56,7 +56,7 @@ class ConnectionExceptionMessageTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException {
-            ConnectionExceptionMessage message = new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG);
+            final ConnectionExceptionMessage message = new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG);
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
@@ -77,9 +77,9 @@ class ConnectionExceptionMessageTest {
     class Equals {
         @Test
         void notSameBecauseOfDifferentError() {
-            ConnectionExceptionMessage message1 = new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG);
-            ConnectionExceptionMessage message2 = new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG);
-            ConnectionExceptionMessage message3 = new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE_TIMEOUT);
+            final ConnectionExceptionMessage message1 = new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG);
+            final ConnectionExceptionMessage message2 = new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG);
+            final ConnectionExceptionMessage message3 = new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE_TIMEOUT);
 
             assertEquals(message1, message2);
             assertNotEquals(message2, message3);
@@ -90,9 +90,9 @@ class ConnectionExceptionMessageTest {
     class HashCode {
         @Test
         void notSameBecauseOfDifferentError() {
-            ConnectionExceptionMessage message1 = new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG);
-            ConnectionExceptionMessage message2 = new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG);
-            ConnectionExceptionMessage message3 = new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE_TIMEOUT);
+            final ConnectionExceptionMessage message1 = new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG);
+            final ConnectionExceptionMessage message2 = new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG);
+            final ConnectionExceptionMessage message3 = new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE_TIMEOUT);
 
             assertEquals(message1.hashCode(), message2.hashCode());
             assertNotEquals(message2.hashCode(), message3.hashCode());

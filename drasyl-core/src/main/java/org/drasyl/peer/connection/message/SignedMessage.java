@@ -49,14 +49,14 @@ public class SignedMessage implements Message, Signable {
     private final CompressedPublicKey kid;
     private Signature signature;
 
-    public SignedMessage(Message payload, CompressedPublicKey kid) {
+    public SignedMessage(final Message payload, final CompressedPublicKey kid) {
         this(payload, kid, null);
     }
 
     @JsonCreator
-    public SignedMessage(@JsonProperty("payload") Message payload,
-                         @JsonProperty("kid") CompressedPublicKey kid,
-                         @JsonProperty("signature") Signature signature) {
+    public SignedMessage(@JsonProperty("payload") final Message payload,
+                         @JsonProperty("kid") final CompressedPublicKey kid,
+                         @JsonProperty("signature") final Signature signature) {
         this.payload = requireNonNull(payload);
         this.kid = kid;
         this.signature = signature;
@@ -71,7 +71,7 @@ public class SignedMessage implements Message, Signable {
     }
 
     @Override
-    public void writeFieldsTo(OutputStream outstream) throws IOException {
+    public void writeFieldsTo(final OutputStream outstream) throws IOException {
         requireNonNull(payload);
 
         JACKSON_WRITER.writeValue(outstream, payload);
@@ -83,7 +83,7 @@ public class SignedMessage implements Message, Signable {
     }
 
     @Override
-    public void setSignature(Signature signature) {
+    public void setSignature(final Signature signature) {
         this.signature = signature;
     }
 
@@ -99,14 +99,14 @@ public class SignedMessage implements Message, Signable {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        SignedMessage that = (SignedMessage) o;
+        final SignedMessage that = (SignedMessage) o;
         return Objects.equals(payload, that.payload) &&
                 Objects.equals(kid, that.kid) &&
                 Objects.equals(signature, that.signature);

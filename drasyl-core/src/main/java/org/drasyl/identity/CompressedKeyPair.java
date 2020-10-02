@@ -41,8 +41,8 @@ public class CompressedKeyPair {
     private final CompressedPrivateKey privateKey;
 
     @JsonCreator
-    CompressedKeyPair(@JsonProperty("publicKey") CompressedPublicKey publicKey,
-                      @JsonProperty("privateKey") CompressedPrivateKey privateKey) {
+    CompressedKeyPair(@JsonProperty("publicKey") final CompressedPublicKey publicKey,
+                      @JsonProperty("privateKey") final CompressedPrivateKey privateKey) {
         this.publicKey = publicKey;
         this.privateKey = privateKey;
     }
@@ -65,14 +65,14 @@ public class CompressedKeyPair {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        CompressedKeyPair that = (CompressedKeyPair) o;
+        final CompressedKeyPair that = (CompressedKeyPair) o;
         return Objects.equals(publicKey, that.publicKey) &&
                 Objects.equals(privateKey, that.privateKey);
     }
@@ -85,21 +85,21 @@ public class CompressedKeyPair {
                 '}';
     }
 
-    public static CompressedKeyPair of(CompressedPublicKey publicKey,
-                                       CompressedPrivateKey privateKey) {
+    public static CompressedKeyPair of(final CompressedPublicKey publicKey,
+                                       final CompressedPrivateKey privateKey) {
         return new CompressedKeyPair(publicKey, privateKey);
     }
 
-    public static CompressedKeyPair of(String publicKey, String privateKey) throws CryptoException {
+    public static CompressedKeyPair of(final String publicKey, final String privateKey) throws CryptoException {
         return new CompressedKeyPair(CompressedPublicKey.of(publicKey), CompressedPrivateKey.of(privateKey));
     }
 
-    public static CompressedKeyPair of(KeyPair keyPair) throws CryptoException {
+    public static CompressedKeyPair of(final KeyPair keyPair) throws CryptoException {
         return of(keyPair.getPublic(), keyPair.getPrivate());
     }
 
-    public static CompressedKeyPair of(PublicKey publicKey,
-                                       PrivateKey privateKey) throws CryptoException {
+    public static CompressedKeyPair of(final PublicKey publicKey,
+                                       final PrivateKey privateKey) throws CryptoException {
         return new CompressedKeyPair(CompressedPublicKey.of(publicKey), CompressedPrivateKey.of(privateKey));
     }
 }

@@ -59,14 +59,14 @@ public class DefaultClientChannelInitializer extends ClientChannelInitializer {
     protected static final String DRASYL_HANDSHAKE_AFTER_WEBSOCKET_HANDSHAKE = "drasylHandshakeAfterWebsocketHandshake";
     private final ClientEnvironment environment;
 
-    public DefaultClientChannelInitializer(ClientEnvironment environment) {
+    public DefaultClientChannelInitializer(final ClientEnvironment environment) {
         super(environment.getConfig().getFlushBufferSize(), environment.getIdleTimeout(),
                 environment.getIdleRetries(), environment.getEndpoint());
         this.environment = environment;
     }
 
     @Override
-    protected void afterPojoMarshalStage(ChannelPipeline pipeline) {
+    protected void afterPojoMarshalStage(final ChannelPipeline pipeline) {
         pipeline.addLast(SIGNATURE_HANDLER, new SignatureHandler(environment.getIdentity()));
         pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(environment.getConfig().getMessageHopLimit()));
         pipeline.addLast(CHUNKED_WRITER, new ChunkedWriteHandler());
@@ -74,26 +74,26 @@ public class DefaultClientChannelInitializer extends ClientChannelInitializer {
     }
 
     @Override
-    protected void customStage(ChannelPipeline pipeline) {
+    protected void customStage(final ChannelPipeline pipeline) {
         pipeline.addLast(EXCEPTION_MESSAGE_HANDLER, ConnectionExceptionMessageHandler.INSTANCE);
 
         pipeline.addLast(DRASYL_HANDSHAKE_AFTER_WEBSOCKET_HANDSHAKE, new MyChannelInboundHandlerAdapter(pipeline));
     }
 
     @Override
-    protected void exceptionStage(ChannelPipeline pipeline) {
+    protected void exceptionStage(final ChannelPipeline pipeline) {
         pipeline.addLast(EXCEPTION_HANDLER, new ExceptionHandler());
     }
 
     @Override
-    protected SslHandler generateSslContext(SocketChannel ch) throws ClientException {
+    protected SslHandler generateSslContext(final SocketChannel ch) throws ClientException {
         if (target.isSecureEndpoint()) {
             try {
-                SslContext sslContext = SslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE)
+                final SslContext sslContext = SslContextBuilder.forClient().trustManager(InsecureTrustManagerFactory.INSTANCE)
                         .protocols(environment.getConfig().getServerSSLProtocols()).build();
                 return sslContext.newHandler(ch.alloc(), target.getHost(), target.getPort());
             }
-            catch (SSLException e) {
+            catch (final SSLException e) {
                 throw new ClientException(e);
             }
         }
@@ -103,12 +103,12 @@ public class DefaultClientChannelInitializer extends ClientChannelInitializer {
     private class MyChannelInboundHandlerAdapter extends ChannelInboundHandlerAdapter {
         private final ChannelPipeline pipeline;
 
-        public MyChannelInboundHandlerAdapter(ChannelPipeline pipeline) {
+        public MyChannelInboundHandlerAdapter(final ChannelPipeline pipeline) {
             this.pipeline = pipeline;
         }
 
         @Override
-        public void userEventTriggered(ChannelHandlerContext ctx, Object evt) throws Exception {
+        public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) throws Exception {
             super.userEventTriggered(ctx, evt);
 
             if (evt instanceof ClientHandshakeStateEvent) {
@@ -119,8 +119,8 @@ public class DefaultClientChannelInitializer extends ClientChannelInitializer {
             }
         }
 
-        private void handlePublicKeyExchangeStateEvent(ChannelHandlerContext ctx,
-                                                       PublicKeyExchangeState e) {
+        private void handlePublicKeyExchangeStateEvent(final ChannelHandlerContext ctx,
+                                                       final PublicKeyExchangeState e) {
             if (e == KEY_AVAILABLE) {
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("[{}]: Public key available. Now adding {}.", ctx.channel().id().asShortText(), ClientConnectionHandler.class.getSimpleName());
@@ -133,8 +133,8 @@ public class DefaultClientChannelInitializer extends ClientChannelInitializer {
             }
         }
 
-        private void handleClientHandshakeStateEvent(ChannelHandlerContext ctx,
-                                                     ClientHandshakeStateEvent e) {
+        private void handleClientHandshakeStateEvent(final ChannelHandlerContext ctx,
+                                                     final ClientHandshakeStateEvent e) {
             if (e == HANDSHAKE_COMPLETE) {
                 if (LOG.isTraceEnabled()) {
                     LOG.trace("[{}]: WebSocket Handshake completed. Now adding {}.", ctx.channel().id().asShortText(), PublicKeyExchangeHandler.class.getSimpleName());

@@ -49,7 +49,7 @@ class PortMappingUtilTest {
                 when(mappedPort.getExternalAddress().getHostName()).thenReturn("1.2.3.4");
                 when(mappedPort.getLifetime()).thenReturn(300L);
                 when(scheduler.scheduleDirect(any(), eq(150_000L), eq(MILLISECONDS))).then(invocation -> {
-                    Runnable run = invocation.getArgument(0, Runnable.class);
+                    final Runnable run = invocation.getArgument(0, Runnable.class);
                     run.run();
                     return null;
                 }).thenReturn(refreshDisposable);

@@ -35,21 +35,20 @@ public abstract class SimpleDuplexHandler<I, E, O> extends SimpleInboundHandler<
         outboundMessageMatcher = TypeParameterMatcher.find(this, SimpleDuplexHandler.class, "O");
     }
 
-    protected SimpleDuplexHandler(Class<? extends I> inboundMessageType,
-                                  Class<? extends E> inboundEventType,
-                                  Class<? extends O> outboundMessageType) {
+    protected SimpleDuplexHandler(final Class<? extends I> inboundMessageType,
+                                  final Class<? extends E> inboundEventType,
+                                  final Class<? extends O> outboundMessageType) {
         super(inboundMessageType, inboundEventType);
         outboundMessageMatcher = TypeParameterMatcher.get(outboundMessageType);
     }
 
     @Override
-    public void write(HandlerContext ctx,
-                      CompressedPublicKey recipient,
-                      Object msg,
-                      CompletableFuture<Void> future) {
+    public void write(final HandlerContext ctx,
+                      final CompressedPublicKey recipient,
+                      final Object msg,
+                      final CompletableFuture<Void> future) {
         if (acceptOutbound(msg)) {
-            @SuppressWarnings("unchecked")
-            O castedMsg = (O) msg;
+            @SuppressWarnings("unchecked") final O castedMsg = (O) msg;
             matchedWrite(ctx, recipient, castedMsg, future);
         }
         else {
@@ -61,7 +60,7 @@ public abstract class SimpleDuplexHandler<I, E, O> extends SimpleInboundHandler<
      * Returns {@code true} if the given message should be handled. If {@code false} it will be
      * passed to the next {@link Handler} in the {@link Pipeline}.
      */
-    protected boolean acceptOutbound(Object msg) {
+    protected boolean acceptOutbound(final Object msg) {
         return outboundMessageMatcher.match(msg);
     }
 

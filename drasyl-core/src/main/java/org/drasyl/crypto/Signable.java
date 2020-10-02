@@ -44,11 +44,11 @@ public interface Signable {
      */
     @JsonIgnore
     default byte[] getSignableBytes() {
-        try (ByteArrayOutputStream os = new ByteArrayOutputStream()) {
+        try (final ByteArrayOutputStream os = new ByteArrayOutputStream()) {
             writeFieldsTo(os);
             return os.toByteArray();
         }
-        catch (Exception e) {
+        catch (final Exception e) {
             return null; // NOSONAR
         }
     }
@@ -65,7 +65,7 @@ public interface Signable {
      * @param outstream an outputstream to write to
      * @throws IOException
      */
-    default void writeFieldsTo(OutputStream outstream) throws IOException {
+    default void writeFieldsTo(final OutputStream outstream) throws IOException {
         // do nothing ;-)
     }
 

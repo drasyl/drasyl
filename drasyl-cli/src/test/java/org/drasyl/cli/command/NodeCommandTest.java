@@ -53,7 +53,7 @@ public class NodeCommandTest {
         void shouldPrintHelp() {
             underTest.help(cmd);
 
-            String output = outputStream.toString();
+            final String output = outputStream.toString();
             assertThat(output, containsString("Run a drasyl node in the current directory."));
             assertThat(output, containsString("Usage:" + System.lineSeparator()));
             assertThat(output, containsString("drasyl node [flags]" + System.lineSeparator()));
@@ -67,7 +67,7 @@ public class NodeCommandTest {
         private CommandLine cmd;
 
         @Test
-        void shouldRunANode(@Mock Pair<DrasylNode, CompletableFuture<Void>> pair) throws CliException {
+        void shouldRunANode(@Mock final Pair<DrasylNode, CompletableFuture<Void>> pair) throws CliException {
             when(nodeSupplier.apply(any())).thenReturn(pair);
             when(pair.second()).thenReturn(completedFuture(null));
 

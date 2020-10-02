@@ -25,11 +25,11 @@ import org.drasyl.DrasylException;
  * A IdentityManagerException is thrown by the {@link IdentityManager} when errors occur.
  */
 public class IdentityManagerException extends DrasylException {
-    public IdentityManagerException(Throwable cause) {
+    public IdentityManagerException(final Throwable cause) {
         super(cause);
     }
 
-    public IdentityManagerException(String cause) {
+    public IdentityManagerException(final String cause) {
         super(cause);
     }
 }

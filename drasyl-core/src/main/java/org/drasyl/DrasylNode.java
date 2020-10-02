@@ -150,10 +150,10 @@ public abstract class DrasylNode {
      * @param config custom configuration used for this node
      */
     @SuppressWarnings({ "java:S2095" })
-    public DrasylNode(DrasylConfig config) throws DrasylException {
+    public DrasylNode(final DrasylConfig config) throws DrasylException {
         try {
             this.config = config;
-            IdentityManager identityManager = new IdentityManager(this.config);
+            final IdentityManager identityManager = new IdentityManager(this.config);
             identityManager.loadOrCreateIdentity();
             this.identity = identityManager.getIdentity();
             this.peersManager = new PeersManager(this::onInternalEvent);
@@ -169,10 +169,10 @@ public abstract class DrasylNode {
             // drasyl Pipeline.
             pipeline.addFirst("passToMessengerHandler", new SimpleOutboundHandler<ApplicationMessage>() {
                 @Override
-                protected void matchedWrite(HandlerContext ctx,
-                                            CompressedPublicKey recipient,
-                                            ApplicationMessage msg,
-                                            CompletableFuture<Void> future) {
+                protected void matchedWrite(final HandlerContext ctx,
+                                            final CompressedPublicKey recipient,
+                                            final ApplicationMessage msg,
+                                            final CompletableFuture<Void> future) {
                     if (future.isDone()) {
                         if (LOG.isWarnEnabled()) {
                             LOG.warn("Message `{}` was not written to the underlying drasyl layer, because the corresponding future was already completed.", msg);
@@ -209,7 +209,7 @@ public abstract class DrasylNode {
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = completedFuture(null);
         }
-        catch (ConfigException e) {
+        catch (final ConfigException e) {
             throw new DrasylException("Couldn't load config: " + e.getMessage());
         }
     }
@@ -223,33 +223,33 @@ public abstract class DrasylNode {
      *
      * @param event the event
      */
-    void onInternalEvent(Event event) {
+    void onInternalEvent(final Event event) {
         pipeline.processInbound(event);
     }
 
-    CompletableFuture<Void> messageSink(RelayableMessage message) {
+    CompletableFuture<Void> messageSink(final RelayableMessage message) {
         if (!started.get()) {
             return failedFuture(new NoPathToPublicKeyException(identity.getPublicKey()));
         }
 
-        CompressedPublicKey recipient = message.getRecipient();
+        final CompressedPublicKey recipient = message.getRecipient();
 
         if (!identity.getPublicKey().equals(recipient)) {
             return failedFuture(new NoPathToPublicKeyException(recipient));
         }
 
         if (message instanceof ApplicationMessage) {
-            ApplicationMessage applicationMessage = (ApplicationMessage) message;
+            final ApplicationMessage applicationMessage = (ApplicationMessage) message;
             peersManager.addPeer(applicationMessage.getSender());
             return pipeline.processInbound(applicationMessage);
         }
         else if (message instanceof WhoisMessage) {
-            WhoisMessage whoisMessage = (WhoisMessage) message;
+            final WhoisMessage whoisMessage = (WhoisMessage) message;
             peersManager.setPeerInformation(whoisMessage.getRequester(), whoisMessage.getPeerInformation());
 
-            CompressedPublicKey myPublicKey = identity.getPublicKey();
-            PeerInformation myPeerInformation = PeerInformation.of(endpoints);
-            IdentityMessage identityMessage = new IdentityMessage(whoisMessage.getRequester(), myPublicKey, myPeerInformation, whoisMessage.getId());
+            final CompressedPublicKey myPublicKey = identity.getPublicKey();
+            final PeerInformation myPeerInformation = PeerInformation.of(endpoints);
+            final IdentityMessage identityMessage = new IdentityMessage(whoisMessage.getRequester(), myPublicKey, myPeerInformation, whoisMessage.getId());
 
             return messenger.send(identityMessage).exceptionally(e -> {
                 LOG.info("Unable to reply to {}: {}", whoisMessage, e.getMessage());
@@ -257,7 +257,7 @@ public abstract class DrasylNode {
             });
         }
         else if (message instanceof IdentityMessage) {
-            IdentityMessage identityMessage = (IdentityMessage) message;
+            final IdentityMessage identityMessage = (IdentityMessage) message;
             peersManager.setPeerInformation(identityMessage.getPublicKey(), identityMessage.getPeerInformation());
             return completedFuture(null);
         }
@@ -274,19 +274,19 @@ public abstract class DrasylNode {
      */
     public abstract void onEvent(Event event);
 
-    protected DrasylNode(DrasylConfig config,
-                         Identity identity,
-                         PeersManager peersManager,
-                         PeerChannelGroup channelGroup,
-                         Messenger messenger,
-                         Set<Endpoint> endpoints,
-                         AtomicBoolean acceptNewConnections,
-                         DrasylPipeline pipeline,
-                         List<DrasylNodeComponent> components,
-                         PluginManager pluginManager,
-                         AtomicBoolean started,
-                         CompletableFuture<Void> startSequence,
-                         CompletableFuture<Void> shutdownSequence) {
+    protected DrasylNode(final DrasylConfig config,
+                         final Identity identity,
+                         final PeersManager peersManager,
+                         final PeerChannelGroup channelGroup,
+                         final Messenger messenger,
+                         final Set<Endpoint> endpoints,
+                         final AtomicBoolean acceptNewConnections,
+                         final DrasylPipeline pipeline,
+                         final List<DrasylNodeComponent> components,
+                         final PluginManager pluginManager,
+                         final AtomicBoolean started,
+                         final CompletableFuture<Void> startSequence,
+                         final CompletableFuture<Void> shutdownSequence) {
         this.config = config;
         this.identity = identity;
         this.peersManager = peersManager;
@@ -328,11 +328,11 @@ public abstract class DrasylNode {
      * @see org.drasyl.pipeline.codec.TypeValidator
      * @since 0.1.3-SNAPSHOT
      */
-    public CompletableFuture<Void> send(String recipient, Object payload) {
+    public CompletableFuture<Void> send(final String recipient, final Object payload) {
         try {
             return send(CompressedPublicKey.of(recipient), payload);
         }
-        catch (CryptoException | IllegalArgumentException e) {
+        catch (final CryptoException | IllegalArgumentException e) {
             return failedFuture(new DrasylException("Unable to parse recipient's public key: " + e.getMessage()));
         }
     }
@@ -363,8 +363,8 @@ public abstract class DrasylNode {
      * @see org.drasyl.pipeline.codec.TypeValidator
      * @since 0.1.3-SNAPSHOT
      */
-    public CompletableFuture<Void> send(CompressedPublicKey recipient,
-                                        Object payload) {
+    public CompletableFuture<Void> send(final CompressedPublicKey recipient,
+                                        final Object payload) {
         return pipeline.processOutbound(recipient, payload);
     }
 
@@ -442,7 +442,7 @@ public abstract class DrasylNode {
             shutdownSequence.whenComplete((t, ex) -> getInstanceHeavy().scheduleDirect(() -> {
                 try {
                     pluginManager.beforeStart();
-                    for (DrasylNodeComponent component : components) {
+                    for (final DrasylNodeComponent component : components) {
                         component.open();
                     }
                     acceptNewConnections();
@@ -452,7 +452,7 @@ public abstract class DrasylNode {
                     startSequence.complete(null);
                     pluginManager.afterStart();
                 }
-                catch (DrasylException e) {
+                catch (final DrasylException e) {
                     onInternalEvent(new NodeUnrecoverableErrorEvent(Node.of(identity, endpoints), e));
                     LOG.info("Could not start drasyl Node: {}", e.getMessage());
                     LOG.info("Stop all running components...");
@@ -488,7 +488,7 @@ public abstract class DrasylNode {
             properties.load(DrasylNode.class.getClassLoader().getResourceAsStream("project.properties"));
             return properties.getProperty("version");
         }
-        catch (IOException e) {
+        catch (final IOException e) {
             return null;
         }
     }

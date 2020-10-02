@@ -6,7 +6,7 @@ package org.drasyl.event;
  * This is an immutable object.
  */
 public class PeerRelayEvent extends AbstractPeerEvent {
-    public PeerRelayEvent(Peer peer) {
+    public PeerRelayEvent(final Peer peer) {
         super(peer);
     }
 

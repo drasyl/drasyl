@@ -37,18 +37,18 @@ public class ObservableDrasylNode extends DrasylNode {
         this.events = PublishSubject.create();
     }
 
-    public ObservableDrasylNode(DrasylConfig config) throws DrasylException {
+    public ObservableDrasylNode(final DrasylConfig config) throws DrasylException {
         super(config);
         this.events = PublishSubject.<Event>create().toSerialized();
     }
 
     @Override
-    public void onEvent(Event event) {
+    public void onEvent(final Event event) {
         events.onNext(event);
     }
 
-    public static void main(String[] args) throws DrasylException {
-        ObservableDrasylNode node = new ObservableDrasylNode(DrasylConfig.newBuilder().localHostDiscoveryEnabled(false).serverExposeEnabled(false).build());
+    public static void main(final String[] args) throws DrasylException {
+        final ObservableDrasylNode node = new ObservableDrasylNode(DrasylConfig.newBuilder().localHostDiscoveryEnabled(false).serverExposeEnabled(false).build());
         node.events().subscribeOn(DrasylScheduler.getInstanceLight()).subscribe(System.out::println, System.err::println); // NOSONAR
         node.start().join();
     }

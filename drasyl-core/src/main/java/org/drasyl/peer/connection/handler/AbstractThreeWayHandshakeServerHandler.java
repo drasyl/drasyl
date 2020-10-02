@@ -43,15 +43,15 @@ public abstract class AbstractThreeWayHandshakeServerHandler<R extends RequestMe
     private R requestMessage;
     private O offerMessage;
 
-    protected AbstractThreeWayHandshakeServerHandler(Duration timeout, Messenger messenger) {
+    protected AbstractThreeWayHandshakeServerHandler(final Duration timeout, final Messenger messenger) {
         super(timeout, messenger);
     }
 
-    protected AbstractThreeWayHandshakeServerHandler(Duration timeout,
-                                                     Messenger messenger,
-                                                     CompletableFuture<Void> handshakeFuture,
-                                                     ScheduledFuture<?> timeoutFuture,
-                                                     R requestMessage, O offerMessage) {
+    protected AbstractThreeWayHandshakeServerHandler(final Duration timeout,
+                                                     final Messenger messenger,
+                                                     final CompletableFuture<Void> handshakeFuture,
+                                                     final ScheduledFuture<?> timeoutFuture,
+                                                     final R requestMessage, final O offerMessage) {
         super(timeout, messenger, handshakeFuture, timeoutFuture);
         this.requestMessage = requestMessage;
         this.offerMessage = offerMessage;
@@ -59,11 +59,11 @@ public abstract class AbstractThreeWayHandshakeServerHandler<R extends RequestMe
 
     @Override
     @SuppressWarnings("unchecked")
-    protected void doHandshake(ChannelHandlerContext ctx, Message message) {
+    protected void doHandshake(final ChannelHandlerContext ctx, final Message message) {
         try {
             if (message instanceof RequestMessage && this.requestMessage == null) {
                 this.requestMessage = (R) message;
-                ConnectionExceptionMessage.Error error = validateSessionRequest(requestMessage);
+                final ConnectionExceptionMessage.Error error = validateSessionRequest(requestMessage);
                 if (error == null) {
                     offerMessage = offerSession(ctx, requestMessage);
                     ctx.writeAndFlush(offerMessage);
@@ -73,7 +73,7 @@ public abstract class AbstractThreeWayHandshakeServerHandler<R extends RequestMe
                 }
             }
             else if (message instanceof StatusMessage && offerMessage.getId().equals(((StatusMessage) message).getCorrespondingId())) {
-                StatusMessage confirmMessage = (StatusMessage) message;
+                final StatusMessage confirmMessage = (StatusMessage) message;
 
                 if (confirmMessage.getCode() == STATUS_OK) {
                     confirmSession(ctx);
@@ -86,7 +86,7 @@ public abstract class AbstractThreeWayHandshakeServerHandler<R extends RequestMe
                 processUnexpectedMessageDuringHandshake(ctx, message);
             }
         }
-        catch (ClassCastException e) {
+        catch (final ClassCastException e) {
             processUnexpectedMessageDuringHandshake(ctx, message);
         }
     }
@@ -95,7 +95,7 @@ public abstract class AbstractThreeWayHandshakeServerHandler<R extends RequestMe
 
     protected abstract O offerSession(ChannelHandlerContext ctx, R requestMessage);
 
-    private void confirmSession(ChannelHandlerContext ctx) {
+    private void confirmSession(final ChannelHandlerContext ctx) {
         if (getLogger().isTraceEnabled()) {
             getLogger().trace("[{}]: Create new Connection from Channel {}", ctx.channel().id().asShortText(), ctx.channel().id());
         }

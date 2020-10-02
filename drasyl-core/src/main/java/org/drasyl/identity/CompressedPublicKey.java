@@ -38,7 +38,7 @@ public class CompressedPublicKey extends AbstractCompressedKey<PublicKey> {
      *                                  string
      * @throws CryptoException          if the string parameter does not conform to a valid key
      */
-    public CompressedPublicKey(String compressedKey) throws CryptoException {
+    public CompressedPublicKey(final String compressedKey) throws CryptoException {
         super(compressedKey);
     }
 
@@ -49,7 +49,7 @@ public class CompressedPublicKey extends AbstractCompressedKey<PublicKey> {
      * @throws IllegalArgumentException if parameter does not conform to a valid hexadecimal string
      * @throws CryptoException          if the parameter does not conform to a valid key
      */
-    public CompressedPublicKey(PublicKey key) throws CryptoException {
+    public CompressedPublicKey(final PublicKey key) throws CryptoException {
         this(HexUtil.bytesToHex(Crypto.compressedKey(key)), key);
     }
 
@@ -59,7 +59,7 @@ public class CompressedPublicKey extends AbstractCompressedKey<PublicKey> {
      * @param compressedKey compressed public key
      * @param key           public key
      */
-    CompressedPublicKey(String compressedKey, PublicKey key) {
+    CompressedPublicKey(final String compressedKey, final PublicKey key) {
         super(compressedKey, key);
     }
 
@@ -87,7 +87,7 @@ public class CompressedPublicKey extends AbstractCompressedKey<PublicKey> {
      * @throws IllegalArgumentException if string parameter does not conform to a valid hexadecimal
      *                                  string
      */
-    public static CompressedPublicKey of(String compressedKey) throws CryptoException {
+    public static CompressedPublicKey of(final String compressedKey) throws CryptoException {
         return new CompressedPublicKey(compressedKey);
     }
 
@@ -100,7 +100,7 @@ public class CompressedPublicKey extends AbstractCompressedKey<PublicKey> {
      * @throws IllegalArgumentException if string parameter does not conform to a valid hexadecimal
      *                                  string
      */
-    public static CompressedPublicKey of(PublicKey key) throws CryptoException {
+    public static CompressedPublicKey of(final PublicKey key) throws CryptoException {
         return new CompressedPublicKey(key);
     }
 }

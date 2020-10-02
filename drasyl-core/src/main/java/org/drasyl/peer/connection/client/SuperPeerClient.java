@@ -47,15 +47,15 @@ import java.util.function.Consumer;
 public class SuperPeerClient extends AbstractClient {
     private static final Logger LOG = LoggerFactory.getLogger(SuperPeerClient.class);
 
-    SuperPeerClient(DrasylConfig config,
-                    EventLoopGroup workerGroup,
-                    Set<Endpoint> endpoints,
-                    AtomicBoolean opened,
-                    BooleanSupplier acceptedNewConnections,
-                    AtomicInteger nextEndpointPointer,
-                    AtomicInteger nextRetryDelayPointer,
-                    DrasylFunction<Endpoint, Bootstrap, ClientException> bootstrapSupplier,
-                    Channel channel) {
+    SuperPeerClient(final DrasylConfig config,
+                    final EventLoopGroup workerGroup,
+                    final Set<Endpoint> endpoints,
+                    final AtomicBoolean opened,
+                    final BooleanSupplier acceptedNewConnections,
+                    final AtomicInteger nextEndpointPointer,
+                    final AtomicInteger nextRetryDelayPointer,
+                    final DrasylFunction<Endpoint, Bootstrap, ClientException> bootstrapSupplier,
+                    final Channel channel) {
         super(
                 config.getSuperPeerRetryDelays(),
                 workerGroup,
@@ -69,10 +69,10 @@ public class SuperPeerClient extends AbstractClient {
         );
     }
 
-    protected SuperPeerClient(DrasylConfig config,
-                              EventLoopGroup workerGroup,
-                              BooleanSupplier acceptNewConnectionsSupplier,
-                              DrasylFunction<Endpoint, Bootstrap, ClientException> bootstrapSupplier) {
+    protected SuperPeerClient(final DrasylConfig config,
+                              final EventLoopGroup workerGroup,
+                              final BooleanSupplier acceptNewConnectionsSupplier,
+                              final DrasylFunction<Endpoint, Bootstrap, ClientException> bootstrapSupplier) {
         super(
                 config.getSuperPeerRetryDelays(),
                 workerGroup,
@@ -81,14 +81,14 @@ public class SuperPeerClient extends AbstractClient {
                 bootstrapSupplier);
     }
 
-    public SuperPeerClient(DrasylConfig config,
-                           Identity identity,
-                           PeersManager peersManager,
-                           Messenger messenger,
-                           PeerChannelGroup channelGroup,
-                           EventLoopGroup workerGroup,
-                           Consumer<Event> eventConsumer,
-                           BooleanSupplier acceptNewConnectionsSupplier) {
+    public SuperPeerClient(final DrasylConfig config,
+                           final Identity identity,
+                           final PeersManager peersManager,
+                           final Messenger messenger,
+                           final PeerChannelGroup channelGroup,
+                           final EventLoopGroup workerGroup,
+                           final Consumer<Event> eventConsumer,
+                           final BooleanSupplier acceptNewConnectionsSupplier) {
         super(
                 config.getSuperPeerRetryDelays(),
                 workerGroup,

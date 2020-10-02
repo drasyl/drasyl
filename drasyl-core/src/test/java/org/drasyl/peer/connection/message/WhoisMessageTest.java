@@ -54,14 +54,14 @@ class WhoisMessageTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
-            String json = "{\"@type\":\"WhoisMessage\",\"id\":\"c78fe75d4c93bc07e916e539\",\"recipient\":\"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\"requester\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"peerInformation\":{\"endpoints\":[\"ws://test\"]}}";
+            final String json = "{\"@type\":\"WhoisMessage\",\"id\":\"c78fe75d4c93bc07e916e539\",\"recipient\":\"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\"requester\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"peerInformation\":{\"endpoints\":[\"ws://test\"]}}";
 
             assertEquals(new WhoisMessage(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), PeerInformation.of(Set.of(Endpoint.of("ws://test")))), JACKSON_READER.readValue(json, Message.class));
         }
 
         @Test
         void shouldRejectIncompleteData() {
-            String json = "{\"@type\":\"WhoisMessage\",\"id\":\"c78fe75d4c93bc07e916e539\",\"requester\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"peerInformation\":{\"endpoints\":[\"ws://test\"]}}";
+            final String json = "{\"@type\":\"WhoisMessage\",\"id\":\"c78fe75d4c93bc07e916e539\",\"requester\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"peerInformation\":{\"endpoints\":[\"ws://test\"]}}";
 
             assertThrows(ValueInstantiationException.class, () -> JACKSON_READER.readValue(json, Message.class));
         }
@@ -71,7 +71,7 @@ class WhoisMessageTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException, CryptoException {
-            WhoisMessage message = new WhoisMessage(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), PeerInformation.of(Set.of(Endpoint.of("ws://test"))));
+            final WhoisMessage message = new WhoisMessage(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), PeerInformation.of(Set.of(Endpoint.of("ws://test"))));
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
@@ -84,9 +84,9 @@ class WhoisMessageTest {
     class Equals {
         @Test
         void shouldReturnTrue() {
-            WhoisMessage message1 = new WhoisMessage(recipient, requester, peerInformation);
-            WhoisMessage message2 = new WhoisMessage(recipient, requester, peerInformation);
-            WhoisMessage message3 = new WhoisMessage(recipient, requester, peerInformation2);
+            final WhoisMessage message1 = new WhoisMessage(recipient, requester, peerInformation);
+            final WhoisMessage message2 = new WhoisMessage(recipient, requester, peerInformation);
+            final WhoisMessage message3 = new WhoisMessage(recipient, requester, peerInformation2);
 
             assertEquals(message1, message2);
             assertNotEquals(message1, message3);
@@ -98,9 +98,9 @@ class WhoisMessageTest {
     class HashCode {
         @Test
         void shouldReturnTrue() {
-            WhoisMessage message1 = new WhoisMessage(recipient, requester, peerInformation);
-            WhoisMessage message2 = new WhoisMessage(recipient, requester, peerInformation);
-            WhoisMessage message3 = new WhoisMessage(recipient, requester, peerInformation2);
+            final WhoisMessage message1 = new WhoisMessage(recipient, requester, peerInformation);
+            final WhoisMessage message2 = new WhoisMessage(recipient, requester, peerInformation);
+            final WhoisMessage message3 = new WhoisMessage(recipient, requester, peerInformation2);
 
             assertEquals(message1.hashCode(), message2.hashCode());
             assertNotEquals(message1.hashCode(), message3.hashCode());
@@ -112,7 +112,7 @@ class WhoisMessageTest {
     class IncrementHopCount {
         @Test
         void shouldIncrementHopCountByOne() {
-            WhoisMessage message = new WhoisMessage(recipient, requester, peerInformation);
+            final WhoisMessage message = new WhoisMessage(recipient, requester, peerInformation);
 
             message.incrementHopCount();
 

@@ -22,11 +22,11 @@ package org.drasyl.messenger;
  * A MessageSinkException is thrown by the {@link MessageSink} when errors occur.
  */
 public class MessageSinkException extends MessengerException {
-    public MessageSinkException(Throwable cause) {
+    public MessageSinkException(final Throwable cause) {
         super(cause);
     }
 
-    public MessageSinkException(String cause) {
+    public MessageSinkException(final String cause) {
         super(cause);
     }
 }

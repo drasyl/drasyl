@@ -36,13 +36,13 @@ public class Identity {
     private final ProofOfWork proofOfWork;
     private final CompressedKeyPair keyPair;
 
-    protected Identity(@JsonProperty("proofOfWork") int proofOfWork,
-                       @JsonProperty("publicKey") String publicKey,
-                       @JsonProperty("privateKey") String privateKey) throws CryptoException {
+    protected Identity(@JsonProperty("proofOfWork") final int proofOfWork,
+                       @JsonProperty("publicKey") final String publicKey,
+                       @JsonProperty("privateKey") final String privateKey) throws CryptoException {
         this(ProofOfWork.of(proofOfWork), CompressedKeyPair.of(publicKey, privateKey));
     }
 
-    private Identity(ProofOfWork proofOfWork, CompressedKeyPair keyPair) {
+    private Identity(final ProofOfWork proofOfWork, final CompressedKeyPair keyPair) {
         this.proofOfWork = proofOfWork;
         this.keyPair = keyPair;
     }
@@ -66,14 +66,14 @@ public class Identity {
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        Identity that = (Identity) o;
+        final Identity that = (Identity) o;
         return Objects.equals(keyPair, that.keyPair);
     }
 
@@ -99,26 +99,26 @@ public class Identity {
         return proofOfWork.isValid(keyPair.getPublicKey(), POW_DIFFICULTY);
     }
 
-    public static Identity of(ProofOfWork proofOfWork,
-                              CompressedPublicKey publicKey,
-                              CompressedPrivateKey privateKey) {
+    public static Identity of(final ProofOfWork proofOfWork,
+                              final CompressedPublicKey publicKey,
+                              final CompressedPrivateKey privateKey) {
         return of(proofOfWork, CompressedKeyPair.of(publicKey, privateKey));
     }
 
-    public static Identity of(ProofOfWork proofOfWork,
-                              CompressedKeyPair keyPair) {
+    public static Identity of(final ProofOfWork proofOfWork,
+                              final CompressedKeyPair keyPair) {
         return new Identity(proofOfWork, keyPair);
     }
 
-    public static Identity of(ProofOfWork proofOfWork,
-                              String publicKey,
-                              String privateKey) throws CryptoException {
+    public static Identity of(final ProofOfWork proofOfWork,
+                              final String publicKey,
+                              final String privateKey) throws CryptoException {
         return of(proofOfWork, CompressedKeyPair.of(publicKey, privateKey));
     }
 
-    public static Identity of(int proofOfWork,
-                              String publicKey,
-                              String privateKey) throws CryptoException {
+    public static Identity of(final int proofOfWork,
+                              final String publicKey,
+                              final String privateKey) throws CryptoException {
         return of(ProofOfWork.of(proofOfWork), CompressedKeyPair.of(publicKey, privateKey));
     }
 }

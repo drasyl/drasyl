@@ -42,12 +42,12 @@ public class ServerNewConnectionsGuard extends SimpleChannelInboundHandler<Messa
     private static final Logger LOG = LoggerFactory.getLogger(ServerNewConnectionsGuard.class);
     private final BooleanSupplier acceptNewConnectionsSupplier;
 
-    public ServerNewConnectionsGuard(BooleanSupplier acceptNewConnectionsSupplier) {
+    public ServerNewConnectionsGuard(final BooleanSupplier acceptNewConnectionsSupplier) {
         this.acceptNewConnectionsSupplier = acceptNewConnectionsSupplier;
     }
 
     @Override
-    protected void channelRead0(ChannelHandlerContext ctx, Message msg) {
+    protected void channelRead0(final ChannelHandlerContext ctx, final Message msg) {
         if (acceptNewConnectionsSupplier.getAsBoolean()) {
             ReferenceCountUtil.retain(msg);
             ctx.fireChannelRead(msg);

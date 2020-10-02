@@ -37,10 +37,10 @@ public class ObjectHolder2ApplicationMessageHandler extends SimpleOutboundHandle
     }
 
     @Override
-    protected void matchedWrite(HandlerContext ctx,
-                                CompressedPublicKey recipient,
-                                ObjectHolder msg,
-                                CompletableFuture<Void> future) {
+    protected void matchedWrite(final HandlerContext ctx,
+                                final CompressedPublicKey recipient,
+                                final ObjectHolder msg,
+                                final CompletableFuture<Void> future) {
         ctx.write(recipient, new ApplicationMessage(ctx.identity().getPublicKey(), recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, msg.getClazzAsString()), msg.getObject()), future);
     }
 }

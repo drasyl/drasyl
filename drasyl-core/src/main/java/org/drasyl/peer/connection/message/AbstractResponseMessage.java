@@ -26,12 +26,12 @@ import static java.util.Objects.requireNonNull;
 abstract class AbstractResponseMessage<R extends RequestMessage> extends AbstractMessage implements ResponseMessage<R> {
     protected final MessageId correspondingId;
 
-    protected AbstractResponseMessage(MessageId id, MessageId correspondingId) {
+    protected AbstractResponseMessage(final MessageId id, final MessageId correspondingId) {
         super(id);
         this.correspondingId = requireNonNull(correspondingId);
     }
 
-    protected AbstractResponseMessage(MessageId correspondingId) {
+    protected AbstractResponseMessage(final MessageId correspondingId) {
         this.correspondingId = requireNonNull(correspondingId);
     }
 
@@ -46,7 +46,7 @@ abstract class AbstractResponseMessage<R extends RequestMessage> extends Abstrac
     }
 
     @Override
-    public boolean equals(Object o) {
+    public boolean equals(final Object o) {
         if (this == o) {
             return true;
         }
@@ -56,7 +56,7 @@ abstract class AbstractResponseMessage<R extends RequestMessage> extends Abstrac
         if (!super.equals(o)) {
             return false;
         }
-        AbstractResponseMessage<?> that = (AbstractResponseMessage<?>) o;
+        final AbstractResponseMessage<?> that = (AbstractResponseMessage<?>) o;
         return Objects.equals(correspondingId, that.correspondingId);
     }
 }

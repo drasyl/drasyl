@@ -35,10 +35,10 @@ class ObservableUtilTest {
     class PairWithPreviousObservable {
         @Test
         void shouldPairCurrentAndPreviousItems() {
-            List<String> items = List.of("A", "B", "C", "D", "E");
+            final List<String> items = List.of("A", "B", "C", "D", "E");
 
-            Observable<Pair<String, String>> observable = pairWithPreviousObservable(Observable.fromIterable(items));
-            TestObserver<Pair<String, String>> observer = observable.test();
+            final Observable<Pair<String, String>> observable = pairWithPreviousObservable(Observable.fromIterable(items));
+            final TestObserver<Pair<String, String>> observer = observable.test();
 
             observer.assertValues(
                     Pair.of("A", null),

@@ -30,16 +30,16 @@ abstract class AbstractCommand implements Command {
     protected final PrintStream printStream;
 
     public AbstractCommand(
-            PrintStream printStream) {
+            final PrintStream printStream) {
         this.printStream = printStream;
     }
 
     @Override
-    public void execute(String[] args) throws CliException {
-        Options flags = getOptions();
-        CommandLineParser parser = new DefaultParser();
+    public void execute(final String[] args) throws CliException {
+        final Options flags = getOptions();
+        final CommandLineParser parser = new DefaultParser();
         try {
-            CommandLine cmd = parser.parse(flags, args);
+            final CommandLine cmd = parser.parse(flags, args);
 
             setLogLevel(cmd);
             log.debug("drasyl: Version '{}' starting with parameters [{}]", DrasylNode.getVersion(), args.length > 0 ? "'" + String.join("', '", args) + "'" : "");
@@ -51,20 +51,20 @@ abstract class AbstractCommand implements Command {
                 execute(cmd);
             }
         }
-        catch (ParseException e) {
+        catch (final ParseException e) {
             throw new CliException(e);
         }
     }
 
-    protected void helpTemplate(String name, String header, String footer) {
+    protected void helpTemplate(final String name, final String header, final String footer) {
         helpTemplate(name, header, footer, Map.of());
     }
 
     @SuppressWarnings({ "java:S1192" })
-    protected void helpTemplate(String name,
-                                String header,
-                                String footer,
-                                Map<String, String> commands) {
+    protected void helpTemplate(final String name,
+                                final String header,
+                                final String footer,
+                                final Map<String, String> commands) {
         if (!header.isEmpty()) {
             printStream.println(header);
             printStream.println();
@@ -79,9 +79,9 @@ abstract class AbstractCommand implements Command {
 
         if (!commands.isEmpty()) {
             printStream.println("Available Commands:");
-            for (Map.Entry<String, String> entry : commands.entrySet()) {
-                String command = entry.getKey();
-                String description = entry.getValue();
+            for (final Map.Entry<String, String> entry : commands.entrySet()) {
+                final String command = entry.getKey();
+                final String description = entry.getValue();
                 printStream.printf("%-15s", command);
                 printStream.printf("%-15s%n", description);
             }
@@ -89,8 +89,8 @@ abstract class AbstractCommand implements Command {
         }
 
         printStream.println("Flags:");
-        HelpFormatter formatter = new HelpFormatter();
-        PrintWriter printWriter = new PrintWriter(printStream);
+        final HelpFormatter formatter = new HelpFormatter();
+        final PrintWriter printWriter = new PrintWriter(printStream);
         formatter.printOptions(printWriter, 100, getOptions(), 0, 6);
         printWriter.flush();
 
@@ -100,21 +100,21 @@ abstract class AbstractCommand implements Command {
         }
     }
 
-    protected void helpTemplate(String name, String header) {
+    protected void helpTemplate(final String name, final String header) {
         helpTemplate(name, header, "");
     }
 
     protected Options getOptions() {
-        Options options = new Options();
+        final Options options = new Options();
 
         // global flags
-        Option help = Option.builder("h").longOpt(OPT_HELP).desc("Show this help.").build();
+        final Option help = Option.builder("h").longOpt(OPT_HELP).desc("Show this help.").build();
         options.addOption(help);
 
-        Option verbose = Option.builder("v").longOpt(OPT_VERBOSE).hasArg().argName("level").desc("Sets the log level (off, error, warn, info, debug, trace; default: warn)").build();
+        final Option verbose = Option.builder("v").longOpt(OPT_VERBOSE).hasArg().argName("level").desc("Sets the log level (off, error, warn, info, debug, trace; default: warn)").build();
         options.addOption(verbose);
 
-        Option config = Option.builder("c").longOpt(OPT_CONFIG).hasArg().argName("file").desc("Load configuration from specified file (default: " + DEFAULT_CONF_PATH + ").").build();
+        final Option config = Option.builder("c").longOpt(OPT_CONFIG).hasArg().argName("file").desc("Load configuration from specified file (default: " + DEFAULT_CONF_PATH + ").").build();
         options.addOption(config);
 
         return options;
@@ -124,20 +124,20 @@ abstract class AbstractCommand implements Command {
 
     protected abstract void execute(CommandLine cmd) throws CliException;
 
-    protected void setLogLevel(CommandLine cmd) {
+    protected void setLogLevel(final CommandLine cmd) {
         if (cmd.hasOption(OPT_VERBOSE)) {
-            String levelString = cmd.getOptionValue(OPT_VERBOSE);
-            Level level = Level.valueOf(levelString);
+            final String levelString = cmd.getOptionValue(OPT_VERBOSE);
+            final Level level = Level.valueOf(levelString);
 
-            ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.drasyl");
+            final ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.drasyl");
             root.setLevel(level);
         }
     }
 
-    protected DrasylConfig getDrasylConfig(CommandLine cmd) {
-        DrasylConfig config;
+    protected DrasylConfig getDrasylConfig(final CommandLine cmd) {
+        final DrasylConfig config;
         if (cmd.hasOption(OPT_CONFIG)) {
-            File file = new File(cmd.getOptionValue(OPT_CONFIG));
+            final File file = new File(cmd.getOptionValue(OPT_CONFIG));
             log.info("Using config file from '{}'", file);
             config = DrasylConfig.parseFile(file);
         }

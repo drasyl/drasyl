@@ -60,7 +60,7 @@ class MessengerTest {
     class Send {
         @Test
         void shouldSendMessageToLoopbackSinkIfAllSinksArePresent() {
-            Messenger messenger = new Messenger(peerCommunicationOccurred, loopbackSink, intraVmSink, channelGroupSink);
+            final Messenger messenger = new Messenger(peerCommunicationOccurred, loopbackSink, intraVmSink, channelGroupSink);
             messenger.send(applicationMessage);
 
             verify(loopbackSink).send(applicationMessage);
@@ -72,7 +72,7 @@ class MessengerTest {
         void shouldSendMessageToIntraVmSinkIfLoopbackSinkCanNotSendMessage() {
             when(loopbackSink.send(any())).thenReturn(failedFuture(noPathToPublicKeyException));
 
-            Messenger messenger = new Messenger(peerCommunicationOccurred, loopbackSink, intraVmSink, channelGroupSink);
+            final Messenger messenger = new Messenger(peerCommunicationOccurred, loopbackSink, intraVmSink, channelGroupSink);
             messenger.send(applicationMessage);
 
             verify(intraVmSink).send(applicationMessage);
@@ -82,9 +82,8 @@ class MessengerTest {
         @Test
         void shouldThrowExceptionIfNoSinkCanNotSendMessage() {
             when(applicationMessage.getRecipient()).thenReturn(address);
-            Answer<Object> failingSink = invocation -> {
-                @SuppressWarnings("unchecked")
-                BiConsumer<Void, Throwable> consumer = invocation.getArgument(0, BiConsumer.class);
+            final Answer<Object> failingSink = invocation -> {
+                @SuppressWarnings("unchecked") final BiConsumer<Void, Throwable> consumer = invocation.getArgument(0, BiConsumer.class);
                 consumer.accept(null, new NoPathToPublicKeyException(address));
                 return null;
             };
@@ -92,7 +91,7 @@ class MessengerTest {
             when(intraVmSink.send(any()).whenComplete(any())).then(failingSink);
             when(channelGroupSink.send(any()).whenComplete(any())).then(failingSink);
 
-            Messenger messenger = new Messenger(peerCommunicationOccurred, loopbackSink, intraVmSink, channelGroupSink);
+            final Messenger messenger = new Messenger(peerCommunicationOccurred, loopbackSink, intraVmSink, channelGroupSink);
 
             assertThrows(ExecutionException.class, () -> messenger.send(applicationMessage).get());
         }

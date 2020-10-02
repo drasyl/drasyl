@@ -83,9 +83,9 @@ public abstract class SimpleChannelDuplexHandler<I, O> extends SimpleChannelInbo
      * @param autoFulfillPromise  {@code true} if outbound {@link ChannelPromise} should be
      *                            fulfilled automatically
      */
-    protected SimpleChannelDuplexHandler(boolean inboundAutoRelease,
-                                         boolean outboundAutoRelease,
-                                         boolean autoFulfillPromise) {
+    protected SimpleChannelDuplexHandler(final boolean inboundAutoRelease,
+                                         final boolean outboundAutoRelease,
+                                         final boolean autoFulfillPromise) {
         super(inboundAutoRelease);
         this.outboundAutoRelease = outboundAutoRelease;
         this.autoFulfillPromise = autoFulfillPromise;
@@ -96,8 +96,8 @@ public abstract class SimpleChannelDuplexHandler<I, O> extends SimpleChannelInbo
      * see {@link #SimpleChannelDuplexHandler(Class, Class, boolean, boolean, boolean)} with {@code
      * true} as boolean values.
      */
-    protected SimpleChannelDuplexHandler(Class<? extends I> inboundMessageType,
-                                         Class<? extends O> outboundMessageType) {
+    protected SimpleChannelDuplexHandler(final Class<? extends I> inboundMessageType,
+                                         final Class<? extends O> outboundMessageType) {
         this(inboundMessageType, outboundMessageType, true, true, true);
     }
 
@@ -113,11 +113,11 @@ public abstract class SimpleChannelDuplexHandler<I, O> extends SimpleChannelInbo
      * @param autoFulfillPromise  {@code true} if outbound {@link ChannelPromise} should be
      *                            fulfilled automatically
      */
-    protected SimpleChannelDuplexHandler(Class<? extends I> inboundMessageType,
-                                         Class<? extends O> outboundMessageType,
-                                         boolean inboundAutoRelease,
-                                         boolean outboundAutoRelease,
-                                         boolean autoFulfillPromise) {
+    protected SimpleChannelDuplexHandler(final Class<? extends I> inboundMessageType,
+                                         final Class<? extends O> outboundMessageType,
+                                         final boolean inboundAutoRelease,
+                                         final boolean outboundAutoRelease,
+                                         final boolean autoFulfillPromise) {
         super(inboundMessageType, inboundAutoRelease);
         this.outboundAutoRelease = outboundAutoRelease;
         this.autoFulfillPromise = autoFulfillPromise;
@@ -138,47 +138,46 @@ public abstract class SimpleChannelDuplexHandler<I, O> extends SimpleChannelInbo
     // The following code skips this handler and passes every request to the next handler in the pipeline.
     // -----------------------------------------------------------------------------------------------------------------
     @Override
-    public void bind(ChannelHandlerContext ctx, SocketAddress localAddress,
-                     ChannelPromise promise) throws Exception {
+    public void bind(final ChannelHandlerContext ctx, final SocketAddress localAddress,
+                     final ChannelPromise promise) throws Exception {
         ctx.bind(localAddress, promise);
     }
 
     @Override
-    public void connect(ChannelHandlerContext ctx, SocketAddress remoteAddress,
-                        SocketAddress localAddress, ChannelPromise promise) throws Exception {
+    public void connect(final ChannelHandlerContext ctx, final SocketAddress remoteAddress,
+                        final SocketAddress localAddress, final ChannelPromise promise) throws Exception {
         ctx.connect(remoteAddress, localAddress, promise);
     }
 
     @Override
-    public void disconnect(ChannelHandlerContext ctx, ChannelPromise promise)
+    public void disconnect(final ChannelHandlerContext ctx, final ChannelPromise promise)
             throws Exception {
         ctx.disconnect(promise);
     }
 
     @Override
-    public void close(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+    public void close(final ChannelHandlerContext ctx, final ChannelPromise promise) throws Exception {
         ctx.close(promise);
     }
 
     @Override
-    public void deregister(ChannelHandlerContext ctx, ChannelPromise promise) throws Exception {
+    public void deregister(final ChannelHandlerContext ctx, final ChannelPromise promise) throws Exception {
         ctx.deregister(promise);
     }
 
     @Override
-    public void read(ChannelHandlerContext ctx) throws Exception {
+    public void read(final ChannelHandlerContext ctx) throws Exception {
         ctx.read();
     }
 
     @Override
-    public void write(ChannelHandlerContext ctx,
-                      Object msg,
-                      ChannelPromise promise) throws Exception {
+    public void write(final ChannelHandlerContext ctx,
+                      final Object msg,
+                      final ChannelPromise promise) throws Exception {
         boolean release = true;
         try {
             if (acceptOutboundMessage(msg)) {
-                @SuppressWarnings("unchecked")
-                O omsg = (O) msg;
+                @SuppressWarnings("unchecked") final O omsg = (O) msg;
                 channelWrite0(ctx, omsg, promise);
             }
             else {
@@ -202,7 +201,7 @@ public abstract class SimpleChannelDuplexHandler<I, O> extends SimpleChannelInbo
      * Returns {@code true} if the given message should be handled. If {@code false} it will be
      * passed to the next {@link ChannelOutboundHandler} in the {@link ChannelPipeline}.
      */
-    public boolean acceptOutboundMessage(Object msg) {
+    public boolean acceptOutboundMessage(final Object msg) {
         return outboundMatcher.match(msg);
     }
 
@@ -220,7 +219,7 @@ public abstract class SimpleChannelDuplexHandler<I, O> extends SimpleChannelInbo
                                           ChannelPromise promise) throws Exception; //NOSONAR
 
     @Override
-    public void flush(ChannelHandlerContext ctx) throws Exception {
+    public void flush(final ChannelHandlerContext ctx) throws Exception {
         ctx.flush();
     }
     // -----------------------------------------------------------------------------------------------------------------

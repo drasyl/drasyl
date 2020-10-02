@@ -40,7 +40,7 @@ public final class Hashing {
      * @param input the input to hash
      * @return SHA-256 hash of the input
      */
-    public static String sha256Hex(String input) {
+    public static String sha256Hex(final String input) {
         return sha256Hex(input.getBytes(StandardCharsets.UTF_8));
     }
 
@@ -50,7 +50,7 @@ public final class Hashing {
      * @param input the input to hash
      * @return SHA-256 hash of the input
      */
-    public static String sha256Hex(byte[] input) {
+    public static String sha256Hex(final byte[] input) {
         return hashCode2Hex(SHA256.hashBytes(input));
     }
 
@@ -60,7 +60,7 @@ public final class Hashing {
      * @param code the hash code to be converted
      * @return hexadecimal string representation of the hash code
      */
-    public static String hashCode2Hex(HashCode code) {
+    public static String hashCode2Hex(final HashCode code) {
         return HexUtil.bytesToHex(code.asBytes());
     }
 
@@ -70,7 +70,7 @@ public final class Hashing {
      * @param input the input to hash
      * @return MurMur3x64 hash as hexadecimal string
      */
-    public static String murmur3x64Hex(String input) {
+    public static String murmur3x64Hex(final String input) {
         return murmur3x64Hex(input.getBytes(StandardCharsets.UTF_8));
     }
 
@@ -80,7 +80,7 @@ public final class Hashing {
      * @param input the input to hash
      * @return MurMur3x64 hash as hexadecimal string
      */
-    public static String murmur3x64Hex(byte[] input) {
+    public static String murmur3x64Hex(final byte[] input) {
         return hashCode2Hex(MURMUR3_128.hashBytes(input));
     }
 }
