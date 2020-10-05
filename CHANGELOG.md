@@ -9,7 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Each node now belongs to a certain network ID. Connections between nodes will occur only if both
 peers use the same network ID. The main network has ID 1 (see configuration `drasyl.network.id`)
 - Added drasyl groups plugin for membership management
-
+- Added support for netty's Epoll server channel
 
 ### Changed
 - `drasyl-core` now only depends on slf4j and no longer on logback. As part of this, the methods
