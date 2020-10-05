@@ -19,9 +19,9 @@
 package org.drasyl.peer.connection.streaming;
 
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.reactivex.rxjava3.core.Observable;
 import org.drasyl.DrasylConfig;
+import org.drasyl.DrasylNode;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
@@ -101,8 +101,8 @@ class ChunkedMessageIT {
 //        ch.qos.logback.classic.Logger root = (ch.qos.logback.classic.Logger) LoggerFactory.getLogger("org.drasyl");
 //        root.setLevel(Level.TRACE);
 
-        workerGroup = new NioEventLoopGroup();
-        bossGroup = new NioEventLoopGroup(1);
+        workerGroup = DrasylNode.getBestEventLoop();
+        bossGroup = DrasylNode.getBestEventLoop(1);
 
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
         System.setProperty("io.netty.leakDetection.level", "DISABLED");

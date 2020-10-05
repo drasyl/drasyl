@@ -21,6 +21,8 @@ package org.drasyl;
 import com.google.common.annotations.Beta;
 import com.typesafe.config.ConfigException;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.epoll.Epoll;
+import io.netty.channel.epoll.EpollEventLoopGroup;
 import io.netty.channel.group.ChannelGroupFutureListener;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.crypto.CryptoException;
@@ -553,7 +555,7 @@ public abstract class DrasylNode {
 
     private static class LazyWorkerGroupHolder {
         // https://github.com/netty/netty/issues/639#issuecomment-9263566
-        static final EventLoopGroup INSTANCE = new NioEventLoopGroup(Math.min(2,
+        static final EventLoopGroup INSTANCE = getBestEventLoop(Math.min(2,
                 Math.max(2, Runtime.getRuntime().availableProcessors() * 2 / 3 - 2)));
         static final boolean LOCK = workerGroupCreated = true;
 
@@ -563,10 +565,40 @@ public abstract class DrasylNode {
 
     private static class LazyBossGroupHolder {
         // https://github.com/netty/netty/issues/639#issuecomment-9263566
-        static final EventLoopGroup INSTANCE = new NioEventLoopGroup(2);
+        static final EventLoopGroup INSTANCE = getBestEventLoop(2);
         static final boolean LOCK = bossGroupCreated = true;
 
         private LazyBossGroupHolder() {
+        }
+    }
+
+    /**
+     * Returns the {@link EventLoopGroup} that fits best to the current environment. Under Linux the
+     * more performant {@link EpollEventLoopGroup} is returned.
+     *
+     * @return {@link EventLoopGroup} that fits best to the current environment
+     */
+    public static EventLoopGroup getBestEventLoop(final int poolSize) {
+        if (Epoll.isAvailable()) {
+            return new EpollEventLoopGroup(poolSize);
+        }
+        else {
+            return new NioEventLoopGroup(poolSize);
+        }
+    }
+
+    /**
+     * Returns the {@link EventLoopGroup} that fits best to the current environment. Under Linux the
+     * more performant {@link EpollEventLoopGroup} is returned.
+     *
+     * @return {@link EventLoopGroup} that fits best to the current environment
+     */
+    public static EventLoopGroup getBestEventLoop() {
+        if (Epoll.isAvailable()) {
+            return new EpollEventLoopGroup();
+        }
+        else {
+            return new NioEventLoopGroup();
         }
     }
 }

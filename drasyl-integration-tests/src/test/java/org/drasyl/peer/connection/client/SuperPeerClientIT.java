@@ -19,12 +19,12 @@
 package org.drasyl.peer.connection.client;
 
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.reactivex.rxjava3.observers.TestObserver;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
+import org.drasyl.DrasylNode;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
@@ -107,9 +107,9 @@ class SuperPeerClientIT {
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
         System.setProperty("io.netty.leakDetection.level", "PARANOID");
 
-        workerGroup = new NioEventLoopGroup();
-        serverWorkerGroup = new NioEventLoopGroup();
-        bossGroup = new NioEventLoopGroup(1);
+        workerGroup = DrasylNode.getBestEventLoop();
+        serverWorkerGroup = DrasylNode.getBestEventLoop();
+        bossGroup = DrasylNode.getBestEventLoop(1);
 
         config = DrasylConfig.newBuilder()
                 .networkId(0)

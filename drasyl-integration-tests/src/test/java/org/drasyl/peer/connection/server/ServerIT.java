@@ -26,6 +26,7 @@ import io.netty.util.ResourceLeakDetector;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
+import org.drasyl.DrasylNode;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPrivateKey;
@@ -594,8 +595,8 @@ class ServerIT {
 
     @BeforeAll
     static void beforeAll() {
-        workerGroup = new NioEventLoopGroup();
-        bossGroup = new NioEventLoopGroup(1);
+        workerGroup = DrasylNode.getBestEventLoop();
+        bossGroup = DrasylNode.getBestEventLoop(1);
     }
 
     @AfterAll
