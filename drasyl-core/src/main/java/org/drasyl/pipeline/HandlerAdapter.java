@@ -52,7 +52,9 @@ public class HandlerAdapter implements Handler {
     }
 
     @Override
-    public void eventTriggered(final HandlerContext ctx, final Event event, final CompletableFuture<Void> future) {
+    public void eventTriggered(final HandlerContext ctx,
+                               final Event event,
+                               final CompletableFuture<Void> future) {
         ctx.fireEventTriggered(event, future);
     }
 

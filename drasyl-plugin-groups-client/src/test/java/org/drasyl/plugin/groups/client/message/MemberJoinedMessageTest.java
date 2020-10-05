@@ -14,7 +14,7 @@
  *  GNU Lesser General Public License for more details.
  *
  *  You should have received a copy of the GNU Lesser General Public License
- *  along with drasyl.  If not, see <http://www.gnu.org/licenses />.
+ *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
 package org.drasyl.plugin.groups.client.message;
 
@@ -39,8 +39,9 @@ class MemberJoinedMessageTest {
     class Constructor {
         @Test
         void shouldRejectNullValues() {
+            final Group group = Group.of("my-squad");
             assertThrows(NullPointerException.class, () -> new MemberJoinedMessage(publicKey, null));
-            assertThrows(NullPointerException.class, () -> new MemberJoinedMessage(null, Group.of("my-squad")));
+            assertThrows(NullPointerException.class, () -> new MemberJoinedMessage(null, group));
         }
 
         @Test

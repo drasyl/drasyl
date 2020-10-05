@@ -69,7 +69,8 @@ public class SignatureHandler extends SimpleChannelDuplexHandler<Message, Messag
      * @param ctx           channel handler context
      * @param signedMessage the signed message
      */
-    private void inboundSafeguards(final ChannelHandlerContext ctx, final SignedMessage signedMessage) {
+    private void inboundSafeguards(final ChannelHandlerContext ctx,
+                                   final SignedMessage signedMessage) {
         final PublicKey publicKey = extractPublicKey(signedMessage);
 
         // Prevent MITM after JoinMessage

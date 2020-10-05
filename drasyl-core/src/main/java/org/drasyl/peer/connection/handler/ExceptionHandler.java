@@ -101,7 +101,9 @@ public class ExceptionHandler extends ChannelDuplexHandler {
     }
 
     @Override
-    public void write(final ChannelHandlerContext ctx, final Object msg, final ChannelPromise promise) {
+    public void write(final ChannelHandlerContext ctx,
+                      final Object msg,
+                      final ChannelPromise promise) {
         ctx.write(msg, exceptionListener.getListener(promise, ctx));
     }
 

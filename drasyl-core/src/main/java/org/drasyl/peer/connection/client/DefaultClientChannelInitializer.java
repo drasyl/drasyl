@@ -108,7 +108,8 @@ public class DefaultClientChannelInitializer extends ClientChannelInitializer {
         }
 
         @Override
-        public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) throws Exception {
+        public void userEventTriggered(final ChannelHandlerContext ctx,
+                                       final Object evt) throws Exception {
             super.userEventTriggered(ctx, evt);
 
             if (evt instanceof ClientHandshakeStateEvent) {

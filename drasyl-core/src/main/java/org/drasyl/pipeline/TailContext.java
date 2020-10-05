@@ -93,7 +93,9 @@ class TailContext extends AbstractEndHandler {
     }
 
     @Override
-    public void eventTriggered(final HandlerContext ctx, final Event event, final CompletableFuture<Void> future) {
+    public void eventTriggered(final HandlerContext ctx,
+                               final Event event,
+                               final CompletableFuture<Void> future) {
         // Pass event to Application
         if (future.isDone()) {
             if (LOG.isWarnEnabled()) {

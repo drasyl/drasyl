@@ -86,7 +86,8 @@ public class ProofOfWork {
         return ProofOfWork.generateProofOfWork(publicKey, difficulty);
     }
 
-    public static ProofOfWork generateProofOfWork(final CompressedPublicKey publicKey, final short difficulty) {
+    public static ProofOfWork generateProofOfWork(final CompressedPublicKey publicKey,
+                                                  final short difficulty) {
         LOG.info("Generate proof of work. This may take a while ...");
         final ProofOfWork pow = new ProofOfWork();
 
@@ -111,7 +112,8 @@ public class ProofOfWork {
         return Hashing.sha256Hex(publicKey.getCompressedKey() + nonce);
     }
 
-    public static short getDifficulty(final ProofOfWork proofOfWork, final CompressedPublicKey publicKey) {
+    public static short getDifficulty(final ProofOfWork proofOfWork,
+                                      final CompressedPublicKey publicKey) {
         final String hash = generateHash(publicKey, proofOfWork.getNonce());
         short i;
 

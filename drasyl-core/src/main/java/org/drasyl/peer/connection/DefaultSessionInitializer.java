@@ -38,8 +38,8 @@ import static org.drasyl.peer.connection.handler.MessageDecoder.MESSAGE_DECODER;
 import static org.drasyl.peer.connection.handler.MessageEncoder.MESSAGE_ENCODER;
 
 /**
- * Creates a newly configured {@link ChannelPipeline} for a new channel for a connection to or
- * from a the {@link org.drasyl.peer.connection.server.Server}.
+ * Creates a newly configured {@link ChannelPipeline} for a new channel for a connection to or from
+ * a the {@link org.drasyl.peer.connection.server.Server}.
  *
  * <p>
  * <b>Note: You have to add a websocket handler by yourself to the {@link

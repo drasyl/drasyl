@@ -157,7 +157,9 @@ public class ChunkedMessageOutput {
         }
     }
 
-    private void logDebug(final String format, final ChannelHandlerContext ctx, final Object... arguments) {
+    private void logDebug(final String format,
+                          final ChannelHandlerContext ctx,
+                          final Object... arguments) {
         if (LOG.isDebugEnabled()) {
             LOG.debug("[" + ctx.channel().id().asShortText() + "]:" + format, arguments); // NOSONAR
         }

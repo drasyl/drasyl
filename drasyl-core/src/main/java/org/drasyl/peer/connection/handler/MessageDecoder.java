@@ -49,7 +49,9 @@ public class MessageDecoder extends MessageToMessageDecoder<BinaryWebSocketFrame
     }
 
     @Override
-    protected void decode(final ChannelHandlerContext ctx, final BinaryWebSocketFrame msg, final List<Object> out) {
+    protected void decode(final ChannelHandlerContext ctx,
+                          final BinaryWebSocketFrame msg,
+                          final List<Object> out) {
         try {
             final ByteBufInputStream inputStream = new ByteBufInputStream(msg.content());
             final Message message = requireNonNull(JACKSON_READER.readValue((InputStream) inputStream, Message.class));

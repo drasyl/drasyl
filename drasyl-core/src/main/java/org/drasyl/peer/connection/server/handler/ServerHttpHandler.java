@@ -184,7 +184,6 @@ public class ServerHttpHandler extends SimpleChannelInboundHandler<FullHttpReque
             return children;
         }
 
-
         public CompressedPublicKey getSuperPeer() {
             return superPeer;
         }

@@ -90,7 +90,8 @@ public class CompressedKeyPair {
         return new CompressedKeyPair(publicKey, privateKey);
     }
 
-    public static CompressedKeyPair of(final String publicKey, final String privateKey) throws CryptoException {
+    public static CompressedKeyPair of(final String publicKey,
+                                       final String privateKey) throws CryptoException {
         return new CompressedKeyPair(CompressedPublicKey.of(publicKey), CompressedPrivateKey.of(privateKey));
     }
 

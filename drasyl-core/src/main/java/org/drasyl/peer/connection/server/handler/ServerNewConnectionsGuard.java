@@ -34,8 +34,8 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_SERVI
 
 /**
  * This handler acts as a channel creation guard. A new channel should not be created, if the {@code
- * isOpenSupplier} returns <code>false</code>. Used by the {@link Server} to prevent new
- * connections from being established during shutdown.
+ * isOpenSupplier} returns <code>false</code>. Used by the {@link Server} to prevent new connections
+ * from being established during shutdown.
  */
 public class ServerNewConnectionsGuard extends SimpleChannelInboundHandler<Message> {
     public static final String CONNECTION_GUARD = "connectionGuard";

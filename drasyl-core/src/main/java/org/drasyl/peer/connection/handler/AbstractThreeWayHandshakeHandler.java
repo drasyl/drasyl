@@ -92,7 +92,8 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
     }
 
     @Override
-    public void close(final ChannelHandlerContext ctx, final ChannelPromise promise) throws Exception {
+    public void close(final ChannelHandlerContext ctx,
+                      final ChannelPromise promise) throws Exception {
         if (timeoutFuture != null) {
             timeoutFuture.cancel(true);
         }
@@ -124,7 +125,8 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
     }
 
     @SuppressWarnings({ "java:S1172" })
-    protected void processMessageAfterHandshake(final ChannelHandlerContext ctx, final Message message) {
+    protected void processMessageAfterHandshake(final ChannelHandlerContext ctx,
+                                                final Message message) {
         if (message instanceof RelayableMessage) {
             final RelayableMessage relayableMessage = (RelayableMessage) message;
             messenger.send(relayableMessage).whenComplete((done, e) -> {

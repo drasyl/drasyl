@@ -6,163 +6,28 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [?] - 2020-??-??
 ### Added
--
--
--
--
--
--
--
--
--
--
--
--
--
 - Each node now belongs to a certain network ID. Connections between nodes will occur only if both
-peers use the same network ID. The main network has ID 1 (see configuration `drasyl.network.id`).
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
+peers use the same network ID. The main network has ID 1 (see configuration `drasyl.network.id`)
+- Added drasyl groups plugin for membership management
+
 
 ### Changed
--
--
--
--
--
 - `drasyl-core` now only depends on slf4j and no longer on logback. As part of this, the methods
 `DrasylNode.getLogLevel()` and `DrasylNode.setLogLevel()` have been removed and the configuration
-`drasyl.loglevel` has been removed.
--
--
--
--
--
--
--
--
--
--
-- Nodes now only accept children joins if they are configured as a super peer (`drasyl.super-peer.enabled = false`).
--
--
--
--
-- All-new plugin interface.
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
+`drasyl.loglevel` has been removed
+- Nodes now only accept children joins if they are configured as a super-peer (`drasyl.super-peer.enabled = false`)
+- Removed grandchildren nodes. The hierarchy is now limited in depth
+- All-new plugin interface
+- Changed docker base image from `drasyl/drasyl-build-images:jre-11-curl-7.64.0` to `openjdk:11-jre-slim` and removed default HEALTHCHECK
+- Enhanced JavaDoc
+- Changed `TypeValidator` to distinguish between in- and outbound messages
+- EmbeddedPipeline was generalized to simplify handler testing
 
 ### Fixed
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
--
+- Fixed memory-leaks of certain immutable classes
+- Fixed `DefaultPipeline.addBefore` method
+- Fixed error in IntraVM discovery which has delivered events around the pipeline directly to the application
+- Several minor bug fixes
 
 ## [0.2.0] - 2020-09-15
 ### Added

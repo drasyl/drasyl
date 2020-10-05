@@ -300,7 +300,8 @@ public abstract class DefaultPipeline implements Pipeline {
     }
 
     @Override
-    public CompletableFuture<Void> processOutbound(final CompressedPublicKey recipient, final Object msg) {
+    public CompletableFuture<Void> processOutbound(final CompressedPublicKey recipient,
+                                                   final Object msg) {
         final CompletableFuture<Void> rtn = new CompletableFuture<>();
 
         this.scheduler.scheduleDirect(() -> this.tail.write(recipient, msg, rtn));

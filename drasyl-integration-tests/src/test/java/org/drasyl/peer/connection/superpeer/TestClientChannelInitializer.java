@@ -28,7 +28,9 @@ public class TestClientChannelInitializer extends DefaultClientChannelInitialize
     private final boolean doPingPong;
     private final boolean doJoin;
 
-    public TestClientChannelInitializer(final ClientEnvironment environment, final boolean doPingPong, final boolean doJoin) {
+    public TestClientChannelInitializer(final ClientEnvironment environment,
+                                        final boolean doPingPong,
+                                        final boolean doJoin) {
         super(environment);
         this.doPingPong = doPingPong;
         this.doJoin = doJoin;
