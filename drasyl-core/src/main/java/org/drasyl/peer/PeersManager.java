@@ -84,6 +84,7 @@ public class PeersManager {
 
             return "PeersManager{" +
                     "peers=" + peers +
+                    ", paths=" + paths +
                     ", children=" + children +
                     ", eventConsumer=" + eventConsumer +
                     ", superPeer=" + superPeer +
