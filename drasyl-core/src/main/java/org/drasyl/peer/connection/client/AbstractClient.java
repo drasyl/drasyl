@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.peer.connection.client;
 
 import io.netty.bootstrap.Bootstrap;
@@ -24,6 +23,8 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.epoll.Epoll;
+import io.netty.channel.epoll.EpollSocketChannel;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioSocketChannel;
 import org.drasyl.DrasylConfig;
@@ -86,7 +87,7 @@ abstract class AbstractClient implements DrasylNodeComponent {
                 acceptNewConnectionsSupplier,
                 endpoint -> new Bootstrap()
                         .group(workerGroup)
-                        .channel(NioSocketChannel.class)
+                        .channel(getBestSocketChannel())
                         .handler(initiateChannelInitializer(new ClientEnvironment(
                                         config,
                                         identity,
@@ -103,6 +104,21 @@ abstract class AbstractClient implements DrasylNodeComponent {
                                 channelInitializerClazz))
                         .remoteAddress(endpoint.getHost(), endpoint.getPort())
         );
+    }
+
+    /**
+     * Returns the {@link SocketChannel} that fits best to the current environment. Under Linux the
+     * more performant {@link EpollSocketChannel} is returned.
+     *
+     * @return {@link SocketChannel} that fits best to the current environment
+     */
+    static Class<? extends SocketChannel> getBestSocketChannel() {
+        if (Epoll.isAvailable()) {
+            return EpollSocketChannel.class;
+        }
+        else {
+            return NioSocketChannel.class;
+        }
     }
 
     protected AbstractClient(final List<Duration> retryDelays,

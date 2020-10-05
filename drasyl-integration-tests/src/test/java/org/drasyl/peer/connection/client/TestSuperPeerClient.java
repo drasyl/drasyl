@@ -24,7 +24,6 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.socket.nio.NioSocketChannel;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
@@ -91,7 +90,7 @@ public class TestSuperPeerClient extends SuperPeerClient {
                 () -> true,
                 endpoint -> new Bootstrap()
                         .group(workerGroup)
-                        .channel(NioSocketChannel.class)
+                        .channel(AbstractClient.getBestSocketChannel())
                         .handler(new TestClientChannelInitializer(new ClientEnvironment(
                                 config,
                                 identity,

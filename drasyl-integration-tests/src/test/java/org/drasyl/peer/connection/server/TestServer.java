@@ -22,7 +22,6 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.reactivex.rxjava3.core.Observable;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.CompressedPublicKey;
@@ -81,7 +80,7 @@ public class TestServer extends Server {
                 identity,
                 config,
                 new ServerBootstrap().group(bossGroup, workerGroup)
-                        .channel(NioServerSocketChannel.class)
+                        .channel(Server.getBestServerSocketChannel())
                         .childHandler(channelInitializer),
                 new AtomicBoolean(),
                 null,
