@@ -42,7 +42,7 @@ public class ConnectionExceptionMessageHandler extends SimpleChannelInboundHandl
     protected void channelRead0(final ChannelHandlerContext ctx,
                                 final ConnectionExceptionMessage msg) {
         if (LOG.isDebugEnabled()) {
-            LOG.debug("[{}]: received {}. Close channel", ctx.channel().id().asShortText(), msg);
+            LOG.debug("[{}]: Received {} from other peer. Close channel", ctx.channel().id().asShortText(), msg);
         }
         ctx.close();
     }
