@@ -21,6 +21,7 @@ package org.drasyl.identity;
 import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.util.DrasylSupplier;
+import org.drasyl.util.PathUtil;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,7 +34,11 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
+import java.util.Set;
 
+import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
+import static org.drasyl.util.PathUtil.hasPosixSupport;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.not;
@@ -75,6 +80,9 @@ class IdentityManagerTest {
                     "  \"publicKey\" : \"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\n" +
                     "  \"privateKey\" : \"0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d\"\n" +
                     "}", StandardOpenOption.CREATE);
+            if (hasPosixSupport(path)) {
+                Files.setPosixFilePermissions(path, Set.of(OWNER_READ, OWNER_WRITE));
+            }
 
             final IdentityManager identityManager = new IdentityManager(identityGenerator, config, null);
             identityManager.loadOrCreateIdentity();

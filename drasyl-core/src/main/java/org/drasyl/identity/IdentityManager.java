@@ -31,11 +31,23 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.attribute.PosixFilePermission;
 import java.security.KeyPair;
+import java.util.Collections;
+import java.util.Set;
 
+import static java.nio.file.attribute.PosixFilePermission.GROUP_EXECUTE;
+import static java.nio.file.attribute.PosixFilePermission.GROUP_READ;
+import static java.nio.file.attribute.PosixFilePermission.GROUP_WRITE;
+import static java.nio.file.attribute.PosixFilePermission.OTHERS_EXECUTE;
+import static java.nio.file.attribute.PosixFilePermission.OTHERS_READ;
+import static java.nio.file.attribute.PosixFilePermission.OTHERS_WRITE;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_READ;
+import static java.nio.file.attribute.PosixFilePermission.OWNER_WRITE;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
+import static org.drasyl.util.PathUtil.hasPosixSupport;
 
 /**
  * This class holds the identity of the node. Messages to the node are addressed to the identity. In
@@ -72,7 +84,7 @@ public class IdentityManager {
      * exist, a new identity is generated and written to the file. If all this fails and no identity
      * can be loaded, an {@link IdentityManagerException} is thrown.
      *
-     * @throws IdentityManagerException
+     * @throws IdentityManagerException if identity could not be loaded or created
      */
     public void loadOrCreateIdentity() throws IdentityManagerException {
         if (config.getIdentityProofOfWork() != null && config.getIdentityPublicKey() != null && config.getIdentityPrivateKey() != null) {
@@ -108,8 +120,8 @@ public class IdentityManager {
      * Returns <code>true</code> if the identity file <code>path</code> exists. Otherwise
      * <code>false</code> is returned.
      *
-     * @param path
-     * @return
+     * @param path path to identity file
+     * @return {@code true} if file exists
      */
     private static boolean isIdentityFilePresent(final Path path) {
         return path.toFile().exists() && path.toFile().isFile();
@@ -119,12 +131,20 @@ public class IdentityManager {
      * Reads the identity from <code>path</code>. Throws <code>IdentityManagerException</code> if
      * file cannot be read or file has unexpected content.
      *
-     * @param path
-     * @return
-     * @throws IdentityManagerException
+     * @param path path to identity file
+     * @return The identity contained in the file
+     * @throws IdentityManagerException if identity could not be read from file
      */
     private static Identity readIdentityFile(final Path path) throws IdentityManagerException {
         try {
+            // check if file permissions are too open
+            if (hasPosixSupport(path)) {
+                Set<PosixFilePermission> permissions = Files.getPosixFilePermissions(path);
+                if (!Collections.disjoint(permissions, Set.of(GROUP_EXECUTE, GROUP_WRITE, GROUP_READ, OTHERS_EXECUTE, OTHERS_WRITE, OTHERS_READ))) {
+                    throw new IdentityManagerException("Unprotected private key: It is required that your identity file '" + path + "' is NOT accessible by others.'");
+                }
+            }
+
             return JACKSON_READER.readValue(path.toFile(), Identity.class);
         }
         catch (final JsonProcessingException e) {
@@ -138,8 +158,8 @@ public class IdentityManager {
     /**
      * Generates a new random identity.
      *
-     * @return
-     * @throws IdentityManagerException
+     * @return the generated identity
+     * @throws IdentityManagerException if an identity could not be generated
      */
     public static Identity generateIdentity() throws IdentityManagerException {
         try {
@@ -155,12 +175,12 @@ public class IdentityManager {
     }
 
     /**
-     * Writes the identity <code>keyPair</code> to the file <code>path</code>. Attention: If
-     * <code>path</code> already contains an identity, it will be overwritten without warning.
+     * Writes the identity {@code identity} to the file {@code path}. Attention: If {@code path}
+     * already contains an identity, it will be overwritten without warning.
      *
-     * @param path
-     * @param identity
-     * @throws IdentityManagerException
+     * @param path     path where the identity should be written to
+     * @param identity this identity is written to the file
+     * @throws IdentityManagerException if the identity could not be written to the file
      */
     private static void writeIdentityFile(final Path path,
                                           final Identity identity) throws IdentityManagerException {
@@ -174,6 +194,11 @@ public class IdentityManager {
         }
         else {
             try {
+                // ensure that file permissions will not be too open
+                if (hasPosixSupport(path) && file.createNewFile()) {
+                    Files.setPosixFilePermissions(path, Set.of(OWNER_READ, OWNER_WRITE));
+                }
+
                 JACKSON_WRITER.with(new DefaultPrettyPrinter()).writeValue(file, identity);
             }
             catch (final IOException e) {
