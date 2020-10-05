@@ -449,7 +449,7 @@ public class DrasylConfig {
             throw new ConfigException.WrongType(pluginConfig.origin(), path, "plugin", "instantiation: " + e.getMessage());
         }
         catch (final InvocationTargetException e) {
-            throw new ConfigException.WrongType(pluginConfig.origin(), path, "plugin", "invocation-target: " + e.getMessage());
+            throw new ConfigException.WrongType(pluginConfig.origin(), path, "plugin", "invocation-target: " + e.getTargetException().getMessage());
         }
     }
 

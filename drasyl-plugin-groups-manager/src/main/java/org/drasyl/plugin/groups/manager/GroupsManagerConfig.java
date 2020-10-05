@@ -19,17 +19,20 @@
 package org.drasyl.plugin.groups.manager;
 
 import com.typesafe.config.Config;
+import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigValue;
 import org.drasyl.plugin.groups.manager.data.Group;
 
 import java.net.URI;
+import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
+import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.DrasylConfig.getShort;
 import static org.drasyl.DrasylConfig.getURI;
-import static org.drasyl.plugin.groups.util.DurationUtil.normalize;
 import static org.drasyl.util.SecretUtil.maskSecret;
 
 /**
@@ -68,11 +71,24 @@ public class GroupsManagerConfig {
              */
             final Config groupConfig = entry.getValue().atKey("group").getConfig("group"); // NOSONAR
 
+            short minDifficulty = 0;
+            if (groupConfig.hasPath(GROUP_MIN_DIFFICULTY)) {
+                minDifficulty = getShort(groupConfig, GROUP_MIN_DIFFICULTY);
+                if (minDifficulty < 0) {
+                    throw new ConfigException.WrongType(groupConfig.getValue(GROUP_MIN_DIFFICULTY).origin(), GROUP_MIN_DIFFICULTY, "non negative short", "out-of-range-value " + minDifficulty);
+                }
+            }
+
+            Duration timeout = ofSeconds(60);
+            if (groupConfig.hasPath(GROUP_TIMEOUT) && groupConfig.getDuration(GROUP_TIMEOUT).compareTo(timeout) > 0) {
+                timeout = groupConfig.getDuration(GROUP_TIMEOUT);
+            }
+
             groups.put(name, Group.of(
                     name,
                     groupConfig.getString(GROUP_SECRET),
-                    ((short) Math.min(Math.max(groupConfig.getInt(GROUP_MIN_DIFFICULTY), 0), Short.MAX_VALUE)),
-                    normalize(groupConfig.getDuration(GROUP_TIMEOUT))));
+                    minDifficulty,
+                    timeout));
         }
 
         return groups;
