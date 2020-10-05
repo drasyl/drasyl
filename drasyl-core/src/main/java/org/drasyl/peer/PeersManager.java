@@ -29,11 +29,11 @@ import org.drasyl.util.Pair;
 import org.drasyl.util.SetUtil;
 import org.drasyl.util.Triple;
 
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 import java.util.function.Consumer;
@@ -60,7 +60,7 @@ public class PeersManager {
     private CompressedPublicKey superPeer;
 
     public PeersManager(final Consumer<Event> eventConsumer) {
-        this(new ReentrantReadWriteLock(true), new HashMap<>(), HashMultimap.create(), new HashSet<>(), null, eventConsumer);
+        this(new ReentrantReadWriteLock(true), new ConcurrentHashMap<>(), HashMultimap.create(), new HashSet<>(), null, eventConsumer);
     }
 
     PeersManager(final ReadWriteLock lock,
