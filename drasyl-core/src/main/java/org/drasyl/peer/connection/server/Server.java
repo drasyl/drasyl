@@ -23,6 +23,9 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelInitializer;
 import io.netty.channel.EventLoopGroup;
+import io.netty.channel.epoll.Epoll;
+import io.netty.channel.epoll.EpollServerSocketChannel;
+import io.netty.channel.socket.ServerSocketChannel;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.channel.socket.nio.NioServerSocketChannel;
 import io.reactivex.rxjava3.core.Observable;
@@ -141,7 +144,7 @@ public class Server implements DrasylNodeComponent {
                 identity,
                 config,
                 new ServerBootstrap().group(bossGroup, workerGroup)
-                        .channel(NioServerSocketChannel.class)
+                        .channel(getBestServerSocketChannel())
                         .childHandler(initiateChannelInitializer(new ServerEnvironment(
                                         config,
                                         identity,
@@ -312,5 +315,20 @@ public class Server implements DrasylNodeComponent {
                 .map(address -> createUri(scheme, address.getHostAddress(), listenAddress.getPort()))
                 .map(address -> Endpoint.of(address, identity.getPublicKey()))
                 .collect(Collectors.toSet());
+    }
+
+    /**
+     * Returns the {@link ServerSocketChannel} that fits best to the current environment. Under
+     * Linux the more performant {@link EpollServerSocketChannel} is returned.
+     *
+     * @return {@link ServerSocketChannel} that fits best to the current environment
+     */
+    static Class<? extends ServerSocketChannel> getBestServerSocketChannel() {
+        if (Epoll.isAvailable()) {
+            return EpollServerSocketChannel.class;
+        }
+        else {
+            return NioServerSocketChannel.class;
+        }
     }
 }
