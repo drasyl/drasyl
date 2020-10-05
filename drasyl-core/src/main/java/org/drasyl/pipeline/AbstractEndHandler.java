@@ -67,7 +67,9 @@ public abstract class AbstractEndHandler extends AbstractHandlerContext implemen
     }
 
     @Override
-    public void eventTriggered(final HandlerContext ctx, final Event event, final CompletableFuture<Void> future) {
+    public void eventTriggered(final HandlerContext ctx,
+                               final Event event,
+                               final CompletableFuture<Void> future) {
         // skip
         ctx.fireEventTriggered(event, future);
     }

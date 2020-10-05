@@ -62,7 +62,8 @@ public class PingPongHandler extends SimpleChannelInboundHandler<Message> {
     }
 
     @Override
-    public void userEventTriggered(final ChannelHandlerContext ctx, final Object evt) throws Exception {
+    public void userEventTriggered(final ChannelHandlerContext ctx,
+                                   final Object evt) throws Exception {
         super.userEventTriggered(ctx, evt);
 
         // only send pings if channel is idle

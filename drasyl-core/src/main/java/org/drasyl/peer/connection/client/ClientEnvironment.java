@@ -37,7 +37,6 @@ public class ClientEnvironment {
     private final Identity identity;
     private final Endpoint endpoint;
     private final Messenger messenger;
-
     private final PeerChannelGroup channelGroup;
     private final PeersManager peersManager;
     private final Consumer<Event> eventConsumer;

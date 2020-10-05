@@ -5,7 +5,7 @@ This is a short guide on how to contribute things to drasyl.
 ## Reporting a bug
 
 When filing an issue, please include the following information if possible as well as a description
-of the problem. Make sure you test with the [latest snapshot version of drasyl](docs/getting-started/snapshots.md):
+of the problem. Make sure you test with the [latest snapshot version of drasyl](https://docs.drasyl.org/master/getting-started/quick-start/):
 
   * drasyl version
   * Expected behavior
@@ -31,12 +31,32 @@ Make sure you
   * Use the drasyl code style:
     * [.editorconfig](.editorconfig)
     * Use `final` keyword where possible.
+    * Each file must have the following copyright notice in the header: 
+    ```
+        Copyright (c) $today.year.
+        
+        This file is part of drasyl.
+        
+         drasyl is free software: you can redistribute it and/or modify
+         it under the terms of the GNU Lesser General Public License as published by
+         the Free Software Foundation, either version 3 of the License, or
+         (at your option) any later version.
+         
+         drasyl is distributed in the hope that it will be useful,
+         but WITHOUT ANY WARRANTY; without even the implied warranty of
+         MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+         GNU Lesser General Public License for more details.
+         
+         You should have received a copy of the GNU Lesser General Public License
+         along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
+    ```
   * Add [changelog](./CHANGELOG.md) entry
   * Add documentation for a new feature.
   * Add tests for a new feature.
   * squash commits down to one per feature.
   * rebase to master with `git rebase master`
   * keep your pull request/merge request as small as possible.
+  * Make sure that `mvn checkstyle:check` does not print warnings for checkstyle
 
 When ready - run the tests
 

@@ -18,6 +18,7 @@
  */
 
 /**
- * Provides a command line interface with drasyl-related tools (run root node, generate identity, etc.).
+ * Provides a command line interface with drasyl-related tools (run root node, generate identity,
+ * etc.).
  */
 package org.drasyl.cli;

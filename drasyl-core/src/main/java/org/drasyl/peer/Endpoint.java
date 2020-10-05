@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2020.
+ *
+ * This file is part of drasyl.
+ *
+ *  drasyl is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  drasyl is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package org.drasyl.peer;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
@@ -134,7 +153,8 @@ public class Endpoint implements Comparable<Endpoint> {
      * @param publicKey public key component of the endpoint
      * @return {@code Endpoint} converted from {@code uri} and {@code publicKey}
      * @throws NullPointerException     if {@code uri} is {@code null}
-     * @throws IllegalArgumentException if {@code uri} and {@code publicKey} creates an invalid {@code Endpoint}
+     * @throws IllegalArgumentException if {@code uri} and {@code publicKey} creates an invalid
+     *                                  {@code Endpoint}
      */
     public static Endpoint of(final URI uri, final CompressedPublicKey publicKey) {
         return new Endpoint(removeFragment(uri), publicKey);
@@ -147,8 +167,8 @@ public class Endpoint implements Comparable<Endpoint> {
      * @param publicKey public key component of the endpoint
      * @return {@code Endpoint} converted from {@code endpoint}
      * @throws NullPointerException     if {@code uri} is {@code null}
-     * @throws IllegalArgumentException if {@code uri} and {@code publicKey} creates an invalid {@code Endpoint} or violates
-     *                                  RFC&nbsp;2396
+     * @throws IllegalArgumentException if {@code uri} and {@code publicKey} creates an invalid
+     *                                  {@code Endpoint} or violates RFC&nbsp;2396
      */
     public static Endpoint of(final String uri, final CompressedPublicKey publicKey) {
         try {

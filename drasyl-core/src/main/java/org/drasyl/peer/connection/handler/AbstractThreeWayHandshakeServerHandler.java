@@ -43,7 +43,8 @@ public abstract class AbstractThreeWayHandshakeServerHandler<R extends RequestMe
     private R requestMessage;
     private O offerMessage;
 
-    protected AbstractThreeWayHandshakeServerHandler(final Duration timeout, final Messenger messenger) {
+    protected AbstractThreeWayHandshakeServerHandler(final Duration timeout,
+                                                     final Messenger messenger) {
         super(timeout, messenger);
     }
 

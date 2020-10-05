@@ -144,8 +144,10 @@ public abstract class SimpleChannelDuplexHandler<I, O> extends SimpleChannelInbo
     }
 
     @Override
-    public void connect(final ChannelHandlerContext ctx, final SocketAddress remoteAddress,
-                        final SocketAddress localAddress, final ChannelPromise promise) throws Exception {
+    public void connect(final ChannelHandlerContext ctx,
+                        final SocketAddress remoteAddress,
+                        final SocketAddress localAddress,
+                        final ChannelPromise promise) throws Exception {
         ctx.connect(remoteAddress, localAddress, promise);
     }
 
@@ -156,12 +158,14 @@ public abstract class SimpleChannelDuplexHandler<I, O> extends SimpleChannelInbo
     }
 
     @Override
-    public void close(final ChannelHandlerContext ctx, final ChannelPromise promise) throws Exception {
+    public void close(final ChannelHandlerContext ctx,
+                      final ChannelPromise promise) throws Exception {
         ctx.close(promise);
     }
 
     @Override
-    public void deregister(final ChannelHandlerContext ctx, final ChannelPromise promise) throws Exception {
+    public void deregister(final ChannelHandlerContext ctx,
+                           final ChannelPromise promise) throws Exception {
         ctx.deregister(promise);
     }
 

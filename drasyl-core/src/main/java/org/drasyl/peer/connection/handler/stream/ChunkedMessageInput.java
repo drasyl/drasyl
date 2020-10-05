@@ -114,6 +114,7 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
      * and thus the stream has reached at its end, any subsequent {@link #isEndOfInput()} call must
      * return {@code true}.
      */
+    @Deprecated(since = "0.3.0", forRemoval = true)
     @Override
     public ChunkedMessage readChunk(final ChannelHandlerContext ctx) {
         return readChunk(ctx.alloc());

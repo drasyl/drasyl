@@ -83,7 +83,9 @@ public abstract class SimpleInboundHandler<I, E> extends HandlerAdapter {
     }
 
     @Override
-    public void eventTriggered(final HandlerContext ctx, final Event event, final CompletableFuture<Void> future) {
+    public void eventTriggered(final HandlerContext ctx,
+                               final Event event,
+                               final CompletableFuture<Void> future) {
         if (acceptEvent(event)) {
             @SuppressWarnings("unchecked") final E castedEvent = (E) event;
             matchedEventTriggered(ctx, castedEvent, future);

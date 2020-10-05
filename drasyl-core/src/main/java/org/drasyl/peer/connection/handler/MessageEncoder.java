@@ -50,7 +50,9 @@ public class MessageEncoder extends MessageToMessageEncoder<Message> {
 
     @Override
     @SuppressWarnings("java:S2093")
-    protected void encode(final ChannelHandlerContext ctx, final Message msg, final List<Object> out) {
+    protected void encode(final ChannelHandlerContext ctx,
+                          final Message msg,
+                          final List<Object> out) {
         if (LOG.isTraceEnabled()) {
             LOG.trace("[{}]: Send Message '{}'", ctx.channel().id().asShortText(), msg);
         }

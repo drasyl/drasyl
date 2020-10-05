@@ -175,7 +175,8 @@ public abstract class DrasylNode {
                                             final CompletableFuture<Void> future) {
                     if (future.isDone()) {
                         if (LOG.isWarnEnabled()) {
-                            LOG.warn("Message `{}` was not written to the underlying drasyl layer, because the corresponding future was already completed.", msg);
+                            LOG.warn("Message `{}` was not written to the underlying drasyl layer, " +
+                                    "because the corresponding future was already completed.", msg);
                         }
                     }
                     else {
@@ -186,22 +187,32 @@ public abstract class DrasylNode {
             // -------------------------------------------------------------------------------------
 
             if (config.areDirectConnectionsEnabled()) {
-                this.components.add(new DirectConnectionsManager(config, identity, peersManager, messenger, pipeline, channelGroup, LazyWorkerGroupHolder.INSTANCE, this::onInternalEvent, acceptNewConnections::get, endpoints, messenger.communicationOccurred()));
+                this.components.add(new DirectConnectionsManager(
+                        config, identity, peersManager, messenger, pipeline, channelGroup,
+                        LazyWorkerGroupHolder.INSTANCE, this::onInternalEvent,
+                        acceptNewConnections::get, endpoints, messenger.communicationOccurred()));
             }
             if (config.isIntraVmDiscoveryEnabled()) {
-                this.components.add(new IntraVmDiscovery(identity.getPublicKey(), messenger, peersManager, pipeline));
+                this.components.add(new IntraVmDiscovery(identity.getPublicKey(), messenger,
+                        peersManager, pipeline));
             }
             if (config.isSuperPeerEnabled()) {
-                this.components.add(new SuperPeerClient(this.config, identity, peersManager, messenger, channelGroup, LazyWorkerGroupHolder.INSTANCE, this::onInternalEvent, acceptNewConnections::get));
+                this.components.add(new SuperPeerClient(this.config, identity, peersManager,
+                        messenger, channelGroup, LazyWorkerGroupHolder.INSTANCE,
+                        this::onInternalEvent, acceptNewConnections::get));
             }
             if (config.isServerEnabled()) {
-                this.components.add(new Server(identity, messenger, peersManager, this.config, channelGroup, LazyWorkerGroupHolder.INSTANCE, LazyBossGroupHolder.INSTANCE, endpoints, acceptNewConnections::get));
+                this.components.add(new Server(identity, messenger, peersManager, this.config,
+                        channelGroup, LazyWorkerGroupHolder.INSTANCE, LazyBossGroupHolder.INSTANCE,
+                        endpoints, acceptNewConnections::get));
             }
             if (config.isLocalHostDiscoveryEnabled()) {
-                this.components.add(new LocalHostDiscovery(this.config, identity.getPublicKey(), peersManager, endpoints, messenger.communicationOccurred()));
+                this.components.add(new LocalHostDiscovery(this.config, identity.getPublicKey(),
+                        peersManager, endpoints, messenger.communicationOccurred()));
             }
             if (config.isMonitoringEnabled()) {
-                this.components.add(new Monitoring(config, peersManager, identity.getPublicKey(), pipeline));
+                this.components.add(new Monitoring(config, peersManager,
+                        identity.getPublicKey(), pipeline));
             }
 
             this.pluginManager = new PluginManager(config, pipeline);
@@ -245,11 +256,13 @@ public abstract class DrasylNode {
         }
         else if (message instanceof WhoisMessage) {
             final WhoisMessage whoisMessage = (WhoisMessage) message;
-            peersManager.setPeerInformation(whoisMessage.getRequester(), whoisMessage.getPeerInformation());
+            peersManager.setPeerInformation(whoisMessage.getRequester(),
+                    whoisMessage.getPeerInformation());
 
             final CompressedPublicKey myPublicKey = identity.getPublicKey();
             final PeerInformation myPeerInformation = PeerInformation.of(endpoints);
-            final IdentityMessage identityMessage = new IdentityMessage(whoisMessage.getRequester(), myPublicKey, myPeerInformation, whoisMessage.getId());
+            final IdentityMessage identityMessage = new IdentityMessage(whoisMessage.getRequester(),
+                    myPublicKey, myPeerInformation, whoisMessage.getId());
 
             return messenger.send(identityMessage).exceptionally(e -> {
                 LOG.info("Unable to reply to {}: {}", whoisMessage, e.getMessage());
@@ -258,11 +271,13 @@ public abstract class DrasylNode {
         }
         else if (message instanceof IdentityMessage) {
             final IdentityMessage identityMessage = (IdentityMessage) message;
-            peersManager.setPeerInformation(identityMessage.getPublicKey(), identityMessage.getPeerInformation());
+            peersManager.setPeerInformation(identityMessage.getPublicKey(),
+                    identityMessage.getPeerInformation());
             return completedFuture(null);
         }
         else {
-            throw new IllegalArgumentException("DrasylNode.loopbackMessageSink is not able to handle messages of type " + message.getClass().getSimpleName());
+            throw new IllegalArgumentException("DrasylNode.loopbackMessageSink is not able to " +
+                    "handle messages of type " + message.getClass().getSimpleName());
         }
     }
 
@@ -538,7 +553,8 @@ public abstract class DrasylNode {
 
     private static class LazyWorkerGroupHolder {
         // https://github.com/netty/netty/issues/639#issuecomment-9263566
-        static final EventLoopGroup INSTANCE = new NioEventLoopGroup(Math.min(2, Math.max(2, Runtime.getRuntime().availableProcessors() * 2 / 3 - 2)));
+        static final EventLoopGroup INSTANCE = new NioEventLoopGroup(Math.min(2,
+                Math.max(2, Runtime.getRuntime().availableProcessors() * 2 / 3 - 2)));
         static final boolean LOCK = workerGroupCreated = true;
 
         private LazyWorkerGroupHolder() {

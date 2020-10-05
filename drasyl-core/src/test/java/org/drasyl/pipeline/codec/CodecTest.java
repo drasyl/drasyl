@@ -45,12 +45,16 @@ class CodecTest {
     void shouldSkipDoneFutures() {
         final Codec<Object, Object> codec = new Codec<>() {
             @Override
-            void encode(final HandlerContext ctx, final Object msg, final Consumer<Object> passOnConsumer) {
+            void encode(final HandlerContext ctx,
+                        final Object msg,
+                        final Consumer<Object> passOnConsumer) {
                 passOnConsumer.accept(msg);
             }
 
             @Override
-            void decode(final HandlerContext ctx, final Object msg, final Consumer<Object> passOnConsumer) {
+            void decode(final HandlerContext ctx,
+                        final Object msg,
+                        final Consumer<Object> passOnConsumer) {
                 passOnConsumer.accept(msg);
             }
         };
@@ -67,12 +71,16 @@ class CodecTest {
     void shouldCompleteParentFutureExceptionallyOnChildError() {
         final Codec<Object, Object> codec = new Codec<>() {
             @Override
-            void encode(final HandlerContext ctx, final Object msg, final Consumer<Object> passOnConsumer) {
+            void encode(final HandlerContext ctx,
+                        final Object msg,
+                        final Consumer<Object> passOnConsumer) {
                 passOnConsumer.accept(msg);
             }
 
             @Override
-            void decode(final HandlerContext ctx, final Object msg, final Consumer<Object> passOnConsumer) {
+            void decode(final HandlerContext ctx,
+                        final Object msg,
+                        final Consumer<Object> passOnConsumer) {
                 passOnConsumer.accept(msg);
             }
         };

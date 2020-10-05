@@ -19,8 +19,6 @@
 package org.drasyl.peer.connection.intravm;
 
 import org.drasyl.DrasylNodeComponent;
-import org.drasyl.event.Event;
-import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.messenger.MessageSink;
 import org.drasyl.messenger.Messenger;
@@ -38,7 +36,6 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-import java.util.function.Consumer;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;

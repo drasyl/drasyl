@@ -103,7 +103,8 @@ public class TestServer extends Server {
         return channelInitializer.sentMessages();
     }
 
-    public CompletableFuture<Void> sendMessage(final CompressedPublicKey recipient, final Message message) {
+    public CompletableFuture<Void> sendMessage(final CompressedPublicKey recipient,
+                                               final Message message) {
         final ChannelFuture future = channelGroup.writeAndFlush(recipient, message).awaitUninterruptibly();
         return FutureUtil.toFuture(future);
     }

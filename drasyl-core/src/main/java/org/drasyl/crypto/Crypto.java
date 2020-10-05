@@ -253,7 +253,8 @@ public class Crypto {
      * @param message message to sign
      * @throws CryptoException on failure
      */
-    public static byte[] signMessage(final PrivateKey key, final byte[] message) throws CryptoException {
+    public static byte[] signMessage(final PrivateKey key,
+                                     final byte[] message) throws CryptoException {
         try {
             final Signature ecdsaSign = Signature.getInstance(SHA256_WITH_ECDSA, PROVIDER);
             ecdsaSign.initSign(key);
@@ -294,7 +295,9 @@ public class Crypto {
      * @param signature the signature of the message
      * @return if the message is valid or not
      */
-    public static boolean verifySignature(final PublicKey pubkey, final byte[] message, final byte[] signature) {
+    public static boolean verifySignature(final PublicKey pubkey,
+                                          final byte[] message,
+                                          final byte[] signature) {
         try {
             final Signature ecdsaVerify = Signature.getInstance(SHA256_WITH_ECDSA, PROVIDER);
             ecdsaVerify.initVerify(pubkey);

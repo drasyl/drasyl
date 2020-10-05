@@ -50,7 +50,6 @@ import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
-import java.util.function.Supplier;
 
 import static java.time.Duration.ofSeconds;
 import static org.drasyl.DrasylConfig.DEFAULT;
@@ -143,16 +142,12 @@ class DrasylConfigTest {
     private short messageHopLimit;
     private boolean superPeerEnabled;
     private Set<Endpoint> superPeerEndpoints;
-    @Mock
-    private CompressedPublicKey superPeerPublicKey;
     private Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer;
     private short superPeerIdleRetries;
     private Duration superPeerIdleTimeout;
     @Mock
     private Config typesafeConfig;
     private String identityPathAsString;
-    @Mock
-    private Supplier<Set<String>> networkAddressesProvider;
     private Duration superPeerHandshakeTimeout;
     private boolean intraVmDiscoveryEnabled;
     private boolean localHostDiscoveryEnabled;
@@ -235,6 +230,7 @@ class DrasylConfigTest {
     @Nested
     class Constructor {
         @Test
+        @SuppressWarnings("java:S5961")
         void shouldReadConfigProperly() {
             when(typesafeConfig.getInt(NETWORK_ID)).thenReturn(networkId);
             when(typesafeConfig.getInt(IDENTITY_PROOF_OF_WORK)).thenReturn(-1);

@@ -18,7 +18,7 @@
  */
 
 /**
- * Contains events that inform the application about various states of the
- * drasyl node, incoming communication, or connection type changes.
+ * Contains events that inform the application about various states of the drasyl node, incoming
+ * communication, or connection type changes.
  */
 package org.drasyl.event;

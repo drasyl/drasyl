@@ -58,7 +58,8 @@ public class PublicKeyExchangeHandler extends SimpleChannelInboundHandler<IamMes
         this.timeoutFuture = timeoutFuture;
     }
 
-    public PublicKeyExchangeHandler(final CompressedPublicKey serverPublicKey, final Duration timeout) {
+    public PublicKeyExchangeHandler(final CompressedPublicKey serverPublicKey,
+                                    final Duration timeout) {
         this(serverPublicKey, timeout, null, null);
     }
 
@@ -74,7 +75,8 @@ public class PublicKeyExchangeHandler extends SimpleChannelInboundHandler<IamMes
         ctx.writeAndFlush(request);
     }
 
-    private void attachIdentityToChannel(final ChannelHandlerContext ctx, final CompressedPublicKey identity) {
+    private void attachIdentityToChannel(final ChannelHandlerContext ctx,
+                                         final CompressedPublicKey identity) {
         // attach identity to channel (this information is required for validation signatures of incoming messages)
         ctx.channel().attr(ATTRIBUTE_PUBLIC_KEY).set(identity);
         // emit event
