@@ -91,6 +91,7 @@ nav:
   - 'Contributing':
       - 'Submitting Issues': 'contributing/submitting_issues.md'
       - 'Submiting PRs': 'contributing/submitting_pull_request.md'
+  - 'drasyl Groups': 'groups.md'
   - 'Architecture':
       - 'Concepts': 'architecture/concepts.md'
       - 'Diagrams': 'architecture/diagrams.md'
