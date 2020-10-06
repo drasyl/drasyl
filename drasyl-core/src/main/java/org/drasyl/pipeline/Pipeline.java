@@ -20,7 +20,6 @@ package org.drasyl.pipeline;
 
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.RelayableMessage;
 
 import java.util.NoSuchElementException;
@@ -136,7 +135,7 @@ import java.util.concurrent.CompletableFuture;
  *
  * <li>But for every invocation of:
  *       <ul>
- *       <li>{@link Pipeline#processInbound(ApplicationMessage)}</li>
+ *       <li>{@link Pipeline#processInbound(RelayableMessage)}</li>
  *       <li>{@link Pipeline#processInbound(Event)}</li>
  *       <li>{@link Pipeline#processOutbound(CompressedPublicKey, Object)}</li>
  *       </ul>
@@ -241,7 +240,7 @@ public interface Pipeline {
      *
      * @param msg the inbound message
      */
-    CompletableFuture<Void> processInbound(ApplicationMessage msg);
+    CompletableFuture<Void> processInbound(RelayableMessage msg);
 
     /**
      * Processes an inbound event by the pipeline.

@@ -23,6 +23,7 @@ peers use the same network ID. The main network has ID 1 (see configuration `dra
 - Changed `TypeValidator` to distinguish between in- and outbound messages.
 - EmbeddedPipeline was generalized to simplify handler testing.
 - Node now checks if the permissions of the identity file are too open (POSIX file systems only).
+- Changed `Pipeline.processInbound` to accept `RelayableMessage`.
 
 ### Fixed
 - Fixed memory-leaks of certain immutable classes.

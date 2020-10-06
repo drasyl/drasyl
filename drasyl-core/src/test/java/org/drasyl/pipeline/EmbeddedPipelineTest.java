@@ -25,6 +25,7 @@ import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.pipeline.codec.ApplicationMessage2ObjectHolderHandler;
 import org.drasyl.pipeline.codec.DefaultCodec;
 import org.drasyl.pipeline.codec.ObjectHolder;
 import org.drasyl.pipeline.codec.ObjectHolder2ApplicationMessageHandler;
@@ -60,7 +61,11 @@ class EmbeddedPipelineTest {
                 identity,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.of(List.of(), List.of(), false, false),
-                ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, new HandlerAdapter(), new HandlerAdapter());
+                ApplicationMessage2ObjectHolderHandler.INSTANCE,
+                ObjectHolder2ApplicationMessageHandler.INSTANCE,
+                DefaultCodec.INSTANCE,
+                new HandlerAdapter(),
+                new HandlerAdapter());
         final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
         final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
         final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
