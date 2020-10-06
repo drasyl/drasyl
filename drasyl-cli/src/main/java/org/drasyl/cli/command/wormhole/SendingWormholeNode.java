@@ -34,7 +34,7 @@ import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
-import org.drasyl.pipeline.DrasylPipeline;
+import org.drasyl.pipeline.Pipeline;
 import org.drasyl.plugins.PluginManager;
 
 import java.io.PrintStream;
@@ -62,7 +62,7 @@ public class SendingWormholeNode extends DrasylNode {
                         final Messenger messenger,
                         final Set<Endpoint> endpoints,
                         final AtomicBoolean acceptNewConnections,
-                        final DrasylPipeline pipeline,
+                        final Pipeline pipeline,
                         final List<DrasylNodeComponent> components,
                         final PluginManager pluginManager,
                         final AtomicBoolean started,

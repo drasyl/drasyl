@@ -123,7 +123,7 @@ public abstract class DrasylNode {
     private final Messenger messenger;
     private final Set<Endpoint> endpoints;
     private final AtomicBoolean acceptNewConnections;
-    private final DrasylPipeline pipeline;
+    private final Pipeline pipeline;
     private final List<DrasylNodeComponent> components;
     private final AtomicBoolean started;
     private final PluginManager pluginManager;
@@ -298,7 +298,7 @@ public abstract class DrasylNode {
                          final Messenger messenger,
                          final Set<Endpoint> endpoints,
                          final AtomicBoolean acceptNewConnections,
-                         final DrasylPipeline pipeline,
+                         final Pipeline pipeline,
                          final List<DrasylNodeComponent> components,
                          final PluginManager pluginManager,
                          final AtomicBoolean started,

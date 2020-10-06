@@ -48,7 +48,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class DrasylPipelineIT {
     private PublishSubject<Event> receivedEvents;
     private PublishSubject<ApplicationMessage> outboundMessages;
-    private DrasylPipeline pipeline;
+    private Pipeline pipeline;
     private Identity identity1;
     private Identity identity2;
     private byte[] payload;

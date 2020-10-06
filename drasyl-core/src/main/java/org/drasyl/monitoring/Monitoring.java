@@ -30,10 +30,11 @@ import org.drasyl.DrasylNodeComponent;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.SimpleDuplexHandler;
 import org.drasyl.util.NetworkUtil;
+import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -54,7 +55,7 @@ public class Monitoring implements DrasylNodeComponent {
     static final String MONITORING_HANDLER = "MONITORING_HANDLER";
     private final PeersManager peersManager;
     private final CompressedPublicKey publicKey;
-    private final DrasylPipeline pipeline;
+    private final Pipeline pipeline;
     private final AtomicBoolean opened;
     private final Supplier<MeterRegistry> registrySupplier;
     private MeterRegistry registry;
@@ -62,14 +63,14 @@ public class Monitoring implements DrasylNodeComponent {
     public Monitoring(final DrasylConfig config,
                       final PeersManager peersManager,
                       final CompressedPublicKey publicKey,
-                      final DrasylPipeline pipeline) {
+                      final Pipeline pipeline) {
         this(
                 peersManager,
                 publicKey,
                 pipeline,
                 () -> new InfluxMeterRegistry(new InfluxConfig() {
                     @Override
-                    public String uri() {
+                    public @NotNull String uri() {
                         return config.getMonitoringInfluxUri().toString();
                     }
 
@@ -84,7 +85,7 @@ public class Monitoring implements DrasylNodeComponent {
                     }
 
                     @Override
-                    public String db() {
+                    public @NotNull String db() {
                         return config.getMonitoringInfluxDatabase();
                     }
 
@@ -94,12 +95,12 @@ public class Monitoring implements DrasylNodeComponent {
                     }
 
                     @Override
-                    public Duration step() {
+                    public @NotNull Duration step() {
                         return config.getMonitoringInfluxReportingFrequency();
                     }
 
                     @Override
-                    public String get(final String key) {
+                    public String get(final @NotNull String key) {
                         return null;
                     }
                 }, Clock.SYSTEM), new AtomicBoolean(),
@@ -109,7 +110,7 @@ public class Monitoring implements DrasylNodeComponent {
 
     Monitoring(final PeersManager peersManager,
                final CompressedPublicKey publicKey,
-               final DrasylPipeline pipeline,
+               final Pipeline pipeline,
                final Supplier<MeterRegistry> registrySupplier,
                final AtomicBoolean opened,
                final MeterRegistry registry) {

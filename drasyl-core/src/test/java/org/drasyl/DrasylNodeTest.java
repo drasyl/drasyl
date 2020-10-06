@@ -35,7 +35,7 @@ import org.drasyl.peer.connection.message.MessageId;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.RelayableMessage;
 import org.drasyl.peer.connection.message.WhoisMessage;
-import org.drasyl.pipeline.DrasylPipeline;
+import org.drasyl.pipeline.Pipeline;
 import org.drasyl.plugins.PluginManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -80,7 +80,7 @@ class DrasylNodeTest {
     @Mock
     private CompressedPublicKey publicKey;
     @Mock
-    private DrasylPipeline pipeline;
+    private Pipeline pipeline;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private PeerChannelGroup channelGroup;
     @Mock
@@ -255,7 +255,7 @@ class DrasylNodeTest {
     }
 
     @Nested
-    class Pipeline {
+    class PipelineTest {
         @Test
         void shouldReturnPipeline() {
             final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, components, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {

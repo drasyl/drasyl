@@ -23,8 +23,8 @@ import io.micrometer.core.instrument.MeterRegistry;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.SimpleDuplexHandler;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -55,7 +55,7 @@ class MonitoringTest {
     @Mock
     private CompressedPublicKey publicKey;
     @Mock
-    private DrasylPipeline pipeline;
+    private Pipeline pipeline;
     @Mock
     private AtomicBoolean opened;
     @Mock
@@ -81,7 +81,7 @@ class MonitoringTest {
         void shouldAddHandlerToPipelineAndListenOnPeerRelayEvents(@Mock(answer = Answers.RETURNS_DEEP_STUBS) final HandlerContext ctx) {
             when(registrySupplier.get()).thenReturn(registry);
             when(pipeline.addFirst(eq(MONITORING_HANDLER), any())).then(invocation -> {
-                final SimpleDuplexHandler handler = invocation.getArgument(1);
+                final SimpleDuplexHandler<?, ?, ?> handler = invocation.getArgument(1);
                 handler.eventTriggered(ctx, mock(Event.class), new CompletableFuture<>());
                 handler.read(ctx, mock(CompressedPublicKey.class), mock(Object.class), new CompletableFuture<>());
                 handler.write(ctx, mock(CompressedPublicKey.class), mock(Object.class), new CompletableFuture<>());

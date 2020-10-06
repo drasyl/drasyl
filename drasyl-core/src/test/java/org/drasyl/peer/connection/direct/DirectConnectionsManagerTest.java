@@ -31,9 +31,9 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.client.DirectClient;
 import org.drasyl.peer.connection.message.WhoisMessage;
-import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.HandlerAdapter;
 import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.pipeline.Pipeline;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -81,7 +81,7 @@ class DirectConnectionsManagerTest {
     @Mock
     private RequestPeerInformationCache requestPeerInformationCache;
     @Mock
-    private DrasylPipeline pipeline;
+    private Pipeline pipeline;
     @Mock
     private EventLoopGroup workerGroup;
     @Mock
@@ -148,7 +148,7 @@ class DirectConnectionsManagerTest {
         @Test
         void shouldCloseAndRemoveAllClients(@Mock final CompressedPublicKey publicKey,
                                             @Mock final DirectClient client) {
-            clients = new ConcurrentHashMap(Map.of(publicKey, client));
+            clients = new ConcurrentHashMap<>(Map.of(publicKey, client));
             underTest = new DirectConnectionsManager(config, identity, peersManager, new AtomicBoolean(true), messenger, pipeline, channelGroup, workerGroup, eventConsumer, endpoints, directConnectionDemandsCache, requestPeerInformationCache, clients, acceptNewConnectionsSupplier, maxConnections);
 
             underTest.close();

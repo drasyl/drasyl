@@ -29,7 +29,7 @@ import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
-import org.drasyl.pipeline.DrasylPipeline;
+import org.drasyl.pipeline.Pipeline;
 import org.drasyl.plugins.PluginManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -73,7 +73,7 @@ class SendingWormholeNodeTest {
     @Mock
     private AtomicBoolean started;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private DrasylPipeline pipeline;
+    private Pipeline pipeline;
     @Mock
     private PeerChannelGroup channelGroup;
     @Mock

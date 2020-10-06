@@ -34,9 +34,9 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.client.DirectClient;
 import org.drasyl.peer.connection.message.WhoisMessage;
-import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.HandlerAdapter;
 import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.pipeline.Pipeline;
 import org.drasyl.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -68,7 +68,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
     private final Messenger messenger;
     private final DirectConnectionDemandsCache directConnectionDemandsCache;
     private final RequestPeerInformationCache requestPeerInformationCache;
-    private final DrasylPipeline pipeline;
+    private final Pipeline pipeline;
     private final PeerChannelGroup channelGroup;
     private final EventLoopGroup workerGroup;
     private final Consumer<Event> eventConsumer;
@@ -81,7 +81,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
                                     final Identity identity,
                                     final PeersManager peersManager,
                                     final Messenger messenger,
-                                    final DrasylPipeline pipeline,
+                                    final Pipeline pipeline,
                                     final PeerChannelGroup channelGroup,
                                     final EventLoopGroup workerGroup,
                                     final Consumer<Event> eventConsumer,
@@ -113,7 +113,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
                              final PeersManager peersManager,
                              final AtomicBoolean opened,
                              final Messenger messenger,
-                             final DrasylPipeline pipeline,
+                             final Pipeline pipeline,
                              final PeerChannelGroup channelGroup,
                              final EventLoopGroup workerGroup,
                              final Consumer<Event> eventConsumer,
