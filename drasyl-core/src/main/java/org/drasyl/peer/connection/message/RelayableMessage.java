@@ -31,30 +31,31 @@ import static java.util.Objects.requireNonNull;
  */
 public abstract class RelayableMessage extends AbstractMessage {
     protected final CompressedPublicKey recipient;
+    protected final CompressedPublicKey sender;
     protected short hopCount;
 
     protected RelayableMessage(final MessageId id,
                                final CompressedPublicKey recipient,
+                               final CompressedPublicKey sender,
                                final short hopCount) {
         super(id);
         this.recipient = requireNonNull(recipient);
+        this.sender = requireNonNull(sender);
         this.hopCount = hopCount;
     }
 
-    protected RelayableMessage(final CompressedPublicKey recipient) {
-        this(recipient, (short) 0);
+    protected RelayableMessage(final CompressedPublicKey recipient,
+                               final CompressedPublicKey sender) {
+        this(recipient, (short) 0, sender);
     }
 
-    protected RelayableMessage(final CompressedPublicKey recipient, final short hopCount) {
+    protected RelayableMessage(final CompressedPublicKey recipient,
+                               final short hopCount,
+                               final CompressedPublicKey sender) {
         super();
         this.recipient = requireNonNull(recipient);
         this.hopCount = hopCount;
-    }
-
-    protected RelayableMessage() {
-        super();
-        recipient = null;
-        hopCount = (short) 0;
+        this.sender = requireNonNull(sender);
     }
 
     public short getHopCount() {
@@ -72,9 +73,13 @@ public abstract class RelayableMessage extends AbstractMessage {
         return recipient;
     }
 
+    public CompressedPublicKey getSender() {
+        return sender;
+    }
+
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), recipient, hopCount);
+        return Objects.hash(super.hashCode(), recipient, sender, hopCount);
     }
 
     @Override
@@ -90,6 +95,7 @@ public abstract class RelayableMessage extends AbstractMessage {
         }
         final RelayableMessage that = (RelayableMessage) o;
         return hopCount == that.hopCount &&
-                Objects.equals(recipient, that.recipient);
+                Objects.equals(recipient, that.recipient) &&
+                Objects.equals(sender, that.sender);
     }
 }

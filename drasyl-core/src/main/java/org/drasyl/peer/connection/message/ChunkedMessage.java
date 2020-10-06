@@ -100,7 +100,7 @@ public class ChunkedMessage extends ApplicationMessage {
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(super.hashCode(), contentLength, sender, checksum);
+        int result = Objects.hash(super.hashCode(), contentLength, getSender(), checksum);
         result = 31 * result + Arrays.hashCode(payload);
         return result;
     }
@@ -119,7 +119,7 @@ public class ChunkedMessage extends ApplicationMessage {
         final ChunkedMessage that = (ChunkedMessage) o;
         return contentLength == that.contentLength &&
                 Arrays.equals(payload, that.payload) &&
-                Objects.equals(sender, that.sender) &&
+                Objects.equals(getSender(), that.getSender()) &&
                 Objects.equals(checksum, that.checksum);
     }
 
@@ -128,7 +128,7 @@ public class ChunkedMessage extends ApplicationMessage {
         return "ChunkedMessage{" +
                 "contentLength=" + contentLength +
                 ", payload=byte[" + Optional.ofNullable(payload).orElse(new byte[]{}).length + "] { ... }" +
-                ", sender=" + sender +
+                ", sender=" + getSender() +
                 ", checksum='" + checksum + '\'' +
                 ", recipient=" + recipient +
                 ", hopCount=" + hopCount +

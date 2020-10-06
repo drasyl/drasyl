@@ -34,16 +34,14 @@ import static java.util.Objects.requireNonNull;
  * This is an immutable object.
  */
 public class IdentityMessage extends RelayableMessage implements ResponseMessage<WhoisMessage> {
-    private final CompressedPublicKey publicKey;
     private final PeerInformation peerInformation;
     private final MessageId correspondingId;
 
     public IdentityMessage(final CompressedPublicKey recipient,
-                           final CompressedPublicKey publicKey,
+                           final CompressedPublicKey sender,
                            final PeerInformation peerInformation,
                            final MessageId correspondingId) {
-        super(recipient);
-        this.publicKey = requireNonNull(publicKey);
+        super(recipient, sender);
         this.peerInformation = requireNonNull(peerInformation);
         this.correspondingId = requireNonNull(correspondingId);
     }
@@ -51,18 +49,13 @@ public class IdentityMessage extends RelayableMessage implements ResponseMessage
     @JsonCreator
     private IdentityMessage(@JsonProperty("id") final MessageId id,
                             @JsonProperty("recipient") final CompressedPublicKey recipient,
-                            @JsonProperty("publicKey") final CompressedPublicKey publicKey,
+                            @JsonProperty("sender") final CompressedPublicKey sender,
                             @JsonProperty("peerInformation") final PeerInformation peerInformation,
                             @JsonProperty("correspondingId") final MessageId correspondingId,
                             @JsonProperty("hopCount") final short hopCount) {
-        super(id, recipient, hopCount);
-        this.publicKey = requireNonNull(publicKey);
+        super(id, recipient, sender, hopCount);
         this.peerInformation = requireNonNull(peerInformation);
         this.correspondingId = requireNonNull(correspondingId);
-    }
-
-    public CompressedPublicKey getPublicKey() {
-        return publicKey;
     }
 
     public PeerInformation getPeerInformation() {
@@ -76,7 +69,7 @@ public class IdentityMessage extends RelayableMessage implements ResponseMessage
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), publicKey, peerInformation, correspondingId);
+        return Objects.hash(super.hashCode(), peerInformation, correspondingId);
     }
 
     @Override
@@ -91,15 +84,14 @@ public class IdentityMessage extends RelayableMessage implements ResponseMessage
             return false;
         }
         final IdentityMessage that = (IdentityMessage) o;
-        return Objects.equals(publicKey, that.publicKey) &&
-                Objects.equals(peerInformation, that.peerInformation) &&
+        return Objects.equals(peerInformation, that.peerInformation) &&
                 Objects.equals(correspondingId, that.correspondingId);
     }
 
     @Override
     public String toString() {
         return "IdentityMessage{" +
-                "identity=" + publicKey +
+                "sender=" + sender +
                 ", peerInformation=" + peerInformation +
                 ", correspondingId='" + correspondingId + '\'' +
                 ", recipient=" + recipient +

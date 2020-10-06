@@ -258,12 +258,12 @@ public abstract class DrasylNode {
         }
         else if (message instanceof WhoisMessage) {
             final WhoisMessage whoisMessage = (WhoisMessage) message;
-            peersManager.setPeerInformation(whoisMessage.getRequester(),
+            peersManager.setPeerInformation(whoisMessage.getSender(),
                     whoisMessage.getPeerInformation());
 
             final CompressedPublicKey myPublicKey = identity.getPublicKey();
             final PeerInformation myPeerInformation = PeerInformation.of(endpoints);
-            final IdentityMessage identityMessage = new IdentityMessage(whoisMessage.getRequester(),
+            final IdentityMessage identityMessage = new IdentityMessage(whoisMessage.getSender(),
                     myPublicKey, myPeerInformation, whoisMessage.getId());
 
             return messenger.send(identityMessage).exceptionally(e -> {
@@ -273,7 +273,7 @@ public abstract class DrasylNode {
         }
         else if (message instanceof IdentityMessage) {
             final IdentityMessage identityMessage = (IdentityMessage) message;
-            peersManager.setPeerInformation(identityMessage.getPublicKey(),
+            peersManager.setPeerInformation(identityMessage.getSender(),
                     identityMessage.getPeerInformation());
             return completedFuture(null);
         }
@@ -331,9 +331,9 @@ public abstract class DrasylNode {
      * not sent and the future is fulfilled with an exception. By default, drasyl allows the
      * serialization of Java's primitive types, as well as {@link String} and {@link Number}.
      * Further objects can be added on start via the {@link DrasylConfig} or on demand via {@link
-     * org.drasyl.pipeline.HandlerContext#validator}. If the {@link org.drasyl.pipeline.codec.DefaultCodec}
-     * does not support these objects, a custom {@link Codec} can be added to the beginning of the
-     * {@link Pipeline}.
+     * HandlerContext#inboundValidator()} or {@link HandlerContext#outboundValidator()}. If the
+     * {@link org.drasyl.pipeline.codec.DefaultCodec} does not support these objects, a custom
+     * {@link Codec} can be added to the beginning of the {@link Pipeline}.
      * </p>
      *
      * @param recipient the recipient of a message as compressed public key
@@ -366,9 +366,9 @@ public abstract class DrasylNode {
      * not sent and the future is fulfilled with an exception. By default, drasyl allows the
      * serialization of Java's primitive types, as well as {@link String} and {@link Number}.
      * Further objects can be added on start via the {@link DrasylConfig} or on demand via {@link
-     * org.drasyl.pipeline.HandlerContext#validator}. If the {@link org.drasyl.pipeline.codec.DefaultCodec}
-     * does not support these objects, a custom {@link Codec} can be added to the beginning of the
-     * {@link Pipeline}.
+     * HandlerContext#inboundValidator()} or {@link HandlerContext#outboundValidator()}. If the
+     * {@link org.drasyl.pipeline.codec.DefaultCodec} does not support these objects, a custom
+     * {@link Codec} can be added to the beginning of the {@link Pipeline}.
      * </p>
      *
      * @param recipient the recipient of a message

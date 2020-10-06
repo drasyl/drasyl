@@ -39,7 +39,6 @@ import static java.util.Objects.requireNonNull;
  * This is an immutable object.
  */
 public class ApplicationMessage extends RelayableMessage implements RequestMessage {
-    protected final CompressedPublicKey sender;
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     protected final Map<String, String> headers;
     protected final byte[] payload;
@@ -59,8 +58,7 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
                               @JsonProperty("headers") final Map<String, String> headers,
                               @JsonProperty("payload") final byte[] payload,
                               @JsonProperty("hopCount") final short hopCount) {
-        super(id, recipient, hopCount);
-        this.sender = requireNonNull(sender);
+        super(id, recipient, sender, hopCount);
         if (headers != null) {
             this.headers = Map.copyOf(headers);
         }
@@ -90,8 +88,7 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
                        final Map<String, String> headers,
                        final byte[] payload,
                        final short hopCount) {
-        super(recipient, hopCount);
-        this.sender = requireNonNull(sender);
+        super(recipient, hopCount, sender);
         this.headers = requireNonNull(headers);
         this.payload = requireNonNull(payload);
     }
@@ -107,10 +104,6 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
                               final CompressedPublicKey recipient,
                               final byte[] payload) {
         this(sender, recipient, Map.of(), payload, (short) 0);
-    }
-
-    public CompressedPublicKey getSender() {
-        return sender;
     }
 
     public Map<String, String> getHeaders() {
@@ -147,7 +140,7 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
 
     @Override
     public int hashCode() {
-        int result = Objects.hash(super.hashCode(), sender, headers);
+        int result = Objects.hash(super.hashCode(), headers);
         result = 31 * result + Arrays.hashCode(payload);
         return result;
     }
@@ -164,8 +157,7 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
             return false;
         }
         final ApplicationMessage that = (ApplicationMessage) o;
-        return Objects.equals(sender, that.sender) &&
-                Arrays.equals(payload, that.payload) &&
+        return Arrays.equals(payload, that.payload) &&
                 Objects.equals(headers, that.headers);
     }
 

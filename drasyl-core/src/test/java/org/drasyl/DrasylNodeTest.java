@@ -137,7 +137,7 @@ class DrasylNodeTest {
         }
 
         @Test
-        void shouldStartPlugins() throws DrasylException {
+        void shouldStartPlugins() {
             final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, components, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(final Event event) {
@@ -341,7 +341,7 @@ class DrasylNodeTest {
             });
             underTest.messageSink(message);
 
-            verify(peersManager).setPeerInformation(message.getPublicKey(), message.getPeerInformation());
+            verify(peersManager).setPeerInformation(message.getSender(), message.getPeerInformation());
         }
     }
 }

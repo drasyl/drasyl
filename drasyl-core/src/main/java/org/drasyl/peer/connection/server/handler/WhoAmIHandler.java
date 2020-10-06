@@ -26,7 +26,7 @@ import org.drasyl.peer.connection.message.WhoAreYouMessage;
 import org.drasyl.peer.connection.message.WhoisMessage;
 
 /**
- * This handler returns the public key of this peer to an empty {@link WhoisMessage#getRequester()}.
+ * This handler returns the public key of this peer to an empty {@link WhoisMessage#getSender()}.
  * This allows the client to issue a join proof for this peer.
  */
 public class WhoAmIHandler extends SimpleChannelInboundHandler<WhoAreYouMessage> {
@@ -39,7 +39,7 @@ public class WhoAmIHandler extends SimpleChannelInboundHandler<WhoAreYouMessage>
 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
-                                final WhoAreYouMessage msg) throws Exception {
+                                final WhoAreYouMessage msg) {
         ctx.writeAndFlush(new IamMessage(myPublicKey, msg.getId()));
     }
 }

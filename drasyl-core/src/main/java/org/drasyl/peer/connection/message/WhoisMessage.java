@@ -34,30 +34,23 @@ import static java.util.Objects.requireNonNull;
  * This is an immutable object.
  */
 public class WhoisMessage extends RelayableMessage implements RequestMessage {
-    private final CompressedPublicKey requester;
     private final PeerInformation peerInformation;
 
     @JsonCreator
     private WhoisMessage(@JsonProperty("id") final MessageId id,
                          @JsonProperty("hopCount") final short hopCount,
                          @JsonProperty("recipient") final CompressedPublicKey recipient,
-                         @JsonProperty("requester") final CompressedPublicKey requester,
+                         @JsonProperty("sender") final CompressedPublicKey sender,
                          @JsonProperty("peerInformation") final PeerInformation peerInformation) {
-        super(id, recipient, hopCount);
-        this.requester = requireNonNull(requester);
+        super(id, recipient, sender, hopCount);
         this.peerInformation = requireNonNull(peerInformation);
     }
 
     public WhoisMessage(final CompressedPublicKey recipient,
-                        final CompressedPublicKey requester,
+                        final CompressedPublicKey sender,
                         final PeerInformation peerInformation) {
-        super(recipient);
-        this.requester = requireNonNull(requester);
+        super(recipient, sender);
         this.peerInformation = requireNonNull(peerInformation);
-    }
-
-    public CompressedPublicKey getRequester() {
-        return requester;
     }
 
     public PeerInformation getPeerInformation() {
@@ -66,7 +59,7 @@ public class WhoisMessage extends RelayableMessage implements RequestMessage {
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), requester, peerInformation);
+        return Objects.hash(super.hashCode(), peerInformation);
     }
 
     @Override
@@ -81,14 +74,13 @@ public class WhoisMessage extends RelayableMessage implements RequestMessage {
             return false;
         }
         final WhoisMessage that = (WhoisMessage) o;
-        return Objects.equals(requester, that.requester) &&
-                Objects.equals(peerInformation, that.peerInformation);
+        return Objects.equals(peerInformation, that.peerInformation);
     }
 
     @Override
     public String toString() {
         return "WhoisMessage{" +
-                "requester=" + requester +
+                "sender=" + sender +
                 ", peerInformation=" + peerInformation +
                 ", recipient=" + recipient +
                 ", hopCount=" + hopCount +
