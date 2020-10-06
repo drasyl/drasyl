@@ -22,6 +22,7 @@ import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
+import org.drasyl.pipeline.codec.ApplicationMessage2ObjectHolderHandler;
 import org.drasyl.pipeline.codec.DefaultCodec;
 import org.drasyl.pipeline.codec.ObjectHolder2ApplicationMessageHandler;
 import org.drasyl.pipeline.codec.TypeValidator;
@@ -51,6 +52,7 @@ public class DrasylPipeline extends DefaultPipeline {
 
         // add default codec
         addFirst(DefaultCodec.DEFAULT_CODEC, DefaultCodec.INSTANCE);
+        addFirst(ApplicationMessage2ObjectHolderHandler.APP_MSG2OBJECT_HOLDER, ApplicationMessage2ObjectHolderHandler.INSTANCE);
         addFirst(ObjectHolder2ApplicationMessageHandler.OBJECT_HOLDER2APP_MSG, ObjectHolder2ApplicationMessageHandler.INSTANCE);
     }
 

@@ -76,7 +76,9 @@ class DefaultCodecTest {
                     identity,
                     TypeValidator.ofOutboundValidator(config),
                     TypeValidator.of(List.of(), List.of(), false, false),
-                    ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE);
+                    ApplicationMessage2ObjectHolderHandler.INSTANCE,
+                    ObjectHolder2ApplicationMessageHandler.INSTANCE,
+                    DefaultCodec.INSTANCE);
             final TestObserver<ApplicationMessage> testObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
 
             when(identity.getPublicKey()).thenReturn(sender);
@@ -117,7 +119,9 @@ class DefaultCodecTest {
                     identity,
                     TypeValidator.of(List.of(), List.of(), false, false),
                     TypeValidator.ofOutboundValidator(config),
-                    ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE);
+                    ApplicationMessage2ObjectHolderHandler.INSTANCE,
+                    ObjectHolder2ApplicationMessageHandler.INSTANCE,
+                    DefaultCodec.INSTANCE);
             final TestObserver<ApplicationMessage> testObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
 
             when(identity.getPublicKey()).thenReturn(sender);
@@ -138,7 +142,10 @@ class DefaultCodecTest {
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                     identity,
                     TypeValidator.of(List.of(), List.of(), false, false),
-                    TypeValidator.ofInboundValidator(config), ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE);
+                    TypeValidator.ofInboundValidator(config),
+                    ApplicationMessage2ObjectHolderHandler.INSTANCE,
+                    ObjectHolder2ApplicationMessageHandler.INSTANCE,
+                    DefaultCodec.INSTANCE);
             final TestObserver<Pair<CompressedPublicKey, Object>> testObserver = pipeline.inboundMessages().test();
 
             pipeline.processInbound(msg);
@@ -188,7 +195,9 @@ class DefaultCodecTest {
                     identity,
                     TypeValidator.ofInboundValidator(config),
                     TypeValidator.of(List.of(), List.of(), false, false),
-                    ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE);
+                    ApplicationMessage2ObjectHolderHandler.INSTANCE,
+                    ObjectHolder2ApplicationMessageHandler.INSTANCE,
+                    DefaultCodec.INSTANCE);
             final TestObserver<Pair<CompressedPublicKey, Object>> testObserver = pipeline.inboundMessages().test();
 
             pipeline.processInbound(msg);
@@ -207,7 +216,9 @@ class DefaultCodecTest {
                     identity,
                     TypeValidator.of(List.of(), List.of(), false, false),
                     TypeValidator.ofInboundValidator(config),
-                    ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE);
+                    ApplicationMessage2ObjectHolderHandler.INSTANCE,
+                    ObjectHolder2ApplicationMessageHandler.INSTANCE,
+                    DefaultCodec.INSTANCE);
             final TestObserver<Event> testObserver = pipeline.inboundEvents().test();
 
             pipeline.processInbound(event);

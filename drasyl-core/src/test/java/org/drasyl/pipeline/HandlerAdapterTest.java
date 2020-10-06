@@ -23,7 +23,6 @@ import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
-import org.drasyl.pipeline.codec.ObjectHolder;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Nested;
@@ -145,13 +144,11 @@ class HandlerAdapterTest {
             final CompressedPublicKey sender = mock(CompressedPublicKey.class);
             final ApplicationMessage msg = mock(ApplicationMessage.class);
             when(msg.getSender()).thenReturn(sender);
-            when(msg.getPayload()).thenReturn(new byte[]{});
-            when(msg.getHeader(ObjectHolder.CLASS_KEY_NAME)).thenReturn(byte[].class.getName());
 
             pipeline.processInbound(msg);
 
             events.awaitCount(1);
-            events.assertValue(Pair.of(sender, ObjectHolder.of(byte[].class, new byte[]{})));
+            events.assertValue(Pair.of(sender, msg));
         }
     }
 }

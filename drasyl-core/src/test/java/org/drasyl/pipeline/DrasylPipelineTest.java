@@ -24,7 +24,6 @@ import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
-import org.drasyl.pipeline.codec.ObjectHolder;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -46,7 +45,6 @@ import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.isA;
 import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -231,18 +229,15 @@ class DrasylPipelineTest {
         final ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
         final DrasylPipeline pipeline = new DrasylPipeline(handlerNames, head, tail, scheduler, config, identity);
 
-        final byte[] payload = new byte[]{};
         final CompressedPublicKey sender = mock(CompressedPublicKey.class);
         final ApplicationMessage msg = mock(ApplicationMessage.class);
         when(msg.getSender()).thenReturn(sender);
-        when(msg.getPayload()).thenReturn(payload);
-        doReturn(payload.getClass().getName()).when(msg).getHeader(ObjectHolder.CLASS_KEY_NAME);
 
         final CompletableFuture<Void> future = pipeline.processInbound(msg);
 
         verify(scheduler).scheduleDirect(captor.capture());
         captor.getValue().run();
-        verify(head).fireRead(eq(sender), eq(ObjectHolder.of(payload.getClass(), payload)), eq(future));
+        verify(head).fireRead(eq(sender), eq(msg), eq(future));
     }
 
     @Test

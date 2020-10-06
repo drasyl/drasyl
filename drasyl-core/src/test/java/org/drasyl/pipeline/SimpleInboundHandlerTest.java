@@ -28,6 +28,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ChunkedMessage;
+import org.drasyl.pipeline.codec.ApplicationMessage2ObjectHolderHandler;
 import org.drasyl.pipeline.codec.DefaultCodec;
 import org.drasyl.pipeline.codec.ObjectHolder;
 import org.drasyl.pipeline.codec.ObjectHolder2ApplicationMessageHandler;
@@ -84,7 +85,9 @@ class SimpleInboundHandlerTest {
                 identity,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, handler);
+                ApplicationMessage2ObjectHolderHandler.INSTANCE,
+                ObjectHolder2ApplicationMessageHandler.INSTANCE,
+                DefaultCodec.INSTANCE, handler);
         final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
         final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
         final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
@@ -124,7 +127,9 @@ class SimpleInboundHandlerTest {
                 identity,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, handler);
+                ApplicationMessage2ObjectHolderHandler.INSTANCE,
+                ObjectHolder2ApplicationMessageHandler.INSTANCE,
+                DefaultCodec.INSTANCE, handler);
         final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
         final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
         final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
