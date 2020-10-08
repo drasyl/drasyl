@@ -34,7 +34,9 @@ import org.drasyl.event.Event;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
-import org.drasyl.messenger.Messenger;
+import org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler;
+import org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler;
+import org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
@@ -43,12 +45,17 @@ import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.ResponseMessage;
 import org.drasyl.peer.connection.superpeer.TestClientChannelInitializer;
+import org.drasyl.pipeline.DrasylPipeline;
 
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.function.Consumer;
 
-import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.awaitility.Awaitility.await;
+import static org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler.DIRECT_CONNECTION_MESSAGE_SINK_HANDLER;
+import static org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler.LOOPBACK_MESSAGE_SINK_HANDLER;
+import static org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler.SUPER_PEER_SINK_HANDLER;
 import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_HANDLER;
 
 public class TestSuperPeerClient extends SuperPeerClient {
@@ -95,7 +102,7 @@ public class TestSuperPeerClient extends SuperPeerClient {
                                 config,
                                 identity,
                                 endpoint,
-                                new Messenger((message -> completedFuture(null)), peersManager, channelGroup),
+                                new TestPipeline(peersManager, channelGroup, receivedEvents::onNext, config, identity),
                                 channelGroup,
                                 peersManager,
                                 receivedEvents::onNext,
@@ -145,7 +152,7 @@ public class TestSuperPeerClient extends SuperPeerClient {
     }
 
     public CompletableFuture<ResponseMessage<?>> sendRequest(final RequestMessage request) {
-        final Observable<ResponseMessage<?>> responses = receivedMessages().filter(m -> m instanceof ResponseMessage<?> && ((ResponseMessage<?>) m).getCorrespondingId().equals(request.getId())).map(m -> (ResponseMessage) m);
+        final Observable<ResponseMessage<?>> responses = receivedMessages().filter(m -> m instanceof ResponseMessage<?> && ((ResponseMessage<?>) m).getCorrespondingId().equals(request.getId())).map(m -> (ResponseMessage<?>) m);
         final CompletableFuture<ResponseMessage<?>> future = responses.firstElement().toCompletionStage().toCompletableFuture();
         send(request);
         return future;
@@ -207,5 +214,19 @@ public class TestSuperPeerClient extends SuperPeerClient {
                 super.channelUnregistered(ctx);
             }
         });
+    }
+
+    public static class TestPipeline extends DrasylPipeline {
+        public TestPipeline(final PeersManager peersManager,
+                            final PeerChannelGroup channelGroup,
+                            final Consumer<Event> eventConsumer,
+                            final DrasylConfig config,
+                            final Identity identity) {
+            super(eventConsumer, config, identity);
+
+            addFirst(SUPER_PEER_SINK_HANDLER, new SuperPeerMessageSinkHandler(channelGroup, peersManager));
+            addAfter(SUPER_PEER_SINK_HANDLER, DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, new DirectConnectionMessageSinkHandler(channelGroup));
+            addAfter(DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, LOOPBACK_MESSAGE_SINK_HANDLER, new LoopbackMessageSinkHandler(new AtomicBoolean(true), identity, peersManager, Set.of()));
+        }
     }
 }

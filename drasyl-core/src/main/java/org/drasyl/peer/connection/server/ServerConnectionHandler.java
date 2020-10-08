@@ -24,13 +24,13 @@ import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.IdentityManager;
-import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.connection.handler.AbstractThreeWayHandshakeServerHandler;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
+import org.drasyl.pipeline.Pipeline;
 import org.drasyl.util.FutureUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,18 +62,18 @@ public class ServerConnectionHandler extends AbstractThreeWayHandshakeServerHand
     private final ServerEnvironment environment;
 
     public ServerConnectionHandler(final ServerEnvironment environment) {
-        super(environment.getConfig().getServerHandshakeTimeout(), environment.getMessenger());
+        super(environment.getConfig().getServerHandshakeTimeout(), environment.getPipeline());
         this.environment = environment;
     }
 
     ServerConnectionHandler(final ServerEnvironment environment,
                             final Duration timeout,
-                            final Messenger messenger,
+                            final Pipeline pipeline,
                             final CompletableFuture<Void> handshakeFuture,
                             final ScheduledFuture<?> timeoutFuture,
                             final JoinMessage requestMessage,
                             final WelcomeMessage offerMessage) {
-        super(timeout, messenger, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
+        super(timeout, pipeline, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         this.environment = environment;
     }
 

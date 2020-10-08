@@ -24,13 +24,13 @@ import org.drasyl.event.Node;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.MessageId;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
+import org.drasyl.pipeline.Pipeline;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,7 +53,7 @@ import static org.mockito.Mockito.when;
 class ClientConnectionHandlerTest {
     private EmbeddedChannel channel;
     @Mock
-    private Messenger messenger;
+    private Pipeline pipeline;
     @Mock
     private QuitMessage quitMessage;
     @Mock
@@ -77,7 +77,7 @@ class ClientConnectionHandlerTest {
     void shouldCloseChannelOnQuitMessage() {
         when(handshakeFuture.isDone()).thenReturn(true);
 
-        final ClientConnectionHandler handler = new ClientConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage);
+        final ClientConnectionHandler handler = new ClientConnectionHandler(environment, ofMillis(1000), pipeline, handshakeFuture, timeoutFuture, requestMessage);
         channel = new EmbeddedChannel(handler);
         channel.readOutbound(); // join message
         channel.flush();
@@ -95,7 +95,7 @@ class ClientConnectionHandlerTest {
         when(statusMessage.getCorrespondingId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
         when(statusMessage.getCode()).thenReturn(STATUS_SERVICE_UNAVAILABLE);
 
-        final ClientConnectionHandler handler = new ClientConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage);
+        final ClientConnectionHandler handler = new ClientConnectionHandler(environment, ofMillis(1000), pipeline, handshakeFuture, timeoutFuture, requestMessage);
         channel = new EmbeddedChannel(handler);
         channel.readOutbound(); // join message
         channel.flush();
@@ -115,7 +115,7 @@ class ClientConnectionHandlerTest {
             when(environment.getPeersManager()).thenReturn(peersManager);
             when(environment.joinAsChildren()).thenReturn(true);
 
-            final ClientConnectionHandler handler = new ClientConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage);
+            final ClientConnectionHandler handler = new ClientConnectionHandler(environment, ofMillis(1000), pipeline, handshakeFuture, timeoutFuture, requestMessage);
             channel = new EmbeddedChannel(handler);
             channel.attr(ATTRIBUTE_PUBLIC_KEY).set(publicKey);
 
@@ -143,7 +143,7 @@ class ClientConnectionHandlerTest {
             when(environment.getPeersManager()).thenReturn(peersManager);
             when(environment.joinAsChildren()).thenReturn(false);
 
-            final ClientConnectionHandler handler = new ClientConnectionHandler(environment, ofMillis(1000), messenger, handshakeFuture, timeoutFuture, requestMessage);
+            final ClientConnectionHandler handler = new ClientConnectionHandler(environment, ofMillis(1000), pipeline, handshakeFuture, timeoutFuture, requestMessage);
             channel = new EmbeddedChannel(handler);
             channel.attr(ATTRIBUTE_PUBLIC_KEY).set(publicKey);
 

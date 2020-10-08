@@ -36,7 +36,9 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.identity.ProofOfWork;
-import org.drasyl.messenger.Messenger;
+import org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler;
+import org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler;
+import org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
@@ -49,6 +51,8 @@ import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.server.TestServer;
+import org.drasyl.pipeline.DrasylPipeline;
+import org.drasyl.pipeline.Pipeline;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -63,10 +67,13 @@ import java.util.List;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.time.Duration.ofSeconds;
-import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler.DIRECT_CONNECTION_MESSAGE_SINK_HANDLER;
+import static org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler.LOOPBACK_MESSAGE_SINK_HANDLER;
+import static org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler.SUPER_PEER_SINK_HANDLER;
 import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_SIZE;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
@@ -87,8 +94,6 @@ class SuperPeerClientIT {
     private IdentityManager identityManager;
     private IdentityManager identityManagerServer;
     private TestServer server;
-    private Messenger messenger;
-    private Messenger messengerServer;
     private PeersManager peersManager;
     private PeersManager peersManagerServer;
     private Subject<Event> emittedEventsSubject;
@@ -96,6 +101,8 @@ class SuperPeerClientIT {
     private PeerChannelGroup channelGroupServer;
     private Set<Endpoint> endpoints;
     private int networkId;
+    private Pipeline pipeline;
+    private Pipeline pipelineServer;
 
     @BeforeEach
     void setup(final TestInfo info) throws DrasylException, CryptoException {
@@ -156,11 +163,19 @@ class SuperPeerClientIT {
         peersManagerServer = new PeersManager(event -> {
         });
         channelGroupServer = new PeerChannelGroup();
-        messenger = new Messenger(message -> completedFuture(null), peersManager, channelGroup);
-        messengerServer = new Messenger(message -> completedFuture(null), peersManager, channelGroup);
+        pipeline = new DrasylPipeline(event -> {
+        }, config, identityManager.getIdentity());
+        pipeline.addFirst(SUPER_PEER_SINK_HANDLER, new SuperPeerMessageSinkHandler(channelGroup, peersManager));
+        pipeline.addAfter(SUPER_PEER_SINK_HANDLER, DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, new DirectConnectionMessageSinkHandler(channelGroup));
+        pipeline.addAfter(DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, LOOPBACK_MESSAGE_SINK_HANDLER, new LoopbackMessageSinkHandler(new AtomicBoolean(true), identityManager.getIdentity(), peersManager, endpoints));
+        pipelineServer = new DrasylPipeline(event -> {
+        }, serverConfig, identityManagerServer.getIdentity());
+        pipelineServer.addFirst(SUPER_PEER_SINK_HANDLER, new SuperPeerMessageSinkHandler(channelGroup, peersManager));
+        pipelineServer.addAfter(SUPER_PEER_SINK_HANDLER, DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, new DirectConnectionMessageSinkHandler(channelGroup));
+        pipelineServer.addAfter(DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, LOOPBACK_MESSAGE_SINK_HANDLER, new LoopbackMessageSinkHandler(new AtomicBoolean(true), identityManagerServer.getIdentity(), peersManagerServer, endpoints));
         endpoints = new HashSet<>();
 
-        server = new TestServer(identityManagerServer.getIdentity(), messengerServer, peersManagerServer, serverConfig, channelGroupServer, serverWorkerGroup, bossGroup, endpoints);
+        server = new TestServer(identityManagerServer.getIdentity(), pipelineServer, peersManagerServer, serverConfig, channelGroupServer, serverWorkerGroup, bossGroup, endpoints);
         server.open();
 
         config = DrasylConfig.newBuilder()
@@ -206,7 +221,7 @@ class SuperPeerClientIT {
         final TestObserver<Message> receivedMessages = server.receivedMessages().test();
 
         // start client
-        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, event -> {
+        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, event -> {
         }, () -> true)) {
             client.open();
 
@@ -223,7 +238,7 @@ class SuperPeerClientIT {
         final TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
-        final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true);
+        final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true);
         client.open();
 
         // wait for node to become online, before closing it
@@ -241,7 +256,7 @@ class SuperPeerClientIT {
         final TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
-        final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true);
+        final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true);
         client.open();
 
         // wait for node to become online, before closing it
@@ -260,7 +275,7 @@ class SuperPeerClientIT {
         final TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof PongMessage && ((PongMessage) m).getCorrespondingId().equals(request.getId())).test();
 
         // start client
-        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, event -> {
+        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, event -> {
         }, () -> true)) {
             client.open();
             server.awaitClient(identityManager.getPublicKey());
@@ -280,7 +295,7 @@ class SuperPeerClientIT {
         final TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof StatusMessage).test();
 
         // start client
-        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, event -> {
+        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, event -> {
         }, () -> true)) {
             client.open();
             server.awaitClient(identityManager.getPublicKey());
@@ -305,7 +320,7 @@ class SuperPeerClientIT {
 
         // start client
         final DrasylConfig noRetryConfig = DrasylConfig.newBuilder(config).superPeerRetryDelays(List.of()).build();
-        try (final SuperPeerClient client = new SuperPeerClient(noRetryConfig, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
+        try (final SuperPeerClient client = new SuperPeerClient(noRetryConfig, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
             client.open();
             server.awaitClient(identityManager.getPublicKey());
 
@@ -324,7 +339,7 @@ class SuperPeerClientIT {
         final TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
-        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
+        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
             client.open();
 
             // verify emitted events
@@ -341,7 +356,7 @@ class SuperPeerClientIT {
         final DrasylConfig config1 = DrasylConfig.newBuilder(config).build();
 
         // start client
-        try (final SuperPeerClient client = new SuperPeerClient(config1, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
+        try (final SuperPeerClient client = new SuperPeerClient(config1, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
             client.open();
 
             // verify emitted events
@@ -358,7 +373,7 @@ class SuperPeerClientIT {
         final DrasylConfig config1 = DrasylConfig.newBuilder(config).build();
 
         // start client
-        try (final SuperPeerClient client = new SuperPeerClient(config1, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
+        try (final SuperPeerClient client = new SuperPeerClient(config1, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
             client.open();
             server.awaitClient(identityManager.getPublicKey());
 
@@ -380,7 +395,7 @@ class SuperPeerClientIT {
         final TestObserver<Event> emittedEvents = emittedEventsSubject.filter(e -> e instanceof MessageEvent).test();
 
         // start client
-        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
+        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
             client.open();
             server.awaitClient(identityManager.getPublicKey());
 
@@ -402,7 +417,7 @@ class SuperPeerClientIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void messageExceedingMaxSizeShouldOnSendShouldThrowException() {
         // start client
-        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, messenger, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
+        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
             client.open();
             server.awaitClient(identityManager.getPublicKey());
 

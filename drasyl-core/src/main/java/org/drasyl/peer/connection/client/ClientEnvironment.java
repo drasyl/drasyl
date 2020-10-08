@@ -21,10 +21,10 @@ package org.drasyl.peer.connection.client;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
-import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
+import org.drasyl.pipeline.Pipeline;
 
 import java.time.Duration;
 import java.util.function.Consumer;
@@ -36,7 +36,7 @@ public class ClientEnvironment {
     private final DrasylConfig config;
     private final Identity identity;
     private final Endpoint endpoint;
-    private final Messenger messenger;
+    private final Pipeline pipeline;
     private final PeerChannelGroup channelGroup;
     private final PeersManager peersManager;
     private final Consumer<Event> eventConsumer;
@@ -49,7 +49,7 @@ public class ClientEnvironment {
     public ClientEnvironment(final DrasylConfig config,
                              final Identity identity,
                              final Endpoint endpoint,
-                             final Messenger messenger,
+                             final Pipeline pipeline,
                              final PeerChannelGroup channelGroup,
                              final PeersManager peersManager,
                              final Consumer<Event> eventConsumer,
@@ -60,7 +60,7 @@ public class ClientEnvironment {
         this.config = config;
         this.identity = identity;
         this.endpoint = endpoint;
-        this.messenger = messenger;
+        this.pipeline = pipeline;
         this.channelGroup = channelGroup;
         this.peersManager = peersManager;
         this.eventConsumer = eventConsumer;
@@ -82,8 +82,8 @@ public class ClientEnvironment {
         return identity;
     }
 
-    public Messenger getMessenger() {
-        return messenger;
+    public Pipeline getPipeline() {
+        return pipeline;
     }
 
     public PeersManager getPeersManager() {

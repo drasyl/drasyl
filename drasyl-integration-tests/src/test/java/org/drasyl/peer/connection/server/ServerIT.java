@@ -21,7 +21,6 @@ package org.drasyl.peer.connection.server;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.EventLoopGroup;
-import io.netty.channel.nio.NioEventLoopGroup;
 import io.netty.util.ResourceLeakDetector;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
@@ -35,8 +34,9 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.identity.ProofOfWork;
-import org.drasyl.messenger.Messenger;
-import org.drasyl.messenger.NoPathToPublicKeyException;
+import org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler;
+import org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler;
+import org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
@@ -55,6 +55,8 @@ import org.drasyl.peer.connection.message.SignedMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
 import org.drasyl.peer.connection.superpeer.TestClientChannelInitializer;
+import org.drasyl.pipeline.DrasylPipeline;
+import org.drasyl.pipeline.Pipeline;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -76,10 +78,11 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.time.Duration.ofSeconds;
-import static java.util.concurrent.CompletableFuture.completedFuture;
-import static java.util.concurrent.CompletableFuture.failedFuture;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.awaitility.Awaitility.await;
+import static org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler.DIRECT_CONNECTION_MESSAGE_SINK_HANDLER;
+import static org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler.LOOPBACK_MESSAGE_SINK_HANDLER;
+import static org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler.SUPER_PEER_SINK_HANDLER;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_HANDSHAKE_TIMEOUT;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_INITIALIZATION;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_PING_PONG;
@@ -113,7 +116,6 @@ class ServerIT {
     private DrasylConfig serverConfig;
     private IdentityManager serverIdentityManager;
     private Server server;
-    private Messenger serverMessenger;
     private PeersManager peersManager;
     private Identity identitySession1;
     private Identity identitySession2;
@@ -122,6 +124,7 @@ class ServerIT {
     private AtomicBoolean acceptNewConnections;
     private PeerChannelGroup channelGroup;
     private int networkId;
+    private Pipeline pipeline;
 
     @BeforeEach
     void setup(final TestInfo info) throws DrasylException, CryptoException {
@@ -157,20 +160,16 @@ class ServerIT {
         peersManager = new PeersManager(event -> {
         });
         channelGroup = new PeerChannelGroup();
-        serverMessenger = new Messenger(message -> {
-            final CompressedPublicKey recipient = message.getRecipient();
-            if (recipient.equals(serverIdentityManager.getPublicKey())) {
-                return completedFuture(null);
-            }
-            else {
-                return failedFuture(new NoPathToPublicKeyException(recipient));
-            }
-        }, peersManager, channelGroup);
+        pipeline = new DrasylPipeline(event -> {
+        }, serverConfig, serverIdentityManager.getIdentity());
+        pipeline.addFirst(SUPER_PEER_SINK_HANDLER, new SuperPeerMessageSinkHandler(channelGroup, peersManager));
+        pipeline.addAfter(SUPER_PEER_SINK_HANDLER, DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, new DirectConnectionMessageSinkHandler(channelGroup));
+        pipeline.addAfter(DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, LOOPBACK_MESSAGE_SINK_HANDLER, new LoopbackMessageSinkHandler(new AtomicBoolean(true), serverIdentityManager.getIdentity(), peersManager, endpoints));
         opened = new AtomicBoolean(false);
         endpoints = new HashSet<>();
         acceptNewConnections = new AtomicBoolean(true);
 
-        server = new Server(serverIdentityManager.getIdentity(), serverMessenger, peersManager, serverConfig, channelGroup, workerGroup, bossGroup, opened, acceptNewConnections::get, endpoints);
+        server = new Server(serverIdentityManager.getIdentity(), pipeline, peersManager, serverConfig, channelGroup, workerGroup, bossGroup, opened, acceptNewConnections::get, endpoints);
         server.open();
 
         configClient1 = DrasylConfig.newBuilder()
@@ -520,7 +519,7 @@ class ServerIT {
 
     @Test
     void shouldOpenAndCloseGracefully() throws DrasylException {
-        try (final Server myServer = new Server(serverIdentityManager.getIdentity(), serverMessenger, peersManager, serverConfig, channelGroup, workerGroup, bossGroup, endpoints, acceptNewConnections::get)) {
+        try (final Server myServer = new Server(serverIdentityManager.getIdentity(), pipeline, peersManager, serverConfig, channelGroup, workerGroup, bossGroup, endpoints, acceptNewConnections::get)) {
             myServer.open();
         }
 
@@ -533,7 +532,7 @@ class ServerIT {
                 .networkId(0)
                 .serverBindPort(72722)
                 .build();
-        try (final Server myServer = new Server(serverIdentityManager.getIdentity(), serverMessenger, peersManager, config, channelGroup, workerGroup, bossGroup, endpoints, acceptNewConnections::get)) {
+        try (final Server myServer = new Server(serverIdentityManager.getIdentity(), pipeline, peersManager, config, channelGroup, workerGroup, bossGroup, endpoints, acceptNewConnections::get)) {
             assertThrows(ServerException.class, myServer::open);
         }
     }

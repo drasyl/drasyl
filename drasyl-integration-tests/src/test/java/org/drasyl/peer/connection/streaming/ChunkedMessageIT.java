@@ -29,7 +29,9 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.identity.ProofOfWork;
-import org.drasyl.messenger.Messenger;
+import org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler;
+import org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler;
+import org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
@@ -40,6 +42,8 @@ import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.server.ServerException;
 import org.drasyl.peer.connection.server.TestServer;
 import org.drasyl.peer.connection.superpeer.TestClientChannelInitializer;
+import org.drasyl.pipeline.DrasylPipeline;
+import org.drasyl.pipeline.Pipeline;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeAll;
@@ -52,10 +56,13 @@ import testutils.AnsiColor;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.time.Duration.ofSeconds;
-import static java.util.concurrent.CompletableFuture.completedFuture;
 import static org.awaitility.Awaitility.await;
+import static org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler.DIRECT_CONNECTION_MESSAGE_SINK_HANDLER;
+import static org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler.LOOPBACK_MESSAGE_SINK_HANDLER;
+import static org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler.SUPER_PEER_SINK_HANDLER;
 import static org.drasyl.util.NetworkUtil.createInetAddress;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static testutils.AnsiColor.COLOR_CYAN;
@@ -73,6 +80,7 @@ class ChunkedMessageIT {
     private static byte[] bigPayload;
     private static PeerChannelGroup channelGroup;
     private static Set<Endpoint> endpoints;
+    private static Pipeline pipeline;
 
     @BeforeEach
     void setup(final TestInfo info) {
@@ -129,11 +137,15 @@ class ChunkedMessageIT {
         serverIdentityManager.loadOrCreateIdentity();
         final PeersManager peersManager = new PeersManager(event -> {
         });
-        final Messenger serverMessenger = new Messenger(message -> completedFuture(null), peersManager, channelGroup);
+        pipeline = new DrasylPipeline(event -> {
+        }, serverConfig, serverIdentityManager.getIdentity());
+        pipeline.addFirst(SUPER_PEER_SINK_HANDLER, new SuperPeerMessageSinkHandler(channelGroup, peersManager));
+        pipeline.addAfter(SUPER_PEER_SINK_HANDLER, DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, new DirectConnectionMessageSinkHandler(channelGroup));
+        pipeline.addAfter(DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, LOOPBACK_MESSAGE_SINK_HANDLER, new LoopbackMessageSinkHandler(new AtomicBoolean(true), serverIdentityManager.getIdentity(), peersManager, endpoints));
         channelGroup = new PeerChannelGroup();
         endpoints = new HashSet<>();
 
-        server = new TestServer(serverIdentityManager.getIdentity(), serverMessenger, peersManager, serverConfig, channelGroup, workerGroup, bossGroup, endpoints);
+        server = new TestServer(serverIdentityManager.getIdentity(), pipeline, peersManager, serverConfig, channelGroup, workerGroup, bossGroup, endpoints);
         server.open();
 
         config = DrasylConfig.newBuilder()
