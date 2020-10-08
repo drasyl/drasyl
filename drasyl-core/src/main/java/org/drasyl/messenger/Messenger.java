@@ -58,7 +58,7 @@ public class Messenger {
             }
             catch (final IllegalArgumentException e) {
                 final CompressedPublicKey superPeer = peersManager.getSuperPeerKey();
-                if (superPeer != null && recipient != superPeer) {
+                if (superPeer != null && !superPeer.equals(recipient)) {
                     // no direct connection, send message to super peer
                     try {
                         return toFuture(channelGroup.writeAndFlush(superPeer, message));
