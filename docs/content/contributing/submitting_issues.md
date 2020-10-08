@@ -18,7 +18,7 @@ of the problem. Make sure you test with the [latest snapshot version of drasyl](
 
     For end-user related support questions, try using first:
 
-    - the drasyl element room: [![Join the chat at element.io](https://img.shields.io/badge/style-register-green.svg?style=social&label=Element)](https://app.element.io/#/room/!QlXixeEWlMMXLOnzoV:matrix.org)
+    - the drasyl gitter room: [![Gitter](https://badges.gitter.im/drasyl-overlay/drasyl.svg)](https://gitter.im/drasyl-overlay/drasyl)
     
 ## Feature Requests
 
