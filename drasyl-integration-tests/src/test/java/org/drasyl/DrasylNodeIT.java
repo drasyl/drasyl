@@ -183,9 +183,9 @@ class DrasylNodeIT {
                 client2 = createStartedNode(config);
                 colorizedPrintln("CREATED client2", COLOR_CYAN, STYLE_REVERSED);
 
-                superPeer.second().filter(e -> e instanceof NodeUpEvent || e instanceof PeerDirectEvent).test().awaitCount(3);
-                client1.second().filter(e -> e instanceof NodeOnlineEvent || e instanceof PeerDirectEvent).test().awaitCount(2);
-                client2.second().filter(e -> e instanceof NodeOnlineEvent || e instanceof PeerDirectEvent).test().awaitCount(2);
+                superPeer.second().filter(e -> e instanceof NodeUpEvent || e instanceof PeerDirectEvent).test().awaitCount(3).assertValueCount(3);
+                client1.second().filter(e -> e instanceof NodeOnlineEvent || e instanceof PeerDirectEvent).test().awaitCount(2).assertValueCount(2);
+                client2.second().filter(e -> e instanceof NodeOnlineEvent || e instanceof PeerDirectEvent).test().awaitCount(2).assertValueCount(2);
             }
 
             /**
@@ -220,9 +220,9 @@ class DrasylNodeIT {
                 //
                 // verify
                 //
-                superPeerMessages.awaitCount(3);
-                client1Messages.awaitCount(3);
-                client2Messages.awaitCount(3);
+                superPeerMessages.awaitCount(3).assertValueCount(3);
+                client1Messages.awaitCount(3).assertValueCount(3);
+                client2Messages.awaitCount(3).assertValueCount(3);
             }
 
             /**
@@ -243,9 +243,9 @@ class DrasylNodeIT {
 //            client1.second().subscribe(e -> System.err.println("C1: " + e));
 //            client2.second().subscribe(e -> System.err.println("C2: " + e));
 
-                superPeerEvents.awaitCount(2);
-                client1Events.awaitCount(1);
-                client2Events.awaitCount(1);
+                superPeerEvents.awaitCount(2).assertValueCount(2);
+                client1Events.awaitCount(1).assertValueCount(1);
+                client2Events.awaitCount(1).assertValueCount(1);
             }
 
             /**
@@ -263,8 +263,8 @@ class DrasylNodeIT {
 
                 superPeer.first().shutdown().join();
 
-                client1Events.awaitCount(1);
-                client2Events.awaitCount(1);
+                client1Events.awaitCount(1).assertValueCount(1);
+                client2Events.awaitCount(1).assertValueCount(1);
             }
         }
     }
@@ -349,9 +349,9 @@ class DrasylNodeIT {
                 client2 = createStartedNode(config);
                 colorizedPrintln("CREATED client2", COLOR_CYAN, STYLE_REVERSED);
 
-                superPeer.second().filter(e -> e instanceof NodeOnlineEvent || e instanceof PeerDirectEvent).test().awaitCount(3);
-                client1.second().filter(e -> e instanceof NodeOnlineEvent || e instanceof PeerDirectEvent).test().awaitCount(2);
-                client2.second().filter(e -> e instanceof NodeOnlineEvent || e instanceof PeerDirectEvent).test().awaitCount(2);
+                superPeer.second().filter(e -> e instanceof NodeUpEvent || e instanceof PeerDirectEvent).test().awaitCount(3).assertValueCount(3);
+                client1.second().filter(e -> e instanceof NodeOnlineEvent || e instanceof PeerDirectEvent).test().awaitCount(2).assertValueCount(2);
+                client2.second().filter(e -> e instanceof NodeOnlineEvent || e instanceof PeerDirectEvent).test().awaitCount(2).assertValueCount(2);
             }
 
             /**
@@ -455,10 +455,10 @@ class DrasylNodeIT {
                 node4 = createStartedNode(config);
                 colorizedPrintln("CREATED node4", COLOR_CYAN, STYLE_REVERSED);
 
-                node1.second().filter(e -> e instanceof NodeUpEvent || e instanceof PeerDirectEvent).test().awaitCount(3);
-                node2.second().filter(e -> e instanceof NodeUpEvent || e instanceof PeerDirectEvent).test().awaitCount(3);
-                node3.second().filter(e -> e instanceof NodeUpEvent || e instanceof PeerDirectEvent).test().awaitCount(3);
-                node4.second().filter(e -> e instanceof NodeUpEvent || e instanceof PeerDirectEvent).test().awaitCount(3);
+                node1.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1).assertValueCount(1);
+                node2.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1).assertValueCount(1);
+                node3.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1).assertValueCount(1);
+                node4.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1).assertValueCount(1);
             }
 
             /**
@@ -468,6 +468,11 @@ class DrasylNodeIT {
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
             void applicationMessagesShouldBeDelivered() {
+                node1.second().filter(e -> e instanceof PeerDirectEvent).test().awaitCount(3).assertValueCount(3);
+                node2.second().filter(e -> e instanceof PeerDirectEvent).test().awaitCount(3).assertValueCount(3);
+                node3.second().filter(e -> e instanceof PeerDirectEvent).test().awaitCount(3).assertValueCount(3);
+                node4.second().filter(e -> e instanceof PeerDirectEvent).test().awaitCount(3).assertValueCount(3);
+
                 final TestObserver<Event> node1Messages = node1.second().filter(e -> e instanceof MessageEvent).test();
                 final TestObserver<Event> nodes2Messages = node2.second().filter(e -> e instanceof MessageEvent).test();
                 final TestObserver<Event> node3Messages = node3.second().filter(e -> e instanceof MessageEvent).test();
@@ -495,10 +500,10 @@ class DrasylNodeIT {
                 //
                 // verify
                 //
-                node1Messages.awaitCount(4);
-                nodes2Messages.awaitCount(4);
-                node3Messages.awaitCount(4);
-                node4Messages.awaitCount(4);
+                node1Messages.awaitCount(4).assertValueCount(4);
+                nodes2Messages.awaitCount(4).assertValueCount(4);
+                node3Messages.awaitCount(4).assertValueCount(4);
+                node4Messages.awaitCount(4).assertValueCount(4);
             }
 
             /**
@@ -513,10 +518,10 @@ class DrasylNodeIT {
                 final TestObserver<Event> node3Events = node3.second().filter(e -> e instanceof PeerDirectEvent).test();
                 final TestObserver<Event> node4Events = node4.second().filter(e -> e instanceof PeerDirectEvent).test();
 
-                node1Events.awaitCount(3);
-                node2Events.awaitCount(3);
-                node3Events.awaitCount(3);
-                node4Events.awaitCount(3);
+                node1Events.awaitCount(3).assertValueCount(3);
+                node2Events.awaitCount(3).assertValueCount(3);
+                node3Events.awaitCount(3).assertValueCount(3);
+                node4Events.awaitCount(3).assertValueCount(3);
             }
         }
     }
@@ -609,10 +614,10 @@ class DrasylNodeIT {
                 node4 = createStartedNode(config);
                 colorizedPrintln("CREATED node4", COLOR_CYAN, STYLE_REVERSED);
 
-                node1.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1);
-                node2.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1);
-                node3.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1);
-                node4.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1);
+                node1.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1).assertValueCount(1);
+                node2.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1).assertValueCount(1);
+                node3.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1).assertValueCount(1);
+                node4.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1).assertValueCount(1);
             }
 
             /**
@@ -678,23 +683,21 @@ class DrasylNodeIT {
                     .localHostDiscoveryEnabled(false)
                     .build();
             node1 = createStartedNode(config);
-            node1.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1);
+            node1.second().filter(e -> e instanceof NodeUpEvent).test().awaitCount(1).assertValueCount(1);
             colorizedPrintln("CREATED node1", COLOR_CYAN, STYLE_REVERSED);
         }
 
         /**
-         * This test ensures that loopback message discovery work. Every node an application
-         * messages to itself. At the end, a check is made to ensure that all nodes have received a
-         * message.
+         * This test ensures that loopback message discovery work.
          */
         @Test
         @Timeout(value = TIMEOUT, unit = MILLISECONDS)
         void applicationMessagesShouldBeDelivered() {
             final TestObserver<Event> node1Messages = node1.second().filter(e -> e instanceof MessageEvent).test();
 
-            node1.first().send("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a", "Hallo Welt");
+            node1.first().send("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4", "Hallo Welt");
 
-            node1Messages.awaitCount(1);
+            node1Messages.awaitCount(1).assertValueCount(1);
         }
     }
 

@@ -86,7 +86,7 @@ class PluginsIT {
 
         node.start();
 
-        events.awaitCount(2);
+        events.awaitCount(2).assertValueCount(2);
         events.assertValues(event1, event2);
     }
 

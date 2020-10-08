@@ -83,7 +83,7 @@ class SimpleOutboundHandlerTest {
 
         pipeline.processOutbound(recipient, payload);
 
-        inboundMessageTestObserver.awaitCount(1);
+        inboundMessageTestObserver.awaitCount(1).assertValueCount(1);
         inboundMessageTestObserver.assertValue(Pair.of(sender, payload));
         outboundMessageTestObserver.assertNoValues();
     }
@@ -117,7 +117,7 @@ class SimpleOutboundHandlerTest {
         final byte[] payload = new byte[]{};
         pipeline.processOutbound(recipient, payload);
 
-        outboundMessageTestObserver.awaitCount(1);
+        outboundMessageTestObserver.awaitCount(1).assertValueCount(1);
         outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, payload.getClass().getName()), payload));
         inboundMessageTestObserver.assertNoValues();
     }

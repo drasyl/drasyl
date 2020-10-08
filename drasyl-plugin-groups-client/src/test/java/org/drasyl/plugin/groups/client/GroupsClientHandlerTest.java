@@ -128,7 +128,7 @@ class GroupsClientHandlerTest {
             pipeline.addLast("handler", handler);
             pipeline.remove("handler");
 
-            testObserver.awaitCount(1);
+            testObserver.awaitCount(1).assertValueCount(1);
             testObserver.assertValue(new GroupLeaveMessage(group));
         }
     }
@@ -148,7 +148,7 @@ class GroupsClientHandlerTest {
 
             pipeline.processInbound(event);
 
-            testObserver.awaitCount(1);
+            testObserver.awaitCount(1).assertValueCount(1);
             testObserver.assertValue(event);
         }
 
@@ -172,10 +172,10 @@ class GroupsClientHandlerTest {
 
             pipeline.processInbound(event);
 
-            outboundObserver.awaitCount(1);
+            outboundObserver.awaitCount(1).assertValueCount(1);
             outboundObserver.assertValue(new GroupJoinMessage(uri.getGroup(), uri.getCredentials(), proofOfWork));
 
-            eventObserver.awaitCount(1);
+            eventObserver.awaitCount(1).assertValueCount(1);
             eventObserver.assertValue(event);
         }
     }
@@ -195,7 +195,7 @@ class GroupsClientHandlerTest {
 
             final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
 
-            eventObserver.awaitCount(1);
+            eventObserver.awaitCount(1).assertValueCount(1);
             eventObserver.assertValue(new GroupMemberJoinedEvent(publicKey, group));
             assertTrue(future.isDone());
         }
@@ -213,7 +213,7 @@ class GroupsClientHandlerTest {
 
             final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
 
-            eventObserver.awaitCount(1);
+            eventObserver.awaitCount(1).assertValueCount(1);
             eventObserver.assertValue(new GroupMemberLeftEvent(publicKey, group));
             assertTrue(future.isDone());
         }
@@ -235,7 +235,7 @@ class GroupsClientHandlerTest {
 
             final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
 
-            eventObserver.awaitCount(1);
+            eventObserver.awaitCount(1).assertValueCount(1);
             eventObserver.assertValue(new GroupJoinedEvent(group, Set.of(publicKey), () -> {
             }));
             assertTrue(future.isDone());
@@ -257,7 +257,7 @@ class GroupsClientHandlerTest {
 
             final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
 
-            eventObserver.awaitCount(1);
+            eventObserver.awaitCount(1).assertValueCount(1);
             eventObserver.assertValue(new GroupJoinFailedEvent(group, error, () -> {
             }));
 

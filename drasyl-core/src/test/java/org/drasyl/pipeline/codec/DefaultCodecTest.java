@@ -84,7 +84,7 @@ class DefaultCodecTest {
             when(identity.getPublicKey()).thenReturn(sender);
             pipeline.processOutbound(recipient, msg);
 
-            testObserver.awaitCount(1);
+            testObserver.awaitCount(1).assertValueCount(1);
             testObserver.assertValue(new ApplicationMessage(sender, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, msg.getClass().getName()), msg));
         }
 
@@ -127,7 +127,7 @@ class DefaultCodecTest {
             when(identity.getPublicKey()).thenReturn(sender);
             final CompletableFuture<Void> future = pipeline.processOutbound(recipient, msg);
 
-            testObserver.awaitCount(1);
+            testObserver.awaitCount(1).assertValueCount(1);
             testObserver.assertValue(new ApplicationMessage(sender, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, Integer.class.getName()), JSONUtil.JACKSON_WRITER.writeValueAsBytes(msg)));
             future.join();
             assertTrue(future.isDone());
@@ -150,7 +150,7 @@ class DefaultCodecTest {
 
             pipeline.processInbound(msg);
 
-            testObserver.awaitCount(1);
+            testObserver.awaitCount(1).assertValueCount(1);
             testObserver.assertValue(Pair.of(sender, new byte[]{}));
         }
 
@@ -202,7 +202,7 @@ class DefaultCodecTest {
 
             pipeline.processInbound(msg);
 
-            testObserver.awaitCount(1);
+            testObserver.awaitCount(1).assertValueCount(1);
             testObserver.assertValue(Pair.of(sender, integer));
         }
     }
@@ -223,7 +223,7 @@ class DefaultCodecTest {
 
             pipeline.processInbound(event);
 
-            testObserver.awaitCount(1);
+            testObserver.awaitCount(1).assertValueCount(1);
             testObserver.assertValue(event);
         }
     }
