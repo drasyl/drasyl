@@ -68,7 +68,7 @@ public class PeerChannelGroup extends DefaultChannelGroup {
             return existingChannel.writeAndFlush(message);
         }
         else {
-            throw new IllegalArgumentException("No channel with given Identity found.");
+            throw new IllegalArgumentException("No channel with given Public Key found.");
         }
     }
 
