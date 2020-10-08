@@ -227,7 +227,7 @@ class SuperPeerClientIT {
         client.open();
 
         // wait for node to become online, before closing it
-        emittedEvents.awaitCount(1);
+        emittedEvents.awaitCount(1).assertValueCount(1);
         client.close();
 
         // verify emitted events
@@ -245,7 +245,7 @@ class SuperPeerClientIT {
         client.open();
 
         // wait for node to become online, before closing it
-        emittedEvents.awaitCount(1);
+        emittedEvents.awaitCount(1).assertValueCount(1);
         client.close();
 
         // verify emitted events
@@ -269,7 +269,7 @@ class SuperPeerClientIT {
             server.sendMessage(identityManager.getPublicKey(), request);
 
             // verify received message
-            receivedMessages.awaitCount(1);
+            receivedMessages.awaitCount(1).assertValueCount(1);
         }
     }
 
@@ -328,7 +328,7 @@ class SuperPeerClientIT {
             client.open();
 
             // verify emitted events
-            emittedEvents.awaitCount(1);
+            emittedEvents.awaitCount(1).assertValueCount(1);
             emittedEvents.assertValue(new NodeOnlineEvent(Node.of(identityManager.getIdentity())));
         }
     }
@@ -345,7 +345,7 @@ class SuperPeerClientIT {
             client.open();
 
             // verify emitted events
-            emittedEvents.awaitCount(1);
+            emittedEvents.awaitCount(1).assertValueCount(1);
             emittedEvents.assertValue(new NodeOnlineEvent(Node.of(identityManager.getIdentity())));
         }
     }

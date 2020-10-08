@@ -113,7 +113,7 @@ class DrasylPipelineIT {
 
         pipeline.processInbound(msg);
 
-        events.awaitCount(1);
+        events.awaitCount(1).assertValueCount(1);
         events.assertValue(new MessageEvent(identity2.getPublicKey(), newPayload));
     }
 
@@ -184,7 +184,7 @@ class DrasylPipelineIT {
 
         pipeline.processInbound(msg);
 
-        exceptions.awaitCount(1);
+        exceptions.awaitCount(1).assertValueCount(1);
         exceptions.assertValue(exception);
     }
 
@@ -212,7 +212,7 @@ class DrasylPipelineIT {
 
         final CompletableFuture<Void> future = pipeline.processOutbound(identity1.getPublicKey(), payload);
 
-        outbounds.awaitCount(1);
+        outbounds.awaitCount(1).assertValueCount(1);
         outbounds.assertValue(newMsg);
         future.join();
         assertTrue(future.isDone());
@@ -240,7 +240,7 @@ class DrasylPipelineIT {
 
         final CompletableFuture<Void> future = pipeline.processOutbound(identity2.getPublicKey(), msg);
 
-        outbounds.awaitCount(1);
+        future.join();
         outbounds.assertNoValues();
         assertTrue(future.isDone());
         assertFalse(future.isCancelled());
@@ -267,7 +267,7 @@ class DrasylPipelineIT {
 
         final CompletableFuture<Void> future = pipeline.processOutbound(identity2.getPublicKey(), msg);
 
-        outbounds.awaitCount(1);
+        assertThrows(CompletionException.class, future::join);
         outbounds.assertNoValues();
         assertTrue(future.isDone());
         assertFalse(future.isCancelled());
@@ -293,11 +293,10 @@ class DrasylPipelineIT {
 
         final CompletableFuture<Void> future = pipeline.processOutbound(identity2.getPublicKey(), msg);
 
-        outbounds.awaitCount(1);
+        assertThrows(CompletionException.class, future::join);
         outbounds.assertNoValues();
         assertTrue(future.isDone());
         assertFalse(future.isCancelled());
         assertTrue(future.isCompletedExceptionally());
-        assertThrows(CompletionException.class, future::join);
     }
 }

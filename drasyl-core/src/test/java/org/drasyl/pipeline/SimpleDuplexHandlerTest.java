@@ -106,7 +106,7 @@ class SimpleDuplexHandlerTest {
             final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
             pipeline.processOutbound(recipient, payload);
 
-            inboundMessageTestObserver.awaitCount(1);
+            inboundMessageTestObserver.awaitCount(1).assertValueCount(1);
             inboundMessageTestObserver.assertValue(Pair.of(sender, payload));
             outboundMessageTestObserver.assertNoValues();
         }
@@ -155,7 +155,7 @@ class SimpleDuplexHandlerTest {
             final byte[] payload = new byte[]{};
             pipeline.processOutbound(recipient, payload);
 
-            outboundMessageTestObserver.awaitCount(1);
+            outboundMessageTestObserver.awaitCount(1).assertValueCount(1);
             outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, byte[].class.getName()), payload));
             inboundMessageTestObserver.assertNoValues();
         }
@@ -207,7 +207,7 @@ class SimpleDuplexHandlerTest {
             final byte[] msg = JSONUtil.JACKSON_WRITER.writeValueAsBytes(new byte[]{});
             pipeline.processInbound(new ApplicationMessage(sender, sender, msg));
 
-            outboundMessageTestObserver.awaitCount(1);
+            outboundMessageTestObserver.awaitCount(1).assertValueCount(1);
             outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, sender, Map.of(ObjectHolder.CLASS_KEY_NAME, byte[].class.getName()), msg));
             inboundMessageTestObserver.assertNoValues();
             eventTestObserver.assertNoValues();
@@ -215,7 +215,7 @@ class SimpleDuplexHandlerTest {
 
         @Test
         void shouldPassthroughsNotMatchingMessage() {
-            final SimpleDuplexHandler<List, Event, Object> handler = new SimpleDuplexHandler<>() {
+            final SimpleDuplexHandler<List<?>, Event, Object> handler = new SimpleDuplexHandler<>() {
                 @Override
                 protected void matchedWrite(final HandlerContext ctx,
                                             final CompressedPublicKey recipient,
@@ -234,7 +234,7 @@ class SimpleDuplexHandlerTest {
                 @Override
                 protected void matchedRead(final HandlerContext ctx,
                                            final CompressedPublicKey sender,
-                                           final List msg,
+                                           final List<?> msg,
                                            final CompletableFuture<Void> future) {
                     // Emit this message as outbound message to test
                     ctx.pipeline().processOutbound(sender, msg);
@@ -260,9 +260,9 @@ class SimpleDuplexHandlerTest {
 
             pipeline.processInbound(msg);
 
-            inboundMessageTestObserver.awaitCount(1);
+            inboundMessageTestObserver.awaitCount(1).assertValueCount(1);
             inboundMessageTestObserver.assertValue(Pair.of(msg.getSender(), payload));
-            eventTestObserver.awaitCount(1);
+            eventTestObserver.awaitCount(1).assertValueCount(1);
             eventTestObserver.assertValue(new MessageEvent(msg.getSender(), payload));
             outboundMessageTestObserver.assertNoValues();
         }
@@ -337,7 +337,7 @@ class SimpleDuplexHandlerTest {
             final Event event = mock(Event.class);
             pipeline.processInbound(event);
 
-            eventTestObserver.awaitCount(1);
+            eventTestObserver.awaitCount(1).assertValueCount(1);
             eventTestObserver.assertValue(event);
         }
     }

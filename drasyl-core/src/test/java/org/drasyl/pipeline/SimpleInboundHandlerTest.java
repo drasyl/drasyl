@@ -97,7 +97,7 @@ class SimpleInboundHandlerTest {
         final byte[] msg = JSONUtil.JACKSON_WRITER.writeValueAsBytes(new byte[]{});
         pipeline.processInbound(new ApplicationMessage(sender, sender, msg));
 
-        outboundMessageTestObserver.awaitCount(1);
+        outboundMessageTestObserver.awaitCount(1).assertValueCount(1);
         outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, sender, Map.of(ObjectHolder.CLASS_KEY_NAME, msg.getClass().getName()), msg));
         inboundMessageTestObserver.assertNoValues();
         eventTestObserver.assertNoValues();
@@ -105,7 +105,7 @@ class SimpleInboundHandlerTest {
 
     @Test
     void shouldPassthroughsNotMatchingMessage() {
-        final SimpleInboundHandler<List, Event> handler = new SimpleInboundHandler<>() {
+        final SimpleInboundHandler<List<?>, Event> handler = new SimpleInboundHandler<>() {
             @Override
             protected void matchedEventTriggered(final HandlerContext ctx,
                                                  final Event event,
@@ -116,7 +116,7 @@ class SimpleInboundHandlerTest {
             @Override
             protected void matchedRead(final HandlerContext ctx,
                                        final CompressedPublicKey sender,
-                                       final List msg,
+                                       final List<?> msg,
                                        final CompletableFuture<Void> future) {
                 // Emit this message as outbound message to test
                 ctx.pipeline().processOutbound(sender, msg);
@@ -142,9 +142,9 @@ class SimpleInboundHandlerTest {
 
         pipeline.processInbound(msg);
 
-        inboundMessageTestObserver.awaitCount(1);
+        inboundMessageTestObserver.awaitCount(1).assertValueCount(1);
         inboundMessageTestObserver.assertValue(Pair.of(msg.getSender(), payload));
-        eventTestObserver.awaitCount(1);
+        eventTestObserver.awaitCount(1).assertValueCount(1);
         eventTestObserver.assertValue(new MessageEvent(msg.getSender(), payload));
         outboundMessageTestObserver.assertNoValues();
     }
@@ -203,7 +203,7 @@ class SimpleInboundHandlerTest {
         final Event event = mock(Event.class);
         pipeline.processInbound(event);
 
-        eventTestObserver.awaitCount(1);
+        eventTestObserver.awaitCount(1).assertValueCount(1);
         eventTestObserver.assertValue(event);
     }
 }

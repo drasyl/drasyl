@@ -132,7 +132,7 @@ class HandlerAdapterTest {
             final Event event = mock(Event.class);
             pipeline.processInbound(event);
 
-            events.awaitCount(1);
+            events.awaitCount(1).assertValueCount(1);
             events.assertValue(event);
         }
 
@@ -147,7 +147,7 @@ class HandlerAdapterTest {
 
             pipeline.processInbound(msg);
 
-            events.awaitCount(1);
+            events.awaitCount(1).assertValueCount(1);
             events.assertValue(Pair.of(sender, msg));
         }
     }
