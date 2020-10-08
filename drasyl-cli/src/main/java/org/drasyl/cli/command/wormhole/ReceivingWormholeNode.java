@@ -30,7 +30,6 @@ import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
-import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
@@ -68,7 +67,6 @@ public class ReceivingWormholeNode extends DrasylNode {
                           final Identity identity,
                           final PeersManager peersManager,
                           final PeerChannelGroup channelGroup,
-                          final Messenger messenger,
                           final Set<Endpoint> endpoints,
                           final AtomicBoolean acceptNewConnections,
                           final Pipeline pipeline,
@@ -77,7 +75,7 @@ public class ReceivingWormholeNode extends DrasylNode {
                           final AtomicBoolean started,
                           final CompletableFuture<Void> startSequence,
                           final CompletableFuture<Void> shutdownSequence) {
-        super(config, identity, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, components, pluginManager, started, startSequence, shutdownSequence);
+        super(config, identity, peersManager, channelGroup, endpoints, acceptNewConnections, pipeline, components, pluginManager, started, startSequence, shutdownSequence);
         this.doneFuture = doneFuture;
         this.printStream = printStream;
         this.received = received;

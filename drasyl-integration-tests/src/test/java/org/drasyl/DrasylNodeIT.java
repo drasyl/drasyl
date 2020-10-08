@@ -364,10 +364,10 @@ class DrasylNodeIT {
 
                 client1.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", "Hallo Welt");
 
-                client1RelayEvents.awaitCount(2);
+                client1RelayEvents.awaitCount(2).assertValueCount(2);
                 client1RelayEvents.assertValueAt(0, new PeerRelayEvent(Peer.of(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))));
                 client1RelayEvents.assertValueAt(1, new PeerDirectEvent(Peer.of(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))));
-                client2RelayEvents.awaitCount(3);
+                client2RelayEvents.awaitCount(3).assertValueCount(3);
                 client2RelayEvents.assertValueAt(0, new PeerRelayEvent(Peer.of(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))));
                 client2RelayEvents.assertValueAt(1, e -> e instanceof MessageEvent);
                 client2RelayEvents.assertValueAt(2, new PeerDirectEvent(Peer.of(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))));
@@ -702,7 +702,7 @@ class DrasylNodeIT {
     }
 
     @Nested
-    class TestMessenger {
+    class Send {
         /**
          * Network Layout:
          * <pre>

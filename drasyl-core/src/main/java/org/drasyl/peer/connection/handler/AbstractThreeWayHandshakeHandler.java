@@ -23,12 +23,12 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.RelayableMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
+import org.drasyl.pipeline.Pipeline;
 import org.slf4j.Logger;
 
 import java.time.Duration;
@@ -42,20 +42,20 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBI
 abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandler<Message, Message> {
     protected final Duration timeout;
     protected final CompletableFuture<Void> handshakeFuture;
-    protected final Messenger messenger;
+    protected final Pipeline pipeline;
     protected ScheduledFuture<?> timeoutFuture;
 
-    protected AbstractThreeWayHandshakeHandler(final Duration timeout, final Messenger messenger) {
-        this(timeout, messenger, new CompletableFuture<>(), null);
+    protected AbstractThreeWayHandshakeHandler(final Duration timeout, final Pipeline pipeline) {
+        this(timeout, pipeline, new CompletableFuture<>(), null);
     }
 
     protected AbstractThreeWayHandshakeHandler(final Duration timeout,
-                                               final Messenger messenger,
+                                               final Pipeline pipeline,
                                                final CompletableFuture<Void> handshakeFuture,
                                                final ScheduledFuture<?> timeoutFuture) {
         super(true, false, false);
         this.timeout = timeout;
-        this.messenger = messenger;
+        this.pipeline = pipeline;
         this.handshakeFuture = handshakeFuture;
         this.timeoutFuture = timeoutFuture;
     }
@@ -129,7 +129,7 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
                                                 final Message message) {
         if (message instanceof RelayableMessage) {
             final RelayableMessage relayableMessage = (RelayableMessage) message;
-            messenger.send(relayableMessage).whenComplete((done, e) -> {
+            pipeline.processOutbound(relayableMessage.getRecipient(), relayableMessage).whenComplete((done, e) -> {
                 if (e != null) {
                     getLogger().trace("Unable to send Message {}: {}", relayableMessage, e.getMessage());
                 }

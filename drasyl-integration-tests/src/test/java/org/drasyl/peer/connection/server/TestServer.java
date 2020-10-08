@@ -26,11 +26,11 @@ import io.reactivex.rxjava3.core.Observable;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
-import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.Message;
+import org.drasyl.pipeline.Pipeline;
 import org.drasyl.util.DrasylScheduler;
 import org.drasyl.util.FutureUtil;
 import org.drasyl.util.PortMappingUtil;
@@ -51,7 +51,7 @@ public class TestServer extends Server {
     private final TestServerChannelInitializer channelInitializer;
 
     public TestServer(final Identity identity,
-                      final Messenger messenger,
+                      final Pipeline pipeline,
                       final PeersManager peersManager,
                       final DrasylConfig config,
                       final PeerChannelGroup channelGroup,
@@ -62,7 +62,7 @@ public class TestServer extends Server {
                 config,
                 identity,
                 peersManager,
-                messenger,
+                pipeline,
                 endpoints,
                 channelGroup,
                 () -> true

@@ -16,10 +16,8 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.peer.connection.localhost;
 
-import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.DrasylConfig;
@@ -29,6 +27,10 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.message.RelayableMessage;
+import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.pipeline.Pipeline;
+import org.drasyl.pipeline.SimpleOutboundHandler;
 import org.drasyl.util.DrasylScheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -40,6 +42,7 @@ import java.nio.file.Path;
 import java.nio.file.WatchService;
 import java.time.Duration;
 import java.util.Set;
+import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.nio.file.StandardWatchEventKinds.ENTRY_CREATE;
@@ -48,6 +51,7 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler.LOOPBACK_MESSAGE_SINK_HANDLER;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 
@@ -70,40 +74,38 @@ import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 @SuppressWarnings("java:S1192")
 public class LocalHostDiscovery implements DrasylNodeComponent {
     private static final Logger LOG = LoggerFactory.getLogger(LocalHostDiscovery.class);
+    static final String LOCAL_HOST_DISCOVERY_COMMUNICATION_OCCURRED = "LOCAL_HOST_DISCOVERY_COMMUNICATION_OCCURRED";
     private final Path discoveryPath;
     private final Duration leaseTime;
     private final CompressedPublicKey ownPublicKey;
     private final PeersManager peersManager;
     private final Set<Endpoint> endpoints;
-    private final Observable<CompressedPublicKey> communicationOccurred;
     private final AtomicBoolean opened;
     private final AtomicBoolean doScan;
     private final Scheduler scheduler;
     private Disposable watchDisposable;
     private Disposable postDisposable;
     private WatchService watchService; // NOSONAR
-    private Disposable communicationObserver;
+    private final Pipeline pipeline;
     private PeerInformation postedPeerInformation;
 
     public LocalHostDiscovery(final DrasylConfig config,
                               final CompressedPublicKey ownPublicKey,
                               final PeersManager peersManager,
                               final Set<Endpoint> endpoints,
-                              final Observable<CompressedPublicKey> communicationOccurred) {
+                              final Pipeline pipeline) {
         this(
                 config.getLocalHostDiscoveryPath(),
                 config.getLocalHostDiscoveryLeaseTime(),
                 ownPublicKey,
                 peersManager,
                 endpoints,
-                communicationOccurred,
                 new AtomicBoolean(),
                 new AtomicBoolean(),
                 DrasylScheduler.getInstanceLight(),
                 null,
                 null,
-                null
-        );
+                pipeline);
     }
 
     @SuppressWarnings({ "java:S107" })
@@ -112,25 +114,23 @@ public class LocalHostDiscovery implements DrasylNodeComponent {
                        final CompressedPublicKey ownPublicKey,
                        final PeersManager peersManager,
                        final Set<Endpoint> endpoints,
-                       final Observable<CompressedPublicKey> communicationOccurred,
                        final AtomicBoolean opened,
                        final AtomicBoolean doScan,
                        final Scheduler scheduler,
                        final Disposable watchDisposable,
                        final Disposable postDisposable,
-                       final Disposable communicationObserver) {
+                       final Pipeline pipeline) {
         this.discoveryPath = discoveryPath;
         this.leaseTime = leaseTime;
         this.ownPublicKey = ownPublicKey;
         this.peersManager = peersManager;
         this.endpoints = endpoints;
-        this.communicationOccurred = communicationOccurred;
         this.opened = opened;
         this.doScan = doScan;
         this.scheduler = scheduler;
         this.watchDisposable = watchDisposable;
         this.postDisposable = postDisposable;
-        this.communicationObserver = communicationObserver;
+        this.pipeline = pipeline;
     }
 
     @Override
@@ -149,10 +149,17 @@ public class LocalHostDiscovery implements DrasylNodeComponent {
                 tryWatchDirectory();
                 scan();
                 keepOwnInformationUpToDate();
-                communicationObserver = communicationOccurred.subscribe(publicKey -> {
-                    // A scan only happens if a change in the directory was monitored or the time of last poll is too old.
-                    if (doScan.compareAndSet(true, false)) {
-                        scan();
+                pipeline.addAfter(LOOPBACK_MESSAGE_SINK_HANDLER, LOCAL_HOST_DISCOVERY_COMMUNICATION_OCCURRED, new SimpleOutboundHandler<RelayableMessage>() {
+                    @Override
+                    protected void matchedWrite(final HandlerContext ctx,
+                                                final CompressedPublicKey recipient,
+                                                final RelayableMessage msg,
+                                                final CompletableFuture<Void> future) {
+                        // A scan only happens if a change in the directory was monitored or the time of last poll is too old.
+                        if (doScan.compareAndSet(true, false)) {
+                            scheduler.scheduleDirect(LocalHostDiscovery.this::scan);
+                        }
+                        ctx.write(recipient, msg, future);
                     }
                 });
             }
@@ -259,9 +266,10 @@ public class LocalHostDiscovery implements DrasylNodeComponent {
     public void close() {
         if (opened.compareAndSet(true, false)) {
             LOG.debug("Stop Local Host Discovery...");
-            if (communicationObserver != null) {
-                communicationObserver.dispose();
-            }
+
+            // remove handler that has been added in {@link #open()}
+            pipeline.remove(LOCAL_HOST_DISCOVERY_COMMUNICATION_OCCURRED);
+
             if (watchDisposable != null) {
                 watchDisposable.dispose();
             }

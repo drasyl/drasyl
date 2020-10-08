@@ -27,7 +27,6 @@ import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
-import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
@@ -72,8 +71,6 @@ class ReceivingWormholeNodeTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
     @Mock
-    private Messenger messenger;
-    @Mock
     private PeersManager peersManager;
     @Mock
     private PeerChannelGroup channelGroup;
@@ -97,7 +94,7 @@ class ReceivingWormholeNodeTest {
     void setUp() {
         outputStream = new ByteArrayOutputStream();
         printStream = new PrintStream(outputStream, true);
-        underTest = new ReceivingWormholeNode(doneFuture, printStream, received, sender, timeoutGuard, config, identity, peersManager, channelGroup, messenger, endpoints, acceptNewConnections, pipeline, components, pluginManager, started, startSequence, shutdownSequence);
+        underTest = new ReceivingWormholeNode(doneFuture, printStream, received, sender, timeoutGuard, config, identity, peersManager, channelGroup, endpoints, acceptNewConnections, pipeline, components, pluginManager, started, startSequence, shutdownSequence);
     }
 
     @Nested

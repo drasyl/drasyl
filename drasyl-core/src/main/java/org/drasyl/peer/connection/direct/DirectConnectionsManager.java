@@ -19,24 +19,24 @@
 package org.drasyl.peer.connection.direct;
 
 import io.netty.channel.EventLoopGroup;
-import io.reactivex.rxjava3.core.Observable;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylNodeComponent;
 import org.drasyl.event.Event;
 import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
-import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.client.DirectClient;
+import org.drasyl.peer.connection.message.RelayableMessage;
 import org.drasyl.peer.connection.message.WhoisMessage;
 import org.drasyl.pipeline.HandlerAdapter;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
+import org.drasyl.pipeline.SimpleOutboundHandler;
 import org.drasyl.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -52,6 +52,7 @@ import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static java.time.Duration.ofSeconds;
+import static org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler.LOOPBACK_MESSAGE_SINK_HANDLER;
 
 /**
  * This class is responsible for establishing and managing direct connections with other drasyl
@@ -60,12 +61,12 @@ import static java.time.Duration.ofSeconds;
 @SuppressWarnings({ "java:S107" })
 public class DirectConnectionsManager implements DrasylNodeComponent {
     static final String DIRECT_CONNECTIONS_MANAGER = "DIRECT_CONNECTIONS_MANAGER";
+    static final String DIRECT_CONNECTIONS_MANAGER_COMMUNICATION_OCCURRED = "DIRECT_CONNECTIONS_MANAGER_COMMUNICATION_OCCURRED";
     private static final Logger LOG = LoggerFactory.getLogger(DirectConnectionsManager.class);
     private final DrasylConfig config;
     private final Identity identity;
     private final PeersManager peersManager;
     private final AtomicBoolean opened;
-    private final Messenger messenger;
     private final DirectConnectionDemandsCache directConnectionDemandsCache;
     private final RequestPeerInformationCache requestPeerInformationCache;
     private final Pipeline pipeline;
@@ -80,20 +81,17 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
     public DirectConnectionsManager(final DrasylConfig config,
                                     final Identity identity,
                                     final PeersManager peersManager,
-                                    final Messenger messenger,
                                     final Pipeline pipeline,
                                     final PeerChannelGroup channelGroup,
                                     final EventLoopGroup workerGroup,
                                     final Consumer<Event> eventConsumer,
                                     final BooleanSupplier acceptNewConnectionsSupplier,
-                                    final Set<Endpoint> endpoints,
-                                    final Observable<CompressedPublicKey> communicationOccurred) {
+                                    final Set<Endpoint> endpoints) {
         this(
                 config,
                 identity,
                 peersManager,
                 new AtomicBoolean(false),
-                messenger,
                 pipeline,
                 channelGroup,
                 workerGroup,
@@ -105,14 +103,12 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
                 acceptNewConnectionsSupplier,
                 config.getDirectConnectionsMaxConcurrentConnections()
         );
-        communicationOccurred.subscribe(this::communicationOccurred);
     }
 
     DirectConnectionsManager(final DrasylConfig config,
                              final Identity identity,
                              final PeersManager peersManager,
                              final AtomicBoolean opened,
-                             final Messenger messenger,
                              final Pipeline pipeline,
                              final PeerChannelGroup channelGroup,
                              final EventLoopGroup workerGroup,
@@ -127,7 +123,6 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
         this.identity = identity;
         this.peersManager = peersManager;
         this.opened = opened;
-        this.messenger = messenger;
         this.channelGroup = channelGroup;
         this.workerGroup = workerGroup;
         this.eventConsumer = eventConsumer;
@@ -163,6 +158,16 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
                     super.eventTriggered(ctx, event, future);
                 }
             });
+            pipeline.addAfter(LOOPBACK_MESSAGE_SINK_HANDLER, DIRECT_CONNECTIONS_MANAGER_COMMUNICATION_OCCURRED, new SimpleOutboundHandler<RelayableMessage>() {
+                @Override
+                protected void matchedWrite(final HandlerContext ctx,
+                                            final CompressedPublicKey recipient,
+                                            final RelayableMessage msg,
+                                            final CompletableFuture<Void> future) {
+                    communicationOccurred(msg.getRecipient());
+                    ctx.write(recipient, msg, future);
+                }
+            });
             LOG.debug("Direct Connections Manager started.");
         }
     }
@@ -193,6 +198,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
             LOG.debug("Stop Direct Connections Handler...");
 
             // remove handler that has been added in {@link #open()}
+            pipeline.remove(DIRECT_CONNECTIONS_MANAGER_COMMUNICATION_OCCURRED);
             pipeline.remove(DIRECT_CONNECTIONS_MANAGER);
 
             // remove all direct connection demands
@@ -220,7 +226,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
     private void requestPeerInformation(final CompressedPublicKey publicKey) {
         if (requestPeerInformationCache.add(publicKey)) {
             LOG.debug("Request information for Peer '{}'", publicKey);
-            messenger.send(new WhoisMessage(publicKey, identity.getPublicKey(), PeerInformation.of(endpoints))).whenComplete((done, e) -> {
+            pipeline.processOutbound(publicKey, new WhoisMessage(publicKey, identity.getPublicKey(), PeerInformation.of(endpoints))).whenComplete((done, e) -> {
                 if (e != null) {
                     LOG.debug("Unable to request information for Peer '{}': {}", publicKey, e.getMessage());
                 }
@@ -253,7 +259,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
                             config,
                             identity,
                             peersManager,
-                            messenger,
+                            pipeline,
                             channelGroup,
                             workerGroup,
                             eventConsumer,

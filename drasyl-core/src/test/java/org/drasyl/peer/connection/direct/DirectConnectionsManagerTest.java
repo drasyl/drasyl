@@ -25,7 +25,6 @@ import org.drasyl.event.Event;
 import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
-import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
@@ -72,15 +71,13 @@ class DirectConnectionsManagerTest {
     private PeersManager peersManager;
     @Mock
     private AtomicBoolean opened;
-    @Mock(answer = RETURNS_DEEP_STUBS)
-    private Messenger messenger;
     @Mock
     private Set<Endpoint> endpoints;
     @Mock
     private DirectConnectionDemandsCache directConnectionDemandsCache;
     @Mock
     private RequestPeerInformationCache requestPeerInformationCache;
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private Pipeline pipeline;
     @Mock
     private EventLoopGroup workerGroup;
@@ -100,7 +97,7 @@ class DirectConnectionsManagerTest {
         @Test
         void shouldSetOpenToTrue() {
             opened = new AtomicBoolean();
-            underTest = new DirectConnectionsManager(config, identity, peersManager, opened, messenger, pipeline, channelGroup, workerGroup, eventConsumer, endpoints, directConnectionDemandsCache, requestPeerInformationCache, clients, acceptNewConnectionsSupplier, maxConnections);
+            underTest = new DirectConnectionsManager(config, identity, peersManager, opened, pipeline, channelGroup, workerGroup, eventConsumer, endpoints, directConnectionDemandsCache, requestPeerInformationCache, clients, acceptNewConnectionsSupplier, maxConnections);
             underTest.open();
 
             assertTrue(opened.get());
@@ -117,7 +114,7 @@ class DirectConnectionsManagerTest {
                 return invocation.getMock();
             });
 
-            underTest = new DirectConnectionsManager(config, identity, peersManager, new AtomicBoolean(), messenger, pipeline, channelGroup, workerGroup, eventConsumer, endpoints, directConnectionDemandsCache, requestPeerInformationCache, clients, acceptNewConnectionsSupplier, maxConnections);
+            underTest = new DirectConnectionsManager(config, identity, peersManager, new AtomicBoolean(), pipeline, channelGroup, workerGroup, eventConsumer, endpoints, directConnectionDemandsCache, requestPeerInformationCache, clients, acceptNewConnectionsSupplier, maxConnections);
             underTest.open();
 
             verify(pipeline).addLast(eq(DIRECT_CONNECTIONS_MANAGER), any());
@@ -129,7 +126,7 @@ class DirectConnectionsManagerTest {
     class Close {
         @Test
         void shouldSetOpenToFalse() {
-            underTest = new DirectConnectionsManager(config, identity, peersManager, new AtomicBoolean(true), messenger, pipeline, channelGroup, workerGroup, eventConsumer, endpoints, directConnectionDemandsCache, requestPeerInformationCache, clients, acceptNewConnectionsSupplier, maxConnections);
+            underTest = new DirectConnectionsManager(config, identity, peersManager, new AtomicBoolean(true), pipeline, channelGroup, workerGroup, eventConsumer, endpoints, directConnectionDemandsCache, requestPeerInformationCache, clients, acceptNewConnectionsSupplier, maxConnections);
 
             underTest.close();
 
@@ -138,7 +135,7 @@ class DirectConnectionsManagerTest {
 
         @Test
         void shouldRemoveHandlerFromPipeline() {
-            underTest = new DirectConnectionsManager(config, identity, peersManager, new AtomicBoolean(true), messenger, pipeline, channelGroup, workerGroup, eventConsumer, endpoints, directConnectionDemandsCache, requestPeerInformationCache, clients, acceptNewConnectionsSupplier, maxConnections);
+            underTest = new DirectConnectionsManager(config, identity, peersManager, new AtomicBoolean(true), pipeline, channelGroup, workerGroup, eventConsumer, endpoints, directConnectionDemandsCache, requestPeerInformationCache, clients, acceptNewConnectionsSupplier, maxConnections);
 
             underTest.close();
 
@@ -149,7 +146,7 @@ class DirectConnectionsManagerTest {
         void shouldCloseAndRemoveAllClients(@Mock final CompressedPublicKey publicKey,
                                             @Mock final DirectClient client) {
             clients = new ConcurrentHashMap<>(Map.of(publicKey, client));
-            underTest = new DirectConnectionsManager(config, identity, peersManager, new AtomicBoolean(true), messenger, pipeline, channelGroup, workerGroup, eventConsumer, endpoints, directConnectionDemandsCache, requestPeerInformationCache, clients, acceptNewConnectionsSupplier, maxConnections);
+            underTest = new DirectConnectionsManager(config, identity, peersManager, new AtomicBoolean(true), pipeline, channelGroup, workerGroup, eventConsumer, endpoints, directConnectionDemandsCache, requestPeerInformationCache, clients, acceptNewConnectionsSupplier, maxConnections);
 
             underTest.close();
 
@@ -165,48 +162,48 @@ class DirectConnectionsManagerTest {
 
         @Test
         void shouldRequestInformationIfPathsMissingAndCacheEmpty() {
-            underTest = new DirectConnectionsManager(config, identity, peersManager, new AtomicBoolean(true), messenger, pipeline, channelGroup, workerGroup, eventConsumer, Set.of(), directConnectionDemandsCache, requestPeerInformationCache, clients, acceptNewConnectionsSupplier, maxConnections);
+            underTest = new DirectConnectionsManager(config, identity, peersManager, new AtomicBoolean(true), pipeline, channelGroup, workerGroup, eventConsumer, Set.of(), directConnectionDemandsCache, requestPeerInformationCache, clients, acceptNewConnectionsSupplier, maxConnections);
             when(peersManager.getPeer(any()).second().isEmpty()).thenReturn(true);
             when(requestPeerInformationCache.add(any())).thenReturn(true);
 
             underTest.communicationOccurred(publicKey);
 
-            verify(messenger).send(any(WhoisMessage.class));
+            verify(pipeline).processOutbound(any(), any(WhoisMessage.class));
         }
 
         @Test
         void shouldNotRequestInformationIfPathsExist() {
-            underTest = new DirectConnectionsManager(config, identity, peersManager, new AtomicBoolean(true), messenger, pipeline, channelGroup, workerGroup, eventConsumer, endpoints, directConnectionDemandsCache, requestPeerInformationCache, clients, acceptNewConnectionsSupplier, maxConnections);
+            underTest = new DirectConnectionsManager(config, identity, peersManager, new AtomicBoolean(true), pipeline, channelGroup, workerGroup, eventConsumer, endpoints, directConnectionDemandsCache, requestPeerInformationCache, clients, acceptNewConnectionsSupplier, maxConnections);
             when(peersManager.getPeer(any()).second().isEmpty()).thenReturn(false);
 
             underTest.communicationOccurred(publicKey);
 
-            verify(messenger, never()).send(any());
+            verify(pipeline, never()).processOutbound(any(), any());
         }
 
         @Test
         void shouldNotRequestInformationIfPathsMissingButCacheIsNotEmpty() {
-            underTest = new DirectConnectionsManager(config, identity, peersManager, new AtomicBoolean(true), messenger, pipeline, channelGroup, workerGroup, eventConsumer, endpoints, directConnectionDemandsCache, requestPeerInformationCache, clients, acceptNewConnectionsSupplier, maxConnections);
+            underTest = new DirectConnectionsManager(config, identity, peersManager, new AtomicBoolean(true), pipeline, channelGroup, workerGroup, eventConsumer, endpoints, directConnectionDemandsCache, requestPeerInformationCache, clients, acceptNewConnectionsSupplier, maxConnections);
             when(peersManager.getPeer(any()).second().isEmpty()).thenReturn(true);
             when(requestPeerInformationCache.add(any())).thenReturn(false);
 
             underTest.communicationOccurred(publicKey);
 
-            verify(messenger, never()).send(any());
+            verify(pipeline, never()).processOutbound(any(), any());
         }
 
         @Test
         void shouldNotRequestInformationIfManagerHasNotBeenStarted() {
-            underTest = new DirectConnectionsManager(config, identity, peersManager, new AtomicBoolean(false), messenger, pipeline, channelGroup, workerGroup, eventConsumer, endpoints, directConnectionDemandsCache, requestPeerInformationCache, clients, acceptNewConnectionsSupplier, maxConnections);
+            underTest = new DirectConnectionsManager(config, identity, peersManager, new AtomicBoolean(false), pipeline, channelGroup, workerGroup, eventConsumer, endpoints, directConnectionDemandsCache, requestPeerInformationCache, clients, acceptNewConnectionsSupplier, maxConnections);
 
             underTest.communicationOccurred(publicKey);
 
-            verify(messenger, never()).send(any());
+            verify(pipeline, never()).processOutbound(any(), any());
         }
 
         @Test
         void shouldInitiateDirectConnectionIfPathMissingAndEndpointsGiven() {
-            underTest = new DirectConnectionsManager(config, identity, peersManager, new AtomicBoolean(true), messenger, pipeline, channelGroup, workerGroup, eventConsumer, endpoints, directConnectionDemandsCache, requestPeerInformationCache, clients, acceptNewConnectionsSupplier, maxConnections);
+            underTest = new DirectConnectionsManager(config, identity, peersManager, new AtomicBoolean(true), pipeline, channelGroup, workerGroup, eventConsumer, endpoints, directConnectionDemandsCache, requestPeerInformationCache, clients, acceptNewConnectionsSupplier, maxConnections);
             when(peersManager.getPeer(any()).second().isEmpty()).thenReturn(false);
             when(directConnectionDemandsCache.contains(any())).thenReturn(true);
 

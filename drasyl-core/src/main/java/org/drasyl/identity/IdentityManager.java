@@ -139,7 +139,7 @@ public class IdentityManager {
         try {
             // check if file permissions are too open
             if (hasPosixSupport(path)) {
-                Set<PosixFilePermission> permissions = Files.getPosixFilePermissions(path);
+                final Set<PosixFilePermission> permissions = Files.getPosixFilePermissions(path);
                 if (!Collections.disjoint(permissions, Set.of(GROUP_EXECUTE, GROUP_WRITE, GROUP_READ, OTHERS_EXECUTE, OTHERS_WRITE, OTHERS_READ))) {
                     throw new IdentityManagerException("Unprotected private key: It is required that your identity file '" + path + "' is NOT accessible by others.'");
                 }

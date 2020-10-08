@@ -20,10 +20,10 @@ package org.drasyl.peer.connection.server;
 
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
-import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
+import org.drasyl.pipeline.Pipeline;
 
 import java.util.Set;
 import java.util.function.BooleanSupplier;
@@ -36,21 +36,21 @@ public class ServerEnvironment {
     private final Identity identity;
     private final PeersManager peersManager;
     private final BooleanSupplier acceptedNewConnectionsSupplier;
-    private final Messenger messenger;
+    private final Pipeline pipeline;
     private final Set<Endpoint> endpoints;
     private final PeerChannelGroup channelGroup;
 
     public ServerEnvironment(final DrasylConfig config,
                              final Identity identity,
                              final PeersManager peersManager,
-                             final Messenger messenger,
+                             final Pipeline pipeline,
                              final Set<Endpoint> endpoints,
                              final PeerChannelGroup channelGroup,
                              final BooleanSupplier acceptedNewConnectionsSupplier) {
         this.config = config;
         this.identity = identity;
         this.peersManager = peersManager;
-        this.messenger = messenger;
+        this.pipeline = pipeline;
         this.endpoints = endpoints;
         this.channelGroup = channelGroup;
         this.acceptedNewConnectionsSupplier = acceptedNewConnectionsSupplier;
@@ -72,8 +72,8 @@ public class ServerEnvironment {
         return config;
     }
 
-    public Messenger getMessenger() {
-        return messenger;
+    public Pipeline getPipeline() {
+        return pipeline;
     }
 
     public Set<Endpoint> getEndpoints() {

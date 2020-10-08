@@ -25,13 +25,13 @@ import org.drasyl.event.Node;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.connection.handler.AbstractThreeWayHandshakeClientHandler;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
+import org.drasyl.pipeline.Pipeline;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -61,7 +61,7 @@ public class ClientConnectionHandler extends AbstractThreeWayHandshakeClientHand
     public ClientConnectionHandler(final ClientEnvironment environment) {
         super(
                 environment.getHandshakeTimeout(),
-                environment.getMessenger(),
+                environment.getPipeline(),
                 new JoinMessage(environment.getIdentity().getProofOfWork(),
                         environment.getIdentity().getPublicKey(),
                         environment.joinAsChildren(),
@@ -74,11 +74,11 @@ public class ClientConnectionHandler extends AbstractThreeWayHandshakeClientHand
     @SuppressWarnings({ "java:S107" })
     ClientConnectionHandler(final ClientEnvironment environment,
                             final Duration timeout,
-                            final Messenger messenger,
+                            final Pipeline pipeline,
                             final CompletableFuture<Void> handshakeFuture,
                             final ScheduledFuture<?> timeoutFuture,
                             final JoinMessage requestMessage) {
-        super(timeout, messenger, handshakeFuture, timeoutFuture, requestMessage);
+        super(timeout, pipeline, handshakeFuture, timeoutFuture, requestMessage);
         this.environment = environment;
         this.childrenJoin = environment.joinAsChildren();
     }

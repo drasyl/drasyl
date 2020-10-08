@@ -20,12 +20,12 @@ package org.drasyl.peer.connection.handler;
 
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.ResponseMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
+import org.drasyl.pipeline.Pipeline;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
@@ -44,16 +44,16 @@ public abstract class AbstractThreeWayHandshakeServerHandler<R extends RequestMe
     private O offerMessage;
 
     protected AbstractThreeWayHandshakeServerHandler(final Duration timeout,
-                                                     final Messenger messenger) {
-        super(timeout, messenger);
+                                                     final Pipeline pipeline) {
+        super(timeout, pipeline);
     }
 
     protected AbstractThreeWayHandshakeServerHandler(final Duration timeout,
-                                                     final Messenger messenger,
+                                                     final Pipeline pipeline,
                                                      final CompletableFuture<Void> handshakeFuture,
                                                      final ScheduledFuture<?> timeoutFuture,
                                                      final R requestMessage, final O offerMessage) {
-        super(timeout, messenger, handshakeFuture, timeoutFuture);
+        super(timeout, pipeline, handshakeFuture, timeoutFuture);
         this.requestMessage = requestMessage;
         this.offerMessage = offerMessage;
     }

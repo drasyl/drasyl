@@ -34,7 +34,7 @@ public class PathUtil {
      * @param path the path
      * @return {@code true} if path's file system supports POSIX. Otherwise {@code false}.
      */
-    public static boolean hasPosixSupport(Path path) {
+    public static boolean hasPosixSupport(final Path path) {
         return path.getFileSystem().supportedFileAttributeViews().contains("posix");
     }
 }

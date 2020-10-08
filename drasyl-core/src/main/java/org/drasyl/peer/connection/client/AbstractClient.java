@@ -32,10 +32,10 @@ import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeComponent;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
-import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
+import org.drasyl.pipeline.Pipeline;
 import org.drasyl.util.DrasylFunction;
 import org.drasyl.util.SetUtil;
 import org.slf4j.Logger;
@@ -70,7 +70,7 @@ abstract class AbstractClient implements DrasylNodeComponent {
                              final Supplier<Set<Endpoint>> endpointsSupplier,
                              final BooleanSupplier acceptNewConnectionsSupplier,
                              final Identity identity,
-                             final Messenger messenger,
+                             final Pipeline pipeline,
                              final PeersManager peersManager,
                              final DrasylConfig config,
                              final PeerChannelGroup channelGroup,
@@ -92,7 +92,7 @@ abstract class AbstractClient implements DrasylNodeComponent {
                                         config,
                                         identity,
                                         endpoint,
-                                        messenger,
+                                        pipeline,
                                         channelGroup,
                                         peersManager,
                                         eventConsumer,

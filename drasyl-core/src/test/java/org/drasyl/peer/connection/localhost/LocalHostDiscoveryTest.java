@@ -27,6 +27,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.pipeline.Pipeline;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,6 +51,7 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.drasyl.peer.connection.localhost.LocalHostDiscovery.LOCAL_HOST_DISCOVERY_COMMUNICATION_OCCURRED;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.io.FileMatchers.anExistingFile;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -73,8 +75,6 @@ class LocalHostDiscoveryTest {
     @Mock
     private Set<Endpoint> endpoints;
     @Mock
-    private Observable<CompressedPublicKey> communicationOccurred;
-    @Mock
     private Scheduler scheduler;
     private AtomicBoolean opened = new AtomicBoolean();
     @Mock
@@ -83,13 +83,15 @@ class LocalHostDiscoveryTest {
     private Disposable postDisposable;
     @Mock
     private Disposable communicationObserver;
+    @Mock
+    private Pipeline pipeline;
     private LocalHostDiscovery underTest;
 
     @Nested
     class Open {
         @Test
         void shouldSetOpenToTrue() {
-            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, endpoints, communicationOccurred, opened, doScan, scheduler, watchDisposable, postDisposable, communicationObserver);
+            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, endpoints, opened, doScan, scheduler, watchDisposable, postDisposable, pipeline);
             underTest.open();
 
             assertTrue(opened.get());
@@ -99,7 +101,7 @@ class LocalHostDiscoveryTest {
         void shouldCreateDiscoveryDirectory() {
             when(discoveryPath.toFile().exists()).thenReturn(false);
 
-            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, endpoints, communicationOccurred, opened, doScan, scheduler, watchDisposable, postDisposable, communicationObserver);
+            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, endpoints, opened, doScan, scheduler, watchDisposable, postDisposable, pipeline);
             underTest.open();
 
             verify(discoveryPath.toFile()).mkdir();
@@ -112,7 +114,7 @@ class LocalHostDiscoveryTest {
             when(discoveryPath.toFile().canRead()).thenReturn(true);
             when(discoveryPath.toFile().canWrite()).thenReturn(true);
 
-            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, endpoints, communicationOccurred, opened, doScan, scheduler, watchDisposable, postDisposable, communicationObserver);
+            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, endpoints, opened, doScan, scheduler, watchDisposable, postDisposable, pipeline);
             underTest.open();
 
             verify(discoveryPath).register(any(), eq(ENTRY_CREATE), eq(ENTRY_MODIFY), eq(ENTRY_DELETE));
@@ -125,7 +127,7 @@ class LocalHostDiscoveryTest {
             when(discoveryPath.toFile().canRead()).thenReturn(true);
             when(discoveryPath.toFile().canWrite()).thenReturn(true);
 
-            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, endpoints, communicationOccurred, opened, doScan, scheduler, watchDisposable, postDisposable, communicationObserver);
+            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, endpoints, opened, doScan, scheduler, watchDisposable, postDisposable, pipeline);
             underTest.open();
 
             verify(scheduler).schedulePeriodicallyDirect(any(), eq(0L), eq(5L), eq(SECONDS));
@@ -149,7 +151,7 @@ class LocalHostDiscoveryTest {
                 return null;
             });
 
-            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, Set.of(Endpoint.of("ws://localhost:123")), communicationOccurred, opened, doScan, scheduler, watchDisposable, postDisposable, communicationObserver);
+            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, Set.of(Endpoint.of("ws://localhost:123")), opened, doScan, scheduler, watchDisposable, postDisposable, pipeline);
             underTest.open();
 
             verify(discoveryPath.getFileSystem().newWatchService()).poll();
@@ -162,7 +164,7 @@ class LocalHostDiscoveryTest {
         @Test
         void shouldSetOpenToFalse() {
             opened = new AtomicBoolean(true);
-            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, endpoints, communicationOccurred, opened, doScan, scheduler, watchDisposable, postDisposable, communicationObserver);
+            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, endpoints, opened, doScan, scheduler, watchDisposable, postDisposable, pipeline);
 
             underTest.close();
 
@@ -170,13 +172,13 @@ class LocalHostDiscoveryTest {
         }
 
         @Test
-        void shouldDisposeAllTasksAndSubscriptions() {
+        void shouldRemoveAllHandlersAndDisposeAllTasksAndSubscriptions() {
             opened = new AtomicBoolean(true);
-            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, endpoints, communicationOccurred, opened, doScan, scheduler, watchDisposable, postDisposable, communicationObserver);
+            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, endpoints, opened, doScan, scheduler, watchDisposable, postDisposable, pipeline);
 
             underTest.close();
 
-            verify(communicationObserver).dispose();
+            verify(pipeline).remove(LOCAL_HOST_DISCOVERY_COMMUNICATION_OCCURRED);
             verify(watchDisposable).dispose();
             verify(postDisposable).dispose();
         }
@@ -190,7 +192,7 @@ class LocalHostDiscoveryTest {
             final Path path = Paths.get(dir.toString(), "03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a.json");
             Files.writeString(path, "{\"endpoints\":[\"ws://localhost:123\"]}", StandardOpenOption.CREATE);
 
-            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, Set.of(Endpoint.of("ws://localhost:123")), communicationOccurred, new AtomicBoolean(true), new AtomicBoolean(true), scheduler, watchDisposable, postDisposable, communicationObserver);
+            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, Set.of(Endpoint.of("ws://localhost:123")), new AtomicBoolean(true), new AtomicBoolean(true), scheduler, watchDisposable, postDisposable, pipeline);
             underTest.scan();
 
             verify(peersManager).setPeerInformation(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"), PeerInformation.of(Set.of(Endpoint.of("ws://localhost:123"))));

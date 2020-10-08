@@ -25,10 +25,10 @@ import io.netty.channel.EventLoopGroup;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
-import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
+import org.drasyl.pipeline.Pipeline;
 import org.drasyl.util.DrasylFunction;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -55,7 +55,7 @@ public class DirectClient extends AbstractClient {
     public DirectClient(final DrasylConfig config,
                         final Identity identity,
                         final PeersManager peersManager,
-                        final Messenger messenger,
+                        final Pipeline pipeline,
                         final PeerChannelGroup channelGroup,
                         final EventLoopGroup workerGroup,
                         final Consumer<Event> eventConsumer,
@@ -69,7 +69,7 @@ public class DirectClient extends AbstractClient {
                 endpointsSupplier,
                 acceptNewConnectionsSupplier,
                 identity,
-                messenger,
+                pipeline,
                 peersManager,
                 config,
                 channelGroup,

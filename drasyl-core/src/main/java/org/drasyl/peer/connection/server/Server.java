@@ -33,10 +33,10 @@ import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylNodeComponent;
 import org.drasyl.identity.Identity;
-import org.drasyl.messenger.Messenger;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
+import org.drasyl.pipeline.Pipeline;
 import org.drasyl.util.DrasylScheduler;
 import org.drasyl.util.Pair;
 import org.drasyl.util.PortMappingUtil;
@@ -106,7 +106,7 @@ public class Server implements DrasylNodeComponent {
     }
 
     public Server(final Identity identity,
-                  final Messenger messenger,
+                  final Pipeline pipeline,
                   final PeersManager peersManager,
                   final DrasylConfig config,
                   final PeerChannelGroup channelGroup,
@@ -114,14 +114,14 @@ public class Server implements DrasylNodeComponent {
                   final EventLoopGroup bossGroup,
                   final Set<Endpoint> nodeEndpoints,
                   final BooleanSupplier acceptNewConnectionsSupplier) throws ServerException {
-        this(identity, messenger, peersManager, config, channelGroup, workerGroup, bossGroup, new AtomicBoolean(false), acceptNewConnectionsSupplier, nodeEndpoints);
+        this(identity, pipeline, peersManager, config, channelGroup, workerGroup, bossGroup, new AtomicBoolean(false), acceptNewConnectionsSupplier, nodeEndpoints);
     }
 
     /**
      * Server for accepting connections from child peers and non-child peers.
      *
      * @param identity                     the identity manager
-     * @param messenger                    the messenger object
+     * @param pipeline                     the pipeline object
      * @param peersManager                 the peers manager
      * @param config                       config that should be used
      * @param channelGroup                 the channel group
@@ -131,7 +131,7 @@ public class Server implements DrasylNodeComponent {
      * @param nodeEndpoints                the node endpoints
      */
     public Server(final Identity identity,
-                  final Messenger messenger,
+                  final Pipeline pipeline,
                   final PeersManager peersManager,
                   final DrasylConfig config,
                   final PeerChannelGroup channelGroup,
@@ -149,7 +149,7 @@ public class Server implements DrasylNodeComponent {
                                         config,
                                         identity,
                                         peersManager,
-                                        messenger,
+                                        pipeline,
                                         nodeEndpoints,
                                         channelGroup,
                                         acceptNewConnectionsSupplier

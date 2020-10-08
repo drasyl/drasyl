@@ -35,31 +35,24 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
-import org.drasyl.messenger.Messenger;
-import org.drasyl.messenger.MessengerException;
-import org.drasyl.messenger.NoPathToPublicKeyException;
 import org.drasyl.monitoring.Monitoring;
 import org.drasyl.peer.Endpoint;
-import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.client.SuperPeerClient;
 import org.drasyl.peer.connection.direct.DirectConnectionsManager;
 import org.drasyl.peer.connection.intravm.IntraVmDiscovery;
 import org.drasyl.peer.connection.localhost.LocalHostDiscovery;
-import org.drasyl.peer.connection.message.ApplicationMessage;
-import org.drasyl.peer.connection.message.IdentityMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
-import org.drasyl.peer.connection.message.RelayableMessage;
-import org.drasyl.peer.connection.message.WhoisMessage;
 import org.drasyl.peer.connection.server.Server;
+import org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler;
 import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler;
 import org.drasyl.pipeline.Pipeline;
-import org.drasyl.pipeline.SimpleOutboundHandler;
+import org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler;
 import org.drasyl.pipeline.codec.Codec;
 import org.drasyl.plugins.PluginManager;
-import org.drasyl.util.FutureUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -76,6 +69,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
+import static org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler.DIRECT_CONNECTION_MESSAGE_SINK_HANDLER;
+import static org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler.LOOPBACK_MESSAGE_SINK_HANDLER;
+import static org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler.SUPER_PEER_SINK_HANDLER;
 import static org.drasyl.util.DrasylScheduler.getInstanceHeavy;
 
 /**
@@ -120,7 +116,6 @@ public abstract class DrasylNode {
     private final Identity identity;
     private final PeersManager peersManager;
     private final PeerChannelGroup channelGroup;
-    private final Messenger messenger;
     private final Set<Endpoint> endpoints;
     private final AtomicBoolean acceptNewConnections;
     private final Pipeline pipeline;
@@ -137,7 +132,7 @@ public abstract class DrasylNode {
      * Note: This is a blocking method, because when a node is started for the first time, its
      * identity must be created. This can take up to a minute because of the proof of work.
      */
-    public DrasylNode() throws DrasylException {
+    protected DrasylNode() throws DrasylException {
         this(new DrasylConfig());
     }
 
@@ -152,7 +147,7 @@ public abstract class DrasylNode {
      * @param config custom configuration used for this node
      */
     @SuppressWarnings({ "java:S2095" })
-    public DrasylNode(final DrasylConfig config) throws DrasylException {
+    protected DrasylNode(final DrasylConfig config) throws DrasylException {
         try {
             this.config = config;
             final IdentityManager identityManager = new IdentityManager(this.config);
@@ -160,57 +155,38 @@ public abstract class DrasylNode {
             this.identity = identityManager.getIdentity();
             this.peersManager = new PeersManager(this::onInternalEvent);
             this.channelGroup = new PeerChannelGroup();
-            this.messenger = new Messenger(this::messageSink, peersManager, channelGroup);
             this.endpoints = new CopyOnWriteArraySet<>();
             this.acceptNewConnections = new AtomicBoolean();
             this.pipeline = new DrasylPipeline(this::onEvent, config, identity);
+            this.started = new AtomicBoolean();
+            pipeline.addFirst(SUPER_PEER_SINK_HANDLER, new SuperPeerMessageSinkHandler(channelGroup, peersManager));
+            pipeline.addAfter(SUPER_PEER_SINK_HANDLER, DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, new DirectConnectionMessageSinkHandler(channelGroup));
+            pipeline.addAfter(DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, LOOPBACK_MESSAGE_SINK_HANDLER, new LoopbackMessageSinkHandler(started, identity, peersManager, endpoints));
             this.components = new ArrayList<>();
-
-            // --------------------------------- TODO ----------------------------------------------
-            // Remove this later, when the messenger is replaced and all components are added to the
-            // drasyl Pipeline.
-            pipeline.addFirst("passToMessengerHandler", new SimpleOutboundHandler<ApplicationMessage>() {
-                @Override
-                protected void matchedWrite(final HandlerContext ctx,
-                                            final CompressedPublicKey recipient,
-                                            final ApplicationMessage msg,
-                                            final CompletableFuture<Void> future) {
-                    if (future.isDone()) {
-                        if (LOG.isWarnEnabled()) {
-                            LOG.warn("Message `{}` was not written to the underlying drasyl layer, " +
-                                    "because the corresponding future was already completed.", msg);
-                        }
-                    }
-                    else {
-                        FutureUtil.completeOnAllOf(future, messenger.send(msg));
-                    }
-                }
-            });
-            // -------------------------------------------------------------------------------------
 
             if (config.areDirectConnectionsEnabled()) {
                 this.components.add(new DirectConnectionsManager(
-                        config, identity, peersManager, messenger, pipeline, channelGroup,
+                        config, identity, peersManager, pipeline, channelGroup,
                         LazyWorkerGroupHolder.INSTANCE, this::onInternalEvent,
-                        acceptNewConnections::get, endpoints, messenger.communicationOccurred()));
+                        acceptNewConnections::get, endpoints));
             }
             if (config.isIntraVmDiscoveryEnabled()) {
-                this.components.add(new IntraVmDiscovery(identity.getPublicKey(), messenger,
+                this.components.add(new IntraVmDiscovery(identity.getPublicKey(),
                         peersManager, pipeline));
             }
             if (config.isSuperPeerEnabled()) {
                 this.components.add(new SuperPeerClient(this.config, identity, peersManager,
-                        messenger, channelGroup, LazyWorkerGroupHolder.INSTANCE,
+                        pipeline, channelGroup, LazyWorkerGroupHolder.INSTANCE,
                         this::onInternalEvent, acceptNewConnections::get));
             }
             if (config.isServerEnabled()) {
-                this.components.add(new Server(identity, messenger, peersManager, this.config,
+                this.components.add(new Server(identity, pipeline, peersManager, this.config,
                         channelGroup, LazyWorkerGroupHolder.INSTANCE, LazyBossGroupHolder.INSTANCE,
                         endpoints, acceptNewConnections::get));
             }
             if (config.isLocalHostDiscoveryEnabled()) {
                 this.components.add(new LocalHostDiscovery(this.config, identity.getPublicKey(),
-                        peersManager, endpoints, messenger.communicationOccurred()));
+                        peersManager, endpoints, pipeline));
             }
             if (config.isMonitoringEnabled()) {
                 this.components.add(new Monitoring(config, peersManager,
@@ -218,12 +194,105 @@ public abstract class DrasylNode {
             }
 
             this.pluginManager = new PluginManager(config, pipeline);
-            this.started = new AtomicBoolean();
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = completedFuture(null);
         }
         catch (final ConfigException e) {
             throw new DrasylException("Couldn't load config: " + e.getMessage());
+        }
+    }
+
+    protected DrasylNode(final DrasylConfig config,
+                         final Identity identity,
+                         final PeersManager peersManager,
+                         final PeerChannelGroup channelGroup,
+                         final Set<Endpoint> endpoints,
+                         final AtomicBoolean acceptNewConnections,
+                         final Pipeline pipeline,
+                         final List<DrasylNodeComponent> components,
+                         final PluginManager pluginManager,
+                         final AtomicBoolean started,
+                         final CompletableFuture<Void> startSequence,
+                         final CompletableFuture<Void> shutdownSequence) {
+        this.config = config;
+        this.identity = identity;
+        this.peersManager = peersManager;
+        this.endpoints = endpoints;
+        this.acceptNewConnections = acceptNewConnections;
+        this.pipeline = pipeline;
+        this.channelGroup = channelGroup;
+        this.components = components;
+        this.pluginManager = pluginManager;
+        this.started = started;
+        this.startSequence = startSequence;
+        this.shutdownSequence = shutdownSequence;
+    }
+
+    /**
+     * Returns the version of the node. If the version could not be read, <code>null</code> is
+     * returned.
+     *
+     * @return the version of the node
+     */
+    public static String getVersion() {
+        final Properties properties = new Properties();
+        try {
+            properties.load(DrasylNode.class.getClassLoader().getResourceAsStream("project.properties"));
+            return properties.getProperty("version");
+        }
+        catch (final IOException e) {
+            return null;
+        }
+    }
+
+    /**
+     * This method stops the shared threads ({@link EventLoopGroup}s), but only if none {@link
+     * DrasylNode} is using them anymore.
+     *
+     * <p>
+     * <b>This operation cannot be undone. After performing this operation, no new DrasylNodes can
+     * be created!</b>
+     * </p>
+     */
+    public static void irrevocablyTerminate() {
+        if (INSTANCES.isEmpty()) {
+            if (bossGroupCreated) {
+                LazyBossGroupHolder.INSTANCE.shutdownGracefully().syncUninterruptibly();
+            }
+
+            if (workerGroupCreated) {
+                LazyWorkerGroupHolder.INSTANCE.shutdownGracefully().syncUninterruptibly();
+            }
+        }
+    }
+
+    /**
+     * Returns the {@link EventLoopGroup} that fits best to the current environment. Under Linux the
+     * more performant {@link EpollEventLoopGroup} is returned.
+     *
+     * @return {@link EventLoopGroup} that fits best to the current environment
+     */
+    public static EventLoopGroup getBestEventLoop(final int poolSize) {
+        if (Epoll.isAvailable()) {
+            return new EpollEventLoopGroup(poolSize);
+        }
+        else {
+            return new NioEventLoopGroup(poolSize);
+        }
+    }
+
+    /**
+     * Returns the {@link EventLoopGroup} that fits best to the current environment. Under Linux the
+     * more performant {@link EpollEventLoopGroup} is returned.
+     *
+     * @return {@link EventLoopGroup} that fits best to the current environment
+     */
+    public static EventLoopGroup getBestEventLoop() {
+        if (Epoll.isAvailable()) {
+            return new EpollEventLoopGroup();
+        }
+        else {
+            return new NioEventLoopGroup();
         }
     }
 
@@ -240,49 +309,6 @@ public abstract class DrasylNode {
         pipeline.processInbound(event);
     }
 
-    CompletableFuture<Void> messageSink(final RelayableMessage message) {
-        if (!started.get()) {
-            return failedFuture(new NoPathToPublicKeyException(identity.getPublicKey()));
-        }
-
-        final CompressedPublicKey recipient = message.getRecipient();
-
-        if (!identity.getPublicKey().equals(recipient)) {
-            return failedFuture(new NoPathToPublicKeyException(recipient));
-        }
-
-        if (message instanceof ApplicationMessage) {
-            final ApplicationMessage applicationMessage = (ApplicationMessage) message;
-            peersManager.addPeer(applicationMessage.getSender());
-            return pipeline.processInbound(applicationMessage);
-        }
-        else if (message instanceof WhoisMessage) {
-            final WhoisMessage whoisMessage = (WhoisMessage) message;
-            peersManager.setPeerInformation(whoisMessage.getSender(),
-                    whoisMessage.getPeerInformation());
-
-            final CompressedPublicKey myPublicKey = identity.getPublicKey();
-            final PeerInformation myPeerInformation = PeerInformation.of(endpoints);
-            final IdentityMessage identityMessage = new IdentityMessage(whoisMessage.getSender(),
-                    myPublicKey, myPeerInformation, whoisMessage.getId());
-
-            return messenger.send(identityMessage).exceptionally(e -> {
-                LOG.info("Unable to reply to {}: {}", whoisMessage, e.getMessage());
-                return null;
-            });
-        }
-        else if (message instanceof IdentityMessage) {
-            final IdentityMessage identityMessage = (IdentityMessage) message;
-            peersManager.setPeerInformation(identityMessage.getSender(),
-                    identityMessage.getPeerInformation());
-            return completedFuture(null);
-        }
-        else {
-            throw new IllegalArgumentException("DrasylNode.loopbackMessageSink is not able to " +
-                    "handle messages of type " + message.getClass().getSimpleName());
-        }
-    }
-
     /**
      * Sends <code>event</code> to the application and tells it information about the local node,
      * other peers, connections or incoming messages.
@@ -291,38 +317,10 @@ public abstract class DrasylNode {
      */
     public abstract void onEvent(Event event);
 
-    protected DrasylNode(final DrasylConfig config,
-                         final Identity identity,
-                         final PeersManager peersManager,
-                         final PeerChannelGroup channelGroup,
-                         final Messenger messenger,
-                         final Set<Endpoint> endpoints,
-                         final AtomicBoolean acceptNewConnections,
-                         final Pipeline pipeline,
-                         final List<DrasylNodeComponent> components,
-                         final PluginManager pluginManager,
-                         final AtomicBoolean started,
-                         final CompletableFuture<Void> startSequence,
-                         final CompletableFuture<Void> shutdownSequence) {
-        this.config = config;
-        this.identity = identity;
-        this.peersManager = peersManager;
-        this.messenger = messenger;
-        this.endpoints = endpoints;
-        this.acceptNewConnections = acceptNewConnections;
-        this.pipeline = pipeline;
-        this.channelGroup = channelGroup;
-        this.components = components;
-        this.pluginManager = pluginManager;
-        this.started = started;
-        this.startSequence = startSequence;
-        this.shutdownSequence = shutdownSequence;
-    }
-
     /**
      * Sends the content of {@code payload} to the identity {@code recipient}. Returns a failed
-     * future with a {@link MessengerException} if the message could not be sent to the recipient or
-     * a super peer. Important: Just because the future did not fail does not automatically mean
+     * future with a {@link IllegalStateException} if the message could not be sent to the recipient
+     * or a super peer. Important: Just because the future did not fail does not automatically mean
      * that the message could be delivered. Delivery confirmations must be implemented by the
      * application.
      *
@@ -356,8 +354,8 @@ public abstract class DrasylNode {
 
     /**
      * Sends the content of {@code payload} to the identity {@code recipient}. Returns a failed
-     * future with a {@link MessengerException} if the message could not be sent to the recipient or
-     * a super peer. Important: Just because the future did not fail does not automatically mean
+     * future with a {@link IllegalStateException} if the message could not be sent to the recipient
+     * or a super peer. Important: Just because the future did not fail does not automatically mean
      * that the message could be delivered. Delivery confirmations must be implemented by the
      * application.
      *
@@ -493,23 +491,6 @@ public abstract class DrasylNode {
         return startSequence;
     }
 
-    /**
-     * Returns the version of the node. If the version could not be read, <code>null</code> is
-     * returned.
-     *
-     * @return the version of the node
-     */
-    public static String getVersion() {
-        final Properties properties = new Properties();
-        try {
-            properties.load(DrasylNode.class.getClassLoader().getResourceAsStream("project.properties"));
-            return properties.getProperty("version");
-        }
-        catch (final IOException e) {
-            return null;
-        }
-    }
-
     private void acceptNewConnections() {
         acceptNewConnections.set(true);
     }
@@ -532,27 +513,6 @@ public abstract class DrasylNode {
         return identity;
     }
 
-    /**
-     * This method stops the shared threads ({@link EventLoopGroup}s), but only if none {@link
-     * DrasylNode} is using them anymore.
-     *
-     * <p>
-     * <b>This operation cannot be undone. After performing this operation, no new DrasylNodes can
-     * be created!</b>
-     * </p>
-     */
-    public static void irrevocablyTerminate() {
-        if (INSTANCES.isEmpty()) {
-            if (bossGroupCreated) {
-                LazyBossGroupHolder.INSTANCE.shutdownGracefully().syncUninterruptibly();
-            }
-
-            if (workerGroupCreated) {
-                LazyWorkerGroupHolder.INSTANCE.shutdownGracefully().syncUninterruptibly();
-            }
-        }
-    }
-
     private static class LazyWorkerGroupHolder {
         // https://github.com/netty/netty/issues/639#issuecomment-9263566
         static final EventLoopGroup INSTANCE = getBestEventLoop(Math.min(2,
@@ -569,36 +529,6 @@ public abstract class DrasylNode {
         static final boolean LOCK = bossGroupCreated = true;
 
         private LazyBossGroupHolder() {
-        }
-    }
-
-    /**
-     * Returns the {@link EventLoopGroup} that fits best to the current environment. Under Linux the
-     * more performant {@link EpollEventLoopGroup} is returned.
-     *
-     * @return {@link EventLoopGroup} that fits best to the current environment
-     */
-    public static EventLoopGroup getBestEventLoop(final int poolSize) {
-        if (Epoll.isAvailable()) {
-            return new EpollEventLoopGroup(poolSize);
-        }
-        else {
-            return new NioEventLoopGroup(poolSize);
-        }
-    }
-
-    /**
-     * Returns the {@link EventLoopGroup} that fits best to the current environment. Under Linux the
-     * more performant {@link EpollEventLoopGroup} is returned.
-     *
-     * @return {@link EventLoopGroup} that fits best to the current environment
-     */
-    public static EventLoopGroup getBestEventLoop() {
-        if (Epoll.isAvailable()) {
-            return new EpollEventLoopGroup();
-        }
-        else {
-            return new NioEventLoopGroup();
         }
     }
 }
