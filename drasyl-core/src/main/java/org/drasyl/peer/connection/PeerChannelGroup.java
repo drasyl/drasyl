@@ -19,13 +19,13 @@
 package org.drasyl.peer.connection;
 
 import io.netty.channel.Channel;
-import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelId;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.EventExecutor;
+import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.QuitMessage;
@@ -43,6 +43,7 @@ import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_
 public class PeerChannelGroup extends DefaultChannelGroup {
     public static final AttributeKey<CompressedPublicKey> ATTRIBUTE_PUBLIC_KEY = AttributeKey.valueOf("publicKey");
     private final Map<CompressedPublicKey, ChannelId> identity2channelId;
+    private final EventExecutor executor;
     private final ChannelFutureListener remover = future -> remove(future.channel());
 
     public PeerChannelGroup() {
@@ -53,6 +54,7 @@ public class PeerChannelGroup extends DefaultChannelGroup {
                      final EventExecutor executor) {
         super(executor);
         this.identity2channelId = identity2channelId;
+        this.executor = executor;
     }
 
     public PeerChannelGroup(final EventExecutor executor) {
@@ -60,20 +62,29 @@ public class PeerChannelGroup extends DefaultChannelGroup {
     }
 
     /**
-     * @throws IllegalArgumentException if no channel with given identity could be found
+     * @param publicKey the recipient of a message as compressed public key
+     * @param message   the message to send
+     * @return a completed future if the message was successfully processed, otherwise an
+     * exceptionally future
      */
-    public ChannelFuture writeAndFlush(final CompressedPublicKey identity, final Object message) {
-        final Channel existingChannel = find(identity);
+    public Future<Void> writeAndFlush(final CompressedPublicKey publicKey, final Object message) {
+        final Channel existingChannel = find(publicKey);
         if (existingChannel != null) {
             return existingChannel.writeAndFlush(message);
         }
         else {
-            throw new IllegalArgumentException("No channel with given Public Key found.");
+            return executor.newFailedFuture(new IllegalArgumentException("No channel with given Public Key found."));
         }
     }
 
-    public Channel find(final CompressedPublicKey identity) {
-        final ChannelId existingChannelId = identity2channelId.get(identity);
+    /**
+     * Searches the channel for given public key.
+     *
+     * @param publicKey public key for which a channel should be searched
+     * @return the {@code channel} if found, otherwise {@code null}
+     */
+    public Channel find(final CompressedPublicKey publicKey) {
+        final ChannelId existingChannelId = identity2channelId.get(publicKey);
         if (existingChannelId != null) {
             return find(existingChannelId);
         }

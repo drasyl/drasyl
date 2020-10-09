@@ -22,6 +22,7 @@ import io.netty.bootstrap.ServerBootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.EventLoopGroup;
+import io.netty.util.concurrent.Future;
 import io.reactivex.rxjava3.core.Observable;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.CompressedPublicKey;
@@ -104,7 +105,7 @@ public class TestServer extends Server {
 
     public CompletableFuture<Void> sendMessage(final CompressedPublicKey recipient,
                                                final Message message) {
-        final ChannelFuture future = channelGroup.writeAndFlush(recipient, message).awaitUninterruptibly();
+        final Future<Void> future = channelGroup.writeAndFlush(recipient, message).awaitUninterruptibly();
         return FutureUtil.toFuture(future);
     }
 
