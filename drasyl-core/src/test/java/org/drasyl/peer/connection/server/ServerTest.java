@@ -45,6 +45,7 @@ import java.util.function.Function;
 
 import static org.drasyl.peer.connection.server.Server.determineActualEndpoints;
 import static org.drasyl.util.NetworkUtil.createInetAddress;
+import static org.drasyl.util.PortMappingUtil.Protocol.TCP;
 import static org.drasyl.util.UriUtil.createUri;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -69,7 +70,7 @@ class ServerTest {
     @Mock
     private Scheduler scheduler;
     @Mock
-    private final Function<InetSocketAddress, Set<PortMapping>> portExposer = PortMappingUtil::expose;
+    private final Function<InetSocketAddress, Set<PortMapping>> portExposer = address -> PortMappingUtil.expose(address, TCP);
 
     @Nested
     class Open {

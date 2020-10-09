@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.util;
 
 import com.google.common.base.Suppliers;
@@ -71,17 +70,19 @@ public class PortMappingUtil {
      * Note: This is a blocking method, because it connects to other devices that may react slowly
      * or not at all.
      *
-     * @param address address to be exposed
+     * @param address  address to be exposed
+     * @param protocol protocol to be exposed
      * @return List of port mappings.
      */
-    public static Set<PortMapping> expose(final InetSocketAddress address) {
+    public static Set<PortMapping> expose(final InetSocketAddress address,
+                                          final Protocol protocol) {
         // discover available port mapping devices
         final List<PortMapper> mappers = discoverMappers(address.getAddress());
 
         final Set<PortMapping> mappings = new HashSet<>();
         for (final PortMapper mapper : mappers) {
             try {
-                mappings.add(new PortMapping(mapper, address));
+                mappings.add(new PortMapping(mapper, address, protocol));
             }
             catch (final IllegalStateException e) {
                 if (LOG.isDebugEnabled()) {
@@ -133,12 +134,27 @@ public class PortMappingUtil {
         }
     }
 
+    public enum Protocol {
+        UDP(PortType.UDP),
+        TCP(PortType.TCP);
+        private final PortType portType;
+
+        Protocol(PortType portType) {
+            this.portType = portType;
+        }
+
+        PortType getPortType() {
+            return portType;
+        }
+    }
+
     /**
      * Represents a port mapping.
      */
     public static class PortMapping {
         private final PortMapper mapper;
         private final InetSocketAddress address;
+        private final Protocol protocol;
         private final Subject<Optional<InetSocketAddress>> externalAddressObservable;
         private final Scheduler scheduler;
         private MappedPort mappedPort;
@@ -146,12 +162,14 @@ public class PortMappingUtil {
 
         PortMapping(final PortMapper mapper,
                     final InetSocketAddress address,
+                    final Protocol protocol,
                     final Subject<Optional<InetSocketAddress>> externalAddressObservable,
                     final Scheduler scheduler,
                     final MappedPort mappedPort,
                     final Disposable refreshDisposable) {
             this.mapper = mapper;
             this.address = address;
+            this.protocol = protocol;
             this.externalAddressObservable = externalAddressObservable;
             this.scheduler = scheduler;
             this.mappedPort = mappedPort;
@@ -160,9 +178,10 @@ public class PortMappingUtil {
 
         PortMapping(final PortMapper mapper,
                     final InetSocketAddress address,
+                    Protocol protocol,
                     final Subject<Optional<InetSocketAddress>> externalAddressObservable,
                     final Scheduler scheduler) {
-            this(mapper, address, externalAddressObservable, scheduler, null, null);
+            this(mapper, address, protocol, externalAddressObservable, scheduler, null, null);
 
             try {
                 createMapping();
@@ -175,13 +194,15 @@ public class PortMappingUtil {
         /**
          * Attempts to create a port mapping for {@code address} at router {@code mapper}.
          *
-         * @param mapper  router where the port mapping will be requested.
-         * @param address address to be exposed
+         * @param mapper   router where the port mapping will be requested.
+         * @param address  address to be exposed
+         * @param protocol protocol to be exposed
          * @throws IllegalStateException if the port could not be mapped for any reason
          */
         public PortMapping(final PortMapper mapper,
-                           final InetSocketAddress address) {
-            this(mapper, address, BehaviorSubject.createDefault(Optional.empty()), DrasylScheduler.getInstanceLight());
+                           final InetSocketAddress address,
+                           Protocol protocol) {
+            this(mapper, address, protocol, BehaviorSubject.createDefault(Optional.empty()), DrasylScheduler.getInstanceLight());
         }
 
         /**
@@ -263,7 +284,7 @@ public class PortMappingUtil {
 
         private void createMapping() {
             try {
-                mappedPort = mapper.mapPort(PortType.TCP, address.getPort(), address.getPort(), PORT_LIFETIME.getSeconds());
+                mappedPort = mapper.mapPort(protocol.getPortType(), address.getPort(), address.getPort(), PORT_LIFETIME.getSeconds());
                 final InetSocketAddress externalAdded = new InetSocketAddress(mappedPort.getExternalAddress().getHostName(), mappedPort.getExternalPort());
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("{} router has created {} port mapping {} -> {} (lifetime: {}s)", mappingMethod(), mappedPort.getPortType(), externalAdded, address, mappedPort.getLifetime());

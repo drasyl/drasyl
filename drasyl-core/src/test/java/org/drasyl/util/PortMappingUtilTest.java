@@ -26,6 +26,7 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.subjects.BehaviorSubject;
 import io.reactivex.rxjava3.subjects.Subject;
 import org.drasyl.util.PortMappingUtil.PortMapping;
+import org.drasyl.util.PortMappingUtil.Protocol;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -36,6 +37,7 @@ import java.net.InetSocketAddress;
 import java.util.Optional;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.util.PortMappingUtil.Protocol.TCP;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -50,6 +52,7 @@ class PortMappingUtilTest {
         @Mock(answer = RETURNS_DEEP_STUBS)
         com.offbynull.portmapper.mapper.PortMapper mapper;
         InetSocketAddress address = InetSocketAddress.createUnresolved("192.168.188.112", 22527);
+        Protocol protocol = TCP;
         @Mock
         Subject<Optional<InetSocketAddress>> externalAddressObservable;
         @Mock
@@ -73,7 +76,7 @@ class PortMappingUtilTest {
                     return null;
                 }).thenReturn(refreshDisposable);
 
-                underTest = new PortMapping(mapper, address, externalAddressObservable, scheduler);
+                underTest = new PortMapping(mapper, address, protocol, externalAddressObservable, scheduler);
 
                 verify(mapper, times(2)).mapPort(PortType.TCP, 22527, 22527, 300);
                 verify(scheduler, times(2)).scheduleDirect(any(), eq(150_000L), eq(MILLISECONDS));
@@ -86,7 +89,7 @@ class PortMappingUtilTest {
             void shouldCloseMapping() throws InterruptedException {
                 externalAddressObservable = BehaviorSubject.createDefault(Optional.empty());
 
-                underTest = new PortMapping(mapper, address, externalAddressObservable, scheduler, mappedPort, refreshDisposable);
+                underTest = new PortMapping(mapper, address, protocol, externalAddressObservable, scheduler, mappedPort, refreshDisposable);
                 underTest.close();
 
                 verify(mapper).unmapPort(mappedPort);

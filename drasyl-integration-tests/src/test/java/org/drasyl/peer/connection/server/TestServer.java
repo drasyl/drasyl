@@ -42,6 +42,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.awaitility.Awaitility.await;
+import static org.drasyl.util.PortMappingUtil.Protocol.TCP;
 
 /**
  * This is a special implementation of the Server which is used for testing. It offers additional
@@ -89,7 +90,7 @@ public class TestServer extends Server {
                 new HashSet<>(),
                 endpoints,
                 DrasylScheduler.getInstanceHeavy(),
-                PortMappingUtil::expose
+                address -> PortMappingUtil.expose(address, TCP)
         );
         this.channelGroup = channelGroup;
         this.channelInitializer = channelInitializer;

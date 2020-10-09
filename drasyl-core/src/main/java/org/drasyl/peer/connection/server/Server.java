@@ -61,6 +61,7 @@ import java.util.stream.Collectors;
 
 import static org.drasyl.util.NetworkUtil.getAddresses;
 import static org.drasyl.util.ObservableUtil.pairWithPreviousObservable;
+import static org.drasyl.util.PortMappingUtil.Protocol.TCP;
 import static org.drasyl.util.UriUtil.createUri;
 import static org.drasyl.util.UriUtil.overridePort;
 
@@ -161,7 +162,7 @@ public class Server implements DrasylNodeComponent {
                 new HashSet<>(),
                 nodeEndpoints,
                 DrasylScheduler.getInstanceHeavy(),
-                PortMappingUtil::expose);
+                address -> PortMappingUtil.expose(address, TCP));
     }
 
     /**
