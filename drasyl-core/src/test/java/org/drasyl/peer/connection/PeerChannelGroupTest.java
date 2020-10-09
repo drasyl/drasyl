@@ -23,6 +23,7 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelId;
 import io.netty.util.Attribute;
+import io.netty.util.concurrent.EventExecutor;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.junit.jupiter.api.BeforeEach;
@@ -34,10 +35,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Map;
+import java.util.concurrent.ExecutionException;
 
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_NEW_SESSION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
@@ -47,6 +48,8 @@ import static org.mockito.Mockito.when;
 class PeerChannelGroupTest {
     @Mock
     private Map<CompressedPublicKey, ChannelId> identity2channelId;
+    @Mock
+    private EventExecutor executor;
     @InjectMocks
     private PeerChannelGroup underTest;
 
@@ -79,8 +82,10 @@ class PeerChannelGroupTest {
         }
 
         @Test
-        void itShouldThrowExceptionIfChannelDoesNotExists() {
-            assertThrows(IllegalArgumentException.class, () -> underTest.writeAndFlush(identity, message));
+        void itShouldReturnFailedFutureIfChannelDoesNotExists() throws ExecutionException, InterruptedException {
+            underTest.writeAndFlush(identity, message);
+
+            verify(executor).newFailedFuture(any());
         }
     }
 

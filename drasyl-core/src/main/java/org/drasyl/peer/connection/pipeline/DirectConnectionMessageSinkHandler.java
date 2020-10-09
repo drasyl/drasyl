@@ -23,11 +23,8 @@ import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.RelayableMessage;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.SimpleOutboundHandler;
-import org.drasyl.util.FutureUtil;
 
 import java.util.concurrent.CompletableFuture;
-
-import static org.drasyl.util.FutureUtil.toFuture;
 
 /**
  * This handler tries to send outgoing messages via TCP-based direct connection to another peers.
@@ -45,12 +42,14 @@ public class DirectConnectionMessageSinkHandler extends SimpleOutboundHandler<Re
                                 final CompressedPublicKey recipient,
                                 final RelayableMessage msg,
                                 final CompletableFuture<Void> future) {
-        try {
-            FutureUtil.completeOnAllOf(future, toFuture(channelGroup.writeAndFlush(recipient, msg)));
-        }
-        catch (final IllegalArgumentException e) {
-            // no direct connection, pass to next handler
-            ctx.write(recipient, msg, future);
-        }
+        channelGroup.writeAndFlush(recipient, msg).addListener(result -> {
+            if (result.isSuccess()) {
+                future.complete(null);
+            }
+            else {
+                // no direct connection, pass to next handler
+                ctx.write(recipient, msg, future);
+            }
+        });
     }
 }
