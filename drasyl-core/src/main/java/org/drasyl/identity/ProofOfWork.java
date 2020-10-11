@@ -18,6 +18,7 @@
  */
 package org.drasyl.identity;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
 import org.drasyl.crypto.Hashing;
 import org.slf4j.Logger;
@@ -30,19 +31,12 @@ import static java.util.Objects.requireNonNull;
 /**
  * This class models the proof of work for a given public key. Hence, identity creation becomes an
  * expensive operation and sybil attacks should be made more difficult.
- * <p>
- * This is an immutable object.
  */
 public class ProofOfWork {
     private static final Logger LOG = LoggerFactory.getLogger(ProofOfWork.class);
-    @JsonValue
     private int nonce;
 
-    private ProofOfWork() {
-        this.nonce = 0;
-    }
-
-    public ProofOfWork(final int nonce) {
+    ProofOfWork(final int nonce) {
         if (nonce < 0) {
             throw new IllegalArgumentException("Nonce must be positive.");
         }
@@ -75,21 +69,30 @@ public class ProofOfWork {
     }
 
     public int getNonce() {
-        return this.nonce;
+        return nonce;
     }
 
+    /**
+     * Returns the value of this {@code ProofOfWork} as an {@code int}.
+     */
+    @JsonValue
+    public int intValue() {
+        return nonce;
+    }
+
+    @JsonCreator
     public static ProofOfWork of(final int nonce) {
         return new ProofOfWork(nonce);
     }
 
-    public static ProofOfWork of(final CompressedPublicKey publicKey, final short difficulty) {
-        return ProofOfWork.generateProofOfWork(publicKey, difficulty);
+    private static ProofOfWork of() {
+        return of(0);
     }
 
     public static ProofOfWork generateProofOfWork(final CompressedPublicKey publicKey,
                                                   final short difficulty) {
         LOG.info("Generate proof of work. This may take a while ...");
-        final ProofOfWork pow = new ProofOfWork();
+        final ProofOfWork pow = ProofOfWork.of();
 
         while (!pow.isValid(publicKey, difficulty)) {
             pow.incNonce();

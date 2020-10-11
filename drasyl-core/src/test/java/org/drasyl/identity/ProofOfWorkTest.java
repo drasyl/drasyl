@@ -18,10 +18,16 @@
  */
 package org.drasyl.identity;
 
+import net.javacrumbs.jsonunit.core.Option;
 import org.drasyl.crypto.CryptoException;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
+
+import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
+import static org.drasyl.util.JSONUtil.JACKSON_READER;
+import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -46,13 +52,16 @@ class ProofOfWorkTest {
         void shouldThrowExceptionOnNegativeNonce() {
             assertThrows(IllegalArgumentException.class, () -> ProofOfWork.of(-1));
         }
+    }
 
+    @Nested
+    class GenerateProofOfWork {
         @Test
         void shouldGenerateCorrectProof() throws CryptoException {
             final short difficulty = 1;
             final CompressedPublicKey publicKey = CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9");
-            final ProofOfWork proof1 = ProofOfWork.of(publicKey, difficulty);
-            final ProofOfWork proof2 = ProofOfWork.of(publicKey, difficulty);
+            final ProofOfWork proof1 = ProofOfWork.generateProofOfWork(publicKey, difficulty);
+            final ProofOfWork proof2 = ProofOfWork.generateProofOfWork(publicKey, difficulty);
 
             assertTrue(proof1.isValid(publicKey, difficulty));
             assertTrue(proof2.isValid(publicKey, difficulty));
@@ -69,6 +78,29 @@ class ProofOfWorkTest {
 
             proof.incNonce();
             assertEquals(2, proof.getNonce());
+        }
+    }
+
+    @Nested
+    class JsonDeserialization {
+        @Test
+        void shouldDeserializeToCorrectObject() throws IOException {
+            final String json = "123";
+
+            assertEquals(
+                    ProofOfWork.of(123),
+                    JACKSON_READER.readValue(json, ProofOfWork.class)
+            );
+        }
+    }
+
+    @Nested
+    class JsonSerialization {
+        @Test
+        void shouldSerializeToCorrectJson() throws IOException {
+            assertThatJson(JACKSON_WRITER.writeValueAsString(ProofOfWork.of(123)))
+                    .when(Option.IGNORING_ARRAY_ORDER)
+                    .isEqualTo("123");
         }
     }
 }

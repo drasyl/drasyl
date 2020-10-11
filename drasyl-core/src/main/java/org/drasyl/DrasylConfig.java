@@ -286,7 +286,7 @@ public class DrasylConfig {
     public static ProofOfWork getProofOfWork(final Config config, final String path) {
         try {
             final int intValue = config.getInt(path);
-            return new ProofOfWork(intValue);
+            return ProofOfWork.of(intValue);
         }
         catch (final IllegalArgumentException e) {
             throw new ConfigException.WrongType(config.getValue(path).origin(), path, "proof of work", "invalid-value: " + e.getMessage());

@@ -29,8 +29,6 @@ import java.io.IOException;
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 class CompressedPublicKeyTest {
@@ -61,10 +59,13 @@ class CompressedPublicKeyTest {
     @Nested
     class JsonDeserialization {
         @Test
-        void shouldDeserializeToCorrectObject() throws IOException {
+        void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
             final String json = "\"0340A4F2ADBDDEEDC8F9ACE30E3F18713A3405F43F4871B4BAC9624FE80D2056A7\"";
 
-            assertThat(JACKSON_READER.readValue(json, CompressedPublicKey.class), instanceOf(CompressedPublicKey.class));
+            assertEquals(
+                    CompressedPublicKey.of("0340A4F2ADBDDEEDC8F9ACE30E3F18713A3405F43F4871B4BAC9624FE80D2056A7"),
+                    JACKSON_READER.readValue(json, CompressedPublicKey.class)
+            );
         }
     }
 
@@ -75,8 +76,6 @@ class CompressedPublicKeyTest {
             assertThatJson(JACKSON_WRITER.writeValueAsString(publicKey))
                     .when(Option.IGNORING_ARRAY_ORDER)
                     .isEqualTo(publicKey.toString());
-
-            assertEquals(publicKey, JACKSON_READER.readValue(JACKSON_WRITER.writeValueAsString(publicKey), CompressedPublicKey.class));
         }
     }
 }
