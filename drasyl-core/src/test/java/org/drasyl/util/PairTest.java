@@ -71,9 +71,9 @@ class PairTest {
     class HashCode {
         @Test
         void shouldRecognizeEqualPairs() {
-            final Pair pairA = Pair.of(5, "beers");
-            final Pair pairB = Pair.of(5, "beers");
-            final Pair pairC = Pair.of(10, "shots");
+            final Pair<Integer, String> pairA = Pair.of(5, "beers");
+            final Pair<Integer, String> pairB = Pair.of(5, "beers");
+            final Pair<Integer, String> pairC = Pair.of(10, "shots");
 
             assertEquals(pairA.hashCode(), pairB.hashCode());
             assertNotEquals(pairA.hashCode(), pairC.hashCode());
@@ -105,7 +105,7 @@ class PairTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException {
-            final Pair pair = Pair.of(5, "beers");
+            final Pair<Integer, String> pair = Pair.of(5, "beers");
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(pair))
                     .isArray()

@@ -61,8 +61,8 @@ abstract class AbstractClient implements DrasylNodeComponent {
     private final AtomicInteger nextRetryDelayPointer;
     private final DrasylFunction<Endpoint, Bootstrap, ClientException> bootstrapSupplier;
     private final List<Duration> retryDelays;
+    protected final BooleanSupplier acceptNewConnectionsSupplier;
     protected Channel channel;
-    protected BooleanSupplier acceptNewConnectionsSupplier;
 
     @SuppressWarnings({ "java:S107" })
     protected AbstractClient(final List<Duration> retryDelays,

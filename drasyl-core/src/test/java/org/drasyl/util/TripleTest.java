@@ -117,7 +117,7 @@ class TripleTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException {
-            final Triple triple = Triple.of(5, false, "beers");
+            final Triple<Integer, Boolean, String> triple = Triple.of(5, false, "beers");
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(triple))
                     .isArray()

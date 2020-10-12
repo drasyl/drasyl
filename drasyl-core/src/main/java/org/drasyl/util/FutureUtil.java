@@ -58,7 +58,9 @@ public class FutureUtil {
         final CompletableFuture<T> completableFuture = new CompletableFuture<>();
         future.addListener(f -> {
             if (f.isSuccess()) {
-                completableFuture.complete((T) f.getNow());
+                @SuppressWarnings("unchecked")
+                T now = (T) f.getNow();
+                completableFuture.complete(now);
             }
             else {
                 completableFuture.completeExceptionally(f.cause());

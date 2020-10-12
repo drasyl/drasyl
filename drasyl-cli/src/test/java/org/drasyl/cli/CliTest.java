@@ -61,8 +61,6 @@ class CliTest {
 
     @Test
     void runShouldThrowExceptionForUnknownCommand() {
-        assertThrows(CommandNotFoundCliException.class, () -> {
-            underTest.run(new String[]{ "sadassdaashdaskj" });
-        });
+        assertThrows(CommandNotFoundCliException.class, () -> underTest.run(new String[]{ "sadassdaashdaskj" }));
     }
 }

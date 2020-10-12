@@ -59,7 +59,7 @@ public abstract class AbstractThreeWayHandshakeClientHandler<R extends RequestMe
 
     @Override
     protected void doHandshake(final ChannelHandlerContext ctx, final Message message) {
-        if (message instanceof ResponseMessage && ((ResponseMessage) message).getCorrespondingId().equals(requestMessage.getId())) {
+        if (message instanceof ResponseMessage && ((ResponseMessage<?>) message).getCorrespondingId().equals(requestMessage.getId())) {
             if (message instanceof StatusMessage && ((StatusMessage) message).getCode() != STATUS_OK) {
                 requestFailed(ctx, ((StatusMessage) message).getCode());
             }

@@ -115,7 +115,9 @@ public class EmbeddedPipeline extends DefaultPipeline {
      * @return all messages that passes the pipeline until the end
      */
     public <T> Observable<T> outboundMessages(final Class<T> clazz) {
-        return (Observable<T>) outboundMessages.filter(clazz::isInstance);
+        @SuppressWarnings("unchecked")
+        Observable<T> result = (Observable<T>) outboundMessages.filter(clazz::isInstance);
+        return result;
     }
 
     /**

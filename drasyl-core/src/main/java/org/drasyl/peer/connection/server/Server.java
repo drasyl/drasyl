@@ -155,7 +155,8 @@ public class Server implements DrasylNodeComponent {
                                         channelGroup,
                                         acceptNewConnectionsSupplier
                                 ),
-                                config.getServerChannelInitializer())),
+                                config.getServerChannelInitializer()))
+                        .localAddress(config.getServerBindHost(), config.getServerBindPort()),
                 opened,
                 null,
                 null,
@@ -174,11 +175,12 @@ public class Server implements DrasylNodeComponent {
         if (opened.compareAndSet(false, true)) {
             LOG.debug("Start Server...");
             try {
-                final ChannelFuture channelFuture = serverBootstrap
-                        .bind(config.getServerBindHost(), config.getServerBindPort());
+                // bind server to address/port
+                final ChannelFuture channelFuture = serverBootstrap.bind();
                 channelFuture.awaitUninterruptibly();
 
                 if (channelFuture.isSuccess()) {
+                    // server successfully started
                     channel = channelFuture.channel();
 
                     channel.closeFuture().addListener(future -> {
@@ -199,6 +201,7 @@ public class Server implements DrasylNodeComponent {
                     }
                 }
                 else {
+                    // server start failed
                     throw new ServerException("Unable to bind server to address " + config.getServerBindHost() + ":" + config.getServerBindPort() + ": " + channelFuture.cause().getMessage());
                 }
             }

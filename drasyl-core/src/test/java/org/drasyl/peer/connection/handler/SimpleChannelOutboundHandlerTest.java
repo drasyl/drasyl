@@ -50,7 +50,7 @@ class SimpleChannelOutboundHandlerTest {
             @Override
             protected void channelWrite0(final ChannelHandlerContext ctx,
                                          final String msg,
-                                         final ChannelPromise promise) throws Exception {
+                                         final ChannelPromise promise) {
                 assertEquals(o, msg);
             }
         };

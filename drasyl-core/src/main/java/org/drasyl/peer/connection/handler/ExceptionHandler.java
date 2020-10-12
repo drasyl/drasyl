@@ -73,7 +73,7 @@ public class ExceptionHandler extends ChannelDuplexHandler {
 
     @Override
     public void bind(final ChannelHandlerContext ctx, final SocketAddress localAddress,
-                     final ChannelPromise promise) throws Exception {
+                     final ChannelPromise promise) {
         ctx.bind(localAddress, exceptionListener.getListener(promise, ctx));
     }
 

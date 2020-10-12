@@ -139,7 +139,7 @@ public abstract class SimpleChannelDuplexHandler<I, O> extends SimpleChannelInbo
     // -----------------------------------------------------------------------------------------------------------------
     @Override
     public void bind(final ChannelHandlerContext ctx, final SocketAddress localAddress,
-                     final ChannelPromise promise) throws Exception {
+                     final ChannelPromise promise) {
         ctx.bind(localAddress, promise);
     }
 
@@ -147,13 +147,12 @@ public abstract class SimpleChannelDuplexHandler<I, O> extends SimpleChannelInbo
     public void connect(final ChannelHandlerContext ctx,
                         final SocketAddress remoteAddress,
                         final SocketAddress localAddress,
-                        final ChannelPromise promise) throws Exception {
+                        final ChannelPromise promise) {
         ctx.connect(remoteAddress, localAddress, promise);
     }
 
     @Override
-    public void disconnect(final ChannelHandlerContext ctx, final ChannelPromise promise)
-            throws Exception {
+    public void disconnect(final ChannelHandlerContext ctx, final ChannelPromise promise) {
         ctx.disconnect(promise);
     }
 
@@ -165,12 +164,12 @@ public abstract class SimpleChannelDuplexHandler<I, O> extends SimpleChannelInbo
 
     @Override
     public void deregister(final ChannelHandlerContext ctx,
-                           final ChannelPromise promise) throws Exception {
+                           final ChannelPromise promise) {
         ctx.deregister(promise);
     }
 
     @Override
-    public void read(final ChannelHandlerContext ctx) throws Exception {
+    public void read(final ChannelHandlerContext ctx) {
         ctx.read();
     }
 
@@ -223,7 +222,7 @@ public abstract class SimpleChannelDuplexHandler<I, O> extends SimpleChannelInbo
                                           ChannelPromise promise) throws Exception; //NOSONAR
 
     @Override
-    public void flush(final ChannelHandlerContext ctx) throws Exception {
+    public void flush(final ChannelHandlerContext ctx) {
         ctx.flush();
     }
     // -----------------------------------------------------------------------------------------------------------------

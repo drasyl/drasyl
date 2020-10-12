@@ -266,10 +266,9 @@ public final class NetworkUtil {
     }
 
     /**
-     * Returns the local host name. If no host name can be determined, <code>null</code> is
-     * returned.
+     * Returns the local host name. If no host name can be determined, {@code null} is returned.
      *
-     * @return
+     * @return the local host name. If no host name can be determined, {@code null} is returned.
      */
     public static String getLocalHostName() {
         try {

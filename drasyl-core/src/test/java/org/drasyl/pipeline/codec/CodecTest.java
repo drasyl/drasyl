@@ -87,12 +87,12 @@ class CodecTest {
 
         final Object msg = mock(Object.class);
         final CompletableFuture<Void> future = new CompletableFuture<>();
-        final ArgumentCaptor<CompletableFuture> captor = ArgumentCaptor.forClass(CompletableFuture.class);
+        final ArgumentCaptor<CompletableFuture<Void>> captor = ArgumentCaptor.forClass(CompletableFuture.class);
 
         codec.matchedWrite(ctx, recipient, msg, future);
 
         verify(ctx).write(eq(recipient), eq(msg), captor.capture());
         captor.getValue().completeExceptionally(new Exception());
-        assertThrows(Exception.class, () -> future.join());
+        assertThrows(Exception.class, future::join);
     }
 }
