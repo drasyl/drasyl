@@ -34,8 +34,7 @@ public class MessageId {
     @JsonValue
     private final String id;
 
-    @JsonCreator
-    public MessageId(final String id) {
+    private MessageId(final String id) {
         if (!isValidMessageId(id)) {
             throw new IllegalArgumentException("ID must be a 24 lower-case hex digit string: " + id);
         }
@@ -113,5 +112,10 @@ public class MessageId {
         }
 
         return true;
+    }
+
+    @JsonCreator
+    public static MessageId of(final String id) {
+        return new MessageId(id);
     }
 }

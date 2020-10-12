@@ -88,8 +88,8 @@ class ClientConnectionHandlerTest {
     @Test
     void shouldFailHandshakeIfServerReplyWithStatusUnavailableOnWelcomeMessage() {
         when(handshakeFuture.isDone()).thenReturn(false);
-        when(requestMessage.getId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
-        when(statusMessage.getCorrespondingId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
+        when(requestMessage.getId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
+        when(statusMessage.getCorrespondingId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
         when(statusMessage.getCode()).thenReturn(STATUS_SERVICE_UNAVAILABLE);
 
         final ClientConnectionHandler handler = new ClientConnectionHandler(environment, ofMillis(1000), pipeline, handshakeFuture, timeoutFuture, requestMessage);
@@ -106,9 +106,9 @@ class ClientConnectionHandlerTest {
     class ServerAsSuperPeer {
         @Test
         void shouldAddPeerInformationAndSetSuperPeerAndEmitNodeOnlineEventOnSessionCreationAndRemovePeerInformationAndUnsetSuperPeer() {
-            when(requestMessage.getId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
-            when(offerMessage.getCorrespondingId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
-            when(offerMessage.getId()).thenReturn(new MessageId("78c36c82b8d11c7217a011b3"));
+            when(requestMessage.getId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
+            when(offerMessage.getCorrespondingId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
+            when(offerMessage.getId()).thenReturn(MessageId.of("78c36c82b8d11c7217a011b3"));
             when(environment.getPeersManager()).thenReturn(peersManager);
             when(environment.joinAsChildren()).thenReturn(true);
 
@@ -132,9 +132,9 @@ class ClientConnectionHandlerTest {
     class ServerAsPeer {
         @Test
         void shouldAddPeerInformationAndSetSuperPeerAndEmitNodeOnlineEventOnSessionCreationAndRemovePeerInformationAndUnsetSuperPeerAndEmitNodeOfflineEventOnClose() {
-            when(requestMessage.getId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
-            when(offerMessage.getCorrespondingId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
-            when(offerMessage.getId()).thenReturn(new MessageId("78c36c82b8d11c7217a011b3"));
+            when(requestMessage.getId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
+            when(offerMessage.getCorrespondingId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
+            when(offerMessage.getId()).thenReturn(MessageId.of("78c36c82b8d11c7217a011b3"));
             when(environment.getPeersManager()).thenReturn(peersManager);
             when(environment.joinAsChildren()).thenReturn(false);
 

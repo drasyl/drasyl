@@ -42,7 +42,7 @@ class StatusMessageTest {
 
     @BeforeEach
     void setUp() {
-        correspondingId = new MessageId("412176952b5b81fd13f84a7c");
+        correspondingId = MessageId.of("412176952b5b81fd13f84a7c");
     }
 
     @Nested
@@ -51,7 +51,7 @@ class StatusMessageTest {
         void shouldDeserializeToCorrectObject() throws IOException {
             final String json = "{\"@type\":\"" + StatusMessage.class.getSimpleName() + "\",\"id\":\"c78fe75d4c93bc07e916e539\",\"code\":" + STATUS_OK.getNumber() + ",\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
 
-            assertEquals(new StatusMessage(STATUS_OK, new MessageId("412176952b5b81fd13f84a7c")), JACKSON_READER.readValue(json, Message.class));
+            assertEquals(new StatusMessage(STATUS_OK, MessageId.of("412176952b5b81fd13f84a7c")), JACKSON_READER.readValue(json, Message.class));
         }
 
         @Test

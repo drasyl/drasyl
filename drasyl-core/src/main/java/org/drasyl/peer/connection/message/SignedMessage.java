@@ -90,7 +90,7 @@ public class SignedMessage implements Message, Signable {
     @Override
     @JsonIgnore
     public MessageId getId() {
-        return new MessageId("SignedMessage");
+        return MessageId.of("SignedMessage");
     }
 
     @Override
