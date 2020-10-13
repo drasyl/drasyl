@@ -28,6 +28,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
+import org.drasyl.peer.connection.client.DefaultClientChannelInitializer;
 import org.drasyl.peer.connection.client.DirectClient;
 import org.drasyl.peer.connection.message.WhoisMessage;
 import org.drasyl.pipeline.HandlerAdapter;
@@ -37,7 +38,9 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.invocation.InvocationOnMock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.stubbing.Answer;
 
 import java.util.Map;
 import java.util.Set;
@@ -106,6 +109,7 @@ class DirectConnectionsManagerTest {
         @Test
         void shouldAddHandlerToPipelineAndListenOnPeerRelayEvents(@Mock(answer = RETURNS_DEEP_STUBS) final PeerRelayEvent event,
                                                                   @Mock final CompressedPublicKey publicKey) {
+            when(peersManager.getPeer(any()).first().getEndpoints().toArray()).thenThrow(IndexOutOfBoundsException.class);
             when(event.getPeer().getPublicKey()).thenReturn(publicKey);
             when(directConnectionDemandsCache.contains(publicKey)).thenReturn(true);
             when(pipeline.addLast(eq(DIRECT_CONNECTIONS_MANAGER), any())).then(invocation -> {
@@ -204,6 +208,7 @@ class DirectConnectionsManagerTest {
         @Test
         void shouldInitiateDirectConnectionIfPathMissingAndEndpointsGiven() {
             underTest = new DirectConnectionsManager(config, identity, peersManager, new AtomicBoolean(true), pipeline, channelGroup, workerGroup, eventConsumer, endpoints, directConnectionDemandsCache, requestPeerInformationCache, clients, acceptNewConnectionsSupplier, maxConnections);
+            when(peersManager.getPeer(any()).first().getEndpoints().toArray()).thenThrow(IndexOutOfBoundsException.class);
             when(peersManager.getPeer(any()).second().isEmpty()).thenReturn(false);
             when(directConnectionDemandsCache.contains(any())).thenReturn(true);
 

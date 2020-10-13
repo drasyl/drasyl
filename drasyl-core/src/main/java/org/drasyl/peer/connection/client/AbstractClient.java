@@ -37,12 +37,12 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.util.DrasylFunction;
-import org.drasyl.util.SetUtil;
 import org.slf4j.Logger;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -205,8 +205,8 @@ abstract class AbstractClient implements DrasylNodeComponent {
      */
     Endpoint nextEndpoint() {
         try {
-            final Set<Endpoint> endpoints = endpointsSupplier.get();
-            final Endpoint endpoint = SetUtil.nthElement(endpoints, nextEndpointPointer.get());
+            final List<Endpoint> endpoints = new ArrayList<>(endpointsSupplier.get());
+            final Endpoint endpoint = endpoints.get(nextEndpointPointer.get());
             nextEndpointPointer.updateAndGet(p -> (p + 1) % endpoints.size());
             return endpoint;
         }
