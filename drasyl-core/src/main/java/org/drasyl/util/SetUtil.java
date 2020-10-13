@@ -91,14 +91,15 @@ public final class SetUtil {
     }
 
     /**
-     * Returns the <code>n</code>-th element from set <code>set</code>. Throws a {@link
-     * IndexOutOfBoundsException} if <code>n</code> is negative or greater than the set's
-     * cardinality.
+     * Returns the {@code n}-th element from set {@code set}. Throws a {@link
+     * IndexOutOfBoundsException} if {@code n} is negative or greater than the set's cardinality.
      *
      * @param set a set
      * @param n   specifies the element to be taken
-     * @param <E> the {@code Set}'s element type
-     * @return <code>n</code>-th element from set <code>set</code>
+     * @param <E> the {@link Set}'s element type
+     * @return {@code n}-th element from set {@code set}
+     * @throws IndexOutOfBoundsException if {@code n} is negative or greater than the set's
+     *                                   cardinality
      */
     public static <E> E nthElement(final Set<E> set, final int n) {
         requireNonNull(set);
