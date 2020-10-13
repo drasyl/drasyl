@@ -44,7 +44,6 @@ import org.drasyl.peer.connection.handler.SimpleChannelDuplexHandler;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.ResponseMessage;
-import org.drasyl.peer.connection.superpeer.TestClientChannelInitializer;
 import org.drasyl.pipeline.DrasylPipeline;
 
 import java.util.Set;

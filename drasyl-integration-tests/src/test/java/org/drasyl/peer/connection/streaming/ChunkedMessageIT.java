@@ -41,7 +41,7 @@ import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.server.ServerException;
 import org.drasyl.peer.connection.server.TestServer;
-import org.drasyl.peer.connection.superpeer.TestClientChannelInitializer;
+import org.drasyl.peer.connection.client.TestClientChannelInitializer;
 import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.Pipeline;
 import org.junit.jupiter.api.AfterAll;

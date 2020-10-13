@@ -54,7 +54,7 @@ import org.drasyl.peer.connection.message.ResponseMessage;
 import org.drasyl.peer.connection.message.SignedMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
-import org.drasyl.peer.connection.superpeer.TestClientChannelInitializer;
+import org.drasyl.peer.connection.client.TestClientChannelInitializer;
 import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.Pipeline;
 import org.junit.jupiter.api.AfterAll;
