@@ -19,7 +19,6 @@
 package org.drasyl.peer.connection.client;
 
 import org.drasyl.DrasylConfig;
-import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
@@ -27,7 +26,6 @@ import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.pipeline.Pipeline;
 
 import java.time.Duration;
-import java.util.function.Consumer;
 
 /**
  * This class encapsulates all information needed by a {@link ClientChannelInitializer}.
@@ -39,7 +37,6 @@ public class ClientEnvironment {
     private final Pipeline pipeline;
     private final PeerChannelGroup channelGroup;
     private final PeersManager peersManager;
-    private final Consumer<Event> eventConsumer;
     private final boolean joinAsChildren;
     private final short idleRetries;
     private final Duration idleTimeout;
@@ -52,7 +49,6 @@ public class ClientEnvironment {
                              final Pipeline pipeline,
                              final PeerChannelGroup channelGroup,
                              final PeersManager peersManager,
-                             final Consumer<Event> eventConsumer,
                              final boolean joinAsChildren,
                              final short idleRetries,
                              final Duration idleTimeout,
@@ -63,7 +59,6 @@ public class ClientEnvironment {
         this.pipeline = pipeline;
         this.channelGroup = channelGroup;
         this.peersManager = peersManager;
-        this.eventConsumer = eventConsumer;
         this.joinAsChildren = joinAsChildren;
         this.idleRetries = idleRetries;
         this.idleTimeout = idleTimeout;
@@ -88,10 +83,6 @@ public class ClientEnvironment {
 
     public PeersManager getPeersManager() {
         return peersManager;
-    }
-
-    public Consumer<Event> getEventConsumer() {
-        return eventConsumer;
     }
 
     public boolean joinAsChildren() {

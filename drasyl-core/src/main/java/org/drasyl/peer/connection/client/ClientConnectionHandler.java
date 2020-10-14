@@ -21,9 +21,6 @@ package org.drasyl.peer.connection.client;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.event.Node;
-import org.drasyl.event.NodeOfflineEvent;
-import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.connection.handler.AbstractThreeWayHandshakeClientHandler;
@@ -116,16 +113,10 @@ public class ClientConnectionHandler extends AbstractThreeWayHandshakeClientHand
 
         if (childrenJoin) {
             // remove peer information on disconnect
-            channel.closeFuture().addListener(future -> {
-                environment.getEventConsumer().accept(new NodeOfflineEvent(Node.of(environment.getIdentity())));
-
-                environment.getPeersManager().unsetSuperPeerAndRemovePath(path);
-            });
+            channel.closeFuture().addListener(future -> environment.getPeersManager().unsetSuperPeerAndRemovePath(path));
 
             // store peer information
             environment.getPeersManager().setPeerInformationAndAddPathAndSetSuperPeer(identity, offerMessage.getPeerInformation(), path);
-
-            environment.getEventConsumer().accept(new NodeOnlineEvent(Node.of(environment.getIdentity())));
         }
         else {
             // remove peer information on disconnect

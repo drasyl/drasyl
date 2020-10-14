@@ -22,7 +22,6 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
 import org.drasyl.DrasylConfig;
-import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
@@ -36,7 +35,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
 
 /**
  * This class represents the link between <code>DrasylNode</code> and the super peer. It is
@@ -87,7 +85,6 @@ public class SuperPeerClient extends AbstractClient {
                            final Pipeline pipeline,
                            final PeerChannelGroup channelGroup,
                            final EventLoopGroup workerGroup,
-                           final Consumer<Event> eventConsumer,
                            final BooleanSupplier acceptNewConnectionsSupplier) {
         super(
                 config.getSuperPeerRetryDelays(),
@@ -102,7 +99,6 @@ public class SuperPeerClient extends AbstractClient {
                 config.getSuperPeerIdleRetries(),
                 config.getSuperPeerIdleTimeout(),
                 config.getSuperPeerHandshakeTimeout(),
-                eventConsumer,
                 true,
                 config.getSuperPeerChannelInitializer()
         );

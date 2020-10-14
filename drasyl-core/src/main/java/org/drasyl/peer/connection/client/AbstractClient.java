@@ -30,7 +30,6 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeComponent;
-import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
@@ -48,7 +47,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -77,7 +75,6 @@ abstract class AbstractClient implements DrasylNodeComponent {
                              final short idleRetries,
                              final Duration idleTimeout,
                              final Duration handshakeTimeout,
-                             final Consumer<Event> eventConsumer,
                              final boolean joinsAsChildren,
                              final Class<? extends ChannelInitializer<SocketChannel>> channelInitializerClazz) {
         this(
@@ -95,7 +92,6 @@ abstract class AbstractClient implements DrasylNodeComponent {
                                         pipeline,
                                         channelGroup,
                                         peersManager,
-                                        eventConsumer,
                                         joinsAsChildren,
                                         idleRetries,
                                         idleTimeout,
