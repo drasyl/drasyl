@@ -23,7 +23,6 @@ import io.netty.bootstrap.Bootstrap;
 import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
 import org.drasyl.DrasylConfig;
-import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
@@ -39,7 +38,6 @@ import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 /**
@@ -58,7 +56,6 @@ public class DirectClient extends AbstractClient {
                         final Pipeline pipeline,
                         final PeerChannelGroup channelGroup,
                         final EventLoopGroup workerGroup,
-                        final Consumer<Event> eventConsumer,
                         final Supplier<Set<Endpoint>> endpointsSupplier,
                         final BooleanSupplier directConnectionDemand,
                         final Runnable onFailure,
@@ -76,7 +73,6 @@ public class DirectClient extends AbstractClient {
                 config.getDirectConnectionsIdleRetries(),
                 config.getDirectConnectionsIdleTimeout(),
                 config.getDirectConnectionsHandshakeTimeout(),
-                eventConsumer,
                 false,
                 config.getDirectConnectionsChannelInitializer()
         );

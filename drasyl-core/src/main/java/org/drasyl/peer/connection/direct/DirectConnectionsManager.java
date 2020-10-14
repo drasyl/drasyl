@@ -48,7 +48,6 @@ import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static java.time.Duration.ofSeconds;
@@ -72,7 +71,6 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
     private final Pipeline pipeline;
     private final PeerChannelGroup channelGroup;
     private final EventLoopGroup workerGroup;
-    private final Consumer<Event> eventConsumer;
     private final Map<CompressedPublicKey, DirectClient> clients;
     private final BooleanSupplier acceptNewConnectionsSupplier;
     private final Set<Endpoint> endpoints;
@@ -84,7 +82,6 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
                                     final Pipeline pipeline,
                                     final PeerChannelGroup channelGroup,
                                     final EventLoopGroup workerGroup,
-                                    final Consumer<Event> eventConsumer,
                                     final BooleanSupplier acceptNewConnectionsSupplier,
                                     final Set<Endpoint> endpoints) {
         this(
@@ -95,7 +92,6 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
                 pipeline,
                 channelGroup,
                 workerGroup,
-                eventConsumer,
                 endpoints,
                 new DirectConnectionDemandsCache(config.getDirectConnectionsMaxConcurrentConnections(), ofSeconds(60)),
                 new RequestPeerInformationCache(1_000, ofSeconds(60)),
@@ -112,7 +108,6 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
                              final Pipeline pipeline,
                              final PeerChannelGroup channelGroup,
                              final EventLoopGroup workerGroup,
-                             final Consumer<Event> eventConsumer,
                              final Set<Endpoint> endpoints,
                              final DirectConnectionDemandsCache directConnectionDemandsCache,
                              final RequestPeerInformationCache requestPeerInformationCache,
@@ -125,7 +120,6 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
         this.opened = opened;
         this.channelGroup = channelGroup;
         this.workerGroup = workerGroup;
-        this.eventConsumer = eventConsumer;
         this.endpoints = endpoints;
         this.directConnectionDemandsCache = directConnectionDemandsCache;
         this.requestPeerInformationCache = requestPeerInformationCache;
@@ -262,7 +256,6 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
                             pipeline,
                             channelGroup,
                             workerGroup,
-                            eventConsumer,
                             endpointsSupplier,
                             () -> directConnectionDemandsCache.contains(publicKey),
                             () -> clients.remove(publicKey),

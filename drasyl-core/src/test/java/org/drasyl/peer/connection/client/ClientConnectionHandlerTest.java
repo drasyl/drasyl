@@ -20,9 +20,6 @@ package org.drasyl.peer.connection.client;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.event.Node;
-import org.drasyl.event.NodeOfflineEvent;
-import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.JoinMessage;
@@ -108,7 +105,7 @@ class ClientConnectionHandlerTest {
     @Nested
     class ServerAsSuperPeer {
         @Test
-        void shouldAddPeerInformationAndSetSuperPeerAndEmitNodeOnlineEventOnSessionCreationAndRemovePeerInformationAndUnsetSuperPeerAndEmitNodeOfflineEventOnClose() {
+        void shouldAddPeerInformationAndSetSuperPeerAndEmitNodeOnlineEventOnSessionCreationAndRemovePeerInformationAndUnsetSuperPeer() {
             when(requestMessage.getId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
             when(offerMessage.getCorrespondingId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
             when(offerMessage.getId()).thenReturn(new MessageId("78c36c82b8d11c7217a011b3"));
@@ -123,13 +120,11 @@ class ClientConnectionHandlerTest {
             channel.flush();
 
             verify(peersManager).setPeerInformationAndAddPathAndSetSuperPeer(eq(publicKey), any(), any());
-            verify(environment.getEventConsumer()).accept(new NodeOnlineEvent(Node.of(environment.getIdentity())));
 //        assertEquals(new StatusMessage(STATUS_OK, "78c36c82b8d11c7217a011b3"), channel.readOutbound());
 
             channel.close();
 
             verify(peersManager).unsetSuperPeerAndRemovePath(any());
-            verify(environment.getEventConsumer()).accept(new NodeOfflineEvent(Node.of(environment.getIdentity())));
         }
     }
 

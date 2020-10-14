@@ -34,9 +34,6 @@ import org.drasyl.event.Event;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler;
-import org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler;
-import org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
@@ -44,6 +41,9 @@ import org.drasyl.peer.connection.handler.SimpleChannelDuplexHandler;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.ResponseMessage;
+import org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler;
+import org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler;
+import org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler;
 import org.drasyl.pipeline.DrasylPipeline;
 
 import java.util.Set;
@@ -52,10 +52,10 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import static org.awaitility.Awaitility.await;
+import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_HANDLER;
 import static org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler.DIRECT_CONNECTION_MESSAGE_SINK_HANDLER;
 import static org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler.LOOPBACK_MESSAGE_SINK_HANDLER;
 import static org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler.SUPER_PEER_SINK_HANDLER;
-import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_HANDLER;
 
 public class TestSuperPeerClient extends SuperPeerClient {
     private final Identity identity;
@@ -79,7 +79,7 @@ public class TestSuperPeerClient extends SuperPeerClient {
                                 final Subject<Event> receivedEvents,
                                 final boolean doPingPong,
                                 final boolean doJoin) {
-        this(config, identity, workerGroup, receivedEvents, new PeersManager(receivedEvents::onNext), channelGroup, doPingPong, doJoin);
+        this(config, identity, workerGroup, receivedEvents, new PeersManager(receivedEvents::onNext, identity), channelGroup, doPingPong, doJoin);
     }
 
     private TestSuperPeerClient(final DrasylConfig config,
@@ -104,7 +104,6 @@ public class TestSuperPeerClient extends SuperPeerClient {
                                 new TestPipeline(peersManager, channelGroup, receivedEvents::onNext, config, identity),
                                 channelGroup,
                                 peersManager,
-                                receivedEvents::onNext,
                                 true,
                                 config.getSuperPeerIdleRetries(),
                                 config.getSuperPeerIdleTimeout(),

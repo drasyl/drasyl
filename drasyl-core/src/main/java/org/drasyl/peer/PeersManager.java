@@ -21,10 +21,14 @@ package org.drasyl.peer;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 import org.drasyl.event.Event;
+import org.drasyl.event.Node;
+import org.drasyl.event.NodeOfflineEvent;
+import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.Peer;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
 import org.drasyl.util.Pair;
 import org.drasyl.util.SetUtil;
 import org.drasyl.util.Triple;
@@ -57,10 +61,11 @@ public class PeersManager {
     private final SetMultimap<CompressedPublicKey, Path> paths;
     private final Set<CompressedPublicKey> children;
     private final Consumer<Event> eventConsumer;
+    private final Identity identity;
     private CompressedPublicKey superPeer;
 
-    public PeersManager(final Consumer<Event> eventConsumer) {
-        this(new ReentrantReadWriteLock(true), new ConcurrentHashMap<>(), HashMultimap.create(), new HashSet<>(), null, eventConsumer);
+    public PeersManager(final Consumer<Event> eventConsumer, final Identity identity) {
+        this(new ReentrantReadWriteLock(true), new ConcurrentHashMap<>(), HashMultimap.create(), new HashSet<>(), null, eventConsumer, identity);
     }
 
     PeersManager(final ReadWriteLock lock,
@@ -68,13 +73,15 @@ public class PeersManager {
                  final SetMultimap<CompressedPublicKey, Path> paths,
                  final Set<CompressedPublicKey> children,
                  final CompressedPublicKey superPeer,
-                 final Consumer<Event> eventConsumer) {
+                 final Consumer<Event> eventConsumer,
+                 final Identity identity) {
         this.lock = lock;
         this.peers = peers;
         this.paths = paths;
         this.children = children;
         this.superPeer = superPeer;
         this.eventConsumer = eventConsumer;
+        this.identity = identity;
     }
 
     @Override
@@ -294,7 +301,11 @@ public class PeersManager {
         try {
             lock.writeLock().lock();
 
-            superPeer = null;
+            if (superPeer != null) {
+                eventConsumer.accept(new NodeOfflineEvent(Node.of(identity)));
+
+                superPeer = null;
+            }
         }
         finally {
             lock.writeLock().unlock();
@@ -308,6 +319,8 @@ public class PeersManager {
             lock.writeLock().lock();
 
             if (superPeer != null) {
+                eventConsumer.accept(new NodeOfflineEvent(Node.of(identity)));
+
                 handlePeerStateTransition(
                         superPeer,
                         peers.get(superPeer),
@@ -340,6 +353,9 @@ public class PeersManager {
                     peerInformation,
                     SetUtil.merge(paths.get(publicKey), path)
             );
+            if (superPeer == null) {
+                eventConsumer.accept(new NodeOnlineEvent(Node.of(identity)));
+            }
             superPeer = publicKey;
         }
         finally {

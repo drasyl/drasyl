@@ -21,10 +21,14 @@ package org.drasyl.peer;
 import com.google.common.collect.HashMultimap;
 import com.google.common.collect.SetMultimap;
 import org.drasyl.event.Event;
+import org.drasyl.event.Node;
+import org.drasyl.event.NodeOfflineEvent;
+import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.Peer;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
 import org.drasyl.util.Pair;
 import org.drasyl.util.Triple;
 import org.junit.jupiter.api.AfterEach;
@@ -53,6 +57,7 @@ import static org.junit.jupiter.api.Assertions.fail;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
@@ -66,6 +71,8 @@ class PeersManagerTest {
     private CompressedPublicKey superPeer;
     @Mock
     private Consumer<Event> eventConsumer;
+    @Mock
+    private Identity identity;
     private PeersManager underTest;
 
     @BeforeEach
@@ -73,7 +80,7 @@ class PeersManagerTest {
         peers = new HashMap<>();
         paths = HashMultimap.create();
         children = new HashSet<>();
-        underTest = new PeersManager(lock, peers, paths, children, superPeer, eventConsumer);
+        underTest = new PeersManager(lock, peers, paths, children, superPeer, eventConsumer, identity);
     }
 
     @Nested
@@ -193,7 +200,7 @@ class PeersManagerTest {
         @Test
         void shouldEmitPeerRelayEventIfThereIsNoSuperPeerAndPeerIsChildren(@Mock final CompressedPublicKey publicKey,
                                                                            @Mock final PeerInformation peerInformation) {
-            underTest = new PeersManager(lock, peers, paths, children, null, eventConsumer);
+            underTest = new PeersManager(lock, peers, paths, children, null, eventConsumer, identity);
 
             children.add(publicKey);
 
@@ -277,6 +284,15 @@ class PeersManagerTest {
             assertNull(underTest.getSuperPeer());
         }
 
+        @Test
+        void shouldEmitNodeOfflineEvent(@Mock final PeerInformation peerInformation) {
+            peers.put(superPeer, peerInformation);
+
+            underTest.unsetSuperPeer();
+
+            verify(eventConsumer).accept(new NodeOfflineEvent(Node.of(identity)));
+        }
+
         @AfterEach
         void tearDown() {
             verify(lock.writeLock()).lock();
@@ -297,6 +313,16 @@ class PeersManagerTest {
         }
 
         @Test
+        void shouldEmitNodeOfflineEvent(@Mock final PeerInformation peerInformation,
+                                        @Mock final Path path) {
+            peers.put(superPeer, peerInformation);
+
+            underTest.unsetSuperPeerAndRemovePath(path);
+
+            verify(eventConsumer).accept(new NodeOfflineEvent(Node.of(identity)));
+        }
+
+        @Test
         @Disabled("not implemented")
         void shouldEmitNoEventForSuperPeerIfPathsLeft() {
             fail("not implemented");
@@ -311,6 +337,11 @@ class PeersManagerTest {
 
     @Nested
     class SetPeerInformationAndAddPathAndSetSuperPeer {
+        @BeforeEach
+        void setUp() {
+            underTest.unsetSuperPeer();
+        }
+
         @Test
         void shouldSetPeerInformationAndAddPathAndSetSuperPeer(@Mock final CompressedPublicKey publicKey,
                                                                @Mock final PeerInformation peerInformation,
@@ -323,18 +354,19 @@ class PeersManagerTest {
         }
 
         @Test
-        void shouldEmitPeerDirectEventForSuperPeer(@Mock final CompressedPublicKey publicKey,
-                                                   @Mock final PeerInformation peerInformation,
-                                                   @Mock final Path path) {
+        void shouldEmitPeerDirectEventForSuperPeerAndNodeOnlineEvent(@Mock final CompressedPublicKey publicKey,
+                                                                     @Mock final PeerInformation peerInformation,
+                                                                     @Mock final Path path) {
             underTest.setPeerInformationAndAddPathAndSetSuperPeer(publicKey, peerInformation, path);
 
             verify(eventConsumer).accept(new PeerDirectEvent(Peer.of(publicKey)));
+            verify(eventConsumer).accept(new NodeOnlineEvent(Node.of(identity)));
         }
 
         @AfterEach
         void tearDown() {
-            verify(lock.writeLock()).lock();
-            verify(lock.writeLock()).unlock();
+            verify(lock.writeLock(), times(2)).lock();
+            verify(lock.writeLock(), times(2)).unlock();
         }
     }
 
