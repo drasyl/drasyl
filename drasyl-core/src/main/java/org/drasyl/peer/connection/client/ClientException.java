@@ -21,7 +21,7 @@ package org.drasyl.peer.connection.client;
 import org.drasyl.DrasylException;
 
 /**
- * A ClientException is thrown by the {@link AbstractClient} when errors occur.
+ * A ClientException is thrown by clients when errors occur.
  */
 public class ClientException extends DrasylException {
     public ClientException(final Throwable cause) {
