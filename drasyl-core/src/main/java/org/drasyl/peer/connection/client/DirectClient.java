@@ -59,12 +59,12 @@ public class DirectClient extends AbstractClient {
                         final Supplier<Set<Endpoint>> endpointsSupplier,
                         final BooleanSupplier directConnectionDemand,
                         final Runnable onFailure,
-                        final BooleanSupplier acceptNewConnectionsSupplier) {
+                        final BooleanSupplier doNewConnectionsSupplier) {
         super(
                 config.getDirectConnectionsRetryDelays(),
                 workerGroup,
                 endpointsSupplier,
-                acceptNewConnectionsSupplier,
+                doNewConnectionsSupplier,
                 identity,
                 pipeline,
                 peersManager,
@@ -84,14 +84,14 @@ public class DirectClient extends AbstractClient {
                  final EventLoopGroup workerGroup,
                  final Supplier<Set<Endpoint>> endpointsSupplier,
                  final AtomicBoolean opened,
-                 final BooleanSupplier acceptNewConnectionsSupplier,
+                 final BooleanSupplier doNewConnectionsSupplier,
                  final AtomicInteger nextEndpointPointer,
                  final AtomicInteger nextRetryDelayPointer,
                  final DrasylFunction<Endpoint, Bootstrap, ClientException> bootstrapSupplier,
                  final Channel channel,
                  final BooleanSupplier directConnectionDemand,
                  final Runnable onFailure) {
-        super(retryDelays, workerGroup, endpointsSupplier, opened, acceptNewConnectionsSupplier, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, channel);
+        super(retryDelays, workerGroup, endpointsSupplier, opened, doNewConnectionsSupplier, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, channel);
         this.directConnectionDemand = directConnectionDemand;
         this.onFailure = onFailure;
     }

@@ -69,13 +69,13 @@ public class SuperPeerClient extends AbstractClient {
 
     protected SuperPeerClient(final DrasylConfig config,
                               final EventLoopGroup workerGroup,
-                              final BooleanSupplier acceptNewConnectionsSupplier,
+                              final BooleanSupplier doNewConnectionsSupplier,
                               final DrasylFunction<Endpoint, Bootstrap, ClientException> bootstrapSupplier) {
         super(
                 config.getSuperPeerRetryDelays(),
                 workerGroup,
                 config::getSuperPeerEndpoints,
-                acceptNewConnectionsSupplier,
+                doNewConnectionsSupplier,
                 bootstrapSupplier);
     }
 
@@ -85,12 +85,12 @@ public class SuperPeerClient extends AbstractClient {
                            final Pipeline pipeline,
                            final PeerChannelGroup channelGroup,
                            final EventLoopGroup workerGroup,
-                           final BooleanSupplier acceptNewConnectionsSupplier) {
+                           final BooleanSupplier doNewConnectionsSupplier) {
         super(
                 config.getSuperPeerRetryDelays(),
                 workerGroup,
                 config::getSuperPeerEndpoints,
-                acceptNewConnectionsSupplier,
+                doNewConnectionsSupplier,
                 identity,
                 pipeline,
                 peersManager,

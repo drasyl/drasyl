@@ -59,14 +59,14 @@ abstract class AbstractClient implements DrasylNodeComponent {
     private final AtomicInteger nextRetryDelayPointer;
     private final DrasylFunction<Endpoint, Bootstrap, ClientException> bootstrapSupplier;
     private final List<Duration> retryDelays;
-    protected final BooleanSupplier acceptNewConnectionsSupplier;
+    protected final BooleanSupplier doNewConnectionsSupplier;
     protected Channel channel;
 
     @SuppressWarnings({ "java:S107" })
     protected AbstractClient(final List<Duration> retryDelays,
                              final EventLoopGroup workerGroup,
                              final Supplier<Set<Endpoint>> endpointsSupplier,
-                             final BooleanSupplier acceptNewConnectionsSupplier,
+                             final BooleanSupplier doNewConnectionsSupplier,
                              final Identity identity,
                              final Pipeline pipeline,
                              final PeersManager peersManager,
@@ -81,7 +81,7 @@ abstract class AbstractClient implements DrasylNodeComponent {
                 retryDelays,
                 workerGroup,
                 endpointsSupplier,
-                acceptNewConnectionsSupplier,
+                doNewConnectionsSupplier,
                 endpoint -> new Bootstrap()
                         .group(workerGroup)
                         .channel(getBestSocketChannel())
@@ -120,14 +120,14 @@ abstract class AbstractClient implements DrasylNodeComponent {
     protected AbstractClient(final List<Duration> retryDelays,
                              final EventLoopGroup workerGroup,
                              final Supplier<Set<Endpoint>> endpointsSupplier,
-                             final BooleanSupplier acceptNewConnectionsSupplier,
+                             final BooleanSupplier doNewConnectionsSupplier,
                              final DrasylFunction<Endpoint, Bootstrap, ClientException> bootstrapSupplier) {
         this(
                 retryDelays,
                 workerGroup,
                 endpointsSupplier,
                 new AtomicBoolean(false),
-                acceptNewConnectionsSupplier,
+                doNewConnectionsSupplier,
                 new AtomicInteger(0),
                 new AtomicInteger(0),
                 bootstrapSupplier,
@@ -140,7 +140,7 @@ abstract class AbstractClient implements DrasylNodeComponent {
                              final EventLoopGroup workerGroup,
                              final Supplier<Set<Endpoint>> endpointsSupplier,
                              final AtomicBoolean opened,
-                             final BooleanSupplier acceptNewConnectionsSupplier,
+                             final BooleanSupplier doNewConnectionsSupplier,
                              final AtomicInteger nextEndpointPointer,
                              final AtomicInteger nextRetryDelayPointer,
                              final DrasylFunction<Endpoint, Bootstrap, ClientException> bootstrapSupplier,
@@ -149,7 +149,7 @@ abstract class AbstractClient implements DrasylNodeComponent {
         this.workerGroup = workerGroup;
         this.endpointsSupplier = endpointsSupplier;
         this.opened = opened;
-        this.acceptNewConnectionsSupplier = acceptNewConnectionsSupplier;
+        this.doNewConnectionsSupplier = doNewConnectionsSupplier;
         this.nextEndpointPointer = nextEndpointPointer;
         this.nextRetryDelayPointer = nextRetryDelayPointer;
         this.bootstrapSupplier = bootstrapSupplier;
@@ -235,7 +235,7 @@ abstract class AbstractClient implements DrasylNodeComponent {
      * <code>false</code> is returned
      */
     protected boolean shouldRetry() {
-        return opened.get() && acceptNewConnectionsSupplier.getAsBoolean() && !retryDelays.isEmpty();
+        return opened.get() && doNewConnectionsSupplier.getAsBoolean() && !retryDelays.isEmpty();
     }
 
     /**
