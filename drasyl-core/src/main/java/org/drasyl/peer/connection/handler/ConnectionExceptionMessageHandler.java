@@ -21,6 +21,7 @@ package org.drasyl.peer.connection.handler;
 import io.netty.channel.ChannelHandler.Sharable;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
+import io.netty.util.AttributeKey;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,6 +31,7 @@ import org.slf4j.LoggerFactory;
  */
 @Sharable
 public class ConnectionExceptionMessageHandler extends SimpleChannelInboundHandler<ConnectionExceptionMessage> {
+    public static final AttributeKey<ConnectionExceptionMessage.Error> ATTRIBUTE_CONNECTION_ERROR = AttributeKey.valueOf("connection_ERROR");
     public static final ConnectionExceptionMessageHandler INSTANCE = new ConnectionExceptionMessageHandler();
     public static final String EXCEPTION_MESSAGE_HANDLER = "connectionExceptionMessageHandler";
     private static final Logger LOG = LoggerFactory.getLogger(ConnectionExceptionMessageHandler.class);
@@ -44,6 +46,7 @@ public class ConnectionExceptionMessageHandler extends SimpleChannelInboundHandl
         if (LOG.isDebugEnabled()) {
             LOG.debug("[{}]: Received {} from other peer. Close channel", ctx.channel().id().asShortText(), msg);
         }
+        ctx.channel().attr(ATTRIBUTE_CONNECTION_ERROR).set(msg.getError());
         ctx.close();
     }
 }
