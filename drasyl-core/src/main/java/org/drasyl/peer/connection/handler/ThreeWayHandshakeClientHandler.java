@@ -38,21 +38,21 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
  * then offers the client a session. Then the client has to confirm the offered session again.
  */
 @SuppressWarnings({ "java:S110" })
-public abstract class AbstractThreeWayHandshakeClientHandler<R extends RequestMessage, O extends ResponseMessage<?>> extends AbstractThreeWayHandshakeHandler {
+public abstract class ThreeWayHandshakeClientHandler<R extends RequestMessage, O extends ResponseMessage<?>> extends AbstractThreeWayHandshakeHandler {
     private final R requestMessage;
 
-    protected AbstractThreeWayHandshakeClientHandler(final Duration timeout,
-                                                     final Pipeline pipeline,
-                                                     final R requestMessage) {
+    protected ThreeWayHandshakeClientHandler(final Duration timeout,
+                                             final Pipeline pipeline,
+                                             final R requestMessage) {
         super(timeout, pipeline);
         this.requestMessage = requestMessage;
     }
 
-    protected AbstractThreeWayHandshakeClientHandler(final Duration timeout,
-                                                     final Pipeline pipeline,
-                                                     final CompletableFuture<Void> handshakeFuture,
-                                                     final ScheduledFuture<?> timeoutFuture,
-                                                     final R requestMessage) {
+    protected ThreeWayHandshakeClientHandler(final Duration timeout,
+                                             final Pipeline pipeline,
+                                             final CompletableFuture<Void> handshakeFuture,
+                                             final ScheduledFuture<?> timeoutFuture,
+                                             final R requestMessage) {
         super(timeout, pipeline, handshakeFuture, timeoutFuture);
         this.requestMessage = requestMessage;
     }

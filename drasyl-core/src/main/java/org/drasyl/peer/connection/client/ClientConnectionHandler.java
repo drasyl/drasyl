@@ -23,7 +23,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.Path;
-import org.drasyl.peer.connection.handler.AbstractThreeWayHandshakeClientHandler;
+import org.drasyl.peer.connection.handler.ThreeWayHandshakeClientHandler;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
@@ -48,7 +48,7 @@ import static org.drasyl.util.FutureUtil.toFuture;
  * StatusMessage}.
  */
 @SuppressWarnings({ "java:S110" })
-public class ClientConnectionHandler extends AbstractThreeWayHandshakeClientHandler<JoinMessage, WelcomeMessage> {
+public class ClientConnectionHandler extends ThreeWayHandshakeClientHandler<JoinMessage, WelcomeMessage> {
     public static final String CLIENT_CONNECTION_HANDLER = "clientConnectionHandler";
     private static final Logger LOG = LoggerFactory.getLogger(ClientConnectionHandler.class);
     private final ClientEnvironment environment;

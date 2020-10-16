@@ -39,20 +39,20 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
  * an offer message to the client. It then waits for the client to confirm the offer.
  */
 @SuppressWarnings({ "java:S110" })
-public abstract class AbstractThreeWayHandshakeServerHandler<R extends RequestMessage, O extends ResponseMessage<?>> extends AbstractThreeWayHandshakeHandler {
+public abstract class ThreeWayHandshakeServerHandler<R extends RequestMessage, O extends ResponseMessage<?>> extends AbstractThreeWayHandshakeHandler {
     private R requestMessage;
     private O offerMessage;
 
-    protected AbstractThreeWayHandshakeServerHandler(final Duration timeout,
-                                                     final Pipeline pipeline) {
+    protected ThreeWayHandshakeServerHandler(final Duration timeout,
+                                             final Pipeline pipeline) {
         super(timeout, pipeline);
     }
 
-    protected AbstractThreeWayHandshakeServerHandler(final Duration timeout,
-                                                     final Pipeline pipeline,
-                                                     final CompletableFuture<Void> handshakeFuture,
-                                                     final ScheduledFuture<?> timeoutFuture,
-                                                     final R requestMessage, final O offerMessage) {
+    protected ThreeWayHandshakeServerHandler(final Duration timeout,
+                                             final Pipeline pipeline,
+                                             final CompletableFuture<Void> handshakeFuture,
+                                             final ScheduledFuture<?> timeoutFuture,
+                                             final R requestMessage, final O offerMessage) {
         super(timeout, pipeline, handshakeFuture, timeoutFuture);
         this.requestMessage = requestMessage;
         this.offerMessage = offerMessage;

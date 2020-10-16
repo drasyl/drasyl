@@ -31,7 +31,7 @@ import java.util.concurrent.CompletableFuture;
  * Skeleton implementation for end handler of the {@link Pipeline}.
  */
 @SuppressWarnings({ "common-java:DuplicatedBlocks" })
-public abstract class AbstractEndHandler extends AbstractHandlerContext implements Handler {
+abstract class AbstractEndHandler extends AbstractHandlerContext implements Handler {
     public AbstractEndHandler(final String name,
                               final DrasylConfig config,
                               final Pipeline pipeline,

@@ -26,7 +26,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
-import org.drasyl.peer.connection.handler.AbstractThreeWayHandshakeServerHandler;
+import org.drasyl.peer.connection.handler.ThreeWayHandshakeServerHandler;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
@@ -56,7 +56,7 @@ import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Erro
  * received.
  */
 @SuppressWarnings({ "java:S107", "java:S110" })
-public class ServerConnectionHandler extends AbstractThreeWayHandshakeServerHandler<JoinMessage, WelcomeMessage> {
+public class ServerConnectionHandler extends ThreeWayHandshakeServerHandler<JoinMessage, WelcomeMessage> {
     public static final String SERVER_CONNECTION_HANDLER = "serverConnectionHandler";
     private static final Logger LOG = LoggerFactory.getLogger(ServerConnectionHandler.class);
     private final ServerEnvironment environment;
