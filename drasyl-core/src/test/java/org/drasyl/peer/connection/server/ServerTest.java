@@ -78,8 +78,8 @@ class ServerTest {
         void shouldSetOpenToTrue() throws ServerException {
             when(config.getServerBindHost()).thenReturn(createInetAddress("0.0.0.0"));
             when(config.getServerEndpoints()).thenReturn(Set.of(Endpoint.of("ws://localhost:22527/")));
-            when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).isSuccess()).thenReturn(true);
-            when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).channel().localAddress()).thenReturn(new InetSocketAddress(22527));
+            when(serverBootstrap.bind().isSuccess()).thenReturn(true);
+            when(serverBootstrap.bind().channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
             final AtomicBoolean opened = new AtomicBoolean(false);
             try (final Server server = new Server(
@@ -107,8 +107,8 @@ class ServerTest {
             when(config.isServerExposeEnabled()).thenReturn(true);
             when(config.getServerBindHost()).thenReturn(createInetAddress("0.0.0.0"));
             when(config.getServerEndpoints()).thenReturn(Set.of(Endpoint.of("ws://localhost:22527/")));
-            when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).isSuccess()).thenReturn(true);
-            when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).channel().localAddress()).thenReturn(new InetSocketAddress(22527));
+            when(serverBootstrap.bind().isSuccess()).thenReturn(true);
+            when(serverBootstrap.bind().channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
             try (final Server server = new Server(
                     identity, config, serverBootstrap, new AtomicBoolean(), null, serverChannel,
@@ -124,8 +124,8 @@ class ServerTest {
             when(config.isServerExposeEnabled()).thenReturn(false);
             when(config.getServerBindHost()).thenReturn(createInetAddress("0.0.0.0"));
             when(config.getServerEndpoints()).thenReturn(Set.of(Endpoint.of("ws://localhost:22527/")));
-            when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).isSuccess()).thenReturn(true);
-            when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).channel().localAddress()).thenReturn(new InetSocketAddress(22527));
+            when(serverBootstrap.bind().isSuccess()).thenReturn(true);
+            when(serverBootstrap.bind().channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
             try (final Server server = new Server(
                     identity, config, serverBootstrap, new AtomicBoolean(), null, serverChannel,

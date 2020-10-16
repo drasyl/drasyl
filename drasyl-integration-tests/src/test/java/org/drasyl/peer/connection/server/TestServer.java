@@ -83,7 +83,8 @@ public class TestServer extends Server {
                 config,
                 new ServerBootstrap().group(bossGroup, workerGroup)
                         .channel(Server.getBestServerSocketChannel())
-                        .childHandler(channelInitializer),
+                        .childHandler(channelInitializer)
+                        .localAddress(config.getServerBindHost(), config.getServerBindPort()),
                 new AtomicBoolean(),
                 null,
                 null,

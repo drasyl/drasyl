@@ -527,14 +527,12 @@ class ServerIT {
     }
 
     @Test
-    void openShouldFailIfInvalidPortIsGiven() throws DrasylException {
+    void constructorShouldFailIfInvalidPortIsGiven() {
         final DrasylConfig config = DrasylConfig.newBuilder()
                 .networkId(0)
                 .serverBindPort(72722)
                 .build();
-        try (final Server myServer = new Server(serverIdentityManager.getIdentity(), pipeline, peersManager, config, channelGroup, workerGroup, bossGroup, endpoints, acceptNewConnections::get)) {
-            assertThrows(ServerException.class, myServer::open);
-        }
+        assertThrows(IllegalArgumentException.class, () -> new Server(serverIdentityManager.getIdentity(), pipeline, peersManager, config, channelGroup, workerGroup, bossGroup, endpoints, acceptNewConnections::get));
     }
 
     @Test
