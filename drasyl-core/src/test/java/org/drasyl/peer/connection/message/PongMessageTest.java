@@ -39,7 +39,7 @@ class PongMessageTest {
 
     @BeforeEach
     void setUp() {
-        correspondingId = new MessageId("d41e4d0aca48d6f40376c145");
+        correspondingId = MessageId.of("d41e4d0aca48d6f40376c145");
     }
 
     @Nested
@@ -48,7 +48,7 @@ class PongMessageTest {
         void shouldDeserializeToCorrectObject() throws IOException {
             final String json = "{\"@type\":\"" + PongMessage.class.getSimpleName() + "\",\"id\":\"89ba3cd9efb7570eb3126d11\",\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
 
-            assertEquals(new PongMessage(new MessageId("412176952b5b81fd13f84a7c")), JACKSON_READER.readValue(json, Message.class));
+            assertEquals(new PongMessage(MessageId.of("412176952b5b81fd13f84a7c")), JACKSON_READER.readValue(json, Message.class));
         }
 
         @Test

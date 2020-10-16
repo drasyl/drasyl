@@ -29,19 +29,19 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.identity.ProofOfWork;
-import org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler;
-import org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler;
-import org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
+import org.drasyl.peer.connection.client.TestClientChannelInitializer;
 import org.drasyl.peer.connection.client.TestSuperPeerClient;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
+import org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler;
+import org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler;
+import org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler;
 import org.drasyl.peer.connection.server.ServerException;
 import org.drasyl.peer.connection.server.TestServer;
-import org.drasyl.peer.connection.superpeer.TestClientChannelInitializer;
 import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.Pipeline;
 import org.junit.jupiter.api.AfterAll;
@@ -136,7 +136,7 @@ class ChunkedMessageIT {
         final IdentityManager serverIdentityManager = new IdentityManager(serverConfig);
         serverIdentityManager.loadOrCreateIdentity();
         final PeersManager peersManager = new PeersManager(event -> {
-        });
+        }, serverIdentityManager.getIdentity());
         pipeline = new DrasylPipeline(event -> {
         }, serverConfig, serverIdentityManager.getIdentity());
         pipeline.addFirst(SUPER_PEER_SINK_HANDLER, new SuperPeerMessageSinkHandler(channelGroup, peersManager));

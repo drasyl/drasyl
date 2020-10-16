@@ -75,7 +75,7 @@ class PublicKeyExchangeHandlerTest {
     @BeforeEach
     void setUp() {
         timeout = Duration.ofSeconds(10);
-        requestID = new MessageId("89ba3cd9efb7570eb3126d11");
+        requestID = MessageId.of("89ba3cd9efb7570eb3126d11");
     }
 
     @Test
@@ -134,7 +134,7 @@ class PublicKeyExchangeHandlerTest {
     void shouldNotMatchingMessagePassOn() {
         final PublicKeyExchangeHandler handler = new PublicKeyExchangeHandler(mock(CompressedPublicKey.class), timeout, requestID, timeoutFuture);
 
-        final IamMessage msg = new IamMessage(mockedPublicKey, new MessageId("6d1a9c2d27fa8281a4933a60"));
+        final IamMessage msg = new IamMessage(mockedPublicKey, MessageId.of("6d1a9c2d27fa8281a4933a60"));
         handler.channelRead0(ctx, msg);
 
         verify(ctx).fireChannelRead(msg);

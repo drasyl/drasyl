@@ -44,13 +44,13 @@ import org.drasyl.peer.connection.direct.DirectConnectionsManager;
 import org.drasyl.peer.connection.intravm.IntraVmDiscovery;
 import org.drasyl.peer.connection.localhost.LocalHostDiscovery;
 import org.drasyl.peer.connection.message.QuitMessage;
-import org.drasyl.peer.connection.server.Server;
 import org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler;
+import org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler;
+import org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler;
+import org.drasyl.peer.connection.server.Server;
 import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler;
 import org.drasyl.pipeline.Pipeline;
-import org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler;
 import org.drasyl.pipeline.codec.Codec;
 import org.drasyl.plugins.PluginManager;
 import org.slf4j.Logger;
@@ -153,7 +153,7 @@ public abstract class DrasylNode {
             final IdentityManager identityManager = new IdentityManager(this.config);
             identityManager.loadOrCreateIdentity();
             this.identity = identityManager.getIdentity();
-            this.peersManager = new PeersManager(this::onInternalEvent);
+            this.peersManager = new PeersManager(this::onInternalEvent, identity);
             this.channelGroup = new PeerChannelGroup();
             this.endpoints = new CopyOnWriteArraySet<>();
             this.acceptNewConnections = new AtomicBoolean();
@@ -167,7 +167,7 @@ public abstract class DrasylNode {
             if (config.areDirectConnectionsEnabled()) {
                 this.components.add(new DirectConnectionsManager(
                         config, identity, peersManager, pipeline, channelGroup,
-                        LazyWorkerGroupHolder.INSTANCE, this::onInternalEvent,
+                        LazyWorkerGroupHolder.INSTANCE,
                         acceptNewConnections::get, endpoints));
             }
             if (config.isIntraVmDiscoveryEnabled()) {
@@ -177,7 +177,7 @@ public abstract class DrasylNode {
             if (config.isSuperPeerEnabled()) {
                 this.components.add(new SuperPeerClient(this.config, identity, peersManager,
                         pipeline, channelGroup, LazyWorkerGroupHolder.INSTANCE,
-                        this::onInternalEvent, acceptNewConnections::get));
+                        acceptNewConnections::get));
             }
             if (config.isServerEnabled()) {
                 this.components.add(new Server(identity, pipeline, peersManager, this.config,

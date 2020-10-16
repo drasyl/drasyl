@@ -38,7 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
 class WelcomeMessageTest {
-    private final MessageId correspondingId = new MessageId("412176952b5b81fd13f84a7c");
+    private final MessageId correspondingId = MessageId.of("412176952b5b81fd13f84a7c");
     @Mock
     private PeerInformation peerInformation;
 
@@ -48,7 +48,7 @@ class WelcomeMessageTest {
         void shouldDeserializeToCorrectObject() throws IOException {
             final String json = "{\"@type\":\"WelcomeMessage\",\"id\":\"c78fe75d4c93bc07e916e539\",\"userAgent\":\"\",\"peerInformation\":{\"endpoints\":[\"ws://test\"]},\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
 
-            assertEquals(new WelcomeMessage(PeerInformation.of(Set.of(Endpoint.of("ws://test"))), new MessageId("412176952b5b81fd13f84a7c")), JACKSON_READER.readValue(json, Message.class));
+            assertEquals(new WelcomeMessage(PeerInformation.of(Set.of(Endpoint.of("ws://test"))), MessageId.of("412176952b5b81fd13f84a7c")), JACKSON_READER.readValue(json, Message.class));
         }
 
         @Test

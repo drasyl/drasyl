@@ -134,7 +134,7 @@ class MessageEncoderTest {
     private static class MyMessage implements Message {
         @Override
         public MessageId getId() {
-            return new MessageId("d8bc65cf7dc1951e96313055");
+            return MessageId.of("d8bc65cf7dc1951e96313055");
         }
     }
 }

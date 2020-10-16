@@ -30,25 +30,23 @@ import io.netty.channel.socket.nio.NioSocketChannel;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNodeComponent;
-import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.util.DrasylFunction;
-import org.drasyl.util.SetUtil;
 import org.slf4j.Logger;
 
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
-import java.util.function.Consumer;
 import java.util.function.Supplier;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
@@ -77,7 +75,6 @@ abstract class AbstractClient implements DrasylNodeComponent {
                              final short idleRetries,
                              final Duration idleTimeout,
                              final Duration handshakeTimeout,
-                             final Consumer<Event> eventConsumer,
                              final boolean joinsAsChildren,
                              final Class<? extends ChannelInitializer<SocketChannel>> channelInitializerClazz) {
         this(
@@ -95,7 +92,6 @@ abstract class AbstractClient implements DrasylNodeComponent {
                                         pipeline,
                                         channelGroup,
                                         peersManager,
-                                        eventConsumer,
                                         joinsAsChildren,
                                         idleRetries,
                                         idleTimeout,
@@ -205,8 +201,8 @@ abstract class AbstractClient implements DrasylNodeComponent {
      */
     Endpoint nextEndpoint() {
         try {
-            final Set<Endpoint> endpoints = endpointsSupplier.get();
-            final Endpoint endpoint = SetUtil.nthElement(endpoints, nextEndpointPointer.get());
+            final List<Endpoint> endpoints = new ArrayList<>(endpointsSupplier.get());
+            final Endpoint endpoint = endpoints.get(nextEndpointPointer.get());
             nextEndpointPointer.updateAndGet(p -> (p + 1) % endpoints.size());
             return endpoint;
         }

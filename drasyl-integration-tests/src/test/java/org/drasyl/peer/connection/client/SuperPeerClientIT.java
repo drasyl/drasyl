@@ -36,9 +36,6 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.identity.IdentityManagerException;
 import org.drasyl.identity.ProofOfWork;
-import org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler;
-import org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler;
-import org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
@@ -50,6 +47,9 @@ import org.drasyl.peer.connection.message.PongMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
+import org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler;
+import org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler;
+import org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler;
 import org.drasyl.peer.connection.server.TestServer;
 import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.Pipeline;
@@ -71,12 +71,12 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler.DIRECT_CONNECTION_MESSAGE_SINK_HANDLER;
-import static org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler.LOOPBACK_MESSAGE_SINK_HANDLER;
-import static org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler.SUPER_PEER_SINK_HANDLER;
 import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_SIZE;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
+import static org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler.DIRECT_CONNECTION_MESSAGE_SINK_HANDLER;
+import static org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler.LOOPBACK_MESSAGE_SINK_HANDLER;
+import static org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler.SUPER_PEER_SINK_HANDLER;
 import static org.drasyl.util.NetworkUtil.createInetAddress;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static testutils.AnsiColor.COLOR_CYAN;
@@ -117,6 +117,7 @@ class SuperPeerClientIT {
         workerGroup = DrasylNode.getBestEventLoop();
         serverWorkerGroup = DrasylNode.getBestEventLoop();
         bossGroup = DrasylNode.getBestEventLoop(1);
+        emittedEventsSubject = ReplaySubject.<Event>create().toSerialized();
 
         config = DrasylConfig.newBuilder()
                 .networkId(0)
@@ -157,11 +158,10 @@ class SuperPeerClientIT {
                 .build();
         identityManagerServer = new IdentityManager(serverConfig);
         identityManagerServer.loadOrCreateIdentity();
-        peersManager = new PeersManager(event -> {
-        });
+        peersManager = new PeersManager(emittedEventsSubject::onNext, identityManager.getIdentity());
         channelGroup = new PeerChannelGroup();
         peersManagerServer = new PeersManager(event -> {
-        });
+        }, identityManagerServer.getIdentity());
         channelGroupServer = new PeerChannelGroup();
         pipeline = new DrasylPipeline(event -> {
         }, config, identityManager.getIdentity());
@@ -170,7 +170,7 @@ class SuperPeerClientIT {
         pipeline.addAfter(DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, LOOPBACK_MESSAGE_SINK_HANDLER, new LoopbackMessageSinkHandler(new AtomicBoolean(true), identityManager.getIdentity(), peersManager, endpoints));
         pipelineServer = new DrasylPipeline(event -> {
         }, serverConfig, identityManagerServer.getIdentity());
-        pipelineServer.addFirst(SUPER_PEER_SINK_HANDLER, new SuperPeerMessageSinkHandler(channelGroup, peersManager));
+        pipelineServer.addFirst(SUPER_PEER_SINK_HANDLER, new SuperPeerMessageSinkHandler(channelGroup, peersManagerServer));
         pipelineServer.addAfter(SUPER_PEER_SINK_HANDLER, DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, new DirectConnectionMessageSinkHandler(channelGroup));
         pipelineServer.addAfter(DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, LOOPBACK_MESSAGE_SINK_HANDLER, new LoopbackMessageSinkHandler(new AtomicBoolean(true), identityManagerServer.getIdentity(), peersManagerServer, endpoints));
         endpoints = new HashSet<>();
@@ -200,7 +200,6 @@ class SuperPeerClientIT {
         identityManager = new IdentityManager(config);
         identityManager.loadOrCreateIdentity();
 
-        emittedEventsSubject = ReplaySubject.<Event>create().toSerialized();
         networkId = 0;
     }
 
@@ -221,8 +220,7 @@ class SuperPeerClientIT {
         final TestObserver<Message> receivedMessages = server.receivedMessages().test();
 
         // start client
-        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, event -> {
-        }, () -> true)) {
+        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, () -> true)) {
             client.open();
 
             // verify received messages
@@ -238,7 +236,7 @@ class SuperPeerClientIT {
         final TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
-        final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true);
+        final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, () -> true);
         client.open();
 
         // wait for node to become online, before closing it
@@ -256,16 +254,16 @@ class SuperPeerClientIT {
         final TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
-        final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true);
+        final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, () -> true);
         client.open();
 
         // wait for node to become online, before closing it
-        emittedEvents.awaitCount(1).assertValueCount(1);
+        emittedEvents.awaitCount(2).assertValueCount(2);
         client.close();
 
         // verify emitted events
-        emittedEvents.awaitCount(2);
-        emittedEvents.assertValueAt(1, new NodeOfflineEvent(Node.of(identityManager.getIdentity())));
+        emittedEvents.awaitCount(3);
+        emittedEvents.assertValueAt(2, new NodeOfflineEvent(Node.of(identityManager.getIdentity())));
     }
 
     @Test
@@ -275,8 +273,7 @@ class SuperPeerClientIT {
         final TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof PongMessage && ((PongMessage) m).getCorrespondingId().equals(request.getId())).test();
 
         // start client
-        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, event -> {
-        }, () -> true)) {
+        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, () -> true)) {
             client.open();
             server.awaitClient(identityManager.getPublicKey());
 
@@ -295,8 +292,7 @@ class SuperPeerClientIT {
         final TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof StatusMessage).test();
 
         // start client
-        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, event -> {
-        }, () -> true)) {
+        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, () -> true)) {
             client.open();
             server.awaitClient(identityManager.getPublicKey());
 
@@ -320,7 +316,7 @@ class SuperPeerClientIT {
 
         // start client
         final DrasylConfig noRetryConfig = DrasylConfig.newBuilder(config).superPeerRetryDelays(List.of()).build();
-        try (final SuperPeerClient client = new SuperPeerClient(noRetryConfig, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
+        try (final SuperPeerClient client = new SuperPeerClient(noRetryConfig, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, () -> true)) {
             client.open();
             server.awaitClient(identityManager.getPublicKey());
 
@@ -328,8 +324,8 @@ class SuperPeerClientIT {
             server.sendMessage(identityManager.getPublicKey(), new QuitMessage());
 
             // verify emitted events
-            emittedEvents.awaitCount(2);
-            emittedEvents.assertValueAt(1, new NodeOfflineEvent(Node.of(identityManager.getIdentity())));
+            emittedEvents.awaitCount(3);
+            emittedEvents.assertValueAt(2, new NodeOfflineEvent(Node.of(identityManager.getIdentity())));
         }
     }
 
@@ -339,12 +335,12 @@ class SuperPeerClientIT {
         final TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
         // start client
-        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
+        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, () -> true)) {
             client.open();
 
             // verify emitted events
-            emittedEvents.awaitCount(1).assertValueCount(1);
-            emittedEvents.assertValue(new NodeOnlineEvent(Node.of(identityManager.getIdentity())));
+            emittedEvents.awaitCount(2);
+            emittedEvents.assertValueAt(1, new NodeOnlineEvent(Node.of(identityManager.getIdentity())));
         }
     }
 
@@ -356,12 +352,12 @@ class SuperPeerClientIT {
         final DrasylConfig config1 = DrasylConfig.newBuilder(config).build();
 
         // start client
-        try (final SuperPeerClient client = new SuperPeerClient(config1, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
+        try (final SuperPeerClient client = new SuperPeerClient(config1, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, () -> true)) {
             client.open();
 
             // verify emitted events
-            emittedEvents.awaitCount(1).assertValueCount(1);
-            emittedEvents.assertValue(new NodeOnlineEvent(Node.of(identityManager.getIdentity())));
+            emittedEvents.awaitCount(2);
+            emittedEvents.assertValueAt(1, new NodeOnlineEvent(Node.of(identityManager.getIdentity())));
         }
     }
 
@@ -373,7 +369,7 @@ class SuperPeerClientIT {
         final DrasylConfig config1 = DrasylConfig.newBuilder(config).build();
 
         // start client
-        try (final SuperPeerClient client = new SuperPeerClient(config1, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
+        try (final SuperPeerClient client = new SuperPeerClient(config1, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, () -> true)) {
             client.open();
             server.awaitClient(identityManager.getPublicKey());
 
@@ -381,10 +377,10 @@ class SuperPeerClientIT {
             server.closeClient(identityManager.getPublicKey());
 
             // verify emitted events
-            emittedEvents.awaitCount(3); // wait for EVENT_NODE_OFFLINE and EVENT_NODE_ONLINE
-            emittedEvents.assertValueAt(0, new NodeOnlineEvent(Node.of(identityManager.getIdentity(), Set.of())));
-            emittedEvents.assertValueAt(1, new NodeOfflineEvent(Node.of(identityManager.getIdentity(), Set.of())));
-            emittedEvents.assertValueAt(2, new NodeOnlineEvent(Node.of(identityManager.getIdentity(), Set.of())));
+            emittedEvents.awaitCount(5);
+            emittedEvents.assertValueAt(1, new NodeOnlineEvent(Node.of(identityManager.getIdentity(), Set.of())));
+            emittedEvents.assertValueAt(2, new NodeOfflineEvent(Node.of(identityManager.getIdentity(), Set.of())));
+            emittedEvents.assertValueAt(4, new NodeOnlineEvent(Node.of(identityManager.getIdentity(), Set.of())));
         }
     }
 
@@ -395,7 +391,7 @@ class SuperPeerClientIT {
         final TestObserver<Event> emittedEvents = emittedEventsSubject.filter(e -> e instanceof MessageEvent).test();
 
         // start client
-        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
+        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, () -> true)) {
             client.open();
             server.awaitClient(identityManager.getPublicKey());
 
@@ -417,7 +413,7 @@ class SuperPeerClientIT {
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void messageExceedingMaxSizeShouldOnSendShouldThrowException() {
         // start client
-        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, emittedEventsSubject::onNext, () -> true)) {
+        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, () -> true)) {
             client.open();
             server.awaitClient(identityManager.getPublicKey());
 

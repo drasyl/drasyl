@@ -20,9 +20,6 @@ package org.drasyl.peer.connection.client;
 
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.ScheduledFuture;
-import org.drasyl.event.Node;
-import org.drasyl.event.NodeOfflineEvent;
-import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.JoinMessage;
@@ -91,8 +88,8 @@ class ClientConnectionHandlerTest {
     @Test
     void shouldFailHandshakeIfServerReplyWithStatusUnavailableOnWelcomeMessage() {
         when(handshakeFuture.isDone()).thenReturn(false);
-        when(requestMessage.getId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
-        when(statusMessage.getCorrespondingId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
+        when(requestMessage.getId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
+        when(statusMessage.getCorrespondingId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
         when(statusMessage.getCode()).thenReturn(STATUS_SERVICE_UNAVAILABLE);
 
         final ClientConnectionHandler handler = new ClientConnectionHandler(environment, ofMillis(1000), pipeline, handshakeFuture, timeoutFuture, requestMessage);
@@ -108,10 +105,10 @@ class ClientConnectionHandlerTest {
     @Nested
     class ServerAsSuperPeer {
         @Test
-        void shouldAddPeerInformationAndSetSuperPeerAndEmitNodeOnlineEventOnSessionCreationAndRemovePeerInformationAndUnsetSuperPeerAndEmitNodeOfflineEventOnClose() {
-            when(requestMessage.getId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
-            when(offerMessage.getCorrespondingId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
-            when(offerMessage.getId()).thenReturn(new MessageId("78c36c82b8d11c7217a011b3"));
+        void shouldAddPeerInformationAndSetSuperPeerAndEmitNodeOnlineEventOnSessionCreationAndRemovePeerInformationAndUnsetSuperPeer() {
+            when(requestMessage.getId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
+            when(offerMessage.getCorrespondingId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
+            when(offerMessage.getId()).thenReturn(MessageId.of("78c36c82b8d11c7217a011b3"));
             when(environment.getPeersManager()).thenReturn(peersManager);
             when(environment.joinAsChildren()).thenReturn(true);
 
@@ -123,13 +120,11 @@ class ClientConnectionHandlerTest {
             channel.flush();
 
             verify(peersManager).setPeerInformationAndAddPathAndSetSuperPeer(eq(publicKey), any(), any());
-            verify(environment.getEventConsumer()).accept(new NodeOnlineEvent(Node.of(environment.getIdentity())));
 //        assertEquals(new StatusMessage(STATUS_OK, "78c36c82b8d11c7217a011b3"), channel.readOutbound());
 
             channel.close();
 
             verify(peersManager).unsetSuperPeerAndRemovePath(any());
-            verify(environment.getEventConsumer()).accept(new NodeOfflineEvent(Node.of(environment.getIdentity())));
         }
     }
 
@@ -137,9 +132,9 @@ class ClientConnectionHandlerTest {
     class ServerAsPeer {
         @Test
         void shouldAddPeerInformationAndSetSuperPeerAndEmitNodeOnlineEventOnSessionCreationAndRemovePeerInformationAndUnsetSuperPeerAndEmitNodeOfflineEventOnClose() {
-            when(requestMessage.getId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
-            when(offerMessage.getCorrespondingId()).thenReturn(new MessageId("412176952b5b81fd13f84a7c"));
-            when(offerMessage.getId()).thenReturn(new MessageId("78c36c82b8d11c7217a011b3"));
+            when(requestMessage.getId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
+            when(offerMessage.getCorrespondingId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
+            when(offerMessage.getId()).thenReturn(MessageId.of("78c36c82b8d11c7217a011b3"));
             when(environment.getPeersManager()).thenReturn(peersManager);
             when(environment.joinAsChildren()).thenReturn(false);
 

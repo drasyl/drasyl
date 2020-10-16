@@ -64,7 +64,7 @@ class ChunkedMessageInputTest {
 
     @BeforeEach
     void setUp() {
-        msgID = new MessageId("89ba3cd9efb7570eb3126d11");
+        msgID = MessageId.of("89ba3cd9efb7570eb3126d11");
         payload = new byte[]{};
     }
 

@@ -39,7 +39,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class IamMessageTest {
     @Mock
     private CompressedPublicKey publicKey;
-    private final MessageId correspondingId = new MessageId("412176952b5b81fd13f84a7c");
+    private final MessageId correspondingId = MessageId.of("412176952b5b81fd13f84a7c");
 
     @Nested
     class JsonDeserialization {
@@ -47,7 +47,7 @@ class IamMessageTest {
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
             final String json = "{\"@type\":\"" + IamMessage.class.getSimpleName() + "\",\"id\":\"412176952b5b81fd13f84a7c\",\"publicKey\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
 
-            assertEquals(new IamMessage(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), new MessageId("412176952b5b81fd13f84a7c")), JACKSON_READER.readValue(json, Message.class));
+            assertEquals(new IamMessage(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), MessageId.of("412176952b5b81fd13f84a7c")), JACKSON_READER.readValue(json, Message.class));
         }
 
         @Test

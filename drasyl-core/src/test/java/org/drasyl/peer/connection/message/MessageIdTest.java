@@ -44,7 +44,7 @@ class MessageIdTest {
     class Constructor {
         @Test
         void shouldValidateGivenId() {
-            assertThrows(IllegalArgumentException.class, () -> new MessageId("xyz"));
+            assertThrows(IllegalArgumentException.class, () -> MessageId.of("xyz"));
         }
     }
 
@@ -53,9 +53,9 @@ class MessageIdTest {
         @Test
         void shouldRecognizeEqualPairs() {
             System.out.println();
-            final MessageId idA = new MessageId("412176952b5b81fd13f84a7c");
-            final MessageId idB = new MessageId("412176952b5b81fd13f84a7c");
-            final MessageId idC = new MessageId("78c36c82b8d11c7217a011b3");
+            final MessageId idA = MessageId.of("412176952b5b81fd13f84a7c");
+            final MessageId idB = MessageId.of("412176952b5b81fd13f84a7c");
+            final MessageId idC = MessageId.of("78c36c82b8d11c7217a011b3");
 
             assertEquals(idA, idA);
             assertEquals(idA, idB);
@@ -70,9 +70,9 @@ class MessageIdTest {
     class HashCode {
         @Test
         void shouldRecognizeEqualPairs() {
-            final MessageId idA = new MessageId("412176952b5b81fd13f84a7c");
-            final MessageId idB = new MessageId("412176952b5b81fd13f84a7c");
-            final MessageId idC = new MessageId("78c36c82b8d11c7217a011b3");
+            final MessageId idA = MessageId.of("412176952b5b81fd13f84a7c");
+            final MessageId idB = MessageId.of("412176952b5b81fd13f84a7c");
+            final MessageId idC = MessageId.of("78c36c82b8d11c7217a011b3");
 
             assertEquals(idA.hashCode(), idB.hashCode());
             assertNotEquals(idA.hashCode(), idC.hashCode());
@@ -84,7 +84,7 @@ class MessageIdTest {
     class ToString {
         @Test
         void shouldReturnCorrectString() {
-            final String string = new MessageId("412176952b5b81fd13f84a7c").toString();
+            final String string = MessageId.of("412176952b5b81fd13f84a7c").toString();
 
             assertEquals("412176952b5b81fd13f84a7c", string);
         }
@@ -97,7 +97,7 @@ class MessageIdTest {
             final String json = "\"412176952b5b81fd13f84a7c\"";
 
             assertEquals(
-                    new MessageId("412176952b5b81fd13f84a7c"),
+                    MessageId.of("412176952b5b81fd13f84a7c"),
                     JACKSON_READER.readValue(json, MessageId.class)
             );
         }
@@ -107,7 +107,7 @@ class MessageIdTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException {
-            final MessageId id = new MessageId("412176952b5b81fd13f84a7c");
+            final MessageId id = MessageId.of("412176952b5b81fd13f84a7c");
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(id))
                     .isEqualTo("\"412176952b5b81fd13f84a7c\"");
