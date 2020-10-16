@@ -52,7 +52,7 @@ public class MessageEncoder extends MessageToMessageEncoder<Message> {
     @SuppressWarnings("java:S2093")
     protected void encode(final ChannelHandlerContext ctx,
                           final Message msg,
-                          final List<Object> out) {
+                          final List<Object> out) throws MessageDecoderException {
         if (LOG.isTraceEnabled()) {
             LOG.trace("[{}]: Send Message '{}'", ctx.channel().id().asShortText(), msg);
         }
@@ -68,7 +68,7 @@ public class MessageEncoder extends MessageToMessageEncoder<Message> {
         }
         catch (final IOException e) {
             LOG.error("[{}]: Unable to serialize '{}'", ctx.channel().id().asShortText(), LoggingUtil.sanitizeLogArg(msg));
-            throw new IllegalArgumentException("Message could not be serialized. This could indicate a bug in drasyl: " + e.getMessage());
+            throw new MessageDecoderException("Message could not be serialized. This could indicate a bug in drasyl: " + e.getMessage(), e);
         }
         finally {
             if (frame != null) {

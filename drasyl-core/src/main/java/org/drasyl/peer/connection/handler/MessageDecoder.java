@@ -51,7 +51,7 @@ public class MessageDecoder extends MessageToMessageDecoder<BinaryWebSocketFrame
     @Override
     protected void decode(final ChannelHandlerContext ctx,
                           final BinaryWebSocketFrame msg,
-                          final List<Object> out) {
+                          final List<Object> out) throws MessageDecoderException {
         try {
             final ByteBufInputStream inputStream = new ByteBufInputStream(msg.content());
             final Message message = requireNonNull(JACKSON_READER.readValue((InputStream) inputStream, Message.class));
@@ -63,7 +63,7 @@ public class MessageDecoder extends MessageToMessageDecoder<BinaryWebSocketFrame
         }
         catch (final IOException e) {
             LOG.warn("[{}]: Unable to deserialize '{}': ", ctx.channel().id().asShortText(), LoggingUtil.sanitizeLogArg(msg));
-            throw new IllegalArgumentException("Message could not be deserialized: " + e.getMessage());
+            throw new MessageDecoderException("Message could not be deserialized: " + e.getMessage(), e);
         }
     }
 }
