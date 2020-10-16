@@ -27,6 +27,8 @@ import org.drasyl.pipeline.Pipeline;
 
 import java.time.Duration;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * This class encapsulates all information needed by a {@link ClientChannelInitializer}.
  */
@@ -53,16 +55,16 @@ public class ClientEnvironment {
                              final short idleRetries,
                              final Duration idleTimeout,
                              final Duration handshakeTimeout) {
-        this.config = config;
-        this.identity = identity;
-        this.endpoint = endpoint;
-        this.pipeline = pipeline;
-        this.channelGroup = channelGroup;
-        this.peersManager = peersManager;
+        this.config = requireNonNull(config);
+        this.identity = requireNonNull(identity);
+        this.endpoint = requireNonNull(endpoint);
+        this.pipeline = requireNonNull(pipeline);
+        this.channelGroup = requireNonNull(channelGroup);
+        this.peersManager = requireNonNull(peersManager);
         this.joinAsChildren = joinAsChildren;
         this.idleRetries = idleRetries;
-        this.idleTimeout = idleTimeout;
-        this.handshakeTimeout = handshakeTimeout;
+        this.idleTimeout = requireNonNull(idleTimeout);
+        this.handshakeTimeout = requireNonNull(handshakeTimeout);
     }
 
     public DrasylConfig getConfig() {
