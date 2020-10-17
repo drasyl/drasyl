@@ -91,7 +91,7 @@ class EndpointTest {
     class ToString {
         @Test
         void shouldReturnCorrectStringForEndpointWithoutPublicKey() {
-            assertEquals("ws://example.com", Endpoint.of("ws://example.com").toString());
+            assertEquals("ws://example.com#030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb", Endpoint.of("ws://example.com#030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb").toString());
         }
 
         @Test
@@ -106,7 +106,7 @@ class EndpointTest {
         void shouldReturnCorrectURI() {
             assertEquals(
                     URI.create("ws://example.com"),
-                    Endpoint.of("ws://example.com").getURI()
+                    Endpoint.of("ws://example.com#030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb").getURI()
             );
         }
     }
@@ -116,8 +116,8 @@ class EndpointTest {
         @Test
         void shouldReturnHostOfURI() {
             assertEquals(
-                    URI.create("ws://example.com").getHost(),
-                    Endpoint.of("ws://example.com").getHost()
+                    URI.create("ws://example.com#030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb").getHost(),
+                    Endpoint.of("ws://example.com#030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb").getHost()
             );
         }
     }
@@ -126,17 +126,17 @@ class EndpointTest {
     class GetPort {
         @Test
         void shouldReturnPortContainedInEndpoint() {
-            assertEquals(123, Endpoint.of("ws://localhost:123").getPort());
+            assertEquals(123, Endpoint.of("ws://localhost:123#030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb").getPort());
         }
 
         @Test
         void shouldFallbackToDefaultWebsocketPort() {
-            assertEquals(80, Endpoint.of("ws://localhost").getPort());
+            assertEquals(80, Endpoint.of("ws://localhost#030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb").getPort());
         }
 
         @Test
         void shouldFallbackToDefaultSecureWebsocketPort() {
-            assertEquals(443, Endpoint.of("wss://localhost").getPort());
+            assertEquals(443, Endpoint.of("wss://localhost#030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb").getPort());
         }
     }
 
@@ -144,12 +144,12 @@ class EndpointTest {
     class IsSecureEndpoint {
         @Test
         void shouldReturnTrueForWebSocketSecureURI() {
-            assertTrue(Endpoint.of("wss://localhost").isSecureEndpoint());
+            assertTrue(Endpoint.of("wss://localhost#030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb").isSecureEndpoint());
         }
 
         @Test
         void shouldReturnFalseForWebSocketURI() {
-            assertFalse(Endpoint.of("ws://localhost").isSecureEndpoint());
+            assertFalse(Endpoint.of("ws://localhost#030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb").isSecureEndpoint());
         }
     }
 
@@ -157,43 +157,43 @@ class EndpointTest {
     class CompareTo {
         @Test
         void shouldReturnCorrectResult() {
-            assertEquals(-1, Endpoint.of("ws://a").compareTo(Endpoint.of("ws://b")));
-            assertEquals(0, Endpoint.of("ws://a").compareTo(Endpoint.of("ws://a")));
-            assertEquals(1, Endpoint.of("ws://b").compareTo(Endpoint.of("ws://a")));
+            assertEquals(-1, Endpoint.of("ws://a#030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb").compareTo(Endpoint.of("ws://b#033de3da699f6f9ffbd427c56725910655ba3913be4ff55b13c628e957c860fd55")));
+            assertEquals(0, Endpoint.of("ws://a#030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb").compareTo(Endpoint.of("ws://a#030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb")));
+            assertEquals(1, Endpoint.of("ws://b#033de3da699f6f9ffbd427c56725910655ba3913be4ff55b13c628e957c860fd55").compareTo(Endpoint.of("ws://a#030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb")));
         }
     }
 
     @Nested
     class Of {
         @Test
+        @SuppressWarnings("all")
         void shouldThrowNullPointerExceptionForNullValue() {
             assertThrows(NullPointerException.class, () -> Endpoint.of((URI) null));
             assertThrows(NullPointerException.class, () -> Endpoint.of((String) null));
         }
 
         @Test
-        void shouldThrowIllegalLinkExceptionForNonWebSocketURI() {
-            final URI uri = URI.create("http://example.com");
+        void shouldThrowIllegalArgumentExceptionForNonWebSocketURI() {
+            final URI uri = URI.create("http://example.com#033de3da699f6f9ffbd427c56725910655ba3913be4ff55b13c628e957c860fd55");
             assertThrows(IllegalArgumentException.class, () -> Endpoint.of(uri));
         }
 
         @Test
-        void shouldThrowIllegalLinkExceptionForInvalidURI() {
+        void shouldThrowIllegalArgumentExceptionForInvalidURI() {
             assertThrows(IllegalArgumentException.class, () -> Endpoint.of("\n"));
+        }
+
+        @Test
+        void shouldThrowIllegalArgumentExceptionIfPublicKeyIsMissing() {
+            final URI uri = URI.create("wss://example.com");
+            assertThrows(IllegalArgumentException.class, () -> Endpoint.of(uri));
         }
     }
 
     @Nested
     class JsonDeserialization {
         @Test
-        void shouldDeserializeEndpointWithoutPublicKeyToCorrectObject() throws IOException {
-            final String json = "\"ws://example.com\"";
-
-            assertEquals(Endpoint.of(URI.create("ws://example.com")), JACKSON_READER.readValue(json, Endpoint.class));
-        }
-
-        @Test
-        void shouldDeserializeEndpointWithPublicKeyToCorrectObject() throws IOException, CryptoException {
+        void shouldDeserializeEndpointToCorrectObject() throws IOException, CryptoException {
             final String json = "\"ws://example.com#030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb\"";
 
             assertEquals(Endpoint.of(URI.create("ws://example.com"), CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb")), JACKSON_READER.readValue(json, Endpoint.class));
@@ -201,7 +201,14 @@ class EndpointTest {
 
         @Test
         void shouldRejectNonWebSocketEndpoint() {
-            final String json = "\"http://example.com\"";
+            final String json = "\"http://example.com#030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb\"";
+
+            assertThrows(JsonMappingException.class, () -> JACKSON_READER.readValue(json, Endpoint.class));
+        }
+
+        @Test
+        void shouldRejectEndpointWithoutPublicKey() {
+            final String json = "\"ws://example.com\"";
 
             assertThrows(JsonMappingException.class, () -> JACKSON_READER.readValue(json, Endpoint.class));
         }
@@ -210,15 +217,7 @@ class EndpointTest {
     @Nested
     class JsonSerialization {
         @Test
-        void shouldSerializeEndpointWithoutPublicKeyToCorrectJson() throws IOException {
-            final Endpoint endpoint = Endpoint.of(URI.create("wss://example.com"));
-
-            assertThatJson(JACKSON_WRITER.writeValueAsString(endpoint))
-                    .isEqualTo("wss://example.com");
-        }
-
-        @Test
-        void shouldSerializeEndpointWithPublicKeyToCorrectJson() throws IOException, CryptoException {
+        void shouldSerializeEndpointToCorrectJson() throws IOException, CryptoException {
             final Endpoint endpoint = Endpoint.of(URI.create("wss://example.com"), CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb"));
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(endpoint))

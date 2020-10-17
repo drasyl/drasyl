@@ -23,7 +23,6 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.identity.IdentityManager;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.connection.handler.ThreeWayHandshakeServerHandler;
@@ -38,6 +37,8 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
+import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
+import static org.drasyl.peer.connection.handler.ThreeWayHandshakeClientHandler.ATTRIBUTE_PUBLIC_KEY;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_IDENTITY_COLLISION;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_NOT_A_SUPER_PEER;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_OTHER_NETWORK;
@@ -81,8 +82,7 @@ public class ServerConnectionHandler extends ThreeWayHandshakeServerHandler<Join
     protected ConnectionExceptionMessage.Error validateSessionRequest(final JoinMessage requestMessage) {
         final CompressedPublicKey clientPublicKey = requestMessage.getPublicKey();
 
-        if (!requestMessage.getProofOfWork().isValid(requestMessage.getPublicKey(),
-                IdentityManager.POW_DIFFICULTY)) {
+        if (!requestMessage.getProofOfWork().isValid(requestMessage.getPublicKey(), POW_DIFFICULTY)) {
             return CONNECTION_ERROR_PROOF_OF_WORK_INVALID;
         }
         else if (requestMessage.isChildrenJoin() && environment.getConfig().isSuperPeerEnabled()) {
@@ -102,7 +102,7 @@ public class ServerConnectionHandler extends ThreeWayHandshakeServerHandler<Join
     @Override
     protected WelcomeMessage offerSession(final ChannelHandlerContext ctx,
                                           final JoinMessage requestMessage) {
-        return new WelcomeMessage(PeerInformation.of(environment.getEndpoints()), requestMessage.getId());
+        return new WelcomeMessage(environment.getConfig().getNetworkId(), environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), PeerInformation.of(environment.getEndpoints()), requestMessage.getId());
     }
 
     @Override
@@ -112,6 +112,8 @@ public class ServerConnectionHandler extends ThreeWayHandshakeServerHandler<Join
         final Channel channel = ctx.channel();
         final PeerInformation clientInformation = PeerInformation.of();
         final Path path = msg -> FutureUtil.toFuture(ctx.writeAndFlush(msg));
+
+        ctx.channel().attr(ATTRIBUTE_PUBLIC_KEY).set(clientPublicKey);
 
         environment.getChannelGroup().add(clientPublicKey, channel);
 

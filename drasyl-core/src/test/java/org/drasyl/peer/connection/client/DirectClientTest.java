@@ -79,7 +79,7 @@ class DirectClientTest {
         @Test
         void shouldConnectIfClientIsNotAlreadyOpen() throws ClientException {
             when(bootstrapSupplier.apply(any())).thenReturn(bootstrap);
-            when(endpointsSupplier.get()).thenReturn(Set.of(Endpoint.of("ws://localhost")));
+            when(endpointsSupplier.get()).thenReturn(Set.of(Endpoint.of("ws://localhost#030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb")));
 
             try (final DirectClient client = new DirectClient(retryDelays, workerGroup, endpointsSupplier, new AtomicBoolean(), () -> false, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, channel, directConnectionDemand, onFailure)) {
                 client.open();

@@ -28,6 +28,7 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.Objects;
 
+import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.UriUtil.overrideFragment;
 import static org.drasyl.util.UriUtil.removeFragment;
 import static org.drasyl.util.WebSocketUtil.isWebSocketSecureURI;
@@ -48,15 +49,15 @@ public class Endpoint implements Comparable<Endpoint> {
      * Creates a new {@code Endpoint}.
      *
      * @param uri a drasyl node endpoint represented as {@code URI}
-     * @throws NullPointerException     if {@code uri} is {@code null}
+     * @throws NullPointerException     if {@code uri} or {@code publicKey} is {@code null}
      * @throws IllegalArgumentException if {@code uri} is an invalid {@code Endpoint}
      */
     Endpoint(final URI uri, final CompressedPublicKey publicKey) {
         if (!isWebSocketURI(uri)) {
             throw new IllegalArgumentException("URI must use the WebSocket (Secure) protocol.");
         }
-        this.uri = uri;
-        this.publicKey = publicKey;
+        this.uri = requireNonNull(uri);
+        this.publicKey = requireNonNull(publicKey);
     }
 
     /**
@@ -71,8 +72,7 @@ public class Endpoint implements Comparable<Endpoint> {
     /**
      * Returns the {@link CompressedPublicKey} of this {@code Endpoint}.
      *
-     * @return a {@link CompressedPublicKey} if this {@code Endpoint} contains a public key.
-     * Otherwise {@code null}
+     * @return a {@link CompressedPublicKey}
      */
     public CompressedPublicKey getPublicKey() {
         return publicKey;
@@ -197,7 +197,7 @@ public class Endpoint implements Comparable<Endpoint> {
             }
         }
         else {
-            return new Endpoint(endpoint, null);
+            throw new IllegalArgumentException("Public key must be specified as URI fragment.");
         }
     }
 

@@ -193,7 +193,7 @@ class DrasylConfigTest {
         messageMaxContentLength = 1024;
         messageHopLimit = 64;
         superPeerEnabled = true;
-        superPeerEndpoints = Set.of(Endpoint.of("ws://foo.bar:123"), Endpoint.of("wss://example.com"));
+        superPeerEndpoints = Set.of(Endpoint.of("ws://foo.bar:123#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"), Endpoint.of("wss://example.com#033de3da699f6f9ffbd427c56725910655ba3913be4ff55b13c628e957c860fd55"));
         superPeerChannelInitializer = DefaultClientChannelInitializer.class;
         superPeerIdleRetries = 3;
         superPeerHandshakeTimeout = ofSeconds(30);
@@ -252,7 +252,7 @@ class DrasylConfigTest {
             when(typesafeConfig.getStringList(SERVER_ENDPOINTS)).thenReturn(List.of());
             when(typesafeConfig.getBoolean(SERVER_EXPOSE_ENABLED)).thenReturn(serverExposeEnabled);
             when(typesafeConfig.getBoolean(SUPER_PEER_ENABLED)).thenReturn(superPeerEnabled);
-            when(typesafeConfig.getStringList(SUPER_PEER_ENDPOINTS)).thenReturn(List.of("ws://foo.bar:123", "wss://example.com"));
+            when(typesafeConfig.getStringList(SUPER_PEER_ENDPOINTS)).thenReturn(List.of("ws://foo.bar:123#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22", "wss://example.com#033de3da699f6f9ffbd427c56725910655ba3913be4ff55b13c628e957c860fd55"));
             when(typesafeConfig.getDurationList(SUPER_PEER_RETRY_DELAYS)).thenReturn(superPeerRetryDelays);
             when(typesafeConfig.getDuration(SUPER_PEER_HANDSHAKE_TIMEOUT)).thenReturn(superPeerHandshakeTimeout);
             when(typesafeConfig.getString(SUPER_PEER_CHANNEL_INITIALIZER)).thenReturn(superPeerChannelInitializer.getCanonicalName());

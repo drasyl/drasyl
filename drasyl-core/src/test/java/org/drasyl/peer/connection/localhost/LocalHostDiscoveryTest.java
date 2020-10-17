@@ -19,7 +19,6 @@
 
 package org.drasyl.peer.connection.localhost;
 
-import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.crypto.CryptoException;
@@ -98,6 +97,7 @@ class LocalHostDiscoveryTest {
         }
 
         @Test
+        @SuppressWarnings("all")
         void shouldCreateDiscoveryDirectory() {
             when(discoveryPath.toFile().exists()).thenReturn(false);
 
@@ -151,7 +151,7 @@ class LocalHostDiscoveryTest {
                 return null;
             });
 
-            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, Set.of(Endpoint.of("ws://localhost:123")), opened, doScan, scheduler, watchDisposable, postDisposable, pipeline);
+            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, Set.of(Endpoint.of("ws://localhost:123#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")), opened, doScan, scheduler, watchDisposable, postDisposable, pipeline);
             underTest.open();
 
             verify(discoveryPath.getFileSystem().newWatchService()).poll();
@@ -190,12 +190,12 @@ class LocalHostDiscoveryTest {
         void shouldScanDirectory(@TempDir final Path dir) throws IOException, CryptoException {
             when(discoveryPath.toFile()).thenReturn(dir.toFile());
             final Path path = Paths.get(dir.toString(), "03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a.json");
-            Files.writeString(path, "{\"endpoints\":[\"ws://localhost:123\"]}", StandardOpenOption.CREATE);
+            Files.writeString(path, "{\"endpoints\":[\"ws://localhost:123#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22\"]}", StandardOpenOption.CREATE);
 
-            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, Set.of(Endpoint.of("ws://localhost:123")), new AtomicBoolean(true), new AtomicBoolean(true), scheduler, watchDisposable, postDisposable, pipeline);
+            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, Set.of(Endpoint.of("ws://localhost:123#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")), new AtomicBoolean(true), new AtomicBoolean(true), scheduler, watchDisposable, postDisposable, pipeline);
             underTest.scan();
 
-            verify(peersManager).setPeerInformation(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"), PeerInformation.of(Set.of(Endpoint.of("ws://localhost:123"))));
+            verify(peersManager).setPeerInformation(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"), PeerInformation.of(Set.of(Endpoint.of("ws://localhost:123#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))));
         }
     }
 }

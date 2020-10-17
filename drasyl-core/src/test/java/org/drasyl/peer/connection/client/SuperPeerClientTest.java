@@ -78,7 +78,7 @@ class SuperPeerClientTest {
         @Test
         void shouldConnectIfClientIsNotAlreadyOpen() throws ClientException {
             when(bootstrapSupplier.apply(any())).thenReturn(bootstrap);
-            endpoints = Set.of(Endpoint.of("ws://localhost"));
+            endpoints = Set.of(Endpoint.of("ws://localhost#033de3da699f6f9ffbd427c56725910655ba3913be4ff55b13c628e957c860fd55"));
 
             try (final SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, new AtomicBoolean(false), () -> false, nextEndpointPointer, nextRetryDelayPointer, bootstrapSupplier, channel)) {
                 client.open();
@@ -125,13 +125,13 @@ class SuperPeerClientTest {
         @Test
         void shouldReturnCorrectEndpoint() {
             endpoints = new TreeSet<>();
-            endpoints.add(Endpoint.of("ws://node1.org"));
-            endpoints.add(Endpoint.of("ws://node2.org"));
+            endpoints.add(Endpoint.of("ws://node1.org#030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb"));
+            endpoints.add(Endpoint.of("ws://node2.org#033de3da699f6f9ffbd427c56725910655ba3913be4ff55b13c628e957c860fd55"));
 
             try (final SuperPeerClient client = new SuperPeerClient(config, workerGroup, endpoints, opened, () -> false, new AtomicInteger(0), nextRetryDelayPointer, bootstrapSupplier, channel)) {
-                assertEquals(Endpoint.of("ws://node1.org"), client.nextEndpoint());
-                assertEquals(Endpoint.of("ws://node2.org"), client.nextEndpoint());
-                assertEquals(Endpoint.of("ws://node1.org"), client.nextEndpoint());
+                assertEquals(Endpoint.of("ws://node1.org#030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb"), client.nextEndpoint());
+                assertEquals(Endpoint.of("ws://node2.org#033de3da699f6f9ffbd427c56725910655ba3913be4ff55b13c628e957c860fd55"), client.nextEndpoint());
+                assertEquals(Endpoint.of("ws://node1.org#030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb"), client.nextEndpoint());
             }
         }
     }

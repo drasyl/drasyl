@@ -19,6 +19,9 @@
 package org.drasyl.peer.connection.message;
 
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
+import org.drasyl.crypto.CryptoException;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeerInformation;
 import org.junit.jupiter.api.Nested;
@@ -38,17 +41,21 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
 class WelcomeMessageTest {
-    private final MessageId correspondingId = MessageId.of("412176952b5b81fd13f84a7c");
+    @Mock
+    private CompressedPublicKey publicKey;
+    @Mock
+    private ProofOfWork proofOfWork;
     @Mock
     private PeerInformation peerInformation;
+    private final MessageId correspondingId = MessageId.of("412176952b5b81fd13f84a7c");
 
     @Nested
     class JsonDeserialization {
         @Test
-        void shouldDeserializeToCorrectObject() throws IOException {
-            final String json = "{\"@type\":\"WelcomeMessage\",\"id\":\"c78fe75d4c93bc07e916e539\",\"userAgent\":\"\",\"peerInformation\":{\"endpoints\":[\"ws://test\"]},\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
+        void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
+            final String json = "{\"@type\":\"WelcomeMessage\",\"id\":\"c78fe75d4c93bc07e916e539\",\"userAgent\":\"\",\"networkId\":1337,\"publicKey\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\",\"proofOfWork\":3556154,\"peerInformation\":{\"endpoints\":[\"ws://test#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22\"]},\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
 
-            assertEquals(new WelcomeMessage(PeerInformation.of(Set.of(Endpoint.of("ws://test"))), MessageId.of("412176952b5b81fd13f84a7c")), JACKSON_READER.readValue(json, Message.class));
+            assertEquals(new WelcomeMessage(1337, CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"), ProofOfWork.of(3556154), PeerInformation.of(Set.of(Endpoint.of("ws://test#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))), MessageId.of("412176952b5b81fd13f84a7c")), JACKSON_READER.readValue(json, Message.class));
         }
 
         @Test
@@ -63,12 +70,12 @@ class WelcomeMessageTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException {
-            final WelcomeMessage message = new WelcomeMessage(PeerInformation.of(), correspondingId);
+            final WelcomeMessage message = new WelcomeMessage(1337, publicKey, proofOfWork, PeerInformation.of(), correspondingId);
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", WelcomeMessage.class.getSimpleName())
-                    .containsKeys("id", "userAgent", "peerInformation", "correspondingId");
+                    .containsKeys("id", "userAgent", "networkId", "publicKey", "proofOfWork", "peerInformation", "correspondingId");
         }
     }
 
@@ -76,8 +83,8 @@ class WelcomeMessageTest {
     class Equals {
         @Test
         void shouldReturnTrue() {
-            final WelcomeMessage message1 = new WelcomeMessage(peerInformation, correspondingId);
-            final WelcomeMessage message2 = new WelcomeMessage(peerInformation, correspondingId);
+            final WelcomeMessage message1 = new WelcomeMessage(1337, publicKey, proofOfWork, peerInformation, correspondingId);
+            final WelcomeMessage message2 = new WelcomeMessage(1337, publicKey, proofOfWork, peerInformation, correspondingId);
 
             assertEquals(message1, message2);
         }
@@ -87,8 +94,8 @@ class WelcomeMessageTest {
     class HashCode {
         @Test
         void shouldReturnTrue() {
-            final WelcomeMessage message1 = new WelcomeMessage(peerInformation, correspondingId);
-            final WelcomeMessage message2 = new WelcomeMessage(peerInformation, correspondingId);
+            final WelcomeMessage message1 = new WelcomeMessage(1337, publicKey, proofOfWork, peerInformation, correspondingId);
+            final WelcomeMessage message2 = new WelcomeMessage(1337, publicKey, proofOfWork, peerInformation, correspondingId);
 
             assertEquals(message1.hashCode(), message2.hashCode());
         }

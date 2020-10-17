@@ -19,7 +19,9 @@
 package org.drasyl.peer.connection.handler;
 
 import io.netty.channel.ChannelHandlerContext;
+import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.ScheduledFuture;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
@@ -39,6 +41,7 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
  */
 @SuppressWarnings({ "java:S110" })
 public abstract class ThreeWayHandshakeClientHandler<R extends RequestMessage, O extends ResponseMessage<?>> extends AbstractThreeWayHandshakeHandler {
+    public static final AttributeKey<CompressedPublicKey> ATTRIBUTE_PUBLIC_KEY = AttributeKey.valueOf("publicKey");
     private final R requestMessage;
 
     protected ThreeWayHandshakeClientHandler(final Duration timeout,
