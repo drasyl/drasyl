@@ -42,7 +42,7 @@ services:
       CONFIG_FORCE_drasyl_identity_proof__of__work: $DRASYL_PROOF_OF_WORK
       CONFIG_FORCE_drasyl_identity_public__key: $DRASYL_PUBLIC_KEY
       CONFIG_FORCE_drasyl_identity_private__key: $DRASYL_PRIVATE_KEY
-      CONFIG_FORCE_drasyl_server_endpoints_0: wss://${APP_DEPLOY_HOST}
+      CONFIG_FORCE_drasyl_server_endpoints_0: wss://${APP_DEPLOY_HOST}#${DRASYL_PUBLIC_KEY}
       CONFIG_FORCE_drasyl_server_expose_enabled: "false"
       CONFIG_FORCE_drasyl_super__peer_enabled: "false"
       CONFIG_FORCE_drasyl_monitoring_enabled: "true"

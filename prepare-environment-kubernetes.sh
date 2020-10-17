@@ -67,7 +67,7 @@ spec:
         - name: CONFIG_FORCE_drasyl_identity_private__key
           value: "$DRASYL_PRIVATE_KEY"
         - name: CONFIG_FORCE_drasyl_server_endpoints_0
-          value: "wss://$host"
+          value: "wss://${host}#${DRASYL_PUBLIC_KEY}"
         - name: CONFIG_FORCE_drasyl_server_expose_enabled
           value: "false"
         - name: CONFIG_FORCE_drasyl_super__peer_enabled
