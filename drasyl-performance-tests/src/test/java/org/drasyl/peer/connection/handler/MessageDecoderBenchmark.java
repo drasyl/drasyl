@@ -59,7 +59,7 @@ public class MessageDecoderBenchmark {
     }
 
     @Benchmark
-    public void decode() {
+    public void decode() throws MessageDecoderException {
         MessageDecoder.INSTANCE.decode(ctx, new BinaryWebSocketFrame(Unpooled.wrappedBuffer(msg)), new ArrayList<>());
     }
 }

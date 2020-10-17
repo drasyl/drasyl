@@ -57,7 +57,7 @@ public class MessageEncoderBenchmark {
     }
 
     @Benchmark
-    public void encode() {
+    public void encode() throws MessageDecoderException {
         final ArrayList<Object> out = new ArrayList<>();
         MessageEncoder.INSTANCE.encode(ctx, msg, out);
         ((BinaryWebSocketFrame) out.get(0)).release();
