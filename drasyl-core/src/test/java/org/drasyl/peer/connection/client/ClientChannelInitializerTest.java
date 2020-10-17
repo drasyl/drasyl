@@ -51,7 +51,7 @@ class ClientChannelInitializerTest {
         flushBufferSize = FlushConsolidationHandler.DEFAULT_EXPLICIT_FLUSH_AFTER_FLUSHES;
         readIdleTimeout = Duration.ofSeconds(2);
         pingPongRetries = 3;
-        endpoint = Endpoint.of("ws://localhost:22527/");
+        endpoint = Endpoint.of("ws://localhost:22527/#030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb");
     }
 
     @Test

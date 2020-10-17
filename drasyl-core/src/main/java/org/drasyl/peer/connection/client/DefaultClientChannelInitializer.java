@@ -28,7 +28,6 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.handler.stream.ChunkedWriteHandler;
-import org.drasyl.peer.connection.client.PublicKeyExchangeHandler.PublicKeyExchangeState;
 import org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.RelayableMessageGuard;
@@ -42,8 +41,6 @@ import javax.net.ssl.SSLException;
 import static io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler.ClientHandshakeStateEvent.HANDSHAKE_COMPLETE;
 import static io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler.ClientHandshakeStateEvent.HANDSHAKE_TIMEOUT;
 import static org.drasyl.peer.connection.client.ClientConnectionHandler.CLIENT_CONNECTION_HANDLER;
-import static org.drasyl.peer.connection.client.PublicKeyExchangeHandler.PUBLIC_KEY_EXCHANGE_HANDLER;
-import static org.drasyl.peer.connection.client.PublicKeyExchangeHandler.PublicKeyExchangeState.KEY_AVAILABLE;
 import static org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler.EXCEPTION_MESSAGE_HANDLER;
 import static org.drasyl.peer.connection.handler.ExceptionHandler.EXCEPTION_HANDLER;
 import static org.drasyl.peer.connection.handler.RelayableMessageGuard.HOP_COUNT_GUARD;
@@ -115,34 +112,18 @@ public class DefaultClientChannelInitializer extends ClientChannelInitializer {
             if (evt instanceof ClientHandshakeStateEvent) {
                 handleClientHandshakeStateEvent(ctx, (ClientHandshakeStateEvent) evt);
             }
-            else if (evt instanceof PublicKeyExchangeState) {
-                handlePublicKeyExchangeStateEvent(ctx, (PublicKeyExchangeState) evt);
-            }
-        }
-
-        private void handlePublicKeyExchangeStateEvent(final ChannelHandlerContext ctx,
-                                                       final PublicKeyExchangeState e) {
-            if (e == KEY_AVAILABLE) {
-                if (LOG.isTraceEnabled()) {
-                    LOG.trace("[{}]: Public key available. Now adding {}.", ctx.channel().id().asShortText(), ClientConnectionHandler.class.getSimpleName());
-                }
-
-                // Must be added before the exception handler otherwise exceptions are not captured anymore and raising an error
-                // See: https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/77
-                pipeline.addBefore(EXCEPTION_HANDLER, CLIENT_CONNECTION_HANDLER, new ClientConnectionHandler(environment));
-                pipeline.remove(this);
-            }
         }
 
         private void handleClientHandshakeStateEvent(final ChannelHandlerContext ctx,
                                                      final ClientHandshakeStateEvent e) {
             if (e == HANDSHAKE_COMPLETE) {
                 if (LOG.isTraceEnabled()) {
-                    LOG.trace("[{}]: WebSocket Handshake completed. Now adding {}.", ctx.channel().id().asShortText(), PublicKeyExchangeHandler.class.getSimpleName());
+                    LOG.trace("[{}]: Public key available. Now adding {}.", ctx.channel().id().asShortText(), ClientConnectionHandler.class.getSimpleName());
                 }
                 // Must be added before the exception handler otherwise exceptions are not captured anymore and raising an error
                 // See: https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/77
-                pipeline.addBefore(EXCEPTION_HANDLER, PUBLIC_KEY_EXCHANGE_HANDLER, new PublicKeyExchangeHandler(environment.getEndpoint().getPublicKey(), environment.getConfig().getServerHandshakeTimeout()));
+                pipeline.addBefore(EXCEPTION_HANDLER, CLIENT_CONNECTION_HANDLER, new ClientConnectionHandler(environment));
+                pipeline.remove(this);
             }
             else if (e == HANDSHAKE_TIMEOUT) {
                 if (LOG.isTraceEnabled()) {

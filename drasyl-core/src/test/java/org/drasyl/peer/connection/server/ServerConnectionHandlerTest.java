@@ -40,14 +40,12 @@ import org.drasyl.pipeline.Pipeline;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.CompletableFuture;
 
 import static java.time.Duration.ofMillis;
-import static org.drasyl.peer.connection.PeerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_HANDSHAKE_TIMEOUT;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_IDENTITY_COLLISION;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_NOT_A_SUPER_PEER;
@@ -57,6 +55,7 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.anyShort;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.any;
@@ -75,7 +74,7 @@ class ServerConnectionHandlerTest {
     private Throwable cause;
     @Mock
     private ApplicationMessage applicationMessage;
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private JoinMessage joinMessage;
     @Mock
     private Pipeline pipeline;
@@ -99,7 +98,7 @@ class ServerConnectionHandlerTest {
     private StatusMessage statusMessage;
     @Mock
     private WelcomeMessage offerMessage;
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private ServerEnvironment environment;
 
     @Test
@@ -202,7 +201,6 @@ class ServerConnectionHandlerTest {
 
             final ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), pipeline, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
-            channel.attr(ATTRIBUTE_PUBLIC_KEY).set(publicKey0);
 
             channel.writeInbound(statusMessage);
             channel.flush();
@@ -246,7 +244,6 @@ class ServerConnectionHandlerTest {
 
             final ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), pipeline, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
-            channel.attr(ATTRIBUTE_PUBLIC_KEY).set(publicKey0);
 
             channel.writeInbound(statusMessage);
             channel.flush();

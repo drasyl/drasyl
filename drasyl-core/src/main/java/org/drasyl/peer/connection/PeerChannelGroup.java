@@ -23,7 +23,6 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelId;
 import io.netty.channel.group.ChannelGroup;
 import io.netty.channel.group.DefaultChannelGroup;
-import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GlobalEventExecutor;
@@ -34,6 +33,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.peer.connection.handler.ThreeWayHandshakeClientHandler.ATTRIBUTE_PUBLIC_KEY;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_NEW_SESSION;
 
 /**
@@ -41,7 +41,6 @@ import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_
  * lookups by {@link CompressedPublicKey}.
  */
 public class PeerChannelGroup extends DefaultChannelGroup {
-    public static final AttributeKey<CompressedPublicKey> ATTRIBUTE_PUBLIC_KEY = AttributeKey.valueOf("publicKey");
     private final Map<CompressedPublicKey, ChannelId> identity2channelId;
     private final EventExecutor executor;
     private final ChannelFutureListener remover = future -> remove(future.channel());

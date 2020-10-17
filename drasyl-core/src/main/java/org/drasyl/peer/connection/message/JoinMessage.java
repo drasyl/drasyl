@@ -33,58 +33,56 @@ import static java.util.Objects.requireNonNull;
  * This is an immutable object.
  */
 public class JoinMessage extends AbstractMessageWithUserAgent implements RequestMessage {
+    private final int networkId;
     private final ProofOfWork proofOfWork;
     private final CompressedPublicKey publicKey;
     private final boolean childrenJoin;
-    private final int networkId;
 
     @JsonCreator
     private JoinMessage(@JsonProperty("id") final MessageId id,
                         @JsonProperty("userAgent") final String userAgent,
+                        @JsonProperty("networkId") final int networkId,
                         @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                         @JsonProperty("publicKey") final CompressedPublicKey publicKey,
-                        @JsonProperty("childrenJoin") final boolean childrenJoin,
-                        @JsonProperty("networkId") final int networkId) {
+                        @JsonProperty("childrenJoin") final boolean childrenJoin) {
         super(id, userAgent);
+        this.networkId = networkId;
         this.proofOfWork = requireNonNull(proofOfWork);
         this.publicKey = requireNonNull(publicKey);
         this.childrenJoin = childrenJoin;
-        this.networkId = networkId;
     }
 
     /**
      * Creates a new join message.
      *
+     * @param networkId   the network of the joining node
      * @param proofOfWork the proof of work
      * @param publicKey   the identity of the joining node
-     * @param networkId   the network of the joining node
      */
-    public JoinMessage(final ProofOfWork proofOfWork,
-                       final CompressedPublicKey publicKey,
-                       final int networkId) {
-        this(proofOfWork, publicKey, true, networkId);
+    public JoinMessage(final int networkId, final ProofOfWork proofOfWork,
+                       final CompressedPublicKey publicKey) {
+        this(networkId, proofOfWork, publicKey, true);
     }
 
     /**
      * Creates a new join message.
      *
+     * @param networkId    the network of the joining node
      * @param proofOfWork  the proof of work
      * @param publicKey    the identity of the joining node
      * @param childrenJoin join peer as children
-     * @param networkId    the network of the joining node
      */
-    public JoinMessage(final ProofOfWork proofOfWork,
+    public JoinMessage(final int networkId, final ProofOfWork proofOfWork,
                        final CompressedPublicKey publicKey,
-                       final boolean childrenJoin,
-                       final int networkId) {
+                       final boolean childrenJoin) {
         this.proofOfWork = requireNonNull(proofOfWork);
         this.publicKey = requireNonNull(publicKey);
         this.childrenJoin = childrenJoin;
         this.networkId = networkId;
     }
 
-    public boolean isChildrenJoin() {
-        return childrenJoin;
+    public int getNetworkId() {
+        return this.networkId;
     }
 
     public CompressedPublicKey getPublicKey() {
@@ -95,13 +93,13 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
         return this.proofOfWork;
     }
 
-    public int getNetworkId() {
-        return this.networkId;
+    public boolean isChildrenJoin() {
+        return childrenJoin;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), proofOfWork, publicKey, childrenJoin, networkId);
+        return Objects.hash(super.hashCode(), networkId, publicKey, proofOfWork, childrenJoin);
     }
 
     @Override
@@ -116,19 +114,19 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
             return false;
         }
         final JoinMessage that = (JoinMessage) o;
-        return childrenJoin == that.childrenJoin &&
-                Objects.equals(proofOfWork, that.proofOfWork) &&
+        return networkId == that.networkId &&
                 Objects.equals(publicKey, that.publicKey) &&
-                networkId == that.networkId;
+                Objects.equals(proofOfWork, that.proofOfWork) &&
+                childrenJoin == that.childrenJoin;
     }
 
     @Override
     public String toString() {
         return "JoinMessage{" +
-                "proofOfWork=" + proofOfWork +
+                "networkId=" + networkId +
                 ", publicKey=" + publicKey +
+                ", proofOfWork=" + proofOfWork +
                 ", childrenJoin=" + childrenJoin +
-                ", networkId=" + networkId +
                 ", id=" + id +
                 '}';
     }

@@ -147,7 +147,7 @@ class ServerIT {
                 .serverExposeEnabled(false)
                 .serverBindHost(createInetAddress("127.0.0.1"))
                 .serverBindPort(0)
-                .serverEndpoints(Set.of(Endpoint.of("wss://127.0.0.1:0")))
+                .serverEndpoints(Set.of(Endpoint.of("wss://127.0.0.1:0#023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff")))
                 .serverHandshakeTimeout(ofSeconds(5))
                 .serverSSLEnabled(true)
                 .serverIdleTimeout(ofSeconds(1))
@@ -212,7 +212,7 @@ class ServerIT {
         try (final TestSuperPeerClient session = clientSession(configClient1, server, identitySession1)) {
 
             // send message
-            final RequestMessage request = new JoinMessage(session.getIdentity().getProofOfWork(), session.getIdentity().getPublicKey(), networkId);
+            final RequestMessage request = new JoinMessage(networkId, session.getIdentity().getProofOfWork(), session.getIdentity().getPublicKey());
             final CompletableFuture<ResponseMessage<?>> send = session.sendRequest(request);
 
             // verify response
@@ -271,10 +271,10 @@ class ServerIT {
             try (final TestSuperPeerClient session2 = clientSession(configClient2, server, identitySession2)) {
 
                 // send messages
-                final RequestMessage request1 = new JoinMessage(session1.getIdentity().getProofOfWork(), session1.getIdentity().getPublicKey(), networkId);
+                final RequestMessage request1 = new JoinMessage(networkId, session1.getIdentity().getProofOfWork(), session1.getIdentity().getPublicKey());
                 final CompletableFuture<ResponseMessage<?>> send1 = session1.sendRequest(request1);
 
-                final RequestMessage request2 = new JoinMessage(session2.getIdentity().getProofOfWork(), session2.getIdentity().getPublicKey(), networkId);
+                final RequestMessage request2 = new JoinMessage(networkId, session2.getIdentity().getProofOfWork(), session2.getIdentity().getPublicKey());
                 final CompletableFuture<ResponseMessage<?>> send2 = session2.sendRequest(request2);
 
                 // verify responses
@@ -326,12 +326,12 @@ class ServerIT {
                 final TestObserver<Message> receivedMessages2 = session2.receivedMessages().test();
 
                 // send messages
-                final RequestMessage request1 = new JoinMessage(session1.getIdentity().getProofOfWork(), session1.getIdentity().getPublicKey(), networkId);
+                final RequestMessage request1 = new JoinMessage(networkId, session1.getIdentity().getProofOfWork(), session1.getIdentity().getPublicKey());
                 final ResponseMessage<?> response1 = session1.sendRequest(request1).get();
                 session1.send(new StatusMessage(STATUS_OK, response1.getId()));
                 await().until(() -> channelGroup.find(session1.getIdentity().getPublicKey()) != null);
 
-                final RequestMessage request2 = new JoinMessage(session1.getIdentity().getProofOfWork(), session1.getIdentity().getPublicKey(), networkId);
+                final RequestMessage request2 = new JoinMessage(networkId, session1.getIdentity().getProofOfWork(), session1.getIdentity().getPublicKey());
                 final ResponseMessage<?> response2 = session2.sendRequest(request2).join();
                 session2.send(new StatusMessage(STATUS_OK, response2.getId()));
 
@@ -532,7 +532,8 @@ class ServerIT {
                 .networkId(0)
                 .serverBindPort(72722)
                 .build();
-        assertThrows(IllegalArgumentException.class, () -> new Server(serverIdentityManager.getIdentity(), pipeline, peersManager, config, channelGroup, workerGroup, bossGroup, endpoints, acceptNewConnections::get));
+        final Identity identity = serverIdentityManager.getIdentity();
+        assertThrows(IllegalArgumentException.class, () -> new Server(identity, pipeline, peersManager, config, channelGroup, workerGroup, bossGroup, endpoints, acceptNewConnections::get));
     }
 
     @Test
@@ -542,7 +543,7 @@ class ServerIT {
             acceptNewConnections.set(false);
 
             // send message
-            final RequestMessage request = new JoinMessage(session.getIdentity().getProofOfWork(), session.getIdentity().getPublicKey(), networkId);
+            final RequestMessage request = new JoinMessage(networkId, session.getIdentity().getProofOfWork(), session.getIdentity().getPublicKey());
             final CompletableFuture<ResponseMessage<?>> send = session.sendRequest(request);
 
             // verify response
@@ -581,7 +582,7 @@ class ServerIT {
             final TestObserver<Message> receivedMessages = session.receivedMessages().filter(msg -> msg instanceof ConnectionExceptionMessage).test();
 
             // send messages
-            final RequestMessage request1 = new JoinMessage(identitySession2.getProofOfWork(), session.getIdentity().getPublicKey(), networkId);
+            final RequestMessage request1 = new JoinMessage(networkId, identitySession2.getProofOfWork(), session.getIdentity().getPublicKey());
             session.sendRequest(request1);
 
             // verify response

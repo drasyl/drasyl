@@ -21,6 +21,8 @@ package org.drasyl.peer.connection.message;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeerInformation;
 
 import java.util.Objects;
@@ -33,6 +35,9 @@ import static java.util.Objects.requireNonNull;
  * This is an immutable object.
  */
 public class WelcomeMessage extends AbstractMessageWithUserAgent implements ResponseMessage<JoinMessage> {
+    private final int networkId;
+    private final CompressedPublicKey publicKey;
+    private final ProofOfWork proofOfWork;
     private final PeerInformation peerInformation;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final MessageId correspondingId;
@@ -40,9 +45,15 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
     @JsonCreator
     private WelcomeMessage(@JsonProperty("id") final MessageId id,
                            @JsonProperty("userAgent") final String userAgent,
+                           @JsonProperty("networkId") final int networkId,
+                           @JsonProperty("publicKey") final CompressedPublicKey publicKey,
+                           @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                            @JsonProperty("peerInformation") final PeerInformation peerInformation,
                            @JsonProperty("correspondingId") final MessageId correspondingId) {
         super(id, userAgent);
+        this.networkId = networkId;
+        this.publicKey = requireNonNull(publicKey);
+        this.proofOfWork = requireNonNull(proofOfWork);
         this.peerInformation = requireNonNull(peerInformation);
         this.correspondingId = requireNonNull(correspondingId);
     }
@@ -50,13 +61,34 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
     /**
      * Creates new welcome message.
      *
+     * @param networkId       the network id of the node server
+     * @param publicKey       the public key of the node server
+     * @param proofOfWork     the proof of work of the node server
      * @param peerInformation the peer information of the node server
      * @param correspondingId the corresponding id of the previous join message
      */
-    public WelcomeMessage(final PeerInformation peerInformation,
+    public WelcomeMessage(final int networkId,
+                          final CompressedPublicKey publicKey,
+                          final ProofOfWork proofOfWork,
+                          final PeerInformation peerInformation,
                           final MessageId correspondingId) {
+        this.networkId = networkId;
+        this.publicKey = requireNonNull(publicKey);
+        this.proofOfWork = requireNonNull(proofOfWork);
         this.peerInformation = requireNonNull(peerInformation);
         this.correspondingId = requireNonNull(correspondingId);
+    }
+
+    public int getNetworkId() {
+        return networkId;
+    }
+
+    public CompressedPublicKey getPublicKey() {
+        return publicKey;
+    }
+
+    public ProofOfWork getProofOfWork() {
+        return proofOfWork;
     }
 
     public PeerInformation getPeerInformation() {
@@ -70,7 +102,7 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), peerInformation, correspondingId);
+        return Objects.hash(super.hashCode(), networkId, publicKey, proofOfWork, peerInformation, correspondingId);
     }
 
     @Override
@@ -85,16 +117,22 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
             return false;
         }
         final WelcomeMessage that = (WelcomeMessage) o;
-        return Objects.equals(peerInformation, that.peerInformation) &&
+        return networkId == that.networkId &&
+                Objects.equals(publicKey, that.publicKey) &&
+                Objects.equals(proofOfWork, that.proofOfWork) &&
+                Objects.equals(peerInformation, that.peerInformation) &&
                 Objects.equals(correspondingId, that.correspondingId);
     }
 
     @Override
     public String toString() {
         return "WelcomeMessage{" +
-                "peerInformation=" + peerInformation +
-                ", correspondingId='" + correspondingId + '\'' +
-                ", id='" + id +
+                "networkId=" + networkId +
+                ", publicKey=" + publicKey +
+                ", proofOfWork=" + proofOfWork +
+                ", peerInformation=" + peerInformation +
+                ", correspondingId=" + correspondingId +
+                ", id=" + id +
                 '}';
     }
 }

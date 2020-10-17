@@ -23,6 +23,8 @@ import io.netty.channel.Channel;
 import io.netty.channel.EventLoopGroup;
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
+import org.drasyl.crypto.CryptoException;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.util.NetworkUtil;
@@ -77,7 +79,7 @@ class ServerTest {
         @Test
         void shouldSetOpenToTrue() throws ServerException {
             when(config.getServerBindHost()).thenReturn(createInetAddress("0.0.0.0"));
-            when(config.getServerEndpoints()).thenReturn(Set.of(Endpoint.of("ws://localhost:22527/")));
+            when(config.getServerEndpoints()).thenReturn(Set.of(Endpoint.of("ws://localhost:22527/#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")));
             when(serverBootstrap.bind().isSuccess()).thenReturn(true);
             when(serverBootstrap.bind().channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
@@ -106,7 +108,7 @@ class ServerTest {
         void shouldExposeServerWhenExposingIsEnabled() throws ServerException {
             when(config.isServerExposeEnabled()).thenReturn(true);
             when(config.getServerBindHost()).thenReturn(createInetAddress("0.0.0.0"));
-            when(config.getServerEndpoints()).thenReturn(Set.of(Endpoint.of("ws://localhost:22527/")));
+            when(config.getServerEndpoints()).thenReturn(Set.of(Endpoint.of("ws://localhost:22527/#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")));
             when(serverBootstrap.bind().isSuccess()).thenReturn(true);
             when(serverBootstrap.bind().channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
@@ -123,7 +125,7 @@ class ServerTest {
         void shouldNotExposeServerWhenExposingIsDisabled() throws ServerException {
             when(config.isServerExposeEnabled()).thenReturn(false);
             when(config.getServerBindHost()).thenReturn(createInetAddress("0.0.0.0"));
-            when(config.getServerEndpoints()).thenReturn(Set.of(Endpoint.of("ws://localhost:22527/")));
+            when(config.getServerEndpoints()).thenReturn(Set.of(Endpoint.of("ws://localhost:22527/#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")));
             when(serverBootstrap.bind().isSuccess()).thenReturn(true);
             when(serverBootstrap.bind().channel().localAddress()).thenReturn(new InetSocketAddress(22527));
 
@@ -159,7 +161,7 @@ class ServerTest {
         @BeforeEach
         void setUp() {
             when(config.getServerBindHost()).thenReturn(createInetAddress("0.0.0.0"));
-            when(config.getServerEndpoints()).thenReturn(Set.of(Endpoint.of("ws://localhost:22527/")));
+            when(config.getServerEndpoints()).thenReturn(Set.of(Endpoint.of("ws://localhost:22527/#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")));
             when(serverBootstrap.bind(createInetAddress("0.0.0.0"), 0).channel().localAddress()).thenReturn(new InetSocketAddress(22527));
             when(scheduler.scheduleDirect(any())).then(invocation -> {
                 final Runnable argument = invocation.getArgument(0, Runnable.class);
@@ -185,22 +187,24 @@ class ServerTest {
     class DetermineActualEndpoints {
         @Test
         void shouldReturnConfigEndpointsIfSpecified() {
-            when(config.getServerEndpoints()).thenReturn(Set.of(Endpoint.of("ws://foo.bar:22527")));
+            when(config.getServerEndpoints()).thenReturn(Set.of(Endpoint.of("ws://foo.bar:22527#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")));
 
             assertEquals(
-                    Set.of(Endpoint.of("ws://foo.bar:22527")),
+                    Set.of(Endpoint.of("ws://foo.bar:22527#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")),
                     determineActualEndpoints(identity, config, new InetSocketAddress(22527))
             );
         }
 
         @Test
-        void shouldReturnEndpointForSpecificAddressesIfServerIsBoundToSpecificInterfaces() {
+        void shouldReturnEndpointForSpecificAddressesIfServerIsBoundToSpecificInterfaces() throws CryptoException {
+            when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"));
+
             final InetAddress firstAddress = NetworkUtil.getAddresses().iterator().next();
             if (firstAddress != null) {
                 when(config.getServerEndpoints().isEmpty()).thenReturn(true);
 
                 assertEquals(
-                        Set.of(Endpoint.of(createUri("ws", firstAddress.getHostAddress(), 22527))),
+                        Set.of(Endpoint.of(createUri("ws", firstAddress.getHostAddress(), 22527), CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))),
                         determineActualEndpoints(identity, config, new InetSocketAddress(firstAddress, 22527))
                 );
             }

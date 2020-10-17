@@ -32,7 +32,6 @@ import org.drasyl.peer.connection.server.Server;
         @JsonSubTypes.Type(value = ConnectionExceptionMessage.class),
         @JsonSubTypes.Type(value = ChunkedMessage.class),
         @JsonSubTypes.Type(value = ExceptionMessage.class),
-        @JsonSubTypes.Type(value = IamMessage.class),
         @JsonSubTypes.Type(value = IdentityMessage.class),
         @JsonSubTypes.Type(value = JoinMessage.class),
         @JsonSubTypes.Type(value = PingMessage.class),
@@ -41,7 +40,6 @@ import org.drasyl.peer.connection.server.Server;
         @JsonSubTypes.Type(value = SignedMessage.class),
         @JsonSubTypes.Type(value = StatusMessage.class),
         @JsonSubTypes.Type(value = WelcomeMessage.class),
-        @JsonSubTypes.Type(value = WhoAreYouMessage.class),
         @JsonSubTypes.Type(value = WhoisMessage.class),
 })
 @JsonIgnoreProperties(ignoreUnknown = true)

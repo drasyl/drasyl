@@ -35,7 +35,10 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
-import static org.drasyl.peer.connection.PeerChannelGroup.ATTRIBUTE_PUBLIC_KEY;
+import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
+import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_IDENTITY_COLLISION;
+import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_OTHER_NETWORK;
+import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_PROOF_OF_WORK_INVALID;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_WRONG_PUBLIC_KEY;
 import static org.drasyl.util.FutureUtil.toFuture;
 
@@ -53,16 +56,15 @@ public class ClientConnectionHandler extends ThreeWayHandshakeClientHandler<Join
     private static final Logger LOG = LoggerFactory.getLogger(ClientConnectionHandler.class);
     private final ClientEnvironment environment;
     private final boolean childrenJoin;
-    private ChannelHandlerContext ctx;
 
     public ClientConnectionHandler(final ClientEnvironment environment) {
         super(
                 environment.getHandshakeTimeout(),
                 environment.getPipeline(),
-                new JoinMessage(environment.getIdentity().getProofOfWork(),
+                new JoinMessage(environment.getConfig().getNetworkId(), environment.getIdentity().getProofOfWork(),
                         environment.getIdentity().getPublicKey(),
-                        environment.joinAsChildren(),
-                        environment.getConfig().getNetworkId())
+                        environment.joinAsChildren()
+                )
         );
         this.environment = environment;
         this.childrenJoin = environment.joinAsChildren();
@@ -81,21 +83,25 @@ public class ClientConnectionHandler extends ThreeWayHandshakeClientHandler<Join
     }
 
     @Override
-    public void handlerAdded(final ChannelHandlerContext ctx) throws Exception {
-        super.handlerAdded(ctx);
-        this.ctx = ctx;
-    }
-
-    @Override
     protected Logger getLogger() {
         return LOG;
     }
 
     @Override
     protected ConnectionExceptionMessage.Error validateSessionOffer(final WelcomeMessage offerMessage) {
-        // Raise error if the public key is equals to my public key
-        if (environment.getIdentity().getPublicKey().equals(ctx.channel().attr(ATTRIBUTE_PUBLIC_KEY).get())) {
+        final CompressedPublicKey serverPublicKey = offerMessage.getPublicKey();
+
+        if (!environment.getEndpoint().getPublicKey().equals(serverPublicKey)) {
             return CONNECTION_ERROR_WRONG_PUBLIC_KEY;
+        }
+        else if (!offerMessage.getProofOfWork().isValid(offerMessage.getPublicKey(), POW_DIFFICULTY)) {
+            return CONNECTION_ERROR_PROOF_OF_WORK_INVALID;
+        }
+        else if (environment.getIdentity().getPublicKey().equals(serverPublicKey)) {
+            return CONNECTION_ERROR_IDENTITY_COLLISION;
+        }
+        else if (environment.getConfig().getNetworkId() != offerMessage.getNetworkId()) {
+            return CONNECTION_ERROR_OTHER_NETWORK;
         }
         else {
             return null;
@@ -105,25 +111,27 @@ public class ClientConnectionHandler extends ThreeWayHandshakeClientHandler<Join
     @Override
     protected void createConnection(final ChannelHandlerContext ctx,
                                     final WelcomeMessage offerMessage) {
-        final CompressedPublicKey identity = ctx.channel().attr(ATTRIBUTE_PUBLIC_KEY).get();
+        final CompressedPublicKey serverPublicKey = offerMessage.getPublicKey();
         final Channel channel = ctx.channel();
         final Path path = msg -> toFuture(ctx.writeAndFlush(msg));
 
-        environment.getChannelGroup().add(identity, channel);
+        ctx.channel().attr(ATTRIBUTE_PUBLIC_KEY).set(serverPublicKey);
+
+        environment.getChannelGroup().add(serverPublicKey, channel);
 
         if (childrenJoin) {
             // remove peer information on disconnect
             channel.closeFuture().addListener(future -> environment.getPeersManager().unsetSuperPeerAndRemovePath(path));
 
             // store peer information
-            environment.getPeersManager().setPeerInformationAndAddPathAndSetSuperPeer(identity, offerMessage.getPeerInformation(), path);
+            environment.getPeersManager().setPeerInformationAndAddPathAndSetSuperPeer(serverPublicKey, offerMessage.getPeerInformation(), path);
         }
         else {
             // remove peer information on disconnect
-            channel.closeFuture().addListener(future -> environment.getPeersManager().removePath(identity, path));
+            channel.closeFuture().addListener(future -> environment.getPeersManager().removePath(serverPublicKey, path));
 
             // store peer information
-            environment.getPeersManager().setPeerInformationAndAddPath(identity, offerMessage.getPeerInformation(), path);
+            environment.getPeersManager().setPeerInformationAndAddPath(serverPublicKey, offerMessage.getPeerInformation(), path);
         }
     }
 }
