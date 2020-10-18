@@ -19,6 +19,7 @@
 package org.drasyl.plugin.groups.client;
 
 import com.typesafe.config.Config;
+import com.typesafe.config.ConfigFactory;
 
 import java.util.HashSet;
 import java.util.Objects;
@@ -32,6 +33,7 @@ import static java.util.Objects.requireNonNull;
  * This is an immutable object.
  */
 public class GroupsClientConfig {
+    static final GroupsClientConfig DEFAULT = new GroupsClientConfig(ConfigFactory.defaultReference().getConfig("drasyl.plugins.\"" + GroupsClientPlugin.class.getName() + "\""));
     //======================================== Config Paths ========================================
     static final String GROUPS = "groups";
     //======================================= Config Values ========================================
@@ -91,17 +93,26 @@ public class GroupsClientConfig {
      * @return {@link GroupsClientConfig} builder
      */
     public static Builder builder() {
-        return new Builder();
+        return builder(DEFAULT);
+    }
+
+    /**
+     * Returns a specific builder for a {@link GroupsClientConfig}.
+     *
+     * @return {@link GroupsClientConfig} builder
+     */
+    public static Builder builder(final GroupsClientConfig config) {
+        return new Builder(config);
     }
 
     /**
      * Implements the builder-pattern for this configuration.
      */
     public static class Builder {
-        final Set<GroupURI> groups;
+        Set<GroupURI> groups;
 
-        Builder() {
-            groups = new HashSet<>();
+        public Builder(final GroupsClientConfig config) {
+            groups = config.getGroups();
         }
 
         public Builder addGroupOptions(final GroupURI group) {

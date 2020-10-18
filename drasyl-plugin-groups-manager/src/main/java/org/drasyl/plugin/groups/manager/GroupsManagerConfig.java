@@ -20,7 +20,9 @@ package org.drasyl.plugin.groups.manager;
 
 import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
+import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
+import org.drasyl.DrasylConfig;
 import org.drasyl.plugin.groups.manager.data.Group;
 
 import java.net.URI;
@@ -41,6 +43,7 @@ import static org.drasyl.util.SecretUtil.maskSecret;
  * This is an immutable object.
  */
 public class GroupsManagerConfig {
+    static final GroupsManagerConfig DEFAULT = new GroupsManagerConfig(ConfigFactory.defaultReference().getConfig("drasyl.plugins.\"" + GroupsManagerPlugin.class.getName() + "\""));
     //======================================== Config Paths ========================================
     static final String GROUPS = "groups";
     static final String GROUP_SECRET = "secret";
@@ -136,7 +139,16 @@ public class GroupsManagerConfig {
      * @return {@link GroupsManagerConfig} builder
      */
     public static Builder builder() {
-        return new Builder();
+        return builder(DEFAULT);
+    }
+
+    /**
+     * Returns a specific builder for a {@link GroupsManagerConfig}.
+     *
+     * @return {@link GroupsManagerConfig} builder
+     */
+    public static Builder builder(final GroupsManagerConfig config) {
+        return new Builder(config);
     }
 
     /**
@@ -145,6 +157,11 @@ public class GroupsManagerConfig {
     public static class Builder {
         Map<String, Group> groups;
         URI databaseUri;
+
+        public Builder(final GroupsManagerConfig config) {
+            groups = config.getGroups();
+            databaseUri = config.getDatabaseUri();
+        }
 
         public Builder groups(final Map<String, Group> groups) {
             this.groups = groups;
