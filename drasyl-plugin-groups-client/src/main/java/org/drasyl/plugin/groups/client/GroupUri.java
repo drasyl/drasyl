@@ -36,7 +36,7 @@ import static org.drasyl.util.SecretUtil.maskSecret;
  * This is an immutable object.
  */
 @SuppressWarnings({ "java:S1192" })
-public class GroupURI {
+public class GroupUri {
     public static final int MIN_TIMEOUT = 60;
     public static final String SCHEME = "groups";
     private final CompressedPublicKey manager;
@@ -44,7 +44,7 @@ public class GroupURI {
     private final String name;
     private final Duration timeout;
 
-    private GroupURI(final CompressedPublicKey manager,
+    private GroupUri(final CompressedPublicKey manager,
                      final String credentials,
                      final String name,
                      final Duration timeout) {
@@ -83,7 +83,7 @@ public class GroupURI {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        final GroupURI options = (GroupURI) o;
+        final GroupUri options = (GroupUri) o;
         return Objects.equals(manager, options.manager) &&
                 Objects.equals(credentials, options.credentials) &&
                 Objects.equals(name, options.name) &&
@@ -95,36 +95,40 @@ public class GroupURI {
         return UriUtil.createUri(SCHEME, maskSecret(credentials), manager.toString(), -1, "/" + name, "timeout=" + timeout.toSeconds()).toString();
     }
 
+    public URI toUri() {
+        return UriUtil.createUri(SCHEME, credentials, manager.toString(), -1, "/" + name, "timeout=" + timeout.toSeconds());
+    }
+
     public Group getGroup() {
         return Group.of(name);
     }
 
-    public static GroupURI of(final CompressedPublicKey manager,
+    public static GroupUri of(final CompressedPublicKey manager,
                               final String credentials,
                               final String name,
                               final Duration timeout) {
-        return new GroupURI(manager, credentials, name, timeout);
+        return new GroupUri(manager, credentials, name, timeout);
     }
 
     /**
-     * Generates a {@link GroupURI} object from the given groups URI.
+     * Generates a {@link GroupUri} object from the given groups URI.
      *
      * @param uri the groups URI
-     * @return a {@link GroupURI} object
+     * @return a {@link GroupUri} object
      * @throws IllegalArgumentException if the groups URI is invalid
      */
-    public static GroupURI of(final String uri) {
+    public static GroupUri of(final String uri) {
         return of(URI.create(uri));
     }
 
     /**
-     * Generates a {@link GroupURI} object from the given groups URI.
+     * Generates a {@link GroupUri} object from the given groups URI.
      *
      * @param uri the groups URI
-     * @return a {@link GroupURI} object
+     * @return a {@link GroupUri} object
      * @throws IllegalArgumentException if the groups URL is invalid
      */
-    public static GroupURI of(final URI uri) {
+    public static GroupUri of(final URI uri) {
         if (uri.getScheme() == null || !uri.getScheme().equals(SCHEME)) {
             throw new IllegalArgumentException("Scheme must be " + SCHEME);
         }
@@ -153,7 +157,7 @@ public class GroupURI {
             }
             final Duration timeout = Duration.ofSeconds(timeoutSeconds);
 
-            return new GroupURI(manager, credentials, name, timeout);
+            return new GroupUri(manager, credentials, name, timeout);
         }
         catch (final CryptoException e) {
             throw new IllegalArgumentException("Host contains invalid public key: ", e);

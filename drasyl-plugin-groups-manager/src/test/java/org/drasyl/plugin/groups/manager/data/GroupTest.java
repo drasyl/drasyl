@@ -37,16 +37,13 @@ class GroupTest {
             final Group group = Group.of("test", "secret", (short) 0, Duration.ofSeconds(60));
 
             assertEquals("test", group.getName());
-
-            // ignore toString()
-            group.toString();
         }
 
         @Test
         void shouldReturnCorrectSecret() {
             final Group group = Group.of("test", "secret", (short) 0, Duration.ofSeconds(60));
 
-            assertEquals("secret", group.getSecret());
+            assertEquals("secret", group.getCredentials());
         }
 
         @Test

@@ -18,9 +18,14 @@
  */
 package org.drasyl.plugin.groups.manager.data;
 
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.plugin.groups.client.GroupUri;
+
 import java.time.Duration;
 import java.util.Objects;
 
+import static org.drasyl.plugin.groups.manager.GroupsManagerConfig.GROUP_DEFAULT_MIN_DIFFICULTY;
+import static org.drasyl.plugin.groups.manager.GroupsManagerConfig.GROUP_DEFAULT_TIMEOUT;
 import static org.drasyl.util.SecretUtil.maskSecret;
 
 /**
@@ -31,16 +36,16 @@ import static org.drasyl.util.SecretUtil.maskSecret;
  */
 public class Group {
     private final String name;
-    private final String secret;
+    private final String credentials;
     private final short minDifficulty;
     private final Duration timeout;
 
     private Group(final String name,
-                  final String secret,
+                  final String credentials,
                   final short minDifficulty,
                   final Duration timeout) {
         this.name = Objects.requireNonNull(name);
-        this.secret = Objects.requireNonNull(secret);
+        this.credentials = Objects.requireNonNull(credentials);
         this.minDifficulty = minDifficulty;
         this.timeout = Objects.requireNonNull(timeout);
     }
@@ -49,8 +54,8 @@ public class Group {
         return name;
     }
 
-    public String getSecret() {
-        return secret;
+    public String getCredentials() {
+        return credentials;
     }
 
     public short getMinDifficulty() {
@@ -63,7 +68,7 @@ public class Group {
 
     @Override
     public int hashCode() {
-        return Objects.hash(name, secret, minDifficulty, timeout);
+        return Objects.hash(name, credentials, minDifficulty, timeout);
     }
 
     @Override
@@ -77,7 +82,7 @@ public class Group {
         final Group that = (Group) o;
         return minDifficulty == that.minDifficulty &&
                 Objects.equals(name, that.name) &&
-                Objects.equals(secret, that.secret) &&
+                Objects.equals(credentials, that.credentials) &&
                 Objects.equals(timeout, that.timeout);
     }
 
@@ -85,10 +90,14 @@ public class Group {
     public String toString() {
         return "Group{" +
                 "name='" + name + '\'' +
-                ", secret='" + maskSecret(secret) + '\'' +
+                ", credentials='" + maskSecret(credentials) + '\'' +
                 ", minDifficulty=" + minDifficulty +
                 ", timeout=" + timeout +
                 '}';
+    }
+
+    public GroupUri getUri(final CompressedPublicKey manager) {
+        return GroupUri.of(manager, credentials, name, timeout);
     }
 
     public static Group of(final String name,
@@ -96,5 +105,10 @@ public class Group {
                            final short minDifficulty,
                            final Duration timeout) {
         return new Group(name, secret, minDifficulty, timeout);
+    }
+
+    public static Group of(final String name,
+                           final String secret) {
+        return of(name, secret, GROUP_DEFAULT_MIN_DIFFICULTY, GROUP_DEFAULT_TIMEOUT);
     }
 }

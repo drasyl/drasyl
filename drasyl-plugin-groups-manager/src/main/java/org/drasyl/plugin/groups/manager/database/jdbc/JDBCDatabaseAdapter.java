@@ -102,7 +102,7 @@ public class JDBCDatabaseAdapter implements DatabaseAdapter {
             try (final PreparedStatement ps = con.prepareStatement(sqlInsertGroup)) {
                 ps.setQueryTimeout(QUERY_TIMEOUT);
                 ps.setString(1, group.getName());
-                ps.setString(2, group.getSecret());
+                ps.setString(2, group.getCredentials());
                 ps.setInt(3, group.getMinDifficulty());
                 ps.setLong(4, group.getTimeout().toMillis());
                 return ps.executeUpdate() > 0;

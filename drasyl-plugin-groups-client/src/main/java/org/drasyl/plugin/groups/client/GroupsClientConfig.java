@@ -37,7 +37,7 @@ public class GroupsClientConfig {
     //======================================== Config Paths ========================================
     static final String GROUPS = "groups";
     //======================================= Config Values ========================================
-    private final Set<GroupURI> groupsSet;
+    private final Set<GroupUri> groupsSet;
 
     public GroupsClientConfig(final Builder builder) {
         this.groupsSet = requireNonNull(builder.groups);
@@ -47,17 +47,17 @@ public class GroupsClientConfig {
         groupsSet = getGroupOptions(options, GROUPS);
     }
 
-    private Set<GroupURI> getGroupOptions(final Config config, final String path) {
-        final Set<GroupURI> options = new HashSet<>();
+    private Set<GroupUri> getGroupOptions(final Config config, final String path) {
+        final Set<GroupUri> options = new HashSet<>();
 
         for (final String groupsURL : config.getStringList(path)) {
-            options.add(GroupURI.of(groupsURL));
+            options.add(GroupUri.of(groupsURL));
         }
 
         return options;
     }
 
-    public Set<GroupURI> getGroups() {
+    public Set<GroupUri> getGroups() {
         return groupsSet;
     }
 
@@ -109,13 +109,13 @@ public class GroupsClientConfig {
      * Implements the builder-pattern for this configuration.
      */
     public static class Builder {
-        Set<GroupURI> groups;
+        Set<GroupUri> groups;
 
         public Builder(final GroupsClientConfig config) {
             groups = config.getGroups();
         }
 
-        public Builder addGroupOptions(final GroupURI group) {
+        public Builder addGroupOptions(final GroupUri group) {
             this.groups.add(group);
             return this;
         }

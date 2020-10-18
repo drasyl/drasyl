@@ -54,16 +54,16 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 public class GroupsClientHandler extends SimpleInboundHandler<GroupsServerMessage, Event> {
     private static final Logger LOG = LoggerFactory.getLogger(GroupsClientHandler.class);
-    private final Map<Group, GroupURI> groups;
+    private final Map<Group, GroupUri> groups;
     private final List<Disposable> renewTasks;
 
-    GroupsClientHandler(final Map<Group, GroupURI> groups, final List<Disposable> renewTasks) {
+    GroupsClientHandler(final Map<Group, GroupUri> groups, final List<Disposable> renewTasks) {
         this.groups = groups;
         this.renewTasks = renewTasks;
     }
 
-    public GroupsClientHandler(final Set<GroupURI> groups) {
-        this(groups.stream().collect(Collectors.toMap(GroupURI::getGroup, groupURI -> groupURI)), new ArrayList<>());
+    public GroupsClientHandler(final Set<GroupUri> groups) {
+        this(groups.stream().collect(Collectors.toMap(GroupUri::getGroup, groupURI -> groupURI)), new ArrayList<>());
     }
 
     @Override
@@ -85,9 +85,9 @@ public class GroupsClientHandler extends SimpleInboundHandler<GroupsServerMessag
          * This should be a blocking operation, so drasyl is not shutting down the communication
          * channel before the leave messages are sent.
          */
-        for (final Entry<Group, GroupURI> entry : groups.entrySet()) {
+        for (final Entry<Group, GroupUri> entry : groups.entrySet()) {
             final Group group = entry.getKey();
-            final GroupURI groupURI = entry.getValue();
+            final GroupUri groupURI = entry.getValue();
             try {
                 ctx.pipeline().processOutbound(groupURI.getManager(), new GroupLeaveMessage(group)).join();
             }
@@ -214,7 +214,7 @@ public class GroupsClientHandler extends SimpleInboundHandler<GroupsServerMessag
      * @param ctx   the handler context
      * @param group the group to join
      */
-    private void joinGroup(final HandlerContext ctx, final GroupURI group) {
+    private void joinGroup(final HandlerContext ctx, final GroupUri group) {
         final ProofOfWork proofOfWork = ctx.identity().getProofOfWork();
         final CompressedPublicKey groupManager = group.getManager();
 

@@ -36,13 +36,13 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class GroupsClientConfigTest {
-    private Set<GroupURI> groups;
+    private Set<GroupUri> groups;
     @Mock
     private Config typesafeConfig;
 
     @BeforeEach
     void setUp() {
-        groups = Set.of(GroupURI.of("groups://secret@03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group?timeout=60"));
+        groups = Set.of(GroupUri.of("groups://secret@03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group?timeout=60"));
     }
 
     @Nested
@@ -54,9 +54,6 @@ class GroupsClientConfigTest {
             final GroupsClientConfig config = new GroupsClientConfig(typesafeConfig);
 
             assertEquals(groups, config.getGroups());
-
-            // ignore toString()
-            config.toString();
         }
 
         @Test
@@ -80,9 +77,9 @@ class GroupsClientConfigTest {
         @Test
         void shouldNotBeEquals() {
             final GroupsClientConfig config1 = GroupsClientConfig.builder().addGroupOptions(
-                    GroupURI.of("groups://secret@03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group1?timeout=60")).build();
+                    GroupUri.of("groups://secret@03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group1?timeout=60")).build();
             final GroupsClientConfig config2 = GroupsClientConfig.builder().addGroupOptions(
-                    GroupURI.of("groups://secret@03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group2?timeout=60")).build();
+                    GroupUri.of("groups://secret@03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group2?timeout=60")).build();
 
             assertNotEquals(config1, config2);
         }
@@ -101,9 +98,9 @@ class GroupsClientConfigTest {
         @Test
         void shouldNotBeEquals() {
             final GroupsClientConfig config1 = GroupsClientConfig.builder().addGroupOptions(
-                    GroupURI.of("groups://secret@03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group1?timeout=60")).build();
+                    GroupUri.of("groups://secret@03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group1?timeout=60")).build();
             final GroupsClientConfig config2 = GroupsClientConfig.builder().addGroupOptions(
-                    GroupURI.of("groups://secret@03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group2?timeout=60")).build();
+                    GroupUri.of("groups://secret@03678023dfecac5f2217cb6f6665ad38af3d75cc5d979829a3b091a2b4b2654e5b/group2?timeout=60")).build();
 
             assertNotEquals(config1.hashCode(), config2.hashCode());
         }

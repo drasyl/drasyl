@@ -44,6 +44,8 @@ import static org.drasyl.util.SecretUtil.maskSecret;
  */
 public class GroupsManagerConfig {
     static final GroupsManagerConfig DEFAULT = new GroupsManagerConfig(ConfigFactory.defaultReference().getConfig("drasyl.plugins.\"" + GroupsManagerPlugin.class.getName() + "\""));
+    public static final Duration GROUP_DEFAULT_TIMEOUT = ofSeconds(60);
+    public static final short GROUP_DEFAULT_MIN_DIFFICULTY = 0;
     //======================================== Config Paths ========================================
     static final String GROUPS = "groups";
     static final String GROUP_SECRET = "secret";
@@ -74,7 +76,7 @@ public class GroupsManagerConfig {
              */
             final Config groupConfig = entry.getValue().atKey("group").getConfig("group"); // NOSONAR
 
-            short minDifficulty = 0;
+            short minDifficulty = GROUP_DEFAULT_MIN_DIFFICULTY;
             if (groupConfig.hasPath(GROUP_MIN_DIFFICULTY)) {
                 minDifficulty = getShort(groupConfig, GROUP_MIN_DIFFICULTY);
                 if (minDifficulty < 0) {
@@ -82,7 +84,7 @@ public class GroupsManagerConfig {
                 }
             }
 
-            Duration timeout = ofSeconds(60);
+            Duration timeout = GROUP_DEFAULT_TIMEOUT;
             if (groupConfig.hasPath(GROUP_TIMEOUT) && groupConfig.getDuration(GROUP_TIMEOUT).compareTo(timeout) > 0) {
                 timeout = groupConfig.getDuration(GROUP_TIMEOUT);
             }

@@ -73,7 +73,7 @@ class GroupsClientHandlerTest {
     @Mock
     private List<Disposable> renewTasks;
     @Mock
-    private Map<Group, GroupURI> groups;
+    private Map<Group, GroupUri> groups;
     @Mock
     private Identity identity;
     @Mock
@@ -81,7 +81,7 @@ class GroupsClientHandlerTest {
     @Mock
     private Group group;
     @Mock
-    private GroupURI uri;
+    private GroupUri uri;
     @Mock
     private CompressedPublicKey publicKey;
 
@@ -117,7 +117,7 @@ class GroupsClientHandlerTest {
 
         @Test
         void shouldDeregisterFromGroups() {
-            final Map<Group, GroupURI> groups = Map.of(group, uri);
+            final Map<Group, GroupUri> groups = Map.of(group, uri);
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new ArrayList<>());
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                     identity,
@@ -156,7 +156,7 @@ class GroupsClientHandlerTest {
         void shouldSendJoinOnNodeOnlineEvent() {
             final Event event = mock(NodeOnlineEvent.class);
             final String credentials = "test";
-            final Map<Group, GroupURI> groups = Map.of(group, uri);
+            final Map<Group, GroupUri> groups = Map.of(group, uri);
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new ArrayList<>());
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                     identity,
