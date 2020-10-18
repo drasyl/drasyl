@@ -40,7 +40,7 @@ public class GroupsClientConfig {
     private final Set<GroupUri> groupsSet;
 
     public GroupsClientConfig(final Builder builder) {
-        this.groupsSet = Set.copyOf(requireNonNull(builder.groups));
+        this.groupsSet = Set.copyOf(requireNonNull(builder.groupsSet));
     }
 
     public GroupsClientConfig(final Config options) {
@@ -109,14 +109,19 @@ public class GroupsClientConfig {
      * Implements the builder-pattern for this configuration.
      */
     public static class Builder {
-        Set<GroupUri> groups;
+        Set<GroupUri> groupsSet;
 
         public Builder(final GroupsClientConfig config) {
-            groups = new HashSet<>(config.getGroups());
+            groupsSet = new HashSet<>(config.getGroups());
         }
 
-        public Builder addGroupOptions(final GroupUri group) {
-            this.groups.add(group);
+        public Builder groups(final Set<GroupUri> groups) {
+            this.groupsSet = groups;
+            return this;
+        }
+
+        public Builder addGroup(final GroupUri group) {
+            this.groupsSet.add(group);
             return this;
         }
 

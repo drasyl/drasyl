@@ -43,7 +43,7 @@ public class GroupsClientPlugin implements DrasylPlugin {
         this(new GroupsClientConfig(config));
     }
 
-    GroupsClientPlugin(final GroupsClientConfig config) {
+    public GroupsClientPlugin(final GroupsClientConfig config) {
         this.config = config;
     }
 
