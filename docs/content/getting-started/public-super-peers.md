@@ -1,6 +1,6 @@
-# Super Peers
+# Public Super Peers
 
-The following super-peers are public available:
+The following super peers are public available:
 
 | **Endpoint**                                                                                         | **Network ID**   | **Used drasyl version**                                                                                                              |
 |------------------------------------------------------------------------------------------------------|------------------|--------------------------------------------------------------------------------------------------------------------------------------|

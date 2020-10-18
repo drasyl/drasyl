@@ -84,7 +84,7 @@ nav:
   - 'Getting Started':
       - 'Quick Start': 'getting-started/quick-start.md'
       - 'CLI': 'getting-started/cli.md'
-      - 'Super-Peers': 'getting-started/super-peers.md'
+      - 'Public Super Peers': 'getting-started/public-super-peers.md'
   - 'Configuration':
       - 'Overview': 'configuration/index.md'
       - 'Marshalling': 'configuration/marshalling.md'
