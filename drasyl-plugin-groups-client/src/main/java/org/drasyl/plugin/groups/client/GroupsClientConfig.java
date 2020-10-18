@@ -40,11 +40,11 @@ public class GroupsClientConfig {
     private final Set<GroupUri> groupsSet;
 
     public GroupsClientConfig(final Builder builder) {
-        this.groupsSet = requireNonNull(builder.groups);
+        this.groupsSet = Set.copyOf(requireNonNull(builder.groups));
     }
 
     public GroupsClientConfig(final Config options) {
-        groupsSet = getGroupOptions(options, GROUPS);
+        groupsSet = Set.copyOf(getGroupOptions(options, GROUPS));
     }
 
     private Set<GroupUri> getGroupOptions(final Config config, final String path) {
@@ -112,7 +112,7 @@ public class GroupsClientConfig {
         Set<GroupUri> groups;
 
         public Builder(final GroupsClientConfig config) {
-            groups = config.getGroups();
+            groups = new HashSet<>(config.getGroups());
         }
 
         public Builder addGroupOptions(final GroupUri group) {

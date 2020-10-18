@@ -28,6 +28,7 @@ import org.drasyl.plugin.groups.manager.data.Group;
 import java.net.URI;
 import java.time.Duration;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 
@@ -57,12 +58,12 @@ public class GroupsManagerConfig {
 
     GroupsManagerConfig(final Builder builder) {
         this.databaseUri = requireNonNull(builder.databaseUri);
-        this.groupsMap = requireNonNull(builder.groups);
+        this.groupsMap = Map.copyOf(requireNonNull(builder.groups));
     }
 
     public GroupsManagerConfig(final Config config) {
         databaseUri = getURI(config, DATABASE_URI);
-        groupsMap = getGroups(config, GROUPS);
+        groupsMap = Map.copyOf(getGroups(config, GROUPS));
     }
 
     private Map<String, Group> getGroups(final Config config, final String path) {
@@ -161,7 +162,7 @@ public class GroupsManagerConfig {
         URI databaseUri;
 
         public Builder(final GroupsManagerConfig config) {
-            groups = config.getGroups();
+            groups = new HashMap<>(config.getGroups());
             databaseUri = config.getDatabaseUri();
         }
 

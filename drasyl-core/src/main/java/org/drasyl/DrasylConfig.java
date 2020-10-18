@@ -262,14 +262,14 @@ public class DrasylConfig {
         this.pluginSet = Set.copyOf(getPlugins(config, PLUGINS));
 
         // Load marshalling config
-        this.marshallingInboundAllowedTypes = config.getStringList(MARSHALLING_INBOUND_ALLOWED_TYPES);
+        this.marshallingInboundAllowedTypes = List.copyOf(config.getStringList(MARSHALLING_INBOUND_ALLOWED_TYPES));
         this.marshallingInboundAllowAllPrimitives = config.getBoolean(MARSHALLING_INBOUND_ALLOW_ALL_PRIMITIVES);
         this.marshallingInboundAllowArrayOfDefinedTypes = config.getBoolean(MARSHALLING_INBOUND_ALLOW_ARRAY_OF_DEFINED_TYPES);
-        this.marshallingInboundAllowedPackages = config.getStringList(MARSHALLING_INBOUND_ALLOWED_PACKAGES);
-        this.marshallingOutboundAllowedTypes = config.getStringList(MARSHALLING_OUTBOUND_ALLOWED_TYPES);
+        this.marshallingInboundAllowedPackages = List.copyOf(config.getStringList(MARSHALLING_INBOUND_ALLOWED_PACKAGES));
+        this.marshallingOutboundAllowedTypes = List.copyOf(config.getStringList(MARSHALLING_OUTBOUND_ALLOWED_TYPES));
         this.marshallingOutboundAllowAllPrimitives = config.getBoolean(MARSHALLING_OUTBOUND_ALLOW_ALL_PRIMITIVES);
         this.marshallingOutboundAllowArrayOfDefinedTypes = config.getBoolean(MARSHALLING_OUTBOUND_ALLOW_ARRAY_OF_DEFINED_TYPES);
-        this.marshallingOutboundAllowedPackages = config.getStringList(MARSHALLING_OUTBOUND_ALLOWED_PACKAGES);
+        this.marshallingOutboundAllowedPackages = List.copyOf(config.getStringList(MARSHALLING_OUTBOUND_ALLOWED_PACKAGES));
     }
 
     /**
