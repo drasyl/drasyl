@@ -74,7 +74,7 @@ Make sure that the following entry is included in your configuration under `dras
 "org.drasyl.plugin.groups.manager.GroupsManagerPlugin" {
   enabled = true
   database {
-    uri: "jdbc:sqlite::memory:"
+    uri = "jdbc:sqlite::memory:"
   }
   groups {
     "steezy-vips" {
@@ -85,4 +85,6 @@ Make sure that the following entry is included in your configuration under `dras
 ```
 
 With this configuration the manager is created with the group `steezy-vips`, whose members must
-authenticate themselves using the shared secret `my-shared-secret`.
+authenticate themselves using the shared secret `my-shared-secret`. 
+The manager stores all groups, nodes and their memberships in memory. To persistent the data on
+file system, `database.uri` can be set to `jdbc:sqlite:groups-manager.sqlite`.
