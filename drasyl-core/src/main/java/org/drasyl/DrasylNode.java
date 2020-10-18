@@ -193,7 +193,7 @@ public abstract class DrasylNode {
                         identity.getPublicKey(), pipeline));
             }
 
-            this.pluginManager = new PluginManager(config, pipeline);
+            this.pluginManager = new PluginManager(config, identity, pipeline);
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = completedFuture(null);
         }

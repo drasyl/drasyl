@@ -19,6 +19,7 @@
 package org.drasyl.plugins;
 
 import org.drasyl.DrasylConfig;
+import org.drasyl.identity.Identity;
 import org.drasyl.pipeline.Pipeline;
 
 import java.util.Objects;
@@ -28,15 +29,23 @@ import java.util.Objects;
  */
 public class PluginEnvironment {
     private final DrasylConfig config;
+    private final Identity identity;
     private final Pipeline pipeline;
 
-    public PluginEnvironment(final DrasylConfig config, final Pipeline pipeline) {
+    public PluginEnvironment(final DrasylConfig config,
+                             final Identity identity,
+                             final Pipeline pipeline) {
         this.config = config;
+        this.identity = identity;
         this.pipeline = pipeline;
     }
 
     public DrasylConfig getConfig() {
         return config;
+    }
+
+    public Identity getIdentity() {
+        return identity;
     }
 
     public Pipeline getPipeline() {

@@ -19,6 +19,7 @@
 package org.drasyl.plugins;
 
 import org.drasyl.DrasylConfig;
+import org.drasyl.identity.Identity;
 import org.drasyl.pipeline.Pipeline;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -30,10 +31,14 @@ import org.slf4j.LoggerFactory;
 public class PluginManager {
     private static final Logger LOG = LoggerFactory.getLogger(PluginManager.class);
     private final DrasylConfig config;
+    private final Identity identity;
     private final Pipeline pipeline;
 
-    public PluginManager(final DrasylConfig config, final Pipeline pipeline) {
+    public PluginManager(final DrasylConfig config,
+                         final Identity identity,
+                         final Pipeline pipeline) {
         this.config = config;
+        this.identity = identity;
         this.pipeline = pipeline;
     }
 
@@ -43,7 +48,7 @@ public class PluginManager {
     public void beforeStart() {
         if (!config.getPlugins().isEmpty()) {
             LOG.debug("Execute onBeforeStart listeners for all plugins...");
-            final PluginEnvironment environment = new PluginEnvironment(config, pipeline);
+            final PluginEnvironment environment = new PluginEnvironment(config, identity, pipeline);
             config.getPlugins().forEach(plugin -> plugin.onBeforeStart(environment));
             LOG.debug("All onBeforeStart listeners executed");
         }
@@ -55,7 +60,7 @@ public class PluginManager {
     public void afterStart() {
         if (!config.getPlugins().isEmpty()) {
             LOG.debug("Execute onAfterStart listeners for all plugins...");
-            final PluginEnvironment environment = new PluginEnvironment(config, pipeline);
+            final PluginEnvironment environment = new PluginEnvironment(config, identity, pipeline);
             config.getPlugins().forEach(plugin -> plugin.onAfterStart(environment));
             LOG.debug("All onAfterStart listeners executed");
         }
@@ -67,7 +72,7 @@ public class PluginManager {
     public void beforeShutdown() {
         if (!config.getPlugins().isEmpty()) {
             LOG.debug("Execute onBeforeShutdown listeners for all plugins...");
-            final PluginEnvironment environment = new PluginEnvironment(config, pipeline);
+            final PluginEnvironment environment = new PluginEnvironment(config, identity, pipeline);
             config.getPlugins().forEach(plugin -> plugin.onBeforeShutdown(environment));
             LOG.debug("All onBeforeShutdown listeners executed");
         }
@@ -79,7 +84,7 @@ public class PluginManager {
     public void afterShutdown() {
         if (!config.getPlugins().isEmpty()) {
             LOG.debug("Execute onAfterShutdown listeners for all plugins...");
-            final PluginEnvironment environment = new PluginEnvironment(config, pipeline);
+            final PluginEnvironment environment = new PluginEnvironment(config, identity, pipeline);
             config.getPlugins().forEach(plugin -> plugin.onAfterShutdown(environment));
             LOG.debug("All onAfterShutdown listeners executed");
         }

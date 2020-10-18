@@ -20,6 +20,7 @@
 package org.drasyl.plugins;
 
 import org.drasyl.DrasylConfig;
+import org.drasyl.identity.Identity;
 import org.drasyl.pipeline.Pipeline;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -33,12 +34,14 @@ class PluginEnvironmentTest {
     class Equals {
         @Mock
         private Pipeline pipeline;
+        @Mock
+        private Identity identity;
 
         @Test
         void notSameBecauseOfDifferentConfig() {
-            final PluginEnvironment environment1 = new PluginEnvironment(DrasylConfig.newBuilder().build(), pipeline);
-            final PluginEnvironment environment2 = new PluginEnvironment(DrasylConfig.newBuilder().build(), pipeline);
-            final PluginEnvironment environment3 = new PluginEnvironment(DrasylConfig.newBuilder().serverEnabled(false).build(), pipeline);
+            final PluginEnvironment environment1 = new PluginEnvironment(DrasylConfig.newBuilder().build(), identity, pipeline);
+            final PluginEnvironment environment2 = new PluginEnvironment(DrasylConfig.newBuilder().build(), identity, pipeline);
+            final PluginEnvironment environment3 = new PluginEnvironment(DrasylConfig.newBuilder().serverEnabled(false).build(), identity, pipeline);
 
             assertEquals(environment1, environment2);
             assertNotEquals(environment2, environment3);
@@ -49,12 +52,14 @@ class PluginEnvironmentTest {
     class HashCode {
         @Mock
         private Pipeline pipeline;
+        @Mock
+        private Identity identity;
 
         @Test
         void notSameBecauseOfDifferentConfig() {
-            final PluginEnvironment environment1 = new PluginEnvironment(DrasylConfig.newBuilder().build(), pipeline);
-            final PluginEnvironment environment2 = new PluginEnvironment(DrasylConfig.newBuilder().build(), pipeline);
-            final PluginEnvironment environment3 = new PluginEnvironment(DrasylConfig.newBuilder().serverEnabled(false).build(), pipeline);
+            final PluginEnvironment environment1 = new PluginEnvironment(DrasylConfig.newBuilder().build(), identity, pipeline);
+            final PluginEnvironment environment2 = new PluginEnvironment(DrasylConfig.newBuilder().build(), identity, pipeline);
+            final PluginEnvironment environment3 = new PluginEnvironment(DrasylConfig.newBuilder().serverEnabled(false).build(), identity, pipeline);
 
             assertEquals(environment1.hashCode(), environment2.hashCode());
             assertNotEquals(environment2.hashCode(), environment3.hashCode());

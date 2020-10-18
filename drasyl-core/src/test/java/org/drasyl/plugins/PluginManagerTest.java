@@ -19,6 +19,7 @@
 package org.drasyl.plugins;
 
 import org.drasyl.DrasylConfig;
+import org.drasyl.identity.Identity;
 import org.drasyl.pipeline.Pipeline;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -38,6 +39,8 @@ class PluginManagerTest {
     private DrasylConfig config;
     @Mock
     private Pipeline pipeline;
+    @Mock
+    private Identity identity;
     @InjectMocks
     private PluginManager underTest;
 
@@ -49,7 +52,7 @@ class PluginManagerTest {
 
             underTest.beforeStart();
 
-            verify(plugin).onBeforeStart(new PluginEnvironment(config, pipeline));
+            verify(plugin).onBeforeStart(new PluginEnvironment(config, identity, pipeline));
         }
     }
 
@@ -61,7 +64,7 @@ class PluginManagerTest {
 
             underTest.afterStart();
 
-            verify(plugin).onAfterStart(new PluginEnvironment(config, pipeline));
+            verify(plugin).onAfterStart(new PluginEnvironment(config, identity, pipeline));
         }
     }
 
@@ -73,7 +76,7 @@ class PluginManagerTest {
 
             underTest.beforeShutdown();
 
-            verify(plugin).onBeforeShutdown(new PluginEnvironment(config, pipeline));
+            verify(plugin).onBeforeShutdown(new PluginEnvironment(config, identity, pipeline));
         }
     }
 
@@ -85,7 +88,7 @@ class PluginManagerTest {
 
             underTest.afterShutdown();
 
-            verify(plugin).onAfterShutdown(new PluginEnvironment(config, pipeline));
+            verify(plugin).onAfterShutdown(new PluginEnvironment(config, identity, pipeline));
         }
     }
 }
