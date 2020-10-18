@@ -4,17 +4,12 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.event.Event;
-import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.plugin.groups.client.GroupUri;
 import org.drasyl.plugin.groups.client.GroupsClientConfig;
 import org.drasyl.plugin.groups.client.GroupsClientPlugin;
 import org.drasyl.plugin.groups.client.event.GroupJoinedEvent;
-import org.drasyl.plugin.groups.manager.GroupsManagerConfig;
-import org.drasyl.plugin.groups.manager.GroupsManagerPlugin;
-import org.drasyl.plugin.groups.manager.data.Group;
 
 import java.nio.file.Path;
-import java.util.Map;
 import java.util.Scanner;
 import java.util.Set;
 
@@ -22,6 +17,7 @@ import java.util.Set;
  * This example starts a drasyl node with activated {@link GroupsClientNode}.
  * It can be used to join groups provided by {@link GroupsManagerNode}.
  */
+@SuppressWarnings({ "squid:S106" })
 public class GroupsClientNode {
     public static void main(final String[] args) throws DrasylException {
         final Scanner scanner = new Scanner(System.in);
