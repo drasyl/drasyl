@@ -22,17 +22,14 @@ import com.typesafe.config.Config;
 import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
-import org.drasyl.DrasylConfig;
 import org.drasyl.plugin.groups.manager.data.Group;
 
 import java.net.URI;
 import java.time.Duration;
 import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Map;
 import java.util.Objects;
 
-import static java.time.Duration.ofSeconds;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.DrasylConfig.getShort;
 import static org.drasyl.DrasylConfig.getURI;
@@ -45,8 +42,6 @@ import static org.drasyl.util.SecretUtil.maskSecret;
  */
 public class GroupsManagerConfig {
     static final GroupsManagerConfig DEFAULT = new GroupsManagerConfig(ConfigFactory.defaultReference().getConfig("drasyl.plugins.\"" + GroupsManagerPlugin.class.getName() + "\""));
-    public static final Duration GROUP_DEFAULT_TIMEOUT = ofSeconds(60);
-    public static final short GROUP_DEFAULT_MIN_DIFFICULTY = 0;
     //======================================== Config Paths ========================================
     static final String GROUPS = "groups";
     static final String GROUP_SECRET = "secret";
@@ -77,24 +72,32 @@ public class GroupsManagerConfig {
              */
             final Config groupConfig = entry.getValue().atKey("group").getConfig("group"); // NOSONAR
 
-            short minDifficulty = GROUP_DEFAULT_MIN_DIFFICULTY;
+            final short minDifficulty;
             if (groupConfig.hasPath(GROUP_MIN_DIFFICULTY)) {
                 minDifficulty = getShort(groupConfig, GROUP_MIN_DIFFICULTY);
-                if (minDifficulty < 0) {
-                    throw new ConfigException.WrongType(groupConfig.getValue(GROUP_MIN_DIFFICULTY).origin(), GROUP_MIN_DIFFICULTY, "non negative short", "out-of-range-value " + minDifficulty);
-                }
+            }
+            else {
+                minDifficulty = Group.GROUP_DEFAULT_MIN_DIFFICULTY;
             }
 
-            Duration timeout = GROUP_DEFAULT_TIMEOUT;
-            if (groupConfig.hasPath(GROUP_TIMEOUT) && groupConfig.getDuration(GROUP_TIMEOUT).compareTo(timeout) > 0) {
+            final Duration timeout;
+            if (groupConfig.hasPath(GROUP_TIMEOUT)) {
                 timeout = groupConfig.getDuration(GROUP_TIMEOUT);
             }
+            else {
+                timeout = Group.GROUP_DEFAULT_TIMEOUT;
+            }
 
-            groups.put(name, Group.of(
-                    name,
-                    groupConfig.getString(GROUP_SECRET),
-                    minDifficulty,
-                    timeout));
+            try {
+                groups.put(name, Group.of(
+                        name,
+                        groupConfig.getString(GROUP_SECRET),
+                        minDifficulty,
+                        timeout));
+            }
+            catch (final IllegalArgumentException e) {
+                throw new ConfigException.WrongType(groupConfig.origin(), "", "group", e.getMessage());
+            }
         }
 
         return groups;

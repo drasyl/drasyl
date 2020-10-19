@@ -24,8 +24,7 @@ import org.drasyl.plugin.groups.client.GroupUri;
 import java.time.Duration;
 import java.util.Objects;
 
-import static org.drasyl.plugin.groups.manager.GroupsManagerConfig.GROUP_DEFAULT_MIN_DIFFICULTY;
-import static org.drasyl.plugin.groups.manager.GroupsManagerConfig.GROUP_DEFAULT_TIMEOUT;
+import static java.time.Duration.ofSeconds;
 import static org.drasyl.util.SecretUtil.maskSecret;
 
 /**
@@ -35,6 +34,9 @@ import static org.drasyl.util.SecretUtil.maskSecret;
  * </p>
  */
 public class Group {
+    public static final Duration GROUP_MIN_TIMEOUT = ofSeconds(60);
+    public static final Duration GROUP_DEFAULT_TIMEOUT = GROUP_MIN_TIMEOUT;
+    public static final short GROUP_DEFAULT_MIN_DIFFICULTY = 0;
     private final String name;
     private final String credentials;
     private final short minDifficulty;
@@ -44,6 +46,12 @@ public class Group {
                   final String credentials,
                   final short minDifficulty,
                   final Duration timeout) {
+        if (minDifficulty < 0) {
+            throw new IllegalArgumentException("minDifficulty must be non-negative");
+        }
+        if (GROUP_MIN_TIMEOUT.compareTo(timeout) > 0) {
+            throw new IllegalArgumentException("timeout must not be less than " + GROUP_MIN_TIMEOUT.toSeconds() + "s");
+        }
         this.name = Objects.requireNonNull(name);
         this.credentials = Objects.requireNonNull(credentials);
         this.minDifficulty = minDifficulty;
@@ -100,15 +108,33 @@ public class Group {
         return GroupUri.of(manager, credentials, name, timeout);
     }
 
+    /**
+     * Creates a Group object with given parameters.
+     *
+     * @param name          name of group
+     * @param credentials   credentials of group
+     * @param minDifficulty min difficulty of group
+     * @param timeout       timeout of group
+     * @return created Group
+     * @throws IllegalArgumentException if created Group is invalid
+     */
     public static Group of(final String name,
-                           final String secret,
+                           final String credentials,
                            final short minDifficulty,
                            final Duration timeout) {
-        return new Group(name, secret, minDifficulty, timeout);
+        return new Group(name, credentials, minDifficulty, timeout);
     }
 
+    /**
+     * Creates a Group object with default minDifficulty and timeout.
+     *
+     * @param name        name of group
+     * @param credentials credentials of group
+     * @return created Group
+     * @throws IllegalArgumentException if created Group is invalid
+     */
     public static Group of(final String name,
-                           final String secret) {
-        return of(name, secret, GROUP_DEFAULT_MIN_DIFFICULTY, GROUP_DEFAULT_TIMEOUT);
+                           final String credentials) {
+        return of(name, credentials, GROUP_DEFAULT_MIN_DIFFICULTY, GROUP_DEFAULT_TIMEOUT);
     }
 }
