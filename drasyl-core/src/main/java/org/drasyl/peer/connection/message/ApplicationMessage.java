@@ -52,7 +52,7 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
     }
 
     @JsonCreator
-    public ApplicationMessage(@JsonProperty("id") final MessageId id,
+    private ApplicationMessage(@JsonProperty("id") final MessageId id,
                               @JsonProperty("sender") final CompressedPublicKey sender,
                               @JsonProperty("recipient") final CompressedPublicKey recipient,
                               @JsonProperty("headers") final Map<String, String> headers,
