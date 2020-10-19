@@ -27,7 +27,7 @@
     </parent>
     <modelVersion>4.0.0</modelVersion>
 
-    <name>drasyl: General-Purpose Overlay Network Framework - Groups Master Plugin Package</name>
+    <name>drasyl: General-Purpose Overlay Network Framework - Groups Manager Plugin Package</name>
     <description>
         This package contains the groups membership management manager plugin for drasyl.
     </description>
