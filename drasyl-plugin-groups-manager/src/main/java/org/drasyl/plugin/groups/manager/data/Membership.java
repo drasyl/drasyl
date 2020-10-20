@@ -18,6 +18,8 @@
  */
 package org.drasyl.plugin.groups.manager.data;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
+
 import java.util.Objects;
 
 /**
@@ -43,6 +45,7 @@ public class Membership {
         return member;
     }
 
+    @JsonIgnore
     public Group getGroup() {
         return group;
     }

@@ -28,14 +28,20 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.net.InetAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
 import java.time.Duration;
 import java.util.Map;
 
+import static org.drasyl.plugin.groups.manager.GroupsManagerConfig.API_BIND_HOST;
+import static org.drasyl.plugin.groups.manager.GroupsManagerConfig.API_BIND_PORT;
+import static org.drasyl.plugin.groups.manager.GroupsManagerConfig.API_ENABLED;
 import static org.drasyl.plugin.groups.manager.GroupsManagerConfig.DATABASE_URI;
 import static org.drasyl.plugin.groups.manager.GroupsManagerConfig.GROUPS;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -56,45 +62,81 @@ class GroupsManagerConfigTest {
     @Nested
     class Constructor {
         @Test
-        void shouldReadConfigProperly() {
+        void shouldReadConfigProperly() throws UnknownHostException {
             when(typesafeConfig.getString(DATABASE_URI)).thenReturn("jdbc:sqlite:file:groups?mode=memory&cache=shared");
             when(typesafeConfig.getObject(GROUPS)).thenReturn(ConfigValueFactory.fromMap(Map.of("name",
                     Map.of("secret", "secret",
                             "min-difficulty", 0,
                             "timeout", Duration.ofSeconds(60)))));
+            when(typesafeConfig.getBoolean(API_ENABLED)).thenReturn(true);
+            when(typesafeConfig.getString(API_BIND_HOST)).thenReturn("0.0.0.0");
+            when(typesafeConfig.getInt(API_BIND_PORT)).thenReturn(8080);
 
             final GroupsManagerConfig config = new GroupsManagerConfig(typesafeConfig);
 
             assertEquals(databaseURI, config.getDatabaseUri());
             assertEquals(groups, config.getGroups());
-
-            // ignore toString()
-            config.toString();
+            assertTrue(config.isApiEnabled());
+            assertEquals(InetAddress.getByName("0.0.0.0"), config.getApiBindHost());
+            assertEquals(8080, config.getApiBindPort());
         }
 
         @Test
-        void shouldReadFromBuilderProperly() {
-            final GroupsManagerConfig config = GroupsManagerConfig.builder().databaseUri(databaseURI).groups(groups).build();
+        void shouldReadFromBuilderProperly() throws UnknownHostException {
+            final GroupsManagerConfig config = GroupsManagerConfig.builder()
+                    .databaseUri(databaseURI)
+                    .groups(groups)
+                    .apiEnabled(true)
+                    .apiBindHost(InetAddress.getByName("0.0.0.0"))
+                    .apiBindPort(8080)
+                    .build();
 
             assertEquals(databaseURI, config.getDatabaseUri());
             assertEquals(groups, config.getGroups());
+            assertTrue(config.isApiEnabled());
+            assertEquals(InetAddress.getByName("0.0.0.0"), config.getApiBindHost());
+            assertEquals(8080, config.getApiBindPort());
         }
     }
 
     @Nested
     class Equals {
         @Test
-        void shouldBeEquals() {
-            final GroupsManagerConfig config1 = GroupsManagerConfig.builder().databaseUri(databaseURI).groups(groups).build();
-            final GroupsManagerConfig config2 = GroupsManagerConfig.builder().databaseUri(databaseURI).groups(groups).build();
+        void shouldBeEquals() throws UnknownHostException {
+            final GroupsManagerConfig config1 = GroupsManagerConfig.builder()
+                    .databaseUri(databaseURI)
+                    .groups(groups)
+                    .apiEnabled(true)
+                    .apiBindHost(InetAddress.getByName("0.0.0.0"))
+                    .apiBindPort(8080)
+                    .build();
+            final GroupsManagerConfig config2 = GroupsManagerConfig.builder()
+                    .databaseUri(databaseURI)
+                    .groups(groups)
+                    .apiEnabled(true)
+                    .apiBindHost(InetAddress.getByName("0.0.0.0"))
+                    .apiBindPort(8080)
+                    .build();
 
             assertEquals(config1, config2);
         }
 
         @Test
-        void shouldNotBeEquals() {
-            final GroupsManagerConfig config1 = GroupsManagerConfig.builder().databaseUri(databaseURI).groups(groups).build();
-            final GroupsManagerConfig config2 = GroupsManagerConfig.builder().databaseUri(URI.create("")).groups(groups).build();
+        void shouldNotBeEquals() throws UnknownHostException {
+            final GroupsManagerConfig config1 = GroupsManagerConfig.builder()
+                    .databaseUri(databaseURI)
+                    .groups(groups)
+                    .apiEnabled(true)
+                    .apiBindHost(InetAddress.getByName("0.0.0.0"))
+                    .apiBindPort(8080)
+                    .build();
+            final GroupsManagerConfig config2 = GroupsManagerConfig.builder()
+                    .databaseUri(URI.create(""))
+                    .groups(groups)
+                    .apiEnabled(true)
+                    .apiBindHost(InetAddress.getByName("0.0.0.0"))
+                    .apiBindPort(8080)
+                    .build();
 
             assertNotEquals(config1, config2);
         }
@@ -103,17 +145,41 @@ class GroupsManagerConfigTest {
     @Nested
     class HashCode {
         @Test
-        void shouldBeEquals() {
-            final GroupsManagerConfig config1 = GroupsManagerConfig.builder().databaseUri(databaseURI).groups(groups).build();
-            final GroupsManagerConfig config2 = GroupsManagerConfig.builder().databaseUri(databaseURI).groups(groups).build();
+        void shouldBeEquals() throws UnknownHostException {
+            final GroupsManagerConfig config1 = GroupsManagerConfig.builder()
+                    .databaseUri(databaseURI)
+                    .groups(groups)
+                    .apiEnabled(true)
+                    .apiBindHost(InetAddress.getByName("0.0.0.0"))
+                    .apiBindPort(8080)
+                    .build();
+            final GroupsManagerConfig config2 = GroupsManagerConfig.builder()
+                    .databaseUri(databaseURI)
+                    .groups(groups)
+                    .apiEnabled(true)
+                    .apiBindHost(InetAddress.getByName("0.0.0.0"))
+                    .apiBindPort(8080)
+                    .build();
 
             assertEquals(config1.hashCode(), config2.hashCode());
         }
 
         @Test
-        void shouldNotBeEquals() {
-            final GroupsManagerConfig config1 = GroupsManagerConfig.builder().databaseUri(databaseURI).groups(groups).build();
-            final GroupsManagerConfig config2 = GroupsManagerConfig.builder().databaseUri(URI.create("")).groups(groups).build();
+        void shouldNotBeEquals() throws UnknownHostException {
+            final GroupsManagerConfig config1 = GroupsManagerConfig.builder()
+                    .databaseUri(databaseURI)
+                    .groups(groups)
+                    .apiEnabled(true)
+                    .apiBindHost(InetAddress.getByName("0.0.0.0"))
+                    .apiBindPort(8080)
+                    .build();
+            final GroupsManagerConfig config2 = GroupsManagerConfig.builder()
+                    .databaseUri(URI.create(""))
+                    .groups(groups)
+                    .apiEnabled(true)
+                    .apiBindHost(InetAddress.getByName("0.0.0.0"))
+                    .apiBindPort(8080)
+                    .build();
 
             assertNotEquals(config1.hashCode(), config2.hashCode());
         }

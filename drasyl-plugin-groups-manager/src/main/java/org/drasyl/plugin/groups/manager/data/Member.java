@@ -18,6 +18,7 @@
  */
 package org.drasyl.plugin.groups.manager.data;
 
+import com.fasterxml.jackson.annotation.JsonValue;
 import org.drasyl.identity.CompressedPublicKey;
 
 import java.util.Objects;
@@ -35,6 +36,7 @@ public class Member {
         this.publicKey = publicKey;
     }
 
+    @JsonValue
     public CompressedPublicKey getPublicKey() {
         return publicKey;
     }

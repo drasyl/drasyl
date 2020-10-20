@@ -111,9 +111,16 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
     private void notifyMembers(final HandlerContext ctx,
                                final String group,
                                final GroupsPluginMessage msg) throws DatabaseException {
-        final Set<Membership> recipients = database.getGroupMembers(group);
+        try {
+            final Set<Membership> recipients = database.getGroupMembers(group);
 
-        recipients.forEach(member -> ctx.pipeline().processOutbound(member.getMember().getPublicKey(), msg));
+            recipients.forEach(member -> ctx.pipeline().processOutbound(member.getMember().getPublicKey(), msg));
+        }
+        catch (final DatabaseException e) {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Error occurred on getting members of group '{}': ", group, e);
+            }
+        }
     }
 
     @Override
