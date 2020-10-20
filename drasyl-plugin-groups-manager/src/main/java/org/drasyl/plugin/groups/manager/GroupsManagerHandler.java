@@ -7,12 +7,12 @@
  *  it under the terms of the GNU Lesser General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  drasyl is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -80,14 +80,14 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
      */
     void staleTask(final HandlerContext ctx) {
         try {
-            database.deleteStaleMemberships().forEach(member -> {
+            for (final Membership member : database.deleteStaleMemberships()) {
                 final MemberLeftMessage leftMessage = new MemberLeftMessage(
                         member.getMember().getPublicKey(),
                         org.drasyl.plugin.groups.client.Group.of(member.getGroup().getName()));
 
                 ctx.pipeline().processOutbound(member.getMember().getPublicKey(), leftMessage);
                 notifyMembers(ctx, member.getGroup().getName(), leftMessage);
-            });
+            }
         }
         catch (final DatabaseException e) {
             LOG.warn("Error occurred during deletion of stale memberships: ", e);
@@ -110,7 +110,7 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
      */
     private void notifyMembers(final HandlerContext ctx,
                                final String group,
-                               final GroupsPluginMessage msg) {
+                               final GroupsPluginMessage msg) throws DatabaseException {
         final Set<Membership> recipients = database.getGroupMembers(group);
 
         recipients.forEach(member -> ctx.pipeline().processOutbound(member.getMember().getPublicKey(), msg));
@@ -149,27 +149,36 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
                                    final GroupJoinMessage msg,
                                    final CompletableFuture<Void> future) {
         final String groupName = msg.getGroup().getName();
-        final Group group = database.getGroup(groupName);
+        try {
+            final Group group = database.getGroup(groupName);
 
-        if (group != null) {
-            if (msg.getProofOfWork().isValid(sender, group.getMinDifficulty())) {
-                doJoin(ctx, sender, group, future);
+            if (group != null) {
+                if (msg.getProofOfWork().isValid(sender, group.getMinDifficulty())) {
+                    doJoin(ctx, sender, group, future);
+                }
+                else {
+                    ctx.pipeline().processOutbound(sender, new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(groupName), ERROR_PROOF_TO_WEAK));
+                    future.completeExceptionally(new IllegalArgumentException("Member '" + sender + "' does not fulfill requirements of group '" + groupName + "'"));
+
+                    if (LOG.isDebugEnabled()) {
+                        LOG.debug("Member '{}' does not fulfill requirements of group '{}'", sender, groupName);
+                    }
+                }
             }
             else {
-                ctx.pipeline().processOutbound(sender, new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(groupName), ERROR_PROOF_TO_WEAK));
-                future.completeExceptionally(new IllegalArgumentException("Member '" + sender + "' does not fulfill requirements of group '" + groupName + "'"));
+                ctx.pipeline().processOutbound(sender, new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(groupName), ERROR_GROUP_NOT_FOUND));
+                future.completeExceptionally(new IllegalArgumentException("There is no group '" + groupName + "'"));
 
                 if (LOG.isDebugEnabled()) {
-                    LOG.debug("Member '{}' does not fulfill requirements of group '{}'", sender, groupName);
+                    LOG.debug("There is no group '{}'.", groupName);
                 }
             }
         }
-        else {
-            ctx.pipeline().processOutbound(sender, new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(groupName), ERROR_GROUP_NOT_FOUND));
-            future.completeExceptionally(new IllegalArgumentException("There is no group '" + groupName + "'"));
+        catch (final DatabaseException e) {
+            future.completeExceptionally(e);
 
             if (LOG.isDebugEnabled()) {
-                LOG.debug("There is no group '{}'.", groupName);
+                LOG.debug("Error occurred on getting group '{}': ", groupName, e);
             }
         }
     }
