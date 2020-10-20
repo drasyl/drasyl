@@ -18,6 +18,9 @@
  */
 package org.drasyl.plugin.groups.manager.data;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonProperty;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.plugin.groups.client.GroupUri;
 
@@ -58,6 +61,14 @@ public class Group {
         this.timeout = Objects.requireNonNull(timeout);
     }
 
+    @JsonCreator
+    private Group(@JsonProperty("name") final String name,
+                  @JsonProperty("credentials") final String credentials,
+                  @JsonProperty("minDifficulty") final short minDifficulty,
+                  @JsonProperty("timeout") final long timeoutSeconds) {
+        this(name, credentials, minDifficulty, ofSeconds(timeoutSeconds));
+    }
+
     public String getName() {
         return name;
     }
@@ -70,8 +81,14 @@ public class Group {
         return minDifficulty;
     }
 
+    @JsonIgnore
     public Duration getTimeout() {
         return timeout;
+    }
+
+    @JsonProperty("timeout")
+    public long getTimeoutSeconds() {
+        return timeout.toSeconds();
     }
 
     @Override

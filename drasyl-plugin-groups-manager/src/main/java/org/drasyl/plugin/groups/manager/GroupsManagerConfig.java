@@ -24,6 +24,7 @@ import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigValue;
 import org.drasyl.plugin.groups.manager.data.Group;
 
+import java.net.InetAddress;
 import java.net.URI;
 import java.time.Duration;
 import java.util.HashMap;
@@ -31,6 +32,7 @@ import java.util.Map;
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.DrasylConfig.getInetAddress;
 import static org.drasyl.DrasylConfig.getShort;
 import static org.drasyl.DrasylConfig.getURI;
 import static org.drasyl.util.SecretUtil.maskSecret;
@@ -48,17 +50,29 @@ public class GroupsManagerConfig {
     static final String GROUP_TIMEOUT = "timeout";
     static final String GROUP_MIN_DIFFICULTY = "min-difficulty";
     static final String DATABASE_URI = "database.uri";
+    static final String API_ENABLED = "api.enabled";
+    static final String API_BIND_HOST = "api.bind-host";
+    static final String API_BIND_PORT = "api.bind-port";
     private final URI databaseUri;
     private final Map<String, Group> groupsMap;
+    private final boolean apiEnabled;
+    private final InetAddress apiBindHost;
+    private final int apiBindPort;
 
     GroupsManagerConfig(final Builder builder) {
         this.databaseUri = requireNonNull(builder.databaseUri);
         this.groupsMap = Map.copyOf(requireNonNull(builder.groups));
+        this.apiEnabled = builder.apiEnabled;
+        this.apiBindHost = requireNonNull(builder.apiBindHost);
+        this.apiBindPort = builder.apiBindPort;
     }
 
     public GroupsManagerConfig(final Config config) {
         databaseUri = getURI(config, DATABASE_URI);
         groupsMap = Map.copyOf(getGroups(config, GROUPS));
+        this.apiEnabled = config.getBoolean(API_ENABLED);
+        this.apiBindHost = getInetAddress(config, API_BIND_HOST);
+        this.apiBindPort = config.getInt(API_BIND_PORT);
     }
 
     private Map<String, Group> getGroups(final Config config, final String path) {
@@ -119,6 +133,18 @@ public class GroupsManagerConfig {
                 '}';
     }
 
+    public boolean isApiEnabled() {
+        return apiEnabled;
+    }
+
+    public InetAddress getApiBindHost() {
+        return apiBindHost;
+    }
+
+    public int getApiBindPort() {
+        return apiBindPort;
+    }
+
     @Override
     public boolean equals(final Object o) {
         if (this == o) {
@@ -127,14 +153,17 @@ public class GroupsManagerConfig {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        final GroupsManagerConfig config = (GroupsManagerConfig) o;
-        return Objects.equals(databaseUri, config.databaseUri) &&
-                Objects.equals(groupsMap, config.groupsMap);
+        final GroupsManagerConfig that = (GroupsManagerConfig) o;
+        return apiEnabled == that.apiEnabled &&
+                apiBindPort == that.apiBindPort &&
+                Objects.equals(databaseUri, that.databaseUri) &&
+                Objects.equals(groupsMap, that.groupsMap) &&
+                Objects.equals(apiBindHost, that.apiBindHost);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(databaseUri, groupsMap);
+        return Objects.hash(databaseUri, groupsMap, apiEnabled, apiBindHost, apiBindPort);
     }
 
     //======================================= Config Builder =======================================
@@ -163,10 +192,16 @@ public class GroupsManagerConfig {
     public static class Builder {
         Map<String, Group> groups;
         URI databaseUri;
+        boolean apiEnabled;
+        InetAddress apiBindHost;
+        int apiBindPort;
 
         public Builder(final GroupsManagerConfig config) {
             groups = new HashMap<>(config.getGroups());
             databaseUri = config.getDatabaseUri();
+            apiEnabled = config.isApiEnabled();
+            apiBindHost = config.getApiBindHost();
+            apiBindPort = config.getApiBindPort();
         }
 
         public Builder groups(final Map<String, Group> groups) {
@@ -176,6 +211,21 @@ public class GroupsManagerConfig {
 
         public Builder databaseUri(final URI databaseUri) {
             this.databaseUri = databaseUri;
+            return this;
+        }
+
+        public Builder apiEnabled(final boolean apiEnabled) {
+            this.apiEnabled = apiEnabled;
+            return this;
+        }
+
+        public Builder apiBindHost(final InetAddress apiBindHost) {
+            this.apiBindHost = apiBindHost;
+            return this;
+        }
+
+        public Builder apiBindPort(final int apiBindPort) {
+            this.apiBindPort = apiBindPort;
             return this;
         }
 

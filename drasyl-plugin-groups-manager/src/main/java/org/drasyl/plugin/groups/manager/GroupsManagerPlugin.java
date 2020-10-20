@@ -40,6 +40,7 @@ public class GroupsManagerPlugin implements DrasylPlugin {
     private static final Logger LOG = LoggerFactory.getLogger(GroupsManagerPlugin.class);
     private final GroupsManagerConfig config;
     private DatabaseAdapter database;
+    private GroupsManagerApi api;
 
     GroupsManagerPlugin(final GroupsManagerConfig config,
                         final DatabaseAdapter database) {
@@ -87,11 +88,21 @@ public class GroupsManagerPlugin implements DrasylPlugin {
     public void onAfterStart(final PluginEnvironment env) {
         env.getPipeline().addLast(GROUPS_MANAGER_HANDLER, new GroupsManagerHandler(database));
 
+        // start api
+        if (config.isApiEnabled()) {
+            api = new GroupsManagerApi(config, database);
+            api.start();
+        }
+
         LOG.debug("Groups Manager Plugin was started with options: {}", config);
     }
 
     @Override
     public void onBeforeShutdown(final PluginEnvironment env) {
+        if (api != null) {
+            api.shutdown();
+        }
+
         env.getPipeline().remove(GROUPS_MANAGER_HANDLER);
         try {
             database.close();
