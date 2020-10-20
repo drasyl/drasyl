@@ -7,12 +7,12 @@
  *  it under the terms of the GNU Lesser General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  drasyl is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -35,14 +35,13 @@ import java.net.URI;
 import java.sql.Connection;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.time.Duration;
+import java.util.Set;
 
+import static java.time.Duration.ofSeconds;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.core.IsNot.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
@@ -84,89 +83,179 @@ class JDBCDatabaseAdapterTest {
     }
 
     @Nested
-    class Groups {
+    class AddGroup {
         @Test
-        void shouldAddGroupAndReturnTheGroup() throws DatabaseException {
-            final Group group = Group.of("name", "secret", (short) 0, Duration.ofSeconds(60));
+        void shouldReturnTrueForNewGroup() throws DatabaseException {
+            // prepare
+            final Group group = Group.of("name", "secret", (short) 0, ofSeconds(60));
 
+            // test
             assertTrue(database.addGroup(group));
-            assertEquals(group, database.getGroup(group.getName()));
         }
 
         @Test
         void shouldReturnFalseOnAlreadyExistingGroup() throws DatabaseException {
-            final Group group = Group.of("name", "secret", (short) 0, Duration.ofSeconds(60));
+            // prepare
+            final Group group = Group.of("name", "secret", (short) 0, ofSeconds(60));
+            database.addGroup(group);
 
-            assertTrue(database.addGroup(group));
+            // test
             assertFalse(database.addGroup(group));
-            assertEquals(group, database.getGroup(group.getName()));
+        }
+    }
+
+    @Nested
+    class AddGroupMember {
+        @Test
+        void shouldReturnTrueForNewMember() throws DatabaseException {
+            // prepare
+            final Group group = Group.of("name", "secret", (short) 0, ofSeconds(60));
+            final Member member = Member.of(publicKey);
+            final Membership membership = Membership.of(member, group, 60);
+            database.addGroup(group);
+
+            // test
+            assertTrue(database.addGroupMember(membership));
         }
 
         @Test
-        void shouldReturnNullOnNotExistingGroup() {
+        void shouldReturnFalseOnAlreadyExistingMembers() throws DatabaseException {
+            // prepare
+            final Group group = Group.of("name", "secret", (short) 0, ofSeconds(60));
+            final Member member = Member.of(publicKey);
+            final Membership membership = Membership.of(member, group, 60);
+            database.addGroup(group);
+            database.addGroupMember(membership);
+
+            // test
+            assertFalse(database.addGroupMember(membership));
+        }
+    }
+
+    @Nested
+    class GetGroup {
+        @Test
+        void shouldReturnExistingGroup() throws DatabaseException {
+            // prepare
+            final Group group = Group.of("name", "secret", (short) 0, ofSeconds(60));
+            database.addGroup(group);
+
+            // test
+            assertEquals(group, database.getGroup(group.getName()));
+        }
+    }
+
+    @Nested
+    class GetGroups {
+        @Test
+        void shouldReturnExistingGroups() throws DatabaseException {
+            // prepare
+            final Group group = Group.of("name", "secret", (short) 0, ofSeconds(60));
+            database.addGroup(group);
+
+            // test
+            assertEquals(Set.of(group), database.getGroups());
+        }
+
+        @Test
+        void shouldReturnNullOnNotExistingGroup() throws DatabaseException {
             assertNull(database.getGroup("void"));
         }
     }
 
     @Nested
-    class GroupMember {
+    class DeleteGroup {
         @Test
-        void shouldAddAndReturnGroupMember() throws DatabaseException {
-            final Group group = Group.of("name", "secret", (short) 0, Duration.ofSeconds(60));
-            final Member member = Member.of(publicKey);
-            final Membership membership = Membership.of(member, group, 60);
+        void shouldReturnTrueForExistingGroup() throws DatabaseException {
+            // prepare
+            final Group group = Group.of("name", "secret", (short) 0, ofSeconds(60));
+            database.addGroup(group);
 
-            assertTrue(database.addGroup(group));
-            assertTrue(database.addGroupMember(membership));
-            assertThat(database.getGroupMembers(group.getName()), contains(membership));
+            // test
+            assertTrue(database.deleteGroup("name"));
         }
 
         @Test
-        void shouldUpdateGroupMember() throws DatabaseException {
-            final Group group = Group.of("name", "secret", (short) 0, Duration.ofSeconds(60));
-            final Member member = Member.of(publicKey);
-            final Membership membership1 = Membership.of(member, group, 60);
-            final Membership membership2 = Membership.of(member, group, 120);
-
-            assertTrue(database.addGroup(group));
-
-            assertTrue(database.addGroupMember(membership1));
-            assertThat(database.getGroupMembers(group.getName()), contains(membership1));
-
-            assertFalse(database.addGroupMember(membership2));
-            assertThat(database.getGroupMembers(group.getName()), contains(membership2));
-
-            assertNotEquals(membership1, membership2);
-        }
-
-        @Test
-        void shouldRemoveGroupMember() throws DatabaseException {
-            final Group group = Group.of("name", "secret", (short) 0, Duration.ofSeconds(60));
-            final Member member = Member.of(publicKey);
-            final Membership membership = Membership.of(member, group, 60);
-
-            assertTrue(database.addGroup(group));
-            assertTrue(database.addGroupMember(membership));
-            assertThat(database.getGroupMembers(group.getName()), contains(membership));
-            database.removeGroupMember(publicKey, group.getName());
-            assertThat(database.getGroupMembers(group.getName()), not(contains(membership)));
+        void shouldReturnFalseForNonExistingGroup() throws DatabaseException {
+            assertFalse(database.deleteGroup("name"));
         }
     }
 
     @Nested
-    class Stale {
+    class UpdateGroup {
         @Test
-        void shouldRemoveStaleMemberships() throws DatabaseException {
-            final Group group = Group.of("name", "secret", (short) 0, Duration.ofSeconds(60));
+        void shouldReturnTrueForExistingGroup() throws DatabaseException {
+            // prepare
+            final Group group = Group.of("name", "secret", (short) 0, ofSeconds(60));
+            database.addGroup(group);
+
+            // test
+            assertTrue(database.updateGroup(Group.of("name", "secret", (short) 0, ofSeconds(120))));
+        }
+
+        @Test
+        void shouldReturnFalseForNonExistingGroup() throws DatabaseException {
+            assertFalse(database.updateGroup(Group.of("name", "secret", (short) 0, ofSeconds(120))));
+        }
+    }
+
+    @Nested
+    class GetGroupMembers {
+        @Test
+        void shouldReturnGroupMembers() throws DatabaseException {
+            // prepare
+            final Group group = Group.of("name", "secret", (short) 0, ofSeconds(60));
             final Member member = Member.of(publicKey);
             final Membership membership = Membership.of(member, group, 60);
+            database.addGroup(group);
+            database.addGroupMember(membership);
 
-            assertTrue(database.addGroup(group));
-            assertTrue(database.addGroupMember(membership));
+            // test
             assertThat(database.getGroupMembers(group.getName()), contains(membership));
+        }
+    }
 
+    @Nested
+    class RemoveGroupMember {
+        @Test
+        void shouldReturnTrueForMembers() throws DatabaseException {
+            // prepare
+            final Group group = Group.of("name", "secret", (short) 0, ofSeconds(60));
+            final Member member = Member.of(publicKey);
+            final Membership membership = Membership.of(member, group, 60);
+            database.addGroup(group);
+            database.addGroupMember(membership);
+
+            // test
+            assertTrue(database.removeGroupMember(publicKey, group.getName()));
+        }
+
+        @Test
+        void shouldReturnFalseForNonMember() throws DatabaseException {
+            // prepare
+            final Group group = Group.of("name", "secret", (short) 0, ofSeconds(60));
+            final Member member = Member.of(publicKey);
+            final Membership membership = Membership.of(member, group, 60);
+            database.addGroup(group);
+
+            // test
+            assertFalse(database.removeGroupMember(publicKey, group.getName()));
+        }
+    }
+
+    @Nested
+    class DeleteStaleMemberships {
+        @Test
+        void shouldRemoveStaleMemberships() throws DatabaseException {
+            // prepare
+            final Group group = Group.of("name", "secret", (short) 0, ofSeconds(60));
+            final Member member = Member.of(publicKey);
+            final Membership membership = Membership.of(member, group, 60);
+            database.addGroup(group);
+            database.addGroupMember(membership);
+
+            // test
             assertThat(database.deleteStaleMemberships(), contains(membership));
-            assertThat(database.getGroupMembers(group.getName()), not(contains(membership)));
         }
     }
 }

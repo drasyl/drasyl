@@ -7,12 +7,12 @@
  *  it under the terms of the GNU Lesser General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  drasyl is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -46,6 +46,7 @@ import org.drasyl.plugin.groups.manager.database.DatabaseException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.Timeout;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -56,6 +57,7 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.TimeUnit;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error.ERROR_GROUP_NOT_FOUND;
 import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error.ERROR_PROOF_TO_WEAK;
 import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error.ERROR_UNKNOWN;
@@ -197,7 +199,7 @@ class GroupsManagerHandlerTest {
         }
 
         @Test
-        void shouldSendErrorOnNotExistingGroup() {
+        void shouldSendErrorOnNotExistingGroup() throws DatabaseException {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                     identity,
@@ -218,7 +220,7 @@ class GroupsManagerHandlerTest {
         }
 
         @Test
-        void shouldSendErrorOnNotWeakProofOfWork() {
+        void shouldSendErrorOnNotWeakProofOfWork() throws DatabaseException {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                     identity,
@@ -261,12 +263,31 @@ class GroupsManagerHandlerTest {
                     new GroupJoinFailedMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), ERROR_UNKNOWN));
             assertTrue(future.isCompletedExceptionally());
         }
+
+        @Test
+        @Timeout(value = 15_000, unit = MILLISECONDS)
+        void shouldCompleteFutureExceptionallyOnDatabaseException() throws DatabaseException {
+            final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                    identity,
+                    inboundValidator,
+                    outboundValidator,
+                    handler);
+            final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundMessages(GroupsServerMessage.class).test();
+            final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork);
+
+            when(databaseAdapter.getGroup(any())).thenThrow(DatabaseException.class);
+
+            final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
+
+            assertThrows(Exception.class, future::get);
+        }
     }
 
     @Nested
     class Leave {
         @Test
-        void shouldHandleLeaveRequest() {
+        void shouldHandleLeaveRequest() throws DatabaseException {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                     identity,

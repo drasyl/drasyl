@@ -7,12 +7,12 @@
  *  it under the terms of the GNU Lesser General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  drasyl is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -25,8 +25,6 @@ import org.drasyl.plugin.groups.manager.data.Member;
 import org.drasyl.plugin.groups.manager.data.Membership;
 import org.drasyl.plugin.groups.manager.database.DatabaseAdapter;
 import org.drasyl.plugin.groups.manager.database.DatabaseException;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.net.URI;
 import java.sql.Connection;
@@ -42,10 +40,10 @@ import java.util.Set;
 /**
  * {@link DatabaseAdapter} implementation that supports SQL databases.
  */
+@SuppressWarnings({ "java:S1192" })
 public class JDBCDatabaseAdapter implements DatabaseAdapter {
     public static final int QUERY_TIMEOUT = 15;
     public static final String SCHEME = "jdbc";
-    private static final Logger LOG = LoggerFactory.getLogger(JDBCDatabaseAdapter.class);
     private final String uri;
     private Connection connection;
 
@@ -76,7 +74,7 @@ public class JDBCDatabaseAdapter implements DatabaseAdapter {
             }
         }
         catch (final SQLException e) {
-            throw new DatabaseException("Could not create SQLite database '" + uri + "': ", e);
+            throw new DatabaseException("Could not create SQLite database", e);
         }
     }
 
@@ -109,7 +107,7 @@ public class JDBCDatabaseAdapter implements DatabaseAdapter {
             }
         }
         catch (final SQLException e) {
-            throw new DatabaseException("Could not add group '" + group.getName() + "' to database: ", e);
+            throw new DatabaseException("Could not add group '" + group.getName() + "' to database", e);
         }
     }
 
@@ -146,12 +144,12 @@ public class JDBCDatabaseAdapter implements DatabaseAdapter {
             return rtn;
         }
         catch (final SQLException e) {
-            throw new DatabaseException("Could not add new member '" + membership.getMember().getPublicKey().getCompressedKey() + "' to group '" + membership.getGroup().getName() + "': ", e);
+            throw new DatabaseException("Could not add new member '" + membership.getMember().getPublicKey().getCompressedKey() + "' to group '" + membership.getGroup().getName() + "'", e);
         }
     }
 
     @Override
-    public Group getGroup(final String name) {
+    public Group getGroup(final String name) throws DatabaseException {
         try (final Connection con = getConnection()) {
             final String sqlSelectGroup = "SELECT * FROM `Group` WHERE name=?";
 
@@ -170,15 +168,73 @@ public class JDBCDatabaseAdapter implements DatabaseAdapter {
                 }
             }
         }
-        catch (final Exception e) {
-            LOG.debug("Error occurred on getting group '{}' from database: ", name, e);
+        catch (final SQLException e) {
+            throw new DatabaseException("Could not get group '" + name + "'", e);
         }
 
         return null;
     }
 
     @Override
-    public Set<Membership> getGroupMembers(final String name) {
+    public Set<Group> getGroups() throws DatabaseException {
+        final Set<Group> groups = new HashSet<>();
+
+        try (final Connection con = getConnection()) {
+            final String sqlSelectGroups = "SELECT * FROM `Group`;";
+
+            try (final PreparedStatement ps = con.prepareStatement(sqlSelectGroups)) {
+                ps.setQueryTimeout(QUERY_TIMEOUT);
+
+                try (final ResultSet rs = ps.executeQuery()) {
+                    groups.addAll(getGroupsFromResultSet(rs));
+                }
+            }
+        }
+        catch (final SQLException e) {
+            throw new DatabaseException("Could not get groups", e);
+        }
+
+        return groups;
+    }
+
+    @Override
+    public boolean deleteGroup(final String name) throws DatabaseException {
+        try (final Connection con = getConnection()) {
+            final String sqlDeleteGroup = "DELETE FROM `Group` WHERE name=?;";
+
+            try (final PreparedStatement ps = con.prepareStatement(sqlDeleteGroup)) {
+                ps.setQueryTimeout(QUERY_TIMEOUT);
+                ps.setString(1, name);
+
+                return ps.executeUpdate() > 0;
+            }
+        }
+        catch (final SQLException e) {
+            throw new DatabaseException("Could not remove group '" + name + "'", e);
+        }
+    }
+
+    @Override
+    public boolean updateGroup(final Group group) throws DatabaseException {
+        try (final Connection con = getConnection()) {
+            final String sqlUpdateGroup = "UPDATE `Group` SET secret=?, minDifficulty=?, timeout=? WHERE name=?;";
+
+            try (final PreparedStatement ps = con.prepareStatement(sqlUpdateGroup)) {
+                ps.setQueryTimeout(QUERY_TIMEOUT);
+                ps.setString(1, group.getCredentials());
+                ps.setInt(2, group.getMinDifficulty());
+                ps.setLong(3, group.getTimeout().toMillis());
+                ps.setString(4, group.getName());
+                return ps.executeUpdate() > 0;
+            }
+        }
+        catch (final SQLException e) {
+            throw new DatabaseException("Could not update group '" + group.getName() + "'", e);
+        }
+    }
+
+    @Override
+    public Set<Membership> getGroupMembers(final String name) throws DatabaseException {
         final Set<Membership> members = new HashSet<>();
 
         try (final Connection con = getConnection()) {
@@ -193,16 +249,16 @@ public class JDBCDatabaseAdapter implements DatabaseAdapter {
                 }
             }
         }
-        catch (final Exception e) {
-            LOG.debug("Error occurred on getting members of group '{}': ", name, e);
+        catch (final SQLException | CryptoException e) {
+            throw new DatabaseException("Could not get memberships of group '" + name + "'", e);
         }
 
         return members;
     }
 
     @Override
-    public void removeGroupMember(final CompressedPublicKey member,
-                                  final String groupName) throws DatabaseException {
+    public boolean removeGroupMember(final CompressedPublicKey member,
+                                     final String groupName) throws DatabaseException {
         try (final Connection con = getConnection()) {
             final String sqlDeleteGroupMember = "DELETE FROM `GroupMembers` WHERE member=? AND groupName=?;";
 
@@ -211,11 +267,11 @@ public class JDBCDatabaseAdapter implements DatabaseAdapter {
                 ps.setString(1, member.getCompressedKey());
                 ps.setString(2, groupName);
 
-                ps.executeUpdate();
+                return ps.executeUpdate() > 0;
             }
         }
         catch (final SQLException e) {
-            throw new DatabaseException("Could not remove member '" + member.getCompressedKey() + "' from group '" + groupName + "'");
+            throw new DatabaseException("Could not remove member '" + member.getCompressedKey() + "' from group '" + groupName + "'", e);
         }
     }
 
@@ -226,7 +282,7 @@ public class JDBCDatabaseAdapter implements DatabaseAdapter {
                 connection.close();
             }
             catch (final SQLException e) {
-                throw new DatabaseException("Could close connection: ", e);
+                throw new DatabaseException("Could close connection", e);
             }
         }
     }
@@ -240,7 +296,7 @@ public class JDBCDatabaseAdapter implements DatabaseAdapter {
             return deleteStaleMembershipTransaction(con, time, rtn);
         }
         catch (final SQLException e) {
-            throw new DatabaseException("Could not delete stale memberships: ", e);
+            throw new DatabaseException("Could not delete stale memberships", e);
         }
     }
 
@@ -273,14 +329,29 @@ public class JDBCDatabaseAdapter implements DatabaseAdapter {
 
             return rtn;
         }
-        catch (final Exception e) {
+        catch (final SQLException | CryptoException e) {
             con.rollback();
-            throw new DatabaseException("Could not delete stale memberships: ", e);
+            throw new DatabaseException("Could not delete stale memberships", e);
         }
         finally {
             con.commit();
             con.setAutoCommit(oldAutoCommit);
         }
+    }
+
+    private Set<Group> getGroupsFromResultSet(final ResultSet rs) throws SQLException {
+        final Set<Group> groups = new HashSet<>();
+
+        while (rs.next()) {
+            groups.add(Group.of(
+                    rs.getString("name"),
+                    rs.getString("secret"),
+                    rs.getShort("minDifficulty"),
+                    Duration.ofMillis(rs.getLong("timeout"))
+            ));
+        }
+
+        return groups;
     }
 
     private Set<Membership> getGroupMembersFromResultSet(final ResultSet rs) throws SQLException, CryptoException {
