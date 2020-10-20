@@ -27,7 +27,7 @@ public class GroupsManagerNode {
                 .serverBindPort(0)
                 .plugins(Set.of(new GroupsManagerPlugin(
                     GroupsManagerConfig.builder()
-                            .databaseUri(URI.create("jdbc:sqlite:groups-manager.sqlite"))
+//                            .databaseUri(URI.create("jdbc:sqlite:groups-manager.sqlite"))
                             .groups(Map.of(group.getName(), group))
                             .build()
                 )))
