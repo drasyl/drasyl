@@ -35,6 +35,11 @@ public class Peer {
         this.publicKey = publicKey;
     }
 
+    /**
+     * Returns the peer's public key.
+     *
+     * @return the peer's public key.
+     */
     public CompressedPublicKey getPublicKey() {
         return publicKey;
     }
@@ -59,7 +64,7 @@ public class Peer {
     @Override
     public String toString() {
         return "Peer{" +
-                "identity=" + publicKey +
+                "publicKey=" + publicKey +
                 '}';
     }
 

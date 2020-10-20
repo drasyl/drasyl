@@ -18,10 +18,11 @@ Maven:
 </dependency>
 ```
 
-Gradle:
-
-```gradle
-compile group: 'org.drasyl', name: 'drasyl-plugin-groups-client', version: '0.3.0-SNAPSHOT'
+Other dependency managers:
+```java
+Gradle : compile "org.drasyl:drasyl-plugin-groups-client:0.3.0-SNAPSHOT" // build.gradle 
+   Ivy : <dependency org="org.drasyl" name="drasyl-plugin-groups-client" rev="0.3.0-SNAPSHOT" conf="build" /> // ivy.xml
+   SBT : libraryDependencies += "org.drasyl" % "drasyl-plugin-groups-client" % "0.3.0-SNAPSHOT" // build.sbt
 ```
 
 ### Configuration
@@ -41,7 +42,7 @@ With this configuration, the client will connect to the Groups Manager on the no
 `023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff` at startup and will join the
 group `steezy-vips`. Authentication is done via the shared secret `my-shared-secret`.
 
-Special [Group Events](../../drasyl-plugin-groups-client/src/main/java/org/drasyl/plugin/groups/client/event) will then inform you about group joins of your local or other nodes.
+Special [Group Events](https://www.javadoc.io/doc/org.drasyl/drasyl-plugin-groups-client/latest/org/drasyl/plugin/groups/client/event/package-summary.html) will then inform you about group joins of your local or other nodes.
 
 In the next section you will learn how to start the Group Manager on a node.
 
@@ -60,10 +61,11 @@ Maven:
 </dependency>
 ```
 
-Gradle:
-
-```gradle
-compile group: 'org.drasyl', name: 'drasyl-plugin-groups-manager', version: '0.3.0-SNAPSHOT'
+Other dependency managers:
+```java
+Gradle : compile "org.drasyl:drasyl-plugin-groups-manager:0.3.0-SNAPSHOT" // build.gradle 
+   Ivy : <dependency org="org.drasyl" name="drasyl-plugin-groups-manager" rev="0.3.0-SNAPSHOT" conf="build" /> // ivy.xml
+   SBT : libraryDependencies += "org.drasyl" % "drasyl-plugin-groups-manager" % "0.3.0-SNAPSHOT" // build.sbt
 ```
 
 ### Configuration

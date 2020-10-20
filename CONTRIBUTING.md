@@ -13,6 +13,13 @@ of the problem. Make sure you test with the [latest snapshot version of drasyl](
   * Steps to reproduce
     * Bonus points: provide a minimal working example
 
+### Important: "Getting Help Vs Reporting an Issue"
+
+The issue tracker is not a general support forum, but a place to report bugs and asks for new features.
+
+For end-user related support questions, try using first:
+- the drasyl gitter room: [![Gitter](https://badges.gitter.im/drasyl-overlay/drasyl.svg)](https://gitter.im/drasyl-overlay/drasyl)
+
 ## Submitting a pull request/merge request
 
 If you find a bug that you'd like to fix, or a new feature that you'd

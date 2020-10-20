@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.event;
 
 import org.drasyl.identity.CompressedPublicKey;
@@ -32,12 +31,20 @@ public class MessageEvent implements Event {
     private final CompressedPublicKey sender;
     private final Object payload;
 
+    /**
+     * Creates a new {@code MessageEvent}
+     *
+     * @param sender  the message's sender
+     * @param payload content of the message
+     */
     public MessageEvent(final CompressedPublicKey sender, final Object payload) {
         this.sender = sender;
         this.payload = payload;
     }
 
     /**
+     * Returns the message's sender.
+     *
      * @return the message's sender
      */
     public CompressedPublicKey getSender() {
@@ -45,7 +52,9 @@ public class MessageEvent implements Event {
     }
 
     /**
-     * @return th message
+     * Returns the message's payload.
+     *
+     * @return the message's payload
      */
     public Object getPayload() {
         return payload;

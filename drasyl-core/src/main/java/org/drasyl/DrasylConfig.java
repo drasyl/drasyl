@@ -958,6 +958,13 @@ public class DrasylConfig {
         return new DrasylConfig(ConfigFactory.parseFile(file).withFallback(ConfigFactory.load()));
     }
 
+    /**
+     * Creates a new builder to build a custom {@link DrasylConfig}. The built configuration is
+     * derived from the default configuration. The builder must be finalized by calling {@link
+     * Builder#build()} to create the resulting {@link DrasylConfig}.
+     *
+     * @return the new builder
+     */
     public static Builder newBuilder() {
         return newBuilder(DEFAULT);
     }
@@ -1448,6 +1455,11 @@ public class DrasylConfig {
             return this;
         }
 
+        /**
+         * Creates a {@link DrasylConfig} from the builder.
+         *
+         * @return the {@link DrasylConfig} created from the builder
+         */
         public DrasylConfig build() {
             return new DrasylConfig(networkId, identityProofOfWork, identityPublicKey,
                     identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort,

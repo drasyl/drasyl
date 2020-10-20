@@ -4,7 +4,7 @@ drasyl can automatically (un-) marshall given objects. To prevent security risks
 
 !!! info
 
-    Since version 3, drasyl differs between in- and outbound messages. 
+    Since version 0.3.0, drasyl differs between in- and outbound messages. 
 
 ## [`marshalling.inbound.allowed-types`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.Builder.html#marshallingInboundAllowedTypes(java.util.List)) / [`marshalling.outbound.allowed-types`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.Builder.html#marshallingOutboundAllowedTypes(java.util.List))
 
@@ -13,7 +13,7 @@ This property is a list of all types that are supported by the codec for the dra
 With this list, a developer guarantees that all classes are secure and cannot be misused as a deserialization gadget in the context of the marshaller.
 A reckless implementation of a permitted class can leave the entire application and all executing machines vulnerable to remote code execution.
 
-!!! info 
+!!! important 
 
     An attacker is in general interested in all "non-pure" methods, which have promising side
     effects. A method is "pure" if:

@@ -10,7 +10,7 @@
 drasyl is a general-purpose overlay network framework for rapid development of distributed P2P applications.
 
 By using drasyl developers can fully concentrate on creating distributed applications.
-With drasyl boundaries between layer-2 networks will be eliminated and secure communication channels between any peers will be provided.
+With drasyl, boundaries between IP-based networks will be eliminated and secure communication channels between any peers will be provided.
 Zero-configuration is required to use drasyl.
 Developers can run a new drasyl node without having to write configuration files or provide IP addresses of peers.
 
