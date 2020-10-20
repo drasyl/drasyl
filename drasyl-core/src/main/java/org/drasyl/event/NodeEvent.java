@@ -16,12 +16,16 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.event;
 
 /**
  * Events that refer to a {@link Node}.
  */
 public interface NodeEvent extends Event {
+    /**
+     * Returns the node to which this event refers.
+     *
+     * @return the node to which this event refers.
+     */
     Node getNode();
 }

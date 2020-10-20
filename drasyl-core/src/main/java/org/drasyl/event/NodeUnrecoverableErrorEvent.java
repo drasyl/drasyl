@@ -34,6 +34,11 @@ public class NodeUnrecoverableErrorEvent extends AbstractNodeEvent {
         this.error = error;
     }
 
+    /**
+     * Returns the exception that crashed the node.
+     *
+     * @return the exception that crashed the node
+     */
     public Throwable getError() {
         return error;
     }

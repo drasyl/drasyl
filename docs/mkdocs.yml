@@ -81,17 +81,15 @@ markdown_extensions:
 # Page tree
 nav:
   - 'Welcome': 'index.md'
-  - 'Getting Started':
-      - 'Quick Start': 'getting-started/quick-start.md'
-      - 'CLI': 'getting-started/cli.md'
-      - 'Public Super Peers': 'getting-started/public-super-peers.md'
+  - 'Getting Started': 'getting-started.md'
   - 'Configuration':
       - 'Overview': 'configuration/index.md'
       - 'Marshalling': 'configuration/marshalling.md'
-  - 'Contributing':
-      - 'Submitting Issues': 'contributing/submitting_issues.md'
-      - 'Submiting PRs': 'contributing/submitting_pull_request.md'
-  - 'drasyl Groups': 'groups.md'
+  - 'Command Line Tool': 'cli.md'
+  - 'Public Super Peers': 'public-super-peers.md'
   - 'Architecture':
       - 'Concepts': 'architecture/concepts.md'
       - 'Diagrams': 'architecture/diagrams.md'
+  - 'Plugins':
+      - 'drasyl Groups': 'plugins/groups.md'
+  - 'Contributing': 'contributing.md'

@@ -23,5 +23,10 @@ package org.drasyl.event;
  * Events that refer to a {@link Peer}.
  */
 public interface PeerEvent extends Event {
+    /**
+     * Returns the peer to which this event refers.
+     *
+     * @return the peer to which this event refers.
+     */
     Peer getPeer();
 }

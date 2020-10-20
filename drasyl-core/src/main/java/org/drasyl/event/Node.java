@@ -65,10 +65,20 @@ public class Node {
                 '}';
     }
 
+    /**
+     * Returns the node's identity.
+     *
+     * @return the node's identity
+     */
     public Identity getIdentity() {
         return identity;
     }
 
+    /**
+     * Returns the node's endpoints.
+     *
+     * @return the node's endpoints
+     */
     public Set<Endpoint> getEndpoints() {
         return endpoints;
     }
