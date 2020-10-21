@@ -21,6 +21,7 @@ package org.drasyl.peer.connection.message;
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeerInformation;
 import org.junit.jupiter.api.Nested;
@@ -42,9 +43,11 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @ExtendWith(MockitoExtension.class)
 class WhoisMessageTest {
     @Mock
-    private CompressedPublicKey recipient;
+    private CompressedPublicKey sender;
     @Mock
-    private CompressedPublicKey requester;
+    private ProofOfWork proofOfWork;
+    @Mock
+    private CompressedPublicKey recipient;
     @Mock
     private PeerInformation peerInformation;
     @Mock
@@ -54,9 +57,9 @@ class WhoisMessageTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
-            final String json = "{\"@type\":\"WhoisMessage\",\"id\":\"c78fe75d4c93bc07e916e539\",\"recipient\":\"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\"sender\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"peerInformation\":{\"endpoints\":[\"ws://test#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22\"]}}";
+            final String json = "{\"@type\":\"WhoisMessage\",\"id\":\"c78fe75d4c93bc07e916e539\",\"recipient\":\"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\"sender\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"proofOfWork\":6657650,\"peerInformation\":{\"endpoints\":[\"ws://test#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22\"]}}";
 
-            assertEquals(new WhoisMessage(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), PeerInformation.of(Set.of(Endpoint.of("ws://test#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")))), JACKSON_READER.readValue(json, Message.class));
+            assertEquals(new WhoisMessage(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), ProofOfWork.of(6657650), CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), PeerInformation.of(Set.of(Endpoint.of("ws://test#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")))), JACKSON_READER.readValue(json, Message.class));
         }
 
         @Test
@@ -71,7 +74,7 @@ class WhoisMessageTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException, CryptoException {
-            final WhoisMessage message = new WhoisMessage(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), PeerInformation.of(Set.of(Endpoint.of("ws://test#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))));
+            final WhoisMessage message = new WhoisMessage(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), ProofOfWork.of(6657650), CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), PeerInformation.of(Set.of(Endpoint.of("ws://test#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))));
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
@@ -84,9 +87,9 @@ class WhoisMessageTest {
     class Equals {
         @Test
         void shouldReturnTrue() {
-            final WhoisMessage message1 = new WhoisMessage(recipient, requester, peerInformation);
-            final WhoisMessage message2 = new WhoisMessage(recipient, requester, peerInformation);
-            final WhoisMessage message3 = new WhoisMessage(recipient, requester, peerInformation2);
+            final WhoisMessage message1 = new WhoisMessage(sender, proofOfWork, recipient, peerInformation);
+            final WhoisMessage message2 = new WhoisMessage(sender, proofOfWork, recipient, peerInformation);
+            final WhoisMessage message3 = new WhoisMessage(sender, proofOfWork, recipient, peerInformation2);
 
             assertEquals(message1, message2);
             assertNotEquals(message1, message3);
@@ -98,9 +101,9 @@ class WhoisMessageTest {
     class HashCode {
         @Test
         void shouldReturnTrue() {
-            final WhoisMessage message1 = new WhoisMessage(recipient, requester, peerInformation);
-            final WhoisMessage message2 = new WhoisMessage(recipient, requester, peerInformation);
-            final WhoisMessage message3 = new WhoisMessage(recipient, requester, peerInformation2);
+            final WhoisMessage message1 = new WhoisMessage(sender, proofOfWork, recipient, peerInformation);
+            final WhoisMessage message2 = new WhoisMessage(sender, proofOfWork, recipient, peerInformation);
+            final WhoisMessage message3 = new WhoisMessage(sender, proofOfWork, recipient, peerInformation2);
 
             assertEquals(message1.hashCode(), message2.hashCode());
             assertNotEquals(message1.hashCode(), message3.hashCode());
@@ -112,7 +115,7 @@ class WhoisMessageTest {
     class IncrementHopCount {
         @Test
         void shouldIncrementHopCountByOne() {
-            final WhoisMessage message = new WhoisMessage(recipient, requester, peerInformation);
+            final WhoisMessage message = new WhoisMessage(sender, proofOfWork, recipient, peerInformation);
 
             message.incrementHopCount();
 

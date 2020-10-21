@@ -26,6 +26,7 @@ import io.netty.handler.stream.ChunkedWriteHandler;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.crypto.Hashing;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ChunkedMessage;
 import org.drasyl.peer.connection.message.MessageId;
@@ -40,6 +41,7 @@ import java.util.Queue;
 @SuppressWarnings({ "java:S107" })
 public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
     private final CompressedPublicKey sender;
+    private final ProofOfWork proofOfWork;
     private final CompressedPublicKey recipient;
     private final int contentLength;
     private final String checksum;
@@ -50,6 +52,7 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
     private boolean sentLastChuck;
 
     ChunkedMessageInput(final CompressedPublicKey sender,
+                        final ProofOfWork proofOfWork,
                         final CompressedPublicKey recipient,
                         final int contentLength,
                         final String checksum,
@@ -59,6 +62,7 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
                         final long progress,
                         final boolean sentLastChuck) {
         this.sender = sender;
+        this.proofOfWork = proofOfWork;
         this.recipient = recipient;
         this.contentLength = contentLength;
         this.checksum = checksum;
@@ -77,7 +81,7 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
      * @param chunkSize the size of each chunk
      */
     public ChunkedMessageInput(final ApplicationMessage msg, final int chunkSize) {
-        this(msg.getSender(), msg.getRecipient(), msg.payloadAsByteBuf().readableBytes(),
+        this(msg.getSender(), msg.getProofOfWork(), msg.getRecipient(), msg.payloadAsByteBuf().readableBytes(),
                 Hashing.murmur3x64Hex(msg.getPayload()), new LinkedList<>(),
                 msg.payloadAsByteBuf(),
                 msg.getId(), 0, false);
@@ -139,7 +143,7 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
             else {
                 // Send last chunk for this input
                 sentLastChuck = true;
-                return ChunkedMessage.createLastChunk(sender, recipient, msgID);
+                return ChunkedMessage.createLastChunk(sender, proofOfWork, recipient, msgID);
             }
         }
         else {
@@ -151,11 +155,11 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
 
                 if (progress == 0) {
                     // Send first chunk for this input
-                    chunkedMessage = ChunkedMessage.createFirstChunk(sender, recipient, msgID, new byte[readableBytes], contentLength, checksum);
+                    chunkedMessage = ChunkedMessage.createFirstChunk(sender, proofOfWork, recipient, msgID, new byte[readableBytes], contentLength, checksum);
                 }
                 else {
                     // Send follow chunk for this input
-                    chunkedMessage = ChunkedMessage.createFollowChunk(sender, recipient, msgID, new byte[readableBytes]);
+                    chunkedMessage = ChunkedMessage.createFollowChunk(sender, proofOfWork, recipient, msgID, new byte[readableBytes]);
                 }
 
                 byteBuf.readBytes(chunkedMessage.getPayload());

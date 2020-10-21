@@ -22,6 +22,7 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ChunkedMessage;
 import org.drasyl.pipeline.codec.ApplicationMessage2ObjectHolderHandler;
@@ -46,6 +47,8 @@ import static org.mockito.Mockito.when;
 class SimpleOutboundHandlerTest {
     @Mock
     private Identity identity;
+    @Mock
+    private ProofOfWork proofOfWork;
     private DrasylConfig config;
 
     @BeforeEach
@@ -67,7 +70,7 @@ class SimpleOutboundHandlerTest {
                                         final byte[] msg,
                                         final CompletableFuture<Void> future) {
                 // Emit this message as inbound message to test
-                ctx.pipeline().processInbound(new ApplicationMessage(identity.getPublicKey(), recipient, msg));
+                ctx.pipeline().processInbound(new ApplicationMessage(identity.getPublicKey(), proofOfWork, recipient, msg));
             }
         };
 
@@ -112,13 +115,15 @@ class SimpleOutboundHandlerTest {
         final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
 
         final CompressedPublicKey sender = mock(CompressedPublicKey.class);
-        final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
         when(identity.getPublicKey()).thenReturn(sender);
+        final ProofOfWork senderProofOfWork = mock(ProofOfWork.class);
+        when(identity.getProofOfWork()).thenReturn(senderProofOfWork);
+        final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
         final byte[] payload = new byte[]{};
         pipeline.processOutbound(recipient, payload);
 
         outboundMessageTestObserver.awaitCount(1).assertValueCount(1);
-        outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, payload.getClass().getName()), payload));
+        outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, senderProofOfWork, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, payload.getClass().getName()), payload));
         inboundMessageTestObserver.assertNoValues();
     }
 }

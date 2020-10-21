@@ -97,7 +97,7 @@ class ChunkedMessageIT {
         final Observable<Message> receivedMessages = session2.receivedMessages().filter(msg -> msg instanceof ApplicationMessage);
 
         // send message
-        final RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session2.getPublicKey(), bigPayload);
+        final RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session1.getProofOfWork(), session2.getPublicKey(), bigPayload);
         session2.send(request);
 
         // verify response

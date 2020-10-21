@@ -80,6 +80,7 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
                     new ChunkedMessageOutput(
                             ctx,
                             msg.getSender(),
+                            msg.getProofOfWork(),
                             msg.getRecipient(),
                             msg.getContentLength(),
                             msg.getChecksum(),

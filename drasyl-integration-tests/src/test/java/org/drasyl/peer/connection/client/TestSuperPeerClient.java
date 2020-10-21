@@ -34,6 +34,7 @@ import org.drasyl.event.Event;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
@@ -143,6 +144,10 @@ public class TestSuperPeerClient extends SuperPeerClient {
 
     public CompressedPublicKey getPublicKey() {
         return getIdentity().getPublicKey();
+    }
+
+    public ProofOfWork getProofOfWork() {
+        return getIdentity().getProofOfWork();
     }
 
     public Identity getIdentity() {

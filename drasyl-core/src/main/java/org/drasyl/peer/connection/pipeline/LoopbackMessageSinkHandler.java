@@ -20,6 +20,7 @@ package org.drasyl.peer.connection.pipeline;
 
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
@@ -79,9 +80,10 @@ public class LoopbackMessageSinkHandler extends SimpleOutboundHandler<RelayableM
                     whoisMessage.getPeerInformation());
 
             final CompressedPublicKey myPublicKey = identity.getPublicKey();
+            final ProofOfWork myProofOfWork = identity.getProofOfWork();
             final PeerInformation myPeerInformation = PeerInformation.of(endpoints);
-            final IdentityMessage identityMessage = new IdentityMessage(whoisMessage.getSender(),
-                    myPublicKey, myPeerInformation, whoisMessage.getId());
+            final IdentityMessage identityMessage = new IdentityMessage(myPublicKey, myProofOfWork, whoisMessage.getSender(),
+                    myPeerInformation, whoisMessage.getId());
 
             FutureUtil.completeOnAllOf(future, ctx.pipeline().processOutbound(identityMessage.getRecipient(), identityMessage));
         }

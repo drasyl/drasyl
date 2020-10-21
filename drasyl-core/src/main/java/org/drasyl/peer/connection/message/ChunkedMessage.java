@@ -22,6 +22,7 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.ProofOfWork;
 
 import java.util.Arrays;
 import java.util.Objects;
@@ -62,6 +63,7 @@ public class ChunkedMessage extends ApplicationMessage {
      * Creates a new chunked message.
      *
      * @param sender        the sender of the message
+     * @param proofOfWork   the sender's proof of work
      * @param recipient     the recipient of the message
      * @param id            the id of this message (must be the same as the initial chunk)
      * @param payload       the chunk
@@ -69,23 +71,25 @@ public class ChunkedMessage extends ApplicationMessage {
      * @param checksum      the final checksum
      */
     ChunkedMessage(final CompressedPublicKey sender,
+                   final ProofOfWork proofOfWork,
                    final CompressedPublicKey recipient,
                    final MessageId id,
                    final byte[] payload,
                    final int contentLength,
                    final String checksum) {
-        this(sender, recipient, payload, id, contentLength, checksum, (short) 0);
+        this(sender, proofOfWork, recipient, payload, id, contentLength, checksum, (short) 0);
     }
 
     @JsonCreator
     private ChunkedMessage(@JsonProperty("sender") final CompressedPublicKey sender,
+                           @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                            @JsonProperty("recipient") final CompressedPublicKey recipient,
                            @JsonProperty("payload") final byte[] payload,
                            @JsonProperty("id") final MessageId id,
                            @JsonProperty("contentLength") final int contentLength,
                            @JsonProperty("checksum") final String checksum,
                            @JsonProperty("hopCount") final short hopCount) {
-        super(id, sender, recipient, payload, hopCount);
+        super(id, sender, proofOfWork, recipient, payload, hopCount);
         this.contentLength = contentLength;
         this.checksum = checksum;
     }
@@ -128,7 +132,8 @@ public class ChunkedMessage extends ApplicationMessage {
         return "ChunkedMessage{" +
                 "contentLength=" + contentLength +
                 ", payload=byte[" + Optional.ofNullable(payload).orElse(new byte[]{}).length + "] { ... }" +
-                ", sender=" + getSender() +
+                ", sender=" + sender +
+                ", proofOfWork=" + proofOfWork +
                 ", checksum='" + checksum + '\'' +
                 ", recipient=" + recipient +
                 ", hopCount=" + hopCount +
@@ -144,6 +149,7 @@ public class ChunkedMessage extends ApplicationMessage {
      * Creates the initial chunked message.
      *
      * @param sender        the sender of the message
+     * @param proofOfWork   the sender's proof of work
      * @param recipient     the recipient of the message
      * @param msgID         the id of this message (must be the same as composed message)
      * @param payload       the chunk
@@ -151,39 +157,44 @@ public class ChunkedMessage extends ApplicationMessage {
      * @param checksum      the final checksum
      */
     public static ChunkedMessage createFirstChunk(final CompressedPublicKey sender,
+                                                  final ProofOfWork proofOfWork,
                                                   final CompressedPublicKey recipient,
                                                   final MessageId msgID,
                                                   final byte[] payload,
                                                   final int contentLength,
                                                   final String checksum) {
-        return new ChunkedMessage(sender, recipient, msgID, payload, contentLength, checksum);
+        return new ChunkedMessage(sender, proofOfWork, recipient, msgID, payload, contentLength, checksum);
     }
 
     /**
      * Creates a follow chunked message.
      *
-     * @param sender    the sender of the message
-     * @param recipient the recipient of the message
-     * @param msgID     the id of this message (must be the same as the initial chunk)
-     * @param payload   the chunk
+     * @param sender      the sender of the message
+     * @param proofOfWork the sender's proof of work
+     * @param recipient   the recipient of the message
+     * @param msgID       the id of this message (must be the same as the initial chunk)
+     * @param payload     the chunk
      */
     public static ChunkedMessage createFollowChunk(final CompressedPublicKey sender,
+                                                   final ProofOfWork proofOfWork,
                                                    final CompressedPublicKey recipient,
                                                    final MessageId msgID,
                                                    final byte[] payload) {
-        return new ChunkedMessage(sender, recipient, msgID, payload, 0, null);
+        return new ChunkedMessage(sender, proofOfWork, recipient, msgID, payload, 0, null);
     }
 
     /**
      * Creates the last chunked message.
      *
-     * @param sender    the sender of the message
-     * @param recipient the recipient of the message
-     * @param msgID     the id of this message (must be the same as the initial chunk)
+     * @param sender      the sender of the message
+     * @param proofOfWork the sender's proof of work
+     * @param recipient   the recipient of the message
+     * @param msgID       the id of this message (must be the same as the initial chunk)
      */
     public static ChunkedMessage createLastChunk(final CompressedPublicKey sender,
+                                                 final ProofOfWork proofOfWork,
                                                  final CompressedPublicKey recipient,
                                                  final MessageId msgID) {
-        return new ChunkedMessage(sender, recipient, msgID, new byte[]{}, 0, null);
+        return new ChunkedMessage(sender, proofOfWork, recipient, msgID, new byte[]{}, 0, null);
     }
 }

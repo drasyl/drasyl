@@ -26,6 +26,7 @@ import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ChunkedMessage;
 import org.drasyl.pipeline.codec.ApplicationMessage2ObjectHolderHandler;
@@ -94,11 +95,13 @@ class SimpleInboundHandlerTest {
 
         final CompressedPublicKey sender = mock(CompressedPublicKey.class);
         when(identity.getPublicKey()).thenReturn(sender);
+        final ProofOfWork proofOfWork = mock(ProofOfWork.class);
+        when(identity.getProofOfWork()).thenReturn(proofOfWork);
         final byte[] msg = JSONUtil.JACKSON_WRITER.writeValueAsBytes(new byte[]{});
-        pipeline.processInbound(new ApplicationMessage(sender, sender, msg));
+        pipeline.processInbound(new ApplicationMessage(sender, proofOfWork, sender, msg));
 
         outboundMessageTestObserver.awaitCount(1).assertValueCount(1);
-        outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, sender, Map.of(ObjectHolder.CLASS_KEY_NAME, msg.getClass().getName()), msg));
+        outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, proofOfWork, sender, Map.of(ObjectHolder.CLASS_KEY_NAME, msg.getClass().getName()), msg));
         inboundMessageTestObserver.assertNoValues();
         eventTestObserver.assertNoValues();
     }

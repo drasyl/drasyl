@@ -24,6 +24,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.crypto.Hashing;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ChunkedMessage;
 import org.drasyl.peer.connection.message.MessageId;
@@ -43,6 +44,7 @@ public class ChunkedMessageOutput {
     private static final Logger LOG = LoggerFactory.getLogger(ChunkedMessageOutput.class);
     private final ChannelHandlerContext ctx;
     private final CompressedPublicKey sender;
+    private final ProofOfWork proofOfWork;
     private final CompressedPublicKey recipient;
     private final Runnable removeAction;
     private final ByteBuf payload;
@@ -58,6 +60,7 @@ public class ChunkedMessageOutput {
      *
      * @param ctx              the channel handler context
      * @param sender           the sender of the chunks
+     * @param proofOfWork      the sender's proof of work
      * @param recipient        the recipient of the chunks
      * @param contentLength    the total length of the resulting {@link ApplicationMessage} payload
      * @param checksum         the checksum of the resulting payload
@@ -71,6 +74,7 @@ public class ChunkedMessageOutput {
      */
     public ChunkedMessageOutput(final ChannelHandlerContext ctx,
                                 final CompressedPublicKey sender,
+                                final ProofOfWork proofOfWork,
                                 final CompressedPublicKey recipient,
                                 final int contentLength,
                                 final String checksum,
@@ -78,7 +82,7 @@ public class ChunkedMessageOutput {
                                 final int maxContentLength,
                                 final Runnable removeAction,
                                 final long timeout) {
-        this(ctx, sender, recipient, contentLength, checksum, msgID, maxContentLength, Unpooled.buffer(), 0, removeAction);
+        this(ctx, sender, proofOfWork, recipient, contentLength, checksum, msgID, maxContentLength, Unpooled.buffer(), 0, removeAction);
         this.ctx.executor().schedule(() -> {
             this.ctx.writeAndFlush(new StatusMessage(StatusMessage.Code.STATUS_REQUEST_TIMEOUT, this.msgID));
             removeAction.run();
@@ -90,6 +94,7 @@ public class ChunkedMessageOutput {
 
     ChunkedMessageOutput(final ChannelHandlerContext ctx,
                          final CompressedPublicKey sender,
+                         final ProofOfWork proofOfWork,
                          final CompressedPublicKey recipient,
                          final int contentLength,
                          final String checksum,
@@ -100,6 +105,7 @@ public class ChunkedMessageOutput {
                          final Runnable removeAction) {
         this.ctx = ctx;
         this.sender = sender;
+        this.proofOfWork = proofOfWork;
         this.recipient = recipient;
         this.removeAction = removeAction;
         this.payload = payload;
@@ -143,7 +149,7 @@ public class ChunkedMessageOutput {
                 }
                 else {
                     try {
-                        ctx.fireChannelRead(new ApplicationMessage(msgID, sender, recipient, payload.array(), (short) 0));
+                        ctx.fireChannelRead(new ApplicationMessage(msgID, sender, proofOfWork, recipient, payload.array(), (short) 0));
                     }
                     finally {
                         payload.release();

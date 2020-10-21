@@ -21,6 +21,7 @@ package org.drasyl.peer.connection.message;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeerInformation;
 
 import java.util.Objects;
@@ -37,23 +38,25 @@ public class IdentityMessage extends RelayableMessage implements ResponseMessage
     private final PeerInformation peerInformation;
     private final MessageId correspondingId;
 
-    public IdentityMessage(final CompressedPublicKey recipient,
-                           final CompressedPublicKey sender,
+    public IdentityMessage(final CompressedPublicKey sender,
+                           final ProofOfWork proofOfWork,
+                           final CompressedPublicKey recipient,
                            final PeerInformation peerInformation,
                            final MessageId correspondingId) {
-        super(recipient, sender);
+        super(sender, proofOfWork, recipient);
         this.peerInformation = requireNonNull(peerInformation);
         this.correspondingId = requireNonNull(correspondingId);
     }
 
     @JsonCreator
     private IdentityMessage(@JsonProperty("id") final MessageId id,
-                            @JsonProperty("recipient") final CompressedPublicKey recipient,
                             @JsonProperty("sender") final CompressedPublicKey sender,
+                            @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
+                            @JsonProperty("recipient") final CompressedPublicKey recipient,
                             @JsonProperty("peerInformation") final PeerInformation peerInformation,
                             @JsonProperty("correspondingId") final MessageId correspondingId,
                             @JsonProperty("hopCount") final short hopCount) {
-        super(id, recipient, sender, hopCount);
+        super(id, sender, proofOfWork, recipient, hopCount);
         this.peerInformation = requireNonNull(peerInformation);
         this.correspondingId = requireNonNull(correspondingId);
     }

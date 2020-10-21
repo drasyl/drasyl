@@ -24,6 +24,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.mockito.Answers;
 import org.openjdk.jmh.annotations.Benchmark;
@@ -48,10 +49,11 @@ public class MessageDecoderBenchmark {
         try {
             ctx = mock(ChannelHandlerContext.class, Answers.RETURNS_DEEP_STUBS);
             final CompressedPublicKey sender = CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb");
+            final ProofOfWork proofOfWork = ProofOfWork.of(6657650);
             final CompressedPublicKey recipient = CompressedPublicKey.of("033de3da699f6f9ffbd427c56725910655ba3913be4ff55b13c628e957c860fd55");
             final byte[] payload = new byte[1024 * 1024]; // 1 MB
             new Random().nextBytes(payload);
-            msg = JACKSON_WRITER.writeValueAsBytes(new ApplicationMessage(sender, recipient, payload));
+            msg = JACKSON_WRITER.writeValueAsBytes(new ApplicationMessage(sender, proofOfWork, recipient, payload));
         }
         catch (final CryptoException | JsonProcessingException e) {
             throw new RuntimeException(e);

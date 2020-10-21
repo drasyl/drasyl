@@ -19,6 +19,7 @@
 package org.drasyl.peer.connection.message;
 
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.ProofOfWork;
 
 import java.util.Objects;
 
@@ -30,32 +31,38 @@ import static java.util.Objects.requireNonNull;
  * This is an immutable object.
  */
 public abstract class RelayableMessage extends AbstractMessage {
+    protected final ProofOfWork proofOfWork;
     protected final CompressedPublicKey recipient;
     protected final CompressedPublicKey sender;
     protected short hopCount;
 
     protected RelayableMessage(final MessageId id,
-                               final CompressedPublicKey recipient,
                                final CompressedPublicKey sender,
+                               final ProofOfWork proofOfWork,
+                               final CompressedPublicKey recipient,
                                final short hopCount) {
         super(id);
-        this.recipient = requireNonNull(recipient);
         this.sender = requireNonNull(sender);
+        this.proofOfWork = requireNonNull(proofOfWork);
+        this.recipient = requireNonNull(recipient);
         this.hopCount = hopCount;
     }
 
-    protected RelayableMessage(final CompressedPublicKey recipient,
-                               final CompressedPublicKey sender) {
-        this(recipient, (short) 0, sender);
+    protected RelayableMessage(final CompressedPublicKey sender,
+                               final ProofOfWork proofOfWork,
+                               final CompressedPublicKey recipient) {
+        this(sender, proofOfWork, recipient, (short) 0);
     }
 
-    protected RelayableMessage(final CompressedPublicKey recipient,
-                               final short hopCount,
-                               final CompressedPublicKey sender) {
+    protected RelayableMessage(final CompressedPublicKey sender,
+                               final ProofOfWork proofOfWork,
+                               final CompressedPublicKey recipient,
+                               final short hopCount) {
         super();
+        this.sender = requireNonNull(sender);
+        this.proofOfWork = requireNonNull(proofOfWork);
         this.recipient = requireNonNull(recipient);
         this.hopCount = hopCount;
-        this.sender = requireNonNull(sender);
     }
 
     public short getHopCount() {
@@ -75,6 +82,10 @@ public abstract class RelayableMessage extends AbstractMessage {
 
     public CompressedPublicKey getSender() {
         return sender;
+    }
+
+    public ProofOfWork getProofOfWork() {
+        return proofOfWork;
     }
 
     @Override

@@ -236,7 +236,7 @@ class ServerIT {
                 };
 
                 // send message
-                final RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session2.getPublicKey(), payload);
+                final RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session1.getProofOfWork(), session2.getPublicKey(), payload);
                 session1.send(request);
                 receivedMessages2.awaitCount(1);
                 receivedMessages2.assertValueAt(0, val -> {
@@ -449,8 +449,9 @@ class ServerIT {
 
             // send message
             final CompressedPublicKey sender = CompressedPublicKey.of("023ce7bb9756b5aa68fb82914ecafb71c3bb86701d4f200ae68420d13eddda7ebf");
+            final ProofOfWork proofOfWork = ProofOfWork.of(6657650);
             final CompressedPublicKey recipient = CompressedPublicKey.of("037e43ee5c82742f00355f13b9714c63e53a74a694b7de8d4715f06d9e7880bdbf");
-            final RequestMessage request = new ApplicationMessage(sender, recipient, new byte[]{
+            final RequestMessage request = new ApplicationMessage(sender, proofOfWork, recipient, new byte[]{
                     0x00,
                     0x01
             });
@@ -477,7 +478,7 @@ class ServerIT {
                 new Random().nextBytes(bigPayload);
 
                 // send message
-                final RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session2.getPublicKey(), bigPayload);
+                final RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session1.getProofOfWork(), session2.getPublicKey(), bigPayload);
                 session2.send(request);
 
                 // verify response
@@ -500,7 +501,7 @@ class ServerIT {
                 new Random().nextBytes(bigPayload);
 
                 // send message
-                final RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session2.getPublicKey(), bigPayload);
+                final RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session1.getProofOfWork(), session2.getPublicKey(), bigPayload);
 
                 session1.send(request);
                 receivedMessages2.awaitCount(1);

@@ -41,6 +41,6 @@ public class ObjectHolder2ApplicationMessageHandler extends SimpleOutboundHandle
                                 final CompressedPublicKey recipient,
                                 final ObjectHolder msg,
                                 final CompletableFuture<Void> future) {
-        ctx.write(recipient, new ApplicationMessage(ctx.identity().getPublicKey(), recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, msg.getClazzAsString()), msg.getObject()), future);
+        ctx.write(recipient, new ApplicationMessage(ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, msg.getClazzAsString()), msg.getObject()), future);
     }
 }

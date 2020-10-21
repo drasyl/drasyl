@@ -52,7 +52,6 @@ import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Erro
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_NOT_A_SUPER_PEER;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_OTHER_NETWORK;
 import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_UNEXPECTED_MESSAGE;
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;

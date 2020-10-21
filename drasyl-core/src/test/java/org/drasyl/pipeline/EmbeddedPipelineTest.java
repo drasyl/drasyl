@@ -24,6 +24,7 @@ import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.codec.ApplicationMessage2ObjectHolderHandler;
 import org.drasyl.pipeline.codec.DefaultCodec;
@@ -114,11 +115,13 @@ class EmbeddedPipelineTest {
         final CompressedPublicKey sender = mock(CompressedPublicKey.class);
         final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
         when(identity.getPublicKey()).thenReturn(sender);
+        final ProofOfWork senderProofOfWork = mock(ProofOfWork.class);
+        when(identity.getProofOfWork()).thenReturn(senderProofOfWork);
         final byte[] msg = new byte[]{};
         pipeline.processOutbound(recipient, msg);
 
         outboundMessageTestObserver.awaitCount(1).assertValueCount(1);
-        outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, msg.getClass().getName()), msg));
+        outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, senderProofOfWork, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, msg.getClass().getName()), msg));
         inboundMessageTestObserver.assertNoValues();
         eventTestObserver.assertNoValues();
     }
