@@ -86,7 +86,7 @@ public class ConnectionExceptionMessage extends AbstractMessage implements Reque
     @Override
     public String toString() {
         return "ConnectionExceptionMessage{" +
-                "type='" + error + '\'' +
+                "error='" + error + '\'' +
                 ", id='" + id +
                 '}';
     }
