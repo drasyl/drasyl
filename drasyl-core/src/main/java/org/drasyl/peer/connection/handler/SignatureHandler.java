@@ -33,6 +33,7 @@ import org.slf4j.LoggerFactory;
 import java.security.PublicKey;
 
 import static org.drasyl.peer.connection.handler.ThreeWayHandshakeClientHandler.ATTRIBUTE_PUBLIC_KEY;
+import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_INVALID_SIGNATURE;
 
 /**
  * Acts as a guard for in- and outbound messages. <br> Signs automatically outbound messages. <br>
@@ -91,7 +92,7 @@ public class SignatureHandler extends SimpleChannelDuplexHandler<Message, Messag
                 ctx.fireChannelRead(signedMessage.getPayload());
             }
             else {
-                final StatusMessage exceptionMessage = new StatusMessage(StatusMessage.Code.STATUS_INVALID_SIGNATURE, signedMessage.getPayload().getId());
+                final StatusMessage exceptionMessage = new StatusMessage(STATUS_INVALID_SIGNATURE, signedMessage.getPayload().getId());
                 channelWrite0(ctx, exceptionMessage, ctx.channel().newPromise());
 
                 if (LOG.isInfoEnabled()) {

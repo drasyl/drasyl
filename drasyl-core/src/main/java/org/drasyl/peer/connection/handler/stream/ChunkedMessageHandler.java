@@ -33,6 +33,8 @@ import org.slf4j.LoggerFactory;
 import java.time.Duration;
 import java.util.HashMap;
 
+import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_BAD_REQUEST;
+
 /**
  * This handler allows you to send messages that are too large for the underlying WebSocket
  * transport layer. To do this, this handler splits the message into a series of non-overlapping
@@ -96,7 +98,7 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
             chunks.get(msg.getId()).addChunk(msg);
         }
         else {
-            ctx.writeAndFlush(new StatusMessage(StatusMessage.Code.STATUS_BAD_REQUEST, msg.getId()));
+            ctx.writeAndFlush(new StatusMessage(STATUS_BAD_REQUEST, msg.getId()));
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("[{}]: Dropped chunked message `{}` because start chunk was not sent", ctx.channel().id().asShortText(), msg);

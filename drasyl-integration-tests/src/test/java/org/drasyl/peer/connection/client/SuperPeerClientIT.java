@@ -74,6 +74,7 @@ import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_SIZE;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
+import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_PAYLOAD_TOO_LARGE;
 import static org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler.DIRECT_CONNECTION_MESSAGE_SINK_HANDLER;
 import static org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler.LOOPBACK_MESSAGE_SINK_HANDLER;
 import static org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler.SUPER_PEER_SINK_HANDLER;
@@ -405,7 +406,7 @@ class SuperPeerClientIT {
 
             receivedMessages.awaitCount(2);
             emittedEvents.assertNoValues();
-            receivedMessages.assertValueAt(1, new StatusMessage(StatusMessage.Code.STATUS_PAYLOAD_TOO_LARGE, request.getId()));
+            receivedMessages.assertValueAt(1, new StatusMessage(STATUS_PAYLOAD_TOO_LARGE, request.getId()));
         }
     }
 

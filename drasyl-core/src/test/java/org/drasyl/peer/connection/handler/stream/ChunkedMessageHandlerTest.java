@@ -38,6 +38,7 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Random;
 
+import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_BAD_REQUEST;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -142,7 +143,7 @@ class ChunkedMessageHandlerTest {
         verify(chunks, never()).get(eq(msgID));
         verify(chunkedMessageOutput, never()).addChunk(message);
 
-        assertEquals(new StatusMessage(StatusMessage.Code.STATUS_BAD_REQUEST, msgID), channel.readOutbound());
+        assertEquals(new StatusMessage(STATUS_BAD_REQUEST, msgID), channel.readOutbound());
     }
 
     @Test

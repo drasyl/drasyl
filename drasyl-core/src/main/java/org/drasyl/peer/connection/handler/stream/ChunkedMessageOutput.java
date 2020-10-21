@@ -35,6 +35,10 @@ import org.slf4j.LoggerFactory;
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
+import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_PAYLOAD_TOO_LARGE;
+import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_PRECONDITION_FAILED;
+import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_REQUEST_TIMEOUT;
+
 /**
  * This class is responsible for merging incoming {@link ChunkedMessage}s into one {@link
  * ApplicationMessage}.
@@ -84,7 +88,7 @@ public class ChunkedMessageOutput {
                                 final long timeout) {
         this(ctx, sender, proofOfWork, recipient, contentLength, checksum, msgID, maxContentLength, Unpooled.buffer(), 0, removeAction);
         this.ctx.executor().schedule(() -> {
-            this.ctx.writeAndFlush(new StatusMessage(StatusMessage.Code.STATUS_REQUEST_TIMEOUT, this.msgID));
+            this.ctx.writeAndFlush(new StatusMessage(STATUS_REQUEST_TIMEOUT, this.msgID));
             removeAction.run();
             payload.release();
 
@@ -125,7 +129,7 @@ public class ChunkedMessageOutput {
         try {
             final int length = chunk.getPayload().length;
             if ((length + progress) > maxContentLength || (length + progress) > contentLength) {
-                ctx.writeAndFlush(new StatusMessage(StatusMessage.Code.STATUS_PAYLOAD_TOO_LARGE, msgID));
+                ctx.writeAndFlush(new StatusMessage(STATUS_PAYLOAD_TOO_LARGE, msgID));
 
                 // Release resources on invalid chunk
                 payload.release();
@@ -144,7 +148,7 @@ public class ChunkedMessageOutput {
                 // truncated zeros
                 payload.capacity(progress);
                 if (!checksum.equals(Hashing.murmur3x64Hex(payload.array()))) {
-                    ctx.writeAndFlush(new StatusMessage(StatusMessage.Code.STATUS_PRECONDITION_FAILED, msgID));
+                    ctx.writeAndFlush(new StatusMessage(STATUS_PRECONDITION_FAILED, msgID));
                     logDebug("Dropped chunked message `{}` because checksum was invalid", ctx, msgID);
                 }
                 else {

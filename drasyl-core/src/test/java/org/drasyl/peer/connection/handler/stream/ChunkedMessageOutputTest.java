@@ -37,6 +37,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.TimeUnit;
 
+import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_PAYLOAD_TOO_LARGE;
+import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_PRECONDITION_FAILED;
+import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_REQUEST_TIMEOUT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.ArgumentMatchers.eq;
@@ -93,7 +96,7 @@ class ChunkedMessageOutputTest {
 
         verify(payload).release();
         verify(removeAction).run();
-        verify(ctx).writeAndFlush(eq(new StatusMessage(StatusMessage.Code.STATUS_PAYLOAD_TOO_LARGE, msgID)));
+        verify(ctx).writeAndFlush(eq(new StatusMessage(STATUS_PAYLOAD_TOO_LARGE, msgID)));
     }
 
     @Test
@@ -120,7 +123,7 @@ class ChunkedMessageOutputTest {
 
         output.addChunk(chunk);
         verify(payload, never()).writeBytes(eq(chunk.payloadAsByteBuf()), anyInt(), anyInt());
-        verify(ctx).writeAndFlush(new StatusMessage(StatusMessage.Code.STATUS_PRECONDITION_FAILED, msgID));
+        verify(ctx).writeAndFlush(new StatusMessage(STATUS_PRECONDITION_FAILED, msgID));
     }
 
     @Test
@@ -150,7 +153,7 @@ class ChunkedMessageOutputTest {
 
         verify(eventExecutor).schedule(captor.capture(), eq(1L), eq(TimeUnit.MILLISECONDS));
         captor.getValue().run();
-        verify(ctx).writeAndFlush(new StatusMessage(StatusMessage.Code.STATUS_REQUEST_TIMEOUT, msgID));
+        verify(ctx).writeAndFlush(new StatusMessage(STATUS_REQUEST_TIMEOUT, msgID));
         verify(removeAction).run();
     }
 
