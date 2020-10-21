@@ -24,10 +24,10 @@ import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
+import org.drasyl.peer.connection.message.ExceptionMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.RelayableMessage;
-import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.pipeline.Pipeline;
 import org.slf4j.Logger;
 
@@ -37,7 +37,7 @@ import java.util.concurrent.CompletableFuture;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_HANDSHAKE_TIMEOUT;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_INITIALIZATION;
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
+import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_UNEXPECTED_MESSAGE;
 
 abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandler<Message, Message> {
     protected final Duration timeout;
@@ -66,7 +66,7 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
             getLogger().trace("[{}] Handshake is not completed. Inbound message was rejected: '{}'", ctx.channel().id().asShortText(), message);
         }
         // reject all non-request messages if handshake is not done
-        ctx.writeAndFlush(new StatusMessage(STATUS_FORBIDDEN, message.getId()));
+        ctx.writeAndFlush(new ExceptionMessage(ERROR_UNEXPECTED_MESSAGE));
     }
 
     protected abstract Logger getLogger();

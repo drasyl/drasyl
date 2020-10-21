@@ -43,6 +43,7 @@ import org.drasyl.peer.connection.client.TestSuperPeerClient;
 import org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
+import org.drasyl.peer.connection.message.ExceptionMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.PingMessage;
@@ -84,8 +85,8 @@ import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Erro
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_INITIALIZATION;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_PING_PONG;
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_PROOF_OF_WORK_INVALID;
+import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_UNEXPECTED_MESSAGE;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_NEW_SESSION;
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_SERVICE_UNAVAILABLE;
 import static org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler.DIRECT_CONNECTION_MESSAGE_SINK_HANDLER;
@@ -441,9 +442,10 @@ class ServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void nonAuthorizedClientSendingNonJoinMessageShouldBeRespondedWithStatusForbiddenMessage() throws ExecutionException, InterruptedException, CryptoException {
+    void nonAuthorizedClientSendingNonJoinMessageShouldBeRespondedWithExceptionMessage() throws ExecutionException, InterruptedException, CryptoException {
         // create connection
         try (final TestSuperPeerClient session = clientSession(configClient1, server, identitySession1)) {
+            final TestObserver<Message> receivedMessages = session.receivedMessages().filter(m -> m instanceof ExceptionMessage).test();
 
             // send message
             final CompressedPublicKey sender = CompressedPublicKey.of("023ce7bb9756b5aa68fb82914ecafb71c3bb86701d4f200ae68420d13eddda7ebf");
@@ -452,13 +454,11 @@ class ServerIT {
                     0x00,
                     0x01
             });
-            final CompletableFuture<ResponseMessage<?>> send = session.sendRequest(request);
+            session.send(request);
 
-            // verify response
-            final StatusMessage response = (StatusMessage) send.get();
-
-            assertEquals(STATUS_FORBIDDEN, response.getCode());
-            assertEquals(request.getId(), response.getCorrespondingId());
+            // verify responses
+            receivedMessages.awaitCount(1);
+            receivedMessages.assertValueAt(0, new ExceptionMessage(ERROR_UNEXPECTED_MESSAGE));
         }
     }
 

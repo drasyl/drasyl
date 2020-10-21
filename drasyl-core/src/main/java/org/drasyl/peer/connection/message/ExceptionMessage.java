@@ -96,7 +96,8 @@ public class ExceptionMessage extends AbstractMessage {
      */
     public enum Error {
         ERROR_INTERNAL("Internal Error occurred."),
-        ERROR_FORMAT("Invalid Message format.");
+        ERROR_FORMAT("Invalid Message format."),
+        ERROR_UNEXPECTED_MESSAGE("Unexpected message.");
         private static final Map<String, Error> errors = new HashMap<>();
 
         static {
