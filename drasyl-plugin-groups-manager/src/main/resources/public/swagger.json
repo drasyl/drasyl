@@ -1,0 +1,302 @@
+{
+  "swagger": "2.0",
+  "info": {
+    "version": "0.3.0-SNAPSHOT",
+    "title": "drasyl Groups Manager"
+  },
+  "tags": [
+    {
+      "name": "groups"
+    }
+  ],
+  "paths": {
+    "/groups": {
+      "get": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "List all groups",
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Group"
+              }
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/Exception"
+            }
+          }
+        }
+      },
+      "post": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "Add a new group",
+        "parameters": [
+          {
+            "in": "body",
+            "name": "body",
+            "description": "Group that needs to be added",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/Group"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "schema": {
+              "$ref": "#/definitions/Group"
+            }
+          },
+          "422": {
+            "description": "Failed",
+            "schema": {
+              "type": "string",
+              "example": "Error: Name already taken"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/Exception"
+            }
+          }
+        }
+      }
+    },
+    "/groups/{name}": {
+      "get": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "Find group by name",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Name of group to return",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "schema": {
+              "$ref": "#/definitions/Group"
+            }
+          },
+          "404": {
+            "description": "Group not found",
+            "schema": {
+              "type": "string",
+              "example": "Not Found"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/Exception"
+            }
+          }
+        }
+      },
+      "put": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "Updates a group",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Name of group that needs to be updated",
+            "required": true,
+            "type": "string"
+          },
+          {
+            "in": "body",
+            "name": "body",
+            "description": "Group parameters that need to be updated",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/GroupUpdate"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "schema": {
+              "$ref": "#/definitions/Group"
+            }
+          },
+          "404": {
+            "description": "Group not found"
+          },
+          "422": {
+            "description": "Failed"
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/Exception"
+            }
+          }
+        }
+      },
+      "delete": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "Deletes a Group",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Name of Group to delete",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "Successful operation"
+          },
+          "404": {
+            "description": "Group not found",
+            "schema": {
+              "type": "string",
+              "example": "Not Found"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/Exception"
+            }
+          }
+        }
+      }
+    },
+    "/groups/{name}/memberships": {
+      "get": {
+        "tags": [
+          "groups"
+        ],
+        "summary": "List all memberships of a group",
+        "parameters": [
+          {
+            "name": "name",
+            "in": "path",
+            "description": "Name of group for which all memberships should be returned",
+            "required": true,
+            "type": "string"
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful operation",
+            "schema": {
+              "type": "array",
+              "items": {
+                "$ref": "#/definitions/Membership"
+              }
+            }
+          },
+          "404": {
+            "description": "Group not found",
+            "schema": {
+              "type": "string",
+              "example": "Not Found"
+            }
+          },
+          "500": {
+            "description": "Internal server error",
+            "schema": {
+              "$ref": "#/definitions/Exception"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "Group": {
+      "type": "object",
+      "required": [
+        "name"
+      ],
+      "properties": {
+        "name": {
+          "type": "string",
+          "example": "steezy-vips"
+        },
+        "credentials": {
+          "type": "string",
+          "example": "s3cr3t_passw0rd"
+        },
+        "minDifficulty": {
+          "type": "integer",
+          "example": 6
+        },
+        "timeout": {
+          "type": "integer",
+          "example": 60,
+          "description": "Timeout in seconds"
+        }
+      }
+    },
+    "GroupUpdate": {
+      "type": "object",
+      "properties": {
+        "credentials": {
+          "type": "string",
+          "example": "s3cr3t_passw0rd"
+        },
+        "minDifficulty": {
+          "type": "integer",
+          "example": 6
+        },
+        "timeout": {
+          "type": "integer",
+          "example": 60,
+          "description": "Timeout in seconds"
+        }
+      }
+    },
+    "Membership": {
+      "type": "object",
+      "required": [
+        "member"
+      ],
+      "properties": {
+        "member": {
+          "type": "string",
+          "example": "030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb"
+        },
+        "staleAt": {
+          "type": "integer",
+          "example": 1603067884827
+        }
+      }
+    },
+    "Exception": {
+      "type": "string",
+      "example": "DatabaseException: Server has gone away"
+    }
+  },
+  "externalDocs": {
+    "description": "Find out more about drasyl",
+    "url": "http://docs.drasyl.org"
+  }
+}

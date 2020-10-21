@@ -37,6 +37,7 @@
 
     <properties>
         <sqlite.version>3.32.3.2</sqlite.version>
+        <spark.version>2.9.3</spark.version>
     </properties>
 
     <build>
@@ -60,11 +61,22 @@
             <version>${project.version}</version>
             <scope>compile</scope>
         </dependency>
+
+        <!-- SQLite Database Support -->
         <dependency>
             <groupId>org.xerial</groupId>
             <artifactId>sqlite-jdbc</artifactId>
             <version>${sqlite.version}</version>
         </dependency>
+
+        <!-- HTTP Server required for REST API -->
+        <dependency>
+            <groupId>com.sparkjava</groupId>
+            <artifactId>spark-core</artifactId>
+            <version>${spark.version}</version>
+        </dependency>
+
+        <!-- Testing -->
         <dependency>
             <groupId>org.junit.jupiter</groupId>
             <artifactId>junit-jupiter</artifactId>
