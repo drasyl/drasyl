@@ -22,15 +22,14 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.Message;
-import org.drasyl.peer.connection.message.MessageId;
-import org.drasyl.peer.connection.message.StatusMessage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_SERVICE_UNAVAILABLE;
+import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_PEER_UNAVAILABLE;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -59,13 +58,12 @@ class ServerNewConnectionsGuardTest {
     void shouldCloseConnectionOnClosedGuard() {
         when(ctx.channel()).thenReturn(channel);
         when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
-        when(message.getId()).thenReturn(MessageId.of("593266d6c03547019e2d01ac"));
 
         final ServerNewConnectionsGuard handler = new ServerNewConnectionsGuard(() -> false);
 
         handler.channelRead0(ctx, message);
 
-        verify(ctx).writeAndFlush(new StatusMessage(STATUS_SERVICE_UNAVAILABLE, message.getId()));
+        verify(ctx).writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_PEER_UNAVAILABLE));
         verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
     }
 }
