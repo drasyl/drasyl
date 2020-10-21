@@ -54,9 +54,9 @@ public class SignedMessage implements Message, Signable {
     }
 
     @JsonCreator
-    public SignedMessage(@JsonProperty("payload") final Message payload,
-                         @JsonProperty("sender") final CompressedPublicKey sender,
-                         @JsonProperty("signature") final Signature signature) {
+    SignedMessage(@JsonProperty("payload") final Message payload,
+                  @JsonProperty("sender") final CompressedPublicKey sender,
+                  @JsonProperty("signature") final Signature signature) {
         this.payload = requireNonNull(payload);
         this.sender = sender;
         this.signature = signature;

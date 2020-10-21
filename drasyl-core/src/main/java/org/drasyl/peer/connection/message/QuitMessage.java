@@ -85,7 +85,6 @@ public class QuitMessage extends AbstractMessage implements RequestMessage {
      * Specifies the reason for closing the connection.
      */
     public enum CloseReason {
-        REASON_UNDEFINED("Unknown reason for closing this connection."),
         REASON_NEW_SESSION("New Connection with this Identity has been created."),
         REASON_SHUTTING_DOWN("Peer is shutting down.");
         private static final Map<String, CloseReason> reasons = new HashMap<>();

@@ -35,7 +35,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.drasyl.peer.connection.handler.ThreeWayHandshakeClientHandler.ATTRIBUTE_PUBLIC_KEY;
-import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_UNDEFINED;
+import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -64,7 +64,7 @@ class SignatureHandlerTest {
     @Test
     void shouldSignUnsignedMessage() throws CryptoException {
         final SignatureHandler handler = new SignatureHandler(identity);
-        final QuitMessage message = new QuitMessage(REASON_UNDEFINED);
+        final QuitMessage message = new QuitMessage(REASON_SHUTTING_DOWN);
 
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
         assertTrue(channel.writeOutbound(message));
@@ -83,7 +83,7 @@ class SignatureHandlerTest {
 
         final SignatureHandler handler = new SignatureHandler(mockedIdentity);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
-        final QuitMessage message = new QuitMessage(REASON_UNDEFINED);
+        final QuitMessage message = new QuitMessage(REASON_SHUTTING_DOWN);
 
         assertThrows(CryptoException.class, () -> channel.writeOutbound(message));
     }
@@ -96,7 +96,7 @@ class SignatureHandlerTest {
         final CompressedPublicKey identity2 = CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458");
         channel.attr(ATTRIBUTE_PUBLIC_KEY).set(identity2);
 
-        final QuitMessage message = new QuitMessage(REASON_UNDEFINED);
+        final QuitMessage message = new QuitMessage(REASON_SHUTTING_DOWN);
         final SignedMessage signedMessage = new SignedMessage(message, identity2);
 
         final Identity privateIdentity2 = Identity.of(ProofOfWork.of(36558946), "0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458", "00ea42e42240e0f6e0f9bee7058118aa149ce72de25cde574523ff9199ec2660");
@@ -119,7 +119,7 @@ class SignatureHandlerTest {
         final CompressedPublicKey identity2 = CompressedPublicKey.of("0248b7221b49775dcae85b02fdc9df41fbed6236c72c5c0356b59961190d3f8a13");
         channel.attr(ATTRIBUTE_PUBLIC_KEY).set(identity2);
 
-        final QuitMessage message = new QuitMessage(REASON_UNDEFINED);
+        final QuitMessage message = new QuitMessage(REASON_SHUTTING_DOWN);
         final SignedMessage signedMessage = new SignedMessage(message, identity2);
         Crypto.sign(identity.getPrivateKey().toUncompressedKey(), signedMessage);
 
@@ -134,7 +134,7 @@ class SignatureHandlerTest {
     void shouldNotPassthroughsMessageWhenPublicKeyCantBeExtracted() {
         final SignatureHandler handler = new SignatureHandler(identity);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
-        final QuitMessage message = new QuitMessage(REASON_UNDEFINED);
+        final QuitMessage message = new QuitMessage(REASON_SHUTTING_DOWN);
 
         assertFalse(channel.writeInbound(message));
         assertNull(channel.readInbound());
@@ -144,7 +144,7 @@ class SignatureHandlerTest {
     void shouldNotPassthroughsWhenMessageIsNotSigned() {
         final SignatureHandler handler = new SignatureHandler(identity);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
-        final QuitMessage message = new QuitMessage(REASON_UNDEFINED);
+        final QuitMessage message = new QuitMessage(REASON_SHUTTING_DOWN);
 
         assertFalse(channel.writeInbound(message));
         assertNull(channel.readInbound());
@@ -158,7 +158,7 @@ class SignatureHandlerTest {
 
         final CompressedPublicKey identity2 = CompressedPublicKey.of("026786e52addf59f0e40d5f6a4c1d2873afc04a6460a85b0becd04eb86f1e7116d");
 
-        final QuitMessage message = new QuitMessage(REASON_UNDEFINED);
+        final QuitMessage message = new QuitMessage(REASON_SHUTTING_DOWN);
         final SignedMessage signedMessage = new SignedMessage(message, identity2);
 
         final Identity privateIdentity2 = Identity.of(ProofOfWork.of(2096201), "026786e52addf59f0e40d5f6a4c1d2873afc04a6460a85b0becd04eb86f1e7116d", "02c43ebf22f27add698de3d5a534d4df88616b5acf164850aa56b7f4e8dbfbe2");
@@ -177,7 +177,7 @@ class SignatureHandlerTest {
 
         final SignatureHandler handler = new SignatureHandler(identity);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
-        final QuitMessage message = new QuitMessage(REASON_UNDEFINED);
+        final QuitMessage message = new QuitMessage(REASON_SHUTTING_DOWN);
         final SignedMessage signedMessage = new SignedMessage(message, mockedPublicKey);
         signedMessage.setSignature(signature);
 

@@ -28,7 +28,7 @@ import org.drasyl.peer.connection.message.QuitMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_UNDEFINED;
+import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -45,7 +45,7 @@ class MessageDecoderTest {
 
     @Test
     void shouldDeserializeInboundJsonStringToMessage() throws JsonProcessingException {
-        final byte[] binary = JACKSON_WRITER.writeValueAsBytes(new QuitMessage(REASON_UNDEFINED));
+        final byte[] binary = JACKSON_WRITER.writeValueAsBytes(new QuitMessage(REASON_SHUTTING_DOWN));
 
         channel.writeInbound(new BinaryWebSocketFrame(Unpooled.wrappedBuffer(binary)));
         channel.flush();

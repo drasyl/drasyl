@@ -37,7 +37,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_UNDEFINED;
+import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.never;
@@ -131,7 +131,7 @@ class PingPongHandlerTest {
         final PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        final QuitMessage quitMessage = new QuitMessage(REASON_UNDEFINED);
+        final QuitMessage quitMessage = new QuitMessage(REASON_SHUTTING_DOWN);
         channel.writeInbound(quitMessage);
         channel.flush();
 

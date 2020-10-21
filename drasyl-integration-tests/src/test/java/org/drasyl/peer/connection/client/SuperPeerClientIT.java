@@ -73,7 +73,6 @@ import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_SIZE;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
-import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_UNDEFINED;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 import static org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler.DIRECT_CONNECTION_MESSAGE_SINK_HANDLER;
 import static org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler.LOOPBACK_MESSAGE_SINK_HANDLER;
@@ -322,7 +321,7 @@ class SuperPeerClientIT {
             server.awaitClient(identityManager.getPublicKey());
 
             // send message
-            server.sendMessage(identityManager.getPublicKey(), new QuitMessage(REASON_UNDEFINED));
+            server.sendMessage(identityManager.getPublicKey(), new QuitMessage(REASON_SHUTTING_DOWN));
 
             // verify emitted events
             emittedEvents.awaitCount(3);
