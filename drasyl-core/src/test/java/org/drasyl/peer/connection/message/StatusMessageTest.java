@@ -80,7 +80,7 @@ class StatusMessageTest {
         @Test
         void shouldReturnTrue() {
             final StatusMessage message1 = new StatusMessage(STATUS_OK, correspondingId);
-            final StatusMessage message2 = new StatusMessage(STATUS_OK.getNumber(), correspondingId);
+            final StatusMessage message2 = new StatusMessage(STATUS_OK, correspondingId);
             final StatusMessage message3 = new StatusMessage(STATUS_FORBIDDEN, correspondingId);
 
             assertEquals(message1, message2);
@@ -93,7 +93,7 @@ class StatusMessageTest {
         @Test
         void shouldReturnTrue() {
             final StatusMessage message1 = new StatusMessage(STATUS_OK, correspondingId);
-            final StatusMessage message2 = new StatusMessage(STATUS_OK.getNumber(), correspondingId);
+            final StatusMessage message2 = new StatusMessage(STATUS_OK, correspondingId);
             final StatusMessage message3 = new StatusMessage(STATUS_FORBIDDEN, correspondingId);
 
             assertEquals(message1.hashCode(), message2.hashCode());

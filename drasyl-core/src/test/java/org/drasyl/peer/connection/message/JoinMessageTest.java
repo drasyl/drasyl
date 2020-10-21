@@ -72,7 +72,7 @@ class JoinMessageTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException {
-            final JoinMessage message = new JoinMessage(1337, ProofOfWork.of(1), sender);
+            final JoinMessage message = new JoinMessage(1337, ProofOfWork.of(1), sender, true);
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
@@ -85,9 +85,9 @@ class JoinMessageTest {
     class Constructor {
         @Test
         void shouldRejectNullValues() {
-            assertThrows(NullPointerException.class, () -> new JoinMessage(1337, proofOfWork, null), "Join requires a public key");
+            assertThrows(NullPointerException.class, () -> new JoinMessage(1337, proofOfWork, null, true), "Join requires a public key");
 
-            assertThrows(NullPointerException.class, () -> new JoinMessage(1337, null, null), "Join requires a public key and endpoints");
+            assertThrows(NullPointerException.class, () -> new JoinMessage(1337, null, null, true), "Join requires a public key and endpoints");
         }
     }
 

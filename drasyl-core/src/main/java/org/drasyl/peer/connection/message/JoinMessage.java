@@ -55,18 +55,6 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
     /**
      * Creates a new join message.
      *
-     * @param networkId   the network of the joining node
-     * @param proofOfWork the proof of work
-     * @param sender      the identity of the joining node
-     */
-    public JoinMessage(final int networkId, final ProofOfWork proofOfWork,
-                       final CompressedPublicKey sender) {
-        this(networkId, proofOfWork, sender, true);
-    }
-
-    /**
-     * Creates a new join message.
-     *
      * @param networkId    the network of the joining node
      * @param proofOfWork  the proof of work
      * @param sender    the identity of the joining node

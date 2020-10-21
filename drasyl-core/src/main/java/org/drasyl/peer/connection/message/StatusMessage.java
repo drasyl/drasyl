@@ -88,15 +88,11 @@ public class StatusMessage extends AbstractResponseMessage<RequestMessage> {
         this.code = requireNonNull(code);
     }
 
-    public StatusMessage(final int code, final MessageId correspondingId) {
-        this(Code.from(code), correspondingId);
-    }
-
     /**
      * Creates an immutable code object.
      *
      * @param code            HTTP code code
-     * @param correspondingId
+     * @param correspondingId the corresponding id of the previous message
      * @throws IllegalArgumentException if the code isn't a valid code code
      */
     public StatusMessage(final Code code, final MessageId correspondingId) {
