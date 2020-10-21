@@ -26,6 +26,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.IOException;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
+import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_UNDEFINED;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -38,7 +39,7 @@ class QuitMessageTest {
         void shouldDeserializeToCorrectObject() throws IOException {
             final String json = "{\"@type\":\"" + QuitMessage.class.getSimpleName() + "\",\"id\":\"89ba3cd9efb7570eb3126d11\",\"reason\":\"Unknown reason for closing this connection.\"}";
 
-            assertEquals(new QuitMessage(), JACKSON_READER.readValue(json, Message.class));
+            assertEquals(new QuitMessage(REASON_UNDEFINED), JACKSON_READER.readValue(json, Message.class));
         }
     }
 
@@ -46,7 +47,7 @@ class QuitMessageTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException {
-            final QuitMessage message = new QuitMessage();
+            final QuitMessage message = new QuitMessage(REASON_UNDEFINED);
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
@@ -59,8 +60,8 @@ class QuitMessageTest {
     class Equals {
         @Test
         void shouldReturnTrue() {
-            final QuitMessage message1 = new QuitMessage();
-            final QuitMessage message2 = new QuitMessage();
+            final QuitMessage message1 = new QuitMessage(REASON_UNDEFINED);
+            final QuitMessage message2 = new QuitMessage(REASON_UNDEFINED);
 
             assertEquals(message1, message2);
         }
@@ -70,8 +71,8 @@ class QuitMessageTest {
     class HashCode {
         @Test
         void shouldReturnTrue() {
-            final QuitMessage message1 = new QuitMessage();
-            final QuitMessage message2 = new QuitMessage();
+            final QuitMessage message1 = new QuitMessage(REASON_UNDEFINED);
+            final QuitMessage message2 = new QuitMessage(REASON_UNDEFINED);
 
             assertEquals(message1.hashCode(), message2.hashCode());
         }

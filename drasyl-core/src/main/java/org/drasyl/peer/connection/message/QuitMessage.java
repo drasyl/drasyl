@@ -45,10 +45,6 @@ public class QuitMessage extends AbstractMessage implements RequestMessage {
         this.reason = requireNonNull(reason);
     }
 
-    public QuitMessage() {
-        this(CloseReason.REASON_UNDEFINED);
-    }
-
     public QuitMessage(final CloseReason reason) {
         this.reason = requireNonNull(reason);
     }
