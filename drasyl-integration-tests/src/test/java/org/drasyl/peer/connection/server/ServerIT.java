@@ -325,12 +325,12 @@ class ServerIT {
                 // send messages
                 final RequestMessage request1 = new JoinMessage(networkId, session1.getIdentity().getPublicKey(), session1.getIdentity().getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), true);
                 final ResponseMessage<?> response1 = session1.sendRequest(request1).get();
-                session1.send(new StatusMessage(STATUS_OK, response1.getId()));
+                session1.send(new StatusMessage(session1.getPublicKey(), session1.getProofOfWork(), STATUS_OK, response1.getId()));
                 await().until(() -> channelGroup.find(session1.getIdentity().getPublicKey()) != null);
 
                 final RequestMessage request2 = new JoinMessage(networkId, session1.getIdentity().getPublicKey(), session1.getIdentity().getProofOfWork(), configClient2.getSuperPeerEndpoints().iterator().next().getPublicKey(), true);
                 final ResponseMessage<?> response2 = session2.sendRequest(request2).join();
-                session2.send(new StatusMessage(STATUS_OK, response2.getId()));
+                session2.send(new StatusMessage(session2.getPublicKey(), session2.getProofOfWork(), STATUS_OK, response2.getId()));
 
                 // verify responses
                 receivedMessages1.awaitCount(2);

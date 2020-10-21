@@ -19,10 +19,14 @@
 package org.drasyl.peer.connection.message;
 
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
+import org.drasyl.crypto.CryptoException;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.ProofOfWork;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
@@ -39,6 +43,10 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @ExtendWith(MockitoExtension.class)
 class StatusMessageTest {
     private MessageId correspondingId;
+    @Mock
+    private CompressedPublicKey sender;
+    @Mock
+    private ProofOfWork proofOfWork;
 
     @BeforeEach
     void setUp() {
@@ -48,10 +56,10 @@ class StatusMessageTest {
     @Nested
     class JsonDeserialization {
         @Test
-        void shouldDeserializeToCorrectObject() throws IOException {
-            final String json = "{\"@type\":\"" + StatusMessage.class.getSimpleName() + "\",\"id\":\"c78fe75d4c93bc07e916e539\",\"code\":" + STATUS_OK.getNumber() + ",\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
+        void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
+            final String json = "{\"@type\":\"" + StatusMessage.class.getSimpleName() + "\",\"id\":\"c78fe75d4c93bc07e916e539\",\"code\":" + STATUS_OK.getNumber() + ",\"sender\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"proofOfWork\":6657650,\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
 
-            assertEquals(new StatusMessage(STATUS_OK, MessageId.of("412176952b5b81fd13f84a7c")), JACKSON_READER.readValue(json, Message.class));
+            assertEquals(new StatusMessage(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), ProofOfWork.of(6657650), STATUS_OK, MessageId.of("412176952b5b81fd13f84a7c")), JACKSON_READER.readValue(json, Message.class));
         }
 
         @Test
@@ -65,13 +73,13 @@ class StatusMessageTest {
     @Nested
     class JsonSerialization {
         @Test
-        void shouldSerializeToCorrectJson() throws IOException {
-            final StatusMessage message = new StatusMessage(STATUS_OK, correspondingId);
+        void shouldSerializeToCorrectJson() throws IOException, CryptoException {
+            final StatusMessage message = new StatusMessage(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), ProofOfWork.of(6657650), STATUS_OK, correspondingId);
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", StatusMessage.class.getSimpleName())
-                    .containsKeys("id", "correspondingId", "code");
+                    .containsKeys("id", "correspondingId", "code", "sender", "proofOfWork");
         }
     }
 
@@ -79,9 +87,9 @@ class StatusMessageTest {
     class Equals {
         @Test
         void shouldReturnTrue() {
-            final StatusMessage message1 = new StatusMessage(STATUS_OK, correspondingId);
-            final StatusMessage message2 = new StatusMessage(STATUS_OK, correspondingId);
-            final StatusMessage message3 = new StatusMessage(STATUS_FORBIDDEN, correspondingId);
+            final StatusMessage message1 = new StatusMessage(sender, proofOfWork, STATUS_OK, correspondingId);
+            final StatusMessage message2 = new StatusMessage(sender, proofOfWork, STATUS_OK, correspondingId);
+            final StatusMessage message3 = new StatusMessage(sender, proofOfWork, STATUS_FORBIDDEN, correspondingId);
 
             assertEquals(message1, message2);
             assertNotEquals(message2, message3);
@@ -92,9 +100,9 @@ class StatusMessageTest {
     class HashCode {
         @Test
         void shouldReturnTrue() {
-            final StatusMessage message1 = new StatusMessage(STATUS_OK, correspondingId);
-            final StatusMessage message2 = new StatusMessage(STATUS_OK, correspondingId);
-            final StatusMessage message3 = new StatusMessage(STATUS_FORBIDDEN, correspondingId);
+            final StatusMessage message1 = new StatusMessage(sender, proofOfWork, STATUS_OK, correspondingId);
+            final StatusMessage message2 = new StatusMessage(sender, proofOfWork, STATUS_OK, correspondingId);
+            final StatusMessage message3 = new StatusMessage(sender, proofOfWork, STATUS_FORBIDDEN, correspondingId);
 
             assertEquals(message1.hashCode(), message2.hashCode());
             assertNotEquals(message2.hashCode(), message3.hashCode());

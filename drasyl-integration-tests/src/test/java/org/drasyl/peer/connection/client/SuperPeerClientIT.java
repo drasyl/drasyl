@@ -306,7 +306,7 @@ class SuperPeerClientIT {
 
             // verify received message
             receivedMessages.awaitCount(2);
-            receivedMessages.assertValueAt(1, new StatusMessage(STATUS_OK, request.getId()));
+            receivedMessages.assertValueAt(1, new StatusMessage(identityManager.getPublicKey(), identityManager.getProofOfWork(), STATUS_OK, request.getId()));
         }
     }
 
@@ -406,7 +406,7 @@ class SuperPeerClientIT {
 
             receivedMessages.awaitCount(2);
             emittedEvents.assertNoValues();
-            receivedMessages.assertValueAt(1, new StatusMessage(STATUS_PAYLOAD_TOO_LARGE, request.getId()));
+            receivedMessages.assertValueAt(1, new StatusMessage(identityManagerServer.getPublicKey(), identityManagerServer.getProofOfWork(), STATUS_PAYLOAD_TOO_LARGE, request.getId()));
         }
     }
 

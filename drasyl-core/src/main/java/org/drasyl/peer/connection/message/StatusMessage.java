@@ -21,6 +21,8 @@ package org.drasyl.peer.connection.message;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.ProofOfWork;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -79,25 +81,46 @@ import static java.util.Objects.requireNonNull;
  */
 public class StatusMessage extends AbstractResponseMessage<RequestMessage> {
     private final Code code;
+    private final CompressedPublicKey sender;
+    private final ProofOfWork proofOfWork;
 
     @JsonCreator
     private StatusMessage(@JsonProperty("id") final MessageId id,
+                          @JsonProperty("sender") final CompressedPublicKey sender,
+                          @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                           @JsonProperty("code") final Code code,
                           @JsonProperty("correspondingId") final MessageId correspondingId) {
         super(id, correspondingId);
         this.code = requireNonNull(code);
+        this.sender = sender;
+        this.proofOfWork = proofOfWork;
     }
 
     /**
      * Creates an immutable code object.
      *
+     * @param sender          message's sender
+     * @param proofOfWork     sender's proof of work
      * @param code            HTTP code code
      * @param correspondingId the corresponding id of the previous message
      * @throws IllegalArgumentException if the code isn't a valid code code
      */
-    public StatusMessage(final Code code, final MessageId correspondingId) {
+    public StatusMessage(final CompressedPublicKey sender,
+                         final ProofOfWork proofOfWork,
+                         final Code code,
+                         final MessageId correspondingId) {
         super(correspondingId);
         this.code = requireNonNull(code);
+        this.sender = requireNonNull(sender);
+        this.proofOfWork = requireNonNull(proofOfWork);
+    }
+
+    public CompressedPublicKey getSender() {
+        return sender;
+    }
+
+    public ProofOfWork getProofOfWork() {
+        return proofOfWork;
     }
 
     /**
@@ -110,8 +133,14 @@ public class StatusMessage extends AbstractResponseMessage<RequestMessage> {
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), code);
+    public String toString() {
+        return "StatusMessage{" +
+                "code=" + code +
+                ", sender='" + sender + '\'' +
+                ", proofOfWork='" + proofOfWork + '\'' +
+                ", correspondingId='" + correspondingId + '\'' +
+                ", id='" + id +
+                '}';
     }
 
     @Override
@@ -126,16 +155,14 @@ public class StatusMessage extends AbstractResponseMessage<RequestMessage> {
             return false;
         }
         final StatusMessage that = (StatusMessage) o;
-        return code == that.code;
+        return code == that.code &&
+                Objects.equals(sender, that.sender) &&
+                Objects.equals(proofOfWork, that.proofOfWork);
     }
 
     @Override
-    public String toString() {
-        return "StatusMessage{" +
-                "code=" + code +
-                ", correspondingId='" + correspondingId + '\'' +
-                ", id='" + id +
-                '}';
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), code, sender, proofOfWork);
     }
 
     public enum Code {

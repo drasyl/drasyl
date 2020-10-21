@@ -92,7 +92,7 @@ public class SignatureHandler extends SimpleChannelDuplexHandler<Message, Messag
                 ctx.fireChannelRead(signedMessage.getPayload());
             }
             else {
-                final StatusMessage exceptionMessage = new StatusMessage(STATUS_INVALID_SIGNATURE, signedMessage.getPayload().getId());
+                final StatusMessage exceptionMessage = new StatusMessage(identity.getPublicKey(), identity.getProofOfWork(), STATUS_INVALID_SIGNATURE, signedMessage.getPayload().getId());
                 channelWrite0(ctx, exceptionMessage, ctx.channel().newPromise());
 
                 if (LOG.isInfoEnabled()) {

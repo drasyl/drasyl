@@ -74,7 +74,7 @@ public class DefaultServerChannelInitializer extends ServerChannelInitializer {
         pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(environment.getConfig().getMessageHopLimit()));
         pipeline.addLast(CONNECTION_GUARD, new ServerNewConnectionsGuard(environment.getIdentity(), environment.getAcceptNewConnectionsSupplier()));
         pipeline.addLast(CHUNKED_WRITER, new ChunkedWriteHandler());
-        pipeline.addLast(CHUNK_HANDLER, new ChunkedMessageHandler(environment.getConfig().getMessageMaxContentLength(), environment.getIdentity().getPublicKey(), environment.getConfig().getMessageComposedMessageTransferTimeout()));
+        pipeline.addLast(CHUNK_HANDLER, new ChunkedMessageHandler(environment.getConfig().getMessageMaxContentLength(), environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), environment.getConfig().getMessageComposedMessageTransferTimeout()));
     }
 
     @Override

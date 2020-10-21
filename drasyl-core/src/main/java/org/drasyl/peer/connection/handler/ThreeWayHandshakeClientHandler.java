@@ -43,6 +43,7 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 @SuppressWarnings({ "java:S110" })
 public abstract class ThreeWayHandshakeClientHandler<R extends RequestMessage, O extends ResponseMessage<?>> extends AbstractThreeWayHandshakeHandler {
     public static final AttributeKey<CompressedPublicKey> ATTRIBUTE_PUBLIC_KEY = AttributeKey.valueOf("publicKey");
+    private final Identity identity;
     private final R requestMessage;
 
     protected ThreeWayHandshakeClientHandler(final Identity identity,
@@ -50,6 +51,7 @@ public abstract class ThreeWayHandshakeClientHandler<R extends RequestMessage, O
                                              final Pipeline pipeline,
                                              final R requestMessage) {
         super(timeout, pipeline, identity);
+        this.identity = identity;
         this.requestMessage = requestMessage;
     }
 
@@ -60,6 +62,7 @@ public abstract class ThreeWayHandshakeClientHandler<R extends RequestMessage, O
                                              final ScheduledFuture<?> timeoutFuture,
                                              final R requestMessage) {
         super(timeout, pipeline, handshakeFuture, timeoutFuture, identity);
+        this.identity = identity;
         this.requestMessage = requestMessage;
     }
 
@@ -77,7 +80,7 @@ public abstract class ThreeWayHandshakeClientHandler<R extends RequestMessage, O
                         confirmSession(ctx, offerMessage);
 
                         // send confirmation
-                        ctx.writeAndFlush(new StatusMessage(STATUS_OK, offerMessage.getId()));
+                        ctx.writeAndFlush(new StatusMessage(identity.getPublicKey(), identity.getProofOfWork(), STATUS_OK, offerMessage.getId()));
                     }
                     else {
                         rejectSession(ctx, error);

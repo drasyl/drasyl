@@ -66,6 +66,8 @@ class ChunkedMessageHandlerTest {
     private HashMap<MessageId, ChunkedMessageOutput> chunks;
     @Mock
     private ChunkedMessageOutput chunkedMessageOutput;
+    @Mock
+    private ProofOfWork myProofOfWork;
 
     @BeforeEach
     void setUp() throws CryptoException {
@@ -77,7 +79,7 @@ class ChunkedMessageHandlerTest {
 
     @Test
     void shouldRelayingChunkedMessage() {
-        final ChunkedMessageHandler handler = new ChunkedMessageHandler(chunks, maxContentLength, identity.getPublicKey(), transferTimeout);
+        final ChunkedMessageHandler handler = new ChunkedMessageHandler(chunks, maxContentLength, identity.getPublicKey(), myProofOfWork, transferTimeout);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         final ChunkedMessage message = mock(ChunkedMessage.class);
@@ -90,7 +92,7 @@ class ChunkedMessageHandlerTest {
 
     @Test
     void shouldCreateChunkedMessageOutputOnFirstChunk() {
-        final ChunkedMessageHandler handler = new ChunkedMessageHandler(chunks, maxContentLength, identity.getPublicKey(), transferTimeout);
+        final ChunkedMessageHandler handler = new ChunkedMessageHandler(chunks, maxContentLength, identity.getPublicKey(), myProofOfWork, transferTimeout);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         final ChunkedMessage message = mock(ChunkedMessage.class);
@@ -109,7 +111,7 @@ class ChunkedMessageHandlerTest {
 
     @Test
     void shouldAddChunkToChunkedMessageOutput() {
-        final ChunkedMessageHandler handler = new ChunkedMessageHandler(chunks, maxContentLength, identity.getPublicKey(), transferTimeout);
+        final ChunkedMessageHandler handler = new ChunkedMessageHandler(chunks, maxContentLength, identity.getPublicKey(), myProofOfWork, transferTimeout);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         final ChunkedMessage message = mock(ChunkedMessage.class);
@@ -128,7 +130,7 @@ class ChunkedMessageHandlerTest {
 
     @Test
     void shouldNotAddChunkIfFirstChunkIsMissing() {
-        final ChunkedMessageHandler handler = new ChunkedMessageHandler(chunks, maxContentLength, identity.getPublicKey(), transferTimeout);
+        final ChunkedMessageHandler handler = new ChunkedMessageHandler(chunks, maxContentLength, identity.getPublicKey(), identity.getProofOfWork(), transferTimeout);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         final ChunkedMessage message = mock(ChunkedMessage.class);
@@ -143,7 +145,7 @@ class ChunkedMessageHandlerTest {
         verify(chunks, never()).get(eq(msgID));
         verify(chunkedMessageOutput, never()).addChunk(message);
 
-        assertEquals(new StatusMessage(STATUS_BAD_REQUEST, msgID), channel.readOutbound());
+        assertEquals(new StatusMessage(identity.getPublicKey(), identity.getProofOfWork(), STATUS_BAD_REQUEST, msgID), channel.readOutbound());
     }
 
     @Test
@@ -151,7 +153,7 @@ class ChunkedMessageHandlerTest {
         final byte[] payload = new byte[maxContentLength + 1];
         new Random().nextBytes(payload);
 
-        final ChunkedMessageHandler handler = new ChunkedMessageHandler(maxContentLength, identity.getPublicKey(), transferTimeout);
+        final ChunkedMessageHandler handler = new ChunkedMessageHandler(maxContentLength, identity.getPublicKey(), myProofOfWork, transferTimeout);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         final ApplicationMessage message = mock(ApplicationMessage.class);
@@ -167,7 +169,7 @@ class ChunkedMessageHandlerTest {
         final byte[] payload = new byte[maxContentLength];
         new Random().nextBytes(payload);
 
-        final ChunkedMessageHandler handler = new ChunkedMessageHandler(maxContentLength, identity.getPublicKey(), transferTimeout);
+        final ChunkedMessageHandler handler = new ChunkedMessageHandler(maxContentLength, identity.getPublicKey(), myProofOfWork, transferTimeout);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         final ApplicationMessage message = mock(ApplicationMessage.class);
@@ -182,7 +184,7 @@ class ChunkedMessageHandlerTest {
         final byte[] payload = new byte[ChunkedMessageHandler.CHUNK_SIZE + 1];
         new Random().nextBytes(payload);
 
-        final ChunkedMessageHandler handler = new ChunkedMessageHandler(payload.length + 1, identity.getPublicKey(), transferTimeout);
+        final ChunkedMessageHandler handler = new ChunkedMessageHandler(payload.length + 1, identity.getPublicKey(), myProofOfWork, transferTimeout);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         final ApplicationMessage message = mock(ApplicationMessage.class);
