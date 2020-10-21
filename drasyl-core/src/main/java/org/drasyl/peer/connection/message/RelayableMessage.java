@@ -30,7 +30,7 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * This is an immutable object.
  */
-public abstract class RelayableMessage extends AbstractMessage {
+public abstract class RelayableMessage extends AbstractMessage implements AddressableMessage {
     protected final ProofOfWork proofOfWork;
     protected final CompressedPublicKey recipient;
     protected final CompressedPublicKey sender;
@@ -76,14 +76,17 @@ public abstract class RelayableMessage extends AbstractMessage {
         hopCount++;
     }
 
+    @Override
     public CompressedPublicKey getRecipient() {
         return recipient;
     }
 
+    @Override
     public CompressedPublicKey getSender() {
         return sender;
     }
 
+    @Override
     public ProofOfWork getProofOfWork() {
         return proofOfWork;
     }

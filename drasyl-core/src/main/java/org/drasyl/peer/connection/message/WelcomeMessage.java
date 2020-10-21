@@ -34,7 +34,7 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * This is an immutable object.
  */
-public class WelcomeMessage extends AbstractMessageWithUserAgent implements ResponseMessage<JoinMessage> {
+public class WelcomeMessage extends AbstractMessageWithUserAgent implements ResponseMessage<JoinMessage>, AddressableMessage {
     private final int networkId;
     private final CompressedPublicKey sender;
     private final ProofOfWork proofOfWork;
@@ -89,14 +89,17 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
         return networkId;
     }
 
+    @Override
     public CompressedPublicKey getSender() {
         return sender;
     }
 
+    @Override
     public ProofOfWork getProofOfWork() {
         return proofOfWork;
     }
 
+    @Override
     public CompressedPublicKey getRecipient() {
         return recipient;
     }
