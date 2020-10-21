@@ -44,30 +44,30 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
     public static final int CHUNK_SIZE = 32768; // 32768 := 2^15 bytes for payload and 2^15 bytes for meta-data
     private final int maxContentLength;
     private final HashMap<MessageId, ChunkedMessageOutput> chunks;
-    private final CompressedPublicKey myIdentity;
+    private final CompressedPublicKey myPublicKey;
     private final Duration transferTimeout;
 
     ChunkedMessageHandler(final HashMap<MessageId, ChunkedMessageOutput> chunks,
                           final int maxContentLength,
-                          final CompressedPublicKey myIdentity,
+                          final CompressedPublicKey myPublicKey,
                           final Duration transferTimeout) {
         super(true, false, false);
         this.chunks = chunks;
         this.maxContentLength = maxContentLength;
-        this.myIdentity = myIdentity;
+        this.myPublicKey = myPublicKey;
         this.transferTimeout = transferTimeout;
     }
 
     public ChunkedMessageHandler(final int maxContentLength,
-                                 final CompressedPublicKey myIdentity,
+                                 final CompressedPublicKey myPublicKey,
                                  final Duration transferTimeout) {
-        this(new HashMap<>(), maxContentLength, myIdentity, transferTimeout);
+        this(new HashMap<>(), maxContentLength, myPublicKey, transferTimeout);
     }
 
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
                                 final ChunkedMessage msg) {
-        if (!msg.getRecipient().equals(myIdentity)) {
+        if (!msg.getRecipient().equals(myPublicKey)) {
             // Only relaying...
             ReferenceCountUtil.retain(msg);
             ctx.fireChannelRead(msg);
