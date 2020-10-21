@@ -103,7 +103,7 @@ class ClientConnectionHandlerTest {
             when(requestMessage.getId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
             when(offerMessage.getCorrespondingId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
             when(offerMessage.getId()).thenReturn(MessageId.of("78c36c82b8d11c7217a011b3"));
-            when(offerMessage.getPublicKey()).thenReturn(publicKey);
+            when(offerMessage.getSender()).thenReturn(publicKey);
             when(offerMessage.getProofOfWork().isValid(any(), anyShort())).thenReturn(true);
             when(offerMessage.getNetworkId()).thenReturn(1337);
 
@@ -134,7 +134,7 @@ class ClientConnectionHandlerTest {
             when(requestMessage.getId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
             when(offerMessage.getCorrespondingId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
             when(offerMessage.getId()).thenReturn(MessageId.of("78c36c82b8d11c7217a011b3"));
-            when(offerMessage.getPublicKey()).thenReturn(publicKey);
+            when(offerMessage.getSender()).thenReturn(publicKey);
             when(offerMessage.getProofOfWork().isValid(any(), anyShort())).thenReturn(true);
             when(offerMessage.getNetworkId()).thenReturn(1337);
 

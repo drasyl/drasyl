@@ -121,7 +121,7 @@ class ServerConnectionHandlerTest {
     @Test
     void shouldRejectIncomingJoinMessageWithSamePublicKey() {
         when(environment.getIdentity().getPublicKey()).thenReturn(publicKey0);
-        when(joinMessage.getPublicKey()).thenReturn(publicKey0);
+        when(joinMessage.getSender()).thenReturn(publicKey0);
         when(joinMessage.getProofOfWork().isValid(any(), anyShort())).thenReturn(true);
 
         final ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), pipeline, handshakeFuture, timeoutFuture, null, offerMessage);
@@ -194,7 +194,7 @@ class ServerConnectionHandlerTest {
             when(environment.getPeersManager()).thenReturn(peersManager);
             when(environment.getChannelGroup()).thenReturn(channelGroup);
             when(offerMessage.getId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
-            when(requestMessage.getPublicKey()).thenReturn(publicKey0);
+            when(requestMessage.getSender()).thenReturn(publicKey0);
             when(requestMessage.isChildrenJoin()).thenReturn(true);
             when(statusMessage.getCorrespondingId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
             when(statusMessage.getCode()).thenReturn(STATUS_OK);
@@ -237,7 +237,7 @@ class ServerConnectionHandlerTest {
             when(environment.getPeersManager()).thenReturn(peersManager);
             when(environment.getChannelGroup()).thenReturn(channelGroup);
             when(offerMessage.getId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
-            when(requestMessage.getPublicKey()).thenReturn(publicKey0);
+            when(requestMessage.getSender()).thenReturn(publicKey0);
             when(requestMessage.isChildrenJoin()).thenReturn(false);
             when(statusMessage.getCorrespondingId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
             when(statusMessage.getCode()).thenReturn(STATUS_OK);

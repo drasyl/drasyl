@@ -54,7 +54,7 @@ class SignedMessageTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
-            final String json = "{\"@type\":\"SignedMessage\",\"payload\":{\"@type\":\"PingMessage\",\"id\":\"05155f021bed10398c4ca71c\"},\"kid\":\"0313c96bed7252c22218972dd21d611fec413d76e9eaac2717ed76889dcd357edf\",\"signature\":{\"bytes\":\"MEQCIAESpHbepeb9cRDA5Hd0GErCQnpSj+GN2bQIFEO2AgN5AiAGJwpL9G2BEki8c+VdCcnvKloYXKCDYJSTYt3e5VTylw==\"}}\n";
+            final String json = "{\"@type\":\"SignedMessage\",\"payload\":{\"@type\":\"PingMessage\",\"id\":\"05155f021bed10398c4ca71c\"},\"sender\":\"0313c96bed7252c22218972dd21d611fec413d76e9eaac2717ed76889dcd357edf\",\"signature\":{\"bytes\":\"MEQCIAESpHbepeb9cRDA5Hd0GErCQnpSj+GN2bQIFEO2AgN5AiAGJwpL9G2BEki8c+VdCcnvKloYXKCDYJSTYt3e5VTylw==\"}}\n";
 
             assertEquals(new SignedMessage(new PingMessage(), CompressedPublicKey.of("0313c96bed7252c22218972dd21d611fec413d76e9eaac2717ed76889dcd357edf"), new Signature(new byte[]{
                     0x30,
@@ -132,7 +132,7 @@ class SignedMessageTest {
 
         @Test
         void shouldRejectIncompleteData() {
-            final String json = "{\"@type\":\"SignedMessage\",\"kid\":\"0313c96bed7252c22218972dd21d611fec413d76e9eaac2717ed76889dcd357edf\",\"signature\":{\"bytes\":\"MEQCIAESpHbepeb9cRDA5Hd0GErCQnpSj+GN2bQIFEO2AgN5AiAGJwpL9G2BEki8c+VdCcnvKloYXKCDYJSTYt3e5VTylw==\"}}\n";
+            final String json = "{\"@type\":\"SignedMessage\",\"sender\":\"0313c96bed7252c22218972dd21d611fec413d76e9eaac2717ed76889dcd357edf\",\"signature\":{\"bytes\":\"MEQCIAESpHbepeb9cRDA5Hd0GErCQnpSj+GN2bQIFEO2AgN5AiAGJwpL9G2BEki8c+VdCcnvKloYXKCDYJSTYt3e5VTylw==\"}}\n";
 
             assertThrows(ValueInstantiationException.class, () -> JACKSON_READER.readValue(json, Message.class));
         }
@@ -147,7 +147,7 @@ class SignedMessageTest {
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", SignedMessage.class.getSimpleName())
-                    .containsKeys("payload", "kid", "signature");
+                    .containsKeys("payload", "sender", "signature");
         }
     }
 

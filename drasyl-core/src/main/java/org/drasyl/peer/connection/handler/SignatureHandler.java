@@ -53,7 +53,7 @@ public class SignatureHandler extends SimpleChannelDuplexHandler<Message, Messag
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
                                 final Message msg) {
-        if (!(msg instanceof SignedMessage) || ((SignedMessage) msg).getKid() == null || ((SignedMessage) msg).getSignature() == null) {
+        if (!(msg instanceof SignedMessage) || ((SignedMessage) msg).getSender() == null || ((SignedMessage) msg).getSignature() == null) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("[{}]: Dropped not signed message `{}`", ctx.channel().id().asShortText(), msg);
             }
@@ -77,9 +77,9 @@ public class SignatureHandler extends SimpleChannelDuplexHandler<Message, Messag
         if (ctx.channel().hasAttr(ATTRIBUTE_PUBLIC_KEY)) {
             final CompressedPublicKey channelKey = ctx.channel().attr(ATTRIBUTE_PUBLIC_KEY).get();
 
-            if (!channelKey.equals(signedMessage.getKid())) {
+            if (!channelKey.equals(signedMessage.getSender())) {
                 if (LOG.isInfoEnabled()) {
-                    LOG.info("[{}]: Sender public key `{}`, and the associated channel public key `{}` are not identical. Maybe a MITM attack. Message `{}` was dropped.", ctx.channel().id().asShortText(), signedMessage.getKid(), channelKey, signedMessage);
+                    LOG.info("[{}]: Sender public key `{}`, and the associated channel public key `{}` are not identical. Maybe a MITM attack. Message `{}` was dropped.", ctx.channel().id().asShortText(), signedMessage.getSender(), channelKey, signedMessage);
                 }
 
                 return;
@@ -111,7 +111,7 @@ public class SignatureHandler extends SimpleChannelDuplexHandler<Message, Messag
      * @return public key or zero if it could not be determined
      */
     private static PublicKey extractPublicKey(final SignedMessage msg) {
-        final CompressedPublicKey compressedPublicKey = msg.getKid();
+        final CompressedPublicKey compressedPublicKey = msg.getSender();
 
         try {
             if (compressedPublicKey != null) {

@@ -36,7 +36,7 @@ import static java.util.Objects.requireNonNull;
  */
 public class WelcomeMessage extends AbstractMessageWithUserAgent implements ResponseMessage<JoinMessage> {
     private final int networkId;
-    private final CompressedPublicKey publicKey;
+    private final CompressedPublicKey sender;
     private final ProofOfWork proofOfWork;
     private final PeerInformation peerInformation;
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -46,13 +46,13 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
     private WelcomeMessage(@JsonProperty("id") final MessageId id,
                            @JsonProperty("userAgent") final String userAgent,
                            @JsonProperty("networkId") final int networkId,
-                           @JsonProperty("publicKey") final CompressedPublicKey publicKey,
+                           @JsonProperty("sender") final CompressedPublicKey sender,
                            @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                            @JsonProperty("peerInformation") final PeerInformation peerInformation,
                            @JsonProperty("correspondingId") final MessageId correspondingId) {
         super(id, userAgent);
         this.networkId = networkId;
-        this.publicKey = requireNonNull(publicKey);
+        this.sender = requireNonNull(sender);
         this.proofOfWork = requireNonNull(proofOfWork);
         this.peerInformation = requireNonNull(peerInformation);
         this.correspondingId = requireNonNull(correspondingId);
@@ -62,18 +62,18 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
      * Creates new welcome message.
      *
      * @param networkId       the network id of the node server
-     * @param publicKey       the public key of the node server
+     * @param sender          the public key of the node server
      * @param proofOfWork     the proof of work of the node server
      * @param peerInformation the peer information of the node server
      * @param correspondingId the corresponding id of the previous join message
      */
     public WelcomeMessage(final int networkId,
-                          final CompressedPublicKey publicKey,
+                          final CompressedPublicKey sender,
                           final ProofOfWork proofOfWork,
                           final PeerInformation peerInformation,
                           final MessageId correspondingId) {
         this.networkId = networkId;
-        this.publicKey = requireNonNull(publicKey);
+        this.sender = requireNonNull(sender);
         this.proofOfWork = requireNonNull(proofOfWork);
         this.peerInformation = requireNonNull(peerInformation);
         this.correspondingId = requireNonNull(correspondingId);
@@ -83,8 +83,8 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
         return networkId;
     }
 
-    public CompressedPublicKey getPublicKey() {
-        return publicKey;
+    public CompressedPublicKey getSender() {
+        return sender;
     }
 
     public ProofOfWork getProofOfWork() {
@@ -102,7 +102,7 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), networkId, publicKey, proofOfWork, peerInformation, correspondingId);
+        return Objects.hash(super.hashCode(), networkId, sender, proofOfWork, peerInformation, correspondingId);
     }
 
     @Override
@@ -118,7 +118,7 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
         }
         final WelcomeMessage that = (WelcomeMessage) o;
         return networkId == that.networkId &&
-                Objects.equals(publicKey, that.publicKey) &&
+                Objects.equals(sender, that.sender) &&
                 Objects.equals(proofOfWork, that.proofOfWork) &&
                 Objects.equals(peerInformation, that.peerInformation) &&
                 Objects.equals(correspondingId, that.correspondingId);
@@ -128,7 +128,7 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
     public String toString() {
         return "WelcomeMessage{" +
                 "networkId=" + networkId +
-                ", publicKey=" + publicKey +
+                ", sender=" + sender +
                 ", proofOfWork=" + proofOfWork +
                 ", peerInformation=" + peerInformation +
                 ", correspondingId=" + correspondingId +

@@ -89,12 +89,12 @@ public class ClientConnectionHandler extends ThreeWayHandshakeClientHandler<Join
 
     @Override
     protected ConnectionExceptionMessage.Error validateSessionOffer(final WelcomeMessage offerMessage) {
-        final CompressedPublicKey serverPublicKey = offerMessage.getPublicKey();
+        final CompressedPublicKey serverPublicKey = offerMessage.getSender();
 
         if (!environment.getEndpoint().getPublicKey().equals(serverPublicKey)) {
             return CONNECTION_ERROR_WRONG_PUBLIC_KEY;
         }
-        else if (!offerMessage.getProofOfWork().isValid(offerMessage.getPublicKey(), POW_DIFFICULTY)) {
+        else if (!offerMessage.getProofOfWork().isValid(offerMessage.getSender(), POW_DIFFICULTY)) {
             return CONNECTION_ERROR_PROOF_OF_WORK_INVALID;
         }
         else if (environment.getIdentity().getPublicKey().equals(serverPublicKey)) {
@@ -111,7 +111,7 @@ public class ClientConnectionHandler extends ThreeWayHandshakeClientHandler<Join
     @Override
     protected void createConnection(final ChannelHandlerContext ctx,
                                     final WelcomeMessage offerMessage) {
-        final CompressedPublicKey serverPublicKey = offerMessage.getPublicKey();
+        final CompressedPublicKey serverPublicKey = offerMessage.getSender();
         final Channel channel = ctx.channel();
         final Path path = msg -> toFuture(ctx.writeAndFlush(msg));
 

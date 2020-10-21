@@ -34,31 +34,31 @@ import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 
 /**
  * Represents a container with a signature for the {@link #payload}. The {@link #signature} must be
- * valid under the supplied {@link #kid public key}.
+ * valid under the supplied {@link #sender public key}.
  * <br>
  * <b>
  * The {@link #signature} does not give any guarantees about the logical integrity of the {@link
  * #payload}, but only guarantees that the {@link #payload} was sent by the identity with the {@link
- * #kid public key} (as the last node in a relay chain).
+ * #sender public key} (as the last node in a relay chain).
  * </b>
  * <p>
  * This is an immutable object.
  */
 public class SignedMessage implements Message, Signable {
     private final Message payload;
-    private final CompressedPublicKey kid;
+    private final CompressedPublicKey sender;
     private Signature signature;
 
-    public SignedMessage(final Message payload, final CompressedPublicKey kid) {
-        this(payload, kid, null);
+    public SignedMessage(final Message payload, final CompressedPublicKey sender) {
+        this(payload, sender, null);
     }
 
     @JsonCreator
     public SignedMessage(@JsonProperty("payload") final Message payload,
-                         @JsonProperty("kid") final CompressedPublicKey kid,
+                         @JsonProperty("sender") final CompressedPublicKey sender,
                          @JsonProperty("signature") final Signature signature) {
         this.payload = requireNonNull(payload);
-        this.kid = kid;
+        this.sender = sender;
         this.signature = signature;
     }
 
@@ -66,8 +66,8 @@ public class SignedMessage implements Message, Signable {
         return this.payload;
     }
 
-    public CompressedPublicKey getKid() {
-        return this.kid;
+    public CompressedPublicKey getSender() {
+        return this.sender;
     }
 
     @Override
@@ -95,7 +95,7 @@ public class SignedMessage implements Message, Signable {
 
     @Override
     public int hashCode() {
-        return Objects.hash(payload, kid, signature);
+        return Objects.hash(payload, sender, signature);
     }
 
     @Override
@@ -108,7 +108,7 @@ public class SignedMessage implements Message, Signable {
         }
         final SignedMessage that = (SignedMessage) o;
         return Objects.equals(payload, that.payload) &&
-                Objects.equals(kid, that.kid) &&
+                Objects.equals(sender, that.sender) &&
                 Objects.equals(signature, that.signature);
     }
 
@@ -116,7 +116,7 @@ public class SignedMessage implements Message, Signable {
     public String toString() {
         return "SignedMessage{" +
                 "payload=" + payload +
-                ", kid=" + kid +
+                ", sender=" + sender +
                 ", signature=" + signature +
                 '}';
     }

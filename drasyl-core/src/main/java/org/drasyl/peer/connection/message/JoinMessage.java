@@ -35,7 +35,7 @@ import static java.util.Objects.requireNonNull;
 public class JoinMessage extends AbstractMessageWithUserAgent implements RequestMessage {
     private final int networkId;
     private final ProofOfWork proofOfWork;
-    private final CompressedPublicKey publicKey;
+    private final CompressedPublicKey sender;
     private final boolean childrenJoin;
 
     @JsonCreator
@@ -43,12 +43,12 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
                         @JsonProperty("userAgent") final String userAgent,
                         @JsonProperty("networkId") final int networkId,
                         @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
-                        @JsonProperty("publicKey") final CompressedPublicKey publicKey,
+                        @JsonProperty("sender") final CompressedPublicKey sender,
                         @JsonProperty("childrenJoin") final boolean childrenJoin) {
         super(id, userAgent);
         this.networkId = networkId;
         this.proofOfWork = requireNonNull(proofOfWork);
-        this.publicKey = requireNonNull(publicKey);
+        this.sender = requireNonNull(sender);
         this.childrenJoin = childrenJoin;
     }
 
@@ -57,11 +57,11 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
      *
      * @param networkId   the network of the joining node
      * @param proofOfWork the proof of work
-     * @param publicKey   the identity of the joining node
+     * @param sender      the identity of the joining node
      */
     public JoinMessage(final int networkId, final ProofOfWork proofOfWork,
-                       final CompressedPublicKey publicKey) {
-        this(networkId, proofOfWork, publicKey, true);
+                       final CompressedPublicKey sender) {
+        this(networkId, proofOfWork, sender, true);
     }
 
     /**
@@ -69,14 +69,14 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
      *
      * @param networkId    the network of the joining node
      * @param proofOfWork  the proof of work
-     * @param publicKey    the identity of the joining node
+     * @param sender    the identity of the joining node
      * @param childrenJoin join peer as children
      */
     public JoinMessage(final int networkId, final ProofOfWork proofOfWork,
-                       final CompressedPublicKey publicKey,
+                       final CompressedPublicKey sender,
                        final boolean childrenJoin) {
         this.proofOfWork = requireNonNull(proofOfWork);
-        this.publicKey = requireNonNull(publicKey);
+        this.sender = requireNonNull(sender);
         this.childrenJoin = childrenJoin;
         this.networkId = networkId;
     }
@@ -85,8 +85,8 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
         return this.networkId;
     }
 
-    public CompressedPublicKey getPublicKey() {
-        return this.publicKey;
+    public CompressedPublicKey getSender() {
+        return this.sender;
     }
 
     public ProofOfWork getProofOfWork() {
@@ -99,7 +99,7 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), networkId, publicKey, proofOfWork, childrenJoin);
+        return Objects.hash(super.hashCode(), networkId, sender, proofOfWork, childrenJoin);
     }
 
     @Override
@@ -115,7 +115,7 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
         }
         final JoinMessage that = (JoinMessage) o;
         return networkId == that.networkId &&
-                Objects.equals(publicKey, that.publicKey) &&
+                Objects.equals(sender, that.sender) &&
                 Objects.equals(proofOfWork, that.proofOfWork) &&
                 childrenJoin == that.childrenJoin;
     }
@@ -124,7 +124,7 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
     public String toString() {
         return "JoinMessage{" +
                 "networkId=" + networkId +
-                ", publicKey=" + publicKey +
+                ", sender=" + sender +
                 ", proofOfWork=" + proofOfWork +
                 ", childrenJoin=" + childrenJoin +
                 ", id=" + id +

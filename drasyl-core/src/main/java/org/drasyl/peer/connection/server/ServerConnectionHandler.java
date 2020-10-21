@@ -80,9 +80,9 @@ public class ServerConnectionHandler extends ThreeWayHandshakeServerHandler<Join
 
     @Override
     protected ConnectionExceptionMessage.Error validateSessionRequest(final JoinMessage requestMessage) {
-        final CompressedPublicKey clientPublicKey = requestMessage.getPublicKey();
+        final CompressedPublicKey clientPublicKey = requestMessage.getSender();
 
-        if (!requestMessage.getProofOfWork().isValid(requestMessage.getPublicKey(), POW_DIFFICULTY)) {
+        if (!requestMessage.getProofOfWork().isValid(requestMessage.getSender(), POW_DIFFICULTY)) {
             return CONNECTION_ERROR_PROOF_OF_WORK_INVALID;
         }
         else if (requestMessage.isChildrenJoin() && environment.getConfig().isSuperPeerEnabled()) {
@@ -108,7 +108,7 @@ public class ServerConnectionHandler extends ThreeWayHandshakeServerHandler<Join
     @Override
     protected void createConnection(final ChannelHandlerContext ctx,
                                     final JoinMessage requestMessage) {
-        final CompressedPublicKey clientPublicKey = requestMessage.getPublicKey();
+        final CompressedPublicKey clientPublicKey = requestMessage.getSender();
         final Channel channel = ctx.channel();
         final PeerInformation clientInformation = PeerInformation.of();
         final Path path = msg -> FutureUtil.toFuture(ctx.writeAndFlush(msg));
