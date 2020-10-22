@@ -43,13 +43,6 @@ public class PingPongHandler extends SimpleChannelInboundHandler<Message> {
     protected final AtomicInteger retries;
 
     /**
-     * PingPongHandler with {@code 3} retries, until channel is closed.
-     */
-    public PingPongHandler() {
-        this((short) 3);
-    }
-
-    /**
      * PingPongHandler with {@code retries} retries, until channel is closed.
      */
     public PingPongHandler(final short maxRetries) {
