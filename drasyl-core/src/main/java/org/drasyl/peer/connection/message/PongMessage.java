@@ -28,7 +28,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
  */
 public class PongMessage extends AbstractResponseMessage<PingMessage> {
     @JsonCreator
-    public PongMessage(@JsonProperty("id") final MessageId id,
+    private PongMessage(@JsonProperty("id") final MessageId id,
                        @JsonProperty("correspondingId") final MessageId correspondingId) {
         super(id, correspondingId);
     }
