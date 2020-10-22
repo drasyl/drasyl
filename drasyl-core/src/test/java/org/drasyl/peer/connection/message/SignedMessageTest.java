@@ -59,18 +59,17 @@ class SignedMessageTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
-            final String json = "{\"@type\":\"SignedMessage\",\"payload\":{\"@type\":\"PingMessage\",\"id\":\"a4682843be6696d185f363f9\",\"sender\":\"0300f9df12eed957a17b2b373978ea32177b3e1ce00c92003b5dd2c68de253b35c\",\"proofOfWork\":6657650},\"sender\":\"0300f9df12eed957a17b2b373978ea32177b3e1ce00c92003b5dd2c68de253b35c\",\"signature\":{\"bytes\":\"eyJAdHlwZSI6IlBpbmdNZXNzYWdlIiwiaWQiOiI0YTRiNmEyYzRhZjA0NDllM2FkMGU5MmYiLCJzZW5kZXIiOiIwMzAwZjlkZjEyZWVkOTU3YTE3YjJiMzczOTc4ZWEzMjE3N2IzZTFjZTAwYzkyMDAzYjVkZDJjNjhkZTI1M2IzNWMiLCJwcm9vZk9mV29yayI6NjY1NzY1MH0=\"}}";
+            final String json = "{\"@type\":\"SignedMessage\",\"sender\":\"0300f9df12eed957a17b2b373978ea32177b3e1ce00c92003b5dd2c68de253b35c\",\"proofOfWork\":6657650,\"signature\":{\"bytes\":\"eyJAdHlwZSI6IlBpbmdNZXNzYWdlIiwiaWQiOiI0YTRiNmEyYzRhZjA0NDllM2FkMGU5MmYiLCJzZW5kZXIiOiIwMzAwZjlkZjEyZWVkOTU3YTE3YjJiMzczOTc4ZWEzMjE3N2IzZTFjZTAwYzkyMDAzYjVkZDJjNjhkZTI1M2IzNWMiLCJwcm9vZk9mV29yayI6NjY1NzY1MH0=\"},\"payload\":{\"@type\":\"PingMessage\",\"id\":\"c36bee63dcf0c2998a8bedeb\",\"sender\":\"0300f9df12eed957a17b2b373978ea32177b3e1ce00c92003b5dd2c68de253b35c\",\"proofOfWork\":6657650}}";
 
             assertEquals(
                     new SignedMessage(
-                            new PingMessage(
-                                    CompressedPublicKey.of("0300f9df12eed957a17b2b373978ea32177b3e1ce00c92003b5dd2c68de253b35c"),
-                                    ProofOfWork.of(6657650)
-                            ),
+                            CompressedPublicKey.of("0300f9df12eed957a17b2b373978ea32177b3e1ce00c92003b5dd2c68de253b35c"), ProofOfWork.of(6657650), new Signature(
+                            HexUtil.fromString("7b224074797065223a2250696e674d657373616765222c226964223a22346134623661326334616630343439653361643065393266222c2273656e646572223a22303330306639646631326565643935376131376232623337333937386561333231373762336531636530306339323030336235646432633638646532353362333563222c2270726f6f664f66576f726b223a363635373635307d")
+                    ), new PingMessage(
                             CompressedPublicKey.of("0300f9df12eed957a17b2b373978ea32177b3e1ce00c92003b5dd2c68de253b35c"),
-                            new Signature(
-                                    HexUtil.fromString("7b224074797065223a2250696e674d657373616765222c226964223a22346134623661326334616630343439653361643065393266222c2273656e646572223a22303330306639646631326565643935376131376232623337333937386561333231373762336531636530306339323030336235646432633638646532353362333563222c2270726f6f664f66576f726b223a363635373635307d")
-                            )),
+                            ProofOfWork.of(6657650)
+                    )
+                    ),
                     JACKSON_READER.readValue(json, Message.class)
             );
         }
@@ -90,13 +89,13 @@ class SignedMessageTest {
             final SignedMessage message = new SignedMessage(new PingMessage(
                     CompressedPublicKey.of(keyPair.getPublic()),
                     ProofOfWork.of(6657650)
-            ), CompressedPublicKey.of(keyPair.getPublic()));
+            ), CompressedPublicKey.of(keyPair.getPublic()), proofOfWork);
             Crypto.sign(keyPair.getPrivate(), message);
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", SignedMessage.class.getSimpleName())
-                    .containsKeys("payload", "sender", "signature");
+                    .containsKeys("payload", "sender", "proofOfWork", "signature");
         }
     }
 
@@ -105,8 +104,8 @@ class SignedMessageTest {
         @Test
         void shouldReturnTrue() throws CryptoException {
             final PingMessage message = new PingMessage(sender, proofOfWork);
-            final SignedMessage signedMessage1 = new SignedMessage(message, CompressedPublicKey.of(keyPair.getPublic()));
-            final SignedMessage signedMessage2 = new SignedMessage(message, CompressedPublicKey.of(keyPair.getPublic()));
+            final SignedMessage signedMessage1 = new SignedMessage(message, CompressedPublicKey.of(keyPair.getPublic()), proofOfWork);
+            final SignedMessage signedMessage2 = new SignedMessage(message, CompressedPublicKey.of(keyPair.getPublic()), proofOfWork);
 
             assertEquals(signedMessage1, signedMessage2);
         }
@@ -117,8 +116,8 @@ class SignedMessageTest {
         @Test
         void shouldReturnTrue() throws CryptoException {
             final PingMessage message = new PingMessage(sender, proofOfWork);
-            final SignedMessage signedMessage1 = new SignedMessage(message, CompressedPublicKey.of(keyPair.getPublic()));
-            final SignedMessage signedMessage2 = new SignedMessage(message, CompressedPublicKey.of(keyPair.getPublic()));
+            final SignedMessage signedMessage1 = new SignedMessage(message, CompressedPublicKey.of(keyPair.getPublic()), proofOfWork);
+            final SignedMessage signedMessage2 = new SignedMessage(message, CompressedPublicKey.of(keyPair.getPublic()), proofOfWork);
 
             assertEquals(signedMessage1.hashCode(), signedMessage2.hashCode());
         }

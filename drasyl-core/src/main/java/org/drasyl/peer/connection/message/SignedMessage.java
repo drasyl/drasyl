@@ -24,6 +24,7 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.drasyl.crypto.Signable;
 import org.drasyl.crypto.Signature;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.ProofOfWork;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -45,21 +46,26 @@ import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
  * This is an immutable object.
  */
 public class SignedMessage implements Message, Signable {
-    private final Message payload;
     private final CompressedPublicKey sender;
+    private final ProofOfWork proofOfWork;
     private Signature signature;
+    private final Message payload;
 
-    public SignedMessage(final Message payload, final CompressedPublicKey sender) {
-        this(payload, sender, null);
+    public SignedMessage(final Message payload,
+                         final CompressedPublicKey sender,
+                         final ProofOfWork proofOfWork) {
+        this(sender, proofOfWork, null, payload);
     }
 
     @JsonCreator
-    SignedMessage(@JsonProperty("payload") final Message payload,
-                  @JsonProperty("sender") final CompressedPublicKey sender,
-                  @JsonProperty("signature") final Signature signature) {
-        this.payload = requireNonNull(payload);
-        this.sender = sender;
+    SignedMessage(@JsonProperty("sender") final CompressedPublicKey sender,
+                  @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
+                  @JsonProperty("signature") final Signature signature,
+                  @JsonProperty("payload") final Message payload) {
+        this.sender = requireNonNull(sender);
+        this.proofOfWork = requireNonNull(proofOfWork);
         this.signature = signature;
+        this.payload = requireNonNull(payload);
     }
 
     public Message getPayload() {
@@ -68,6 +74,10 @@ public class SignedMessage implements Message, Signable {
 
     public CompressedPublicKey getSender() {
         return this.sender;
+    }
+
+    public ProofOfWork getProofOfWork() {
+        return proofOfWork;
     }
 
     @Override
@@ -109,6 +119,7 @@ public class SignedMessage implements Message, Signable {
         final SignedMessage that = (SignedMessage) o;
         return Objects.equals(payload, that.payload) &&
                 Objects.equals(sender, that.sender) &&
+                Objects.equals(proofOfWork, that.proofOfWork) &&
                 Objects.equals(signature, that.signature);
     }
 
@@ -117,6 +128,7 @@ public class SignedMessage implements Message, Signable {
         return "SignedMessage{" +
                 "payload=" + payload +
                 ", sender=" + sender +
+                ", proofOfWork=" + proofOfWork +
                 ", signature=" + signature +
                 '}';
     }
