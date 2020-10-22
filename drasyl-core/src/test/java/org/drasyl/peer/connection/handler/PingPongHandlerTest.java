@@ -25,6 +25,7 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.ExceptionMessage;
@@ -41,6 +42,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_FORMAT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -59,13 +61,15 @@ class PingPongHandlerTest {
     private CompressedPublicKey sender;
     @Mock
     private ProofOfWork proofOfwork;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private Identity identity;
 
     @Test
     void userEventTriggeredShouldSendPingMessageIfThresholdNotReached() throws Exception {
         when(evt.state()).thenReturn(IdleState.READER_IDLE);
         when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
 
-        final PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
+        final PingPongHandler handler = new PingPongHandler(identity, (short) 1, new AtomicInteger(0));
         handler.userEventTriggered(ctx, evt);
 
         verify(ctx).writeAndFlush(any(PingMessage.class));
@@ -76,7 +80,7 @@ class PingPongHandlerTest {
         when(evt.state()).thenReturn(IdleState.READER_IDLE);
         when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
 
-        final PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(2));
+        final PingPongHandler handler = new PingPongHandler(identity, (short) 1, new AtomicInteger(2));
         handler.userEventTriggered(ctx, evt);
 
         verify(ctx).writeAndFlush(any(ConnectionExceptionMessage.class));
@@ -88,7 +92,7 @@ class PingPongHandlerTest {
         when(evt.state()).thenReturn(IdleState.READER_IDLE);
         when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
 
-        final PingPongHandler handler = new PingPongHandler((short) 2, new AtomicInteger(0));
+        final PingPongHandler handler = new PingPongHandler(identity, (short) 2, new AtomicInteger(0));
 
         for (int i = 0; i < 3; i++) {
             handler.userEventTriggered(ctx, evt);
@@ -103,7 +107,7 @@ class PingPongHandlerTest {
         when(evt.state()).thenReturn(IdleState.READER_IDLE);
         when(evt.state()).thenReturn(IdleState.WRITER_IDLE);
 
-        final PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
+        final PingPongHandler handler = new PingPongHandler(identity, (short) 1, new AtomicInteger(0));
         handler.userEventTriggered(ctx, evt);
 
         verify(ctx, never()).writeAndFlush(any());
@@ -111,7 +115,7 @@ class PingPongHandlerTest {
 
     @Test
     void shouldReplyWithPongMessageToPingMessage() {
-        final PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
+        final PingPongHandler handler = new PingPongHandler(identity, (short) 1, new AtomicInteger(0));
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         final PingMessage pingMessage = new PingMessage();
@@ -123,7 +127,7 @@ class PingPongHandlerTest {
 
     @Test
     void shouldResetCounterIfPingMessageReceived() {
-        final PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
+        final PingPongHandler handler = new PingPongHandler(identity, (short) 1, new AtomicInteger(0));
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         channel.writeInbound(new PongMessage(MessageId.of("412176952b5b81fd13f84a7c")));
@@ -134,7 +138,7 @@ class PingPongHandlerTest {
 
     @Test
     void shouldPassThroughAllUnrelatedMessages() {
-        final PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
+        final PingPongHandler handler = new PingPongHandler(identity, (short) 1, new AtomicInteger(0));
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
         final Message message = new ExceptionMessage(sender, proofOfwork, ERROR_FORMAT);

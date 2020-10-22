@@ -23,6 +23,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.PingMessage;
@@ -39,17 +40,21 @@ import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Erro
  */
 public class PingPongHandler extends SimpleChannelInboundHandler<Message> {
     public static final String PING_PONG_HANDLER = "pingPongHandler";
+    private final Identity identity;
     protected final short maxRetries;
     protected final AtomicInteger retries;
 
     /**
      * PingPongHandler with {@code retries} retries, until channel is closed.
      */
-    public PingPongHandler(final short maxRetries) {
-        this(maxRetries, new AtomicInteger(0));
+    public PingPongHandler(final Identity identity, final short maxRetries) {
+        this(identity, maxRetries, new AtomicInteger(0));
     }
 
-    PingPongHandler(final short maxRetries, final AtomicInteger retries) {
+    PingPongHandler(final Identity identity,
+                    final short maxRetries,
+                    final AtomicInteger retries) {
+        this.identity = identity;
         this.maxRetries = maxRetries;
         this.retries = retries;
     }
@@ -65,7 +70,7 @@ public class PingPongHandler extends SimpleChannelInboundHandler<Message> {
             if (e.state() == IdleState.READER_IDLE) {
                 if (retries.getAndIncrement() > maxRetries) {
                     // threshold reached, mark connection as unhealthy and close connection
-                    ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG)).addListener(ChannelFutureListener.CLOSE);
+                    ctx.writeAndFlush(new ConnectionExceptionMessage(identity.getPublicKey(), identity.getProofOfWork(), CONNECTION_ERROR_PING_PONG)).addListener(ChannelFutureListener.CLOSE);
                 }
                 else {
                     // send (next) ping

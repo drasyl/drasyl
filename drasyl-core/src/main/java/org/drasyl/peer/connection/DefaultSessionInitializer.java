@@ -26,6 +26,7 @@ import io.netty.handler.flush.FlushConsolidationHandler;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.timeout.IdleStateHandler;
 import org.drasyl.DrasylException;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.MessageDecoder;
 import org.drasyl.peer.connection.handler.MessageEncoder;
@@ -50,13 +51,16 @@ import static org.drasyl.peer.connection.handler.MessageEncoder.MESSAGE_ENCODER;
 public abstract class DefaultSessionInitializer extends ChannelInitializer<SocketChannel> {
     public static final String IDLE_EVENT = "idleEvent";
     public static final String CHUNKED_WRITER = "chunkedWriter";
+    private final Identity identity;
     private final int flushBufferSize;
     private final Duration readIdleTimeout;
     private final short pingPongRetries;
 
-    protected DefaultSessionInitializer(final int flushBufferSize,
+    protected DefaultSessionInitializer(final Identity identity,
+                                        final int flushBufferSize,
                                         final Duration readIdleTimeout,
                                         final short pingPongRetries) {
+        this.identity = identity;
         this.flushBufferSize = flushBufferSize;
         this.readIdleTimeout = readIdleTimeout;
         this.pingPongRetries = pingPongRetries;
@@ -192,7 +196,7 @@ public abstract class DefaultSessionInitializer extends ChannelInitializer<Socke
         if (!readIdleTimeout.isZero()) {
             pipeline.addLast(IDLE_EVENT, new IdleStateHandler(readIdleTimeout.toMillis(), 0, 0, TimeUnit.MILLISECONDS));
         }
-        pipeline.addLast(PingPongHandler.PING_PONG_HANDLER, new PingPongHandler(pingPongRetries));
+        pipeline.addLast(PingPongHandler.PING_PONG_HANDLER, new PingPongHandler(identity, pingPongRetries));
     }
 
     protected void afterIdleStage(final ChannelPipeline pipeline) {

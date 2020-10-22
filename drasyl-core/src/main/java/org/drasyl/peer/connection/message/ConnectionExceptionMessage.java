@@ -22,6 +22,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.ProofOfWork;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -37,23 +39,43 @@ import static java.util.Objects.requireNonNull;
  */
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class ConnectionExceptionMessage extends AbstractMessage implements RequestMessage {
+    private final CompressedPublicKey sender;
+    private final ProofOfWork proofOfWork;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final Error error;
 
     @JsonCreator
     private ConnectionExceptionMessage(@JsonProperty("id") final MessageId id,
+                                       @JsonProperty("sender") final CompressedPublicKey sender,
+                                       @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                                        @JsonProperty("error") final Error error) {
         super(id);
+        this.sender = requireNonNull(sender);
+        this.proofOfWork = requireNonNull(proofOfWork);
         this.error = requireNonNull(error);
     }
 
     /**
      * Creates a new exception message.
      *
-     * @param error the exception type
+     * @param sender      the message's sender
+     * @param proofOfWork sender's proof of work
+     * @param error       the exception type
      */
-    public ConnectionExceptionMessage(final Error error) {
+    public ConnectionExceptionMessage(final CompressedPublicKey sender,
+                                      final ProofOfWork proofOfWork,
+                                      final Error error) {
+        this.sender = requireNonNull(sender);
+        this.proofOfWork = requireNonNull(proofOfWork);
         this.error = requireNonNull(error);
+    }
+
+    public CompressedPublicKey getSender() {
+        return sender;
+    }
+
+    public ProofOfWork getProofOfWork() {
+        return proofOfWork;
     }
 
     /**
@@ -64,8 +86,13 @@ public class ConnectionExceptionMessage extends AbstractMessage implements Reque
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(super.hashCode(), error);
+    public String toString() {
+        return "ConnectionExceptionMessage{" +
+                "sender='" + sender + '\'' +
+                "proofOfWork='" + proofOfWork + '\'' +
+                ", error='" + error + '\'' +
+                ", id='" + id +
+                '}';
     }
 
     @Override
@@ -80,15 +107,14 @@ public class ConnectionExceptionMessage extends AbstractMessage implements Reque
             return false;
         }
         final ConnectionExceptionMessage that = (ConnectionExceptionMessage) o;
-        return Objects.equals(error, that.error);
+        return Objects.equals(sender, that.sender) &&
+                Objects.equals(proofOfWork, that.proofOfWork) &&
+                error == that.error;
     }
 
     @Override
-    public String toString() {
-        return "ConnectionExceptionMessage{" +
-                "error='" + error + '\'' +
-                ", id='" + id +
-                '}';
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), sender, proofOfWork, error);
     }
 
     /**

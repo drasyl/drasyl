@@ -22,6 +22,7 @@ import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.server.Server;
@@ -40,9 +41,12 @@ import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Erro
 public class ServerNewConnectionsGuard extends SimpleChannelInboundHandler<Message> {
     public static final String CONNECTION_GUARD = "connectionGuard";
     private static final Logger LOG = LoggerFactory.getLogger(ServerNewConnectionsGuard.class);
+    private final Identity identity;
     private final BooleanSupplier acceptNewConnectionsSupplier;
 
-    public ServerNewConnectionsGuard(final BooleanSupplier acceptNewConnectionsSupplier) {
+    public ServerNewConnectionsGuard(final Identity identity,
+                                     final BooleanSupplier acceptNewConnectionsSupplier) {
+        this.identity = identity;
         this.acceptNewConnectionsSupplier = acceptNewConnectionsSupplier;
     }
 
@@ -53,7 +57,7 @@ public class ServerNewConnectionsGuard extends SimpleChannelInboundHandler<Messa
             ctx.fireChannelRead(msg);
         }
         else {
-            ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_PEER_UNAVAILABLE)).addListener(ChannelFutureListener.CLOSE);
+            ctx.writeAndFlush(new ConnectionExceptionMessage(identity.getPublicKey(), identity.getProofOfWork(), CONNECTION_ERROR_PEER_UNAVAILABLE)).addListener(ChannelFutureListener.CLOSE);
             LOG.debug("{} blocked creation of channel {}.", getClass().getSimpleName(), ctx.channel().id());
         }
     }

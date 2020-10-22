@@ -55,7 +55,7 @@ public class DefaultServerChannelInitializer extends ServerChannelInitializer {
     protected final ServerEnvironment environment;
 
     public DefaultServerChannelInitializer(final ServerEnvironment environment) {
-        super(environment.getConfig().getFlushBufferSize(), environment.getConfig().getServerIdleTimeout(), environment.getConfig().getServerIdleRetries());
+        super(environment.getIdentity(), environment.getConfig().getFlushBufferSize(), environment.getConfig().getServerIdleTimeout(), environment.getConfig().getServerIdleRetries());
         this.environment = environment;
     }
 
@@ -72,7 +72,7 @@ public class DefaultServerChannelInitializer extends ServerChannelInitializer {
     protected void afterPojoMarshalStage(final ChannelPipeline pipeline) {
         pipeline.addLast(SIGNATURE_HANDLER, new SignatureHandler(environment.getIdentity()));
         pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(environment.getConfig().getMessageHopLimit()));
-        pipeline.addLast(CONNECTION_GUARD, new ServerNewConnectionsGuard(environment.getAcceptNewConnectionsSupplier()));
+        pipeline.addLast(CONNECTION_GUARD, new ServerNewConnectionsGuard(environment.getIdentity(), environment.getAcceptNewConnectionsSupplier()));
         pipeline.addLast(CHUNKED_WRITER, new ChunkedWriteHandler());
         pipeline.addLast(CHUNK_HANDLER, new ChunkedMessageHandler(environment.getConfig().getMessageMaxContentLength(), environment.getIdentity().getPublicKey(), environment.getConfig().getMessageComposedMessageTransferTimeout()));
     }

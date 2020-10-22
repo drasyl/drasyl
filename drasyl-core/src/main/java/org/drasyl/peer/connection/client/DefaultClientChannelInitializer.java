@@ -57,7 +57,7 @@ public class DefaultClientChannelInitializer extends ClientChannelInitializer {
     private final ClientEnvironment environment;
 
     public DefaultClientChannelInitializer(final ClientEnvironment environment) {
-        super(environment.getConfig().getFlushBufferSize(), environment.getIdleTimeout(),
+        super(environment.getIdentity(), environment.getConfig().getFlushBufferSize(), environment.getIdleTimeout(),
                 environment.getIdleRetries(), environment.getEndpoint());
         this.environment = environment;
     }

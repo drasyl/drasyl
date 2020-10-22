@@ -22,6 +22,7 @@ import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.junit.jupiter.api.Test;
@@ -30,6 +31,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_PEER_UNAVAILABLE;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -44,10 +46,12 @@ class ServerNewConnectionsGuardTest {
     private ChannelFuture channelFuture;
     @Mock
     private Channel channel;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private Identity identity;
 
     @Test
     void shouldFireOnOpenGuard() {
-        final ServerNewConnectionsGuard handler = new ServerNewConnectionsGuard(() -> true);
+        final ServerNewConnectionsGuard handler = new ServerNewConnectionsGuard(identity, () -> true);
 
         handler.channelRead0(ctx, message);
 
@@ -59,11 +63,11 @@ class ServerNewConnectionsGuardTest {
         when(ctx.channel()).thenReturn(channel);
         when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
 
-        final ServerNewConnectionsGuard handler = new ServerNewConnectionsGuard(() -> false);
+        final ServerNewConnectionsGuard handler = new ServerNewConnectionsGuard(identity, () -> false);
 
         handler.channelRead0(ctx, message);
 
-        verify(ctx).writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_PEER_UNAVAILABLE));
+        verify(ctx).writeAndFlush(new ConnectionExceptionMessage(identity.getPublicKey(), identity.getProofOfWork(), CONNECTION_ERROR_PEER_UNAVAILABLE));
         verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
     }
 }

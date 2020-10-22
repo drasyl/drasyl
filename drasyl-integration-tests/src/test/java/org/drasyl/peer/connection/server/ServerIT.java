@@ -368,7 +368,7 @@ class ServerIT {
 
             // verify response
             receivedMessages.awaitCount(1);
-            receivedMessages.assertValueAt(0, new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE_TIMEOUT));
+            receivedMessages.assertValueAt(0, new ConnectionExceptionMessage(serverIdentityManager.getPublicKey(), serverIdentityManager.getProofOfWork(), CONNECTION_ERROR_HANDSHAKE_TIMEOUT));
         }
     }
 
@@ -400,7 +400,7 @@ class ServerIT {
 
             // verify responses
             receivedMessages.awaitCount(1);
-            receivedMessages.assertValueAt(0, new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG));
+            receivedMessages.assertValueAt(0, new ConnectionExceptionMessage(serverIdentityManager.getPublicKey(), serverIdentityManager.getProofOfWork(), CONNECTION_ERROR_PING_PONG));
         }
     }
 

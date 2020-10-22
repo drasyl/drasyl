@@ -172,7 +172,7 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
         }
         timeoutFuture.cancel(true);
         handshakeFuture.completeExceptionally(new Exception(errorDescription));
-        ctx.writeAndFlush(new ConnectionExceptionMessage(error)).addListener(ChannelFutureListener.CLOSE);
+        ctx.writeAndFlush(new ConnectionExceptionMessage(identity.getPublicKey(), identity.getProofOfWork(), error)).addListener(ChannelFutureListener.CLOSE);
     }
 
     @Override
@@ -182,7 +182,7 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
                 getLogger().info("[{}]: Exception during handshake occurred: {}", ctx.channel().id().asShortText(), cause.getMessage());
             }
             // close connection if an error occurred before handshake
-            ctx.writeAndFlush(new ConnectionExceptionMessage(CONNECTION_ERROR_INITIALIZATION)).addListener(ChannelFutureListener.CLOSE);
+            ctx.writeAndFlush(new ConnectionExceptionMessage(identity.getPublicKey(), identity.getProofOfWork(), CONNECTION_ERROR_INITIALIZATION)).addListener(ChannelFutureListener.CLOSE);
         }
         else {
             ctx.fireExceptionCaught(cause);

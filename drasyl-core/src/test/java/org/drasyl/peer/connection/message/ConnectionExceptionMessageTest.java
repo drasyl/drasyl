@@ -19,8 +19,14 @@
 package org.drasyl.peer.connection.message;
 
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
+import org.drasyl.crypto.CryptoException;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.ProofOfWork;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
 
@@ -33,15 +39,25 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
+@ExtendWith(MockitoExtension.class)
 class ConnectionExceptionMessageTest {
+    @Mock
+    private CompressedPublicKey sender;
+    @Mock
+    private ProofOfWork proofOfWork;
+
     @Nested
     class JsonDeserialization {
         @Test
-        void shouldDeserializeToCorrectObject() throws IOException {
-            final String json = "{\"@type\":\"" + ConnectionExceptionMessage.class.getSimpleName() + "\",\"id\":\"89ba3cd9efb7570eb3126d11\"," +
+        void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
+            final String json = "{\"@type\":\"" + ConnectionExceptionMessage.class.getSimpleName() + "\",\"proofOfWork\":3556154,\"sender\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\",\"id\":\"89ba3cd9efb7570eb3126d11\"," +
                     "\"error\":\"" + CONNECTION_ERROR_PING_PONG.getDescription() + "\"}";
 
-            assertEquals(new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG), JACKSON_READER.readValue(json, Message.class));
+            assertEquals(new ConnectionExceptionMessage(
+                    CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"),
+                    ProofOfWork.of(3556154),
+                    CONNECTION_ERROR_PING_PONG
+            ), JACKSON_READER.readValue(json, Message.class));
         }
 
         @Test
@@ -55,13 +71,17 @@ class ConnectionExceptionMessageTest {
     @Nested
     class JsonSerialization {
         @Test
-        void shouldSerializeToCorrectJson() throws IOException {
-            final ConnectionExceptionMessage message = new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG);
+        void shouldSerializeToCorrectJson() throws IOException, CryptoException {
+            final ConnectionExceptionMessage message = new ConnectionExceptionMessage(
+                    CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"),
+                    ProofOfWork.of(3556154),
+                    CONNECTION_ERROR_PING_PONG
+            );
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", ConnectionExceptionMessage.class.getSimpleName())
-                    .containsKeys("id", "error");
+                    .containsKeys("id", "error", "sender", "proofOfWork");
         }
     }
 
@@ -69,7 +89,7 @@ class ConnectionExceptionMessageTest {
     class Constructor {
         @Test
         void shouldRejectNullValues() {
-            assertThrows(NullPointerException.class, () -> new ConnectionExceptionMessage(null), "ConnectionExceptionMessage requires an error type");
+            assertThrows(NullPointerException.class, () -> new ConnectionExceptionMessage(sender, proofOfWork, null), "ConnectionExceptionMessage requires an error type");
         }
     }
 
@@ -77,9 +97,9 @@ class ConnectionExceptionMessageTest {
     class Equals {
         @Test
         void notSameBecauseOfDifferentError() {
-            final ConnectionExceptionMessage message1 = new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG);
-            final ConnectionExceptionMessage message2 = new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG);
-            final ConnectionExceptionMessage message3 = new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE_TIMEOUT);
+            final ConnectionExceptionMessage message1 = new ConnectionExceptionMessage(sender, proofOfWork, CONNECTION_ERROR_PING_PONG);
+            final ConnectionExceptionMessage message2 = new ConnectionExceptionMessage(sender, proofOfWork, CONNECTION_ERROR_PING_PONG);
+            final ConnectionExceptionMessage message3 = new ConnectionExceptionMessage(sender, proofOfWork, CONNECTION_ERROR_HANDSHAKE_TIMEOUT);
 
             assertEquals(message1, message2);
             assertNotEquals(message2, message3);
@@ -90,9 +110,9 @@ class ConnectionExceptionMessageTest {
     class HashCode {
         @Test
         void notSameBecauseOfDifferentError() {
-            final ConnectionExceptionMessage message1 = new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG);
-            final ConnectionExceptionMessage message2 = new ConnectionExceptionMessage(CONNECTION_ERROR_PING_PONG);
-            final ConnectionExceptionMessage message3 = new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE_TIMEOUT);
+            final ConnectionExceptionMessage message1 = new ConnectionExceptionMessage(sender, proofOfWork, CONNECTION_ERROR_PING_PONG);
+            final ConnectionExceptionMessage message2 = new ConnectionExceptionMessage(sender, proofOfWork, CONNECTION_ERROR_PING_PONG);
+            final ConnectionExceptionMessage message3 = new ConnectionExceptionMessage(sender, proofOfWork, CONNECTION_ERROR_HANDSHAKE_TIMEOUT);
 
             assertEquals(message1.hashCode(), message2.hashCode());
             assertNotEquals(message2.hashCode(), message3.hashCode());

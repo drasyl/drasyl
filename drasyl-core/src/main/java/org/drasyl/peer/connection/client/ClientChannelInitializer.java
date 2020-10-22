@@ -26,6 +26,7 @@ import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshakerFactory;
 import io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler;
 import io.netty.handler.codec.http.websocketx.WebSocketVersion;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.connection.DefaultSessionInitializer;
 
@@ -41,6 +42,7 @@ public abstract class ClientChannelInitializer extends DefaultSessionInitializer
     /**
      * Initialize a netty Channel for an outbound connection to a node server.
      *
+     * @param identity        the node's identity
      * @param flushBufferSize The size of the flush buffer, to minimize IO overhead. A high value is
      *                        good for throughput. A low value is good for latency.
      * @param readIdleTimeout The maximum time that an active connection can spend in idle before
@@ -52,11 +54,12 @@ public abstract class ClientChannelInitializer extends DefaultSessionInitializer
      *                        value is 1, max 32767
      * @param target          the target URI
      */
-    public ClientChannelInitializer(final int flushBufferSize,
+    public ClientChannelInitializer(final Identity identity,
+                                    final int flushBufferSize,
                                     final Duration readIdleTimeout,
                                     final short pingPongRetries,
                                     final Endpoint target) {
-        super(flushBufferSize, readIdleTimeout, pingPongRetries);
+        super(identity, flushBufferSize, readIdleTimeout, pingPongRetries);
         this.target = target;
     }
 

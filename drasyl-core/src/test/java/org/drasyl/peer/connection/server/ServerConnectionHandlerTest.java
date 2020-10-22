@@ -107,7 +107,7 @@ class ServerConnectionHandlerTest {
         final ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(0), pipeline, handshakeFuture, null, requestMessage, offerMessage);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        assertEquals(new ConnectionExceptionMessage(CONNECTION_ERROR_HANDSHAKE_TIMEOUT), channel.readOutbound());
+        assertEquals(new ConnectionExceptionMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), CONNECTION_ERROR_HANDSHAKE_TIMEOUT), channel.readOutbound());
     }
 
     @Test
@@ -131,7 +131,7 @@ class ServerConnectionHandlerTest {
         channel.writeInbound(joinMessage);
         channel.flush();
 
-        assertEquals(new ConnectionExceptionMessage(CONNECTION_ERROR_IDENTITY_COLLISION), channel.readOutbound());
+        assertEquals(new ConnectionExceptionMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), CONNECTION_ERROR_IDENTITY_COLLISION), channel.readOutbound());
     }
 
     @Test
@@ -146,7 +146,7 @@ class ServerConnectionHandlerTest {
         channel.writeInbound(joinMessage);
         channel.flush();
 
-        assertEquals(new ConnectionExceptionMessage(CONNECTION_ERROR_OTHER_NETWORK), channel.readOutbound());
+        assertEquals(new ConnectionExceptionMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), CONNECTION_ERROR_OTHER_NETWORK), channel.readOutbound());
     }
 
     @Test
@@ -225,7 +225,7 @@ class ServerConnectionHandlerTest {
             channel.writeInbound(joinMessage);
             channel.flush();
 
-            assertEquals(new ConnectionExceptionMessage(CONNECTION_ERROR_NOT_A_SUPER_PEER), channel.readOutbound());
+            assertEquals(new ConnectionExceptionMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), CONNECTION_ERROR_NOT_A_SUPER_PEER), channel.readOutbound());
         }
     }
 

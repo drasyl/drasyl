@@ -25,6 +25,7 @@ import io.netty.handler.codec.http.HttpObjectAggregator;
 import io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler;
 import io.netty.handler.flush.FlushConsolidationHandler;
 import io.netty.handler.ssl.SslHandler;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -45,6 +46,8 @@ class ClientChannelInitializerTest {
     private Endpoint endpoint;
     @Mock
     private ChannelPipeline pipeline;
+    @Mock
+    private Identity identity;
 
     @BeforeEach
     void setUp() {
@@ -56,7 +59,7 @@ class ClientChannelInitializerTest {
 
     @Test
     void beforeMarshalStage() {
-        final ClientChannelInitializer initializer = new ClientChannelInitializer(flushBufferSize, readIdleTimeout, pingPongRetries,
+        final ClientChannelInitializer initializer = new ClientChannelInitializer(identity, flushBufferSize, readIdleTimeout, pingPongRetries,
                 endpoint) {
             @Override
             protected void customStage(final ChannelPipeline pipeline) {

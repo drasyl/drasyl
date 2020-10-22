@@ -24,6 +24,7 @@ import io.netty.handler.flush.FlushConsolidationHandler;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.timeout.IdleStateHandler;
 import org.drasyl.DrasylException;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.handler.MessageDecoder;
 import org.drasyl.peer.connection.handler.MessageEncoder;
 import org.drasyl.peer.connection.handler.PingPongHandler;
@@ -53,6 +54,8 @@ class DefaultSessionInitializerTest {
     private SslHandler sslHandler;
     @Mock
     private SocketChannel ch;
+    @Mock
+    private Identity identity;
 
     @BeforeEach
     void setUp() throws IllegalAccessException, NoSuchFieldException {
@@ -137,7 +140,7 @@ class DefaultSessionInitializerTest {
 
     @Test
     void testIdleStage() {
-        final DefaultSessionInitializer classUnderTest = new DefaultSessionInitializer(1, Duration.ofMillis(1L), (short) 1) {
+        final DefaultSessionInitializer classUnderTest = new DefaultSessionInitializer(identity, 1, Duration.ofMillis(1L), (short) 1) {
             @Override
             protected void beforeMarshalStage(final ChannelPipeline pipeline) {
 

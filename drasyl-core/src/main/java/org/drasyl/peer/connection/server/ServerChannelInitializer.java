@@ -19,6 +19,7 @@
 package org.drasyl.peer.connection.server;
 
 import io.netty.channel.ChannelPipeline;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.DefaultSessionInitializer;
 
 import java.time.Duration;
@@ -28,9 +29,10 @@ import java.time.Duration;
  * server.
  */
 public abstract class ServerChannelInitializer extends DefaultSessionInitializer {
-    protected ServerChannelInitializer(final int flushBufferSize,
+    protected ServerChannelInitializer(final Identity identity,
+                                       final int flushBufferSize,
                                        final Duration readIdleTimeout,
                                        final short pingPongRetries) {
-        super(flushBufferSize, readIdleTimeout, pingPongRetries);
+        super(identity, flushBufferSize, readIdleTimeout, pingPongRetries);
     }
 }
