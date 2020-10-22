@@ -18,9 +18,13 @@
  */
 package org.drasyl.peer.connection.message;
 
+import org.drasyl.crypto.CryptoException;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.ProofOfWork;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
@@ -32,26 +36,37 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @ExtendWith(MockitoExtension.class)
 class PingMessageTest {
+    @Mock
+    private CompressedPublicKey sender;
+    @Mock
+    private ProofOfWork proofOfWork;
+
     @Nested
     class JsonDeserialization {
         @Test
-        void shouldDeserializeToCorrectObject() throws IOException {
-            final String json = "{\"@type\":\"" + PingMessage.class.getSimpleName() + "\",\"id\":\"89ba3cd9efb7570eb3126d11\"}";
+        void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
+            final String json = "{\"@type\":\"" + PingMessage.class.getSimpleName() + "\",\"sender\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"proofOfWork\":6657650,\"id\":\"89ba3cd9efb7570eb3126d11\"}";
 
-            assertEquals(new PingMessage(), JACKSON_READER.readValue(json, Message.class));
+            assertEquals(new PingMessage(
+                    CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"),
+                    ProofOfWork.of(6657650)
+            ), JACKSON_READER.readValue(json, Message.class));
         }
     }
 
     @Nested
     class JsonSerialization {
         @Test
-        void shouldSerializeToCorrectJson() throws IOException {
-            final PingMessage message = new PingMessage();
+        void shouldSerializeToCorrectJson() throws IOException, CryptoException {
+            final PingMessage message = new PingMessage(
+                    CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"),
+                    ProofOfWork.of(6657650)
+            );
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", PingMessage.class.getSimpleName())
-                    .containsKeys("id");
+                    .containsKeys("id", "sender", "proofOfWork");
         }
     }
 
@@ -59,8 +74,8 @@ class PingMessageTest {
     class Equals {
         @Test
         void shouldReturnTrue() {
-            final PingMessage message1 = new PingMessage();
-            final PingMessage message2 = new PingMessage();
+            final PingMessage message1 = new PingMessage(sender, proofOfWork);
+            final PingMessage message2 = new PingMessage(sender, proofOfWork);
 
             assertEquals(message1, message2);
         }
@@ -70,8 +85,8 @@ class PingMessageTest {
     class HashCode {
         @Test
         void shouldReturnTrue() {
-            final PingMessage message1 = new PingMessage();
-            final PingMessage message2 = new PingMessage();
+            final PingMessage message1 = new PingMessage(sender, proofOfWork);
+            final PingMessage message2 = new PingMessage(sender, proofOfWork);
 
             assertEquals(message1.hashCode(), message2.hashCode());
         }

@@ -74,7 +74,7 @@ public class PingPongHandler extends SimpleChannelInboundHandler<Message> {
                 }
                 else {
                     // send (next) ping
-                    ctx.writeAndFlush(new PingMessage());
+                    ctx.writeAndFlush(new PingMessage(identity.getPublicKey(), identity.getProofOfWork()));
                 }
             }
         }

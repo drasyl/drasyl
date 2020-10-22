@@ -423,7 +423,7 @@ class ServerIT {
         // create connection
         try (final TestSuperPeerClient session = clientSession(configClient1, identitySession1, false)) {
             // send message
-            final RequestMessage request = new PingMessage();
+            final RequestMessage request = new PingMessage(configClient1.getIdentityPublicKey(), configClient1.getIdentityProofOfWork());
             final CompletableFuture<ResponseMessage<?>> send = session.sendRequest(request);
 
             // verify response
@@ -554,7 +554,7 @@ class ServerIT {
             final TestObserver<Message> receivedMessages = session.receivedMessages().filter(msg -> msg instanceof StatusMessage).test();
 
             // send message
-            final Message request = new PingMessage();
+            final Message request = new PingMessage(configClient1.getIdentityPublicKey(), configClient1.getIdentityProofOfWork());
             final SignedMessage signedMessage = new SignedMessage(request, session.getPublicKey());
             Crypto.sign(identitySession2.getPrivateKey().toUncompressedKey(), signedMessage);
             final byte[] binary = JACKSON_WRITER.writeValueAsBytes(signedMessage);

@@ -19,10 +19,13 @@
 package org.drasyl.peer.connection.message;
 
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
+import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.crypto.HexUtil;
 import org.drasyl.crypto.Signature;
 import org.drasyl.identity.CompressedKeyPair;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.ProofOfWork;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -43,7 +46,9 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 class SignedMessageTest {
     private static KeyPair keyPair;
     @Mock
-    private CompressedPublicKey publicKey;
+    private CompressedPublicKey sender;
+    @Mock
+    private ProofOfWork proofOfWork;
 
     @BeforeAll
     static void setUp() throws CryptoException {
@@ -54,80 +59,20 @@ class SignedMessageTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
-            final String json = "{\"@type\":\"SignedMessage\",\"payload\":{\"@type\":\"PingMessage\",\"id\":\"05155f021bed10398c4ca71c\"},\"sender\":\"0313c96bed7252c22218972dd21d611fec413d76e9eaac2717ed76889dcd357edf\",\"signature\":{\"bytes\":\"MEQCIAESpHbepeb9cRDA5Hd0GErCQnpSj+GN2bQIFEO2AgN5AiAGJwpL9G2BEki8c+VdCcnvKloYXKCDYJSTYt3e5VTylw==\"}}\n";
+            final String json = "{\"@type\":\"SignedMessage\",\"payload\":{\"@type\":\"PingMessage\",\"id\":\"a4682843be6696d185f363f9\",\"sender\":\"0300f9df12eed957a17b2b373978ea32177b3e1ce00c92003b5dd2c68de253b35c\",\"proofOfWork\":6657650},\"sender\":\"0300f9df12eed957a17b2b373978ea32177b3e1ce00c92003b5dd2c68de253b35c\",\"signature\":{\"bytes\":\"eyJAdHlwZSI6IlBpbmdNZXNzYWdlIiwiaWQiOiI0YTRiNmEyYzRhZjA0NDllM2FkMGU5MmYiLCJzZW5kZXIiOiIwMzAwZjlkZjEyZWVkOTU3YTE3YjJiMzczOTc4ZWEzMjE3N2IzZTFjZTAwYzkyMDAzYjVkZDJjNjhkZTI1M2IzNWMiLCJwcm9vZk9mV29yayI6NjY1NzY1MH0=\"}}";
 
-            assertEquals(new SignedMessage(new PingMessage(), CompressedPublicKey.of("0313c96bed7252c22218972dd21d611fec413d76e9eaac2717ed76889dcd357edf"), new Signature(new byte[]{
-                    0x30,
-                    0x44,
-                    0x02,
-                    0x20,
-                    0x01,
-                    0x12,
-                    (byte) 0xa4,
-                    0x76,
-                    (byte) 0xde,
-                    (byte) 0xa5,
-                    (byte) 0xe6,
-                    (byte) 0xfd,
-                    0x71,
-                    0x10,
-                    (byte) 0xc0,
-                    (byte) 0xe4,
-                    0x77,
-                    0x74,
-                    0x18,
-                    0x4a,
-                    (byte) 0xc2,
-                    0x42,
-                    0x7a,
-                    0x52,
-                    (byte) 0x8f,
-                    (byte) 0xe1,
-                    (byte) 0x8d,
-                    (byte) 0xd9,
-                    (byte) 0xb4,
-                    0x08,
-                    0x14,
-                    0x43,
-                    (byte) 0xb6,
-                    0x02,
-                    0x03,
-                    0x79,
-                    0x02,
-                    0x20,
-                    0x06,
-                    0x27,
-                    0x0a,
-                    0x4b,
-                    (byte) 0xf4,
-                    0x6d,
-                    (byte) 0x81,
-                    0x12,
-                    0x48,
-                    (byte) 0xbc,
-                    0x73,
-                    (byte) 0xe5,
-                    0x5d,
-                    0x09,
-                    (byte) 0xc9,
-                    (byte) 0xef,
-                    0x2a,
-                    0x5a,
-                    0x18,
-                    0x5c,
-                    (byte) 0xa0,
-                    (byte) 0x83,
-                    0x60,
-                    (byte) 0x94,
-                    (byte) 0x93,
-                    0x62,
-                    (byte) 0xdd,
-                    (byte) 0xde,
-                    (byte) 0xe5,
-                    0x54,
-                    (byte) 0xf2,
-                    (byte) 0x97
-            })), JACKSON_READER.readValue(json, Message.class));
+            assertEquals(
+                    new SignedMessage(
+                            new PingMessage(
+                                    CompressedPublicKey.of("0300f9df12eed957a17b2b373978ea32177b3e1ce00c92003b5dd2c68de253b35c"),
+                                    ProofOfWork.of(6657650)
+                            ),
+                            CompressedPublicKey.of("0300f9df12eed957a17b2b373978ea32177b3e1ce00c92003b5dd2c68de253b35c"),
+                            new Signature(
+                                    HexUtil.fromString("7b224074797065223a2250696e674d657373616765222c226964223a22346134623661326334616630343439653361643065393266222c2273656e646572223a22303330306639646631326565643935376131376232623337333937386561333231373762336531636530306339323030336235646432633638646532353362333563222c2270726f6f664f66576f726b223a363635373635307d")
+                            )),
+                    JACKSON_READER.readValue(json, Message.class)
+            );
         }
 
         @Test
@@ -141,8 +86,12 @@ class SignedMessageTest {
     @Nested
     class JsonSerialization {
         @Test
-        void shouldSerializeToCorrectJson() throws IOException {
-            final SignedMessage message = new SignedMessage(new PingMessage(), publicKey);
+        void shouldSerializeToCorrectJson() throws IOException, CryptoException {
+            final SignedMessage message = new SignedMessage(new PingMessage(
+                    CompressedPublicKey.of(keyPair.getPublic()),
+                    ProofOfWork.of(6657650)
+            ), CompressedPublicKey.of(keyPair.getPublic()));
+            Crypto.sign(keyPair.getPrivate(), message);
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
@@ -155,7 +104,7 @@ class SignedMessageTest {
     class Equals {
         @Test
         void shouldReturnTrue() throws CryptoException {
-            final PingMessage message = new PingMessage();
+            final PingMessage message = new PingMessage(sender, proofOfWork);
             final SignedMessage signedMessage1 = new SignedMessage(message, CompressedPublicKey.of(keyPair.getPublic()));
             final SignedMessage signedMessage2 = new SignedMessage(message, CompressedPublicKey.of(keyPair.getPublic()));
 
@@ -167,7 +116,7 @@ class SignedMessageTest {
     class HashCode {
         @Test
         void shouldReturnTrue() throws CryptoException {
-            final PingMessage message = new PingMessage();
+            final PingMessage message = new PingMessage(sender, proofOfWork);
             final SignedMessage signedMessage1 = new SignedMessage(message, CompressedPublicKey.of(keyPair.getPublic()));
             final SignedMessage signedMessage2 = new SignedMessage(message, CompressedPublicKey.of(keyPair.getPublic()));
 

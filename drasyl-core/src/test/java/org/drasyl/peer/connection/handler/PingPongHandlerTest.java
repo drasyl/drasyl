@@ -60,7 +60,7 @@ class PingPongHandlerTest {
     @Mock
     private CompressedPublicKey sender;
     @Mock
-    private ProofOfWork proofOfwork;
+    private ProofOfWork proofOfWork;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
 
@@ -118,7 +118,7 @@ class PingPongHandlerTest {
         final PingPongHandler handler = new PingPongHandler(identity, (short) 1, new AtomicInteger(0));
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        final PingMessage pingMessage = new PingMessage();
+        final PingMessage pingMessage = new PingMessage(sender, proofOfWork);
         channel.writeInbound(pingMessage);
         channel.flush();
 
@@ -141,7 +141,7 @@ class PingPongHandlerTest {
         final PingPongHandler handler = new PingPongHandler(identity, (short) 1, new AtomicInteger(0));
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        final Message message = new ExceptionMessage(sender, proofOfwork, ERROR_FORMAT);
+        final Message message = new ExceptionMessage(sender, proofOfWork, ERROR_FORMAT);
         channel.writeInbound(message);
         channel.flush();
 
