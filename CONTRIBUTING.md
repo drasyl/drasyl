@@ -39,24 +39,24 @@ Make sure you
     * [.editorconfig](.editorconfig)
     * Use `final` keyword where possible.
     * Each file must have the following copyright notice in the header: 
-    ```
-        Copyright (c) $today.year.
-        
-        This file is part of drasyl.
-        
-         drasyl is free software: you can redistribute it and/or modify
-         it under the terms of the GNU Lesser General Public License as published by
-         the Free Software Foundation, either version 3 of the License, or
-         (at your option) any later version.
-         
-         drasyl is distributed in the hope that it will be useful,
-         but WITHOUT ANY WARRANTY; without even the implied warranty of
-         MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-         GNU Lesser General Public License for more details.
-         
-         You should have received a copy of the GNU Lesser General Public License
-         along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
-    ```
+```
+Copyright (c) $today.year.
+
+This file is part of drasyl.
+
+ drasyl is free software: you can redistribute it and/or modify
+ it under the terms of the GNU Lesser General Public License as published by
+ the Free Software Foundation, either version 3 of the License, or
+ (at your option) any later version.
+ 
+ drasyl is distributed in the hope that it will be useful,
+ but WITHOUT ANY WARRANTY; without even the implied warranty of
+ MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ GNU Lesser General Public License for more details.
+ 
+ You should have received a copy of the GNU Lesser General Public License
+ along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
+```
   * Add [changelog](./CHANGELOG.md) entry
   * Add documentation for a new feature.
   * Add tests for a new feature.
