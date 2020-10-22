@@ -160,10 +160,10 @@ class SuperPeerClientIT {
         identityManagerServer = new IdentityManager(serverConfig);
         identityManagerServer.loadOrCreateIdentity();
         peersManager = new PeersManager(emittedEventsSubject::onNext, identityManager.getIdentity());
-        channelGroup = new PeerChannelGroup();
+        channelGroup = new PeerChannelGroup(identityManager.getIdentity());
         peersManagerServer = new PeersManager(event -> {
         }, identityManagerServer.getIdentity());
-        channelGroupServer = new PeerChannelGroup();
+        channelGroupServer = new PeerChannelGroup(identityManagerServer.getIdentity());
         pipeline = new DrasylPipeline(event -> {
         }, config, identityManager.getIdentity());
         pipeline.addFirst(SUPER_PEER_SINK_HANDLER, new SuperPeerMessageSinkHandler(channelGroup, peersManager));
@@ -232,7 +232,7 @@ class SuperPeerClientIT {
 
     @Disabled("Race Condition error")
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldSendQuitMessageOnClientSideDisconnect() {
+    void clientShouldSendQuitMessageOnClientSideDisconnect() throws CryptoException {
         final TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof QuitMessage).test();
         final TestObserver<Event> emittedEvents = emittedEventsSubject.test();
 
@@ -246,7 +246,7 @@ class SuperPeerClientIT {
 
         // verify emitted events
         receivedMessages.awaitCount(1);
-        receivedMessages.assertValueAt(0, new QuitMessage(REASON_SHUTTING_DOWN));
+        receivedMessages.assertValueAt(0, new QuitMessage(identityManager.getIdentity().getPublicKey(), identityManager.getIdentity().getProofOfWork(), CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"), REASON_SHUTTING_DOWN));
     }
 
     @Test
@@ -322,7 +322,7 @@ class SuperPeerClientIT {
             server.awaitClient(identityManager.getPublicKey());
 
             // send message
-            server.sendMessage(identityManager.getPublicKey(), new QuitMessage(REASON_SHUTTING_DOWN));
+            server.sendMessage(identityManager.getPublicKey(), new QuitMessage(identityManagerServer.getIdentity().getPublicKey(), identityManagerServer.getIdentity().getProofOfWork(), identityManager.getIdentity().getPublicKey(), REASON_SHUTTING_DOWN));
 
             // verify emitted events
             emittedEvents.awaitCount(3);

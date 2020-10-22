@@ -160,7 +160,7 @@ class ServerIT {
         serverIdentityManager.loadOrCreateIdentity();
         peersManager = new PeersManager(event -> {
         }, serverIdentityManager.getIdentity());
-        channelGroup = new PeerChannelGroup();
+        channelGroup = new PeerChannelGroup(serverIdentityManager.getIdentity());
         pipeline = new DrasylPipeline(event -> {
         }, serverConfig, serverIdentityManager.getIdentity());
         pipeline.addFirst(SUPER_PEER_SINK_HANDLER, new SuperPeerMessageSinkHandler(channelGroup, peersManager));

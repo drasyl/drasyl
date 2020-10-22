@@ -25,11 +25,11 @@ import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
+import org.drasyl.peer.connection.message.ExceptionMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.MessageId;
 import org.drasyl.peer.connection.message.PingMessage;
 import org.drasyl.peer.connection.message.PongMessage;
-import org.drasyl.peer.connection.message.QuitMessage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -37,7 +37,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
+import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_FORMAT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.never;
@@ -131,11 +131,11 @@ class PingPongHandlerTest {
         final PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        final QuitMessage quitMessage = new QuitMessage(REASON_SHUTTING_DOWN);
-        channel.writeInbound(quitMessage);
+        final Message message = new ExceptionMessage(ERROR_FORMAT);
+        channel.writeInbound(message);
         channel.flush();
 
         assertEquals(0, handler.retries.get());
-        assertEquals(quitMessage, channel.readInbound());
+        assertEquals(message, channel.readInbound());
     }
 }

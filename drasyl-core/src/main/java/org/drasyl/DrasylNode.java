@@ -23,7 +23,6 @@ import com.typesafe.config.ConfigException;
 import io.netty.channel.EventLoopGroup;
 import io.netty.channel.epoll.Epoll;
 import io.netty.channel.epoll.EpollEventLoopGroup;
-import io.netty.channel.group.ChannelGroupFutureListener;
 import io.netty.channel.nio.NioEventLoopGroup;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
@@ -53,6 +52,7 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.codec.Codec;
 import org.drasyl.plugins.PluginManager;
+import org.drasyl.util.FutureUtil;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -68,6 +68,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
+import static org.drasyl.peer.connection.handler.ThreeWayHandshakeClientHandler.ATTRIBUTE_PUBLIC_KEY;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 import static org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler.DIRECT_CONNECTION_MESSAGE_SINK_HANDLER;
 import static org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler.LOOPBACK_MESSAGE_SINK_HANDLER;
@@ -154,7 +155,7 @@ public abstract class DrasylNode {
             identityManager.loadOrCreateIdentity();
             this.identity = identityManager.getIdentity();
             this.peersManager = new PeersManager(this::onInternalEvent, identity);
-            this.channelGroup = new PeerChannelGroup();
+            this.channelGroup = new PeerChannelGroup(identity);
             this.endpoints = new CopyOnWriteArraySet<>();
             this.acceptNewConnections = new AtomicBoolean();
             this.pipeline = new DrasylPipeline(this::onEvent, config, identity);
@@ -430,8 +431,8 @@ public abstract class DrasylNode {
     @SuppressWarnings({ "java:S1905" })
     private void closeConnections() {
         // send quit message to all peers and close connections
-        channelGroup.writeAndFlush(new QuitMessage(REASON_SHUTTING_DOWN))
-                .addListener((ChannelGroupFutureListener) future -> future.group().close());
+        final CompletableFuture<?>[] futures = channelGroup.stream().map(c -> FutureUtil.toFuture(c.writeAndFlush(new QuitMessage(identity.getPublicKey(), identity.getProofOfWork(), c.attr(ATTRIBUTE_PUBLIC_KEY).get(), REASON_SHUTTING_DOWN)))).toArray(CompletableFuture[]::new);
+        CompletableFuture.allOf(futures).thenRun(channelGroup::close);
     }
 
     /**

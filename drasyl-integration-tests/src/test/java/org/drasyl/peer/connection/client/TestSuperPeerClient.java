@@ -70,7 +70,7 @@ public class TestSuperPeerClient extends SuperPeerClient {
                                final boolean doPingPong,
                                final boolean doJoin,
                                final Set<Endpoint> endpoints) {
-        this(DrasylConfig.newBuilder(config).superPeerEnabled(true).superPeerEndpoints(endpoints).build(), identity, new PeerChannelGroup(), workerGroup, ReplaySubject.create(), doPingPong, doJoin);
+        this(DrasylConfig.newBuilder(config).superPeerEnabled(true).superPeerEndpoints(endpoints).build(), identity, new PeerChannelGroup(identity), workerGroup, ReplaySubject.create(), doPingPong, doJoin);
     }
 
     private TestSuperPeerClient(final DrasylConfig config,

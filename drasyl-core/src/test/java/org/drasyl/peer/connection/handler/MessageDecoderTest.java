@@ -24,11 +24,11 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.DecoderException;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
-import org.drasyl.peer.connection.message.QuitMessage;
+import org.drasyl.peer.connection.message.ExceptionMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
+import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_FORMAT;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -45,12 +45,12 @@ class MessageDecoderTest {
 
     @Test
     void shouldDeserializeInboundJsonStringToMessage() throws JsonProcessingException {
-        final byte[] binary = JACKSON_WRITER.writeValueAsBytes(new QuitMessage(REASON_SHUTTING_DOWN));
+        final byte[] binary = JACKSON_WRITER.writeValueAsBytes(new ExceptionMessage(ERROR_FORMAT));
 
         channel.writeInbound(new BinaryWebSocketFrame(Unpooled.wrappedBuffer(binary)));
         channel.flush();
 
-        assertThat(channel.readInbound(), instanceOf(QuitMessage.class));
+        assertThat(channel.readInbound(), instanceOf(ExceptionMessage.class));
     }
 
     @Test

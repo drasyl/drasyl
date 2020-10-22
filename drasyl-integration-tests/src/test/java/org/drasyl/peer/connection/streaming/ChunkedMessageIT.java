@@ -142,7 +142,7 @@ class ChunkedMessageIT {
         pipeline.addFirst(SUPER_PEER_SINK_HANDLER, new SuperPeerMessageSinkHandler(channelGroup, peersManager));
         pipeline.addAfter(SUPER_PEER_SINK_HANDLER, DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, new DirectConnectionMessageSinkHandler(channelGroup));
         pipeline.addAfter(DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, LOOPBACK_MESSAGE_SINK_HANDLER, new LoopbackMessageSinkHandler(new AtomicBoolean(true), serverIdentityManager.getIdentity(), peersManager, endpoints));
-        channelGroup = new PeerChannelGroup();
+        channelGroup = new PeerChannelGroup(serverIdentityManager.getIdentity());
         endpoints = new HashSet<>();
 
         server = new TestServer(serverIdentityManager.getIdentity(), pipeline, peersManager, serverConfig, channelGroup, workerGroup, bossGroup, endpoints);

@@ -22,6 +22,8 @@ import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.ProofOfWork;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -34,24 +36,39 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * This is an immutable object.
  */
-public class QuitMessage extends AbstractMessage implements RequestMessage {
+public class QuitMessage extends AbstractMessage implements RequestMessage, AddressableMessage {
+    private final CompressedPublicKey sender;
+    private final ProofOfWork proofOfWork;
+    private final CompressedPublicKey recipient;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final CloseReason reason;
 
     @JsonCreator
     private QuitMessage(@JsonProperty("id") final MessageId id,
+                        @JsonProperty("sender") final CompressedPublicKey sender,
+                        @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
+                        @JsonProperty("recipient") final CompressedPublicKey recipient,
                         @JsonProperty("reason") final CloseReason reason) {
         super(id);
+        this.sender = requireNonNull(sender);
+        this.proofOfWork = requireNonNull(proofOfWork);
+        this.recipient = requireNonNull(recipient);
         this.reason = requireNonNull(reason);
     }
 
-    public QuitMessage(final CloseReason reason) {
+    public QuitMessage(final CompressedPublicKey sender,
+                       final ProofOfWork proofOfWork,
+                       final CompressedPublicKey recipient,
+                       final CloseReason reason) {
+        this.sender = requireNonNull(sender);
+        this.proofOfWork = requireNonNull(proofOfWork);
+        this.recipient = requireNonNull(recipient);
         this.reason = requireNonNull(reason);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), reason);
+        return Objects.hash(super.hashCode(), sender, proofOfWork, recipient, reason);
     }
 
     @Override
@@ -66,15 +83,36 @@ public class QuitMessage extends AbstractMessage implements RequestMessage {
             return false;
         }
         final QuitMessage that = (QuitMessage) o;
-        return Objects.equals(reason, that.reason);
+        return Objects.equals(sender, that.sender) &&
+                Objects.equals(proofOfWork, that.proofOfWork) &&
+                Objects.equals(recipient, that.recipient) &&
+                reason == that.reason;
     }
 
     @Override
     public String toString() {
         return "QuitMessage{" +
-                "reason='" + reason + '\'' +
+                "sender='" + sender + '\'' +
+                ", proofOfWork='" + proofOfWork + '\'' +
+                ", recipient='" + recipient + '\'' +
+                ", reason='" + reason + '\'' +
                 ", id='" + id +
                 '}';
+    }
+
+    @Override
+    public CompressedPublicKey getSender() {
+        return sender;
+    }
+
+    @Override
+    public ProofOfWork getProofOfWork() {
+        return proofOfWork;
+    }
+
+    @Override
+    public CompressedPublicKey getRecipient() {
+        return recipient;
     }
 
     public CloseReason getReason() {

@@ -25,6 +25,7 @@ import io.netty.channel.ChannelId;
 import io.netty.util.Attribute;
 import io.netty.util.concurrent.EventExecutor;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -40,12 +41,15 @@ import java.util.concurrent.ExecutionException;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_NEW_SESSION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class PeerChannelGroupTest {
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private Identity identity;
     @Mock
     private Map<CompressedPublicKey, ChannelId> identity2channelId;
     @Mock
@@ -92,7 +96,7 @@ class PeerChannelGroupTest {
     @Nested
     class Find {
         @Mock
-        private CompressedPublicKey identity;
+        private CompressedPublicKey publicKey;
         @Mock
         private Channel channel;
         @Mock
@@ -107,10 +111,10 @@ class PeerChannelGroupTest {
             when(channel.id()).thenReturn(channelId);
             when(channel.attr(any())).thenReturn(attribute);
             when(channel.closeFuture()).thenReturn(channelFuture);
-            when(identity2channelId.get(identity)).thenReturn(channelId);
-            underTest.add(identity, channel);
+            when(identity2channelId.get(publicKey)).thenReturn(channelId);
+            underTest.add(publicKey, channel);
 
-            assertEquals(channel, underTest.find(identity));
+            assertEquals(channel, underTest.find(publicKey));
         }
     }
 
@@ -119,7 +123,7 @@ class PeerChannelGroupTest {
         @Mock
         private Channel channel;
         @Mock
-        private CompressedPublicKey identity;
+        private CompressedPublicKey publicKey;
         @Mock
         private ChannelId channelId;
         @Mock
@@ -130,13 +134,13 @@ class PeerChannelGroupTest {
         @Test
         void itShouldAddGivenChannelToGroup() {
             when(channel.attr(any())).thenReturn(attribute);
-            when(attribute.get()).thenReturn(identity);
+            when(attribute.get()).thenReturn(publicKey);
             when(channel.id()).thenReturn(channelId);
             when(channel.closeFuture()).thenReturn(channelFuture);
 
             underTest.add(channel);
 
-            verify(identity2channelId).put(identity, channelId);
+            verify(identity2channelId).put(publicKey, channelId);
         }
     }
 
@@ -145,7 +149,7 @@ class PeerChannelGroupTest {
         @Mock
         private Channel channel;
         @Mock
-        private CompressedPublicKey identity;
+        private CompressedPublicKey publicKey;
         @Mock
         private ChannelId channelId;
         @Mock
@@ -168,31 +172,31 @@ class PeerChannelGroupTest {
             when(existingChannel.id()).thenReturn(existingChannelId);
             when(existingChannel.closeFuture()).thenReturn(channelFuture);
             when(existingChannel.writeAndFlush(any())).thenReturn(channelFuture);
-            when(identity2channelId.get(identity)).thenReturn(existingChannelId);
+            when(identity2channelId.get(publicKey)).thenReturn(existingChannelId);
 
-            underTest.add(identity, existingChannel);
+            underTest.add(publicKey, existingChannel);
         }
 
         @Test
         void itShouldAddGivenChannelToGroup() {
-            assertTrue(underTest.add(identity, channel));
+            assertTrue(underTest.add(publicKey, channel));
 
-            verify(identity2channelId).put(identity, channelId);
+            verify(identity2channelId).put(publicKey, channelId);
         }
 
         @Test
         void itShouldCloseExistingChannelsWithEqualIdentity() {
-            underTest.add(identity, channel);
+            underTest.add(publicKey, channel);
 
-            verify(existingChannel).writeAndFlush(new QuitMessage(REASON_NEW_SESSION));
+            verify(existingChannel).writeAndFlush(new QuitMessage(identity.getPublicKey(), identity.getProofOfWork(), publicKey, REASON_NEW_SESSION));
             verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
         }
 
         @Test
         void itShouldSetIdentityAttribute() {
-            underTest.add(identity, channel);
+            underTest.add(publicKey, channel);
 
-            verify(attribute).set(identity);
+            verify(attribute).set(publicKey);
         }
     }
 

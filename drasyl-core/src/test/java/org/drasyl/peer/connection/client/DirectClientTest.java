@@ -42,7 +42,6 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import static java.time.Duration.ofSeconds;
-import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.anyInt;
@@ -142,7 +141,7 @@ class DirectClientTest {
 
             client.close();
 
-            verify(channel, never()).writeAndFlush(new QuitMessage(REASON_SHUTTING_DOWN));
+            verify(channel, never()).writeAndFlush(any(QuitMessage.class));
             verify(channel, never()).close();
         }
     }

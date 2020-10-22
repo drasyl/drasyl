@@ -41,7 +41,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static java.time.Duration.ofSeconds;
-import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.ArgumentMatchers.anyLong;
@@ -169,7 +168,7 @@ class SuperPeerClientTest {
 
             client.close();
 
-            verify(channel, never()).writeAndFlush(new QuitMessage(REASON_SHUTTING_DOWN));
+            verify(channel, never()).writeAndFlush(any(QuitMessage.class));
             verify(channel, never()).close();
         }
     }

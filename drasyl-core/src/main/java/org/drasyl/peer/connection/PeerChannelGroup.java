@@ -27,6 +27,7 @@ import io.netty.util.concurrent.EventExecutor;
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GlobalEventExecutor;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.QuitMessage;
 
 import java.util.HashMap;
@@ -41,23 +42,26 @@ import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_
  * lookups by {@link CompressedPublicKey}.
  */
 public class PeerChannelGroup extends DefaultChannelGroup {
-    private final Map<CompressedPublicKey, ChannelId> identity2channelId;
+    private final Identity identity;
+    private final Map<CompressedPublicKey, ChannelId> publicKey2channelId;
     private final EventExecutor executor;
     private final ChannelFutureListener remover = future -> remove(future.channel());
 
-    public PeerChannelGroup() {
-        this(new HashMap<>(), GlobalEventExecutor.INSTANCE);
+    public PeerChannelGroup(final Identity identity) {
+        this(identity, new HashMap<>(), GlobalEventExecutor.INSTANCE);
     }
 
-    PeerChannelGroup(final Map<CompressedPublicKey, ChannelId> identity2channelId,
+    PeerChannelGroup(final Identity identity,
+                     final Map<CompressedPublicKey, ChannelId> publicKey2channelId,
                      final EventExecutor executor) {
         super(executor);
-        this.identity2channelId = identity2channelId;
+        this.identity = identity;
+        this.publicKey2channelId = publicKey2channelId;
         this.executor = executor;
     }
 
-    public PeerChannelGroup(final EventExecutor executor) {
-        this(new HashMap<>(), executor);
+    public PeerChannelGroup(final Identity identity, final EventExecutor executor) {
+        this(identity, new HashMap<>(), executor);
     }
 
     /**
@@ -83,7 +87,7 @@ public class PeerChannelGroup extends DefaultChannelGroup {
      * @return the {@code channel} if found, otherwise {@code null}
      */
     public Channel find(final CompressedPublicKey publicKey) {
-        final ChannelId existingChannelId = identity2channelId.get(publicKey);
+        final ChannelId existingChannelId = publicKey2channelId.get(publicKey);
         if (existingChannelId != null) {
             return find(existingChannelId);
         }
@@ -103,10 +107,10 @@ public class PeerChannelGroup extends DefaultChannelGroup {
         if (o instanceof Channel) {
             final Channel channel = (Channel) o;
             final CompressedPublicKey publicKey = channel.attr(ATTRIBUTE_PUBLIC_KEY).get();
-            identity2channelId.remove(publicKey);
+            publicKey2channelId.remove(publicKey);
         }
         else if (o instanceof ChannelId) {
-            identity2channelId.values().remove(o);
+            publicKey2channelId.values().remove(o);
         }
 
         return super.remove(o);
@@ -122,19 +126,19 @@ public class PeerChannelGroup extends DefaultChannelGroup {
         return this == o;
     }
 
-    public boolean add(final CompressedPublicKey identity, final Channel channel) {
-        requireNonNull(identity);
+    public boolean add(final CompressedPublicKey publicKey, final Channel channel) {
+        requireNonNull(publicKey);
 
         // close any existing connections with the same peer...
-        final Channel existingChannel = find(identity);
+        final Channel existingChannel = find(publicKey);
         if (existingChannel != null) {
-            existingChannel.writeAndFlush(new QuitMessage(REASON_NEW_SESSION)).addListener(ChannelFutureListener.CLOSE);
+            existingChannel.writeAndFlush(new QuitMessage(identity.getPublicKey(), identity.getProofOfWork(), publicKey, REASON_NEW_SESSION)).addListener(ChannelFutureListener.CLOSE);
         }
 
         // ...before adding the new one
-        channel.attr(ATTRIBUTE_PUBLIC_KEY).set(identity);
+        channel.attr(ATTRIBUTE_PUBLIC_KEY).set(publicKey);
         final boolean added = super.add(channel);
-        identity2channelId.put(identity, channel.id());
+        publicKey2channelId.put(publicKey, channel.id());
 
         if (added) {
             channel.closeFuture().addListener(remover);
