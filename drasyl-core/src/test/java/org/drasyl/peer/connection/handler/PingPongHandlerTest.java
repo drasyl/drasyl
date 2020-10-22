@@ -24,6 +24,8 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.ExceptionMessage;
 import org.drasyl.peer.connection.message.Message;
@@ -53,6 +55,10 @@ class PingPongHandlerTest {
     private IdleStateEvent evt;
     @Mock
     private ChannelFuture channelFuture;
+    @Mock
+    private CompressedPublicKey sender;
+    @Mock
+    private ProofOfWork proofOfwork;
 
     @Test
     void userEventTriggeredShouldSendPingMessageIfThresholdNotReached() throws Exception {
@@ -131,7 +137,7 @@ class PingPongHandlerTest {
         final PingPongHandler handler = new PingPongHandler((short) 1, new AtomicInteger(0));
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        final Message message = new ExceptionMessage(ERROR_FORMAT);
+        final Message message = new ExceptionMessage(sender, proofOfwork, ERROR_FORMAT);
         channel.writeInbound(message);
         channel.flush();
 

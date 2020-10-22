@@ -23,6 +23,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.ScheduledFuture;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.ExceptionMessage;
 import org.drasyl.peer.connection.message.Message;
@@ -43,21 +44,26 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
     protected final Duration timeout;
     protected final CompletableFuture<Void> handshakeFuture;
     protected final Pipeline pipeline;
+    protected final Identity identity;
     protected ScheduledFuture<?> timeoutFuture;
 
-    protected AbstractThreeWayHandshakeHandler(final Duration timeout, final Pipeline pipeline) {
-        this(timeout, pipeline, new CompletableFuture<>(), null);
+    protected AbstractThreeWayHandshakeHandler(final Duration timeout,
+                                               final Pipeline pipeline,
+                                               final Identity identity) {
+        this(timeout, pipeline, new CompletableFuture<>(), null, identity);
     }
 
     protected AbstractThreeWayHandshakeHandler(final Duration timeout,
                                                final Pipeline pipeline,
                                                final CompletableFuture<Void> handshakeFuture,
-                                               final ScheduledFuture<?> timeoutFuture) {
+                                               final ScheduledFuture<?> timeoutFuture,
+                                               final Identity identity) {
         super(true, false, false);
         this.timeout = timeout;
         this.pipeline = pipeline;
         this.handshakeFuture = handshakeFuture;
         this.timeoutFuture = timeoutFuture;
+        this.identity = identity;
     }
 
     protected void processUnexpectedMessageDuringHandshake(final ChannelHandlerContext ctx,
@@ -66,7 +72,7 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
             getLogger().trace("[{}] Handshake is not completed. Inbound message was rejected: '{}'", ctx.channel().id().asShortText(), message);
         }
         // reject all non-request messages if handshake is not done
-        ctx.writeAndFlush(new ExceptionMessage(ERROR_UNEXPECTED_MESSAGE));
+        ctx.writeAndFlush(new ExceptionMessage(identity.getPublicKey(), identity.getProofOfWork(), ERROR_UNEXPECTED_MESSAGE));
     }
 
     protected abstract Logger getLogger();

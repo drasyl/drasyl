@@ -21,6 +21,7 @@ package org.drasyl.peer.connection.handler;
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ExceptionMessage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,6 +33,7 @@ import java.nio.channels.ClosedChannelException;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -53,11 +55,13 @@ class ExceptionHandlerTest {
     private Object msg;
     @Mock
     private Channel channel;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private Identity identity;
 
     // invoke listener
     @Test
     void write() {
-        final ExceptionHandler handler = new ExceptionHandler(listener, null, false);
+        final ExceptionHandler handler = new ExceptionHandler(identity, listener, null, false);
         handler.write(ctx, msg, promise);
 
         verify(ctx).write(msg,
@@ -67,7 +71,7 @@ class ExceptionHandlerTest {
     // invoke listener
     @Test
     void connect() {
-        final ExceptionHandler handler = new ExceptionHandler();
+        final ExceptionHandler handler = new ExceptionHandler(identity);
         handler.connect(ctx, address, address, promise);
 
         verify(ctx).connect(address, address,
@@ -81,7 +85,7 @@ class ExceptionHandlerTest {
         when(channel.isWritable()).thenReturn(true);
         when(cause.getMessage()).thenReturn("Exception");
 
-        final ExceptionHandler handler = new ExceptionHandler(listener, null, false);
+        final ExceptionHandler handler = new ExceptionHandler(identity, listener, null, false);
         handler.exceptionCaught(ctx, cause);
 
         assertEquals(cause, handler.handledCause);
@@ -91,7 +95,7 @@ class ExceptionHandlerTest {
     // do nothing
     @Test
     void exceptionCaughtClosedChannelException() {
-        final ExceptionHandler handler = new ExceptionHandler(listener, null, false);
+        final ExceptionHandler handler = new ExceptionHandler(identity, listener, null, false);
         handler.exceptionCaught(ctx, new ClosedChannelException());
 
         assertNull(handler.handledCause);
@@ -105,7 +109,7 @@ class ExceptionHandlerTest {
         when(channel.isWritable()).thenReturn(true);
         when(cause.getMessage()).thenReturn("Exception");
 
-        final ExceptionHandler handler = new ExceptionHandler(listener, null, true);
+        final ExceptionHandler handler = new ExceptionHandler(identity, listener, null, true);
         handler.exceptionCaught(ctx, cause);
 
         assertEquals(cause, handler.handledCause);
@@ -118,7 +122,7 @@ class ExceptionHandlerTest {
     void exceptionCaughtAlreadyHandled() {
         when(cause.getMessage()).thenReturn("Exception");
 
-        final ExceptionHandler handler = new ExceptionHandler(listener, cause, true);
+        final ExceptionHandler handler = new ExceptionHandler(identity, listener, cause, true);
         handler.exceptionCaught(ctx, cause);
 
         assertEquals(cause, handler.handledCause);

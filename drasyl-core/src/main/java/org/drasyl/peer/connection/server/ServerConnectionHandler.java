@@ -63,7 +63,7 @@ public class ServerConnectionHandler extends ThreeWayHandshakeServerHandler<Join
     private final ServerEnvironment environment;
 
     public ServerConnectionHandler(final ServerEnvironment environment) {
-        super(environment.getConfig().getServerHandshakeTimeout(), environment.getPipeline());
+        super(environment.getConfig().getServerHandshakeTimeout(), environment.getPipeline(), environment.getIdentity());
         this.environment = environment;
     }
 
@@ -74,7 +74,7 @@ public class ServerConnectionHandler extends ThreeWayHandshakeServerHandler<Join
                             final ScheduledFuture<?> timeoutFuture,
                             final JoinMessage requestMessage,
                             final WelcomeMessage offerMessage) {
-        super(timeout, pipeline, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
+        super(timeout, pipeline, handshakeFuture, timeoutFuture, requestMessage, offerMessage, environment.getIdentity());
         this.environment = environment;
     }
 

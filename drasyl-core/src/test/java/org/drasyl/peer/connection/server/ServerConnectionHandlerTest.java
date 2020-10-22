@@ -156,7 +156,7 @@ class ServerConnectionHandlerTest {
 
         channel.writeInbound(applicationMessage);
 
-        assertEquals(new ExceptionMessage(ERROR_UNEXPECTED_MESSAGE), channel.readOutbound());
+        assertEquals(new ExceptionMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), ERROR_UNEXPECTED_MESSAGE), channel.readOutbound());
         assertNull(channel.readInbound());
     }
 

@@ -452,7 +452,7 @@ class ServerIT {
 
             // verify responses
             receivedMessages.awaitCount(1);
-            receivedMessages.assertValueAt(0, new ExceptionMessage(ERROR_UNEXPECTED_MESSAGE));
+            receivedMessages.assertValueAt(0, new ExceptionMessage(serverConfig.getIdentityPublicKey(), serverConfig.getIdentityProofOfWork(), ERROR_UNEXPECTED_MESSAGE));
         }
     }
 

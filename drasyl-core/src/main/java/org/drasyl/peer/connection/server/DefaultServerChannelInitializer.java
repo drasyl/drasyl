@@ -85,7 +85,7 @@ public class DefaultServerChannelInitializer extends ServerChannelInitializer {
 
     @Override
     protected void exceptionStage(final ChannelPipeline pipeline) {
-        pipeline.addLast(EXCEPTION_HANDLER, new ExceptionHandler());
+        pipeline.addLast(EXCEPTION_HANDLER, new ExceptionHandler(environment.getIdentity()));
     }
 
     @Override

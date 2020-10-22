@@ -143,7 +143,7 @@ class SignatureHandlerTest {
     void shouldNotPassthroughsMessageWhenPublicKeyCantBeExtracted() {
         final SignatureHandler handler = new SignatureHandler(identity);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
-        final Message message = new ExceptionMessage(ERROR_FORMAT);
+        final Message message = new ExceptionMessage(sender, proofOfWork, ERROR_FORMAT);
 
         assertFalse(channel.writeInbound(message));
         assertNull(channel.readInbound());
@@ -153,7 +153,7 @@ class SignatureHandlerTest {
     void shouldNotPassthroughsWhenMessageIsNotSigned() {
         final SignatureHandler handler = new SignatureHandler(identity);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
-        final Message message = new ExceptionMessage(ERROR_FORMAT);
+        final Message message = new ExceptionMessage(sender, proofOfWork, ERROR_FORMAT);
 
         assertFalse(channel.writeInbound(message));
         assertNull(channel.readInbound());

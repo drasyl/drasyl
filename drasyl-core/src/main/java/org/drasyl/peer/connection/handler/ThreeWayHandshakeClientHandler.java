@@ -22,6 +22,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
@@ -44,19 +45,21 @@ public abstract class ThreeWayHandshakeClientHandler<R extends RequestMessage, O
     public static final AttributeKey<CompressedPublicKey> ATTRIBUTE_PUBLIC_KEY = AttributeKey.valueOf("publicKey");
     private final R requestMessage;
 
-    protected ThreeWayHandshakeClientHandler(final Duration timeout,
+    protected ThreeWayHandshakeClientHandler(final Identity identity,
+                                             final Duration timeout,
                                              final Pipeline pipeline,
                                              final R requestMessage) {
-        super(timeout, pipeline);
+        super(timeout, pipeline, identity);
         this.requestMessage = requestMessage;
     }
 
-    protected ThreeWayHandshakeClientHandler(final Duration timeout,
+    protected ThreeWayHandshakeClientHandler(final Identity identity,
+                                             final Duration timeout,
                                              final Pipeline pipeline,
                                              final CompletableFuture<Void> handshakeFuture,
                                              final ScheduledFuture<?> timeoutFuture,
                                              final R requestMessage) {
-        super(timeout, pipeline, handshakeFuture, timeoutFuture);
+        super(timeout, pipeline, handshakeFuture, timeoutFuture, identity);
         this.requestMessage = requestMessage;
     }
 

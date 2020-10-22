@@ -59,7 +59,7 @@ public class ClientConnectionHandler extends ThreeWayHandshakeClientHandler<Join
 
     public ClientConnectionHandler(final ClientEnvironment environment) {
         super(
-                environment.getHandshakeTimeout(),
+                environment.getIdentity(), environment.getHandshakeTimeout(),
                 environment.getPipeline(),
                 new JoinMessage(environment.getConfig().getNetworkId(), environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(),
                         environment.getEndpoint().getPublicKey(), environment.joinAsChildren()
@@ -76,7 +76,7 @@ public class ClientConnectionHandler extends ThreeWayHandshakeClientHandler<Join
                             final CompletableFuture<Void> handshakeFuture,
                             final ScheduledFuture<?> timeoutFuture,
                             final JoinMessage requestMessage) {
-        super(timeout, pipeline, handshakeFuture, timeoutFuture, requestMessage);
+        super(environment.getIdentity(), timeout, pipeline, handshakeFuture, timeoutFuture, requestMessage);
         this.environment = environment;
         this.childrenJoin = environment.joinAsChildren();
     }
