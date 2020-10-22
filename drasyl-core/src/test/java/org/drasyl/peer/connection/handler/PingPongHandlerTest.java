@@ -63,6 +63,10 @@ class PingPongHandlerTest {
     private ProofOfWork proofOfWork;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
+    @Mock
+    private CompressedPublicKey recipient;
+    @Mock
+    private ProofOfWork recipientsProofOfWork;
 
     @Test
     void userEventTriggeredShouldSendPingMessageIfThresholdNotReached() throws Exception {
@@ -122,7 +126,7 @@ class PingPongHandlerTest {
         channel.writeInbound(pingMessage);
         channel.flush();
 
-        assertEquals(new PongMessage(pingMessage.getId()), channel.readOutbound());
+        assertEquals(new PongMessage(identity.getPublicKey(), identity.getProofOfWork(), sender, pingMessage.getId()), channel.readOutbound());
     }
 
     @Test
@@ -130,7 +134,7 @@ class PingPongHandlerTest {
         final PingPongHandler handler = new PingPongHandler(identity, (short) 1, new AtomicInteger(0));
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        channel.writeInbound(new PongMessage(MessageId.of("412176952b5b81fd13f84a7c")));
+        channel.writeInbound(new PongMessage(recipient, recipientsProofOfWork, sender, MessageId.of("412176952b5b81fd13f84a7c")));
         channel.flush();
 
         assertEquals(0, handler.retries.get());

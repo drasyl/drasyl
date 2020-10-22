@@ -19,10 +19,14 @@
 package org.drasyl.peer.connection.message;
 
 import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
+import org.drasyl.crypto.CryptoException;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.ProofOfWork;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
@@ -36,6 +40,12 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 @ExtendWith(MockitoExtension.class)
 class PongMessageTest {
     private MessageId correspondingId;
+    @Mock
+    private CompressedPublicKey sender;
+    @Mock
+    private ProofOfWork proofOfWork;
+    @Mock
+    private CompressedPublicKey recipient;
 
     @BeforeEach
     void setUp() {
@@ -45,10 +55,10 @@ class PongMessageTest {
     @Nested
     class JsonDeserialization {
         @Test
-        void shouldDeserializeToCorrectObject() throws IOException {
-            final String json = "{\"@type\":\"" + PongMessage.class.getSimpleName() + "\",\"id\":\"89ba3cd9efb7570eb3126d11\",\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
+        void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
+            final String json = "{\"@type\":\"" + PongMessage.class.getSimpleName() + "\",\"id\":\"89ba3cd9efb7570eb3126d11\",\"sender\":\"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\"proofOfWork\":6657650,\"recipient\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
 
-            assertEquals(new PongMessage(MessageId.of("412176952b5b81fd13f84a7c")), JACKSON_READER.readValue(json, Message.class));
+            assertEquals(new PongMessage(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), ProofOfWork.of(6657650), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), MessageId.of("412176952b5b81fd13f84a7c")), JACKSON_READER.readValue(json, Message.class));
         }
 
         @Test
@@ -63,7 +73,7 @@ class PongMessageTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException {
-            final PongMessage message = new PongMessage(correspondingId);
+            final PongMessage message = new PongMessage(sender, proofOfWork, recipient, correspondingId);
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
@@ -76,8 +86,8 @@ class PongMessageTest {
     class Equals {
         @Test
         void shouldReturnTrue() {
-            final PongMessage message1 = new PongMessage(correspondingId);
-            final PongMessage message2 = new PongMessage(correspondingId);
+            final PongMessage message1 = new PongMessage(sender, proofOfWork, recipient, correspondingId);
+            final PongMessage message2 = new PongMessage(sender, proofOfWork, recipient, correspondingId);
 
             assertEquals(message1, message2);
         }
@@ -87,8 +97,8 @@ class PongMessageTest {
     class HashCode {
         @Test
         void shouldReturnTrue() {
-            final PongMessage message1 = new PongMessage(correspondingId);
-            final PongMessage message2 = new PongMessage(correspondingId);
+            final PongMessage message1 = new PongMessage(sender, proofOfWork, recipient, correspondingId);
+            final PongMessage message2 = new PongMessage(sender, proofOfWork, recipient, correspondingId);
 
             assertEquals(message1.hashCode(), message2.hashCode());
         }

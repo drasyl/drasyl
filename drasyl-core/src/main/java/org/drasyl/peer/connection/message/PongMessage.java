@@ -20,28 +20,90 @@ package org.drasyl.peer.connection.message;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonProperty;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.ProofOfWork;
+
+import java.util.Objects;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * A message representing a PONG response.
  * <p>
  * This is an immutable object.
  */
-public class PongMessage extends AbstractResponseMessage<PingMessage> {
+public class PongMessage extends AbstractResponseMessage<PingMessage> implements AddressableMessage {
+    private final CompressedPublicKey sender;
+    private final ProofOfWork proofOfWork;
+    private final CompressedPublicKey recipient;
+
     @JsonCreator
     private PongMessage(@JsonProperty("id") final MessageId id,
-                       @JsonProperty("correspondingId") final MessageId correspondingId) {
+                        @JsonProperty("sender") final CompressedPublicKey sender,
+                        @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
+                        @JsonProperty("recipient") final CompressedPublicKey recipient,
+                        @JsonProperty("correspondingId") final MessageId correspondingId) {
         super(id, correspondingId);
+        this.sender = requireNonNull(sender);
+        this.proofOfWork = requireNonNull(proofOfWork);
+        this.recipient = requireNonNull(recipient);
     }
 
-    public PongMessage(final MessageId correspondingId) {
+    public PongMessage(final CompressedPublicKey sender,
+                       final ProofOfWork proofOfWork,
+                       final CompressedPublicKey recipient,
+                       final MessageId correspondingId) {
         super(correspondingId);
+        this.sender = requireNonNull(sender);
+        this.proofOfWork = requireNonNull(proofOfWork);
+        this.recipient = requireNonNull(recipient);
+    }
+
+    @Override
+    public CompressedPublicKey getSender() {
+        return sender;
+    }
+
+    @Override
+    public ProofOfWork getProofOfWork() {
+        return proofOfWork;
+    }
+
+    @Override
+    public CompressedPublicKey getRecipient() {
+        return recipient;
     }
 
     @Override
     public String toString() {
         return "PongMessage{" +
-                "correspondingId='" + correspondingId + '\'' +
+                "sender='" + sender + '\'' +
+                ", proofOfWork='" + proofOfWork + '\'' +
+                ", recipient='" + recipient + '\'' +
+                ", correspondingId='" + correspondingId + '\'' +
                 ", id='" + id +
                 '}';
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        if (!super.equals(o)) {
+            return false;
+        }
+        final PongMessage that = (PongMessage) o;
+        return Objects.equals(sender, that.sender) &&
+                Objects.equals(proofOfWork, that.proofOfWork) &&
+                Objects.equals(recipient, that.recipient);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), sender, proofOfWork, recipient);
     }
 }
