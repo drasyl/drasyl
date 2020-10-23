@@ -158,6 +158,7 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
             timeoutFuture = ctx.executor().schedule(() -> {
                 if (!timeoutFuture.isCancelled()) {
                     rejectSession(ctx, ERROR_HANDSHAKE_TIMEOUT);
+                    ctx.writeAndFlush(new ErrorMessage(identity.getPublicKey(), identity.getProofOfWork(), ERROR_HANDSHAKE_TIMEOUT)).addListener(ChannelFutureListener.CLOSE);
                 }
             }, timeout.toMillis(), MILLISECONDS);
         }
@@ -171,7 +172,6 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
         }
         timeoutFuture.cancel(true);
         handshakeFuture.completeExceptionally(new Exception(errorDescription));
-        ctx.writeAndFlush(new ErrorMessage(identity.getPublicKey(), identity.getProofOfWork(), error)).addListener(ChannelFutureListener.CLOSE);
     }
 
     @Override

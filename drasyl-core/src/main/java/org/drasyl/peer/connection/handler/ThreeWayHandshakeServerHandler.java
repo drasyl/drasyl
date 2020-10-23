@@ -18,6 +18,7 @@
  */
 package org.drasyl.peer.connection.handler;
 
+import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.identity.Identity;
@@ -72,6 +73,7 @@ public abstract class ThreeWayHandshakeServerHandler<R extends RequestMessage, O
                 }
                 else {
                     rejectSession(ctx, error);
+                    ctx.writeAndFlush(new ErrorMessage(identity.getPublicKey(), identity.getProofOfWork(), requestMessage.getSender(), error, requestMessage.getId())).addListener(ChannelFutureListener.CLOSE);
                 }
             }
             else if (message instanceof SuccessMessage && offerMessage.getId().equals(((SuccessMessage) message).getCorrespondingId())) {
