@@ -89,7 +89,7 @@
         <dependency>
             <groupId>org.openjfx</groupId>
             <artifactId>javafx-controls</artifactId>
-            <version>14.0.2.1</version>
+            <version>15.0.1</version>
         </dependency>
     </dependencies>
 
