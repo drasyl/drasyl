@@ -51,7 +51,6 @@ import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_ID
 import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_NOT_A_SUPER_PEER;
 import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_OTHER_NETWORK;
 import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_UNEXPECTED_MESSAGE;
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -195,7 +194,6 @@ class ServerConnectionHandlerTest {
             when(requestMessage.getSender()).thenReturn(publicKey0);
             when(requestMessage.isChildrenJoin()).thenReturn(true);
             when(statusMessage.getCorrespondingId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
-            when(statusMessage.getCode()).thenReturn(STATUS_OK);
 
             final ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), pipeline, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
@@ -238,7 +236,6 @@ class ServerConnectionHandlerTest {
             when(requestMessage.getSender()).thenReturn(publicKey0);
             when(requestMessage.isChildrenJoin()).thenReturn(false);
             when(statusMessage.getCorrespondingId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
-            when(statusMessage.getCode()).thenReturn(STATUS_OK);
 
             final ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), pipeline, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);

@@ -31,9 +31,6 @@ import org.drasyl.pipeline.Pipeline;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
-import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_HANDSHAKE_REJECTED;
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
-
 /**
  * This handler performs the server-side part of a three-way handshake to create a session. It waits
  * for a request message for a new session from the client. The request is then confirmed by sending
@@ -78,14 +75,17 @@ public abstract class ThreeWayHandshakeServerHandler<R extends RequestMessage, O
                 }
             }
             else if (message instanceof StatusMessage && offerMessage.getId().equals(((StatusMessage) message).getCorrespondingId())) {
-                final StatusMessage confirmMessage = (StatusMessage) message;
+                confirmSession(ctx);
+            }
+            else if (message instanceof ExceptionMessage && offerMessage.getId().equals(((ExceptionMessage) message).getCorrespondingId())) {
+                final ExceptionMessage exceptionMessage = (ExceptionMessage) message;
 
-                if (confirmMessage.getCode() == STATUS_OK) {
-                    confirmSession(ctx);
+                final String errorDescription = exceptionMessage.getError().getDescription();
+                if (getLogger().isTraceEnabled()) {
+                    getLogger().trace("[{}]: {}", ctx.channel().id().asShortText(), errorDescription);
                 }
-                else {
-                    rejectSession(ctx, ERROR_HANDSHAKE_REJECTED);
-                }
+                timeoutFuture.cancel(true);
+                handshakeFuture.completeExceptionally(new Exception(errorDescription));
             }
             else {
                 processUnexpectedMessageDuringHandshake(ctx, message);
