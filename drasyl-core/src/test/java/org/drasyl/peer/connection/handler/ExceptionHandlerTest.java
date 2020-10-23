@@ -42,8 +42,6 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 class ExceptionHandlerTest {
     @Mock
-    private ExceptionHandler.ChannelExceptionListener listener;
-    @Mock
     private ChannelHandlerContext ctx;
     @Mock
     private ChannelPromise promise;
@@ -58,26 +56,6 @@ class ExceptionHandlerTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
 
-    // invoke listener
-    @Test
-    void write() {
-        final ExceptionHandler handler = new ExceptionHandler(identity, listener, null, false);
-        handler.write(ctx, msg, promise);
-
-        verify(ctx).write(msg,
-                listener.getListener(promise, ctx));
-    }
-
-    // invoke listener
-    @Test
-    void connect() {
-        final ExceptionHandler handler = new ExceptionHandler(identity);
-        handler.connect(ctx, address, address, promise);
-
-        verify(ctx).connect(address, address,
-                listener.getListener(promise, ctx));
-    }
-
     // sendMSG the exception as exception message
     @Test
     void exceptionCaughtWithoutRethrow() {
@@ -85,7 +63,7 @@ class ExceptionHandlerTest {
         when(channel.isWritable()).thenReturn(true);
         when(cause.getMessage()).thenReturn("Exception");
 
-        final ExceptionHandler handler = new ExceptionHandler(identity, listener, null, false);
+        final ExceptionHandler handler = new ExceptionHandler(identity, null, false);
         handler.exceptionCaught(ctx, cause);
 
         assertEquals(cause, handler.handledCause);
@@ -95,7 +73,7 @@ class ExceptionHandlerTest {
     // do nothing
     @Test
     void exceptionCaughtClosedChannelException() {
-        final ExceptionHandler handler = new ExceptionHandler(identity, listener, null, false);
+        final ExceptionHandler handler = new ExceptionHandler(identity, null, false);
         handler.exceptionCaught(ctx, new ClosedChannelException());
 
         assertNull(handler.handledCause);
@@ -109,7 +87,7 @@ class ExceptionHandlerTest {
         when(channel.isWritable()).thenReturn(true);
         when(cause.getMessage()).thenReturn("Exception");
 
-        final ExceptionHandler handler = new ExceptionHandler(identity, listener, null, true);
+        final ExceptionHandler handler = new ExceptionHandler(identity, null, true);
         handler.exceptionCaught(ctx, cause);
 
         assertEquals(cause, handler.handledCause);
@@ -122,7 +100,7 @@ class ExceptionHandlerTest {
     void exceptionCaughtAlreadyHandled() {
         when(cause.getMessage()).thenReturn("Exception");
 
-        final ExceptionHandler handler = new ExceptionHandler(identity, listener, cause, true);
+        final ExceptionHandler handler = new ExceptionHandler(identity, cause, true);
         handler.exceptionCaught(ctx, cause);
 
         assertEquals(cause, handler.handledCause);

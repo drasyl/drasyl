@@ -20,14 +20,12 @@ package org.drasyl.peer.connection.handler;
 
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.DecoderException;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.Objects;
 
@@ -42,16 +40,13 @@ public class ExceptionHandler extends ChannelDuplexHandler {
     public static final String EXCEPTION_HANDLER = "exceptionHandler";
     private static final Logger LOG = LoggerFactory.getLogger(ExceptionHandler.class);
     private final Identity identity;
-    private final ChannelExceptionListener exceptionListener;
     private final boolean rethrowExceptions;
     Throwable handledCause;
 
     ExceptionHandler(final Identity identity,
-                     final ChannelExceptionListener exceptionListener,
                      final Throwable handledCause,
                      final boolean rethrowExceptions) {
         this.identity = identity;
-        this.exceptionListener = exceptionListener;
         this.handledCause = handledCause;
         this.rethrowExceptions = rethrowExceptions;
     }
@@ -75,45 +70,8 @@ public class ExceptionHandler extends ChannelDuplexHandler {
      */
     public ExceptionHandler(final Identity identity, final boolean rethrowExceptions) {
         this.identity = identity;
-        this.exceptionListener = new ChannelExceptionListener();
         this.handledCause = null;
         this.rethrowExceptions = rethrowExceptions;
-    }
-
-    @Override
-    public void bind(final ChannelHandlerContext ctx, final SocketAddress localAddress,
-                     final ChannelPromise promise) {
-        ctx.bind(localAddress, exceptionListener.getListener(promise, ctx));
-    }
-
-    @Override
-    public void connect(final ChannelHandlerContext ctx,
-                        final SocketAddress remoteAddress,
-                        final SocketAddress localAddress,
-                        final ChannelPromise promise) {
-        ctx.connect(remoteAddress, localAddress, exceptionListener.getListener(promise, ctx));
-    }
-
-    @Override
-    public void disconnect(final ChannelHandlerContext ctx, final ChannelPromise promise) {
-        ctx.disconnect(exceptionListener.getListener(promise, ctx));
-    }
-
-    @Override
-    public void close(final ChannelHandlerContext ctx, final ChannelPromise promise) {
-        ctx.close(exceptionListener.getListener(promise, ctx));
-    }
-
-    @Override
-    public void deregister(final ChannelHandlerContext ctx, final ChannelPromise promise) {
-        ctx.deregister(exceptionListener.getListener(promise, ctx));
-    }
-
-    @Override
-    public void write(final ChannelHandlerContext ctx,
-                      final Object msg,
-                      final ChannelPromise promise) {
-        ctx.write(msg, exceptionListener.getListener(promise, ctx));
     }
 
     @Override
@@ -150,15 +108,5 @@ public class ExceptionHandler extends ChannelDuplexHandler {
             ctx.writeAndFlush(msg);
         }
         LOG.debug("Exception caught: {}", e.getMessage());
-    }
-
-    class ChannelExceptionListener {
-        ChannelPromise getListener(final ChannelPromise promise, final ChannelHandlerContext ctx) {
-            return promise.addListener(future -> {
-                if (!future.isSuccess()) {
-                    sendException(ctx, future.cause());
-                }
-            });
-        }
     }
 }
