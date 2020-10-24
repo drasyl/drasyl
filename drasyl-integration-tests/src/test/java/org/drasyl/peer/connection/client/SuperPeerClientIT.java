@@ -270,7 +270,7 @@ class SuperPeerClientIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldRespondToPingMessageWithPongMessage() {
-        final PingMessage request = new PingMessage(config.getIdentityPublicKey(), config.getIdentityProofOfWork());
+        final PingMessage request = new PingMessage(config.getIdentityPublicKey(), config.getIdentityProofOfWork(), identityManager.getPublicKey());
         final TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof PongMessage && ((PongMessage) m).getCorrespondingId().equals(request.getId())).test();
 
         // start client

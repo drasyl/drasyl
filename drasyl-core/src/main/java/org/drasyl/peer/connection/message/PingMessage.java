@@ -52,11 +52,6 @@ public class PingMessage extends AbstractMessage implements RequestMessage {
         this.recipient = recipient;
     }
 
-    public PingMessage(final CompressedPublicKey sender,
-                       final ProofOfWork proofOfWork) {
-        this(sender, proofOfWork, null);
-    }
-
     @Override
     public String toString() {
         return "PingMessage{" +

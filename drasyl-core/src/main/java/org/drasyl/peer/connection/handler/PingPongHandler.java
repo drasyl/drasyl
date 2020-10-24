@@ -22,12 +22,15 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.PingMessage;
 import org.drasyl.peer.connection.message.PongMessage;
 
 import java.util.concurrent.atomic.AtomicInteger;
+
+import static org.drasyl.peer.connection.handler.ThreeWayHandshakeClientHandler.ATTRIBUTE_PUBLIC_KEY;
 
 /**
  * This handler acts as a health check for a connection. It periodically sends {@link PingMessage}s,
@@ -68,9 +71,11 @@ public class PingPongHandler extends SimpleChannelInboundHandler<Message> {
                     // threshold reached, close connection
                     ctx.close();
                 }
-                else {
+                else if (ctx.channel().hasAttr(ATTRIBUTE_PUBLIC_KEY)) {
+                    final CompressedPublicKey publicKey = ctx.channel().attr(ATTRIBUTE_PUBLIC_KEY).get();
+
                     // send (next) ping
-                    ctx.writeAndFlush(new PingMessage(identity.getPublicKey(), identity.getProofOfWork()));
+                    ctx.writeAndFlush(new PingMessage(identity.getPublicKey(), identity.getProofOfWork(), publicKey));
                 }
             }
         }

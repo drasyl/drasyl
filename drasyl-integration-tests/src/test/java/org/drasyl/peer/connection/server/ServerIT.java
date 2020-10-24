@@ -406,7 +406,7 @@ class ServerIT {
         // create connection
         try (final TestSuperPeerClient session = clientSession(configClient1, identitySession1, false)) {
             // send message
-            final RequestMessage request = new PingMessage(configClient1.getIdentityPublicKey(), configClient1.getIdentityProofOfWork());
+            final RequestMessage request = new PingMessage(configClient1.getIdentityPublicKey(), configClient1.getIdentityProofOfWork(), serverConfig.getIdentityPublicKey());
             final CompletableFuture<ResponseMessage<?>> send = session.sendRequest(request);
 
             // verify response
@@ -537,7 +537,7 @@ class ServerIT {
             final TestObserver<Message> receivedMessages = session.receivedMessages().filter(msg -> msg instanceof ErrorMessage).test();
 
             // send message
-            final Message request = new PingMessage(configClient1.getIdentityPublicKey(), configClient1.getIdentityProofOfWork());
+            final Message request = new PingMessage(configClient1.getIdentityPublicKey(), configClient1.getIdentityProofOfWork(), serverConfig.getIdentityPublicKey());
             final SignedMessage signedMessage = new SignedMessage(session.getPublicKey(), session.getProofOfWork(), request);
             Crypto.sign(identitySession2.getPrivateKey().toUncompressedKey(), signedMessage);
             final byte[] binary = JACKSON_WRITER.writeValueAsBytes(signedMessage);

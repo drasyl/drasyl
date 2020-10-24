@@ -49,7 +49,7 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class PingPongHandlerTest {
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private ChannelHandlerContext ctx;
     @Mock
     private IdleStateEvent evt;
@@ -69,9 +69,11 @@ class PingPongHandlerTest {
     private MessageId correspondingId;
 
     @Test
-    void userEventTriggeredShouldSendPingMessageIfThresholdNotReached() throws Exception {
+    void userEventTriggeredShouldSendPingMessageIfThresholdNotReached(@Mock final CompressedPublicKey publicKey) throws Exception {
         when(evt.state()).thenReturn(IdleState.READER_IDLE);
         when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
+        when(ctx.channel().hasAttr(any())).thenReturn(true);
+        when(ctx.channel().attr(any()).get()).thenReturn(publicKey);
 
         final PingPongHandler handler = new PingPongHandler(identity, (short) 1, new AtomicInteger(0));
         handler.userEventTriggered(ctx, evt);
@@ -90,9 +92,11 @@ class PingPongHandlerTest {
     }
 
     @Test
-    void userEventTriggeredShouldSendCorrectNumberOfPingMessages() throws Exception {
+    void userEventTriggeredShouldSendCorrectNumberOfPingMessages(@Mock final CompressedPublicKey publicKey) throws Exception {
         when(evt.state()).thenReturn(IdleState.READER_IDLE);
         when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
+        when(ctx.channel().hasAttr(any())).thenReturn(true);
+        when(ctx.channel().attr(any()).get()).thenReturn(publicKey);
 
         final PingPongHandler handler = new PingPongHandler(identity, (short) 2, new AtomicInteger(0));
 
@@ -120,7 +124,7 @@ class PingPongHandlerTest {
         final PingPongHandler handler = new PingPongHandler(identity, (short) 1, new AtomicInteger(0));
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        final PingMessage pingMessage = new PingMessage(sender, proofOfWork);
+        final PingMessage pingMessage = new PingMessage(sender, proofOfWork, identity.getPublicKey());
         channel.writeInbound(pingMessage);
         channel.flush();
 
