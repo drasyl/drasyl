@@ -435,7 +435,7 @@ class ServerIT {
 
             // verify responses
             receivedMessages.awaitCount(1);
-            receivedMessages.assertValueAt(0, new ErrorMessage(serverConfig.getIdentityPublicKey(), serverConfig.getIdentityProofOfWork(), recipient, ERROR_UNEXPECTED_MESSAGE, request.getId()));
+            receivedMessages.assertValueAt(0, new ErrorMessage(serverConfig.getIdentityPublicKey(), serverConfig.getIdentityProofOfWork(), sender, ERROR_UNEXPECTED_MESSAGE, request.getId()));
         }
     }
 

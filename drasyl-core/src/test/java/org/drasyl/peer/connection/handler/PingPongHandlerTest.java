@@ -65,6 +65,8 @@ class PingPongHandlerTest {
     private CompressedPublicKey recipient;
     @Mock
     private ProofOfWork recipientsProofOfWork;
+    @Mock
+    private MessageId correspondingId;
 
     @Test
     void userEventTriggeredShouldSendPingMessageIfThresholdNotReached() throws Exception {
@@ -141,7 +143,7 @@ class PingPongHandlerTest {
         final PingPongHandler handler = new PingPongHandler(identity, (short) 1, new AtomicInteger(0));
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        final Message message = new ErrorMessage(sender, proofOfWork, ERROR_IDENTITY_COLLISION);
+        final Message message = new ErrorMessage(sender, proofOfWork, recipient, ERROR_IDENTITY_COLLISION, correspondingId);
         channel.writeInbound(message);
         channel.flush();
 

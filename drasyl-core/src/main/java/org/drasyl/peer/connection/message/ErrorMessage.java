@@ -40,9 +40,7 @@ import static java.util.Objects.requireNonNull;
 public class ErrorMessage extends AbstractMessage implements RequestMessage, ResponseMessage<RequestMessage> {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final CompressedPublicKey recipient;
-    @JsonInclude(JsonInclude.Include.NON_NULL)
     private final Error error;
-    @JsonInclude(JsonInclude.Include.NON_NULL)
     private final MessageId correspondingId;
 
     @JsonCreator
@@ -76,20 +74,7 @@ public class ErrorMessage extends AbstractMessage implements RequestMessage, Res
         super(sender, proofOfWork);
         this.recipient = recipient;
         this.error = requireNonNull(error);
-        this.correspondingId = correspondingId;
-    }
-
-    /**
-     * Creates a new error message.
-     *
-     * @param sender      the message's sender
-     * @param proofOfWork sender's proof of work
-     * @param error       the error type
-     */
-    public ErrorMessage(final CompressedPublicKey sender,
-                        final ProofOfWork proofOfWork,
-                        final Error error) {
-        this(sender, proofOfWork, null, error, null);
+        this.correspondingId = requireNonNull(correspondingId);
     }
 
     /**
@@ -100,13 +85,13 @@ public class ErrorMessage extends AbstractMessage implements RequestMessage, Res
     }
 
     @Override
-    public String toString() {
-        return "ErrorMessage{" +
-                "sender='" + sender + '\'' +
-                "proofOfWork='" + proofOfWork + '\'' +
-                ", error='" + error + '\'' +
-                ", id='" + id +
-                '}';
+    public MessageId getCorrespondingId() {
+        return correspondingId;
+    }
+
+    @Override
+    public CompressedPublicKey getRecipient() {
+        return recipient;
     }
 
     @Override
@@ -121,22 +106,27 @@ public class ErrorMessage extends AbstractMessage implements RequestMessage, Res
             return false;
         }
         final ErrorMessage that = (ErrorMessage) o;
-        return error == that.error;
+        return Objects.equals(recipient, that.recipient) &&
+                error == that.error &&
+                Objects.equals(correspondingId, that.correspondingId);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), error);
+        return Objects.hash(super.hashCode(), recipient, error, correspondingId);
     }
 
     @Override
-    public MessageId getCorrespondingId() {
-        return correspondingId;
-    }
-
-    @Override
-    public CompressedPublicKey getRecipient() {
-        return recipient;
+    public String toString() {
+        return "ErrorMessage{" +
+                "recipient=" + recipient +
+                ", error=" + error +
+                ", correspondingId=" + correspondingId +
+                ", id=" + id +
+                ", sender=" + sender +
+                ", proofOfWork=" + proofOfWork +
+                ", userAgent='" + userAgent + '\'' +
+                '}';
     }
 
     /**

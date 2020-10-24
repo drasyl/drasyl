@@ -28,6 +28,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.connection.message.ErrorMessage;
 import org.drasyl.peer.connection.message.Message;
+import org.drasyl.peer.connection.message.MessageId;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.SignedMessage;
 import org.junit.jupiter.api.BeforeEach;
@@ -64,6 +65,8 @@ class SignatureHandlerTest {
     private ProofOfWork proofOfWork;
     @Mock
     private CompressedPublicKey recipient;
+    @Mock
+    private MessageId correspondingId;
 
     @BeforeEach
     void setUp() throws CryptoException {
@@ -144,7 +147,7 @@ class SignatureHandlerTest {
     void shouldNotPassthroughsMessageWhenPublicKeyCantBeExtracted() {
         final SignatureHandler handler = new SignatureHandler(identity);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
-        final Message message = new ErrorMessage(sender, proofOfWork, ERROR_IDENTITY_COLLISION);
+        final Message message = new ErrorMessage(sender, proofOfWork, recipient, ERROR_IDENTITY_COLLISION, correspondingId);
 
         assertFalse(channel.writeInbound(message));
         assertNull(channel.readInbound());
@@ -154,7 +157,7 @@ class SignatureHandlerTest {
     void shouldNotPassthroughsWhenMessageIsNotSigned() {
         final SignatureHandler handler = new SignatureHandler(identity);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
-        final Message message = new ErrorMessage(sender, proofOfWork, ERROR_IDENTITY_COLLISION);
+        final Message message = new ErrorMessage(sender, proofOfWork, recipient, ERROR_IDENTITY_COLLISION, correspondingId);
 
         assertFalse(channel.writeInbound(message));
         assertNull(channel.readInbound());

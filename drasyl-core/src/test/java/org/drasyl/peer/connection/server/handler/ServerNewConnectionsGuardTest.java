@@ -40,7 +40,7 @@ import static org.mockito.Mockito.when;
 class ServerNewConnectionsGuardTest {
     @Mock
     private ChannelHandlerContext ctx;
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private Message message;
     @Mock
     private ChannelFuture channelFuture;
@@ -67,7 +67,7 @@ class ServerNewConnectionsGuardTest {
 
         handler.channelRead0(ctx, message);
 
-        verify(ctx).writeAndFlush(new ErrorMessage(identity.getPublicKey(), identity.getProofOfWork(), ERROR_PEER_UNAVAILABLE));
+        verify(ctx).writeAndFlush(new ErrorMessage(identity.getPublicKey(), identity.getProofOfWork(), message.getSender(), ERROR_PEER_UNAVAILABLE, message.getId()));
         verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
     }
 }

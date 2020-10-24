@@ -68,7 +68,7 @@ class ServerConnectionHandlerTest {
     private ChannelFuture channelFuture;
     @Mock
     private Throwable cause;
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private ApplicationMessage applicationMessage;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private JoinMessage joinMessage;
@@ -76,7 +76,7 @@ class ServerConnectionHandlerTest {
     private Pipeline pipeline;
     @Mock
     private CompletableFuture<Void> handshakeFuture;
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private JoinMessage requestMessage;
     @Mock
     private CompressedPublicKey publicKey0;
@@ -92,7 +92,7 @@ class ServerConnectionHandlerTest {
     private PeerChannelGroup channelGroup;
     @Mock
     private SuccessMessage successMessage;
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private WelcomeMessage offerMessage;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private ServerEnvironment environment;
@@ -126,7 +126,7 @@ class ServerConnectionHandlerTest {
         channel.writeInbound(joinMessage);
         channel.flush();
 
-        assertEquals(new ErrorMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), ERROR_IDENTITY_COLLISION), channel.readOutbound());
+        assertEquals(new ErrorMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), joinMessage.getSender(), ERROR_IDENTITY_COLLISION, joinMessage.getId()), channel.readOutbound());
     }
 
     @Test
@@ -141,7 +141,7 @@ class ServerConnectionHandlerTest {
         channel.writeInbound(joinMessage);
         channel.flush();
 
-        assertEquals(new ErrorMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), ERROR_OTHER_NETWORK), channel.readOutbound());
+        assertEquals(new ErrorMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), joinMessage.getSender(), ERROR_OTHER_NETWORK, joinMessage.getId()), channel.readOutbound());
     }
 
     @Test
@@ -151,7 +151,7 @@ class ServerConnectionHandlerTest {
 
         channel.writeInbound(applicationMessage);
 
-        assertEquals(new ErrorMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), ERROR_UNEXPECTED_MESSAGE), channel.readOutbound());
+        assertEquals(new ErrorMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), applicationMessage.getSender(), ERROR_UNEXPECTED_MESSAGE, applicationMessage.getId()), channel.readOutbound());
         assertNull(channel.readInbound());
     }
 
@@ -217,7 +217,7 @@ class ServerConnectionHandlerTest {
             channel.writeInbound(joinMessage);
             channel.flush();
 
-            assertEquals(new ErrorMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), ERROR_NOT_A_SUPER_PEER), channel.readOutbound());
+            assertEquals(new ErrorMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), joinMessage.getSender(), ERROR_NOT_A_SUPER_PEER, joinMessage.getId()), channel.readOutbound());
         }
     }
 
