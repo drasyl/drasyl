@@ -144,7 +144,6 @@ public class ErrorMessage extends AbstractMessage implements RequestMessage, Res
      */
     public enum Error {
         ERROR_INITIALIZATION("Error occurred during initialization stage."),
-        ERROR_HANDSHAKE_TIMEOUT("Handshake did not take place within timeout."),
         ERROR_HANDSHAKE_REJECTED("Handshake has been rejected by other peer."),
         ERROR_PING_PONG("Too many Ping Messages were not answered with a Pong Message."),
         ERROR_IDENTITY_COLLISION("Peer states that my address is already used by another peer with different Public Key."),

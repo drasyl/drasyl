@@ -80,7 +80,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.awaitility.Awaitility.await;
-import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_HANDSHAKE_TIMEOUT;
 import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_INITIALIZATION;
 import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_INVALID_SIGNATURE;
 import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_PEER_UNAVAILABLE;
@@ -357,17 +356,11 @@ class ServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void notJoiningClientsShouldBeDroppedAfterTimeout() throws InterruptedException {
+    void notJoiningClientsShouldBeDroppedAfterTimeout() {
         // create connection
         try (final TestSuperPeerClient session = clientSession(configClient1, server, identitySession1)) {
-            final TestObserver<Message> receivedMessages = session.receivedMessages().filter(m -> m instanceof ErrorMessage).test();
-
             // wait for timeout
-            Thread.sleep(serverConfig.getServerHandshakeTimeout().plusSeconds(2).toMillis());// NOSONAR
-
-            // verify response
-            receivedMessages.awaitCount(1);
-            receivedMessages.assertValueAt(0, new ErrorMessage(serverIdentityManager.getPublicKey(), serverIdentityManager.getProofOfWork(), ERROR_HANDSHAKE_TIMEOUT));
+            await().atMost(serverConfig.getServerHandshakeTimeout().plusSeconds(2)).untilAsserted(() -> assertTrue(session.isClosed()));
         }
     }
 

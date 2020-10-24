@@ -46,7 +46,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.concurrent.CompletableFuture;
 
 import static java.time.Duration.ofMillis;
-import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_HANDSHAKE_TIMEOUT;
 import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_IDENTITY_COLLISION;
 import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_NOT_A_SUPER_PEER;
 import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_OTHER_NETWORK;
@@ -101,11 +100,11 @@ class ServerConnectionHandlerTest {
     private ServerEnvironment environment;
 
     @Test
-    void shouldSendExceptionMessageIfHandshakeIsNotDoneInTime() {
+    void shouldCloseIfHandshakeIsNotDoneInTime() {
         final ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(0), pipeline, handshakeFuture, null, requestMessage, offerMessage);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        assertEquals(new ErrorMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), ERROR_HANDSHAKE_TIMEOUT), channel.readOutbound());
+        assertFalse(channel.isOpen());
     }
 
     @Test

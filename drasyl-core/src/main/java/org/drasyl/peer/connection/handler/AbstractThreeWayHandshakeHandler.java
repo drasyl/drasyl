@@ -35,7 +35,6 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_HANDSHAKE_TIMEOUT;
 import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_INITIALIZATION;
 import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_UNEXPECTED_MESSAGE;
 
@@ -157,8 +156,8 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
             // schedule connection error if handshake did not take place within timeout
             timeoutFuture = ctx.executor().schedule(() -> {
                 if (!timeoutFuture.isCancelled()) {
-                    rejectSession(ctx, ERROR_HANDSHAKE_TIMEOUT.getDescription());
-                    ctx.writeAndFlush(new ErrorMessage(identity.getPublicKey(), identity.getProofOfWork(), ERROR_HANDSHAKE_TIMEOUT)).addListener(ChannelFutureListener.CLOSE);
+                    rejectSession(ctx, "Handshake did not take place within timeout.");
+                    ctx.close();
                 }
             }, timeout.toMillis(), MILLISECONDS);
         }

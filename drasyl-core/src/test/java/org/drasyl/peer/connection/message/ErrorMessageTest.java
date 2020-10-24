@@ -31,7 +31,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.IOException;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
-import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_HANDSHAKE_TIMEOUT;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_IDENTITY_COLLISION;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_OTHER_NETWORK;
 import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_PING_PONG;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
@@ -95,9 +96,9 @@ class ErrorMessageTest {
     class Equals {
         @Test
         void notSameBecauseOfDifferentError() {
-            final ErrorMessage message1 = new ErrorMessage(sender, proofOfWork, ERROR_PING_PONG);
-            final ErrorMessage message2 = new ErrorMessage(sender, proofOfWork, ERROR_PING_PONG);
-            final ErrorMessage message3 = new ErrorMessage(sender, proofOfWork, ERROR_HANDSHAKE_TIMEOUT);
+            final ErrorMessage message1 = new ErrorMessage(sender, proofOfWork, ERROR_OTHER_NETWORK);
+            final ErrorMessage message2 = new ErrorMessage(sender, proofOfWork, ERROR_OTHER_NETWORK);
+            final ErrorMessage message3 = new ErrorMessage(sender, proofOfWork, ERROR_IDENTITY_COLLISION);
 
             assertEquals(message1, message2);
             assertNotEquals(message2, message3);
@@ -108,9 +109,9 @@ class ErrorMessageTest {
     class HashCode {
         @Test
         void notSameBecauseOfDifferentError() {
-            final ErrorMessage message1 = new ErrorMessage(sender, proofOfWork, ERROR_PING_PONG);
-            final ErrorMessage message2 = new ErrorMessage(sender, proofOfWork, ERROR_PING_PONG);
-            final ErrorMessage message3 = new ErrorMessage(sender, proofOfWork, ERROR_HANDSHAKE_TIMEOUT);
+            final ErrorMessage message1 = new ErrorMessage(sender, proofOfWork, ERROR_OTHER_NETWORK);
+            final ErrorMessage message2 = new ErrorMessage(sender, proofOfWork, ERROR_OTHER_NETWORK);
+            final ErrorMessage message3 = new ErrorMessage(sender, proofOfWork, ERROR_IDENTITY_COLLISION);
 
             assertEquals(message1.hashCode(), message2.hashCode());
             assertNotEquals(message2.hashCode(), message3.hashCode());
