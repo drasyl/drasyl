@@ -18,20 +18,16 @@
  */
 package org.drasyl.peer.connection.handler;
 
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.handler.timeout.IdleState;
 import io.netty.handler.timeout.IdleStateEvent;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.message.ErrorMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.PingMessage;
 import org.drasyl.peer.connection.message.PongMessage;
 
 import java.util.concurrent.atomic.AtomicInteger;
-
-import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_PING_PONG;
 
 /**
  * This handler acts as a health check for a connection. It periodically sends {@link PingMessage}s,
@@ -69,8 +65,8 @@ public class PingPongHandler extends SimpleChannelInboundHandler<Message> {
             final IdleStateEvent e = (IdleStateEvent) evt;
             if (e.state() == IdleState.READER_IDLE) {
                 if (retries.getAndIncrement() > maxRetries) {
-                    // threshold reached, mark connection as unhealthy and close connection
-                    ctx.writeAndFlush(new ErrorMessage(identity.getPublicKey(), identity.getProofOfWork(), ERROR_PING_PONG)).addListener(ChannelFutureListener.CLOSE);
+                    // threshold reached, close connection
+                    ctx.close();
                 }
                 else {
                     // send (next) ping

@@ -83,7 +83,6 @@ import static org.awaitility.Awaitility.await;
 import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_INITIALIZATION;
 import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_INVALID_SIGNATURE;
 import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_PEER_UNAVAILABLE;
-import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_PING_PONG;
 import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_PROOF_OF_WORK_INVALID;
 import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_UNEXPECTED_MESSAGE;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_NEW_SESSION;
@@ -382,17 +381,13 @@ class ServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientsNotSendingPongMessageShouldBeDroppedAfterTimeout() throws InterruptedException {
+    void clientsNotSendingPongMessageShouldBeDroppedAfterTimeout() {
         // create connection
         try (final TestSuperPeerClient session = clientSession(configClient1, identitySession1, false)) {
-            final TestObserver<Message> receivedMessages = session.receivedMessages().filter(m -> m instanceof ErrorMessage).test();
-
-            // wait until timeout
-            Thread.sleep(serverConfig.getServerIdleTimeout().toMillis() * (serverConfig.getServerIdleRetries() + 1) + 1000);// NOSONAR
-
-            // verify responses
-            receivedMessages.awaitCount(1);
-            receivedMessages.assertValueAt(0, new ErrorMessage(serverIdentityManager.getPublicKey(), serverIdentityManager.getProofOfWork(), ERROR_PING_PONG));
+            // wait for timeout
+            await()
+                    .atMost(serverConfig.getServerIdleTimeout().multipliedBy(serverConfig.getServerIdleRetries()).plus(ofSeconds(5)))
+                    .untilAsserted(() -> assertTrue(session.isClosed()));
         }
     }
 

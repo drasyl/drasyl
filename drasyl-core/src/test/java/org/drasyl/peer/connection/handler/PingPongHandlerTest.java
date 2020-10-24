@@ -19,7 +19,6 @@
 package org.drasyl.peer.connection.handler;
 
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.timeout.IdleState;
@@ -79,15 +78,13 @@ class PingPongHandlerTest {
     }
 
     @Test
-    void userEventTriggeredShouldSendExceptionMessageIfThresholdIsReached() throws Exception {
+    void userEventTriggeredShouldCloseChannelIfThresholdIsReached() throws Exception {
         when(evt.state()).thenReturn(IdleState.READER_IDLE);
-        when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
 
         final PingPongHandler handler = new PingPongHandler(identity, (short) 1, new AtomicInteger(2));
         handler.userEventTriggered(ctx, evt);
 
-        verify(ctx).writeAndFlush(any(ErrorMessage.class));
-        verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
+        verify(ctx).close();
     }
 
     @Test

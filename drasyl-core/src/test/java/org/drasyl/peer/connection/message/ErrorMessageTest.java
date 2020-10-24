@@ -33,7 +33,6 @@ import java.io.IOException;
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_IDENTITY_COLLISION;
 import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_OTHER_NETWORK;
-import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_PING_PONG;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -52,12 +51,15 @@ class ErrorMessageTest {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
             final String json = "{\"@type\":\"" + ErrorMessage.class.getSimpleName() + "\",\"proofOfWork\":3556154,\"sender\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\",\"userAgent\":\"\",\"id\":\"89ba3cd9efb7570eb3126d11\"," +
-                    "\"error\":\"" + ERROR_PING_PONG.getDescription() + "\"}";
+                    "\"error\":\"" + ERROR_IDENTITY_COLLISION.getDescription() + "\"}";
 
             assertEquals(new ErrorMessage(
-                    CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"),
-                    ProofOfWork.of(3556154),
-                    ERROR_PING_PONG), JACKSON_READER.readValue(json, Message.class));
+                            CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"),
+                            ProofOfWork.of(3556154),
+                            ERROR_IDENTITY_COLLISION
+                    ),
+                    JACKSON_READER.readValue(json, Message.class)
+            );
         }
 
         @Test
@@ -75,7 +77,7 @@ class ErrorMessageTest {
             final ErrorMessage message = new ErrorMessage(
                     CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"),
                     ProofOfWork.of(3556154),
-                    ERROR_PING_PONG);
+                    ERROR_IDENTITY_COLLISION);
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
