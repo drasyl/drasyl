@@ -20,7 +20,6 @@ package org.drasyl.peer.connection.server;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelFuture;
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelId;
 import io.netty.channel.embedded.EmbeddedChannel;
@@ -31,7 +30,6 @@ import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ErrorMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
-import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.MessageId;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.SuccessMessage;
@@ -158,16 +156,14 @@ class ServerConnectionHandlerTest {
     }
 
     @Test
-    void exceptionCaughtShouldWriteExceptionToChannelAndThenCloseIt() {
-        when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
+    void exceptionCaughtShouldCloseChannelIt() {
         when(ctx.channel()).thenReturn(nettyChannel);
         when(nettyChannel.id()).thenReturn(channelId);
 
         final ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), pipeline, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         handler.exceptionCaught(ctx, cause);
 
-        verify(ctx).writeAndFlush(any(ErrorMessage.class));
-        verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
+        verify(ctx).close();
     }
 
     @Test

@@ -18,7 +18,6 @@
  */
 package org.drasyl.peer.connection.handler;
 
-import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
@@ -35,7 +34,6 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_INITIALIZATION;
 import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_UNEXPECTED_MESSAGE;
 
 abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandler<Message, Message> {
@@ -179,7 +177,7 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
                 getLogger().info("[{}]: Exception during handshake occurred: {}", ctx.channel().id().asShortText(), cause.getMessage());
             }
             // close connection if an error occurred before handshake
-            ctx.writeAndFlush(new ErrorMessage(identity.getPublicKey(), identity.getProofOfWork(), ERROR_INITIALIZATION)).addListener(ChannelFutureListener.CLOSE);
+            ctx.close();
         }
         else {
             ctx.fireExceptionCaught(cause);

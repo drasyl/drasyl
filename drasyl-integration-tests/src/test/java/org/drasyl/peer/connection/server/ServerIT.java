@@ -80,7 +80,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.awaitility.Awaitility.await;
-import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_INITIALIZATION;
 import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_INVALID_SIGNATURE;
 import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_PEER_UNAVAILABLE;
 import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_PROOF_OF_WORK_INVALID;
@@ -365,17 +364,14 @@ class ServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void invalidMessageShouldBeRespondedWithExceptionMessage() {
+    void invalidMessageShouldCloseChannel() {
         // create connection
         try (final TestSuperPeerClient session = clientSession(configClient1, server, identitySession1)) {
-            final TestObserver<Message> receivedMessages = session.receivedMessages().test();
-
             // send message
             session.sendRawBinary(Unpooled.buffer().writeBytes("invalid message".getBytes()));
 
-            // verify response
-            receivedMessages.awaitCount(1);
-            receivedMessages.assertValueAt(0, val -> ((ErrorMessage) val).getError() == ERROR_INITIALIZATION);
+            // verify channel status
+            await().untilAsserted(() -> assertTrue(session.isClosed()));
         }
     }
 
