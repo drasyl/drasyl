@@ -54,7 +54,7 @@ public abstract class ClientChannelInitializer extends DefaultSessionInitializer
      *                        value is 1, max 32767
      * @param target          the target URI
      */
-    public ClientChannelInitializer(final Identity identity,
+    protected ClientChannelInitializer(final Identity identity,
                                     final int flushBufferSize,
                                     final Duration readIdleTimeout,
                                     final short pingPongRetries,
