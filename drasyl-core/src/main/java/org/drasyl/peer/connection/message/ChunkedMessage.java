@@ -143,8 +143,8 @@ public class ChunkedMessage extends ApplicationMessage {
                 ", payload=byte[" + Optional.ofNullable(payload).orElse(new byte[]{}).length + "] { ... }" +
                 ", hopCount=" + hopCount +
                 ", contentLength=" + contentLength +
-                ", checksum='" + checksum + '\'' +
-                ", id='" + id + '\'' +
+                ", checksum=" + checksum +
+                ", id=" + id +
                 "} ";
     }
 
@@ -153,7 +153,7 @@ public class ChunkedMessage extends ApplicationMessage {
     }
 
     /**
-     * Creates the initial chunked message.
+     * Creates the initial chunked message. Indicated by a non-zero {@code contentLength}.
      *
      * @param id            the id of this message (must be the same as composed message)
      * @param networkId     the network the sender belongs to
@@ -177,7 +177,7 @@ public class ChunkedMessage extends ApplicationMessage {
     }
 
     /**
-     * Creates a follow chunked message.
+     * Creates a follow chunked message. Indicated by a zero {@code contentLength}.
      *
      * @param id          the id of this message (must be the same as the initial chunk)
      * @param networkId   the network the sender belongs to
@@ -196,7 +196,7 @@ public class ChunkedMessage extends ApplicationMessage {
     }
 
     /**
-     * Creates the last chunked message.
+     * Creates the last chunked message. Indicated by an empty {@code payload}.
      *
      * @param id          the id of this message (must be the same as the initial chunk)
      * @param networkId   the network the sender belongs to

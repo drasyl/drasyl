@@ -24,7 +24,6 @@ import org.drasyl.identity.ProofOfWork;
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.peer.connection.message.MessageId.randomMessageId;
 
 abstract class AbstractResponseMessage<R extends RequestMessage> extends AbstractMessage implements ResponseMessage<R> {
     protected final MessageId correspondingId;
@@ -37,16 +36,6 @@ abstract class AbstractResponseMessage<R extends RequestMessage> extends Abstrac
                                       final CompressedPublicKey recipient,
                                       final MessageId correspondingId) {
         super(id, userAgent, networkId, sender, proofOfWork, recipient);
-        this.correspondingId = requireNonNull(correspondingId);
-    }
-
-    protected AbstractResponseMessage(final String userAgent,
-                                      final int networkId,
-                                      final CompressedPublicKey sender,
-                                      final ProofOfWork proofOfWork,
-                                      final CompressedPublicKey recipient,
-                                      final MessageId correspondingId) {
-        super(randomMessageId(), userAgent, networkId, sender, proofOfWork, recipient);
         this.correspondingId = requireNonNull(correspondingId);
     }
 

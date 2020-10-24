@@ -36,9 +36,8 @@ import static java.util.Objects.requireNonNull;
  * This is an immutable object.
  */
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class ErrorMessage extends AbstractMessage implements RequestMessage, ResponseMessage<RequestMessage> {
+public class ErrorMessage extends AbstractResponseMessage<RequestMessage> {
     private final Error error;
-    private final MessageId correspondingId;
 
     @JsonCreator
     private ErrorMessage(@JsonProperty("id") final MessageId id,
@@ -49,9 +48,8 @@ public class ErrorMessage extends AbstractMessage implements RequestMessage, Res
                          @JsonProperty("recipient") final CompressedPublicKey recipient,
                          @JsonProperty("error") final Error error,
                          @JsonProperty("correspondingId") final MessageId correspondingId) {
-        super(id, userAgent, networkId, sender, proofOfWork, recipient);
+        super(id, userAgent, networkId, sender, proofOfWork, recipient, correspondingId);
         this.error = requireNonNull(error);
-        this.correspondingId = requireNonNull(correspondingId);
     }
 
     /**
@@ -70,9 +68,8 @@ public class ErrorMessage extends AbstractMessage implements RequestMessage, Res
                         final CompressedPublicKey recipient,
                         final Error error,
                         final MessageId correspondingId) {
-        super(networkId, sender, proofOfWork, recipient);
+        super(networkId, sender, proofOfWork, recipient, correspondingId);
         this.error = requireNonNull(error);
-        this.correspondingId = requireNonNull(correspondingId);
     }
 
     /**
@@ -80,11 +77,6 @@ public class ErrorMessage extends AbstractMessage implements RequestMessage, Res
      */
     public Error getError() {
         return error;
-    }
-
-    @Override
-    public MessageId getCorrespondingId() {
-        return correspondingId;
     }
 
     @Override
@@ -99,13 +91,12 @@ public class ErrorMessage extends AbstractMessage implements RequestMessage, Res
             return false;
         }
         final ErrorMessage that = (ErrorMessage) o;
-        return error == that.error &&
-                Objects.equals(correspondingId, that.correspondingId);
+        return error == that.error;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), error, correspondingId);
+        return Objects.hash(super.hashCode(), error);
     }
 
     @Override

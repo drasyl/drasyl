@@ -33,10 +33,8 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * This is an immutable object.
  */
-public class WelcomeMessage extends AbstractMessage implements ResponseMessage<JoinMessage> {
-    private final int networkId;
+public class WelcomeMessage extends AbstractResponseMessage<JoinMessage> {
     private final PeerInformation peerInformation;
-    private final MessageId correspondingId;
 
     @JsonCreator
     private WelcomeMessage(@JsonProperty("id") final MessageId id,
@@ -47,10 +45,8 @@ public class WelcomeMessage extends AbstractMessage implements ResponseMessage<J
                            @JsonProperty("recipient") final CompressedPublicKey recipient,
                            @JsonProperty("peerInformation") final PeerInformation peerInformation,
                            @JsonProperty("correspondingId") final MessageId correspondingId) {
-        super(id, userAgent, networkId, sender, proofOfWork, recipient);
-        this.networkId = networkId;
+        super(id, userAgent, networkId, sender, proofOfWork, recipient, correspondingId);
         this.peerInformation = requireNonNull(peerInformation);
-        this.correspondingId = requireNonNull(correspondingId);
     }
 
     /**
@@ -69,14 +65,8 @@ public class WelcomeMessage extends AbstractMessage implements ResponseMessage<J
                           final CompressedPublicKey recipient,
                           final PeerInformation peerInformation,
                           final MessageId correspondingId) {
-        super(networkId, sender, proofOfWork, recipient);
-        this.networkId = networkId;
+        super(networkId, sender, proofOfWork, recipient, correspondingId);
         this.peerInformation = requireNonNull(peerInformation);
-        this.correspondingId = requireNonNull(correspondingId);
-    }
-
-    public int getNetworkId() {
-        return networkId;
     }
 
     public PeerInformation getPeerInformation() {
@@ -84,13 +74,8 @@ public class WelcomeMessage extends AbstractMessage implements ResponseMessage<J
     }
 
     @Override
-    public MessageId getCorrespondingId() {
-        return correspondingId;
-    }
-
-    @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), networkId, peerInformation, correspondingId);
+        return Objects.hash(super.hashCode(), peerInformation);
     }
 
     @Override
@@ -105,9 +90,7 @@ public class WelcomeMessage extends AbstractMessage implements ResponseMessage<J
             return false;
         }
         final WelcomeMessage that = (WelcomeMessage) o;
-        return networkId == that.networkId &&
-                Objects.equals(peerInformation, that.peerInformation) &&
-                Objects.equals(correspondingId, that.correspondingId);
+        return Objects.equals(peerInformation, that.peerInformation);
     }
 
     @Override
@@ -118,7 +101,6 @@ public class WelcomeMessage extends AbstractMessage implements ResponseMessage<J
                 ", proofOfWork=" + proofOfWork +
                 ", recipient=" + recipient +
                 ", peerInformation=" + peerInformation +
-                ", correspondingId=" + correspondingId +
                 ", id=" + id +
                 '}';
     }
