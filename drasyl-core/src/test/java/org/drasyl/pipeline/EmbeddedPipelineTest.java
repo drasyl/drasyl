@@ -53,7 +53,9 @@ class EmbeddedPipelineTest {
 
     @BeforeEach
     void setUp() {
-        config = DrasylConfig.newBuilder().build();
+        config = DrasylConfig.newBuilder()
+                .networkId(1)
+                .build();
     }
 
     @Test
@@ -63,7 +65,7 @@ class EmbeddedPipelineTest {
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.of(List.of(), List.of(), false, false),
                 ApplicationMessage2ObjectHolderHandler.INSTANCE,
-                ObjectHolder2ApplicationMessageHandler.INSTANCE,
+                new ObjectHolder2ApplicationMessageHandler(config.getNetworkId()),
                 DefaultCodec.INSTANCE,
                 new HandlerAdapter(),
                 new HandlerAdapter());
@@ -107,7 +109,11 @@ class EmbeddedPipelineTest {
                 identity,
                 TypeValidator.of(List.of(), List.of(), false, false),
                 TypeValidator.ofOutboundValidator(config),
-                ObjectHolder2ApplicationMessageHandler.INSTANCE, DefaultCodec.INSTANCE, new HandlerAdapter(), new HandlerAdapter());
+                new ObjectHolder2ApplicationMessageHandler(config.getNetworkId()),
+                DefaultCodec.INSTANCE,
+                new HandlerAdapter(),
+                new HandlerAdapter()
+        );
         final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
         final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
         final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
@@ -121,7 +127,7 @@ class EmbeddedPipelineTest {
         pipeline.processOutbound(recipient, msg);
 
         outboundMessageTestObserver.awaitCount(1).assertValueCount(1);
-        outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, senderProofOfWork, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, msg.getClass().getName()), msg));
+        outboundMessageTestObserver.assertValue(new ApplicationMessage(1, sender, senderProofOfWork, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, msg.getClass().getName()), msg));
         inboundMessageTestObserver.assertNoValues();
         eventTestObserver.assertNoValues();
     }

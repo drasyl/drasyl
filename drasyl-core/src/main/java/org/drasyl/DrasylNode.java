@@ -155,14 +155,14 @@ public abstract class DrasylNode {
             identityManager.loadOrCreateIdentity();
             this.identity = identityManager.getIdentity();
             this.peersManager = new PeersManager(this::onInternalEvent, identity);
-            this.channelGroup = new PeerChannelGroup(identity);
+            this.channelGroup = new PeerChannelGroup(this.config.getNetworkId(), identity);
             this.endpoints = new CopyOnWriteArraySet<>();
             this.acceptNewConnections = new AtomicBoolean();
-            this.pipeline = new DrasylPipeline(this::onEvent, config, identity);
+            this.pipeline = new DrasylPipeline(this::onEvent, this.config, identity);
             this.started = new AtomicBoolean();
             pipeline.addFirst(SUPER_PEER_SINK_HANDLER, new SuperPeerMessageSinkHandler(channelGroup, peersManager));
             pipeline.addAfter(SUPER_PEER_SINK_HANDLER, DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, new DirectConnectionMessageSinkHandler(channelGroup));
-            pipeline.addAfter(DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, LOOPBACK_MESSAGE_SINK_HANDLER, new LoopbackMessageSinkHandler(started, identity, peersManager, endpoints));
+            pipeline.addAfter(DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, LOOPBACK_MESSAGE_SINK_HANDLER, new LoopbackMessageSinkHandler(started, this.config.getNetworkId(), identity, peersManager, endpoints));
             this.components = new ArrayList<>();
 
             if (config.areDirectConnectionsEnabled()) {
@@ -431,7 +431,7 @@ public abstract class DrasylNode {
     @SuppressWarnings({ "java:S1905" })
     private void closeConnections() {
         // send quit message to all peers and close connections
-        final CompletableFuture<?>[] futures = channelGroup.stream().map(c -> FutureUtil.toFuture(c.writeAndFlush(new QuitMessage(identity.getPublicKey(), identity.getProofOfWork(), c.attr(ATTRIBUTE_PUBLIC_KEY).get(), REASON_SHUTTING_DOWN)))).toArray(CompletableFuture[]::new);
+        final CompletableFuture<?>[] futures = channelGroup.stream().map(c -> FutureUtil.toFuture(c.writeAndFlush(new QuitMessage(config.getNetworkId(), identity.getPublicKey(), identity.getProofOfWork(), c.attr(ATTRIBUTE_PUBLIC_KEY).get(), REASON_SHUTTING_DOWN)))).toArray(CompletableFuture[]::new);
         CompletableFuture.allOf(futures).thenRun(channelGroup::close);
     }
 

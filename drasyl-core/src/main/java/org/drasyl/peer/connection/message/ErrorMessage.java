@@ -43,31 +43,34 @@ public class ErrorMessage extends AbstractMessage implements RequestMessage, Res
     @JsonCreator
     private ErrorMessage(@JsonProperty("id") final MessageId id,
                          @JsonProperty("userAgent") final String userAgent,
+                         @JsonProperty("networkId") final int networkId,
                          @JsonProperty("sender") final CompressedPublicKey sender,
                          @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                          @JsonProperty("recipient") final CompressedPublicKey recipient,
                          @JsonProperty("error") final Error error,
                          @JsonProperty("correspondingId") final MessageId correspondingId) {
-        super(id, userAgent, sender, proofOfWork, recipient);
+        super(id, userAgent, networkId, sender, proofOfWork, recipient);
         this.error = requireNonNull(error);
-        this.correspondingId = correspondingId;
+        this.correspondingId = requireNonNull(correspondingId);
     }
 
     /**
      * Creates a new error message.
      *
+     * @param networkId       the network the sender belongs to
      * @param sender          the message's sender
      * @param proofOfWork     sender's proof of work
      * @param recipient       the message's recipient
      * @param error           the error type
      * @param correspondingId the corresponding id of the previous message
      */
-    public ErrorMessage(final CompressedPublicKey sender,
+    public ErrorMessage(final int networkId,
+                        final CompressedPublicKey sender,
                         final ProofOfWork proofOfWork,
                         final CompressedPublicKey recipient,
                         final Error error,
                         final MessageId correspondingId) {
-        super(sender, proofOfWork, recipient);
+        super(networkId, sender, proofOfWork, recipient);
         this.error = requireNonNull(error);
         this.correspondingId = requireNonNull(correspondingId);
     }
@@ -102,13 +105,14 @@ public class ErrorMessage extends AbstractMessage implements RequestMessage, Res
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), recipient, error, correspondingId);
+        return Objects.hash(super.hashCode(), error, correspondingId);
     }
 
     @Override
     public String toString() {
         return "ErrorMessage{" +
-                "sender=" + sender +
+                "networkId=" + networkId +
+                ", sender=" + sender +
                 ", proofOfWork=" + proofOfWork +
                 ", recipient=" + recipient +
                 ", error=" + error +

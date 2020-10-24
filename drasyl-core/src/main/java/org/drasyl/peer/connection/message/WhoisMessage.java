@@ -40,20 +40,22 @@ public class WhoisMessage extends RelayableMessage implements RequestMessage {
     @JsonCreator
     private WhoisMessage(@JsonProperty("id") final MessageId id,
                          @JsonProperty("userAgent") final String userAgent,
+                         @JsonProperty("networkId") final int networkId,
                          @JsonProperty("sender") final CompressedPublicKey sender,
                          @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                          @JsonProperty("recipient") final CompressedPublicKey recipient,
                          @JsonProperty("hopCount") final short hopCount,
                          @JsonProperty("peerInformation") final PeerInformation peerInformation) {
-        super(id, userAgent, sender, proofOfWork, recipient, hopCount);
+        super(id, userAgent, networkId, sender, proofOfWork, recipient, hopCount);
         this.peerInformation = requireNonNull(peerInformation);
     }
 
-    public WhoisMessage(final CompressedPublicKey sender,
+    public WhoisMessage(final int networkId,
+                        final CompressedPublicKey sender,
                         final ProofOfWork proofOfWork,
                         final CompressedPublicKey recipient,
                         final PeerInformation peerInformation) {
-        super(sender, proofOfWork, recipient);
+        super(networkId, sender, proofOfWork, recipient);
         this.peerInformation = requireNonNull(peerInformation);
     }
 
@@ -84,8 +86,9 @@ public class WhoisMessage extends RelayableMessage implements RequestMessage {
     @Override
     public String toString() {
         return "WhoisMessage{" +
-                "sender=" + sender +
-                "proofOfWork=" + proofOfWork +
+                "networkId=" + networkId +
+                ", sender=" + sender +
+                ", proofOfWork=" + proofOfWork +
                 ", recipient=" + recipient +
                 ", peerInformation=" + peerInformation +
                 ", hopCount=" + hopCount +

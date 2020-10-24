@@ -220,7 +220,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
     private void requestPeerInformation(final CompressedPublicKey publicKey) {
         if (requestPeerInformationCache.add(publicKey)) {
             LOG.debug("Request information for Peer '{}'", publicKey);
-            pipeline.processOutbound(publicKey, new WhoisMessage(identity.getPublicKey(), identity.getProofOfWork(), publicKey, PeerInformation.of(endpoints))).whenComplete((done, e) -> {
+            pipeline.processOutbound(publicKey, new WhoisMessage(config.getNetworkId(), identity.getPublicKey(), identity.getProofOfWork(), publicKey, PeerInformation.of(endpoints))).whenComplete((done, e) -> {
                 if (e != null) {
                     LOG.debug("Unable to request information for Peer '{}': {}", publicKey, e.getMessage());
                 }

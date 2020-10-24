@@ -31,7 +31,6 @@ import java.util.Objects;
  * This is an immutable object.
  */
 public class JoinMessage extends AbstractMessage implements RequestMessage {
-    private final int networkId;
     private final boolean childrenJoin;
 
     @JsonCreator
@@ -42,8 +41,7 @@ public class JoinMessage extends AbstractMessage implements RequestMessage {
                         @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                         @JsonProperty("recipient") final CompressedPublicKey recipient,
                         @JsonProperty("childrenJoin") final boolean childrenJoin) {
-        super(id, userAgent, sender, proofOfWork, recipient);
-        this.networkId = networkId;
+        super(id, userAgent, networkId, sender, proofOfWork, recipient);
         this.childrenJoin = childrenJoin;
     }
 
@@ -61,13 +59,8 @@ public class JoinMessage extends AbstractMessage implements RequestMessage {
                        final ProofOfWork proofOfWork,
                        final CompressedPublicKey recipient,
                        final boolean childrenJoin) {
-        super(sender, proofOfWork, recipient);
+        super(networkId, sender, proofOfWork, recipient);
         this.childrenJoin = childrenJoin;
-        this.networkId = networkId;
-    }
-
-    public int getNetworkId() {
-        return this.networkId;
     }
 
     public boolean isChildrenJoin() {
@@ -76,7 +69,7 @@ public class JoinMessage extends AbstractMessage implements RequestMessage {
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), networkId, recipient, childrenJoin);
+        return Objects.hash(super.hashCode(), childrenJoin);
     }
 
     @Override
@@ -91,8 +84,7 @@ public class JoinMessage extends AbstractMessage implements RequestMessage {
             return false;
         }
         final JoinMessage that = (JoinMessage) o;
-        return networkId == that.networkId &&
-                childrenJoin == that.childrenJoin;
+        return childrenJoin == that.childrenJoin;
     }
 
     @Override

@@ -50,6 +50,7 @@ class SimpleOutboundHandlerTest {
     @Mock
     private ProofOfWork proofOfWork;
     private DrasylConfig config;
+    private final int networkId = 1;
 
     @BeforeEach
     void setUp() {
@@ -70,7 +71,7 @@ class SimpleOutboundHandlerTest {
                                         final byte[] msg,
                                         final CompletableFuture<Void> future) {
                 // Emit this message as inbound message to test
-                ctx.pipeline().processInbound(new ApplicationMessage(identity.getPublicKey(), proofOfWork, recipient, msg));
+                ctx.pipeline().processInbound(new ApplicationMessage(networkId, identity.getPublicKey(), proofOfWork, recipient, msg));
             }
         };
 
@@ -79,7 +80,7 @@ class SimpleOutboundHandlerTest {
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
                 ApplicationMessage2ObjectHolderHandler.INSTANCE,
-                ObjectHolder2ApplicationMessageHandler.INSTANCE,
+                new ObjectHolder2ApplicationMessageHandler(networkId),
                 DefaultCodec.INSTANCE, handler);
         final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
         final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
@@ -109,7 +110,7 @@ class SimpleOutboundHandlerTest {
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
                 ApplicationMessage2ObjectHolderHandler.INSTANCE,
-                ObjectHolder2ApplicationMessageHandler.INSTANCE,
+                new ObjectHolder2ApplicationMessageHandler(networkId),
                 DefaultCodec.INSTANCE, handler);
         final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
         final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
@@ -123,7 +124,7 @@ class SimpleOutboundHandlerTest {
         pipeline.processOutbound(recipient, payload);
 
         outboundMessageTestObserver.awaitCount(1).assertValueCount(1);
-        outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, senderProofOfWork, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, payload.getClass().getName()), payload));
+        outboundMessageTestObserver.assertValue(new ApplicationMessage(networkId, sender, senderProofOfWork, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, payload.getClass().getName()), payload));
         inboundMessageTestObserver.assertNoValues();
     }
 }

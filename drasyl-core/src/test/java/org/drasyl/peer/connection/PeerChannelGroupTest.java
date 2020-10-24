@@ -31,7 +31,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -54,8 +53,12 @@ class PeerChannelGroupTest {
     private Map<CompressedPublicKey, ChannelId> identity2channelId;
     @Mock
     private EventExecutor executor;
-    @InjectMocks
     private PeerChannelGroup underTest;
+
+    @BeforeEach
+    void setUp() {
+        underTest = new PeerChannelGroup(1, identity, identity2channelId, executor);
+    }
 
     @Nested
     class WriteAndFlush {
@@ -188,7 +191,7 @@ class PeerChannelGroupTest {
         void itShouldCloseExistingChannelsWithEqualIdentity() {
             underTest.add(publicKey, channel);
 
-            verify(existingChannel).writeAndFlush(new QuitMessage(identity.getPublicKey(), identity.getProofOfWork(), publicKey, REASON_NEW_SESSION));
+            verify(existingChannel).writeAndFlush(new QuitMessage(1, identity.getPublicKey(), identity.getProofOfWork(), publicKey, REASON_NEW_SESSION));
             verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
         }
 

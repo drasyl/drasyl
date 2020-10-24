@@ -45,15 +45,18 @@ public class LoopbackMessageSinkHandler extends SimpleOutboundHandler<RelayableM
     public static final String LOOPBACK_MESSAGE_SINK_HANDLER = "LOOPBACK_MESSAGE_SINK_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(LoopbackMessageSinkHandler.class);
     private final AtomicBoolean started;
+    private final int networkId;
     private final Identity identity;
     private final PeersManager peersManager;
     private final Set<Endpoint> endpoints;
 
     public LoopbackMessageSinkHandler(final AtomicBoolean started,
+                                      final int networkId,
                                       final Identity identity,
                                       final PeersManager peersManager,
                                       final Set<Endpoint> endpoints) {
         this.started = started;
+        this.networkId = networkId;
         this.identity = identity;
         this.peersManager = peersManager;
         this.endpoints = endpoints;
@@ -82,7 +85,7 @@ public class LoopbackMessageSinkHandler extends SimpleOutboundHandler<RelayableM
             final CompressedPublicKey myPublicKey = identity.getPublicKey();
             final ProofOfWork myProofOfWork = identity.getProofOfWork();
             final PeerInformation myPeerInformation = PeerInformation.of(endpoints);
-            final IdentityMessage identityMessage = new IdentityMessage(myPublicKey, myProofOfWork, whoisMessage.getSender(),
+            final IdentityMessage identityMessage = new IdentityMessage(networkId, myPublicKey, myProofOfWork, whoisMessage.getSender(),
                     myPeerInformation, whoisMessage.getId());
 
             FutureUtil.completeOnAllOf(future, ctx.pipeline().processOutbound(identityMessage.getRecipient(), identityMessage));

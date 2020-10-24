@@ -31,34 +31,38 @@ public abstract class RelayableMessage extends AbstractMessage {
 
     protected RelayableMessage(final MessageId id,
                                final String userAgent,
+                               final int networkId,
                                final CompressedPublicKey sender,
                                final ProofOfWork proofOfWork,
                                final CompressedPublicKey recipient,
                                final short hopCount) {
-        super(id, userAgent, sender, proofOfWork, recipient);
+        super(id, userAgent, networkId, sender, proofOfWork, recipient);
         this.hopCount = hopCount;
     }
 
     protected RelayableMessage(final MessageId id,
+                               final int networkId,
                                final CompressedPublicKey sender,
                                final ProofOfWork proofOfWork,
                                final CompressedPublicKey recipient,
                                final short hopCount) {
-        super(id, userAgentGenerator.get(), sender, proofOfWork, recipient);
+        super(id, userAgentGenerator.get(), networkId, sender, proofOfWork, recipient);
         this.hopCount = hopCount;
     }
 
-    protected RelayableMessage(final CompressedPublicKey sender,
+    protected RelayableMessage(final int networkId,
+                               final CompressedPublicKey sender,
                                final ProofOfWork proofOfWork,
                                final CompressedPublicKey recipient) {
-        this(sender, proofOfWork, recipient, (short) 0);
+        this(networkId, sender, proofOfWork, recipient, (short) 0);
     }
 
-    protected RelayableMessage(final CompressedPublicKey sender,
+    protected RelayableMessage(final int networkId,
+                               final CompressedPublicKey sender,
                                final ProofOfWork proofOfWork,
                                final CompressedPublicKey recipient,
                                final short hopCount) {
-        super(sender, proofOfWork, recipient);
+        super(networkId, sender, proofOfWork, recipient);
         this.hopCount = hopCount;
     }
 

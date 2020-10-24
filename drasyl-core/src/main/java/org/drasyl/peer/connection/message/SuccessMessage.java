@@ -32,37 +32,41 @@ public class SuccessMessage extends AbstractResponseMessage<RequestMessage> {
     @JsonCreator
     private SuccessMessage(@JsonProperty("id") final MessageId id,
                            @JsonProperty("userAgent") final String userAgent,
+                           @JsonProperty("networkId") final int networkId,
                            @JsonProperty("sender") final CompressedPublicKey sender,
                            @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                            @JsonProperty("recipient") final CompressedPublicKey recipient,
                            @JsonProperty("correspondingId") final MessageId correspondingId) {
-        super(id, userAgent, sender, proofOfWork, recipient, correspondingId);
+        super(id, userAgent, networkId, sender, proofOfWork, recipient, correspondingId);
     }
 
     /**
      * Creates an immutable code object.
      *
+     * @param networkId       the network the sender belongs to
      * @param sender          message's sender
      * @param proofOfWork     sender's proof of work
      * @param recipient       message's recipient
      * @param correspondingId the corresponding id of the previous message
      * @throws IllegalArgumentException if the code isn't a valid code code
      */
-    public SuccessMessage(final CompressedPublicKey sender,
+    public SuccessMessage(final int networkId,
+                          final CompressedPublicKey sender,
                           final ProofOfWork proofOfWork,
                           final CompressedPublicKey recipient,
                           final MessageId correspondingId) {
-        super(sender, proofOfWork, recipient, correspondingId);
+        super(networkId, sender, proofOfWork, recipient, correspondingId);
     }
 
     @Override
     public String toString() {
         return "OkMessage{" +
-                "sender='" + sender + '\'' +
-                ", proofOfWork='" + proofOfWork + '\'' +
-                ", recipient='" + recipient + '\'' +
-                ", correspondingId='" + correspondingId + '\'' +
-                ", id='" + id +
+                "networkId=" + networkId +
+                ", sender=" + sender +
+                ", proofOfWork=" + proofOfWork +
+                ", recipient=" + recipient +
+                ", correspondingId=" + correspondingId +
+                ", id=" + id +
                 '}';
     }
 

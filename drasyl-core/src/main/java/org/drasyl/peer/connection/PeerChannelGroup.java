@@ -42,26 +42,32 @@ import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_
  * lookups by {@link CompressedPublicKey}.
  */
 public class PeerChannelGroup extends DefaultChannelGroup {
+    private final int networkId;
     private final Identity identity;
     private final Map<CompressedPublicKey, ChannelId> publicKey2channelId;
     private final EventExecutor executor;
     private final ChannelFutureListener remover = future -> remove(future.channel());
 
-    public PeerChannelGroup(final Identity identity) {
-        this(identity, new HashMap<>(), GlobalEventExecutor.INSTANCE);
+    public PeerChannelGroup(final int networkId,
+                            final Identity identity) {
+        this(networkId, identity, new HashMap<>(), GlobalEventExecutor.INSTANCE);
     }
 
-    PeerChannelGroup(final Identity identity,
+    PeerChannelGroup(final int networkId,
+                     final Identity identity,
                      final Map<CompressedPublicKey, ChannelId> publicKey2channelId,
                      final EventExecutor executor) {
         super(executor);
+        this.networkId = networkId;
         this.identity = identity;
         this.publicKey2channelId = publicKey2channelId;
         this.executor = executor;
     }
 
-    public PeerChannelGroup(final Identity identity, final EventExecutor executor) {
-        this(identity, new HashMap<>(), executor);
+    public PeerChannelGroup(final int networkId,
+                            final Identity identity,
+                            final EventExecutor executor) {
+        this(networkId, identity, new HashMap<>(), executor);
     }
 
     /**
@@ -132,7 +138,7 @@ public class PeerChannelGroup extends DefaultChannelGroup {
         // close any existing connections with the same peer...
         final Channel existingChannel = find(publicKey);
         if (existingChannel != null) {
-            existingChannel.writeAndFlush(new QuitMessage(identity.getPublicKey(), identity.getProofOfWork(), publicKey, REASON_NEW_SESSION)).addListener(ChannelFutureListener.CLOSE);
+            existingChannel.writeAndFlush(new QuitMessage(networkId, identity.getPublicKey(), identity.getProofOfWork(), publicKey, REASON_NEW_SESSION)).addListener(ChannelFutureListener.CLOSE);
         }
 
         // ...before adding the new one

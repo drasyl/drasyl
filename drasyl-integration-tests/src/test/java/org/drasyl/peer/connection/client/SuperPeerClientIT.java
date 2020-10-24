@@ -160,20 +160,20 @@ class SuperPeerClientIT {
         identityManagerServer = new IdentityManager(serverConfig);
         identityManagerServer.loadOrCreateIdentity();
         peersManager = new PeersManager(emittedEventsSubject::onNext, identityManager.getIdentity());
-        channelGroup = new PeerChannelGroup(identityManager.getIdentity());
+        channelGroup = new PeerChannelGroup(networkId, identityManager.getIdentity());
         peersManagerServer = new PeersManager(event -> {
         }, identityManagerServer.getIdentity());
-        channelGroupServer = new PeerChannelGroup(identityManagerServer.getIdentity());
+        channelGroupServer = new PeerChannelGroup(networkId, identityManagerServer.getIdentity());
         pipeline = new DrasylPipeline(event -> {
         }, config, identityManager.getIdentity());
         pipeline.addFirst(SUPER_PEER_SINK_HANDLER, new SuperPeerMessageSinkHandler(channelGroup, peersManager));
         pipeline.addAfter(SUPER_PEER_SINK_HANDLER, DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, new DirectConnectionMessageSinkHandler(channelGroup));
-        pipeline.addAfter(DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, LOOPBACK_MESSAGE_SINK_HANDLER, new LoopbackMessageSinkHandler(new AtomicBoolean(true), identityManager.getIdentity(), peersManager, endpoints));
+        pipeline.addAfter(DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, LOOPBACK_MESSAGE_SINK_HANDLER, new LoopbackMessageSinkHandler(new AtomicBoolean(true), networkId, identityManager.getIdentity(), peersManager, endpoints));
         pipelineServer = new DrasylPipeline(event -> {
         }, serverConfig, identityManagerServer.getIdentity());
         pipelineServer.addFirst(SUPER_PEER_SINK_HANDLER, new SuperPeerMessageSinkHandler(channelGroup, peersManagerServer));
         pipelineServer.addAfter(SUPER_PEER_SINK_HANDLER, DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, new DirectConnectionMessageSinkHandler(channelGroup));
-        pipelineServer.addAfter(DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, LOOPBACK_MESSAGE_SINK_HANDLER, new LoopbackMessageSinkHandler(new AtomicBoolean(true), identityManagerServer.getIdentity(), peersManagerServer, endpoints));
+        pipelineServer.addAfter(DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, LOOPBACK_MESSAGE_SINK_HANDLER, new LoopbackMessageSinkHandler(new AtomicBoolean(true), networkId, identityManagerServer.getIdentity(), peersManagerServer, endpoints));
         endpoints = new HashSet<>();
 
         server = new TestServer(identityManagerServer.getIdentity(), pipelineServer, peersManagerServer, serverConfig, channelGroupServer, serverWorkerGroup, bossGroup, endpoints);
@@ -246,7 +246,7 @@ class SuperPeerClientIT {
 
         // verify emitted events
         receivedMessages.awaitCount(1);
-        receivedMessages.assertValueAt(0, new QuitMessage(identityManager.getIdentity().getPublicKey(), identityManager.getIdentity().getProofOfWork(), CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"), REASON_SHUTTING_DOWN));
+        receivedMessages.assertValueAt(0, new QuitMessage(networkId, identityManager.getIdentity().getPublicKey(), identityManager.getIdentity().getProofOfWork(), CompressedPublicKey.of("023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff"), REASON_SHUTTING_DOWN));
     }
 
     @Test
@@ -270,7 +270,7 @@ class SuperPeerClientIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldRespondToPingMessageWithPongMessage() {
-        final PingMessage request = new PingMessage(config.getIdentityPublicKey(), config.getIdentityProofOfWork(), identityManager.getPublicKey());
+        final PingMessage request = new PingMessage(networkId, config.getIdentityPublicKey(), config.getIdentityProofOfWork(), identityManager.getPublicKey());
         final TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof PongMessage && ((PongMessage) m).getCorrespondingId().equals(request.getId())).test();
 
         // start client
@@ -298,7 +298,7 @@ class SuperPeerClientIT {
             server.awaitClient(identityManager.getPublicKey());
 
             // send message
-            final ApplicationMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManagerServer.getProofOfWork(), identityManager.getPublicKey(), new byte[]{
+            final ApplicationMessage request = new ApplicationMessage(networkId, identityManagerServer.getPublicKey(), identityManagerServer.getProofOfWork(), identityManager.getPublicKey(), new byte[]{
                     0x00,
                     0x01
             });
@@ -306,7 +306,7 @@ class SuperPeerClientIT {
 
             // verify received message
             receivedMessages.awaitCount(2);
-            receivedMessages.assertValueAt(1, new SuccessMessage(identityManager.getPublicKey(), identityManager.getProofOfWork(), identityManagerServer.getPublicKey(), request.getId()));
+            receivedMessages.assertValueAt(1, new SuccessMessage(networkId, identityManager.getPublicKey(), identityManager.getProofOfWork(), identityManagerServer.getPublicKey(), request.getId()));
         }
     }
 
@@ -322,7 +322,7 @@ class SuperPeerClientIT {
             server.awaitClient(identityManager.getPublicKey());
 
             // send message
-            server.sendMessage(identityManager.getPublicKey(), new QuitMessage(identityManagerServer.getIdentity().getPublicKey(), identityManagerServer.getIdentity().getProofOfWork(), identityManager.getIdentity().getPublicKey(), REASON_SHUTTING_DOWN));
+            server.sendMessage(identityManager.getPublicKey(), new QuitMessage(networkId, identityManagerServer.getIdentity().getPublicKey(), identityManagerServer.getIdentity().getProofOfWork(), identityManager.getIdentity().getPublicKey(), REASON_SHUTTING_DOWN));
 
             // verify emitted events
             emittedEvents.awaitCount(3);
@@ -401,12 +401,12 @@ class SuperPeerClientIT {
             new Random().nextBytes(bigPayload);
 
             // send message
-            final RequestMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManagerServer.getProofOfWork(), identityManager.getPublicKey(), bigPayload);
+            final RequestMessage request = new ApplicationMessage(networkId, identityManagerServer.getPublicKey(), identityManagerServer.getProofOfWork(), identityManager.getPublicKey(), bigPayload);
             server.sendMessage(identityManager.getPublicKey(), request);
 
             receivedMessages.awaitCount(2);
             emittedEvents.assertNoValues();
-            receivedMessages.assertValueAt(1, new ErrorMessage(identityManagerServer.getPublicKey(), identityManagerServer.getProofOfWork(), identityManager.getPublicKey(), ERROR_CHUNKED_MESSAGE_PAYLOAD_TOO_LARGE, request.getId()));
+            receivedMessages.assertValueAt(1, new ErrorMessage(networkId, identityManagerServer.getPublicKey(), identityManagerServer.getProofOfWork(), identityManager.getPublicKey(), ERROR_CHUNKED_MESSAGE_PAYLOAD_TOO_LARGE, request.getId()));
         }
     }
 
@@ -423,7 +423,7 @@ class SuperPeerClientIT {
             new Random().nextBytes(bigPayload);
 
             // send message
-            final RequestMessage request = new ApplicationMessage(identityManagerServer.getPublicKey(), identityManagerServer.getProofOfWork(), identityManager.getPublicKey(), bigPayload);
+            final RequestMessage request = new ApplicationMessage(networkId, identityManagerServer.getPublicKey(), identityManagerServer.getProofOfWork(), identityManager.getPublicKey(), bigPayload);
             assertThrows(ExecutionException.class, () -> server.sendMessage(identityManager.getPublicKey(), request).get());
         }
     }

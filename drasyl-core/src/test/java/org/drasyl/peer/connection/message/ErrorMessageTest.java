@@ -49,15 +49,17 @@ class ErrorMessageTest {
     private CompressedPublicKey recipient;
     @Mock
     private MessageId correspondingId;
+    private final int networkId = 1;
 
     @Nested
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
-            final String json = "{\"@type\":\"" + ErrorMessage.class.getSimpleName() + "\",\"proofOfWork\":3556154,\"sender\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\",\"recipient\":\"025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4\",\"userAgent\":\"\",\"id\":\"89ba3cd9efb7570eb3126d11\"," +
+            final String json = "{\"@type\":\"" + ErrorMessage.class.getSimpleName() + "\",\"networkId\":1,\"proofOfWork\":3556154,\"sender\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\",\"recipient\":\"025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4\",\"userAgent\":\"\",\"id\":\"89ba3cd9efb7570eb3126d11\"," +
                     "\"error\":\"" + ERROR_IDENTITY_COLLISION.getDescription() + "\",\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
 
             assertEquals(new ErrorMessage(
+                            1,
                             CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"),
                             ProofOfWork.of(3556154),
                             CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"),
@@ -81,6 +83,7 @@ class ErrorMessageTest {
         @Test
         void shouldSerializeToCorrectJson() throws IOException, CryptoException {
             final ErrorMessage message = new ErrorMessage(
+                    1,
                     CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"),
                     ProofOfWork.of(3556154),
                     CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"),
@@ -90,7 +93,7 @@ class ErrorMessageTest {
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", ErrorMessage.class.getSimpleName())
-                    .containsKeys("id", "error", "sender", "proofOfWork", "recipient", "userAgent", "correspondingId");
+                    .containsKeys("id", "error", "sender", "proofOfWork", "recipient", "userAgent", "correspondingId", "networkId");
         }
     }
 
@@ -99,7 +102,7 @@ class ErrorMessageTest {
         @Test
         void shouldRejectNullValues() {
             final MessageId id = MessageId.of("412176952b5b81fd13f84a7c");
-            assertThrows(NullPointerException.class, () -> new ErrorMessage(sender, proofOfWork, recipient, null, id), "ConnectionExceptionMessage requires an error type");
+            assertThrows(NullPointerException.class, () -> new ErrorMessage(networkId, sender, proofOfWork, recipient, null, id), "ConnectionExceptionMessage requires an error type");
         }
     }
 
@@ -107,9 +110,9 @@ class ErrorMessageTest {
     class Equals {
         @Test
         void notSameBecauseOfDifferentError() {
-            final ErrorMessage message1 = new ErrorMessage(sender, proofOfWork, recipient, ERROR_OTHER_NETWORK, correspondingId);
-            final ErrorMessage message2 = new ErrorMessage(sender, proofOfWork, recipient, ERROR_OTHER_NETWORK, correspondingId);
-            final ErrorMessage message3 = new ErrorMessage(sender, proofOfWork, recipient, ERROR_IDENTITY_COLLISION, correspondingId);
+            final ErrorMessage message1 = new ErrorMessage(networkId, sender, proofOfWork, recipient, ERROR_OTHER_NETWORK, correspondingId);
+            final ErrorMessage message2 = new ErrorMessage(networkId, sender, proofOfWork, recipient, ERROR_OTHER_NETWORK, correspondingId);
+            final ErrorMessage message3 = new ErrorMessage(networkId, sender, proofOfWork, recipient, ERROR_IDENTITY_COLLISION, correspondingId);
 
             assertEquals(message1, message2);
             assertNotEquals(message2, message3);
@@ -120,9 +123,9 @@ class ErrorMessageTest {
     class HashCode {
         @Test
         void notSameBecauseOfDifferentError() {
-            final ErrorMessage message1 = new ErrorMessage(sender, proofOfWork, recipient, ERROR_OTHER_NETWORK, correspondingId);
-            final ErrorMessage message2 = new ErrorMessage(sender, proofOfWork, recipient, ERROR_OTHER_NETWORK, correspondingId);
-            final ErrorMessage message3 = new ErrorMessage(sender, proofOfWork, recipient, ERROR_IDENTITY_COLLISION, correspondingId);
+            final ErrorMessage message1 = new ErrorMessage(networkId, sender, proofOfWork, recipient, ERROR_OTHER_NETWORK, correspondingId);
+            final ErrorMessage message2 = new ErrorMessage(networkId, sender, proofOfWork, recipient, ERROR_OTHER_NETWORK, correspondingId);
+            final ErrorMessage message3 = new ErrorMessage(networkId, sender, proofOfWork, recipient, ERROR_IDENTITY_COLLISION, correspondingId);
 
             assertEquals(message1.hashCode(), message2.hashCode());
             assertNotEquals(message2.hashCode(), message3.hashCode());

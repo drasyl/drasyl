@@ -53,7 +53,7 @@ public class DrasylPipeline extends DefaultPipeline {
         // add default codec
         addFirst(DefaultCodec.DEFAULT_CODEC, DefaultCodec.INSTANCE);
         addFirst(ApplicationMessage2ObjectHolderHandler.APP_MSG2OBJECT_HOLDER, ApplicationMessage2ObjectHolderHandler.INSTANCE);
-        addFirst(ObjectHolder2ApplicationMessageHandler.OBJECT_HOLDER2APP_MSG, ObjectHolder2ApplicationMessageHandler.INSTANCE);
+        addFirst(ObjectHolder2ApplicationMessageHandler.OBJECT_HOLDER2APP_MSG, new ObjectHolder2ApplicationMessageHandler(config.getNetworkId()));
     }
 
     DrasylPipeline(final Map<String, AbstractHandlerContext> handlerNames,

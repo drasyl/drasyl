@@ -43,14 +43,16 @@ class QuitMessageTest {
     private ProofOfWork proofOfWork;
     @Mock
     private CompressedPublicKey recipient;
+    private final int networkId = 1;
 
     @Nested
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
-            final String json = "{\"@type\":\"" + QuitMessage.class.getSimpleName() + "\",\"id\":\"89ba3cd9efb7570eb3126d11\",\"sender\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\",\"proofOfWork\":3556154,\"recipient\":\"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\"reason\":\"Peer is shutting down.\",\"userAgent\":\"\"}";
+            final String json = "{\"@type\":\"" + QuitMessage.class.getSimpleName() + "\",\"id\":\"89ba3cd9efb7570eb3126d11\",\"networkId\":1,\"sender\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\",\"proofOfWork\":3556154,\"recipient\":\"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\"reason\":\"Peer is shutting down.\",\"userAgent\":\"\"}";
 
             assertEquals(new QuitMessage(
+                    1,
                     CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"),
                     ProofOfWork.of(3556154),
                     CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"),
@@ -63,12 +65,12 @@ class QuitMessageTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException {
-            final QuitMessage message = new QuitMessage(sender, proofOfWork, recipient, REASON_SHUTTING_DOWN);
+            final QuitMessage message = new QuitMessage(networkId, sender, proofOfWork, recipient, REASON_SHUTTING_DOWN);
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", QuitMessage.class.getSimpleName())
-                    .containsKeys("id", "sender", "proofOfWork", "recipient", "reason", "userAgent");
+                    .containsKeys("id", "sender", "proofOfWork", "recipient", "reason", "userAgent", "networkId");
         }
     }
 
@@ -76,8 +78,8 @@ class QuitMessageTest {
     class Equals {
         @Test
         void shouldReturnTrue() {
-            final QuitMessage message1 = new QuitMessage(sender, proofOfWork, recipient, REASON_SHUTTING_DOWN);
-            final QuitMessage message2 = new QuitMessage(sender, proofOfWork, recipient, REASON_SHUTTING_DOWN);
+            final QuitMessage message1 = new QuitMessage(networkId, sender, proofOfWork, recipient, REASON_SHUTTING_DOWN);
+            final QuitMessage message2 = new QuitMessage(networkId, sender, proofOfWork, recipient, REASON_SHUTTING_DOWN);
 
             assertEquals(message1, message2);
         }
@@ -87,8 +89,8 @@ class QuitMessageTest {
     class HashCode {
         @Test
         void shouldReturnTrue() {
-            final QuitMessage message1 = new QuitMessage(sender, proofOfWork, recipient, REASON_SHUTTING_DOWN);
-            final QuitMessage message2 = new QuitMessage(sender, proofOfWork, recipient, REASON_SHUTTING_DOWN);
+            final QuitMessage message1 = new QuitMessage(networkId, sender, proofOfWork, recipient, REASON_SHUTTING_DOWN);
+            final QuitMessage message2 = new QuitMessage(networkId, sender, proofOfWork, recipient, REASON_SHUTTING_DOWN);
 
             assertEquals(message1.hashCode(), message2.hashCode());
         }

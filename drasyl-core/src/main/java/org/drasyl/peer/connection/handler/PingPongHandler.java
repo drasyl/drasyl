@@ -39,6 +39,7 @@ import static org.drasyl.peer.connection.handler.ThreeWayHandshakeClientHandler.
  */
 public class PingPongHandler extends SimpleChannelInboundHandler<Message> {
     public static final String PING_PONG_HANDLER = "pingPongHandler";
+    private final int networkId;
     private final Identity identity;
     protected final short maxRetries;
     protected final AtomicInteger retries;
@@ -46,13 +47,17 @@ public class PingPongHandler extends SimpleChannelInboundHandler<Message> {
     /**
      * PingPongHandler with {@code retries} retries, until channel is closed.
      */
-    public PingPongHandler(final Identity identity, final short maxRetries) {
-        this(identity, maxRetries, new AtomicInteger(0));
+    public PingPongHandler(final int networkId,
+                           final Identity identity,
+                           final short maxRetries) {
+        this(networkId, identity, maxRetries, new AtomicInteger(0));
     }
 
-    PingPongHandler(final Identity identity,
+    PingPongHandler(final int networkId,
+                    final Identity identity,
                     final short maxRetries,
                     final AtomicInteger retries) {
+        this.networkId = networkId;
         this.identity = identity;
         this.maxRetries = maxRetries;
         this.retries = retries;
@@ -75,7 +80,7 @@ public class PingPongHandler extends SimpleChannelInboundHandler<Message> {
                     final CompressedPublicKey publicKey = ctx.channel().attr(ATTRIBUTE_PUBLIC_KEY).get();
 
                     // send (next) ping
-                    ctx.writeAndFlush(new PingMessage(identity.getPublicKey(), identity.getProofOfWork(), publicKey));
+                    ctx.writeAndFlush(new PingMessage(networkId, identity.getPublicKey(), identity.getProofOfWork(), publicKey));
                 }
             }
         }
@@ -85,7 +90,7 @@ public class PingPongHandler extends SimpleChannelInboundHandler<Message> {
     protected void channelRead0(final ChannelHandlerContext ctx, final Message msg) {
         if (msg instanceof PingMessage) {
             // reply to received ping with pong message
-            ctx.writeAndFlush(new PongMessage(identity.getPublicKey(), identity.getProofOfWork(), msg.getSender(), msg.getId()));
+            ctx.writeAndFlush(new PongMessage(networkId, identity.getPublicKey(), identity.getProofOfWork(), msg.getSender(), msg.getId()));
         }
         else if (msg instanceof PongMessage) {
             // pong received, reset retries counter

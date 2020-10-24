@@ -40,25 +40,29 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
     protected final Duration timeout;
     protected final CompletableFuture<Void> handshakeFuture;
     protected final Pipeline pipeline;
+    protected final int networkId;
     protected final Identity identity;
     protected ScheduledFuture<?> timeoutFuture;
 
     protected AbstractThreeWayHandshakeHandler(final Duration timeout,
                                                final Pipeline pipeline,
+                                               final int networkId,
                                                final Identity identity) {
-        this(timeout, pipeline, new CompletableFuture<>(), null, identity);
+        this(timeout, pipeline, new CompletableFuture<>(), null, networkId, identity);
     }
 
     protected AbstractThreeWayHandshakeHandler(final Duration timeout,
                                                final Pipeline pipeline,
                                                final CompletableFuture<Void> handshakeFuture,
                                                final ScheduledFuture<?> timeoutFuture,
+                                               final int networkId,
                                                final Identity identity) {
         super(true, false, false);
         this.timeout = timeout;
         this.pipeline = pipeline;
         this.handshakeFuture = handshakeFuture;
         this.timeoutFuture = timeoutFuture;
+        this.networkId = networkId;
         this.identity = identity;
     }
 
@@ -68,7 +72,7 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
             getLogger().trace("[{}] Handshake is not completed. Inbound message was rejected: '{}'", ctx.channel().id().asShortText(), message);
         }
         // reject all non-request messages if handshake is not done
-        ctx.writeAndFlush(new ErrorMessage(identity.getPublicKey(), identity.getProofOfWork(), message.getSender(), ERROR_UNEXPECTED_MESSAGE, message.getId()));
+        ctx.writeAndFlush(new ErrorMessage(networkId, identity.getPublicKey(), identity.getProofOfWork(), message.getSender(), ERROR_UNEXPECTED_MESSAGE, message.getId()));
     }
 
     protected abstract Logger getLogger();

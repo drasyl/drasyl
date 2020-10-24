@@ -42,6 +42,7 @@ public abstract class ClientChannelInitializer extends DefaultSessionInitializer
     /**
      * Initialize a netty Channel for an outbound connection to a node server.
      *
+     * @param networkId       the network the node belongs to
      * @param identity        the node's identity
      * @param flushBufferSize The size of the flush buffer, to minimize IO overhead. A high value is
      *                        good for throughput. A low value is good for latency.
@@ -54,12 +55,13 @@ public abstract class ClientChannelInitializer extends DefaultSessionInitializer
      *                        value is 1, max 32767
      * @param target          the target URI
      */
-    protected ClientChannelInitializer(final Identity identity,
-                                    final int flushBufferSize,
-                                    final Duration readIdleTimeout,
-                                    final short pingPongRetries,
-                                    final Endpoint target) {
-        super(identity, flushBufferSize, readIdleTimeout, pingPongRetries);
+    protected ClientChannelInitializer(final int networkId,
+                                       final Identity identity,
+                                       final int flushBufferSize,
+                                       final Duration readIdleTimeout,
+                                       final short pingPongRetries,
+                                       final Endpoint target) {
+        super(networkId, identity, flushBufferSize, readIdleTimeout, pingPongRetries);
         this.target = target;
     }
 

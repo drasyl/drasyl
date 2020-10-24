@@ -47,6 +47,7 @@ import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_CHUNKE
 public class ChunkedMessageOutput {
     private static final Logger LOG = LoggerFactory.getLogger(ChunkedMessageOutput.class);
     private final ChannelHandlerContext ctx;
+    private final int networkId;
     private final CompressedPublicKey sender;
     private final ProofOfWork proofOfWork;
     private final CompressedPublicKey recipient;
@@ -63,6 +64,7 @@ public class ChunkedMessageOutput {
      * {@link ApplicationMessage}.
      *
      * @param ctx              the channel handler context
+     * @param networkId        the network the chunk's sender belongs to
      * @param sender           the sender of the chunks
      * @param proofOfWork      the sender's proof of work
      * @param recipient        the recipient of the chunks
@@ -77,6 +79,7 @@ public class ChunkedMessageOutput {
      *                         #removeAction} is called
      */
     public ChunkedMessageOutput(final ChannelHandlerContext ctx,
+                                final int networkId,
                                 final CompressedPublicKey sender,
                                 final ProofOfWork proofOfWork,
                                 final CompressedPublicKey recipient,
@@ -86,9 +89,9 @@ public class ChunkedMessageOutput {
                                 final int maxContentLength,
                                 final Runnable removeAction,
                                 final long timeout) {
-        this(ctx, sender, proofOfWork, recipient, contentLength, checksum, msgID, maxContentLength, Unpooled.buffer(), 0, removeAction);
+        this(ctx, networkId, sender, proofOfWork, recipient, contentLength, checksum, msgID, maxContentLength, Unpooled.buffer(), 0, removeAction);
         this.ctx.executor().schedule(() -> {
-            this.ctx.writeAndFlush(new ErrorMessage(sender, proofOfWork, recipient, ERROR_CHUNKED_MESSAGE_TIMEOUT, this.msgID));
+            this.ctx.writeAndFlush(new ErrorMessage(networkId, sender, proofOfWork, recipient, ERROR_CHUNKED_MESSAGE_TIMEOUT, this.msgID));
             removeAction.run();
             payload.release();
 
@@ -97,6 +100,7 @@ public class ChunkedMessageOutput {
     }
 
     ChunkedMessageOutput(final ChannelHandlerContext ctx,
+                         final int networkId,
                          final CompressedPublicKey sender,
                          final ProofOfWork proofOfWork,
                          final CompressedPublicKey recipient,
@@ -108,6 +112,7 @@ public class ChunkedMessageOutput {
                          final int progress,
                          final Runnable removeAction) {
         this.ctx = ctx;
+        this.networkId = networkId;
         this.sender = sender;
         this.proofOfWork = proofOfWork;
         this.recipient = recipient;
@@ -129,7 +134,7 @@ public class ChunkedMessageOutput {
         try {
             final int length = chunk.getPayload().length;
             if ((length + progress) > maxContentLength || (length + progress) > contentLength) {
-                ctx.writeAndFlush(new ErrorMessage(sender, proofOfWork, recipient, ERROR_CHUNKED_MESSAGE_PAYLOAD_TOO_LARGE, msgID));
+                ctx.writeAndFlush(new ErrorMessage(networkId, sender, proofOfWork, recipient, ERROR_CHUNKED_MESSAGE_PAYLOAD_TOO_LARGE, msgID));
 
                 // Release resources on invalid chunk
                 payload.release();
@@ -148,12 +153,12 @@ public class ChunkedMessageOutput {
                 // truncated zeros
                 payload.capacity(progress);
                 if (!checksum.equals(Hashing.murmur3x64Hex(payload.array()))) {
-                    ctx.writeAndFlush(new ErrorMessage(sender, proofOfWork, recipient, ERROR_CHUNKED_MESSAGE_INVALID_CHECKSUM, msgID));
+                    ctx.writeAndFlush(new ErrorMessage(networkId, sender, proofOfWork, recipient, ERROR_CHUNKED_MESSAGE_INVALID_CHECKSUM, msgID));
                     logDebug("Dropped chunked message `{}` because checksum was invalid", ctx, msgID);
                 }
                 else {
                     try {
-                        ctx.fireChannelRead(new ApplicationMessage(msgID, sender, proofOfWork, recipient, payload.array(), (short) 0));
+                        ctx.fireChannelRead(new ApplicationMessage(msgID, networkId, sender, proofOfWork, recipient, payload.array(), (short) 0));
                     }
                     finally {
                         payload.release();

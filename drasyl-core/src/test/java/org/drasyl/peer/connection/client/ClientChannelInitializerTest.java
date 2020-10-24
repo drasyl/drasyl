@@ -48,6 +48,7 @@ class ClientChannelInitializerTest {
     private ChannelPipeline pipeline;
     @Mock
     private Identity identity;
+    private final int networkId = 1;
 
     @BeforeEach
     void setUp() {
@@ -59,7 +60,7 @@ class ClientChannelInitializerTest {
 
     @Test
     void beforeMarshalStage() {
-        final ClientChannelInitializer initializer = new ClientChannelInitializer(identity, flushBufferSize, readIdleTimeout, pingPongRetries,
+        final ClientChannelInitializer initializer = new ClientChannelInitializer(networkId, identity, flushBufferSize, readIdleTimeout, pingPongRetries,
                 endpoint) {
             @Override
             protected void customStage(final ChannelPipeline pipeline) {

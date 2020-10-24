@@ -110,7 +110,7 @@ class DrasylPipelineIT {
             }
         });
 
-        final ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), payload);
+        final ApplicationMessage msg = new ApplicationMessage(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), payload);
 
         pipeline.processInbound(msg);
 
@@ -138,7 +138,7 @@ class DrasylPipelineIT {
             }
         });
 
-        final ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), payload);
+        final ApplicationMessage msg = new ApplicationMessage(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), payload);
 
         pipeline.processInbound(msg);
 
@@ -181,7 +181,7 @@ class DrasylPipelineIT {
             }
         });
 
-        final ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), payload);
+        final ApplicationMessage msg = new ApplicationMessage(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), payload);
 
         pipeline.processInbound(msg);
 
@@ -197,7 +197,7 @@ class DrasylPipelineIT {
                 0x05
         };
 
-        final ApplicationMessage newMsg = new ApplicationMessage(identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), Map.of(ObjectHolder.CLASS_KEY_NAME, newPayload.getClass().getName()), newPayload);
+        final ApplicationMessage newMsg = new ApplicationMessage(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), Map.of(ObjectHolder.CLASS_KEY_NAME, newPayload.getClass().getName()), newPayload);
 
         IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 
@@ -224,7 +224,7 @@ class DrasylPipelineIT {
     @Test
     void shouldNotPassthroughsMessagesWithDoneFuture() {
         final TestObserver<ApplicationMessage> outbounds = outboundMessages.test();
-        final ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), payload);
+        final ApplicationMessage msg = new ApplicationMessage(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), payload);
 
         IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 
@@ -251,7 +251,7 @@ class DrasylPipelineIT {
     @Test
     void shouldNotPassthroughsMessagesWithExceptionallyFuture() {
         final TestObserver<ApplicationMessage> outbounds = outboundMessages.test();
-        final ApplicationMessage msg = new ApplicationMessage(identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), payload);
+        final ApplicationMessage msg = new ApplicationMessage(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), payload);
 
         IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 

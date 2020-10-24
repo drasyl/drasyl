@@ -41,19 +41,21 @@ public class QuitMessage extends AbstractMessage implements RequestMessage {
     @JsonCreator
     private QuitMessage(@JsonProperty("id") final MessageId id,
                         @JsonProperty("userAgent") final String userAgent,
+                        @JsonProperty("networkId") final int networkId,
                         @JsonProperty("sender") final CompressedPublicKey sender,
                         @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                         @JsonProperty("recipient") final CompressedPublicKey recipient,
                         @JsonProperty("reason") final CloseReason reason) {
-        super(id, userAgent, sender, proofOfWork, recipient);
+        super(id, userAgent, networkId, sender, proofOfWork, recipient);
         this.reason = requireNonNull(reason);
     }
 
-    public QuitMessage(final CompressedPublicKey sender,
+    public QuitMessage(final int networkId,
+                       final CompressedPublicKey sender,
                        final ProofOfWork proofOfWork,
                        final CompressedPublicKey recipient,
                        final CloseReason reason) {
-        super(sender, proofOfWork, recipient);
+        super(networkId, sender, proofOfWork, recipient);
         this.reason = requireNonNull(reason);
     }
 
@@ -80,11 +82,12 @@ public class QuitMessage extends AbstractMessage implements RequestMessage {
     @Override
     public String toString() {
         return "QuitMessage{" +
-                "sender='" + sender + '\'' +
-                ", proofOfWork='" + proofOfWork + '\'' +
-                ", recipient='" + recipient + '\'' +
-                ", reason='" + reason + '\'' +
-                ", id='" + id +
+                "networkId=" + networkId +
+                ", sender=" + sender +
+                ", proofOfWork=" + proofOfWork +
+                ", recipient=" + recipient +
+                ", reason=" + reason +
+                ", id=" + id +
                 '}';
     }
 

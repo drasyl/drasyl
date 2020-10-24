@@ -44,10 +44,13 @@ import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_INVALI
 public class SignatureHandler extends SimpleChannelDuplexHandler<Message, Message> {
     public static final String SIGNATURE_HANDLER = "signatureHandler";
     private static final Logger LOG = LoggerFactory.getLogger(SignatureHandler.class);
+    private final int networkId;
     private final Identity identity;
 
-    public SignatureHandler(final Identity identity) {
+    public SignatureHandler(final int networkId,
+                            final Identity identity) {
         super(true, true, false);
+        this.networkId = networkId;
         this.identity = identity;
     }
 
@@ -92,7 +95,7 @@ public class SignatureHandler extends SimpleChannelDuplexHandler<Message, Messag
                 ctx.fireChannelRead(signedMessage.getPayload());
             }
             else {
-                final ErrorMessage errorMessage = new ErrorMessage(identity.getPublicKey(), identity.getProofOfWork(), signedMessage.getSender(), ERROR_INVALID_SIGNATURE, signedMessage.getPayload().getId());
+                final ErrorMessage errorMessage = new ErrorMessage(networkId, identity.getPublicKey(), identity.getProofOfWork(), signedMessage.getSender(), ERROR_INVALID_SIGNATURE, signedMessage.getPayload().getId());
                 channelWrite0(ctx, errorMessage, ctx.channel().newPromise());
 
                 if (LOG.isInfoEnabled()) {
@@ -132,7 +135,7 @@ public class SignatureHandler extends SimpleChannelDuplexHandler<Message, Messag
     protected void channelWrite0(final ChannelHandlerContext ctx,
                                  final Message msg, final ChannelPromise promise) {
         try {
-            final SignedMessage signedMessage = new SignedMessage(identity.getPublicKey(), identity.getProofOfWork(), msg.getRecipient(), msg);
+            final SignedMessage signedMessage = new SignedMessage(networkId, identity.getPublicKey(), identity.getProofOfWork(), msg.getRecipient(), msg);
             Crypto.sign(identity.getPrivateKey().toUncompressedKey(), signedMessage);
 
             ctx.write(signedMessage, promise);

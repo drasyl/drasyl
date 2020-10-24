@@ -31,28 +31,31 @@ abstract class AbstractResponseMessage<R extends RequestMessage> extends Abstrac
 
     protected AbstractResponseMessage(final MessageId id,
                                       final String userAgent,
+                                      final int networkId,
                                       final CompressedPublicKey sender,
                                       final ProofOfWork proofOfWork,
                                       final CompressedPublicKey recipient,
                                       final MessageId correspondingId) {
-        super(id, userAgent, sender, proofOfWork, recipient);
+        super(id, userAgent, networkId, sender, proofOfWork, recipient);
         this.correspondingId = requireNonNull(correspondingId);
     }
 
     protected AbstractResponseMessage(final String userAgent,
+                                      final int networkId,
                                       final CompressedPublicKey sender,
                                       final ProofOfWork proofOfWork,
                                       final CompressedPublicKey recipient,
                                       final MessageId correspondingId) {
-        super(randomMessageId(), userAgent, sender, proofOfWork, recipient);
+        super(randomMessageId(), userAgent, networkId, sender, proofOfWork, recipient);
         this.correspondingId = requireNonNull(correspondingId);
     }
 
-    protected AbstractResponseMessage(final CompressedPublicKey sender,
+    protected AbstractResponseMessage(final int networkId,
+                                      final CompressedPublicKey sender,
                                       final ProofOfWork proofOfWork,
                                       final CompressedPublicKey recipient,
                                       final MessageId correspondingId) {
-        super(sender, proofOfWork, recipient);
+        super(networkId, sender, proofOfWork, recipient);
         this.correspondingId = requireNonNull(correspondingId);
     }
 

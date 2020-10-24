@@ -32,22 +32,25 @@ public class PingMessage extends AbstractMessage implements RequestMessage {
     @JsonCreator
     private PingMessage(@JsonProperty("id") final MessageId id,
                         @JsonProperty("userAgent") final String userAgent,
+                        @JsonProperty("networkId") final int networkId,
                         @JsonProperty("sender") final CompressedPublicKey sender,
                         @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                         @JsonProperty("recipient") final CompressedPublicKey recipient) {
-        super(id, userAgent, sender, proofOfWork, recipient);
+        super(id, userAgent, networkId, sender, proofOfWork, recipient);
     }
 
-    public PingMessage(final CompressedPublicKey sender,
+    public PingMessage(final int networkId,
+                       final CompressedPublicKey sender,
                        final ProofOfWork proofOfWork,
                        final CompressedPublicKey recipient) {
-        super(sender, proofOfWork, recipient);
+        super(networkId, sender, proofOfWork, recipient);
     }
 
     @Override
     public String toString() {
         return "PingMessage{" +
-                "sender='" + sender +
+                "networkId=" + networkId +
+                ", sender=" + sender +
                 ", proofOfWork='" + proofOfWork +
                 ", recipient='" + recipient +
                 ", id='" + id +

@@ -44,18 +44,21 @@ public abstract class ThreeWayHandshakeServerHandler<R extends RequestMessage, O
 
     protected ThreeWayHandshakeServerHandler(final Duration timeout,
                                              final Pipeline pipeline,
+                                             final int networkId,
                                              final Identity identity) {
-        super(timeout, pipeline, identity);
+        super(timeout, pipeline, networkId, identity);
     }
 
+    @SuppressWarnings({ "java:S107" })
     protected ThreeWayHandshakeServerHandler(final Duration timeout,
                                              final Pipeline pipeline,
                                              final CompletableFuture<Void> handshakeFuture,
                                              final ScheduledFuture<?> timeoutFuture,
                                              final R requestMessage,
                                              final O offerMessage,
+                                             final int networkId,
                                              final Identity identity) {
-        super(timeout, pipeline, handshakeFuture, timeoutFuture, identity);
+        super(timeout, pipeline, handshakeFuture, timeoutFuture, networkId, identity);
         this.requestMessage = requestMessage;
         this.offerMessage = offerMessage;
     }
@@ -73,7 +76,7 @@ public abstract class ThreeWayHandshakeServerHandler<R extends RequestMessage, O
                 }
                 else {
                     rejectSession(ctx, error.getDescription());
-                    ctx.writeAndFlush(new ErrorMessage(identity.getPublicKey(), identity.getProofOfWork(), requestMessage.getSender(), error, requestMessage.getId())).addListener(ChannelFutureListener.CLOSE);
+                    ctx.writeAndFlush(new ErrorMessage(networkId, identity.getPublicKey(), identity.getProofOfWork(), requestMessage.getSender(), error, requestMessage.getId())).addListener(ChannelFutureListener.CLOSE);
                 }
             }
             else if (message instanceof SuccessMessage && offerMessage.getId().equals(((SuccessMessage) message).getCorrespondingId())) {

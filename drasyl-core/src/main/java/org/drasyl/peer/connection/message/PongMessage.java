@@ -32,28 +32,31 @@ public class PongMessage extends AbstractResponseMessage<PingMessage> {
     @JsonCreator
     private PongMessage(@JsonProperty("id") final MessageId id,
                         @JsonProperty("userAgent") final String userAgent,
+                        @JsonProperty("networkId") final int networkId,
                         @JsonProperty("sender") final CompressedPublicKey sender,
                         @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                         @JsonProperty("recipient") final CompressedPublicKey recipient,
                         @JsonProperty("correspondingId") final MessageId correspondingId) {
-        super(id, userAgent, sender, proofOfWork, recipient, correspondingId);
+        super(id, userAgent, networkId, sender, proofOfWork, recipient, correspondingId);
     }
 
-    public PongMessage(final CompressedPublicKey sender,
+    public PongMessage(final int networkId,
+                       final CompressedPublicKey sender,
                        final ProofOfWork proofOfWork,
                        final CompressedPublicKey recipient,
                        final MessageId correspondingId) {
-        super(sender, proofOfWork, recipient, correspondingId);
+        super(networkId, sender, proofOfWork, recipient, correspondingId);
     }
 
     @Override
     public String toString() {
         return "PongMessage{" +
-                "sender='" + sender + '\'' +
-                ", proofOfWork='" + proofOfWork + '\'' +
-                ", recipient='" + recipient + '\'' +
-                ", correspondingId='" + correspondingId + '\'' +
-                ", id='" + id +
+                "networkId=" + networkId +
+                ", sender=" + sender +
+                ", proofOfWork=" + proofOfWork +
+                ", recipient=" + recipient +
+                ", correspondingId=" + correspondingId +
+                ", id=" + id +
                 '}';
     }
 

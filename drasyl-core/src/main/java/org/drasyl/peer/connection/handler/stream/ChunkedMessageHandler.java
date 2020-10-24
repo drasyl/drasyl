@@ -47,28 +47,32 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
     public static final int CHUNK_SIZE = 32768; // 32768 := 2^15 bytes for payload and 2^15 bytes for meta-data
     private final int maxContentLength;
     private final HashMap<MessageId, ChunkedMessageOutput> chunks;
+    private final int networkId;
     private final CompressedPublicKey myPublicKey;
     private final ProofOfWork myProofOfWork;
     private final Duration transferTimeout;
 
     ChunkedMessageHandler(final HashMap<MessageId, ChunkedMessageOutput> chunks,
                           final int maxContentLength,
+                          final int networkId,
                           final CompressedPublicKey myPublicKey,
                           final ProofOfWork myProofOfWork,
                           final Duration transferTimeout) {
         super(true, false, false);
         this.chunks = chunks;
         this.maxContentLength = maxContentLength;
+        this.networkId = networkId;
         this.myPublicKey = myPublicKey;
         this.myProofOfWork = myProofOfWork;
         this.transferTimeout = transferTimeout;
     }
 
     public ChunkedMessageHandler(final int maxContentLength,
+                                 final int networkId,
                                  final CompressedPublicKey myPublicKey,
                                  final ProofOfWork myProofOfWork,
                                  final Duration transferTimeout) {
-        this(new HashMap<>(), maxContentLength, myPublicKey, myProofOfWork, transferTimeout);
+        this(new HashMap<>(), maxContentLength, networkId, myPublicKey, myProofOfWork, transferTimeout);
     }
 
     @Override
@@ -86,6 +90,7 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
                     msg.getId(),
                     new ChunkedMessageOutput(
                             ctx,
+                            msg.getNetworkId(),
                             msg.getSender(),
                             msg.getProofOfWork(),
                             msg.getRecipient(),
@@ -103,7 +108,7 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
             chunks.get(msg.getId()).addChunk(msg);
         }
         else {
-            ctx.writeAndFlush(new ErrorMessage(myPublicKey, myProofOfWork, msg.getSender(), ERROR_INITIAL_CHUNK_MISSING, msg.getId()));
+            ctx.writeAndFlush(new ErrorMessage(networkId, myPublicKey, myProofOfWork, msg.getSender(), ERROR_INITIAL_CHUNK_MISSING, msg.getId()));
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("[{}]: Dropped chunked message `{}` because start chunk was not sent", ctx.channel().id().asShortText(), msg);

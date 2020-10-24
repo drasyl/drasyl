@@ -52,7 +52,7 @@ class MessageDecoderTest {
 
     @Test
     void shouldDeserializeInboundJsonStringToMessage() throws JsonProcessingException, CryptoException {
-        final byte[] binary = JACKSON_WRITER.writeValueAsBytes(new ErrorMessage(CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"), ProofOfWork.of(3556154), CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"), ERROR_IDENTITY_COLLISION, MessageId.of("89ba3cd9efb7570eb3126d11")));
+        final byte[] binary = JACKSON_WRITER.writeValueAsBytes(new ErrorMessage(1, CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"), ProofOfWork.of(3556154), CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"), ERROR_IDENTITY_COLLISION, MessageId.of("89ba3cd9efb7570eb3126d11")));
 
         channel.writeInbound(new BinaryWebSocketFrame(Unpooled.wrappedBuffer(binary)));
         channel.flush();

@@ -48,10 +48,11 @@ class ServerNewConnectionsGuardTest {
     private Channel channel;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
+    private final int networkId = 1;
 
     @Test
     void shouldFireOnOpenGuard() {
-        final ServerNewConnectionsGuard handler = new ServerNewConnectionsGuard(identity, () -> true);
+        final ServerNewConnectionsGuard handler = new ServerNewConnectionsGuard(networkId, identity, () -> true);
 
         handler.channelRead0(ctx, message);
 
@@ -63,11 +64,11 @@ class ServerNewConnectionsGuardTest {
         when(ctx.channel()).thenReturn(channel);
         when(ctx.writeAndFlush(any(Message.class))).thenReturn(channelFuture);
 
-        final ServerNewConnectionsGuard handler = new ServerNewConnectionsGuard(identity, () -> false);
+        final ServerNewConnectionsGuard handler = new ServerNewConnectionsGuard(networkId, identity, () -> false);
 
         handler.channelRead0(ctx, message);
 
-        verify(ctx).writeAndFlush(new ErrorMessage(identity.getPublicKey(), identity.getProofOfWork(), message.getSender(), ERROR_PEER_UNAVAILABLE, message.getId()));
+        verify(ctx).writeAndFlush(new ErrorMessage(networkId, identity.getPublicKey(), identity.getProofOfWork(), message.getSender(), ERROR_PEER_UNAVAILABLE, message.getId()));
         verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
     }
 }

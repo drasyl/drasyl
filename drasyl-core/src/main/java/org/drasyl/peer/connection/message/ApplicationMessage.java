@@ -47,13 +47,14 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
     @JsonCreator
     private ApplicationMessage(@JsonProperty("id") final MessageId id,
                                @JsonProperty("userAgent") final String userAgent,
+                               @JsonProperty("networkId") final int networkId,
                                @JsonProperty("sender") final CompressedPublicKey sender,
                                @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                                @JsonProperty("recipient") final CompressedPublicKey recipient,
                                @JsonProperty("headers") final Map<String, String> headers,
                                @JsonProperty("payload") final byte[] payload,
                                @JsonProperty("hopCount") final short hopCount) {
-        super(id, userAgent, sender, proofOfWork, recipient, hopCount);
+        super(id, userAgent, networkId, sender, proofOfWork, recipient, hopCount);
         if (headers != null) {
             this.headers = Map.copyOf(headers);
         }
@@ -64,13 +65,28 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
         this.payload = requireNonNull(payload);
     }
 
+    @SuppressWarnings({ "java:S107" })
     public ApplicationMessage(final MessageId id,
+                              final int networkId,
+                              final String userAgent,
                               final CompressedPublicKey sender,
                               final ProofOfWork proofOfWork,
                               final CompressedPublicKey recipient,
                               final byte[] payload,
                               final short hopCount) {
-        super(id, sender, proofOfWork, recipient, hopCount);
+        super(id, userAgent, networkId, sender, proofOfWork, recipient, hopCount);
+        this.headers = Map.of();
+        this.payload = requireNonNull(payload);
+    }
+
+    public ApplicationMessage(final MessageId id,
+                              final int networkId,
+                              final CompressedPublicKey sender,
+                              final ProofOfWork proofOfWork,
+                              final CompressedPublicKey recipient,
+                              final byte[] payload,
+                              final short hopCount) {
+        super(id, networkId, sender, proofOfWork, recipient, hopCount);
         this.headers = Map.of();
         this.payload = requireNonNull(payload);
     }
@@ -78,26 +94,29 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
     /**
      * Creates a new message.
      *
-     * @param sender      The sender
-     * @param proofOfWork The sender's proof of work
-     * @param recipient   The recipient
-     * @param payload     The data to be sent
+     * @param networkId   the network the sender belongs to
+     * @param sender      the sender
+     * @param proofOfWork the sender's proof of work
+     * @param recipient   the recipient
+     * @param payload     the data to be sent
      */
-    public ApplicationMessage(final CompressedPublicKey sender,
+    public ApplicationMessage(final int networkId,
+                              final CompressedPublicKey sender,
                               final ProofOfWork proofOfWork,
                               final CompressedPublicKey recipient,
                               final Map<String, String> headers,
                               final byte[] payload) {
-        this(sender, proofOfWork, recipient, headers, payload, (short) 0);
+        this(networkId, sender, proofOfWork, recipient, headers, payload, (short) 0);
     }
 
-    ApplicationMessage(final CompressedPublicKey sender,
+    ApplicationMessage(final int networkId,
+                       final CompressedPublicKey sender,
                        final ProofOfWork proofOfWork,
                        final CompressedPublicKey recipient,
                        final Map<String, String> headers,
                        final byte[] payload,
                        final short hopCount) {
-        super(sender, proofOfWork, recipient, hopCount);
+        super(networkId, sender, proofOfWork, recipient, hopCount);
         this.headers = requireNonNull(headers);
         this.payload = requireNonNull(payload);
     }
@@ -105,16 +124,18 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
     /**
      * Creates a new message.
      *
-     * @param sender      The sender
-     * @param proofOfWork The sender's proof of work
-     * @param recipient   The recipient
-     * @param payload     The data to be sent
+     * @param networkId   the network the sender belongs to
+     * @param sender      the sender
+     * @param proofOfWork the sender's proof of work
+     * @param recipient   the recipient
+     * @param payload     the data to be sent
      */
-    public ApplicationMessage(final CompressedPublicKey sender,
+    public ApplicationMessage(final int networkId,
+                              final CompressedPublicKey sender,
                               final ProofOfWork proofOfWork,
                               final CompressedPublicKey recipient,
                               final byte[] payload) {
-        this(sender, proofOfWork, recipient, Map.of(), payload, (short) 0);
+        this(networkId, sender, proofOfWork, recipient, Map.of(), payload, (short) 0);
     }
 
     public Map<String, String> getHeaders() {
@@ -175,7 +196,8 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
     @Override
     public String toString() {
         return "ApplicationMessage{" +
-                "sender=" + sender +
+                "networkId=" + networkId +
+                ", sender=" + sender +
                 ", proofOfWork=" + proofOfWork +
                 ", recipient=" + recipient +
                 ", headers=" + headers +

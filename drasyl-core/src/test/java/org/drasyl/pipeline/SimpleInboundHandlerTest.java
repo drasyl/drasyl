@@ -56,6 +56,7 @@ class SimpleInboundHandlerTest {
     @Mock
     private Identity identity;
     private DrasylConfig config;
+    private final int networkId = 1;
 
     @BeforeEach
     void setUp() {
@@ -87,7 +88,7 @@ class SimpleInboundHandlerTest {
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
                 ApplicationMessage2ObjectHolderHandler.INSTANCE,
-                ObjectHolder2ApplicationMessageHandler.INSTANCE,
+                new ObjectHolder2ApplicationMessageHandler(networkId),
                 DefaultCodec.INSTANCE, handler);
         final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
         final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
@@ -98,10 +99,10 @@ class SimpleInboundHandlerTest {
         final ProofOfWork proofOfWork = mock(ProofOfWork.class);
         when(identity.getProofOfWork()).thenReturn(proofOfWork);
         final byte[] msg = JSONUtil.JACKSON_WRITER.writeValueAsBytes(new byte[]{});
-        pipeline.processInbound(new ApplicationMessage(sender, proofOfWork, sender, msg));
+        pipeline.processInbound(new ApplicationMessage(networkId, sender, proofOfWork, sender, msg));
 
         outboundMessageTestObserver.awaitCount(1).assertValueCount(1);
-        outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, proofOfWork, sender, Map.of(ObjectHolder.CLASS_KEY_NAME, msg.getClass().getName()), msg));
+        outboundMessageTestObserver.assertValue(new ApplicationMessage(networkId, sender, proofOfWork, sender, Map.of(ObjectHolder.CLASS_KEY_NAME, msg.getClass().getName()), msg));
         inboundMessageTestObserver.assertNoValues();
         eventTestObserver.assertNoValues();
     }
@@ -131,7 +132,7 @@ class SimpleInboundHandlerTest {
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
                 ApplicationMessage2ObjectHolderHandler.INSTANCE,
-                ObjectHolder2ApplicationMessageHandler.INSTANCE,
+                new ObjectHolder2ApplicationMessageHandler(networkId),
                 DefaultCodec.INSTANCE, handler);
         final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
         final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();

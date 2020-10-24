@@ -61,6 +61,8 @@ public class ChunkedMessage extends ApplicationMessage {
 
     @JsonCreator
     private ChunkedMessage(@JsonProperty("id") final MessageId id,
+                           @JsonProperty("networkId") final int networkId,
+                           @JsonProperty("userAgent") final String userAgent,
                            @JsonProperty("sender") final CompressedPublicKey sender,
                            @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                            @JsonProperty("recipient") final CompressedPublicKey recipient,
@@ -68,7 +70,7 @@ public class ChunkedMessage extends ApplicationMessage {
                            @JsonProperty("hopCount") final short hopCount,
                            @JsonProperty("contentLength") final int contentLength,
                            @JsonProperty("checksum") final String checksum) {
-        super(id, sender, proofOfWork, recipient, payload, hopCount);
+        super(id, networkId, userAgent, sender, proofOfWork, recipient, payload, hopCount);
         this.contentLength = contentLength;
         this.checksum = checksum;
     }
@@ -77,6 +79,7 @@ public class ChunkedMessage extends ApplicationMessage {
      * Creates a new chunked message.
      *
      * @param id            the id of this message (must be the same as the initial chunk)
+     * @param networkId     the network the sender belongs to
      * @param sender        the sender of the message
      * @param proofOfWork   the sender's proof of work
      * @param recipient     the recipient of the message
@@ -84,14 +87,18 @@ public class ChunkedMessage extends ApplicationMessage {
      * @param contentLength the final content length
      * @param checksum      the final checksum
      */
+    @SuppressWarnings({ "java:S107" })
     ChunkedMessage(final MessageId id,
+                   final int networkId,
                    final CompressedPublicKey sender,
                    final ProofOfWork proofOfWork,
                    final CompressedPublicKey recipient,
                    final byte[] payload,
                    final int contentLength,
                    final String checksum) {
-        this(id, sender, proofOfWork, recipient, payload, (short) 0, contentLength, checksum);
+        super(id, networkId, sender, proofOfWork, recipient, payload, (short) 0);
+        this.contentLength = contentLength;
+        this.checksum = checksum;
     }
 
     public int getContentLength() {
@@ -128,7 +135,8 @@ public class ChunkedMessage extends ApplicationMessage {
     @Override
     public String toString() {
         return "ChunkedMessage{" +
-                "sender=" + sender +
+                "networkId=" + networkId +
+                ", sender=" + sender +
                 ", proofOfWork=" + proofOfWork +
                 ", recipient=" + recipient +
                 ", headers=" + headers +
@@ -148,6 +156,7 @@ public class ChunkedMessage extends ApplicationMessage {
      * Creates the initial chunked message.
      *
      * @param id            the id of this message (must be the same as composed message)
+     * @param networkId     the network the sender belongs to
      * @param sender        the sender of the message
      * @param proofOfWork   the sender's proof of work
      * @param recipient     the recipient of the message
@@ -155,45 +164,51 @@ public class ChunkedMessage extends ApplicationMessage {
      * @param contentLength the final content length
      * @param checksum      the final checksum
      */
+    @SuppressWarnings({ "java:S107" })
     public static ChunkedMessage createFirstChunk(final MessageId id,
+                                                  final int networkId,
                                                   final CompressedPublicKey sender,
                                                   final ProofOfWork proofOfWork,
                                                   final CompressedPublicKey recipient,
                                                   final byte[] payload,
                                                   final int contentLength,
                                                   final String checksum) {
-        return new ChunkedMessage(id, sender, proofOfWork, recipient, payload, contentLength, checksum);
+        return new ChunkedMessage(id, networkId, sender, proofOfWork, recipient, payload, contentLength, checksum);
     }
 
     /**
      * Creates a follow chunked message.
      *
      * @param id          the id of this message (must be the same as the initial chunk)
+     * @param networkId   the network the sender belongs to
      * @param sender      the sender of the message
      * @param proofOfWork the sender's proof of work
      * @param recipient   the recipient of the message
      * @param payload     the chunk
      */
     public static ChunkedMessage createFollowChunk(final MessageId id,
+                                                   final int networkId,
                                                    final CompressedPublicKey sender,
                                                    final ProofOfWork proofOfWork,
                                                    final CompressedPublicKey recipient,
                                                    final byte[] payload) {
-        return new ChunkedMessage(id, sender, proofOfWork, recipient, payload, 0, null);
+        return new ChunkedMessage(id, networkId, sender, proofOfWork, recipient, payload, 0, null);
     }
 
     /**
      * Creates the last chunked message.
      *
      * @param id          the id of this message (must be the same as the initial chunk)
+     * @param networkId   the network the sender belongs to
      * @param sender      the sender of the message
      * @param proofOfWork the sender's proof of work
      * @param recipient   the recipient of the message
      */
     public static ChunkedMessage createLastChunk(final MessageId id,
+                                                 final int networkId,
                                                  final CompressedPublicKey sender,
                                                  final ProofOfWork proofOfWork,
                                                  final CompressedPublicKey recipient) {
-        return new ChunkedMessage(id, sender, proofOfWork, recipient, new byte[]{}, 0, null);
+        return new ChunkedMessage(id, networkId, sender, proofOfWork, recipient, new byte[]{}, 0, null);
     }
 }

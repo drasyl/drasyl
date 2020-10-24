@@ -51,7 +51,7 @@ public class MessageEncoderBenchmark {
             final CompressedPublicKey recipient = CompressedPublicKey.of("033de3da699f6f9ffbd427c56725910655ba3913be4ff55b13c628e957c860fd55");
             final byte[] payload = new byte[1024 * 1024]; // 1 MB
             new Random().nextBytes(payload);
-            msg = new ApplicationMessage(sender, proofOfWork, recipient, payload);
+            msg = new ApplicationMessage(1, sender, proofOfWork, recipient, payload);
         }
         catch (final CryptoException e) {
             throw new RuntimeException(e);

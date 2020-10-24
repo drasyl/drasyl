@@ -78,6 +78,11 @@ class MessageEncoderTest {
         }
 
         @Override
+        public int getNetworkId() {
+            return 1;
+        }
+
+        @Override
         public CompressedPublicKey getSender() {
             return sender;
         }

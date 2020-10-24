@@ -30,10 +30,11 @@ import java.util.concurrent.CompletableFuture;
  * Handler that convert a given {@link ObjectHolder} to an {@link ApplicationMessage}.
  */
 public class ObjectHolder2ApplicationMessageHandler extends SimpleOutboundHandler<ObjectHolder, CompressedPublicKey> {
-    public static final ObjectHolder2ApplicationMessageHandler INSTANCE = new ObjectHolder2ApplicationMessageHandler();
     public static final String OBJECT_HOLDER2APP_MSG = "objectHolder2ApplicationMessageHandler";
+    private final int networkId;
 
-    private ObjectHolder2ApplicationMessageHandler() {
+    public ObjectHolder2ApplicationMessageHandler(final int networkId) {
+        this.networkId = networkId;
     }
 
     @Override
@@ -41,6 +42,6 @@ public class ObjectHolder2ApplicationMessageHandler extends SimpleOutboundHandle
                                 final CompressedPublicKey recipient,
                                 final ObjectHolder msg,
                                 final CompletableFuture<Void> future) {
-        ctx.write(recipient, new ApplicationMessage(ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, msg.getClazzAsString()), msg.getObject()), future);
+        ctx.write(recipient, new ApplicationMessage(networkId, ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, msg.getClazzAsString()), msg.getObject()), future);
     }
 }

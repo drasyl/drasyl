@@ -70,7 +70,7 @@ public class TestSuperPeerClient extends SuperPeerClient {
                                final boolean doPingPong,
                                final boolean doJoin,
                                final Set<Endpoint> endpoints) {
-        this(DrasylConfig.newBuilder(config).superPeerEnabled(true).superPeerEndpoints(endpoints).build(), identity, new PeerChannelGroup(identity), workerGroup, ReplaySubject.create(), doPingPong, doJoin);
+        this(DrasylConfig.newBuilder(config).superPeerEnabled(true).superPeerEndpoints(endpoints).build(), identity, new PeerChannelGroup(config.getNetworkId(), identity), workerGroup, ReplaySubject.create(), doPingPong, doJoin);
     }
 
     private TestSuperPeerClient(final DrasylConfig config,
@@ -229,7 +229,7 @@ public class TestSuperPeerClient extends SuperPeerClient {
 
             addFirst(SUPER_PEER_SINK_HANDLER, new SuperPeerMessageSinkHandler(channelGroup, peersManager));
             addAfter(SUPER_PEER_SINK_HANDLER, DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, new DirectConnectionMessageSinkHandler(channelGroup));
-            addAfter(DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, LOOPBACK_MESSAGE_SINK_HANDLER, new LoopbackMessageSinkHandler(new AtomicBoolean(true), identity, peersManager, Set.of()));
+            addAfter(DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, LOOPBACK_MESSAGE_SINK_HANDLER, new LoopbackMessageSinkHandler(new AtomicBoolean(true), config.getNetworkId(), identity, peersManager, Set.of()));
         }
     }
 }

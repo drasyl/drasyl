@@ -57,10 +57,13 @@ class SimpleDuplexHandlerTest {
     @Mock
     private Identity identity;
     private DrasylConfig config;
+    private final int networkId = 1;
 
     @BeforeEach
     void setUp() {
-        config = DrasylConfig.newBuilder().build();
+        config = DrasylConfig.newBuilder()
+                .networkId(0)
+                .build();
     }
 
     @Nested
@@ -95,7 +98,7 @@ class SimpleDuplexHandlerTest {
                                             final byte[] msg,
                                             final CompletableFuture<Void> future) {
                     // Emit this message as inbound message to test
-                    ctx.pipeline().processInbound(new ApplicationMessage(identity.getPublicKey(), identity.getProofOfWork(), recipient, msg));
+                    ctx.pipeline().processInbound(new ApplicationMessage(networkId, identity.getPublicKey(), identity.getProofOfWork(), recipient, msg));
                 }
             };
 
@@ -147,7 +150,7 @@ class SimpleDuplexHandlerTest {
                     TypeValidator.ofInboundValidator(config),
                     TypeValidator.ofOutboundValidator(config),
                     ApplicationMessage2ObjectHolderHandler.INSTANCE,
-                    ObjectHolder2ApplicationMessageHandler.INSTANCE,
+                    new ObjectHolder2ApplicationMessageHandler(networkId),
                     DefaultCodec.INSTANCE, handler);
             final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
             final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
@@ -161,7 +164,7 @@ class SimpleDuplexHandlerTest {
             pipeline.processOutbound(recipient, payload);
 
             outboundMessageTestObserver.awaitCount(1).assertValueCount(1);
-            outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, senderProofOfWork, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, byte[].class.getName()), payload));
+            outboundMessageTestObserver.assertValue(new ApplicationMessage(networkId, sender, senderProofOfWork, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, byte[].class.getName()), payload));
             inboundMessageTestObserver.assertNoValues();
         }
     }
@@ -201,7 +204,7 @@ class SimpleDuplexHandlerTest {
                     TypeValidator.ofInboundValidator(config),
                     TypeValidator.ofOutboundValidator(config),
                     ApplicationMessage2ObjectHolderHandler.INSTANCE,
-                    ObjectHolder2ApplicationMessageHandler.INSTANCE,
+                    new ObjectHolder2ApplicationMessageHandler(networkId),
                     DefaultCodec.INSTANCE, handler);
             final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
             final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
@@ -212,10 +215,10 @@ class SimpleDuplexHandlerTest {
             final ProofOfWork senderProofOfWork = mock(ProofOfWork.class);
             when(identity.getProofOfWork()).thenReturn(senderProofOfWork);
             final byte[] msg = JSONUtil.JACKSON_WRITER.writeValueAsBytes(new byte[]{});
-            pipeline.processInbound(new ApplicationMessage(sender, senderProofOfWork, sender, msg));
+            pipeline.processInbound(new ApplicationMessage(networkId, sender, senderProofOfWork, sender, msg));
 
             outboundMessageTestObserver.awaitCount(1).assertValueCount(1);
-            outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, senderProofOfWork, sender, Map.of(ObjectHolder.CLASS_KEY_NAME, byte[].class.getName()), msg));
+            outboundMessageTestObserver.assertValue(new ApplicationMessage(networkId, sender, senderProofOfWork, sender, Map.of(ObjectHolder.CLASS_KEY_NAME, byte[].class.getName()), msg));
             inboundMessageTestObserver.assertNoValues();
             eventTestObserver.assertNoValues();
         }
@@ -253,7 +256,7 @@ class SimpleDuplexHandlerTest {
                     TypeValidator.ofInboundValidator(config),
                     TypeValidator.ofOutboundValidator(config),
                     ApplicationMessage2ObjectHolderHandler.INSTANCE,
-                    ObjectHolder2ApplicationMessageHandler.INSTANCE,
+                    new ObjectHolder2ApplicationMessageHandler(networkId),
                     DefaultCodec.INSTANCE, handler);
             final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
             final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();

@@ -39,27 +39,31 @@ abstract class AbstractMessage implements Message {
             + ")";
     public static Supplier<String> userAgentGenerator = defaultUserAgentGenerator;
     protected final MessageId id;
+    protected final String userAgent;
+    protected final int networkId;
     protected final CompressedPublicKey sender;
     protected final ProofOfWork proofOfWork;
-    protected final String userAgent;
     protected final CompressedPublicKey recipient;
 
     protected AbstractMessage(final MessageId id,
                               final String userAgent,
+                              final int networkId,
                               final CompressedPublicKey sender,
                               final ProofOfWork proofOfWork,
                               final CompressedPublicKey recipient) {
         this.id = requireNonNull(id);
         this.userAgent = requireNonNull(userAgent);
+        this.networkId = networkId;
         this.sender = requireNonNull(sender);
         this.proofOfWork = requireNonNull(proofOfWork);
         this.recipient = requireNonNull(recipient);
     }
 
-    protected AbstractMessage(final CompressedPublicKey sender,
+    protected AbstractMessage(final int networkId,
+                              final CompressedPublicKey sender,
                               final ProofOfWork proofOfWork,
                               final CompressedPublicKey recipient) {
-        this(randomMessageId(), userAgentGenerator.get(), sender, proofOfWork, recipient);
+        this(randomMessageId(), userAgentGenerator.get(), networkId, sender, proofOfWork, recipient);
     }
 
     @Override
@@ -70,6 +74,11 @@ abstract class AbstractMessage implements Message {
     @Override
     public String getUserAgent() {
         return userAgent;
+    }
+
+    @Override
+    public int getNetworkId() {
+        return networkId;
     }
 
     @Override
@@ -96,13 +105,14 @@ abstract class AbstractMessage implements Message {
             return false;
         }
         final AbstractMessage that = (AbstractMessage) o;
-        return Objects.equals(sender, that.sender) &&
+        return networkId == that.networkId &&
+                Objects.equals(sender, that.sender) &&
                 Objects.equals(proofOfWork, that.proofOfWork) &&
                 Objects.equals(recipient, that.recipient);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(sender, proofOfWork, recipient);
+        return Objects.hash(networkId, sender, proofOfWork, recipient);
     }
 }

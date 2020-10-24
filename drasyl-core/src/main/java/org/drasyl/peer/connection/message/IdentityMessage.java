@@ -41,23 +41,25 @@ public class IdentityMessage extends RelayableMessage implements ResponseMessage
     @JsonCreator
     private IdentityMessage(@JsonProperty("id") final MessageId id,
                             @JsonProperty("userAgent") final String userAgent,
+                            @JsonProperty("networkId") final int networkId,
                             @JsonProperty("sender") final CompressedPublicKey sender,
                             @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                             @JsonProperty("recipient") final CompressedPublicKey recipient,
                             @JsonProperty("peerInformation") final PeerInformation peerInformation,
                             @JsonProperty("correspondingId") final MessageId correspondingId,
                             @JsonProperty("hopCount") final short hopCount) {
-        super(id, userAgent, sender, proofOfWork, recipient, hopCount);
+        super(id, userAgent, networkId, sender, proofOfWork, recipient, hopCount);
         this.peerInformation = requireNonNull(peerInformation);
         this.correspondingId = requireNonNull(correspondingId);
     }
 
-    public IdentityMessage(final CompressedPublicKey sender,
+    public IdentityMessage(final int networkId,
+                           final CompressedPublicKey sender,
                            final ProofOfWork proofOfWork,
                            final CompressedPublicKey recipient,
                            final PeerInformation peerInformation,
                            final MessageId correspondingId) {
-        super(sender, proofOfWork, recipient);
+        super(networkId, sender, proofOfWork, recipient);
         this.peerInformation = requireNonNull(peerInformation);
         this.correspondingId = requireNonNull(correspondingId);
     }
@@ -95,7 +97,8 @@ public class IdentityMessage extends RelayableMessage implements ResponseMessage
     @Override
     public String toString() {
         return "IdentityMessage{" +
-                "sender=" + sender +
+                "networkId=" + networkId +
+                ", sender=" + sender +
                 "proofOfWork=" + proofOfWork +
                 ", recipient=" + recipient +
                 ", peerInformation=" + peerInformation +

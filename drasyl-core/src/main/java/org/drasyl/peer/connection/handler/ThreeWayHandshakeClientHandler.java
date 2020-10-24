@@ -44,21 +44,23 @@ public abstract class ThreeWayHandshakeClientHandler<R extends RequestMessage, O
     public static final AttributeKey<CompressedPublicKey> ATTRIBUTE_PUBLIC_KEY = AttributeKey.valueOf("publicKey");
     private final R requestMessage;
 
-    protected ThreeWayHandshakeClientHandler(final Identity identity,
+    protected ThreeWayHandshakeClientHandler(final int networkId,
+                                             final Identity identity,
                                              final Duration timeout,
                                              final Pipeline pipeline,
                                              final R requestMessage) {
-        super(timeout, pipeline, identity);
+        super(timeout, pipeline, networkId, identity);
         this.requestMessage = requestMessage;
     }
 
-    protected ThreeWayHandshakeClientHandler(final Identity identity,
+    protected ThreeWayHandshakeClientHandler(final int networkId,
+                                             final Identity identity,
                                              final Duration timeout,
                                              final Pipeline pipeline,
                                              final CompletableFuture<Void> handshakeFuture,
                                              final ScheduledFuture<?> timeoutFuture,
                                              final R requestMessage) {
-        super(timeout, pipeline, handshakeFuture, timeoutFuture, identity);
+        super(timeout, pipeline, handshakeFuture, timeoutFuture, networkId, identity);
         this.requestMessage = requestMessage;
     }
 
@@ -76,11 +78,11 @@ public abstract class ThreeWayHandshakeClientHandler<R extends RequestMessage, O
                         confirmSession(ctx, offerMessage);
 
                         // send confirmation
-                        ctx.writeAndFlush(new SuccessMessage(identity.getPublicKey(), identity.getProofOfWork(), message.getSender(), offerMessage.getId()));
+                        ctx.writeAndFlush(new SuccessMessage(networkId, identity.getPublicKey(), identity.getProofOfWork(), message.getSender(), offerMessage.getId()));
                     }
                     else {
                         rejectSession(ctx, error.getDescription());
-                        ctx.writeAndFlush(new ErrorMessage(identity.getPublicKey(), identity.getProofOfWork(), message.getSender(), error, offerMessage.getId())).addListener(ChannelFutureListener.CLOSE);
+                        ctx.writeAndFlush(new ErrorMessage(networkId, identity.getPublicKey(), identity.getProofOfWork(), message.getSender(), error, offerMessage.getId())).addListener(ChannelFutureListener.CLOSE);
                     }
                 }
                 catch (final ClassCastException e) {

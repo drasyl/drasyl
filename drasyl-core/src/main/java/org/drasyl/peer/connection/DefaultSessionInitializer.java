@@ -51,15 +51,18 @@ import static org.drasyl.peer.connection.handler.MessageEncoder.MESSAGE_ENCODER;
 public abstract class DefaultSessionInitializer extends ChannelInitializer<SocketChannel> {
     public static final String IDLE_EVENT = "idleEvent";
     public static final String CHUNKED_WRITER = "chunkedWriter";
+    private final int networkId;
     private final Identity identity;
     private final int flushBufferSize;
     private final Duration readIdleTimeout;
     private final short pingPongRetries;
 
-    protected DefaultSessionInitializer(final Identity identity,
+    protected DefaultSessionInitializer(final int networkId,
+                                        final Identity identity,
                                         final int flushBufferSize,
                                         final Duration readIdleTimeout,
                                         final short pingPongRetries) {
+        this.networkId = networkId;
         this.identity = identity;
         this.flushBufferSize = flushBufferSize;
         this.readIdleTimeout = readIdleTimeout;
@@ -196,7 +199,7 @@ public abstract class DefaultSessionInitializer extends ChannelInitializer<Socke
         if (!readIdleTimeout.isZero()) {
             pipeline.addLast(IDLE_EVENT, new IdleStateHandler(readIdleTimeout.toMillis(), 0, 0, TimeUnit.MILLISECONDS));
         }
-        pipeline.addLast(PingPongHandler.PING_PONG_HANDLER, new PingPongHandler(identity, pingPongRetries));
+        pipeline.addLast(PingPongHandler.PING_PONG_HANDLER, new PingPongHandler(networkId, identity, pingPongRetries));
     }
 
     protected void afterIdleStage(final ChannelPipeline pipeline) {

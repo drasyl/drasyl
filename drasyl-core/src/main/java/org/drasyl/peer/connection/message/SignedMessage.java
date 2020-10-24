@@ -51,21 +51,23 @@ public class SignedMessage extends AbstractMessage implements Signable {
     @JsonCreator
     SignedMessage(@JsonProperty("id") final MessageId id,
                   @JsonProperty("userAgent") final String userAgent,
+                  @JsonProperty("networkId") final int networkId,
                   @JsonProperty("sender") final CompressedPublicKey sender,
                   @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                   @JsonProperty("recipient") final CompressedPublicKey recipient,
                   @JsonProperty("signature") final Signature signature,
                   @JsonProperty("payload") final Message payload) {
-        super(id, userAgent, sender, proofOfWork, recipient);
+        super(id, userAgent, networkId, sender, proofOfWork, recipient);
         this.signature = signature;
         this.payload = requireNonNull(payload);
     }
 
-    public SignedMessage(final CompressedPublicKey sender,
+    public SignedMessage(final int networkId,
+                         final CompressedPublicKey sender,
                          final ProofOfWork proofOfWork,
                          final CompressedPublicKey recipient,
                          final Message payload) {
-        super(sender, proofOfWork, recipient);
+        super(networkId, sender, proofOfWork, recipient);
         this.payload = requireNonNull(payload);
     }
 
@@ -93,7 +95,8 @@ public class SignedMessage extends AbstractMessage implements Signable {
     @Override
     public String toString() {
         return "SignedMessage{" +
-                "sender=" + sender +
+                "networkId=" + networkId +
+                ", sender=" + sender +
                 ", proofOfWork=" + proofOfWork +
                 ", recipient=" + recipient +
                 ", signature=" + signature +

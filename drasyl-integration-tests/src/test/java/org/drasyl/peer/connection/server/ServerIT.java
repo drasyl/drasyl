@@ -156,12 +156,12 @@ class ServerIT {
         serverIdentityManager.loadOrCreateIdentity();
         peersManager = new PeersManager(event -> {
         }, serverIdentityManager.getIdentity());
-        channelGroup = new PeerChannelGroup(serverIdentityManager.getIdentity());
+        channelGroup = new PeerChannelGroup(networkId, serverIdentityManager.getIdentity());
         pipeline = new DrasylPipeline(event -> {
         }, serverConfig, serverIdentityManager.getIdentity());
         pipeline.addFirst(SUPER_PEER_SINK_HANDLER, new SuperPeerMessageSinkHandler(channelGroup, peersManager));
         pipeline.addAfter(SUPER_PEER_SINK_HANDLER, DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, new DirectConnectionMessageSinkHandler(channelGroup));
-        pipeline.addAfter(DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, LOOPBACK_MESSAGE_SINK_HANDLER, new LoopbackMessageSinkHandler(new AtomicBoolean(true), serverIdentityManager.getIdentity(), peersManager, endpoints));
+        pipeline.addAfter(DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, LOOPBACK_MESSAGE_SINK_HANDLER, new LoopbackMessageSinkHandler(new AtomicBoolean(true), networkId, serverIdentityManager.getIdentity(), peersManager, endpoints));
         opened = new AtomicBoolean(false);
         endpoints = new HashSet<>();
         acceptNewConnections = new AtomicBoolean(true);
@@ -232,7 +232,7 @@ class ServerIT {
                 };
 
                 // send message
-                final RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session1.getProofOfWork(), session2.getPublicKey(), payload);
+                final RequestMessage request = new ApplicationMessage(networkId, session1.getPublicKey(), session1.getProofOfWork(), session2.getPublicKey(), payload);
                 session1.send(request);
                 receivedMessages2.awaitCount(1);
                 receivedMessages2.assertValueAt(0, val -> {
@@ -321,12 +321,12 @@ class ServerIT {
                 // send messages
                 final RequestMessage request1 = new JoinMessage(networkId, session1.getIdentity().getPublicKey(), session1.getIdentity().getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), true);
                 final ResponseMessage<?> response1 = session1.sendRequest(request1).get();
-                session1.send(new SuccessMessage(session1.getPublicKey(), session1.getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), response1.getId()));
+                session1.send(new SuccessMessage(networkId, session1.getPublicKey(), session1.getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), response1.getId()));
                 await().until(() -> channelGroup.find(session1.getIdentity().getPublicKey()) != null);
 
                 final RequestMessage request2 = new JoinMessage(networkId, session1.getIdentity().getPublicKey(), session1.getIdentity().getProofOfWork(), configClient2.getSuperPeerEndpoints().iterator().next().getPublicKey(), true);
                 final ResponseMessage<?> response2 = session2.sendRequest(request2).join();
-                session2.send(new SuccessMessage(session2.getPublicKey(), session2.getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), response2.getId()));
+                session2.send(new SuccessMessage(networkId, session2.getPublicKey(), session2.getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), response2.getId()));
 
                 // verify responses
                 receivedMessages1.awaitCount(2);
@@ -406,7 +406,7 @@ class ServerIT {
         // create connection
         try (final TestSuperPeerClient session = clientSession(configClient1, identitySession1, false)) {
             // send message
-            final RequestMessage request = new PingMessage(configClient1.getIdentityPublicKey(), configClient1.getIdentityProofOfWork(), serverConfig.getIdentityPublicKey());
+            final RequestMessage request = new PingMessage(networkId, configClient1.getIdentityPublicKey(), configClient1.getIdentityProofOfWork(), serverConfig.getIdentityPublicKey());
             final CompletableFuture<ResponseMessage<?>> send = session.sendRequest(request);
 
             // verify response
@@ -427,7 +427,7 @@ class ServerIT {
             final CompressedPublicKey sender = CompressedPublicKey.of("023ce7bb9756b5aa68fb82914ecafb71c3bb86701d4f200ae68420d13eddda7ebf");
             final ProofOfWork proofOfWork = ProofOfWork.of(6657650);
             final CompressedPublicKey recipient = CompressedPublicKey.of("037e43ee5c82742f00355f13b9714c63e53a74a694b7de8d4715f06d9e7880bdbf");
-            final RequestMessage request = new ApplicationMessage(sender, proofOfWork, recipient, new byte[]{
+            final RequestMessage request = new ApplicationMessage(networkId, sender, proofOfWork, recipient, new byte[]{
                     0x00,
                     0x01
             });
@@ -435,7 +435,7 @@ class ServerIT {
 
             // verify responses
             receivedMessages.awaitCount(1);
-            receivedMessages.assertValueAt(0, new ErrorMessage(serverConfig.getIdentityPublicKey(), serverConfig.getIdentityProofOfWork(), sender, ERROR_UNEXPECTED_MESSAGE, request.getId()));
+            receivedMessages.assertValueAt(0, new ErrorMessage(networkId, serverConfig.getIdentityPublicKey(), serverConfig.getIdentityProofOfWork(), sender, ERROR_UNEXPECTED_MESSAGE, request.getId()));
         }
     }
 
@@ -454,7 +454,7 @@ class ServerIT {
                 new Random().nextBytes(bigPayload);
 
                 // send message
-                final RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session1.getProofOfWork(), session2.getPublicKey(), bigPayload);
+                final RequestMessage request = new ApplicationMessage(networkId, session1.getPublicKey(), session1.getProofOfWork(), session2.getPublicKey(), bigPayload);
                 session2.send(request);
 
                 // verify response
@@ -477,7 +477,7 @@ class ServerIT {
                 new Random().nextBytes(bigPayload);
 
                 // send message
-                final RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session1.getProofOfWork(), session2.getPublicKey(), bigPayload);
+                final RequestMessage request = new ApplicationMessage(networkId, session1.getPublicKey(), session1.getProofOfWork(), session2.getPublicKey(), bigPayload);
 
                 session1.send(request);
                 receivedMessages2.awaitCount(1);
@@ -537,8 +537,8 @@ class ServerIT {
             final TestObserver<Message> receivedMessages = session.receivedMessages().filter(msg -> msg instanceof ErrorMessage).test();
 
             // send message
-            final Message request = new PingMessage(configClient1.getIdentityPublicKey(), configClient1.getIdentityProofOfWork(), serverConfig.getIdentityPublicKey());
-            final SignedMessage signedMessage = new SignedMessage(session.getPublicKey(), session.getProofOfWork(), serverConfig.getIdentityPublicKey(), request);
+            final Message request = new PingMessage(networkId, configClient1.getIdentityPublicKey(), configClient1.getIdentityProofOfWork(), serverConfig.getIdentityPublicKey());
+            final SignedMessage signedMessage = new SignedMessage(networkId, session.getPublicKey(), session.getProofOfWork(), serverConfig.getIdentityPublicKey(), request);
             Crypto.sign(identitySession2.getPrivateKey().toUncompressedKey(), signedMessage);
             final byte[] binary = JACKSON_WRITER.writeValueAsBytes(signedMessage);
             session.sendRawBinary(Unpooled.wrappedBuffer(binary));

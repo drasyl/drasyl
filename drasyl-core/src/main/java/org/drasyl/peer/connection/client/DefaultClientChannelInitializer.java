@@ -55,17 +55,17 @@ public class DefaultClientChannelInitializer extends ClientChannelInitializer {
     private final ClientEnvironment environment;
 
     public DefaultClientChannelInitializer(final ClientEnvironment environment) {
-        super(environment.getIdentity(), environment.getConfig().getFlushBufferSize(), environment.getIdleTimeout(),
+        super(environment.getConfig().getNetworkId(), environment.getIdentity(), environment.getConfig().getFlushBufferSize(), environment.getIdleTimeout(),
                 environment.getIdleRetries(), environment.getEndpoint());
         this.environment = environment;
     }
 
     @Override
     protected void afterPojoMarshalStage(final ChannelPipeline pipeline) {
-        pipeline.addLast(SIGNATURE_HANDLER, new SignatureHandler(environment.getIdentity()));
+        pipeline.addLast(SIGNATURE_HANDLER, new SignatureHandler(environment.getConfig().getNetworkId(), environment.getIdentity()));
         pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(environment.getConfig().getMessageHopLimit()));
         pipeline.addLast(CHUNKED_WRITER, new ChunkedWriteHandler());
-        pipeline.addLast(CHUNK_HANDLER, new ChunkedMessageHandler(environment.getConfig().getMessageMaxContentLength(), environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), environment.getConfig().getMessageComposedMessageTransferTimeout()));
+        pipeline.addLast(CHUNK_HANDLER, new ChunkedMessageHandler(environment.getConfig().getMessageMaxContentLength(), environment.getConfig().getNetworkId(), environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), environment.getConfig().getMessageComposedMessageTransferTimeout()));
     }
 
     @Override

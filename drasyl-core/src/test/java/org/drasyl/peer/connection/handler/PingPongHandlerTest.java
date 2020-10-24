@@ -67,6 +67,7 @@ class PingPongHandlerTest {
     private ProofOfWork recipientsProofOfWork;
     @Mock
     private MessageId correspondingId;
+    private final int networkId = 1;
 
     @Test
     void userEventTriggeredShouldSendPingMessageIfThresholdNotReached(@Mock final CompressedPublicKey publicKey) throws Exception {
@@ -75,7 +76,7 @@ class PingPongHandlerTest {
         when(ctx.channel().hasAttr(any())).thenReturn(true);
         when(ctx.channel().attr(any()).get()).thenReturn(publicKey);
 
-        final PingPongHandler handler = new PingPongHandler(identity, (short) 1, new AtomicInteger(0));
+        final PingPongHandler handler = new PingPongHandler(networkId, identity, (short) 1, new AtomicInteger(0));
         handler.userEventTriggered(ctx, evt);
 
         verify(ctx).writeAndFlush(any(PingMessage.class));
@@ -85,7 +86,7 @@ class PingPongHandlerTest {
     void userEventTriggeredShouldCloseChannelIfThresholdIsReached() throws Exception {
         when(evt.state()).thenReturn(IdleState.READER_IDLE);
 
-        final PingPongHandler handler = new PingPongHandler(identity, (short) 1, new AtomicInteger(2));
+        final PingPongHandler handler = new PingPongHandler(networkId, identity, (short) 1, new AtomicInteger(2));
         handler.userEventTriggered(ctx, evt);
 
         verify(ctx).close();
@@ -98,7 +99,7 @@ class PingPongHandlerTest {
         when(ctx.channel().hasAttr(any())).thenReturn(true);
         when(ctx.channel().attr(any()).get()).thenReturn(publicKey);
 
-        final PingPongHandler handler = new PingPongHandler(identity, (short) 2, new AtomicInteger(0));
+        final PingPongHandler handler = new PingPongHandler(networkId, identity, (short) 2, new AtomicInteger(0));
 
         for (int i = 0; i < 3; i++) {
             handler.userEventTriggered(ctx, evt);
@@ -113,7 +114,7 @@ class PingPongHandlerTest {
         when(evt.state()).thenReturn(IdleState.READER_IDLE);
         when(evt.state()).thenReturn(IdleState.WRITER_IDLE);
 
-        final PingPongHandler handler = new PingPongHandler(identity, (short) 1, new AtomicInteger(0));
+        final PingPongHandler handler = new PingPongHandler(networkId, identity, (short) 1, new AtomicInteger(0));
         handler.userEventTriggered(ctx, evt);
 
         verify(ctx, never()).writeAndFlush(any());
@@ -121,22 +122,22 @@ class PingPongHandlerTest {
 
     @Test
     void shouldReplyWithPongMessageToPingMessage() {
-        final PingPongHandler handler = new PingPongHandler(identity, (short) 1, new AtomicInteger(0));
+        final PingPongHandler handler = new PingPongHandler(networkId, identity, (short) 1, new AtomicInteger(0));
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        final PingMessage pingMessage = new PingMessage(sender, proofOfWork, identity.getPublicKey());
+        final PingMessage pingMessage = new PingMessage(networkId, sender, proofOfWork, identity.getPublicKey());
         channel.writeInbound(pingMessage);
         channel.flush();
 
-        assertEquals(new PongMessage(identity.getPublicKey(), identity.getProofOfWork(), sender, pingMessage.getId()), channel.readOutbound());
+        assertEquals(new PongMessage(networkId, identity.getPublicKey(), identity.getProofOfWork(), sender, pingMessage.getId()), channel.readOutbound());
     }
 
     @Test
     void shouldResetCounterIfPingMessageReceived() {
-        final PingPongHandler handler = new PingPongHandler(identity, (short) 1, new AtomicInteger(0));
+        final PingPongHandler handler = new PingPongHandler(networkId, identity, (short) 1, new AtomicInteger(0));
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        channel.writeInbound(new PongMessage(recipient, recipientsProofOfWork, sender, MessageId.of("412176952b5b81fd13f84a7c")));
+        channel.writeInbound(new PongMessage(networkId, recipient, recipientsProofOfWork, sender, MessageId.of("412176952b5b81fd13f84a7c")));
         channel.flush();
 
         assertEquals(0, handler.retries.get());
@@ -144,10 +145,10 @@ class PingPongHandlerTest {
 
     @Test
     void shouldPassThroughAllUnrelatedMessages() {
-        final PingPongHandler handler = new PingPongHandler(identity, (short) 1, new AtomicInteger(0));
+        final PingPongHandler handler = new PingPongHandler(networkId, identity, (short) 1, new AtomicInteger(0));
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        final Message message = new ErrorMessage(sender, proofOfWork, recipient, ERROR_IDENTITY_COLLISION, correspondingId);
+        final Message message = new ErrorMessage(networkId, sender, proofOfWork, recipient, ERROR_IDENTITY_COLLISION, correspondingId);
         channel.writeInbound(message);
         channel.flush();
 

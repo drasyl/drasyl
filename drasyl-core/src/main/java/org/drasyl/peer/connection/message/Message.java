@@ -61,6 +61,13 @@ public interface Message {
     String getUserAgent();
 
     /**
+     * Returns the network the sender belongs to.
+     *
+     * @return the network the sender belongs to
+     */
+    int getNetworkId();
+
+    /**
      * Returns this message's sender.
      *
      * @return this message's sender.

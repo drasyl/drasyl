@@ -41,11 +41,14 @@ import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_PEER_U
 public class ServerNewConnectionsGuard extends SimpleChannelInboundHandler<Message> {
     public static final String CONNECTION_GUARD = "connectionGuard";
     private static final Logger LOG = LoggerFactory.getLogger(ServerNewConnectionsGuard.class);
+    private final int networkId;
     private final Identity identity;
     private final BooleanSupplier acceptNewConnectionsSupplier;
 
-    public ServerNewConnectionsGuard(final Identity identity,
+    public ServerNewConnectionsGuard(final int networkId,
+                                     final Identity identity,
                                      final BooleanSupplier acceptNewConnectionsSupplier) {
+        this.networkId = networkId;
         this.identity = identity;
         this.acceptNewConnectionsSupplier = acceptNewConnectionsSupplier;
     }
@@ -57,7 +60,7 @@ public class ServerNewConnectionsGuard extends SimpleChannelInboundHandler<Messa
             ctx.fireChannelRead(msg);
         }
         else {
-            ctx.writeAndFlush(new ErrorMessage(identity.getPublicKey(), identity.getProofOfWork(), msg.getSender(), ERROR_PEER_UNAVAILABLE, msg.getId())).addListener(ChannelFutureListener.CLOSE);
+            ctx.writeAndFlush(new ErrorMessage(networkId, identity.getPublicKey(), identity.getProofOfWork(), msg.getSender(), ERROR_PEER_UNAVAILABLE, msg.getId())).addListener(ChannelFutureListener.CLOSE);
             LOG.debug("{} blocked creation of channel {}.", getClass().getSimpleName(), ctx.channel().id());
         }
     }

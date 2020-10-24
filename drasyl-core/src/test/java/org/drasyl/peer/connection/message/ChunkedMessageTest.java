@@ -43,6 +43,7 @@ class ChunkedMessageTest {
     private MessageId id;
     private int contentLength;
     private String checksum;
+    private final int networkId = 1;
 
     @BeforeEach
     void setUp() throws CryptoException {
@@ -58,13 +59,22 @@ class ChunkedMessageTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
-            final String json = "{\"@type\":\"" + ChunkedMessage.class.getSimpleName() + "\",\"id\":\"412176952b5b81fd13f84a7c\",\"sender\":\"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\"proofOfWork\":6657650,\"recipient\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"payload\":\"AAEC\",\"checksum\":\"abc\",\"contentLength\":3}";
+            final String json = "{\"@type\":\"" + ChunkedMessage.class.getSimpleName() + "\",\"id\":\"412176952b5b81fd13f84a7c\",\"networkId\":1,\"sender\":\"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\"proofOfWork\":6657650,\"recipient\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"payload\":\"AAEC\",\"userAgent\":\"\",\"checksum\":\"abc\",\"contentLength\":3}";
 
-            assertEquals(new ChunkedMessage(id, CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"), ProofOfWork.of(6657650), CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), new byte[]{
-                    0x00,
-                    0x01,
-                    0x02
-            }, contentLength, checksum), JACKSON_READER.readValue(json, ApplicationMessage.class));
+            assertEquals(new ChunkedMessage(
+                    MessageId.of("412176952b5b81fd13f84a7c"),
+                    networkId,
+                    CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"),
+                    ProofOfWork.of(6657650),
+                    CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"),
+                    new byte[]{
+                            0x00,
+                            0x01,
+                            0x02
+                    },
+                    contentLength,
+                    checksum
+            ), JACKSON_READER.readValue(json, ApplicationMessage.class));
         }
     }
 
@@ -72,7 +82,7 @@ class ChunkedMessageTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJsonFristChunk() throws IOException {
-            final ChunkedMessage message = ChunkedMessage.createFirstChunk(id, sender, proofOfWork, recipient, new byte[]{
+            final ChunkedMessage message = ChunkedMessage.createFirstChunk(id, networkId, sender, proofOfWork, recipient, new byte[]{
                     0x00,
                     0x01,
                     0x02
@@ -81,12 +91,12 @@ class ChunkedMessageTest {
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", ChunkedMessage.class.getSimpleName())
-                    .containsKeys("id", "recipient", "hopCount", "sender", "payload", "contentLength", "checksum");
+                    .containsKeys("id", "networkId", "recipient", "hopCount", "sender", "payload", "contentLength", "checksum", "proofOfWork", "userAgent");
         }
 
         @Test
         void shouldSerializeToCorrectJsonFollowChunk() throws IOException {
-            final ChunkedMessage message = ChunkedMessage.createFollowChunk(id, sender, proofOfWork, recipient, new byte[]{
+            final ChunkedMessage message = ChunkedMessage.createFollowChunk(id, networkId, sender, proofOfWork, recipient, new byte[]{
                     0x00,
                     0x01,
                     0x02
@@ -95,17 +105,17 @@ class ChunkedMessageTest {
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", ChunkedMessage.class.getSimpleName())
-                    .containsKeys("id", "recipient", "hopCount", "sender", "payload");
+                    .containsKeys("id", "networkId", "recipient", "hopCount", "sender", "payload", "proofOfWork", "userAgent");
         }
 
         @Test
         void shouldSerializeToCorrectJsonLastChunk() throws IOException {
-            final ChunkedMessage message = ChunkedMessage.createLastChunk(id, sender, proofOfWork, recipient);
+            final ChunkedMessage message = ChunkedMessage.createLastChunk(id, networkId, sender, proofOfWork, recipient);
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", ChunkedMessage.class.getSimpleName())
-                    .containsKeys("id", "recipient", "hopCount", "sender");
+                    .containsKeys("id", "networkId", "sender", "proofOfWork", "recipient", "hopCount", "userAgent");
         }
     }
 
@@ -113,17 +123,17 @@ class ChunkedMessageTest {
     class Equals {
         @Test
         void notSameBecauseOfDifferentPayload() {
-            final ChunkedMessage message1 = ChunkedMessage.createFirstChunk(id, sender, proofOfWork, recipient, new byte[]{
+            final ChunkedMessage message1 = ChunkedMessage.createFirstChunk(id, networkId, sender, proofOfWork, recipient, new byte[]{
                     0x00,
                     0x01,
                     0x02
             }, contentLength, checksum);
-            final ChunkedMessage message2 = ChunkedMessage.createFirstChunk(id, sender, proofOfWork, recipient, new byte[]{
+            final ChunkedMessage message2 = ChunkedMessage.createFirstChunk(id, networkId, sender, proofOfWork, recipient, new byte[]{
                     0x00,
                     0x01,
                     0x02
             }, contentLength, checksum);
-            final ChunkedMessage message3 = ChunkedMessage.createFirstChunk(id, sender, proofOfWork, recipient, new byte[]{
+            final ChunkedMessage message3 = ChunkedMessage.createFirstChunk(id, networkId, sender, proofOfWork, recipient, new byte[]{
                     0x03,
                     0x02,
                     0x01
@@ -138,17 +148,17 @@ class ChunkedMessageTest {
     class HashCode {
         @Test
         void notSameBecauseOfDifferentPayload() {
-            final ChunkedMessage message1 = ChunkedMessage.createFirstChunk(id, sender, proofOfWork, recipient, new byte[]{
+            final ChunkedMessage message1 = ChunkedMessage.createFirstChunk(id, networkId, sender, proofOfWork, recipient, new byte[]{
                     0x00,
                     0x01,
                     0x02
             }, contentLength, checksum);
-            final ChunkedMessage message2 = ChunkedMessage.createFirstChunk(id, sender, proofOfWork, recipient, new byte[]{
+            final ChunkedMessage message2 = ChunkedMessage.createFirstChunk(id, networkId, sender, proofOfWork, recipient, new byte[]{
                     0x00,
                     0x01,
                     0x02
             }, contentLength, checksum);
-            final ChunkedMessage message3 = ChunkedMessage.createFirstChunk(id, sender, proofOfWork, recipient, new byte[]{
+            final ChunkedMessage message3 = ChunkedMessage.createFirstChunk(id, networkId, sender, proofOfWork, recipient, new byte[]{
                     0x03,
                     0x02,
                     0x01

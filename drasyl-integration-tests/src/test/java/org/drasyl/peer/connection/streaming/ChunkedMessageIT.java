@@ -97,7 +97,7 @@ class ChunkedMessageIT {
         final Observable<Message> receivedMessages = session2.receivedMessages().filter(msg -> msg instanceof ApplicationMessage);
 
         // send message
-        final RequestMessage request = new ApplicationMessage(session1.getPublicKey(), session1.getProofOfWork(), session2.getPublicKey(), bigPayload);
+        final RequestMessage request = new ApplicationMessage(0, session1.getPublicKey(), session1.getProofOfWork(), session2.getPublicKey(), bigPayload);
         session2.send(request);
 
         // verify response
@@ -141,8 +141,8 @@ class ChunkedMessageIT {
         }, serverConfig, serverIdentityManager.getIdentity());
         pipeline.addFirst(SUPER_PEER_SINK_HANDLER, new SuperPeerMessageSinkHandler(channelGroup, peersManager));
         pipeline.addAfter(SUPER_PEER_SINK_HANDLER, DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, new DirectConnectionMessageSinkHandler(channelGroup));
-        pipeline.addAfter(DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, LOOPBACK_MESSAGE_SINK_HANDLER, new LoopbackMessageSinkHandler(new AtomicBoolean(true), serverIdentityManager.getIdentity(), peersManager, endpoints));
-        channelGroup = new PeerChannelGroup(serverIdentityManager.getIdentity());
+        pipeline.addAfter(DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, LOOPBACK_MESSAGE_SINK_HANDLER, new LoopbackMessageSinkHandler(new AtomicBoolean(true), serverConfig.getNetworkId(), serverIdentityManager.getIdentity(), peersManager, endpoints));
+        channelGroup = new PeerChannelGroup(0, serverIdentityManager.getIdentity());
         endpoints = new HashSet<>();
 
         server = new TestServer(serverIdentityManager.getIdentity(), pipeline, peersManager, serverConfig, channelGroup, workerGroup, bossGroup, endpoints);

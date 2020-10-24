@@ -56,6 +56,7 @@ class DefaultSessionInitializerTest {
     private SocketChannel ch;
     @Mock
     private Identity identity;
+    private final int networkId = 1;
 
     @BeforeEach
     void setUp() throws IllegalAccessException, NoSuchFieldException {
@@ -140,7 +141,7 @@ class DefaultSessionInitializerTest {
 
     @Test
     void testIdleStage() {
-        final DefaultSessionInitializer classUnderTest = new DefaultSessionInitializer(identity, 1, Duration.ofMillis(1L), (short) 1) {
+        final DefaultSessionInitializer classUnderTest = new DefaultSessionInitializer(networkId, identity, 1, Duration.ofMillis(1L), (short) 1) {
             @Override
             protected void beforeMarshalStage(final ChannelPipeline pipeline) {
 
