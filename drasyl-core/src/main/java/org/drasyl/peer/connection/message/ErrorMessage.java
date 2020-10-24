@@ -150,8 +150,6 @@ public class ErrorMessage extends AbstractMessage implements RequestMessage, Res
         ERROR_PROOF_OF_WORK_INVALID("The proof of work for the given public key is invalid."),
         ERROR_NOT_A_SUPER_PEER("Peer is not configured as super peer and therefore does not accept children."),
         ERROR_PEER_UNAVAILABLE("Peer is currently not able to accept (new) connections."),
-        ERROR_INTERNAL("Internal Error occurred."),
-        ERROR_FORMAT("Invalid Message format."),
         ERROR_UNEXPECTED_MESSAGE("Unexpected message."),
         ERROR_INITIAL_CHUNK_MISSING("Dropped chunked message because start chunk was not sent."),
         ERROR_CHUNKED_MESSAGE_TIMEOUT("Dropped chunked message because timeout has expired."),

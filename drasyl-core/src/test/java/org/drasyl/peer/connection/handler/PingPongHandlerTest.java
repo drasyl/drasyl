@@ -38,7 +38,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_FORMAT;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_IDENTITY_COLLISION;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.any;
@@ -141,7 +141,7 @@ class PingPongHandlerTest {
         final PingPongHandler handler = new PingPongHandler(identity, (short) 1, new AtomicInteger(0));
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        final Message message = new ErrorMessage(sender, proofOfWork, ERROR_FORMAT);
+        final Message message = new ErrorMessage(sender, proofOfWork, ERROR_IDENTITY_COLLISION);
         channel.writeInbound(message);
         channel.flush();
 

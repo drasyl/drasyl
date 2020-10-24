@@ -20,7 +20,6 @@ package org.drasyl.peer.connection.handler;
 
 import io.netty.channel.ChannelDuplexHandler;
 import io.netty.channel.ChannelHandlerContext;
-import io.netty.handler.codec.DecoderException;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ErrorMessage;
 import org.slf4j.Logger;
@@ -28,9 +27,6 @@ import org.slf4j.LoggerFactory;
 
 import java.nio.channels.ClosedChannelException;
 import java.util.Objects;
-
-import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_FORMAT;
-import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_INTERNAL;
 
 /**
  * This handler listens to exceptions on the pipeline and sends them as {@link ErrorMessage} to the
@@ -76,7 +72,7 @@ public class ExceptionHandler extends ChannelDuplexHandler {
 
     @Override
     public void exceptionCaught(final ChannelHandlerContext ctx, final Throwable cause) {
-        sendException(ctx, cause);
+        sendException(cause);
 
         if (rethrowExceptions) {
             ctx.fireExceptionCaught(cause);
@@ -86,27 +82,15 @@ public class ExceptionHandler extends ChannelDuplexHandler {
     /**
      * Writes an exception to the outbound channel and takes care of duplications.
      *
-     * @param ctx the channel handler context
-     * @param e   the exception
+     * @param e the exception
      */
-    private void sendException(final ChannelHandlerContext ctx, final Throwable e) {
+    private void sendException(final Throwable e) {
         if (e instanceof ClosedChannelException
                 || handledCause != null && Objects.equals(handledCause.getMessage(), e.getMessage()) || Objects.equals("SSLEngine closed already", e.getMessage())) {
             return;
         }
 
         handledCause = e;
-
-        if (ctx.channel().isWritable()) {
-            final ErrorMessage msg;
-            if (e instanceof DecoderException) {
-                msg = new ErrorMessage(identity.getPublicKey(), identity.getProofOfWork(), ERROR_FORMAT);
-            }
-            else {
-                msg = new ErrorMessage(identity.getPublicKey(), identity.getProofOfWork(), ERROR_INTERNAL);
-            }
-            ctx.writeAndFlush(msg);
-        }
         LOG.debug("Exception caught: {}", e.getMessage());
     }
 }

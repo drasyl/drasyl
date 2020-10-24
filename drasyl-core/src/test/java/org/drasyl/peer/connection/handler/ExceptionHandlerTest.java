@@ -59,15 +59,12 @@ class ExceptionHandlerTest {
     // sendMSG the exception as exception message
     @Test
     void exceptionCaughtWithoutRethrow() {
-        when(ctx.channel()).thenReturn(channel);
-        when(channel.isWritable()).thenReturn(true);
         when(cause.getMessage()).thenReturn("Exception");
 
         final ExceptionHandler handler = new ExceptionHandler(identity, null, false);
         handler.exceptionCaught(ctx, cause);
 
         assertEquals(cause, handler.handledCause);
-        verify(ctx).writeAndFlush(any(ErrorMessage.class));
     }
 
     // do nothing
@@ -83,15 +80,12 @@ class ExceptionHandlerTest {
     // sendMSG the exception as exception message and pass to the next handler in the pipeline
     @Test
     void exceptionCaughtWithRethrow() {
-        when(ctx.channel()).thenReturn(channel);
-        when(channel.isWritable()).thenReturn(true);
         when(cause.getMessage()).thenReturn("Exception");
 
         final ExceptionHandler handler = new ExceptionHandler(identity, null, true);
         handler.exceptionCaught(ctx, cause);
 
         assertEquals(cause, handler.handledCause);
-        verify(ctx).writeAndFlush(any(ErrorMessage.class));
         verify(ctx).fireExceptionCaught(cause);
     }
 

@@ -33,7 +33,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_FORMAT;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_IDENTITY_COLLISION;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -51,7 +51,7 @@ class MessageDecoderTest {
 
     @Test
     void shouldDeserializeInboundJsonStringToMessage() throws JsonProcessingException, CryptoException {
-        final byte[] binary = JACKSON_WRITER.writeValueAsBytes(new ErrorMessage(CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"), ProofOfWork.of(3556154), ERROR_FORMAT));
+        final byte[] binary = JACKSON_WRITER.writeValueAsBytes(new ErrorMessage(CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"), ProofOfWork.of(3556154), ERROR_IDENTITY_COLLISION));
 
         channel.writeInbound(new BinaryWebSocketFrame(Unpooled.wrappedBuffer(binary)));
         channel.flush();
