@@ -116,7 +116,6 @@ public class ErrorMessage extends AbstractResponseMessage<RequestMessage> {
      * Specifies the type of the {@link ErrorMessage}.
      */
     public enum Error {
-        ERROR_HANDSHAKE_REJECTED("Handshake has been rejected by other peer."),
         ERROR_IDENTITY_COLLISION("Peer states that my address is already used by another peer with different Public Key."),
         ERROR_WRONG_PUBLIC_KEY("Peer has sent an unexpected Public Key. This could indicate a configuration error or man-in-the-middle attack."),
         ERROR_OTHER_NETWORK("Peer belongs to other network."),
