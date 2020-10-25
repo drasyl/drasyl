@@ -22,7 +22,6 @@ import io.netty.channel.ChannelHandler;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.crypto.HexUtil;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.connection.message.Message;
@@ -50,8 +49,6 @@ class MessageEncoderTest {
     void shouldSerializeOutboundMessageToJsonString() {
         channel.writeOutbound(message);
         channel.flush();
-
-        final byte[] binary = HexUtil.fromString("7b224074797065223a224d657373616765456e636f64657254657374244d794d657373616765222c226964223a22643862633635636637646331393531653936333133303535222c22757365724167656e74223a22222c2273656e646572223a22303330353037666138343063633266363730366632383566356336633035356630623762336566623835383835323237636233303666313736323039666636666333222c2270726f6f664f66576f726b223a363635373635307d");
 
         final BinaryWebSocketFrame frame = channel.readOutbound();
 
