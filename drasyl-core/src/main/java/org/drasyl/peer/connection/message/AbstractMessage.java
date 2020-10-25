@@ -42,20 +42,24 @@ abstract class AbstractMessage implements Message {
     protected final CompressedPublicKey sender;
     protected final ProofOfWork proofOfWork;
     protected final String userAgent;
+    protected final CompressedPublicKey recipient;
 
     protected AbstractMessage(final MessageId id,
                               final String userAgent,
                               final CompressedPublicKey sender,
-                              final ProofOfWork proofOfWork) {
+                              final ProofOfWork proofOfWork,
+                              final CompressedPublicKey recipient) {
         this.id = requireNonNull(id);
         this.userAgent = requireNonNull(userAgent);
         this.sender = requireNonNull(sender);
         this.proofOfWork = requireNonNull(proofOfWork);
+        this.recipient = requireNonNull(recipient);
     }
 
     protected AbstractMessage(final CompressedPublicKey sender,
-                              final ProofOfWork proofOfWork) {
-        this(randomMessageId(), userAgentGenerator.get(), sender, proofOfWork);
+                              final ProofOfWork proofOfWork,
+                              final CompressedPublicKey recipient) {
+        this(randomMessageId(), userAgentGenerator.get(), sender, proofOfWork, recipient);
     }
 
     @Override
@@ -79,6 +83,11 @@ abstract class AbstractMessage implements Message {
     }
 
     @Override
+    public CompressedPublicKey getRecipient() {
+        return recipient;
+    }
+
+    @Override
     public boolean equals(final Object o) {
         if (this == o) {
             return true;
@@ -88,11 +97,12 @@ abstract class AbstractMessage implements Message {
         }
         final AbstractMessage that = (AbstractMessage) o;
         return Objects.equals(sender, that.sender) &&
-                Objects.equals(proofOfWork, that.proofOfWork);
+                Objects.equals(proofOfWork, that.proofOfWork) &&
+                Objects.equals(recipient, that.recipient);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(sender, proofOfWork);
+        return Objects.hash(sender, proofOfWork, recipient);
     }
 }

@@ -25,8 +25,6 @@ import org.drasyl.identity.ProofOfWork;
 
 import java.util.Objects;
 
-import static java.util.Objects.requireNonNull;
-
 /**
  * A message representing a join to the node server.
  * <p>
@@ -34,7 +32,6 @@ import static java.util.Objects.requireNonNull;
  */
 public class JoinMessage extends AbstractMessage implements RequestMessage {
     private final int networkId;
-    private final CompressedPublicKey recipient;
     private final boolean childrenJoin;
 
     @JsonCreator
@@ -45,9 +42,8 @@ public class JoinMessage extends AbstractMessage implements RequestMessage {
                         @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                         @JsonProperty("recipient") final CompressedPublicKey recipient,
                         @JsonProperty("childrenJoin") final boolean childrenJoin) {
-        super(id, userAgent, sender, proofOfWork);
+        super(id, userAgent, sender, proofOfWork, recipient);
         this.networkId = networkId;
-        this.recipient = recipient;
         this.childrenJoin = childrenJoin;
     }
 
@@ -65,18 +61,13 @@ public class JoinMessage extends AbstractMessage implements RequestMessage {
                        final ProofOfWork proofOfWork,
                        final CompressedPublicKey recipient,
                        final boolean childrenJoin) {
-        super(sender, proofOfWork);
-        this.recipient = requireNonNull(recipient);
+        super(sender, proofOfWork, recipient);
         this.childrenJoin = childrenJoin;
         this.networkId = networkId;
     }
 
     public int getNetworkId() {
         return this.networkId;
-    }
-
-    public CompressedPublicKey getRecipient() {
-        return recipient;
     }
 
     public boolean isChildrenJoin() {
@@ -101,7 +92,6 @@ public class JoinMessage extends AbstractMessage implements RequestMessage {
         }
         final JoinMessage that = (JoinMessage) o;
         return networkId == that.networkId &&
-                Objects.equals(recipient, that.recipient) &&
                 childrenJoin == that.childrenJoin;
     }
 

@@ -125,7 +125,7 @@ class ChunkedMessageInputTest {
 
         final ChunkedMessageInput input = new ChunkedMessageInput(sender, proofOfWork, recipient, contentLength, checksum, chunks, sourcePayload, msgID, progress, sentLastChunk);
 
-        final ChunkedMessage expectedChunk = ChunkedMessage.createFirstChunk(sender, proofOfWork, recipient, msgID, chunk.array(), contentLength, checksum);
+        final ChunkedMessage expectedChunk = ChunkedMessage.createFirstChunk(msgID, sender, proofOfWork, recipient, chunk.array(), contentLength, checksum);
         assertEquals(expectedChunk, input.readChunk(mock(ByteBufAllocator.class)));
         assertEquals(progress + contentLength, input.progress());
         assertEquals(contentLength, input.length());
@@ -143,7 +143,7 @@ class ChunkedMessageInputTest {
 
         final ChunkedMessageInput input = new ChunkedMessageInput(sender, proofOfWork, recipient, contentLength, checksum, chunks, sourcePayload, msgID, progress, sentLastChunk);
 
-        final ChunkedMessage expectedChunk = ChunkedMessage.createFollowChunk(sender, proofOfWork, recipient, msgID, chunk.array());
+        final ChunkedMessage expectedChunk = ChunkedMessage.createFollowChunk(msgID, sender, proofOfWork, recipient, chunk.array());
         assertEquals(expectedChunk, input.readChunk(mock(ByteBufAllocator.class)));
         assertEquals(progress + contentLength, input.progress());
         assertEquals(contentLength, input.length());
@@ -160,7 +160,7 @@ class ChunkedMessageInputTest {
 
         final ChunkedMessageInput input = new ChunkedMessageInput(sender, proofOfWork, recipient, contentLength, checksum, chunks, sourcePayload, msgID, progress, sentLastChunk);
 
-        final ChunkedMessage expectedChunk = ChunkedMessage.createLastChunk(sender, proofOfWork, recipient, msgID);
+        final ChunkedMessage expectedChunk = ChunkedMessage.createLastChunk(msgID, sender, proofOfWork, recipient);
         assertEquals(expectedChunk, input.readChunk(mock(ByteBufAllocator.class)));
         assertEquals(progress, input.progress());
         assertEquals(contentLength, input.length());

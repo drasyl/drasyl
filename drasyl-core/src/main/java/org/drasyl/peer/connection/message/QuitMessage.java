@@ -19,7 +19,6 @@
 package org.drasyl.peer.connection.message;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 import org.drasyl.identity.CompressedPublicKey;
@@ -37,8 +36,6 @@ import static java.util.Objects.requireNonNull;
  * This is an immutable object.
  */
 public class QuitMessage extends AbstractMessage implements RequestMessage {
-    private final CompressedPublicKey recipient;
-    @JsonInclude(JsonInclude.Include.NON_NULL)
     private final CloseReason reason;
 
     @JsonCreator
@@ -48,8 +45,7 @@ public class QuitMessage extends AbstractMessage implements RequestMessage {
                         @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                         @JsonProperty("recipient") final CompressedPublicKey recipient,
                         @JsonProperty("reason") final CloseReason reason) {
-        super(id, userAgent, sender, proofOfWork);
-        this.recipient = requireNonNull(recipient);
+        super(id, userAgent, sender, proofOfWork, recipient);
         this.reason = requireNonNull(reason);
     }
 
@@ -57,14 +53,13 @@ public class QuitMessage extends AbstractMessage implements RequestMessage {
                        final ProofOfWork proofOfWork,
                        final CompressedPublicKey recipient,
                        final CloseReason reason) {
-        super(sender, proofOfWork);
-        this.recipient = requireNonNull(recipient);
+        super(sender, proofOfWork, recipient);
         this.reason = requireNonNull(reason);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), recipient, reason);
+        return Objects.hash(super.hashCode(), reason);
     }
 
     @Override
@@ -79,8 +74,7 @@ public class QuitMessage extends AbstractMessage implements RequestMessage {
             return false;
         }
         final QuitMessage that = (QuitMessage) o;
-        return Objects.equals(recipient, that.recipient) &&
-                reason == that.reason;
+        return reason == that.reason;
     }
 
     @Override
@@ -92,11 +86,6 @@ public class QuitMessage extends AbstractMessage implements RequestMessage {
                 ", reason='" + reason + '\'' +
                 ", id='" + id +
                 '}';
-    }
-
-    @Override
-    public CompressedPublicKey getRecipient() {
-        return recipient;
     }
 
     public CloseReason getReason() {

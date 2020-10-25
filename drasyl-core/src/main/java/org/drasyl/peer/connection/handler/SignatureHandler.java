@@ -132,7 +132,7 @@ public class SignatureHandler extends SimpleChannelDuplexHandler<Message, Messag
     protected void channelWrite0(final ChannelHandlerContext ctx,
                                  final Message msg, final ChannelPromise promise) {
         try {
-            final SignedMessage signedMessage = new SignedMessage(identity.getPublicKey(), identity.getProofOfWork(), msg);
+            final SignedMessage signedMessage = new SignedMessage(identity.getPublicKey(), identity.getProofOfWork(), msg.getRecipient(), msg);
             Crypto.sign(identity.getPrivateKey().toUncompressedKey(), signedMessage);
 
             ctx.write(signedMessage, promise);

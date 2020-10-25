@@ -19,7 +19,6 @@
 package org.drasyl.peer.connection.message;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.drasyl.crypto.Signable;
 import org.drasyl.crypto.Signature;
@@ -46,8 +45,6 @@ import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
  * This is an immutable object.
  */
 public class SignedMessage extends AbstractMessage implements Signable {
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    private final CompressedPublicKey recipient;
     private Signature signature;
     private final Message payload;
 
@@ -59,8 +56,7 @@ public class SignedMessage extends AbstractMessage implements Signable {
                   @JsonProperty("recipient") final CompressedPublicKey recipient,
                   @JsonProperty("signature") final Signature signature,
                   @JsonProperty("payload") final Message payload) {
-        super(id, userAgent, sender, proofOfWork);
-        this.recipient = recipient;
+        super(id, userAgent, sender, proofOfWork, recipient);
         this.signature = signature;
         this.payload = requireNonNull(payload);
     }
@@ -69,20 +65,8 @@ public class SignedMessage extends AbstractMessage implements Signable {
                          final ProofOfWork proofOfWork,
                          final CompressedPublicKey recipient,
                          final Message payload) {
-        super(sender, proofOfWork);
-        this.recipient = recipient;
+        super(sender, proofOfWork, recipient);
         this.payload = requireNonNull(payload);
-    }
-
-    public SignedMessage(final CompressedPublicKey sender,
-                         final ProofOfWork proofOfWork,
-                         final Message payload) {
-        this(sender, proofOfWork, null, payload);
-    }
-
-    @Override
-    public CompressedPublicKey getRecipient() {
-        return recipient;
     }
 
     public Message getPayload() {
@@ -109,11 +93,11 @@ public class SignedMessage extends AbstractMessage implements Signable {
     @Override
     public String toString() {
         return "SignedMessage{" +
-                "payload=" + payload +
-                ", sender=" + sender +
+                "sender=" + sender +
                 ", proofOfWork=" + proofOfWork +
                 ", recipient=" + recipient +
                 ", signature=" + signature +
+                ", payload=" + payload +
                 '}';
     }
 
@@ -129,13 +113,12 @@ public class SignedMessage extends AbstractMessage implements Signable {
             return false;
         }
         final SignedMessage that = (SignedMessage) o;
-        return Objects.equals(recipient, that.recipient) &&
-                Objects.equals(signature, that.signature) &&
+        return Objects.equals(signature, that.signature) &&
                 Objects.equals(payload, that.payload);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), recipient, signature, payload);
+        return Objects.hash(super.hashCode(), signature, payload);
     }
 }

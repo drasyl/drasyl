@@ -19,12 +19,9 @@
 package org.drasyl.peer.connection.message;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
-
-import java.util.Objects;
 
 /**
  * A message representing a PING request.
@@ -32,24 +29,19 @@ import java.util.Objects;
  * This is an immutable object.
  */
 public class PingMessage extends AbstractMessage implements RequestMessage {
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    private final CompressedPublicKey recipient;
-
     @JsonCreator
     private PingMessage(@JsonProperty("id") final MessageId id,
                         @JsonProperty("userAgent") final String userAgent,
                         @JsonProperty("sender") final CompressedPublicKey sender,
                         @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                         @JsonProperty("recipient") final CompressedPublicKey recipient) {
-        super(id, userAgent, sender, proofOfWork);
-        this.recipient = recipient;
+        super(id, userAgent, sender, proofOfWork, recipient);
     }
 
     public PingMessage(final CompressedPublicKey sender,
                        final ProofOfWork proofOfWork,
                        final CompressedPublicKey recipient) {
-        super(sender, proofOfWork);
-        this.recipient = recipient;
+        super(sender, proofOfWork, recipient);
     }
 
     @Override
@@ -64,26 +56,11 @@ public class PingMessage extends AbstractMessage implements RequestMessage {
 
     @Override
     public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        if (!super.equals(o)) {
-            return false;
-        }
-        final PingMessage that = (PingMessage) o;
-        return Objects.equals(recipient, that.recipient);
+        return super.equals(o);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), recipient);
-    }
-
-    @Override
-    public CompressedPublicKey getRecipient() {
-        return recipient;
+        return super.hashCode();
     }
 }

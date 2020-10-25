@@ -47,6 +47,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.isA;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
@@ -133,7 +134,7 @@ class ChunkedMessageHandlerTest {
         final ChunkedMessageHandler handler = new ChunkedMessageHandler(chunks, maxContentLength, identity.getPublicKey(), identity.getProofOfWork(), transferTimeout);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        final ChunkedMessage message = mock(ChunkedMessage.class);
+        final ChunkedMessage message = mock(ChunkedMessage.class, RETURNS_DEEP_STUBS);
         when(message.getRecipient()).thenReturn(identity.getPublicKey());
         when(message.isInitialChunk()).thenReturn(false);
         when(message.getId()).thenReturn(msgID);

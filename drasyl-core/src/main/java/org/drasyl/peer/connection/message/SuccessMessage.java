@@ -23,16 +23,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 
-import static java.util.Objects.requireNonNull;
-
 /**
  * Represents a confirmation of a previous sent {@link RequestMessage}.
  * <p>
  * This is an immutable object.
  */
 public class SuccessMessage extends AbstractResponseMessage<RequestMessage> {
-    private final CompressedPublicKey recipient;
-
     @JsonCreator
     private SuccessMessage(@JsonProperty("id") final MessageId id,
                            @JsonProperty("userAgent") final String userAgent,
@@ -40,8 +36,7 @@ public class SuccessMessage extends AbstractResponseMessage<RequestMessage> {
                            @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                            @JsonProperty("recipient") final CompressedPublicKey recipient,
                            @JsonProperty("correspondingId") final MessageId correspondingId) {
-        super(id, userAgent, sender, proofOfWork, correspondingId);
-        this.recipient = requireNonNull(recipient);
+        super(id, userAgent, sender, proofOfWork, recipient, correspondingId);
     }
 
     /**
@@ -57,8 +52,7 @@ public class SuccessMessage extends AbstractResponseMessage<RequestMessage> {
                           final ProofOfWork proofOfWork,
                           final CompressedPublicKey recipient,
                           final MessageId correspondingId) {
-        super(sender, proofOfWork, correspondingId);
-        this.recipient = requireNonNull(recipient);
+        super(sender, proofOfWork, recipient, correspondingId);
     }
 
     @Override
@@ -66,6 +60,7 @@ public class SuccessMessage extends AbstractResponseMessage<RequestMessage> {
         return "OkMessage{" +
                 "sender='" + sender + '\'' +
                 ", proofOfWork='" + proofOfWork + '\'' +
+                ", recipient='" + recipient + '\'' +
                 ", correspondingId='" + correspondingId + '\'' +
                 ", id='" + id +
                 '}';
@@ -79,10 +74,5 @@ public class SuccessMessage extends AbstractResponseMessage<RequestMessage> {
     @Override
     public boolean equals(final Object o) {
         return super.equals(o);
-    }
-
-    @Override
-    public CompressedPublicKey getRecipient() {
-        return recipient;
     }
 }

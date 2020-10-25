@@ -23,15 +23,10 @@ import org.drasyl.identity.ProofOfWork;
 
 import java.util.Objects;
 
-import static java.util.Objects.requireNonNull;
-
 /**
  * Includes messages that can be relayed to their recipient via multiple hops.
- * <p>
- * This is an immutable object.
  */
 public abstract class RelayableMessage extends AbstractMessage {
-    protected final CompressedPublicKey recipient;
     protected short hopCount;
 
     protected RelayableMessage(final MessageId id,
@@ -40,8 +35,7 @@ public abstract class RelayableMessage extends AbstractMessage {
                                final ProofOfWork proofOfWork,
                                final CompressedPublicKey recipient,
                                final short hopCount) {
-        super(id, userAgent, sender, proofOfWork);
-        this.recipient = requireNonNull(recipient);
+        super(id, userAgent, sender, proofOfWork, recipient);
         this.hopCount = hopCount;
     }
 
@@ -50,8 +44,7 @@ public abstract class RelayableMessage extends AbstractMessage {
                                final ProofOfWork proofOfWork,
                                final CompressedPublicKey recipient,
                                final short hopCount) {
-        super(id, userAgentGenerator.get(), sender, proofOfWork);
-        this.recipient = requireNonNull(recipient);
+        super(id, userAgentGenerator.get(), sender, proofOfWork, recipient);
         this.hopCount = hopCount;
     }
 
@@ -65,8 +58,7 @@ public abstract class RelayableMessage extends AbstractMessage {
                                final ProofOfWork proofOfWork,
                                final CompressedPublicKey recipient,
                                final short hopCount) {
-        super(sender, proofOfWork);
-        this.recipient = requireNonNull(recipient);
+        super(sender, proofOfWork, recipient);
         this.hopCount = hopCount;
     }
 
@@ -82,13 +74,8 @@ public abstract class RelayableMessage extends AbstractMessage {
     }
 
     @Override
-    public CompressedPublicKey getRecipient() {
-        return recipient;
-    }
-
-    @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), recipient, hopCount);
+        return Objects.hash(super.hashCode(), hopCount);
     }
 
     @Override
@@ -103,7 +90,6 @@ public abstract class RelayableMessage extends AbstractMessage {
             return false;
         }
         final RelayableMessage that = (RelayableMessage) o;
-        return hopCount == that.hopCount &&
-                Objects.equals(recipient, that.recipient);
+        return hopCount == that.hopCount;
     }
 }

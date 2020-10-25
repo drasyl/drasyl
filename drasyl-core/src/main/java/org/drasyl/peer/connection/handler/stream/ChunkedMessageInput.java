@@ -143,7 +143,7 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
             else {
                 // Send last chunk for this input
                 sentLastChuck = true;
-                return ChunkedMessage.createLastChunk(sender, proofOfWork, recipient, msgID);
+                return ChunkedMessage.createLastChunk(msgID, sender, proofOfWork, recipient);
             }
         }
         else {
@@ -155,11 +155,11 @@ public class ChunkedMessageInput implements ChunkedInput<ChunkedMessage> {
 
                 if (progress == 0) {
                     // Send first chunk for this input
-                    chunkedMessage = ChunkedMessage.createFirstChunk(sender, proofOfWork, recipient, msgID, new byte[readableBytes], contentLength, checksum);
+                    chunkedMessage = ChunkedMessage.createFirstChunk(msgID, sender, proofOfWork, recipient, new byte[readableBytes], contentLength, checksum);
                 }
                 else {
                     // Send follow chunk for this input
-                    chunkedMessage = ChunkedMessage.createFollowChunk(sender, proofOfWork, recipient, msgID, new byte[readableBytes]);
+                    chunkedMessage = ChunkedMessage.createFollowChunk(msgID, sender, proofOfWork, recipient, new byte[readableBytes]);
                 }
 
                 byteBuf.readBytes(chunkedMessage.getPayload());

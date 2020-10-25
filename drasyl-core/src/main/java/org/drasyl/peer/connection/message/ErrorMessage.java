@@ -19,7 +19,6 @@
 package org.drasyl.peer.connection.message;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import com.fasterxml.jackson.annotation.JsonValue;
 import org.drasyl.identity.CompressedPublicKey;
@@ -38,8 +37,6 @@ import static java.util.Objects.requireNonNull;
  */
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class ErrorMessage extends AbstractMessage implements RequestMessage, ResponseMessage<RequestMessage> {
-    @JsonInclude(JsonInclude.Include.NON_NULL)
-    private final CompressedPublicKey recipient;
     private final Error error;
     private final MessageId correspondingId;
 
@@ -51,8 +48,7 @@ public class ErrorMessage extends AbstractMessage implements RequestMessage, Res
                          @JsonProperty("recipient") final CompressedPublicKey recipient,
                          @JsonProperty("error") final Error error,
                          @JsonProperty("correspondingId") final MessageId correspondingId) {
-        super(id, userAgent, sender, proofOfWork);
-        this.recipient = recipient;
+        super(id, userAgent, sender, proofOfWork, recipient);
         this.error = requireNonNull(error);
         this.correspondingId = correspondingId;
     }
@@ -71,8 +67,7 @@ public class ErrorMessage extends AbstractMessage implements RequestMessage, Res
                         final CompressedPublicKey recipient,
                         final Error error,
                         final MessageId correspondingId) {
-        super(sender, proofOfWork);
-        this.recipient = recipient;
+        super(sender, proofOfWork, recipient);
         this.error = requireNonNull(error);
         this.correspondingId = requireNonNull(correspondingId);
     }
@@ -90,11 +85,6 @@ public class ErrorMessage extends AbstractMessage implements RequestMessage, Res
     }
 
     @Override
-    public CompressedPublicKey getRecipient() {
-        return recipient;
-    }
-
-    @Override
     public boolean equals(final Object o) {
         if (this == o) {
             return true;
@@ -106,8 +96,7 @@ public class ErrorMessage extends AbstractMessage implements RequestMessage, Res
             return false;
         }
         final ErrorMessage that = (ErrorMessage) o;
-        return Objects.equals(recipient, that.recipient) &&
-                error == that.error &&
+        return error == that.error &&
                 Objects.equals(correspondingId, that.correspondingId);
     }
 
@@ -119,13 +108,12 @@ public class ErrorMessage extends AbstractMessage implements RequestMessage, Res
     @Override
     public String toString() {
         return "ErrorMessage{" +
-                "recipient=" + recipient +
+                "sender=" + sender +
+                ", proofOfWork=" + proofOfWork +
+                ", recipient=" + recipient +
                 ", error=" + error +
                 ", correspondingId=" + correspondingId +
                 ", id=" + id +
-                ", sender=" + sender +
-                ", proofOfWork=" + proofOfWork +
-                ", userAgent='" + userAgent + '\'' +
                 '}';
     }
 

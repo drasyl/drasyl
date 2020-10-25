@@ -19,7 +19,6 @@
 package org.drasyl.peer.connection.message;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -36,9 +35,7 @@ import static java.util.Objects.requireNonNull;
  */
 public class WelcomeMessage extends AbstractMessage implements ResponseMessage<JoinMessage> {
     private final int networkId;
-    private final CompressedPublicKey recipient;
     private final PeerInformation peerInformation;
-    @JsonInclude(JsonInclude.Include.NON_NULL)
     private final MessageId correspondingId;
 
     @JsonCreator
@@ -50,9 +47,8 @@ public class WelcomeMessage extends AbstractMessage implements ResponseMessage<J
                            @JsonProperty("recipient") final CompressedPublicKey recipient,
                            @JsonProperty("peerInformation") final PeerInformation peerInformation,
                            @JsonProperty("correspondingId") final MessageId correspondingId) {
-        super(id, userAgent, sender, proofOfWork);
+        super(id, userAgent, sender, proofOfWork, recipient);
         this.networkId = networkId;
-        this.recipient = requireNonNull(recipient);
         this.peerInformation = requireNonNull(peerInformation);
         this.correspondingId = requireNonNull(correspondingId);
     }
@@ -73,20 +69,14 @@ public class WelcomeMessage extends AbstractMessage implements ResponseMessage<J
                           final CompressedPublicKey recipient,
                           final PeerInformation peerInformation,
                           final MessageId correspondingId) {
-        super(sender, proofOfWork);
+        super(sender, proofOfWork, recipient);
         this.networkId = networkId;
-        this.recipient = requireNonNull(recipient);
         this.peerInformation = requireNonNull(peerInformation);
         this.correspondingId = requireNonNull(correspondingId);
     }
 
     public int getNetworkId() {
         return networkId;
-    }
-
-    @Override
-    public CompressedPublicKey getRecipient() {
-        return recipient;
     }
 
     public PeerInformation getPeerInformation() {
@@ -100,7 +90,7 @@ public class WelcomeMessage extends AbstractMessage implements ResponseMessage<J
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), networkId, recipient, peerInformation, correspondingId);
+        return Objects.hash(super.hashCode(), networkId, peerInformation, correspondingId);
     }
 
     @Override
@@ -116,7 +106,6 @@ public class WelcomeMessage extends AbstractMessage implements ResponseMessage<J
         }
         final WelcomeMessage that = (WelcomeMessage) o;
         return networkId == that.networkId &&
-                Objects.equals(recipient, that.recipient) &&
                 Objects.equals(peerInformation, that.peerInformation) &&
                 Objects.equals(correspondingId, that.correspondingId);
     }

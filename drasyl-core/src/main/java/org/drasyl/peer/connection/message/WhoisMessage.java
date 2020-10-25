@@ -86,8 +86,8 @@ public class WhoisMessage extends RelayableMessage implements RequestMessage {
         return "WhoisMessage{" +
                 "sender=" + sender +
                 "proofOfWork=" + proofOfWork +
-                ", peerInformation=" + peerInformation +
                 ", recipient=" + recipient +
+                ", peerInformation=" + peerInformation +
                 ", hopCount=" + hopCount +
                 ", id='" + id + '\'' +
                 '}';

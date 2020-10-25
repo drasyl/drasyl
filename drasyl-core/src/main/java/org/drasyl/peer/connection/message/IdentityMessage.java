@@ -96,10 +96,11 @@ public class IdentityMessage extends RelayableMessage implements ResponseMessage
     public String toString() {
         return "IdentityMessage{" +
                 "sender=" + sender +
-                ", peerInformation=" + peerInformation +
-                ", correspondingId='" + correspondingId + '\'' +
+                "proofOfWork=" + proofOfWork +
                 ", recipient=" + recipient +
+                ", peerInformation=" + peerInformation +
                 ", hopCount=" + hopCount +
+                ", correspondingId='" + correspondingId + '\'' +
                 ", id='" + id + '\'' +
                 '}';
     }

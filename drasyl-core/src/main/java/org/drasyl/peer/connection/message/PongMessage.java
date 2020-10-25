@@ -23,18 +23,12 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 
-import java.util.Objects;
-
-import static java.util.Objects.requireNonNull;
-
 /**
  * A message representing a PONG response.
  * <p>
  * This is an immutable object.
  */
 public class PongMessage extends AbstractResponseMessage<PingMessage> {
-    private final CompressedPublicKey recipient;
-
     @JsonCreator
     private PongMessage(@JsonProperty("id") final MessageId id,
                         @JsonProperty("userAgent") final String userAgent,
@@ -42,21 +36,14 @@ public class PongMessage extends AbstractResponseMessage<PingMessage> {
                         @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                         @JsonProperty("recipient") final CompressedPublicKey recipient,
                         @JsonProperty("correspondingId") final MessageId correspondingId) {
-        super(id, userAgent, sender, proofOfWork, correspondingId);
-        this.recipient = requireNonNull(recipient);
+        super(id, userAgent, sender, proofOfWork, recipient, correspondingId);
     }
 
     public PongMessage(final CompressedPublicKey sender,
                        final ProofOfWork proofOfWork,
                        final CompressedPublicKey recipient,
                        final MessageId correspondingId) {
-        super(sender, proofOfWork, correspondingId);
-        this.recipient = requireNonNull(recipient);
-    }
-
-    @Override
-    public CompressedPublicKey getRecipient() {
-        return recipient;
+        super(sender, proofOfWork, recipient, correspondingId);
     }
 
     @Override
@@ -72,21 +59,11 @@ public class PongMessage extends AbstractResponseMessage<PingMessage> {
 
     @Override
     public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        if (!super.equals(o)) {
-            return false;
-        }
-        final PongMessage that = (PongMessage) o;
-        return Objects.equals(recipient, that.recipient);
+        return super.equals(o);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), recipient);
+        return super.hashCode();
     }
 }

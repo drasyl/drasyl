@@ -178,9 +178,9 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
                 "sender=" + sender +
                 ", proofOfWork=" + proofOfWork +
                 ", recipient=" + recipient +
+                ", headers=" + headers +
                 ", payload=byte[" + Optional.ofNullable(payload).orElse(new byte[]{}).length + "] { ... }" +
                 ", hopCount=" + hopCount +
-                ", headers=" + headers +
                 ", id='" + id + '\'' +
                 '}';
     }

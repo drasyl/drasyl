@@ -33,23 +33,26 @@ abstract class AbstractResponseMessage<R extends RequestMessage> extends Abstrac
                                       final String userAgent,
                                       final CompressedPublicKey sender,
                                       final ProofOfWork proofOfWork,
+                                      final CompressedPublicKey recipient,
                                       final MessageId correspondingId) {
-        super(id, userAgent, sender, proofOfWork);
+        super(id, userAgent, sender, proofOfWork, recipient);
         this.correspondingId = requireNonNull(correspondingId);
     }
 
     protected AbstractResponseMessage(final String userAgent,
                                       final CompressedPublicKey sender,
                                       final ProofOfWork proofOfWork,
+                                      final CompressedPublicKey recipient,
                                       final MessageId correspondingId) {
-        super(randomMessageId(), userAgent, sender, proofOfWork);
+        super(randomMessageId(), userAgent, sender, proofOfWork, recipient);
         this.correspondingId = requireNonNull(correspondingId);
     }
 
     protected AbstractResponseMessage(final CompressedPublicKey sender,
                                       final ProofOfWork proofOfWork,
+                                      final CompressedPublicKey recipient,
                                       final MessageId correspondingId) {
-        super(sender, proofOfWork);
+        super(sender, proofOfWork, recipient);
         this.correspondingId = requireNonNull(correspondingId);
     }
 
