@@ -102,7 +102,7 @@ public class ServerConnectionHandler extends ThreeWayHandshakeServerHandler<Join
     @Override
     protected WelcomeMessage offerSession(final ChannelHandlerContext ctx,
                                           final JoinMessage requestMessage) {
-        return new WelcomeMessage(environment.getConfig().getNetworkId(), environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), PeerInformation.of(environment.getEndpoints()), requestMessage.getId());
+        return new WelcomeMessage(environment.getConfig().getNetworkId(), environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), requestMessage.getSender(), PeerInformation.of(environment.getEndpoints()), requestMessage.getId());
     }
 
     @Override

@@ -38,6 +38,7 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
     private final int networkId;
     private final CompressedPublicKey sender;
     private final ProofOfWork proofOfWork;
+    private final CompressedPublicKey recipient;
     private final PeerInformation peerInformation;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final MessageId correspondingId;
@@ -48,12 +49,14 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
                            @JsonProperty("networkId") final int networkId,
                            @JsonProperty("sender") final CompressedPublicKey sender,
                            @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
+                           @JsonProperty("recipient") final CompressedPublicKey recipient,
                            @JsonProperty("peerInformation") final PeerInformation peerInformation,
                            @JsonProperty("correspondingId") final MessageId correspondingId) {
         super(id, userAgent);
         this.networkId = networkId;
         this.sender = requireNonNull(sender);
         this.proofOfWork = requireNonNull(proofOfWork);
+        this.recipient = requireNonNull(recipient);
         this.peerInformation = requireNonNull(peerInformation);
         this.correspondingId = requireNonNull(correspondingId);
     }
@@ -64,17 +67,20 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
      * @param networkId       the network id of the node server
      * @param sender          the public key of the node server
      * @param proofOfWork     the proof of work of the node server
+     * @param recipient       the public key of the recipient
      * @param peerInformation the peer information of the node server
      * @param correspondingId the corresponding id of the previous join message
      */
     public WelcomeMessage(final int networkId,
                           final CompressedPublicKey sender,
                           final ProofOfWork proofOfWork,
+                          final CompressedPublicKey recipient,
                           final PeerInformation peerInformation,
                           final MessageId correspondingId) {
         this.networkId = networkId;
         this.sender = requireNonNull(sender);
         this.proofOfWork = requireNonNull(proofOfWork);
+        this.recipient = requireNonNull(recipient);
         this.peerInformation = requireNonNull(peerInformation);
         this.correspondingId = requireNonNull(correspondingId);
     }
@@ -91,6 +97,10 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
         return proofOfWork;
     }
 
+    public CompressedPublicKey getRecipient() {
+        return recipient;
+    }
+
     public PeerInformation getPeerInformation() {
         return this.peerInformation;
     }
@@ -102,7 +112,7 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), networkId, sender, proofOfWork, peerInformation, correspondingId);
+        return Objects.hash(super.hashCode(), networkId, sender, proofOfWork, recipient, peerInformation, correspondingId);
     }
 
     @Override
@@ -120,6 +130,7 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
         return networkId == that.networkId &&
                 Objects.equals(sender, that.sender) &&
                 Objects.equals(proofOfWork, that.proofOfWork) &&
+                Objects.equals(recipient, that.recipient) &&
                 Objects.equals(peerInformation, that.peerInformation) &&
                 Objects.equals(correspondingId, that.correspondingId);
     }
@@ -130,6 +141,7 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
                 "networkId=" + networkId +
                 ", sender=" + sender +
                 ", proofOfWork=" + proofOfWork +
+                ", recipient=" + recipient +
                 ", peerInformation=" + peerInformation +
                 ", correspondingId=" + correspondingId +
                 ", id=" + id +
