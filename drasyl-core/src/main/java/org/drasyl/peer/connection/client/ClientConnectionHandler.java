@@ -64,7 +64,7 @@ public class ClientConnectionHandler extends ThreeWayHandshakeClientHandler<Join
                 environment.getHandshakeTimeout(),
                 environment.getPipeline(),
                 new JoinMessage(environment.getConfig().getNetworkId(), environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(),
-                        environment.getEndpoint().getPublicKey(), environment.joinAsChildren()
+                        environment.getEndpoint().getPublicKey(), environment.joinAsChildren() ? System.currentTimeMillis() : 0
                 )
         );
         this.environment = environment;

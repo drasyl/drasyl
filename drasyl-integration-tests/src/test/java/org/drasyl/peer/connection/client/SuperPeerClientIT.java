@@ -226,7 +226,7 @@ class SuperPeerClientIT {
 
             // verify received messages
             receivedMessages.awaitCount(1);
-            receivedMessages.assertValueAt(0, new JoinMessage(networkId, identityManager.getPublicKey(), identityManager.getProofOfWork(), config.getSuperPeerEndpoints().iterator().next().getPublicKey(), true));
+            receivedMessages.assertValue(message -> message.equals(new JoinMessage(networkId, identityManager.getPublicKey(), identityManager.getProofOfWork(), config.getSuperPeerEndpoints().iterator().next().getPublicKey(), ((JoinMessage) message).getJoinTime())));
         }
     }
 

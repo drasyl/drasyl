@@ -31,7 +31,7 @@ import java.util.Objects;
  * This is an immutable object.
  */
 public class JoinMessage extends AbstractMessage implements RequestMessage {
-    private final boolean childrenJoin;
+    private final long joinTime;
 
     @JsonCreator
     private JoinMessage(@JsonProperty("id") final MessageId id,
@@ -40,36 +40,41 @@ public class JoinMessage extends AbstractMessage implements RequestMessage {
                         @JsonProperty("sender") final CompressedPublicKey sender,
                         @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                         @JsonProperty("recipient") final CompressedPublicKey recipient,
-                        @JsonProperty("childrenJoin") final boolean childrenJoin) {
+                        @JsonProperty("hopCount") final short hopCount,
+                        @JsonProperty("childrenTime") final long joinTime) {
         super(id, userAgent, networkId, sender, proofOfWork, recipient);
-        this.childrenJoin = childrenJoin;
+        this.joinTime = joinTime;
     }
 
     /**
      * Creates a new join message.
      *
-     * @param networkId    the network of the joining node
-     * @param sender       the public key of the joining node
-     * @param proofOfWork  the proof of work
-     * @param recipient    the public key of the node to join
-     * @param childrenJoin join peer as children
+     * @param networkId   the network of the joining node
+     * @param sender      the public key of the joining node
+     * @param proofOfWork the proof of work
+     * @param recipient   the public key of the node to join
+     * @param joinTime    if {@code 0} greater then 0, node will join a children.
      */
     public JoinMessage(final int networkId,
                        final CompressedPublicKey sender,
                        final ProofOfWork proofOfWork,
                        final CompressedPublicKey recipient,
-                       final boolean childrenJoin) {
+                       final long joinTime) {
         super(networkId, sender, proofOfWork, recipient);
-        this.childrenJoin = childrenJoin;
+        this.joinTime = joinTime;
+    }
+
+    public long getJoinTime() {
+        return joinTime;
     }
 
     public boolean isChildrenJoin() {
-        return childrenJoin;
+        return joinTime > 0;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), childrenJoin);
+        return Objects.hash(super.hashCode(), joinTime);
     }
 
     @Override
@@ -84,7 +89,7 @@ public class JoinMessage extends AbstractMessage implements RequestMessage {
             return false;
         }
         final JoinMessage that = (JoinMessage) o;
-        return childrenJoin == that.childrenJoin;
+        return joinTime == that.joinTime;
     }
 
     @Override
@@ -94,7 +99,7 @@ public class JoinMessage extends AbstractMessage implements RequestMessage {
                 ", sender=" + sender +
                 ", proofOfWork=" + proofOfWork +
                 ", recipient=" + recipient +
-                ", childrenJoin=" + childrenJoin +
+                ", joinTime=" + joinTime +
                 ", id=" + id +
                 '}';
     }

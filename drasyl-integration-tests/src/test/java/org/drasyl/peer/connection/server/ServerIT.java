@@ -208,7 +208,7 @@ class ServerIT {
         // create connection
         try (final TestSuperPeerClient session = clientSession(configClient1, server, identitySession1)) {
             // send message
-            final RequestMessage request = new JoinMessage(networkId, session.getIdentity().getPublicKey(), session.getIdentity().getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), true);
+            final RequestMessage request = new JoinMessage(networkId, session.getIdentity().getPublicKey(), session.getIdentity().getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), System.currentTimeMillis());
             final CompletableFuture<ResponseMessage<?>> send = session.sendRequest(request);
 
             // verify response
@@ -266,10 +266,10 @@ class ServerIT {
         try (final TestSuperPeerClient session1 = clientSession(configClient1, server, identitySession1)) {
             try (final TestSuperPeerClient session2 = clientSession(configClient2, server, identitySession2)) {
                 // send messages
-                final RequestMessage request1 = new JoinMessage(networkId, session1.getIdentity().getPublicKey(), session1.getIdentity().getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), true);
+                final RequestMessage request1 = new JoinMessage(networkId, session1.getIdentity().getPublicKey(), session1.getIdentity().getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), System.currentTimeMillis());
                 final CompletableFuture<ResponseMessage<?>> send1 = session1.sendRequest(request1);
 
-                final RequestMessage request2 = new JoinMessage(networkId, session2.getIdentity().getPublicKey(), session2.getIdentity().getProofOfWork(), configClient2.getSuperPeerEndpoints().iterator().next().getPublicKey(), true);
+                final RequestMessage request2 = new JoinMessage(networkId, session2.getIdentity().getPublicKey(), session2.getIdentity().getProofOfWork(), configClient2.getSuperPeerEndpoints().iterator().next().getPublicKey(), System.currentTimeMillis());
                 final CompletableFuture<ResponseMessage<?>> send2 = session2.sendRequest(request2);
 
                 // verify responses
@@ -319,12 +319,12 @@ class ServerIT {
                 final TestObserver<Message> receivedMessages2 = session2.receivedMessages().test();
 
                 // send messages
-                final RequestMessage request1 = new JoinMessage(networkId, session1.getIdentity().getPublicKey(), session1.getIdentity().getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), true);
+                final RequestMessage request1 = new JoinMessage(networkId, session1.getIdentity().getPublicKey(), session1.getIdentity().getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), System.currentTimeMillis());
                 final ResponseMessage<?> response1 = session1.sendRequest(request1).get();
                 session1.send(new SuccessMessage(networkId, session1.getPublicKey(), session1.getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), response1.getId()));
                 await().until(() -> channelGroup.find(session1.getIdentity().getPublicKey()) != null);
 
-                final RequestMessage request2 = new JoinMessage(networkId, session1.getIdentity().getPublicKey(), session1.getIdentity().getProofOfWork(), configClient2.getSuperPeerEndpoints().iterator().next().getPublicKey(), true);
+                final RequestMessage request2 = new JoinMessage(networkId, session1.getIdentity().getPublicKey(), session1.getIdentity().getProofOfWork(), configClient2.getSuperPeerEndpoints().iterator().next().getPublicKey(), System.currentTimeMillis());
                 final ResponseMessage<?> response2 = session2.sendRequest(request2).join();
                 session2.send(new SuccessMessage(networkId, session2.getPublicKey(), session2.getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), response2.getId()));
 
@@ -520,7 +520,7 @@ class ServerIT {
             final TestObserver<Message> receivedMessages = session.receivedMessages().filter(msg -> msg instanceof ErrorMessage).test();
 
             // send message
-            final RequestMessage request = new JoinMessage(networkId, session.getIdentity().getPublicKey(), session.getIdentity().getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), true);
+            final RequestMessage request = new JoinMessage(networkId, session.getIdentity().getPublicKey(), session.getIdentity().getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), System.currentTimeMillis());
             session.sendRequest(request);
 
             // verify response
@@ -557,7 +557,7 @@ class ServerIT {
             final TestObserver<Message> receivedMessages = session.receivedMessages().filter(msg -> msg instanceof ErrorMessage).test();
 
             // send messages
-            final RequestMessage request1 = new JoinMessage(networkId, session.getIdentity().getPublicKey(), identitySession2.getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), true);
+            final RequestMessage request1 = new JoinMessage(networkId, session.getIdentity().getPublicKey(), identitySession2.getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), System.currentTimeMillis());
             session.sendRequest(request1);
 
             // verify response
