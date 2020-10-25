@@ -31,8 +31,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.IOException;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
-import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_FORMAT;
-import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_INTERNAL;
+import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_HANDSHAKE_TIMEOUT;
+import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_PING_PONG;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -51,13 +51,12 @@ class ExceptionMessageTest {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
             final String json = "{\"@type\":\"" + ExceptionMessage.class.getSimpleName() + "\",\"proofOfWork\":3556154,\"sender\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\",\"userAgent\":\"\",\"id\":\"89ba3cd9efb7570eb3126d11\"," +
-                    "\"error\":\"" + ERROR_INTERNAL.getDescription() + "\"}";
+                    "\"error\":\"" + ERROR_PING_PONG.getDescription() + "\"}";
 
             assertEquals(new ExceptionMessage(
                     CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"),
                     ProofOfWork.of(3556154),
-                    ERROR_INTERNAL
-            ), JACKSON_READER.readValue(json, Message.class));
+                    ERROR_PING_PONG), JACKSON_READER.readValue(json, Message.class));
         }
 
         @Test
@@ -75,13 +74,12 @@ class ExceptionMessageTest {
             final ExceptionMessage message = new ExceptionMessage(
                     CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"),
                     ProofOfWork.of(3556154),
-                    ERROR_INTERNAL
-            );
+                    ERROR_PING_PONG);
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", ExceptionMessage.class.getSimpleName())
-                    .containsKeys("id", "error", "proofOfWork", "sender", "userAgent");
+                    .containsKeys("id", "error", "sender", "proofOfWork", "userAgent");
         }
     }
 
@@ -89,7 +87,7 @@ class ExceptionMessageTest {
     class Constructor {
         @Test
         void shouldRejectNullValues() {
-            assertThrows(NullPointerException.class, () -> new ExceptionMessage(sender, proofOfWork, null), "ExceptionMessage requires an error");
+            assertThrows(NullPointerException.class, () -> new ExceptionMessage(sender, proofOfWork, null), "ConnectionExceptionMessage requires an error type");
         }
     }
 
@@ -97,9 +95,9 @@ class ExceptionMessageTest {
     class Equals {
         @Test
         void notSameBecauseOfDifferentError() {
-            final ExceptionMessage message1 = new ExceptionMessage(sender, proofOfWork, ERROR_INTERNAL);
-            final ExceptionMessage message2 = new ExceptionMessage(sender, proofOfWork, ERROR_INTERNAL);
-            final ExceptionMessage message3 = new ExceptionMessage(sender, proofOfWork, ERROR_FORMAT);
+            final ExceptionMessage message1 = new ExceptionMessage(sender, proofOfWork, ERROR_PING_PONG);
+            final ExceptionMessage message2 = new ExceptionMessage(sender, proofOfWork, ERROR_PING_PONG);
+            final ExceptionMessage message3 = new ExceptionMessage(sender, proofOfWork, ERROR_HANDSHAKE_TIMEOUT);
 
             assertEquals(message1, message2);
             assertNotEquals(message2, message3);
@@ -110,9 +108,9 @@ class ExceptionMessageTest {
     class HashCode {
         @Test
         void notSameBecauseOfDifferentError() {
-            final ExceptionMessage message1 = new ExceptionMessage(sender, proofOfWork, ERROR_INTERNAL);
-            final ExceptionMessage message2 = new ExceptionMessage(sender, proofOfWork, ERROR_INTERNAL);
-            final ExceptionMessage message3 = new ExceptionMessage(sender, proofOfWork, ERROR_FORMAT);
+            final ExceptionMessage message1 = new ExceptionMessage(sender, proofOfWork, ERROR_PING_PONG);
+            final ExceptionMessage message2 = new ExceptionMessage(sender, proofOfWork, ERROR_PING_PONG);
+            final ExceptionMessage message3 = new ExceptionMessage(sender, proofOfWork, ERROR_HANDSHAKE_TIMEOUT);
 
             assertEquals(message1.hashCode(), message2.hashCode());
             assertNotEquals(message2.hashCode(), message3.hashCode());

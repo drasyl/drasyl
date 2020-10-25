@@ -28,7 +28,6 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
 import io.netty.handler.stream.ChunkedWriteHandler;
-import org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.RelayableMessageGuard;
 import org.drasyl.peer.connection.handler.SignatureHandler;
@@ -41,7 +40,6 @@ import javax.net.ssl.SSLException;
 import static io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler.ClientHandshakeStateEvent.HANDSHAKE_COMPLETE;
 import static io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler.ClientHandshakeStateEvent.HANDSHAKE_TIMEOUT;
 import static org.drasyl.peer.connection.client.ClientConnectionHandler.CLIENT_CONNECTION_HANDLER;
-import static org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler.EXCEPTION_MESSAGE_HANDLER;
 import static org.drasyl.peer.connection.handler.ExceptionHandler.EXCEPTION_HANDLER;
 import static org.drasyl.peer.connection.handler.RelayableMessageGuard.HOP_COUNT_GUARD;
 import static org.drasyl.peer.connection.handler.SignatureHandler.SIGNATURE_HANDLER;
@@ -72,8 +70,6 @@ public class DefaultClientChannelInitializer extends ClientChannelInitializer {
 
     @Override
     protected void customStage(final ChannelPipeline pipeline) {
-        pipeline.addLast(EXCEPTION_MESSAGE_HANDLER, ConnectionExceptionMessageHandler.INSTANCE);
-
         pipeline.addLast(DRASYL_HANDSHAKE_AFTER_WEBSOCKET_HANDSHAKE, new MyChannelInboundHandlerAdapter(pipeline));
     }
 

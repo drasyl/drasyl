@@ -24,7 +24,6 @@ import io.netty.channel.ChannelPromise;
 import io.netty.util.ReferenceCountUtil;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.ExceptionMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.QuitMessage;
@@ -36,8 +35,8 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_HANDSHAKE_TIMEOUT;
-import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_INITIALIZATION;
+import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_HANDSHAKE_TIMEOUT;
+import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_INITIALIZATION;
 import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_UNEXPECTED_MESSAGE;
 
 abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandler<Message, Message> {
@@ -72,7 +71,7 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
             getLogger().trace("[{}] Handshake is not completed. Inbound message was rejected: '{}'", ctx.channel().id().asShortText(), message);
         }
         // reject all non-request messages if handshake is not done
-        ctx.writeAndFlush(new ExceptionMessage(identity.getPublicKey(), identity.getProofOfWork(), ERROR_UNEXPECTED_MESSAGE));
+        ctx.writeAndFlush(new ExceptionMessage(identity.getPublicKey(), identity.getProofOfWork(), ERROR_UNEXPECTED_MESSAGE, message.getId()));
     }
 
     protected abstract Logger getLogger();
@@ -158,21 +157,21 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
             // schedule connection error if handshake did not take place within timeout
             timeoutFuture = ctx.executor().schedule(() -> {
                 if (!timeoutFuture.isCancelled()) {
-                    rejectSession(ctx, CONNECTION_ERROR_HANDSHAKE_TIMEOUT);
+                    rejectSession(ctx, ERROR_HANDSHAKE_TIMEOUT);
                 }
             }, timeout.toMillis(), MILLISECONDS);
         }
     }
 
     protected void rejectSession(final ChannelHandlerContext ctx,
-                                 final ConnectionExceptionMessage.Error error) {
+                                 final ExceptionMessage.Error error) {
         final String errorDescription = error.getDescription();
         if (getLogger().isTraceEnabled()) {
             getLogger().trace("[{}]: {}", ctx.channel().id().asShortText(), errorDescription);
         }
         timeoutFuture.cancel(true);
         handshakeFuture.completeExceptionally(new Exception(errorDescription));
-        ctx.writeAndFlush(new ConnectionExceptionMessage(identity.getPublicKey(), identity.getProofOfWork(), error)).addListener(ChannelFutureListener.CLOSE);
+        ctx.writeAndFlush(new ExceptionMessage(identity.getPublicKey(), identity.getProofOfWork(), error)).addListener(ChannelFutureListener.CLOSE);
     }
 
     @Override
@@ -182,7 +181,7 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
                 getLogger().info("[{}]: Exception during handshake occurred: {}", ctx.channel().id().asShortText(), cause.getMessage());
             }
             // close connection if an error occurred before handshake
-            ctx.writeAndFlush(new ConnectionExceptionMessage(identity.getPublicKey(), identity.getProofOfWork(), CONNECTION_ERROR_INITIALIZATION)).addListener(ChannelFutureListener.CLOSE);
+            ctx.writeAndFlush(new ExceptionMessage(identity.getPublicKey(), identity.getProofOfWork(), ERROR_INITIALIZATION)).addListener(ChannelFutureListener.CLOSE);
         }
         else {
             ctx.fireExceptionCaught(cause);

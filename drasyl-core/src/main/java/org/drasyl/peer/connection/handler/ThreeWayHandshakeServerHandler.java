@@ -21,7 +21,7 @@ package org.drasyl.peer.connection.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
+import org.drasyl.peer.connection.message.ExceptionMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.ResponseMessage;
@@ -31,7 +31,7 @@ import org.drasyl.pipeline.Pipeline;
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
-import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_HANDSHAKE_REJECTED;
+import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_HANDSHAKE_REJECTED;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 
 /**
@@ -68,7 +68,7 @@ public abstract class ThreeWayHandshakeServerHandler<R extends RequestMessage, O
         try {
             if (message instanceof RequestMessage && this.requestMessage == null) {
                 this.requestMessage = (R) message;
-                final ConnectionExceptionMessage.Error error = validateSessionRequest(requestMessage);
+                final ExceptionMessage.Error error = validateSessionRequest(requestMessage);
                 if (error == null) {
                     offerMessage = offerSession(ctx, requestMessage);
                     ctx.writeAndFlush(offerMessage);
@@ -84,7 +84,7 @@ public abstract class ThreeWayHandshakeServerHandler<R extends RequestMessage, O
                     confirmSession(ctx);
                 }
                 else {
-                    rejectSession(ctx, CONNECTION_ERROR_HANDSHAKE_REJECTED);
+                    rejectSession(ctx, ERROR_HANDSHAKE_REJECTED);
                 }
             }
             else {
@@ -96,7 +96,7 @@ public abstract class ThreeWayHandshakeServerHandler<R extends RequestMessage, O
         }
     }
 
-    protected abstract ConnectionExceptionMessage.Error validateSessionRequest(R requestMessage);
+    protected abstract ExceptionMessage.Error validateSessionRequest(R requestMessage);
 
     protected abstract O offerSession(ChannelHandlerContext ctx, R requestMessage);
 

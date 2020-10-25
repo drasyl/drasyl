@@ -26,7 +26,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.connection.handler.ThreeWayHandshakeServerHandler;
-import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
+import org.drasyl.peer.connection.message.ExceptionMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
 import org.drasyl.pipeline.Pipeline;
@@ -39,10 +39,10 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
 import static org.drasyl.peer.connection.handler.ThreeWayHandshakeClientHandler.ATTRIBUTE_PUBLIC_KEY;
-import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_IDENTITY_COLLISION;
-import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_NOT_A_SUPER_PEER;
-import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_OTHER_NETWORK;
-import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_PROOF_OF_WORK_INVALID;
+import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_IDENTITY_COLLISION;
+import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_NOT_A_SUPER_PEER;
+import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_OTHER_NETWORK;
+import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_PROOF_OF_WORK_INVALID;
 
 /**
  * Acts as a guard for in- and outbound connections. A channel is only created, when a {@link
@@ -79,20 +79,20 @@ public class ServerConnectionHandler extends ThreeWayHandshakeServerHandler<Join
     }
 
     @Override
-    protected ConnectionExceptionMessage.Error validateSessionRequest(final JoinMessage requestMessage) {
+    protected ExceptionMessage.Error validateSessionRequest(final JoinMessage requestMessage) {
         final CompressedPublicKey clientPublicKey = requestMessage.getSender();
 
         if (!requestMessage.getProofOfWork().isValid(requestMessage.getSender(), POW_DIFFICULTY)) {
-            return CONNECTION_ERROR_PROOF_OF_WORK_INVALID;
+            return ERROR_PROOF_OF_WORK_INVALID;
         }
         else if (requestMessage.isChildrenJoin() && environment.getConfig().isSuperPeerEnabled()) {
-            return CONNECTION_ERROR_NOT_A_SUPER_PEER;
+            return ERROR_NOT_A_SUPER_PEER;
         }
         else if (environment.getIdentity().getPublicKey().equals(clientPublicKey)) {
-            return CONNECTION_ERROR_IDENTITY_COLLISION;
+            return ERROR_IDENTITY_COLLISION;
         }
         else if (environment.getConfig().getNetworkId() != requestMessage.getNetworkId()) {
-            return CONNECTION_ERROR_OTHER_NETWORK;
+            return ERROR_OTHER_NETWORK;
         }
         else {
             return null;

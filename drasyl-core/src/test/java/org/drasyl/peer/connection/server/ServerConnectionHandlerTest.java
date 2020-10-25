@@ -29,7 +29,6 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.ApplicationMessage;
-import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.ExceptionMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.Message;
@@ -47,10 +46,10 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.concurrent.CompletableFuture;
 
 import static java.time.Duration.ofMillis;
-import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_HANDSHAKE_TIMEOUT;
-import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_IDENTITY_COLLISION;
-import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_NOT_A_SUPER_PEER;
-import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_OTHER_NETWORK;
+import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_HANDSHAKE_TIMEOUT;
+import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_IDENTITY_COLLISION;
+import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_NOT_A_SUPER_PEER;
+import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_OTHER_NETWORK;
 import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_UNEXPECTED_MESSAGE;
 import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -107,7 +106,7 @@ class ServerConnectionHandlerTest {
         final ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(0), pipeline, handshakeFuture, null, requestMessage, offerMessage);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        assertEquals(new ConnectionExceptionMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), CONNECTION_ERROR_HANDSHAKE_TIMEOUT), channel.readOutbound());
+        assertEquals(new ExceptionMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), ERROR_HANDSHAKE_TIMEOUT), channel.readOutbound());
     }
 
     @Test
@@ -131,7 +130,7 @@ class ServerConnectionHandlerTest {
         channel.writeInbound(joinMessage);
         channel.flush();
 
-        assertEquals(new ConnectionExceptionMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), CONNECTION_ERROR_IDENTITY_COLLISION), channel.readOutbound());
+        assertEquals(new ExceptionMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), ERROR_IDENTITY_COLLISION), channel.readOutbound());
     }
 
     @Test
@@ -146,7 +145,7 @@ class ServerConnectionHandlerTest {
         channel.writeInbound(joinMessage);
         channel.flush();
 
-        assertEquals(new ConnectionExceptionMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), CONNECTION_ERROR_OTHER_NETWORK), channel.readOutbound());
+        assertEquals(new ExceptionMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), ERROR_OTHER_NETWORK), channel.readOutbound());
     }
 
     @Test
@@ -169,7 +168,7 @@ class ServerConnectionHandlerTest {
         final ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), pipeline, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         handler.exceptionCaught(ctx, cause);
 
-        verify(ctx).writeAndFlush(any(ConnectionExceptionMessage.class));
+        verify(ctx).writeAndFlush(any(ExceptionMessage.class));
         verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
     }
 
@@ -225,7 +224,7 @@ class ServerConnectionHandlerTest {
             channel.writeInbound(joinMessage);
             channel.flush();
 
-            assertEquals(new ConnectionExceptionMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), CONNECTION_ERROR_NOT_A_SUPER_PEER), channel.readOutbound());
+            assertEquals(new ExceptionMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), ERROR_NOT_A_SUPER_PEER), channel.readOutbound());
         }
     }
 

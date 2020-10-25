@@ -36,37 +36,57 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * This is an immutable object.
  */
-@SuppressWarnings({ "squid:S2166", "common-java:DuplicatedBlocks" })
-public class ExceptionMessage extends AbstractMessage {
+@SuppressWarnings("common-java:DuplicatedBlocks")
+public class ExceptionMessage extends AbstractMessage implements RequestMessage, ResponseMessage<RequestMessage> {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final Error error;
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private final MessageId correspondingId;
 
     @JsonCreator
     private ExceptionMessage(@JsonProperty("id") final MessageId id,
                              @JsonProperty("userAgent") final String userAgent,
                              @JsonProperty("sender") final CompressedPublicKey sender,
                              @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
-                             @JsonProperty("error") final Error error) {
+                             @JsonProperty("error") final Error error,
+                             @JsonProperty("correspondingId") final MessageId correspondingId) {
         super(id, userAgent, sender, proofOfWork);
         this.error = requireNonNull(error);
+        this.correspondingId = correspondingId;
     }
 
     /**
      * Creates a new exception message.
      *
-     * @param sender      message's sender
+     * @param sender          the message's sender
+     * @param proofOfWork     sender's proof of work
+     * @param error           the exception type
+     * @param correspondingId the corresponding id of the previous message
+     */
+    public ExceptionMessage(final CompressedPublicKey sender,
+                            final ProofOfWork proofOfWork,
+                            final Error error,
+                            final MessageId correspondingId) {
+        super(sender, proofOfWork);
+        this.error = requireNonNull(error);
+        this.correspondingId = correspondingId;
+    }
+
+    /**
+     * Creates a new exception message.
+     *
+     * @param sender      the message's sender
      * @param proofOfWork sender's proof of work
-     * @param error       the error type
+     * @param error       the exception type
      */
     public ExceptionMessage(final CompressedPublicKey sender,
                             final ProofOfWork proofOfWork,
                             final Error error) {
-        super(sender, proofOfWork);
-        this.error = requireNonNull(error);
+        this(sender, proofOfWork, error, null);
     }
 
     /**
-     * @return the error
+     * @return the exception
      */
     public Error getError() {
         return error;
@@ -74,9 +94,9 @@ public class ExceptionMessage extends AbstractMessage {
 
     @Override
     public String toString() {
-        return "ExceptionMessage{" +
+        return "ConnectionExceptionMessage{" +
                 "sender='" + sender + '\'' +
-                ", proofOfWork='" + proofOfWork + '\'' +
+                "proofOfWork='" + proofOfWork + '\'' +
                 ", error='" + error + '\'' +
                 ", id='" + id +
                 '}';
@@ -102,10 +122,25 @@ public class ExceptionMessage extends AbstractMessage {
         return Objects.hash(super.hashCode(), error);
     }
 
+    @Override
+    public MessageId getCorrespondingId() {
+        return correspondingId;
+    }
+
     /**
      * Specifies the type of the {@link ExceptionMessage}.
      */
     public enum Error {
+        ERROR_INITIALIZATION("Error occurred during initialization stage."),
+        ERROR_HANDSHAKE_TIMEOUT("Handshake did not take place within timeout."),
+        ERROR_HANDSHAKE_REJECTED("Handshake has been rejected by other peer."),
+        ERROR_PING_PONG("Too many Ping Messages were not answered with a Pong Message."),
+        ERROR_IDENTITY_COLLISION("Peer states that my address is already used by another peer with different Public Key."),
+        ERROR_WRONG_PUBLIC_KEY("Peer has sent an unexpected Public Key. This could indicate a configuration error or man-in-the-middle attack."),
+        ERROR_OTHER_NETWORK("Peer belongs to other network."),
+        ERROR_PROOF_OF_WORK_INVALID("The proof of work for the given public key is invalid."),
+        ERROR_NOT_A_SUPER_PEER("Peer is not configured as super peer and therefore does not accept children."),
+        ERROR_PEER_UNAVAILABLE("Peer is currently not able to accept (new) connections."),
         ERROR_INTERNAL("Internal Error occurred."),
         ERROR_FORMAT("Invalid Message format."),
         ERROR_UNEXPECTED_MESSAGE("Unexpected message.");

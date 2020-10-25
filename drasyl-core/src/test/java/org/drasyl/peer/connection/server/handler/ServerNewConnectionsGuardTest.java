@@ -23,14 +23,14 @@ import io.netty.channel.ChannelFuture;
 import io.netty.channel.ChannelFutureListener;
 import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
+import org.drasyl.peer.connection.message.ExceptionMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_PEER_UNAVAILABLE;
+import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_PEER_UNAVAILABLE;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.verify;
@@ -67,7 +67,7 @@ class ServerNewConnectionsGuardTest {
 
         handler.channelRead0(ctx, message);
 
-        verify(ctx).writeAndFlush(new ConnectionExceptionMessage(identity.getPublicKey(), identity.getProofOfWork(), CONNECTION_ERROR_PEER_UNAVAILABLE));
+        verify(ctx).writeAndFlush(new ExceptionMessage(identity.getPublicKey(), identity.getProofOfWork(), ERROR_PEER_UNAVAILABLE));
         verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
     }
 }

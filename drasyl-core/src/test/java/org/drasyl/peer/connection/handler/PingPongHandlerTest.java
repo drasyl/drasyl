@@ -27,7 +27,6 @@ import io.netty.handler.timeout.IdleStateEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
-import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.peer.connection.message.ExceptionMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.MessageId;
@@ -87,7 +86,7 @@ class PingPongHandlerTest {
         final PingPongHandler handler = new PingPongHandler(identity, (short) 1, new AtomicInteger(2));
         handler.userEventTriggered(ctx, evt);
 
-        verify(ctx).writeAndFlush(any(ConnectionExceptionMessage.class));
+        verify(ctx).writeAndFlush(any(ExceptionMessage.class));
         verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
     }
 

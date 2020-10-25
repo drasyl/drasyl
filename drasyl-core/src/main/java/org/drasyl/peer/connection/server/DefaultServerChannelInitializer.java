@@ -28,7 +28,6 @@ import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
 import io.netty.handler.stream.ChunkedWriteHandler;
-import org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.RelayableMessageGuard;
 import org.drasyl.peer.connection.handler.SignatureHandler;
@@ -39,7 +38,6 @@ import org.drasyl.peer.connection.server.handler.ServerNewConnectionsGuard;
 import javax.net.ssl.SSLException;
 import java.security.cert.CertificateException;
 
-import static org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler.EXCEPTION_MESSAGE_HANDLER;
 import static org.drasyl.peer.connection.handler.ExceptionHandler.EXCEPTION_HANDLER;
 import static org.drasyl.peer.connection.handler.RelayableMessageGuard.HOP_COUNT_GUARD;
 import static org.drasyl.peer.connection.handler.SignatureHandler.SIGNATURE_HANDLER;
@@ -79,7 +77,6 @@ public class DefaultServerChannelInitializer extends ServerChannelInitializer {
 
     @Override
     protected void customStage(final ChannelPipeline pipeline) {
-        pipeline.addLast(EXCEPTION_MESSAGE_HANDLER, ConnectionExceptionMessageHandler.INSTANCE);
         pipeline.addLast(SERVER_CONNECTION_HANDLER, new ServerConnectionHandler(environment));
     }
 

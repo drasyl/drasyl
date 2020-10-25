@@ -24,7 +24,7 @@ import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.connection.handler.ThreeWayHandshakeClientHandler;
-import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
+import org.drasyl.peer.connection.message.ExceptionMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
@@ -36,10 +36,10 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
-import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_IDENTITY_COLLISION;
-import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_OTHER_NETWORK;
-import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_PROOF_OF_WORK_INVALID;
-import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_WRONG_PUBLIC_KEY;
+import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_IDENTITY_COLLISION;
+import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_OTHER_NETWORK;
+import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_PROOF_OF_WORK_INVALID;
+import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_WRONG_PUBLIC_KEY;
 import static org.drasyl.util.FutureUtil.toFuture;
 
 /**
@@ -87,20 +87,20 @@ public class ClientConnectionHandler extends ThreeWayHandshakeClientHandler<Join
     }
 
     @Override
-    protected ConnectionExceptionMessage.Error validateSessionOffer(final WelcomeMessage offerMessage) {
+    protected ExceptionMessage.Error validateSessionOffer(final WelcomeMessage offerMessage) {
         final CompressedPublicKey serverPublicKey = offerMessage.getSender();
 
         if (!environment.getEndpoint().getPublicKey().equals(serverPublicKey)) {
-            return CONNECTION_ERROR_WRONG_PUBLIC_KEY;
+            return ERROR_WRONG_PUBLIC_KEY;
         }
         else if (!offerMessage.getProofOfWork().isValid(offerMessage.getSender(), POW_DIFFICULTY)) {
-            return CONNECTION_ERROR_PROOF_OF_WORK_INVALID;
+            return ERROR_PROOF_OF_WORK_INVALID;
         }
         else if (environment.getIdentity().getPublicKey().equals(serverPublicKey)) {
-            return CONNECTION_ERROR_IDENTITY_COLLISION;
+            return ERROR_IDENTITY_COLLISION;
         }
         else if (environment.getConfig().getNetworkId() != offerMessage.getNetworkId()) {
-            return CONNECTION_ERROR_OTHER_NETWORK;
+            return ERROR_OTHER_NETWORK;
         }
         else {
             return null;

@@ -23,7 +23,7 @@ import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
+import org.drasyl.peer.connection.message.ExceptionMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.ResponseMessage;
@@ -72,7 +72,7 @@ public abstract class ThreeWayHandshakeClientHandler<R extends RequestMessage, O
             else {
                 try {
                     @SuppressWarnings("unchecked") final O offerMessage = (O) message;
-                    final ConnectionExceptionMessage.Error error = validateSessionOffer(offerMessage);
+                    final ExceptionMessage.Error error = validateSessionOffer(offerMessage);
                     if (error == null) {
                         confirmSession(ctx, offerMessage);
 
@@ -119,14 +119,13 @@ public abstract class ThreeWayHandshakeClientHandler<R extends RequestMessage, O
 
     /**
      * This method validates the session offered by the server and must return an {@link
-     * ConnectionExceptionMessage.Error} in case of error. Otherwise <code>null</code> must be
-     * returned.
+     * ExceptionMessage.Error} in case of error. Otherwise <code>null</code> must be returned.
      *
      * @param offerMessage the message that should be validated
-     * @return {@link ConnectionExceptionMessage.Error} in case of error, otherwise
+     * @return {@link ExceptionMessage.Error} in case of error, otherwise
      * <code>null</code>
      */
-    protected abstract ConnectionExceptionMessage.Error validateSessionOffer(O offerMessage);
+    protected abstract ExceptionMessage.Error validateSessionOffer(O offerMessage);
 
     protected void confirmSession(final ChannelHandlerContext ctx, final O offerMessage) {
         if (getLogger().isTraceEnabled()) {

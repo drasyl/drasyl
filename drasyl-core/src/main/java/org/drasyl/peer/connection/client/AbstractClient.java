@@ -34,7 +34,6 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
-import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.util.DrasylFunction;
 import org.slf4j.Logger;
@@ -50,9 +49,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
-import static java.util.Optional.ofNullable;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.peer.connection.handler.ConnectionExceptionMessageHandler.ATTRIBUTE_CONNECTION_ERROR;
 
 abstract class AbstractClient implements DrasylNodeComponent {
     private final EventLoopGroup workerGroup;
@@ -183,8 +180,7 @@ abstract class AbstractClient implements DrasylNodeComponent {
                             getLogger().debug("Connection to Endpoint '{}' established", endpoint);
                             channel = channelFuture.channel();
                             channel.closeFuture().addListener(future -> {
-                                ConnectionExceptionMessage.Error error = channel.attr(ATTRIBUTE_CONNECTION_ERROR).get();
-                                getLogger().debug("Connection to Endpoint '{}' closed: {}", endpoint, ofNullable(error).map(e -> "Other peer reports: " + e.getDescription()).orElse(null));
+                                getLogger().debug("Connection to Endpoint '{}' closed", endpoint);
                                 conditionalScheduledReconnect();
                             });
                         }

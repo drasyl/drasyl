@@ -23,7 +23,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.SimpleChannelInboundHandler;
 import io.netty.util.ReferenceCountUtil;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.message.ConnectionExceptionMessage;
+import org.drasyl.peer.connection.message.ExceptionMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.server.Server;
 import org.slf4j.Logger;
@@ -31,7 +31,7 @@ import org.slf4j.LoggerFactory;
 
 import java.util.function.BooleanSupplier;
 
-import static org.drasyl.peer.connection.message.ConnectionExceptionMessage.Error.CONNECTION_ERROR_PEER_UNAVAILABLE;
+import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_PEER_UNAVAILABLE;
 
 /**
  * This handler acts as a channel creation guard. A new channel should not be created, if the {@code
@@ -57,7 +57,7 @@ public class ServerNewConnectionsGuard extends SimpleChannelInboundHandler<Messa
             ctx.fireChannelRead(msg);
         }
         else {
-            ctx.writeAndFlush(new ConnectionExceptionMessage(identity.getPublicKey(), identity.getProofOfWork(), CONNECTION_ERROR_PEER_UNAVAILABLE)).addListener(ChannelFutureListener.CLOSE);
+            ctx.writeAndFlush(new ExceptionMessage(identity.getPublicKey(), identity.getProofOfWork(), ERROR_PEER_UNAVAILABLE, msg.getId())).addListener(ChannelFutureListener.CLOSE);
             LOG.debug("{} blocked creation of channel {}.", getClass().getSimpleName(), ctx.channel().id());
         }
     }
