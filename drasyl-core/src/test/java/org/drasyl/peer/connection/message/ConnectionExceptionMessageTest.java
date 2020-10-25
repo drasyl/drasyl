@@ -50,7 +50,7 @@ class ConnectionExceptionMessageTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
-            final String json = "{\"@type\":\"" + ConnectionExceptionMessage.class.getSimpleName() + "\",\"proofOfWork\":3556154,\"sender\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\",\"id\":\"89ba3cd9efb7570eb3126d11\"," +
+            final String json = "{\"@type\":\"" + ConnectionExceptionMessage.class.getSimpleName() + "\",\"proofOfWork\":3556154,\"sender\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\",\"userAgent\":\"\",\"id\":\"89ba3cd9efb7570eb3126d11\"," +
                     "\"error\":\"" + CONNECTION_ERROR_PING_PONG.getDescription() + "\"}";
 
             assertEquals(new ConnectionExceptionMessage(
@@ -81,7 +81,7 @@ class ConnectionExceptionMessageTest {
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", ConnectionExceptionMessage.class.getSimpleName())
-                    .containsKeys("id", "error", "sender", "proofOfWork");
+                    .containsKeys("id", "error", "sender", "proofOfWork", "userAgent");
         }
     }
 

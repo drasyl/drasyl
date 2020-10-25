@@ -21,6 +21,8 @@ package org.drasyl.peer.connection.message;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonSubTypes;
 import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.connection.server.Server;
 
 /**
@@ -45,7 +47,31 @@ import org.drasyl.peer.connection.server.Server;
 @JsonIgnoreProperties(ignoreUnknown = true)
 public interface Message {
     /**
+     * Returns the unique id of this message. Each message generates a random id when it is
+     * created.
+     *
      * @return the unique id of this message. Each message generates a random id when it is created.
      */
     MessageId getId();
+
+    /**
+     * Returns the user agent of the sender's node.
+     *
+     * @return the user agent of the sender's node.
+     */
+    String getUserAgent();
+
+    /**
+     * Returns this message's sender.
+     *
+     * @return this message's sender.
+     */
+    CompressedPublicKey getSender();
+
+    /**
+     * Returns this message sender's proof of work.
+     *
+     * @return this message sender's proof of work.
+     */
+    ProofOfWork getProofOfWork();
 }

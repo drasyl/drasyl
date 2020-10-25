@@ -33,19 +33,16 @@ import static java.util.Objects.requireNonNull;
  * This is an immutable object.
  */
 public class PongMessage extends AbstractResponseMessage<PingMessage> implements AddressableMessage {
-    private final CompressedPublicKey sender;
-    private final ProofOfWork proofOfWork;
     private final CompressedPublicKey recipient;
 
     @JsonCreator
     private PongMessage(@JsonProperty("id") final MessageId id,
+                        @JsonProperty("userAgent") final String userAgent,
                         @JsonProperty("sender") final CompressedPublicKey sender,
                         @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                         @JsonProperty("recipient") final CompressedPublicKey recipient,
                         @JsonProperty("correspondingId") final MessageId correspondingId) {
-        super(id, correspondingId);
-        this.sender = requireNonNull(sender);
-        this.proofOfWork = requireNonNull(proofOfWork);
+        super(id, userAgent, sender, proofOfWork, correspondingId);
         this.recipient = requireNonNull(recipient);
     }
 
@@ -53,20 +50,8 @@ public class PongMessage extends AbstractResponseMessage<PingMessage> implements
                        final ProofOfWork proofOfWork,
                        final CompressedPublicKey recipient,
                        final MessageId correspondingId) {
-        super(correspondingId);
-        this.sender = requireNonNull(sender);
-        this.proofOfWork = requireNonNull(proofOfWork);
+        super(sender, proofOfWork, correspondingId);
         this.recipient = requireNonNull(recipient);
-    }
-
-    @Override
-    public CompressedPublicKey getSender() {
-        return sender;
-    }
-
-    @Override
-    public ProofOfWork getProofOfWork() {
-        return proofOfWork;
     }
 
     @Override
@@ -97,13 +82,11 @@ public class PongMessage extends AbstractResponseMessage<PingMessage> implements
             return false;
         }
         final PongMessage that = (PongMessage) o;
-        return Objects.equals(sender, that.sender) &&
-                Objects.equals(proofOfWork, that.proofOfWork) &&
-                Objects.equals(recipient, that.recipient);
+        return Objects.equals(recipient, that.recipient);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), sender, proofOfWork, recipient);
+        return Objects.hash(super.hashCode(), recipient);
     }
 }

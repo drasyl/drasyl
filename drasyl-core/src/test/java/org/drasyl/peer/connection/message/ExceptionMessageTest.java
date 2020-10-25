@@ -50,7 +50,7 @@ class ExceptionMessageTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
-            final String json = "{\"@type\":\"" + ExceptionMessage.class.getSimpleName() + "\",\"proofOfWork\":3556154,\"sender\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\",\"id\":\"89ba3cd9efb7570eb3126d11\"," +
+            final String json = "{\"@type\":\"" + ExceptionMessage.class.getSimpleName() + "\",\"proofOfWork\":3556154,\"sender\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\",\"userAgent\":\"\",\"id\":\"89ba3cd9efb7570eb3126d11\"," +
                     "\"error\":\"" + ERROR_INTERNAL.getDescription() + "\"}";
 
             assertEquals(new ExceptionMessage(
@@ -81,7 +81,7 @@ class ExceptionMessageTest {
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", ExceptionMessage.class.getSimpleName())
-                    .containsKeys("id", "error", "proofOfWork", "sender");
+                    .containsKeys("id", "error", "proofOfWork", "sender", "userAgent");
         }
     }
 

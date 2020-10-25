@@ -555,7 +555,7 @@ class ServerIT {
 
             // send message
             final Message request = new PingMessage(configClient1.getIdentityPublicKey(), configClient1.getIdentityProofOfWork());
-            final SignedMessage signedMessage = new SignedMessage(request, session.getPublicKey(), session.getProofOfWork());
+            final SignedMessage signedMessage = new SignedMessage(session.getPublicKey(), session.getProofOfWork(), request);
             Crypto.sign(identitySession2.getPrivateKey().toUncompressedKey(), signedMessage);
             final byte[] binary = JACKSON_WRITER.writeValueAsBytes(signedMessage);
             session.sendRawBinary(Unpooled.wrappedBuffer(binary));

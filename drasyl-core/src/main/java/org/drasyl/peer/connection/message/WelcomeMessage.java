@@ -34,10 +34,8 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * This is an immutable object.
  */
-public class WelcomeMessage extends AbstractMessageWithUserAgent implements ResponseMessage<JoinMessage>, AddressableMessage {
+public class WelcomeMessage extends AbstractMessage implements ResponseMessage<JoinMessage>, AddressableMessage {
     private final int networkId;
-    private final CompressedPublicKey sender;
-    private final ProofOfWork proofOfWork;
     private final CompressedPublicKey recipient;
     private final PeerInformation peerInformation;
     @JsonInclude(JsonInclude.Include.NON_NULL)
@@ -52,10 +50,8 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
                            @JsonProperty("recipient") final CompressedPublicKey recipient,
                            @JsonProperty("peerInformation") final PeerInformation peerInformation,
                            @JsonProperty("correspondingId") final MessageId correspondingId) {
-        super(id, userAgent);
+        super(id, userAgent, sender, proofOfWork);
         this.networkId = networkId;
-        this.sender = requireNonNull(sender);
-        this.proofOfWork = requireNonNull(proofOfWork);
         this.recipient = requireNonNull(recipient);
         this.peerInformation = requireNonNull(peerInformation);
         this.correspondingId = requireNonNull(correspondingId);
@@ -77,9 +73,8 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
                           final CompressedPublicKey recipient,
                           final PeerInformation peerInformation,
                           final MessageId correspondingId) {
+        super(sender, proofOfWork);
         this.networkId = networkId;
-        this.sender = requireNonNull(sender);
-        this.proofOfWork = requireNonNull(proofOfWork);
         this.recipient = requireNonNull(recipient);
         this.peerInformation = requireNonNull(peerInformation);
         this.correspondingId = requireNonNull(correspondingId);
@@ -87,16 +82,6 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
 
     public int getNetworkId() {
         return networkId;
-    }
-
-    @Override
-    public CompressedPublicKey getSender() {
-        return sender;
-    }
-
-    @Override
-    public ProofOfWork getProofOfWork() {
-        return proofOfWork;
     }
 
     @Override
@@ -115,7 +100,7 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), networkId, sender, proofOfWork, recipient, peerInformation, correspondingId);
+        return Objects.hash(super.hashCode(), networkId, recipient, peerInformation, correspondingId);
     }
 
     @Override
@@ -131,8 +116,6 @@ public class WelcomeMessage extends AbstractMessageWithUserAgent implements Resp
         }
         final WelcomeMessage that = (WelcomeMessage) o;
         return networkId == that.networkId &&
-                Objects.equals(sender, that.sender) &&
-                Objects.equals(proofOfWork, that.proofOfWork) &&
                 Objects.equals(recipient, that.recipient) &&
                 Objects.equals(peerInformation, that.peerInformation) &&
                 Objects.equals(correspondingId, that.correspondingId);

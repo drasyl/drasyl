@@ -39,19 +39,16 @@ import static java.util.Objects.requireNonNull;
  */
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class ConnectionExceptionMessage extends AbstractMessage implements RequestMessage {
-    private final CompressedPublicKey sender;
-    private final ProofOfWork proofOfWork;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final Error error;
 
     @JsonCreator
     private ConnectionExceptionMessage(@JsonProperty("id") final MessageId id,
+                                       @JsonProperty("userAgent") final String userAgent,
                                        @JsonProperty("sender") final CompressedPublicKey sender,
                                        @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                                        @JsonProperty("error") final Error error) {
-        super(id);
-        this.sender = requireNonNull(sender);
-        this.proofOfWork = requireNonNull(proofOfWork);
+        super(id, userAgent, sender, proofOfWork);
         this.error = requireNonNull(error);
     }
 
@@ -65,17 +62,8 @@ public class ConnectionExceptionMessage extends AbstractMessage implements Reque
     public ConnectionExceptionMessage(final CompressedPublicKey sender,
                                       final ProofOfWork proofOfWork,
                                       final Error error) {
-        this.sender = requireNonNull(sender);
-        this.proofOfWork = requireNonNull(proofOfWork);
+        super(sender, proofOfWork);
         this.error = requireNonNull(error);
-    }
-
-    public CompressedPublicKey getSender() {
-        return sender;
-    }
-
-    public ProofOfWork getProofOfWork() {
-        return proofOfWork;
     }
 
     /**
@@ -107,14 +95,12 @@ public class ConnectionExceptionMessage extends AbstractMessage implements Reque
             return false;
         }
         final ConnectionExceptionMessage that = (ConnectionExceptionMessage) o;
-        return Objects.equals(sender, that.sender) &&
-                Objects.equals(proofOfWork, that.proofOfWork) &&
-                error == that.error;
+        return error == that.error;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), sender, proofOfWork, error);
+        return Objects.hash(super.hashCode(), error);
     }
 
     /**

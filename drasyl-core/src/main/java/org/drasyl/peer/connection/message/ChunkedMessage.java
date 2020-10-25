@@ -59,6 +59,20 @@ public class ChunkedMessage extends ApplicationMessage {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final String checksum;
 
+    @JsonCreator
+    private ChunkedMessage(@JsonProperty("sender") final CompressedPublicKey sender,
+                           @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
+                           @JsonProperty("recipient") final CompressedPublicKey recipient,
+                           @JsonProperty("payload") final byte[] payload,
+                           @JsonProperty("id") final MessageId id,
+                           @JsonProperty("contentLength") final int contentLength,
+                           @JsonProperty("checksum") final String checksum,
+                           @JsonProperty("hopCount") final short hopCount) {
+        super(id, sender, proofOfWork, recipient, payload, hopCount);
+        this.contentLength = contentLength;
+        this.checksum = checksum;
+    }
+
     /**
      * Creates a new chunked message.
      *
@@ -78,20 +92,6 @@ public class ChunkedMessage extends ApplicationMessage {
                    final int contentLength,
                    final String checksum) {
         this(sender, proofOfWork, recipient, payload, id, contentLength, checksum, (short) 0);
-    }
-
-    @JsonCreator
-    private ChunkedMessage(@JsonProperty("sender") final CompressedPublicKey sender,
-                           @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
-                           @JsonProperty("recipient") final CompressedPublicKey recipient,
-                           @JsonProperty("payload") final byte[] payload,
-                           @JsonProperty("id") final MessageId id,
-                           @JsonProperty("contentLength") final int contentLength,
-                           @JsonProperty("checksum") final String checksum,
-                           @JsonProperty("hopCount") final short hopCount) {
-        super(id, sender, proofOfWork, recipient, payload, hopCount);
-        this.contentLength = contentLength;
-        this.checksum = checksum;
     }
 
     public int getContentLength() {

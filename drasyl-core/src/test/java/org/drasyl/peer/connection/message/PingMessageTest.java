@@ -45,7 +45,7 @@ class PingMessageTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
-            final String json = "{\"@type\":\"" + PingMessage.class.getSimpleName() + "\",\"sender\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"proofOfWork\":6657650,\"id\":\"89ba3cd9efb7570eb3126d11\"}";
+            final String json = "{\"@type\":\"" + PingMessage.class.getSimpleName() + "\",\"sender\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"proofOfWork\":6657650,\"id\":\"89ba3cd9efb7570eb3126d11\",\"userAgent\":\"\"}";
 
             assertEquals(new PingMessage(
                     CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"),
@@ -66,7 +66,7 @@ class PingMessageTest {
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", PingMessage.class.getSimpleName())
-                    .containsKeys("id", "sender", "proofOfWork");
+                    .containsKeys("id", "sender", "proofOfWork", "userAgent");
         }
     }
 

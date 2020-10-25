@@ -18,19 +18,38 @@
  */
 package org.drasyl.peer.connection.message;
 
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.ProofOfWork;
+
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.peer.connection.message.MessageId.randomMessageId;
 
 abstract class AbstractResponseMessage<R extends RequestMessage> extends AbstractMessage implements ResponseMessage<R> {
     protected final MessageId correspondingId;
 
-    protected AbstractResponseMessage(final MessageId id, final MessageId correspondingId) {
-        super(id);
+    protected AbstractResponseMessage(final MessageId id,
+                                      final String userAgent,
+                                      final CompressedPublicKey sender,
+                                      final ProofOfWork proofOfWork,
+                                      final MessageId correspondingId) {
+        super(id, userAgent, sender, proofOfWork);
         this.correspondingId = requireNonNull(correspondingId);
     }
 
-    protected AbstractResponseMessage(final MessageId correspondingId) {
+    protected AbstractResponseMessage(final String userAgent,
+                                      final CompressedPublicKey sender,
+                                      final ProofOfWork proofOfWork,
+                                      final MessageId correspondingId) {
+        super(randomMessageId(), userAgent, sender, proofOfWork);
+        this.correspondingId = requireNonNull(correspondingId);
+    }
+
+    protected AbstractResponseMessage(final CompressedPublicKey sender,
+                                      final ProofOfWork proofOfWork,
+                                      final MessageId correspondingId) {
+        super(sender, proofOfWork);
         this.correspondingId = requireNonNull(correspondingId);
     }
 

@@ -39,12 +39,13 @@ public class WhoisMessage extends RelayableMessage implements RequestMessage {
 
     @JsonCreator
     private WhoisMessage(@JsonProperty("id") final MessageId id,
+                         @JsonProperty("userAgent") final String userAgent,
                          @JsonProperty("sender") final CompressedPublicKey sender,
                          @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                          @JsonProperty("recipient") final CompressedPublicKey recipient,
                          @JsonProperty("hopCount") final short hopCount,
                          @JsonProperty("peerInformation") final PeerInformation peerInformation) {
-        super(id, sender, proofOfWork, recipient, hopCount);
+        super(id, userAgent, sender, proofOfWork, recipient, hopCount);
         this.peerInformation = requireNonNull(peerInformation);
     }
 
@@ -84,6 +85,7 @@ public class WhoisMessage extends RelayableMessage implements RequestMessage {
     public String toString() {
         return "WhoisMessage{" +
                 "sender=" + sender +
+                "proofOfWork=" + proofOfWork +
                 ", peerInformation=" + peerInformation +
                 ", recipient=" + recipient +
                 ", hopCount=" + hopCount +

@@ -31,6 +31,7 @@ import java.io.OutputStream;
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.peer.connection.message.AbstractMessage.userAgentGenerator;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 
 /**
@@ -48,36 +49,46 @@ import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 public class SignedMessage implements Message, Signable {
     private final CompressedPublicKey sender;
     private final ProofOfWork proofOfWork;
+    private final String userAgent;
     private Signature signature;
     private final Message payload;
 
-    public SignedMessage(final Message payload,
-                         final CompressedPublicKey sender,
-                         final ProofOfWork proofOfWork) {
-        this(sender, proofOfWork, null, payload);
+    public SignedMessage(final CompressedPublicKey sender,
+                         final ProofOfWork proofOfWork,
+                         final Message payload) {
+        this(userAgentGenerator.get(), sender, proofOfWork, null, payload);
     }
 
     @JsonCreator
-    SignedMessage(@JsonProperty("sender") final CompressedPublicKey sender,
+    SignedMessage(@JsonProperty("userAgent") final String userAgent,
+                  @JsonProperty("sender") final CompressedPublicKey sender,
                   @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                   @JsonProperty("signature") final Signature signature,
                   @JsonProperty("payload") final Message payload) {
+        this.userAgent = userAgent;
         this.sender = requireNonNull(sender);
         this.proofOfWork = requireNonNull(proofOfWork);
         this.signature = signature;
         this.payload = requireNonNull(payload);
     }
 
-    public Message getPayload() {
-        return this.payload;
+    @Override
+    public String getUserAgent() {
+        return userAgent;
     }
 
+    @Override
     public CompressedPublicKey getSender() {
         return this.sender;
     }
 
+    @Override
     public ProofOfWork getProofOfWork() {
         return proofOfWork;
+    }
+
+    public Message getPayload() {
+        return this.payload;
     }
 
     @Override

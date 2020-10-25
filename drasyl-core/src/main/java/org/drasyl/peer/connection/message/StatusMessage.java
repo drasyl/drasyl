@@ -81,19 +81,16 @@ import static java.util.Objects.requireNonNull;
  */
 public class StatusMessage extends AbstractResponseMessage<RequestMessage> {
     private final Code code;
-    private final CompressedPublicKey sender;
-    private final ProofOfWork proofOfWork;
 
     @JsonCreator
     private StatusMessage(@JsonProperty("id") final MessageId id,
+                          @JsonProperty("userAgent") final String userAgent,
                           @JsonProperty("sender") final CompressedPublicKey sender,
                           @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                           @JsonProperty("code") final Code code,
                           @JsonProperty("correspondingId") final MessageId correspondingId) {
-        super(id, correspondingId);
+        super(id, userAgent, sender, proofOfWork, correspondingId);
         this.code = requireNonNull(code);
-        this.sender = sender;
-        this.proofOfWork = proofOfWork;
     }
 
     /**
@@ -109,18 +106,8 @@ public class StatusMessage extends AbstractResponseMessage<RequestMessage> {
                          final ProofOfWork proofOfWork,
                          final Code code,
                          final MessageId correspondingId) {
-        super(correspondingId);
+        super(sender, proofOfWork, correspondingId);
         this.code = requireNonNull(code);
-        this.sender = requireNonNull(sender);
-        this.proofOfWork = requireNonNull(proofOfWork);
-    }
-
-    public CompressedPublicKey getSender() {
-        return sender;
-    }
-
-    public ProofOfWork getProofOfWork() {
-        return proofOfWork;
     }
 
     /**
@@ -155,14 +142,12 @@ public class StatusMessage extends AbstractResponseMessage<RequestMessage> {
             return false;
         }
         final StatusMessage that = (StatusMessage) o;
-        return code == that.code &&
-                Objects.equals(sender, that.sender) &&
-                Objects.equals(proofOfWork, that.proofOfWork);
+        return code == that.code;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), code, sender, proofOfWork);
+        return Objects.hash(super.hashCode(), code);
     }
 
     public enum Code {

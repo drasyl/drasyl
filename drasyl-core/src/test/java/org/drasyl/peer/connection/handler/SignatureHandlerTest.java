@@ -107,7 +107,7 @@ class SignatureHandlerTest {
         channel.attr(ATTRIBUTE_PUBLIC_KEY).set(identity2);
 
         final QuitMessage message = new QuitMessage(sender, proofOfWork, recipient, REASON_SHUTTING_DOWN);
-        final SignedMessage signedMessage = new SignedMessage(message, identity2, proofOfWork);
+        final SignedMessage signedMessage = new SignedMessage(identity2, proofOfWork, message);
 
         final Identity privateIdentity2 = Identity.of(ProofOfWork.of(36558946), "0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458", "00ea42e42240e0f6e0f9bee7058118aa149ce72de25cde574523ff9199ec2660");
         Crypto.sign(privateIdentity2.getPrivateKey().toUncompressedKey(), signedMessage);
@@ -130,7 +130,7 @@ class SignatureHandlerTest {
         channel.attr(ATTRIBUTE_PUBLIC_KEY).set(identity2);
 
         final QuitMessage message = new QuitMessage(sender, proofOfWork, recipient, REASON_SHUTTING_DOWN);
-        final SignedMessage signedMessage = new SignedMessage(message, identity2, proofOfWork);
+        final SignedMessage signedMessage = new SignedMessage(identity2, proofOfWork, message);
         Crypto.sign(identity.getPrivateKey().toUncompressedKey(), signedMessage);
 
         assertNotNull(signedMessage.getSender());
@@ -169,7 +169,7 @@ class SignatureHandlerTest {
         final CompressedPublicKey identity2 = CompressedPublicKey.of("026786e52addf59f0e40d5f6a4c1d2873afc04a6460a85b0becd04eb86f1e7116d");
 
         final QuitMessage message = new QuitMessage(sender, proofOfWork, recipient, REASON_SHUTTING_DOWN);
-        final SignedMessage signedMessage = new SignedMessage(message, identity2, proofOfWork);
+        final SignedMessage signedMessage = new SignedMessage(identity2, proofOfWork, message);
 
         final Identity privateIdentity2 = Identity.of(ProofOfWork.of(2096201), "026786e52addf59f0e40d5f6a4c1d2873afc04a6460a85b0becd04eb86f1e7116d", "02c43ebf22f27add698de3d5a534d4df88616b5acf164850aa56b7f4e8dbfbe2");
         Crypto.sign(privateIdentity2.getPrivateKey().toUncompressedKey(), signedMessage);
@@ -188,7 +188,7 @@ class SignatureHandlerTest {
         final SignatureHandler handler = new SignatureHandler(identity);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
         final QuitMessage message = new QuitMessage(sender, proofOfWork, recipient, REASON_SHUTTING_DOWN);
-        final SignedMessage signedMessage = new SignedMessage(message, mockedPublicKey, proofOfWork);
+        final SignedMessage signedMessage = new SignedMessage(mockedPublicKey, proofOfWork, message);
         signedMessage.setSignature(signature);
 
         assertFalse(channel.writeInbound(signedMessage));

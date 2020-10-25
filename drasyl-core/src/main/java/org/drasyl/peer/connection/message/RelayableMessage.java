@@ -31,19 +31,26 @@ import static java.util.Objects.requireNonNull;
  * This is an immutable object.
  */
 public abstract class RelayableMessage extends AbstractMessage implements AddressableMessage {
-    protected final ProofOfWork proofOfWork;
     protected final CompressedPublicKey recipient;
-    protected final CompressedPublicKey sender;
     protected short hopCount;
+
+    protected RelayableMessage(final MessageId id,
+                               final String userAgent,
+                               final CompressedPublicKey sender,
+                               final ProofOfWork proofOfWork,
+                               final CompressedPublicKey recipient,
+                               final short hopCount) {
+        super(id, userAgent, sender, proofOfWork);
+        this.recipient = requireNonNull(recipient);
+        this.hopCount = hopCount;
+    }
 
     protected RelayableMessage(final MessageId id,
                                final CompressedPublicKey sender,
                                final ProofOfWork proofOfWork,
                                final CompressedPublicKey recipient,
                                final short hopCount) {
-        super(id);
-        this.sender = requireNonNull(sender);
-        this.proofOfWork = requireNonNull(proofOfWork);
+        super(id, userAgentGenerator.get(), sender, proofOfWork);
         this.recipient = requireNonNull(recipient);
         this.hopCount = hopCount;
     }
@@ -58,9 +65,7 @@ public abstract class RelayableMessage extends AbstractMessage implements Addres
                                final ProofOfWork proofOfWork,
                                final CompressedPublicKey recipient,
                                final short hopCount) {
-        super();
-        this.sender = requireNonNull(sender);
-        this.proofOfWork = requireNonNull(proofOfWork);
+        super(sender, proofOfWork);
         this.recipient = requireNonNull(recipient);
         this.hopCount = hopCount;
     }
@@ -82,18 +87,8 @@ public abstract class RelayableMessage extends AbstractMessage implements Addres
     }
 
     @Override
-    public CompressedPublicKey getSender() {
-        return sender;
-    }
-
-    @Override
-    public ProofOfWork getProofOfWork() {
-        return proofOfWork;
-    }
-
-    @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), recipient, sender, hopCount);
+        return Objects.hash(super.hashCode(), recipient, hopCount);
     }
 
     @Override
@@ -109,7 +104,6 @@ public abstract class RelayableMessage extends AbstractMessage implements Addres
         }
         final RelayableMessage that = (RelayableMessage) o;
         return hopCount == that.hopCount &&
-                Objects.equals(recipient, that.recipient) &&
-                Objects.equals(sender, that.sender);
+                Objects.equals(recipient, that.recipient);
     }
 }

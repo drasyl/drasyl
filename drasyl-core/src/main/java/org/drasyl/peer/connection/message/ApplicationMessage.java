@@ -46,13 +46,14 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
 
     @JsonCreator
     private ApplicationMessage(@JsonProperty("id") final MessageId id,
+                               @JsonProperty("userAgent") final String userAgent,
                                @JsonProperty("sender") final CompressedPublicKey sender,
                                @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                                @JsonProperty("recipient") final CompressedPublicKey recipient,
                                @JsonProperty("headers") final Map<String, String> headers,
                                @JsonProperty("payload") final byte[] payload,
                                @JsonProperty("hopCount") final short hopCount) {
-        super(id, sender, proofOfWork, recipient, hopCount);
+        super(id, userAgent, sender, proofOfWork, recipient, hopCount);
         if (headers != null) {
             this.headers = Map.copyOf(headers);
         }
@@ -69,7 +70,9 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
                               final CompressedPublicKey recipient,
                               final byte[] payload,
                               final short hopCount) {
-        this(id, sender, proofOfWork, recipient, Map.of(), payload, hopCount);
+        super(id, sender, proofOfWork, recipient, hopCount);
+        this.headers = Map.of();
+        this.payload = requireNonNull(payload);
     }
 
     /**

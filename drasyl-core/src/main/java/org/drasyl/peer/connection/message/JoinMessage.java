@@ -32,10 +32,8 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * This is an immutable object.
  */
-public class JoinMessage extends AbstractMessageWithUserAgent implements RequestMessage, AddressableMessage {
+public class JoinMessage extends AbstractMessage implements RequestMessage, AddressableMessage {
     private final int networkId;
-    private final ProofOfWork proofOfWork;
-    private final CompressedPublicKey sender;
     private final CompressedPublicKey recipient;
     private final boolean childrenJoin;
 
@@ -47,10 +45,8 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
                         @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                         @JsonProperty("recipient") final CompressedPublicKey recipient,
                         @JsonProperty("childrenJoin") final boolean childrenJoin) {
-        super(id, userAgent);
+        super(id, userAgent, sender, proofOfWork);
         this.networkId = networkId;
-        this.proofOfWork = requireNonNull(proofOfWork);
-        this.sender = requireNonNull(sender);
         this.recipient = recipient;
         this.childrenJoin = childrenJoin;
     }
@@ -69,8 +65,7 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
                        final ProofOfWork proofOfWork,
                        final CompressedPublicKey recipient,
                        final boolean childrenJoin) {
-        this.proofOfWork = requireNonNull(proofOfWork);
-        this.sender = requireNonNull(sender);
+        super(sender, proofOfWork);
         this.recipient = requireNonNull(recipient);
         this.childrenJoin = childrenJoin;
         this.networkId = networkId;
@@ -78,14 +73,6 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
 
     public int getNetworkId() {
         return this.networkId;
-    }
-
-    public CompressedPublicKey getSender() {
-        return this.sender;
-    }
-
-    public ProofOfWork getProofOfWork() {
-        return this.proofOfWork;
     }
 
     public CompressedPublicKey getRecipient() {
@@ -98,7 +85,7 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), networkId, sender, proofOfWork, recipient, childrenJoin);
+        return Objects.hash(super.hashCode(), networkId, recipient, childrenJoin);
     }
 
     @Override
@@ -114,8 +101,6 @@ public class JoinMessage extends AbstractMessageWithUserAgent implements Request
         }
         final JoinMessage that = (JoinMessage) o;
         return networkId == that.networkId &&
-                Objects.equals(sender, that.sender) &&
-                Objects.equals(proofOfWork, that.proofOfWork) &&
                 Objects.equals(recipient, that.recipient) &&
                 childrenJoin == that.childrenJoin;
     }

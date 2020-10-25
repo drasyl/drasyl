@@ -23,40 +23,23 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 
-import java.util.Objects;
-
-import static java.util.Objects.requireNonNull;
-
 /**
  * A message representing a PING request.
  * <p>
  * This is an immutable object.
  */
 public class PingMessage extends AbstractMessage implements RequestMessage {
-    private final CompressedPublicKey sender;
-    private final ProofOfWork proofOfWork;
-
     @JsonCreator
     private PingMessage(@JsonProperty("id") final MessageId id,
+                        @JsonProperty("userAgent") final String userAgent,
                         @JsonProperty("sender") final CompressedPublicKey sender,
                         @JsonProperty("proofOfWork") final ProofOfWork proofOfWork) {
-        super(id);
-        this.sender = requireNonNull(sender);
-        this.proofOfWork = requireNonNull(proofOfWork);
+        super(id, userAgent, sender, proofOfWork);
     }
 
     public PingMessage(final CompressedPublicKey sender,
                        final ProofOfWork proofOfWork) {
-        this.sender = requireNonNull(sender);
-        this.proofOfWork = requireNonNull(proofOfWork);
-    }
-
-    public CompressedPublicKey getSender() {
-        return sender;
-    }
-
-    public ProofOfWork getProofOfWork() {
-        return proofOfWork;
+        super(sender, proofOfWork);
     }
 
     @Override
@@ -70,22 +53,11 @@ public class PingMessage extends AbstractMessage implements RequestMessage {
 
     @Override
     public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
-        }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
-        }
-        if (!super.equals(o)) {
-            return false;
-        }
-        final PingMessage that = (PingMessage) o;
-        return Objects.equals(sender, that.sender) &&
-                Objects.equals(proofOfWork, that.proofOfWork);
+        return super.equals(o);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), sender, proofOfWork);
+        return super.hashCode();
     }
 }

@@ -48,7 +48,7 @@ class QuitMessageTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
-            final String json = "{\"@type\":\"" + QuitMessage.class.getSimpleName() + "\",\"id\":\"89ba3cd9efb7570eb3126d11\",\"sender\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\",\"proofOfWork\":3556154,\"recipient\":\"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\"reason\":\"Peer is shutting down.\"}";
+            final String json = "{\"@type\":\"" + QuitMessage.class.getSimpleName() + "\",\"id\":\"89ba3cd9efb7570eb3126d11\",\"sender\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\",\"proofOfWork\":3556154,\"recipient\":\"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\"reason\":\"Peer is shutting down.\",\"userAgent\":\"\"}";
 
             assertEquals(new QuitMessage(
                     CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"),
@@ -68,7 +68,7 @@ class QuitMessageTest {
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", QuitMessage.class.getSimpleName())
-                    .containsKeys("id", "sender", "proofOfWork", "recipient", "reason");
+                    .containsKeys("id", "sender", "proofOfWork", "recipient", "reason", "userAgent");
         }
     }
 

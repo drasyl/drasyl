@@ -37,21 +37,18 @@ import static java.util.Objects.requireNonNull;
  * This is an immutable object.
  */
 public class QuitMessage extends AbstractMessage implements RequestMessage, AddressableMessage {
-    private final CompressedPublicKey sender;
-    private final ProofOfWork proofOfWork;
     private final CompressedPublicKey recipient;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final CloseReason reason;
 
     @JsonCreator
     private QuitMessage(@JsonProperty("id") final MessageId id,
+                        @JsonProperty("userAgent") final String userAgent,
                         @JsonProperty("sender") final CompressedPublicKey sender,
                         @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                         @JsonProperty("recipient") final CompressedPublicKey recipient,
                         @JsonProperty("reason") final CloseReason reason) {
-        super(id);
-        this.sender = requireNonNull(sender);
-        this.proofOfWork = requireNonNull(proofOfWork);
+        super(id, userAgent, sender, proofOfWork);
         this.recipient = requireNonNull(recipient);
         this.reason = requireNonNull(reason);
     }
@@ -60,15 +57,14 @@ public class QuitMessage extends AbstractMessage implements RequestMessage, Addr
                        final ProofOfWork proofOfWork,
                        final CompressedPublicKey recipient,
                        final CloseReason reason) {
-        this.sender = requireNonNull(sender);
-        this.proofOfWork = requireNonNull(proofOfWork);
+        super(sender, proofOfWork);
         this.recipient = requireNonNull(recipient);
         this.reason = requireNonNull(reason);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), sender, proofOfWork, recipient, reason);
+        return Objects.hash(super.hashCode(), recipient, reason);
     }
 
     @Override
@@ -83,9 +79,7 @@ public class QuitMessage extends AbstractMessage implements RequestMessage, Addr
             return false;
         }
         final QuitMessage that = (QuitMessage) o;
-        return Objects.equals(sender, that.sender) &&
-                Objects.equals(proofOfWork, that.proofOfWork) &&
-                Objects.equals(recipient, that.recipient) &&
+        return Objects.equals(recipient, that.recipient) &&
                 reason == that.reason;
     }
 
@@ -98,16 +92,6 @@ public class QuitMessage extends AbstractMessage implements RequestMessage, Addr
                 ", reason='" + reason + '\'' +
                 ", id='" + id +
                 '}';
-    }
-
-    @Override
-    public CompressedPublicKey getSender() {
-        return sender;
-    }
-
-    @Override
-    public ProofOfWork getProofOfWork() {
-        return proofOfWork;
     }
 
     @Override

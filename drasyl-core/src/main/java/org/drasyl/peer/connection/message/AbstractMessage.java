@@ -18,7 +18,12 @@
  */
 package org.drasyl.peer.connection.message;
 
+import org.drasyl.DrasylNode;
+import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.ProofOfWork;
+
 import java.util.Objects;
+import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.peer.connection.message.MessageId.randomMessageId;
@@ -26,15 +31,31 @@ import static org.drasyl.peer.connection.message.MessageId.randomMessageId;
 /**
  * Message that represents a message from one node to another one.
  */
+@SuppressWarnings({ "squid:S1444", "squid:ClassVariableVisibilityCheck" })
 abstract class AbstractMessage implements Message {
+    public static final Supplier<String> defaultUserAgentGenerator = () -> "drasyl/" + DrasylNode.getVersion() + " (" + System.getProperty("os.name") + "; "
+            + System.getProperty("os.arch") + "; Java/"
+            + System.getProperty("java.vm.specification.version") + ":" + System.getProperty("java.version.date")
+            + ")";
+    public static Supplier<String> userAgentGenerator = defaultUserAgentGenerator;
     protected final MessageId id;
+    protected final CompressedPublicKey sender;
+    protected final ProofOfWork proofOfWork;
+    protected final String userAgent;
 
-    public AbstractMessage() {
-        this(randomMessageId());
+    protected AbstractMessage(final MessageId id,
+                              final String userAgent,
+                              final CompressedPublicKey sender,
+                              final ProofOfWork proofOfWork) {
+        this.id = requireNonNull(id);
+        this.userAgent = requireNonNull(userAgent);
+        this.sender = requireNonNull(sender);
+        this.proofOfWork = requireNonNull(proofOfWork);
     }
 
-    protected AbstractMessage(final MessageId id) {
-        this.id = requireNonNull(id);
+    protected AbstractMessage(final CompressedPublicKey sender,
+                              final ProofOfWork proofOfWork) {
+        this(randomMessageId(), userAgentGenerator.get(), sender, proofOfWork);
     }
 
     @Override
@@ -43,19 +64,35 @@ abstract class AbstractMessage implements Message {
     }
 
     @Override
-    public int hashCode() {
-        return Objects.hash(42);
+    public String getUserAgent() {
+        return userAgent;
+    }
+
+    @Override
+    public CompressedPublicKey getSender() {
+        return sender;
+    }
+
+    @Override
+    public ProofOfWork getProofOfWork() {
+        return proofOfWork;
     }
 
     @Override
     public boolean equals(final Object o) {
-        return o != null && getClass() == o.getClass();
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        final AbstractMessage that = (AbstractMessage) o;
+        return Objects.equals(sender, that.sender) &&
+                Objects.equals(proofOfWork, that.proofOfWork);
     }
 
     @Override
-    public String toString() {
-        return "AbstractMessage{" +
-                "id='" + id +
-                '}';
+    public int hashCode() {
+        return Objects.hash(sender, proofOfWork);
     }
 }

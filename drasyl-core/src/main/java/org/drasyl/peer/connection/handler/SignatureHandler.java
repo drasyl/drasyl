@@ -54,7 +54,7 @@ public class SignatureHandler extends SimpleChannelDuplexHandler<Message, Messag
     @Override
     protected void channelRead0(final ChannelHandlerContext ctx,
                                 final Message msg) {
-        if (!(msg instanceof SignedMessage) || ((SignedMessage) msg).getSender() == null || ((SignedMessage) msg).getSignature() == null) {
+        if (!(msg instanceof SignedMessage) || msg.getSender() == null || ((SignedMessage) msg).getSignature() == null) {
             if (LOG.isDebugEnabled()) {
                 LOG.debug("[{}]: Dropped not signed message `{}`", ctx.channel().id().asShortText(), msg);
             }
@@ -132,7 +132,7 @@ public class SignatureHandler extends SimpleChannelDuplexHandler<Message, Messag
     protected void channelWrite0(final ChannelHandlerContext ctx,
                                  final Message msg, final ChannelPromise promise) {
         try {
-            final SignedMessage signedMessage = new SignedMessage(msg, identity.getPublicKey(), identity.getProofOfWork());
+            final SignedMessage signedMessage = new SignedMessage(identity.getPublicKey(), identity.getProofOfWork(), msg);
             Crypto.sign(identity.getPrivateKey().toUncompressedKey(), signedMessage);
 
             ctx.write(signedMessage, promise);
