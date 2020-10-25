@@ -19,7 +19,7 @@
 package org.drasyl.peer.connection.message;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.drasyl.crypto.Signable;
 import org.drasyl.crypto.Signature;
@@ -31,7 +31,6 @@ import java.io.OutputStream;
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
-import static org.drasyl.peer.connection.message.AbstractMessage.userAgentGenerator;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 
 /**
@@ -46,45 +45,44 @@ import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
  * <p>
  * This is an immutable object.
  */
-public class SignedMessage implements Message, Signable {
-    private final CompressedPublicKey sender;
-    private final ProofOfWork proofOfWork;
-    private final String userAgent;
+public class SignedMessage extends AbstractMessage implements Message, Signable, AddressableMessage {
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private final CompressedPublicKey recipient;
     private Signature signature;
     private final Message payload;
 
-    public SignedMessage(final CompressedPublicKey sender,
-                         final ProofOfWork proofOfWork,
-                         final Message payload) {
-        this(userAgentGenerator.get(), sender, proofOfWork, null, payload);
-    }
-
     @JsonCreator
-    SignedMessage(@JsonProperty("userAgent") final String userAgent,
+    SignedMessage(@JsonProperty("id") final MessageId id,
+                  @JsonProperty("userAgent") final String userAgent,
                   @JsonProperty("sender") final CompressedPublicKey sender,
                   @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
+                  @JsonProperty("recipient") final CompressedPublicKey recipient,
                   @JsonProperty("signature") final Signature signature,
                   @JsonProperty("payload") final Message payload) {
-        this.userAgent = userAgent;
-        this.sender = requireNonNull(sender);
-        this.proofOfWork = requireNonNull(proofOfWork);
+        super(id, userAgent, sender, proofOfWork);
+        this.recipient = recipient;
         this.signature = signature;
         this.payload = requireNonNull(payload);
     }
 
-    @Override
-    public String getUserAgent() {
-        return userAgent;
+    public SignedMessage(final CompressedPublicKey sender,
+                         final ProofOfWork proofOfWork,
+                         final CompressedPublicKey recipient,
+                         final Message payload) {
+        super(sender, proofOfWork);
+        this.recipient = recipient;
+        this.payload = requireNonNull(payload);
+    }
+
+    public SignedMessage(final CompressedPublicKey sender,
+                         final ProofOfWork proofOfWork,
+                         final Message payload) {
+        this(sender, proofOfWork, null, payload);
     }
 
     @Override
-    public CompressedPublicKey getSender() {
-        return this.sender;
-    }
-
-    @Override
-    public ProofOfWork getProofOfWork() {
-        return proofOfWork;
+    public CompressedPublicKey getRecipient() {
+        return recipient;
     }
 
     public Message getPayload() {
@@ -109,14 +107,14 @@ public class SignedMessage implements Message, Signable {
     }
 
     @Override
-    @JsonIgnore
-    public MessageId getId() {
-        return MessageId.of("SignedMessage");
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(payload, sender, signature);
+    public String toString() {
+        return "SignedMessage{" +
+                "payload=" + payload +
+                ", sender=" + sender +
+                ", proofOfWork=" + proofOfWork +
+                ", recipient=" + recipient +
+                ", signature=" + signature +
+                '}';
     }
 
     @Override
@@ -127,20 +125,17 @@ public class SignedMessage implements Message, Signable {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
+        if (!super.equals(o)) {
+            return false;
+        }
         final SignedMessage that = (SignedMessage) o;
-        return Objects.equals(payload, that.payload) &&
-                Objects.equals(sender, that.sender) &&
-                Objects.equals(proofOfWork, that.proofOfWork) &&
-                Objects.equals(signature, that.signature);
+        return Objects.equals(recipient, that.recipient) &&
+                Objects.equals(signature, that.signature) &&
+                Objects.equals(payload, that.payload);
     }
 
     @Override
-    public String toString() {
-        return "SignedMessage{" +
-                "payload=" + payload +
-                ", sender=" + sender +
-                ", proofOfWork=" + proofOfWork +
-                ", signature=" + signature +
-                '}';
+    public int hashCode() {
+        return Objects.hash(super.hashCode(), recipient, signature, payload);
     }
 }
