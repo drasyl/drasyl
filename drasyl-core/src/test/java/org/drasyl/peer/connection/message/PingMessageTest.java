@@ -40,16 +40,19 @@ class PingMessageTest {
     private CompressedPublicKey sender;
     @Mock
     private ProofOfWork proofOfWork;
+    @Mock
+    private CompressedPublicKey recipient;
 
     @Nested
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
-            final String json = "{\"@type\":\"" + PingMessage.class.getSimpleName() + "\",\"sender\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"proofOfWork\":6657650,\"id\":\"89ba3cd9efb7570eb3126d11\",\"userAgent\":\"\"}";
+            final String json = "{\"@type\":\"" + PingMessage.class.getSimpleName() + "\",\"sender\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"proofOfWork\":6657650,\"recipient\":\"0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9\",\"id\":\"89ba3cd9efb7570eb3126d11\",\"userAgent\":\"\"}";
 
             assertEquals(new PingMessage(
                     CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"),
-                    ProofOfWork.of(6657650)
+                    ProofOfWork.of(6657650),
+                    CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9")
             ), JACKSON_READER.readValue(json, Message.class));
         }
     }
@@ -60,13 +63,14 @@ class PingMessageTest {
         void shouldSerializeToCorrectJson() throws IOException, CryptoException {
             final PingMessage message = new PingMessage(
                     CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"),
-                    ProofOfWork.of(6657650)
+                    ProofOfWork.of(6657650),
+                    CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9")
             );
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", PingMessage.class.getSimpleName())
-                    .containsKeys("id", "sender", "proofOfWork", "userAgent");
+                    .containsKeys("id", "sender", "proofOfWork", "recipient", "userAgent");
         }
     }
 
@@ -74,8 +78,8 @@ class PingMessageTest {
     class Equals {
         @Test
         void shouldReturnTrue() {
-            final PingMessage message1 = new PingMessage(sender, proofOfWork);
-            final PingMessage message2 = new PingMessage(sender, proofOfWork);
+            final PingMessage message1 = new PingMessage(sender, proofOfWork, recipient);
+            final PingMessage message2 = new PingMessage(sender, proofOfWork, recipient);
 
             assertEquals(message1, message2);
         }
@@ -85,8 +89,8 @@ class PingMessageTest {
     class HashCode {
         @Test
         void shouldReturnTrue() {
-            final PingMessage message1 = new PingMessage(sender, proofOfWork);
-            final PingMessage message2 = new PingMessage(sender, proofOfWork);
+            final PingMessage message1 = new PingMessage(sender, proofOfWork, recipient);
+            final PingMessage message2 = new PingMessage(sender, proofOfWork, recipient);
 
             assertEquals(message1.hashCode(), message2.hashCode());
         }

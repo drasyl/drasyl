@@ -19,27 +19,42 @@
 package org.drasyl.peer.connection.message;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
+
+import java.util.Objects;
 
 /**
  * A message representing a PING request.
  * <p>
  * This is an immutable object.
  */
-public class PingMessage extends AbstractMessage implements RequestMessage {
+public class PingMessage extends AbstractMessage implements RequestMessage, AddressableMessage {
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private final CompressedPublicKey recipient;
+
     @JsonCreator
     private PingMessage(@JsonProperty("id") final MessageId id,
                         @JsonProperty("userAgent") final String userAgent,
                         @JsonProperty("sender") final CompressedPublicKey sender,
-                        @JsonProperty("proofOfWork") final ProofOfWork proofOfWork) {
+                        @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
+                        @JsonProperty("recipient") final CompressedPublicKey recipient) {
         super(id, userAgent, sender, proofOfWork);
+        this.recipient = recipient;
+    }
+
+    public PingMessage(final CompressedPublicKey sender,
+                       final ProofOfWork proofOfWork,
+                       final CompressedPublicKey recipient) {
+        super(sender, proofOfWork);
+        this.recipient = recipient;
     }
 
     public PingMessage(final CompressedPublicKey sender,
                        final ProofOfWork proofOfWork) {
-        super(sender, proofOfWork);
+        this(sender, proofOfWork, null);
     }
 
     @Override
@@ -47,17 +62,33 @@ public class PingMessage extends AbstractMessage implements RequestMessage {
         return "PingMessage{" +
                 "sender='" + sender +
                 ", proofOfWork='" + proofOfWork +
+                ", recipient='" + recipient +
                 ", id='" + id +
                 '}';
     }
 
     @Override
     public boolean equals(final Object o) {
-        return super.equals(o);
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        if (!super.equals(o)) {
+            return false;
+        }
+        final PingMessage that = (PingMessage) o;
+        return Objects.equals(recipient, that.recipient);
     }
 
     @Override
     public int hashCode() {
-        return super.hashCode();
+        return Objects.hash(super.hashCode(), recipient);
+    }
+
+    @Override
+    public CompressedPublicKey getRecipient() {
+        return recipient;
     }
 }
