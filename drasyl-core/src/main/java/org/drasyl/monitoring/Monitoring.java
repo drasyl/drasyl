@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.monitoring;
 
 import io.micrometer.core.instrument.Clock;
@@ -33,6 +32,7 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.SimpleDuplexHandler;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.util.NetworkUtil;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -140,7 +140,7 @@ public class Monitoring implements DrasylNodeComponent {
             Gauge.builder("peersManager.children", peersManager, pm -> pm.getChildrenKeys().size()).register(registry);
 
             // monitor Pipeline
-            pipeline.addFirst(MONITORING_HANDLER, new SimpleDuplexHandler<Object, Event, Object>() {
+            pipeline.addFirst(MONITORING_HANDLER, new SimpleDuplexHandler<Object, Event, Object, Address>() {
                 private final Map<String, Counter> counters = new HashMap<>();
 
                 @Override
@@ -153,7 +153,7 @@ public class Monitoring implements DrasylNodeComponent {
 
                 @Override
                 protected void matchedRead(final HandlerContext ctx,
-                                           final CompressedPublicKey sender,
+                                           final Address sender,
                                            final Object msg,
                                            final CompletableFuture<Void> future) {
                     ctx.scheduler().scheduleDirect(() -> incrementObjectTypeCounter("pipeline.inbound_messages", msg));
@@ -162,7 +162,7 @@ public class Monitoring implements DrasylNodeComponent {
 
                 @Override
                 protected void matchedWrite(final HandlerContext ctx,
-                                            final CompressedPublicKey recipient,
+                                            final Address recipient,
                                             final Object msg,
                                             final CompletableFuture<Void> future) {
                     ctx.scheduler().scheduleDirect(() -> incrementObjectTypeCounter("pipeline.outbound_messages", msg));

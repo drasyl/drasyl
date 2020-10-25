@@ -21,10 +21,11 @@ package org.drasyl.identity;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonValue;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.pipeline.address.Address;
 
 import java.util.Objects;
 
-abstract class AbstractCompressedKey<K> {
+abstract class AbstractCompressedKey<K> implements Address {
     @JsonValue
     protected final String compressedKey;
     @JsonIgnore

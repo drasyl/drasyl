@@ -26,6 +26,7 @@ import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.DrasylScheduler;
 import org.drasyl.util.Pair;
@@ -71,7 +72,7 @@ public class EmbeddedPipeline extends DefaultPipeline {
         this.head = new AbstractEndHandler(HeadContext.DRASYL_HEAD_HANDLER, config, this, DrasylScheduler.getInstanceHeavy(), identity, inboundValidator, outboundValidator) {
             @Override
             public void write(final HandlerContext ctx,
-                              final CompressedPublicKey recipient,
+                              final Address recipient,
                               final Object msg,
                               final CompletableFuture<Void> future) {
                 outboundMessages.onNext(msg);
@@ -81,11 +82,15 @@ public class EmbeddedPipeline extends DefaultPipeline {
         this.tail = new TailContext(inboundEvents::onNext, config, this, DrasylScheduler.getInstanceHeavy(), identity, inboundValidator, outboundValidator) {
             @Override
             public void read(final HandlerContext ctx,
-                             final CompressedPublicKey sender,
+                             final Address sender,
                              final Object msg,
                              final CompletableFuture<Void> future) {
-                inboundEvents.onNext(new MessageEvent(sender, msg));
-                inboundMessages.onNext(Pair.of(sender, msg));
+                if (sender instanceof CompressedPublicKey) {
+                    final CompressedPublicKey senderAddress = (CompressedPublicKey) sender;
+                    inboundEvents.onNext(new MessageEvent(senderAddress, msg));
+                    inboundMessages.onNext(Pair.of(senderAddress, msg));
+                }
+
                 future.complete(null);
             }
         };
@@ -115,23 +120,7 @@ public class EmbeddedPipeline extends DefaultPipeline {
      * @return all messages that passes the pipeline until the end
      */
     public <T> Observable<T> outboundMessages(final Class<T> clazz) {
-        @SuppressWarnings("unchecked")
-        Observable<T> result = (Observable<T>) outboundMessages.filter(clazz::isInstance);
+        @SuppressWarnings("unchecked") final Observable<T> result = (Observable<T>) outboundMessages.filter(clazz::isInstance);
         return result;
-    }
-
-    /**
-     * Processes an inbound message by the pipeline.
-     *
-     * @param sender the sender of the message
-     * @param msg    the inbound message
-     */
-    public CompletableFuture<Void> processInbound(final CompressedPublicKey sender,
-                                                  final Object msg) {
-        final CompletableFuture<Void> rtn = new CompletableFuture<>();
-
-        this.scheduler.scheduleDirect(() -> this.head.fireRead(sender, msg, rtn));
-
-        return rtn;
     }
 }

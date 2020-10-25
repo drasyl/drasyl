@@ -152,7 +152,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
                     super.eventTriggered(ctx, event, future);
                 }
             });
-            pipeline.addAfter(LOOPBACK_MESSAGE_SINK_HANDLER, DIRECT_CONNECTIONS_MANAGER_COMMUNICATION_OCCURRED, new SimpleOutboundHandler<RelayableMessage>() {
+            pipeline.addAfter(LOOPBACK_MESSAGE_SINK_HANDLER, DIRECT_CONNECTIONS_MANAGER_COMMUNICATION_OCCURRED, new SimpleOutboundHandler<RelayableMessage, CompressedPublicKey>() {
                 @Override
                 protected void matchedWrite(final HandlerContext ctx,
                                             final CompressedPublicKey recipient,

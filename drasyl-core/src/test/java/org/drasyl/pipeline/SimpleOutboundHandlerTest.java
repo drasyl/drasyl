@@ -60,7 +60,7 @@ class SimpleOutboundHandlerTest {
         final byte[] payload = new byte[]{};
         final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
 
-        final SimpleOutboundHandler<byte[]> handler = new SimpleOutboundHandler<>() {
+        final SimpleOutboundHandler<byte[], CompressedPublicKey> handler = new SimpleOutboundHandler<>() {
             @Override
             protected void matchedWrite(final HandlerContext ctx,
                                         final CompressedPublicKey recipient,
@@ -90,7 +90,7 @@ class SimpleOutboundHandlerTest {
 
     @Test
     void shouldPassthroughsNotMatchingMessage() {
-        final SimpleOutboundHandler<ChunkedMessage> handler = new SimpleOutboundHandler<>(ChunkedMessage.class) {
+        final SimpleOutboundHandler<ChunkedMessage, CompressedPublicKey> handler = new SimpleOutboundHandler<>(ChunkedMessage.class, CompressedPublicKey.class) {
             @Override
             protected void matchedWrite(final HandlerContext ctx,
                                         final CompressedPublicKey recipient,

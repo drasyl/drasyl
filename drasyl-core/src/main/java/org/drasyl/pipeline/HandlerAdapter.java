@@ -19,7 +19,7 @@
 package org.drasyl.pipeline;
 
 import org.drasyl.event.Event;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.pipeline.address.Address;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -45,7 +45,7 @@ public class HandlerAdapter implements Handler {
 
     @Override
     public void read(final HandlerContext ctx,
-                     final CompressedPublicKey sender,
+                     final Address sender,
                      final Object msg,
                      final CompletableFuture<Void> future) {
         ctx.fireRead(sender, msg, future);
@@ -65,7 +65,7 @@ public class HandlerAdapter implements Handler {
 
     @Override
     public void write(final HandlerContext ctx,
-                      final CompressedPublicKey recipient,
+                      final Address recipient,
                       final Object msg,
                       final CompletableFuture<Void> future) {
         ctx.write(recipient, msg, future);

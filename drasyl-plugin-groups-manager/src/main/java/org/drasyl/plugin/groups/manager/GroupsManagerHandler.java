@@ -49,7 +49,7 @@ import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Err
 import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error.ERROR_PROOF_TO_WEAK;
 import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error.ERROR_UNKNOWN;
 
-public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessage, GroupEvent> {
+public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessage, GroupEvent, CompressedPublicKey> {
     private static final Logger LOG = LoggerFactory.getLogger(GroupsManagerHandler.class);
     private final DatabaseAdapter database;
     private Disposable staleTask;

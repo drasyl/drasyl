@@ -21,9 +21,9 @@ package org.drasyl.pipeline;
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
-import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.RelayableMessage;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -281,12 +281,18 @@ public abstract class DefaultPipeline implements Pipeline {
     }
 
     @Override
-    public CompletableFuture<Void> processInbound(final RelayableMessage msg) {
+    public CompletableFuture<Void> processInbound(final Address sender,
+                                                  final Object msg) {
         final CompletableFuture<Void> rtn = new CompletableFuture<>();
 
-        this.scheduler.scheduleDirect(() -> this.head.fireRead(msg.getSender(), msg, rtn));
+        this.scheduler.scheduleDirect(() -> this.head.fireRead(sender, msg, rtn));
 
         return rtn;
+    }
+
+    @Override
+    public CompletableFuture<Void> processInbound(final RelayableMessage msg) {
+        return processInbound(msg.getSender(), msg);
     }
 
     @Override
@@ -299,7 +305,7 @@ public abstract class DefaultPipeline implements Pipeline {
     }
 
     @Override
-    public CompletableFuture<Void> processOutbound(final CompressedPublicKey recipient,
+    public CompletableFuture<Void> processOutbound(final Address recipient,
                                                    final Object msg) {
         final CompletableFuture<Void> rtn = new CompletableFuture<>();
 

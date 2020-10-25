@@ -21,8 +21,8 @@ package org.drasyl.pipeline;
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
-import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 
 import java.util.concurrent.CompletableFuture;
@@ -59,7 +59,7 @@ abstract class AbstractEndHandler extends AbstractHandlerContext implements Hand
 
     @Override
     public void read(final HandlerContext ctx,
-                     final CompressedPublicKey sender,
+                     final Address sender,
                      final Object msg,
                      final CompletableFuture<Void> future) {
         // skip
@@ -82,7 +82,7 @@ abstract class AbstractEndHandler extends AbstractHandlerContext implements Hand
 
     @Override
     public void write(final HandlerContext ctx,
-                      final CompressedPublicKey recipient,
+                      final Address recipient,
                       final Object msg,
                       final CompletableFuture<Void> future) {
         // skip

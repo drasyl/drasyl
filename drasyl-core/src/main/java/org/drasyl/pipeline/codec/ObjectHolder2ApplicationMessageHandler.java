@@ -29,7 +29,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Handler that convert a given {@link ObjectHolder} to an {@link ApplicationMessage}.
  */
-public class ObjectHolder2ApplicationMessageHandler extends SimpleOutboundHandler<ObjectHolder> {
+public class ObjectHolder2ApplicationMessageHandler extends SimpleOutboundHandler<ObjectHolder, CompressedPublicKey> {
     public static final ObjectHolder2ApplicationMessageHandler INSTANCE = new ObjectHolder2ApplicationMessageHandler();
     public static final String OBJECT_HOLDER2APP_MSG = "objectHolder2ApplicationMessageHandler";
 

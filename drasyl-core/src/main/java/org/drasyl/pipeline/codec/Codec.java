@@ -16,13 +16,12 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.pipeline.codec;
 
 import org.drasyl.event.Event;
-import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.SimpleDuplexHandler;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.util.FutureUtil;
 
 import java.util.ArrayList;
@@ -40,11 +39,12 @@ import java.util.function.Consumer;
  * vice versa.
  *
  * <p>
- * <b>Note</b>: You can use the {@link HandlerContext#validator()} to check if a given {@code
+ * <b>Note</b>: You can use the {@link HandlerContext#inboundValidator()}} or {@link
+ * HandlerContext#outboundValidator()}} to check if a given {@code
  * Class} is allowed to be encode/decode.
  * </p>
  */
-public abstract class Codec<E, D> extends SimpleDuplexHandler<E, Event, D> {
+public abstract class Codec<E, D, A extends Address> extends SimpleDuplexHandler<E, Event, D, A> {
     @Override
     protected void matchedEventTriggered(final HandlerContext ctx,
                                          final Event event,
@@ -55,7 +55,7 @@ public abstract class Codec<E, D> extends SimpleDuplexHandler<E, Event, D> {
 
     @Override
     protected void matchedRead(final HandlerContext ctx,
-                               final CompressedPublicKey sender,
+                               final A sender,
                                final E msg,
                                final CompletableFuture<Void> future) {
         if (future.isDone()) {
@@ -77,7 +77,7 @@ public abstract class Codec<E, D> extends SimpleDuplexHandler<E, Event, D> {
 
     @Override
     protected void matchedWrite(final HandlerContext ctx,
-                                final CompressedPublicKey recipient,
+                                final A recipient,
                                 final D msg,
                                 final CompletableFuture<Void> future) {
         if (future.isDone()) {

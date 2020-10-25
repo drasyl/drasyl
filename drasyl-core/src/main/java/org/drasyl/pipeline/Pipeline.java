@@ -19,8 +19,8 @@
 package org.drasyl.pipeline;
 
 import org.drasyl.event.Event;
-import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.RelayableMessage;
+import org.drasyl.pipeline.address.Address;
 
 import java.util.NoSuchElementException;
 import java.util.concurrent.CompletableFuture;
@@ -43,8 +43,8 @@ import java.util.concurrent.CompletableFuture;
  * The following diagram describes how I/O events are processed by {@link Handler}s in a {@link
  * Pipeline} typically. An I/O event are handled by a {@link Handler}  and be forwarded to its
  * closest handler by calling the event propagation methods defined in {@link HandlerContext}, such
- * as {@link HandlerContext#fireRead(CompressedPublicKey, Object, CompletableFuture)} and {@link
- * HandlerContext#write(CompressedPublicKey, Object, CompletableFuture)} .
+ * as {@link HandlerContext#fireRead(Address, Object, CompletableFuture)} and {@link
+ * HandlerContext#write(Address, Object, CompletableFuture)} .
  *
  * <pre>
  *                                                 I/O Request
@@ -114,14 +114,14 @@ import java.util.concurrent.CompletableFuture;
  * <ul>
  * <li>Inbound event propagation methods:
  *     <ul>
- *     <li>{@link HandlerContext#fireRead(CompressedPublicKey, Object, CompletableFuture)}</li>
+ *     <li>{@link HandlerContext#fireRead(Address, Object, CompletableFuture)}</li>
  *     <li>{@link HandlerContext#fireEventTriggered(Event, CompletableFuture)}</li>
  *     <li>{@link HandlerContext#fireExceptionCaught(Exception)}</li>
  *     </ul>
  * </li>
  * <li>Outbound event propagation methods:
  *     <ul>
- *     <li>{@link HandlerContext#write(CompressedPublicKey, Object, CompletableFuture)} </li>
+ *     <li>{@link HandlerContext#write(Address, Object, CompletableFuture)} </li>
  *     </ul>
  * </li>
  * </ul>
@@ -132,9 +132,10 @@ import java.util.concurrent.CompletableFuture;
  *
  * <li>But for every invocation of:
  *       <ul>
- *       <li>{@link Pipeline#processInbound(RelayableMessage)}</li>
+ *           <li>{@link Pipeline#processInbound(RelayableMessage)}</li>
+ *       <li>{@link Pipeline#processInbound(Address, Object)}</li>
  *       <li>{@link Pipeline#processInbound(Event)}</li>
- *       <li>{@link Pipeline#processOutbound(CompressedPublicKey, Object)}</li>
+ *       <li>{@link Pipeline#processOutbound(Address, Object)}</li>
  *       </ul>
  * </li>
  * the invocation is scheduled in the {@link org.drasyl.util.DrasylScheduler}, therefore the order of
@@ -235,6 +236,14 @@ public interface Pipeline {
     /**
      * Processes an inbound message by the pipeline.
      *
+     * @param sender the sender of the message
+     * @param msg    the inbound message
+     */
+    CompletableFuture<Void> processInbound(Address sender, Object msg);
+
+    /**
+     * Processes an inbound message by the pipeline.
+     *
      * @param msg the inbound message
      */
     CompletableFuture<Void> processInbound(RelayableMessage msg);
@@ -254,5 +263,5 @@ public interface Pipeline {
      * @return a completed future if the message was successfully processed, otherwise an
      * exceptionally future
      */
-    CompletableFuture<Void> processOutbound(CompressedPublicKey recipient, Object msg);
+    CompletableFuture<Void> processOutbound(Address recipient, Object msg);
 }

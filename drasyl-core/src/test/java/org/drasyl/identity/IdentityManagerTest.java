@@ -21,7 +21,6 @@ package org.drasyl.identity;
 import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.util.DrasylSupplier;
-import org.drasyl.util.PathUtil;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

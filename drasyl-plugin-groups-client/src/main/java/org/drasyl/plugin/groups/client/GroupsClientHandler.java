@@ -52,7 +52,7 @@ import java.util.stream.Collectors;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class GroupsClientHandler extends SimpleInboundHandler<GroupsServerMessage, Event> {
+public class GroupsClientHandler extends SimpleInboundHandler<GroupsServerMessage, Event, CompressedPublicKey> {
     private static final Logger LOG = LoggerFactory.getLogger(GroupsClientHandler.class);
     private final Map<Group, GroupUri> groups;
     private final List<Disposable> renewTasks;
