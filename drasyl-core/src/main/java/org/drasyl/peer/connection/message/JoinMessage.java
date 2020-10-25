@@ -32,7 +32,7 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * This is an immutable object.
  */
-public class JoinMessage extends AbstractMessage implements RequestMessage, AddressableMessage {
+public class JoinMessage extends AbstractMessage implements RequestMessage {
     private final int networkId;
     private final CompressedPublicKey recipient;
     private final boolean childrenJoin;

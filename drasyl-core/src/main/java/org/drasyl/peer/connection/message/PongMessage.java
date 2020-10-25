@@ -32,7 +32,7 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * This is an immutable object.
  */
-public class PongMessage extends AbstractResponseMessage<PingMessage> implements AddressableMessage {
+public class PongMessage extends AbstractResponseMessage<PingMessage> {
     private final CompressedPublicKey recipient;
 
     @JsonCreator

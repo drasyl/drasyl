@@ -34,7 +34,7 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * This is an immutable object.
  */
-public class WelcomeMessage extends AbstractMessage implements ResponseMessage<JoinMessage>, AddressableMessage {
+public class WelcomeMessage extends AbstractMessage implements ResponseMessage<JoinMessage> {
     private final int networkId;
     private final CompressedPublicKey recipient;
     private final PeerInformation peerInformation;

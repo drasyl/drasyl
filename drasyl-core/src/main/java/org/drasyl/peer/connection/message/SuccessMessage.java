@@ -30,7 +30,7 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * This is an immutable object.
  */
-public class SuccessMessage extends AbstractResponseMessage<RequestMessage> implements AddressableMessage {
+public class SuccessMessage extends AbstractResponseMessage<RequestMessage> {
     private final CompressedPublicKey recipient;
 
     @JsonCreator

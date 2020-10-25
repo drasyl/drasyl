@@ -73,4 +73,11 @@ public interface Message {
      * @return this message sender's proof of work.
      */
     ProofOfWork getProofOfWork();
+
+    /**
+     * Returns this message's recipient.
+     *
+     * @return this message's recipient.
+     */
+    CompressedPublicKey getRecipient();
 }

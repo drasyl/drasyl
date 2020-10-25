@@ -70,7 +70,7 @@ public class ErrorMessage extends AbstractMessage implements RequestMessage, Res
      */
     public ErrorMessage(final CompressedPublicKey sender,
                         final ProofOfWork proofOfWork,
-                        CompressedPublicKey recipient,
+                        final CompressedPublicKey recipient,
                         final Error error,
                         final MessageId correspondingId) {
         super(sender, proofOfWork);
@@ -129,13 +129,14 @@ public class ErrorMessage extends AbstractMessage implements RequestMessage, Res
         return Objects.hash(super.hashCode(), error);
     }
 
-    public CompressedPublicKey getRecipient() {
-        return recipient;
-    }
-
     @Override
     public MessageId getCorrespondingId() {
         return correspondingId;
+    }
+
+    @Override
+    public CompressedPublicKey getRecipient() {
+        return recipient;
     }
 
     /**

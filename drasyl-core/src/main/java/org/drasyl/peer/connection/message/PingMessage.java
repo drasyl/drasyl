@@ -31,7 +31,7 @@ import java.util.Objects;
  * <p>
  * This is an immutable object.
  */
-public class PingMessage extends AbstractMessage implements RequestMessage, AddressableMessage {
+public class PingMessage extends AbstractMessage implements RequestMessage {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final CompressedPublicKey recipient;
 

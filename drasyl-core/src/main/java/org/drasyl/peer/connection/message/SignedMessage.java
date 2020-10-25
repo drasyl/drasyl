@@ -45,7 +45,7 @@ import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
  * <p>
  * This is an immutable object.
  */
-public class SignedMessage extends AbstractMessage implements Message, Signable, AddressableMessage {
+public class SignedMessage extends AbstractMessage implements Signable {
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final CompressedPublicKey recipient;
     private Signature signature;

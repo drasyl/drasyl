@@ -32,7 +32,8 @@ import org.junit.jupiter.api.Test;
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 
 class MessageEncoderTest {
-    private static CompressedPublicKey publicKey;
+    private static CompressedPublicKey sender;
+    private static CompressedPublicKey recipient;
     private Message message;
     private EmbeddedChannel channel;
 
@@ -42,7 +43,8 @@ class MessageEncoderTest {
 
         final ChannelHandler handler = MessageEncoder.INSTANCE;
         channel = new EmbeddedChannel(handler);
-        publicKey = CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3");
+        sender = CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3");
+        recipient = CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9");
     }
 
     @Test
@@ -77,12 +79,17 @@ class MessageEncoderTest {
 
         @Override
         public CompressedPublicKey getSender() {
-            return publicKey;
+            return sender;
         }
 
         @Override
         public ProofOfWork getProofOfWork() {
             return ProofOfWork.of(6657650);
+        }
+
+        @Override
+        public CompressedPublicKey getRecipient() {
+            return recipient;
         }
     }
 }

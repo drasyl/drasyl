@@ -36,7 +36,7 @@ import static java.util.Objects.requireNonNull;
  * <p>
  * This is an immutable object.
  */
-public class QuitMessage extends AbstractMessage implements RequestMessage, AddressableMessage {
+public class QuitMessage extends AbstractMessage implements RequestMessage {
     private final CompressedPublicKey recipient;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final CloseReason reason;
