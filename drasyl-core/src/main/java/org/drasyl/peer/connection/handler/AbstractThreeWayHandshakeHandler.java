@@ -157,7 +157,7 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
             // schedule connection error if handshake did not take place within timeout
             timeoutFuture = ctx.executor().schedule(() -> {
                 if (!timeoutFuture.isCancelled()) {
-                    rejectSession(ctx, ERROR_HANDSHAKE_TIMEOUT);
+                    rejectSession(ctx, ERROR_HANDSHAKE_TIMEOUT.getDescription());
                     ctx.writeAndFlush(new ErrorMessage(identity.getPublicKey(), identity.getProofOfWork(), ERROR_HANDSHAKE_TIMEOUT)).addListener(ChannelFutureListener.CLOSE);
                 }
             }, timeout.toMillis(), MILLISECONDS);
@@ -165,13 +165,12 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
     }
 
     protected void rejectSession(final ChannelHandlerContext ctx,
-                                 final ErrorMessage.Error error) {
-        final String errorDescription = error.getDescription();
+                                 final String error) {
         if (getLogger().isTraceEnabled()) {
-            getLogger().trace("[{}]: {}", ctx.channel().id().asShortText(), errorDescription);
+            getLogger().trace("[{}]: {}", ctx.channel().id().asShortText(), error);
         }
         timeoutFuture.cancel(true);
-        handshakeFuture.completeExceptionally(new Exception(errorDescription));
+        handshakeFuture.completeExceptionally(new Exception(error));
     }
 
     @Override

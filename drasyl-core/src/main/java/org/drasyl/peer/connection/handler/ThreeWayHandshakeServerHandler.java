@@ -72,7 +72,7 @@ public abstract class ThreeWayHandshakeServerHandler<R extends RequestMessage, O
                     ctx.writeAndFlush(offerMessage);
                 }
                 else {
-                    rejectSession(ctx, error);
+                    rejectSession(ctx, error.getDescription());
                     ctx.writeAndFlush(new ErrorMessage(identity.getPublicKey(), identity.getProofOfWork(), requestMessage.getSender(), error, requestMessage.getId())).addListener(ChannelFutureListener.CLOSE);
                 }
             }
