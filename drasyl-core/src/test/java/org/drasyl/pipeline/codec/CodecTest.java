@@ -43,7 +43,7 @@ class CodecTest {
 
     @Test
     void shouldSkipDoneFutures() {
-        final Codec<Object, Object> codec = new Codec<>() {
+        final Codec<Object, Object, CompressedPublicKey> codec = new Codec<>() {
             @Override
             void encode(final HandlerContext ctx,
                         final Object msg,
@@ -69,7 +69,7 @@ class CodecTest {
 
     @Test
     void shouldCompleteParentFutureExceptionallyOnChildError() {
-        final Codec<Object, Object> codec = new Codec<>() {
+        final Codec<Object, Object, CompressedPublicKey> codec = new Codec<>() {
             @Override
             void encode(final HandlerContext ctx,
                         final Object msg,

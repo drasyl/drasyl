@@ -71,7 +71,7 @@ class SimpleDuplexHandlerTest {
             final byte[] payload = new byte[]{};
             final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
 
-            final SimpleDuplexHandler<Object, Event, byte[]> handler = new SimpleDuplexHandler<>() {
+            final SimpleDuplexHandler<Object, Event, byte[], CompressedPublicKey> handler = new SimpleDuplexHandler<>() {
                 @Override
                 protected void matchedEventTriggered(final HandlerContext ctx, final Event event,
                                                      final CompletableFuture<Void> future) {
@@ -113,7 +113,7 @@ class SimpleDuplexHandlerTest {
 
         @Test
         void shouldPassthroughsNotMatchingMessage() {
-            final SimpleDuplexHandler<Object, Event, ChunkedMessage> handler = new SimpleDuplexHandler<>(Object.class, Event.class, ChunkedMessage.class) {
+            final SimpleDuplexHandler<Object, Event, ChunkedMessage, CompressedPublicKey> handler = new SimpleDuplexHandler<>(Object.class, Event.class, ChunkedMessage.class, CompressedPublicKey.class) {
                 @Override
                 protected void matchedEventTriggered(final HandlerContext ctx,
                                                      final Event event,
@@ -165,7 +165,7 @@ class SimpleDuplexHandlerTest {
     class InboundTest {
         @Test
         void shouldTriggerOnMatchedMessage() throws JsonProcessingException {
-            final SimpleDuplexHandler<byte[], Event, Object> handler = new SimpleDuplexHandler<>() {
+            final SimpleDuplexHandler<byte[], Event, Object, CompressedPublicKey> handler = new SimpleDuplexHandler<>() {
                 @Override
                 protected void matchedWrite(final HandlerContext ctx,
                                             final CompressedPublicKey recipient,
@@ -215,7 +215,7 @@ class SimpleDuplexHandlerTest {
 
         @Test
         void shouldPassthroughsNotMatchingMessage() {
-            final SimpleDuplexHandler<List<?>, Event, Object> handler = new SimpleDuplexHandler<>() {
+            final SimpleDuplexHandler<List<?>, Event, Object, CompressedPublicKey> handler = new SimpleDuplexHandler<>() {
                 @Override
                 protected void matchedWrite(final HandlerContext ctx,
                                             final CompressedPublicKey recipient,
@@ -254,6 +254,7 @@ class SimpleDuplexHandlerTest {
 
             final byte[] payload = new byte[]{ 0x01 };
             final ApplicationMessage msg = mock(ApplicationMessage.class);
+            when(msg.getSender()).thenReturn(mock(CompressedPublicKey.class));
 
             when(msg.getPayload()).thenReturn(payload);
             doReturn(payload.getClass().getName()).when(msg).getHeader(ObjectHolder.CLASS_KEY_NAME);
@@ -269,7 +270,7 @@ class SimpleDuplexHandlerTest {
 
         @Test
         void shouldTriggerOnMatchedEvent() throws InterruptedException {
-            final SimpleDuplexHandler<ApplicationMessage, NodeUpEvent, Object> handler = new SimpleDuplexHandler<>(ApplicationMessage.class, NodeUpEvent.class, Object.class) {
+            final SimpleDuplexHandler<ApplicationMessage, NodeUpEvent, Object, CompressedPublicKey> handler = new SimpleDuplexHandler<>(ApplicationMessage.class, NodeUpEvent.class, Object.class, CompressedPublicKey.class) {
                 @Override
                 protected void matchedWrite(final HandlerContext ctx,
                                             final CompressedPublicKey recipient,
@@ -306,7 +307,7 @@ class SimpleDuplexHandlerTest {
 
         @Test
         void shouldPassthroughsNotMatchingEvents() {
-            final SimpleDuplexHandler<ChunkedMessage, NodeUpEvent, Object> handler = new SimpleDuplexHandler<>() {
+            final SimpleDuplexHandler<ChunkedMessage, NodeUpEvent, Object, CompressedPublicKey> handler = new SimpleDuplexHandler<>() {
                 @Override
                 protected void matchedWrite(final HandlerContext ctx,
                                             final CompressedPublicKey recipient,

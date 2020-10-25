@@ -20,8 +20,8 @@ package org.drasyl.pipeline;
 
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
-import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -62,7 +62,7 @@ class HeadContext extends AbstractEndHandler {
 
     @Override
     public void write(final HandlerContext ctx,
-                      final CompressedPublicKey recipient,
+                      final Address recipient,
                       final Object msg,
                       final CompletableFuture<Void> future) {
         if (msg instanceof AutoSwallow) {

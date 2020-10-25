@@ -19,7 +19,7 @@
 package org.drasyl.pipeline;
 
 import org.drasyl.event.Event;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.pipeline.address.Address;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -62,7 +62,7 @@ public interface Handler {
      * @param future a future for the message
      */
     void read(HandlerContext ctx,
-              CompressedPublicKey sender,
+              Address sender,
               Object msg,
               CompletableFuture<Void> future);
 
@@ -91,7 +91,7 @@ public interface Handler {
      * @param future    a future for the message
      */
     void write(HandlerContext ctx,
-               CompressedPublicKey recipient,
+               Address recipient,
                Object msg,
                CompletableFuture<Void> future);
 }

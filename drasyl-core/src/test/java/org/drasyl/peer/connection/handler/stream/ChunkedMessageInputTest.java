@@ -21,7 +21,6 @@ package org.drasyl.peer.connection.handler.stream;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufAllocator;
 import io.netty.buffer.Unpooled;
-import io.netty.channel.ChannelHandlerContext;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ChunkedMessage;
@@ -66,6 +65,7 @@ class ChunkedMessageInputTest {
     void setUp() {
         msgID = MessageId.of("89ba3cd9efb7570eb3126d11");
         payload = new byte[]{};
+        sentLastChunk = false;
     }
 
     @Test
@@ -158,7 +158,7 @@ class ChunkedMessageInputTest {
         final ChunkedMessageInput input = new ChunkedMessageInput(sender, recipient, contentLength, checksum, chunks, sourcePayload, msgID, progress, sentLastChunk);
 
         final ChunkedMessage expectedChunk = ChunkedMessage.createLastChunk(sender, recipient, msgID);
-        assertEquals(expectedChunk, input.readChunk(mock(ChannelHandlerContext.class)));
+        assertEquals(expectedChunk, input.readChunk(mock(ByteBufAllocator.class)));
         assertEquals(progress, input.progress());
         assertEquals(contentLength, input.length());
         assertTrue(input.isEndOfInput());

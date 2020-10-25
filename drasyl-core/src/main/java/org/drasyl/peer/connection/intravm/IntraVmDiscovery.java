@@ -77,7 +77,7 @@ public class IntraVmDiscovery implements DrasylNodeComponent {
                 }
         );
 
-        pipeline.addBefore(LOOPBACK_MESSAGE_SINK_HANDLER, INTRA_VM_SINK_HANDLER, new SimpleOutboundHandler<RelayableMessage>() {
+        pipeline.addBefore(LOOPBACK_MESSAGE_SINK_HANDLER, INTRA_VM_SINK_HANDLER, new SimpleOutboundHandler<RelayableMessage, CompressedPublicKey>() {
             @Override
             protected void matchedWrite(final HandlerContext ctx,
                                         final CompressedPublicKey recipient,

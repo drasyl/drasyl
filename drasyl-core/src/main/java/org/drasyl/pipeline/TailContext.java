@@ -24,6 +24,7 @@ import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -67,7 +68,7 @@ class TailContext extends AbstractEndHandler {
 
     @Override
     public void read(final HandlerContext ctx,
-                     final CompressedPublicKey sender,
+                     final Address sender,
                      final Object msg,
                      final CompletableFuture<Void> future) {
         if (msg instanceof AutoSwallow) {
@@ -81,13 +82,19 @@ class TailContext extends AbstractEndHandler {
                 LOG.warn("Message `{}` was not written to the application, because the corresponding future was already completed.", msg);
             }
         }
-        else {
-            final MessageEvent event = new MessageEvent(sender, msg);
+        else if (sender instanceof CompressedPublicKey) {
+            final CompressedPublicKey senderAddress = (CompressedPublicKey) sender;
+            final MessageEvent event = new MessageEvent(senderAddress, msg);
             eventConsumer.accept(event);
             future.complete(null);
 
             if (LOG.isTraceEnabled()) {
                 LOG.trace("Event has passed the pipeline: `{}` ", event);
+            }
+        }
+        else {
+            if (LOG.isDebugEnabled()) {
+                LOG.debug("Message '{}' was not written to the application, because the corresponding address was not of type CompressedPublicKey.", msg);
             }
         }
     }

@@ -7,12 +7,12 @@
  *  it under the terms of the GNU Lesser General Public License as published by
  *  the Free Software Foundation, either version 3 of the License, or
  *  (at your option) any later version.
- *  
+ *
  *  drasyl is distributed in the hope that it will be useful,
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU Lesser General Public License for more details.
- *  
+ *
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
@@ -29,6 +29,7 @@ import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.ObjectHolder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -75,7 +76,7 @@ class DrasylPipelineIT {
                 .build();
 
         pipeline = new DrasylPipeline(receivedEvents::onNext, config, identity1);
-        pipeline.addFirst("outboundMessages", new SimpleOutboundHandler<ApplicationMessage>() {
+        pipeline.addFirst("outboundMessages", new SimpleOutboundHandler<ApplicationMessage, CompressedPublicKey>() {
             @Override
             protected void matchedWrite(final HandlerContext ctx,
                                         final CompressedPublicKey recipient,
@@ -102,7 +103,7 @@ class DrasylPipelineIT {
         pipeline.addLast("msgChanger", new HandlerAdapter() {
             @Override
             public void read(final HandlerContext ctx,
-                             final CompressedPublicKey sender,
+                             final Address sender,
                              final Object msg,
                              final CompletableFuture<Void> future) {
                 super.read(ctx, identity2.getPublicKey(), newPayload, future);
@@ -129,7 +130,7 @@ class DrasylPipelineIT {
         pipeline.addLast("eventProducer", new HandlerAdapter() {
             @Override
             public void read(final HandlerContext ctx,
-                             final CompressedPublicKey sender,
+                             final Address sender,
                              final Object msg,
                              final CompletableFuture<Void> future) {
                 super.read(ctx, sender, msg, future);
@@ -164,7 +165,7 @@ class DrasylPipelineIT {
         pipeline.addLast("exceptionProducer", new HandlerAdapter() {
             @Override
             public void read(final HandlerContext ctx,
-                             final CompressedPublicKey sender,
+                             final Address sender,
                              final Object msg,
                              final CompletableFuture<Void> future) {
                 super.read(ctx, sender, msg, future);
@@ -203,7 +204,7 @@ class DrasylPipelineIT {
         pipeline.addLast("outboundChanger", new HandlerAdapter() {
             @Override
             public void write(final HandlerContext ctx,
-                              final CompressedPublicKey recipient,
+                              final Address recipient,
                               final Object msg,
                               final CompletableFuture<Void> future) {
                 super.write(ctx, identity2.getPublicKey(), newPayload, future);
@@ -230,7 +231,7 @@ class DrasylPipelineIT {
         pipeline.addLast("outbound", new HandlerAdapter() {
             @Override
             public void write(final HandlerContext ctx,
-                              final CompressedPublicKey recipient,
+                              final Address recipient,
                               final Object msg,
                               final CompletableFuture<Void> future) {
                 future.complete(null);
@@ -257,7 +258,7 @@ class DrasylPipelineIT {
         pipeline.addLast("outbound", new HandlerAdapter() {
             @Override
             public void write(final HandlerContext ctx,
-                              final CompressedPublicKey recipient,
+                              final Address recipient,
                               final Object msg,
                               final CompletableFuture<Void> future) {
                 future.completeExceptionally(new Exception("Error!"));
@@ -284,7 +285,7 @@ class DrasylPipelineIT {
         pipeline.addLast("outbound", new HandlerAdapter() {
             @Override
             public void write(final HandlerContext ctx,
-                              final CompressedPublicKey recipient,
+                              final Address recipient,
                               final Object msg,
                               final CompletableFuture<Void> future) {
                 super.write(ctx, recipient, msg, future);

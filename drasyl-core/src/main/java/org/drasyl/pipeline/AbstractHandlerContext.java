@@ -21,8 +21,8 @@ package org.drasyl.pipeline;
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
-import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -151,13 +151,13 @@ abstract class AbstractHandlerContext implements HandlerContext {
     }
 
     @Override
-    public CompletableFuture<Void> fireRead(final CompressedPublicKey sender,
+    public CompletableFuture<Void> fireRead(final Address sender,
                                             final Object msg,
                                             final CompletableFuture<Void> future) {
         return invokeRead(sender, msg, future);
     }
 
-    private CompletableFuture<Void> invokeRead(final CompressedPublicKey sender,
+    private CompletableFuture<Void> invokeRead(final Address sender,
                                                final Object msg,
                                                final CompletableFuture<Void> future) {
         final AbstractHandlerContext inboundCtx = findNextInbound();
@@ -200,13 +200,13 @@ abstract class AbstractHandlerContext implements HandlerContext {
     }
 
     @Override
-    public CompletableFuture<Void> write(final CompressedPublicKey recipient,
+    public CompletableFuture<Void> write(final Address recipient,
                                          final Object msg,
                                          final CompletableFuture<Void> future) {
         return invokeWrite(recipient, msg, future);
     }
 
-    private CompletableFuture<Void> invokeWrite(final CompressedPublicKey recipient,
+    private CompletableFuture<Void> invokeWrite(final Address recipient,
                                                 final Object msg,
                                                 final CompletableFuture<Void> future) {
         final AbstractHandlerContext outboundCtx = findPrevOutbound();

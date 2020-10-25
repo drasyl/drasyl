@@ -21,6 +21,7 @@ package org.drasyl.pipeline;
 import io.netty.util.internal.TypeParameterMatcher;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.ChunkedMessage;
+import org.drasyl.pipeline.address.Address;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -31,16 +32,18 @@ import java.util.concurrent.CompletableFuture;
  *
  * <pre>
  *     public class ChunkedHandler extends
- *             {@link SimpleOutboundHandler}&lt;{@link ChunkedMessage}&gt; {
+ *             {@link SimpleOutboundHandler}&lt;{@link ChunkedMessage}, {@link CompressedPublicKey}&gt; {
  *
- *         {@code @Override}
- *         protected void matchedWrite({@link HandlerContext} ctx, {@link ChunkedMessage} msg, {@link CompletableFuture}&lt;{@link Void}&gt; future) {
+ *        {@code @Override}
+ *         protected void matchedWrite({@link HandlerContext} ctx,
+ *             {@link CompressedPublicKey} recipient, {@link ChunkedMessage} msg,
+ *             {@link CompletableFuture}&lt;{@link Void}&gt; future) {
  *             System.out.println(msg);
  *         }
  *     }
  * </pre>
  */
-public abstract class SimpleOutboundHandler<O> extends HandlerAdapter {
+public abstract class SimpleOutboundHandler<O, A extends Address> extends AddressHandlerAdapter<A> {
     private final TypeParameterMatcher matcherMessage;
 
     /**
@@ -55,19 +58,23 @@ public abstract class SimpleOutboundHandler<O> extends HandlerAdapter {
      * Create a new instance
      *
      * @param outboundMessageType the type of messages to match
+     * @param addressType         the type of the address to match
      */
-    protected SimpleOutboundHandler(final Class<? extends O> outboundMessageType) {
+    protected SimpleOutboundHandler(final Class<? extends O> outboundMessageType,
+                                    final Class<? extends A> addressType) {
+        super(addressType);
         matcherMessage = TypeParameterMatcher.get(outboundMessageType);
     }
 
     @Override
     public void write(final HandlerContext ctx,
-                      final CompressedPublicKey recipient,
+                      final Address recipient,
                       final Object msg,
                       final CompletableFuture<Void> future) {
-        if (acceptOutbound(msg)) {
+        if (acceptOutbound(msg) && acceptAddress(recipient)) {
             @SuppressWarnings("unchecked") final O castedMsg = (O) msg;
-            matchedWrite(ctx, recipient, castedMsg, future);
+            @SuppressWarnings("unchecked") final A castedAddress = (A) recipient;
+            matchedWrite(ctx, castedAddress, castedMsg, future);
         }
         else {
             ctx.write(recipient, msg, future);
@@ -91,7 +98,7 @@ public abstract class SimpleOutboundHandler<O> extends HandlerAdapter {
      * @param future    a future for the message
      */
     protected abstract void matchedWrite(HandlerContext ctx,
-                                         CompressedPublicKey recipient,
+                                         A recipient,
                                          O msg,
                                          CompletableFuture<Void> future);
 }

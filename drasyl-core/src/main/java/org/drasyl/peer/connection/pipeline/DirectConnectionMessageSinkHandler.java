@@ -29,7 +29,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * This handler tries to send outgoing messages via TCP-based direct connection to another peers.
  */
-public class DirectConnectionMessageSinkHandler extends SimpleOutboundHandler<RelayableMessage> {
+public class DirectConnectionMessageSinkHandler extends SimpleOutboundHandler<RelayableMessage, CompressedPublicKey> {
     public static final String DIRECT_CONNECTION_MESSAGE_SINK_HANDLER = "DIRECT_CONNECTION_MESSAGE_SINK_HANDLER";
     private final PeerChannelGroup channelGroup;
 

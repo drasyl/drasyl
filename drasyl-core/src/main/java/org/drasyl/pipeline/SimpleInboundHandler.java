@@ -23,6 +23,7 @@ import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.pipeline.address.Address;
 
 import java.util.concurrent.CompletableFuture;
 
@@ -34,16 +35,25 @@ import java.util.concurrent.CompletableFuture;
  *
  * <pre>
  *     public class MessageEventHandler extends
- *             {@link SimpleInboundHandler}&lt;{@link ApplicationMessage}, {@link MessageEvent}&gt; {
+ *             {@link SimpleInboundHandler}&lt;{@link ApplicationMessage}, {@link MessageEvent},
+ *             {@link CompressedPublicKey}&gt; {
  *
- *         {@code @Override}
- *         protected void matchedEventTriggered({@link HandlerContext} ctx, {@link MessageEvent} event) {
+ *        {@code @Override}
+ *         protected void matchedEventTriggered({@link HandlerContext} ctx,
+ *             {@link MessageEvent} event) {
  *             System.out.println(event);
+ *         }
+ *
+ *        {@code @Override}
+ *         protected void matchedRead({@link HandlerContext} ctx,
+ *             {@link CompressedPublicKey} sender, {@link ApplicationMessage} msg,
+ *             {@link CompletableFuture}&lt;{@link Void}&gt; future) {
+ *             System.out.println(msg);
  *         }
  *     }
  * </pre>
  */
-public abstract class SimpleInboundHandler<I, E> extends HandlerAdapter {
+public abstract class SimpleInboundHandler<I, E, A extends Address> extends AddressHandlerAdapter<A> {
     private final TypeParameterMatcher matcherMessage;
     private final TypeParameterMatcher matcherEvent;
 
@@ -61,21 +71,25 @@ public abstract class SimpleInboundHandler<I, E> extends HandlerAdapter {
      *
      * @param inboundMessageType the type of messages to match
      * @param inboundEventType   the type of events to match
+     * @param addressType        the type of the address to match
      */
     protected SimpleInboundHandler(final Class<? extends I> inboundMessageType,
-                                   final Class<? extends E> inboundEventType) {
+                                   final Class<? extends E> inboundEventType,
+                                   final Class<? extends A> addressType) {
+        super(addressType);
         matcherMessage = TypeParameterMatcher.get(inboundMessageType);
         matcherEvent = TypeParameterMatcher.get(inboundEventType);
     }
 
     @Override
     public void read(final HandlerContext ctx,
-                     final CompressedPublicKey sender,
+                     final Address sender,
                      final Object msg,
                      final CompletableFuture<Void> future) {
-        if (acceptInbound(msg)) {
+        if (acceptInbound(msg) && acceptAddress(sender)) {
             @SuppressWarnings("unchecked") final I castedMsg = (I) msg;
-            matchedRead(ctx, sender, castedMsg, future);
+            @SuppressWarnings("unchecked") final A castedAddress = (A) sender;
+            matchedRead(ctx, castedAddress, castedMsg, future);
         }
         else {
             ctx.fireRead(sender, msg, future);
@@ -131,7 +145,7 @@ public abstract class SimpleInboundHandler<I, E> extends HandlerAdapter {
      * @param future the future of the message
      */
     protected abstract void matchedRead(HandlerContext ctx,
-                                        CompressedPublicKey sender,
+                                        A sender,
                                         I msg,
                                         CompletableFuture<Void> future);
 }

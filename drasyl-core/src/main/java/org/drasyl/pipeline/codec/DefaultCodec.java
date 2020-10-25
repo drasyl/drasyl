@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.pipeline.codec;
 
 import io.netty.buffer.ByteBuf;
@@ -24,6 +23,7 @@ import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.util.JSONUtil;
 import org.slf4j.Logger;
@@ -40,7 +40,7 @@ import static java.util.Objects.requireNonNull;
  * This default codec allows to encode/decode all supported objects by Jackson.
  */
 @SuppressWarnings({ "java:S110" })
-public class DefaultCodec extends Codec<ObjectHolder, Object> {
+public class DefaultCodec extends Codec<ObjectHolder, Object, CompressedPublicKey> {
     public static final DefaultCodec INSTANCE = new DefaultCodec();
     public static final String DEFAULT_CODEC = "defaultCodec";
     private static final Logger LOG = LoggerFactory.getLogger(DefaultCodec.class);

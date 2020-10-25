@@ -63,7 +63,7 @@ class SimpleInboundHandlerTest {
 
     @Test
     void shouldTriggerOnMatchedMessage() throws JsonProcessingException {
-        final SimpleInboundHandler<byte[], Event> handler = new SimpleInboundHandler<>() {
+        final SimpleInboundHandler<byte[], Event, CompressedPublicKey> handler = new SimpleInboundHandler<>() {
             @Override
             protected void matchedEventTriggered(final HandlerContext ctx,
                                                  final Event event,
@@ -105,7 +105,7 @@ class SimpleInboundHandlerTest {
 
     @Test
     void shouldPassthroughsNotMatchingMessage() {
-        final SimpleInboundHandler<List<?>, Event> handler = new SimpleInboundHandler<>() {
+        final SimpleInboundHandler<List<?>, Event, CompressedPublicKey> handler = new SimpleInboundHandler<>() {
             @Override
             protected void matchedEventTriggered(final HandlerContext ctx,
                                                  final Event event,
@@ -137,6 +137,7 @@ class SimpleInboundHandlerTest {
         final byte[] payload = new byte[]{ 0x01 };
         final ApplicationMessage msg = mock(ApplicationMessage.class);
 
+        when(msg.getSender()).thenReturn(mock(CompressedPublicKey.class));
         when(msg.getPayload()).thenReturn(payload);
         doReturn(payload.getClass().getName()).when(msg).getHeader(ObjectHolder.CLASS_KEY_NAME);
 
@@ -151,7 +152,7 @@ class SimpleInboundHandlerTest {
 
     @Test
     void shouldTriggerOnMatchedEvent() throws InterruptedException {
-        final SimpleInboundHandler<ApplicationMessage, NodeUpEvent> handler = new SimpleInboundHandler<>(ApplicationMessage.class, NodeUpEvent.class) {
+        final SimpleInboundHandler<ApplicationMessage, NodeUpEvent, CompressedPublicKey> handler = new SimpleInboundHandler<>(ApplicationMessage.class, NodeUpEvent.class, CompressedPublicKey.class) {
             @Override
             protected void matchedEventTriggered(final HandlerContext ctx,
                                                  final NodeUpEvent event,
@@ -180,7 +181,7 @@ class SimpleInboundHandlerTest {
 
     @Test
     void shouldPassthroughsNotMatchingEvents() {
-        final SimpleInboundHandler<ChunkedMessage, NodeUpEvent> handler = new SimpleInboundHandler<>() {
+        final SimpleInboundHandler<ChunkedMessage, NodeUpEvent, CompressedPublicKey> handler = new SimpleInboundHandler<>() {
             @Override
             protected void matchedEventTriggered(final HandlerContext ctx,
                                                  final NodeUpEvent event,

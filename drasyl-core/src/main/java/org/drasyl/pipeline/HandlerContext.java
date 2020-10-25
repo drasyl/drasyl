@@ -21,8 +21,8 @@ package org.drasyl.pipeline;
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
-import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.DrasylScheduler;
 
@@ -61,15 +61,15 @@ public interface HandlerContext {
     /**
      * Received a message.
      * <p>
-     * This will result in having the {@link Handler#read(HandlerContext, CompressedPublicKey,
-     * Object, CompletableFuture)} method called of the next {@link Handler} contained in the {@link
+     * This will result in having the {@link Handler#read(HandlerContext, Address, Object,
+     * CompletableFuture)} method called of the next {@link Handler} contained in the {@link
      * Pipeline}.
      *
      * @param sender the sender of the message
      * @param msg    the message
      * @param future the future of the message
      */
-    CompletableFuture<Void> fireRead(CompressedPublicKey sender,
+    CompletableFuture<Void> fireRead(Address sender,
                                      Object msg,
                                      CompletableFuture<Void> future);
 
@@ -92,7 +92,7 @@ public interface HandlerContext {
      * @param msg       the message
      * @param future    the future of the message
      */
-    CompletableFuture<Void> write(CompressedPublicKey recipient,
+    CompletableFuture<Void> write(Address recipient,
                                   Object msg,
                                   CompletableFuture<Void> future);
 

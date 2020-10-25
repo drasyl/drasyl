@@ -149,7 +149,7 @@ public class LocalHostDiscovery implements DrasylNodeComponent {
                 tryWatchDirectory();
                 scan();
                 keepOwnInformationUpToDate();
-                pipeline.addAfter(LOOPBACK_MESSAGE_SINK_HANDLER, LOCAL_HOST_DISCOVERY_COMMUNICATION_OCCURRED, new SimpleOutboundHandler<RelayableMessage>() {
+                pipeline.addAfter(LOOPBACK_MESSAGE_SINK_HANDLER, LOCAL_HOST_DISCOVERY_COMMUNICATION_OCCURRED, new SimpleOutboundHandler<RelayableMessage, CompressedPublicKey>() {
                     @Override
                     protected void matchedWrite(final HandlerContext ctx,
                                                 final CompressedPublicKey recipient,

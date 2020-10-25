@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * This handler delivers outgoing messages addressed to the local node.
  */
-public class LoopbackMessageSinkHandler extends SimpleOutboundHandler<RelayableMessage> {
+public class LoopbackMessageSinkHandler extends SimpleOutboundHandler<RelayableMessage, CompressedPublicKey> {
     public static final String LOOPBACK_MESSAGE_SINK_HANDLER = "LOOPBACK_MESSAGE_SINK_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(LoopbackMessageSinkHandler.class);
     private final AtomicBoolean started;
