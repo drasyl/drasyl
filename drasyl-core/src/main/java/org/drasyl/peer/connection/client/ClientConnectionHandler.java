@@ -24,9 +24,9 @@ import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.connection.handler.ThreeWayHandshakeClientHandler;
-import org.drasyl.peer.connection.message.ExceptionMessage;
+import org.drasyl.peer.connection.message.ErrorMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
-import org.drasyl.peer.connection.message.StatusMessage;
+import org.drasyl.peer.connection.message.SuccessMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
 import org.drasyl.pipeline.Pipeline;
 import org.slf4j.Logger;
@@ -36,10 +36,10 @@ import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
-import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_IDENTITY_COLLISION;
-import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_OTHER_NETWORK;
-import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_PROOF_OF_WORK_INVALID;
-import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_WRONG_PUBLIC_KEY;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_IDENTITY_COLLISION;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_OTHER_NETWORK;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_PROOF_OF_WORK_INVALID;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_WRONG_PUBLIC_KEY;
 import static org.drasyl.util.FutureUtil.toFuture;
 
 /**
@@ -48,7 +48,7 @@ import static org.drasyl.util.FutureUtil.toFuture;
  * <p>
  * The handshake is initiated by a {@link JoinMessage} sent by the client, which is answered with a
  * {@link WelcomeMessage} from the server. The client must then confirm this message with a {@link
- * StatusMessage}.
+ * SuccessMessage}.
  */
 @SuppressWarnings({ "java:S110" })
 public class ClientConnectionHandler extends ThreeWayHandshakeClientHandler<JoinMessage, WelcomeMessage> {
@@ -87,7 +87,7 @@ public class ClientConnectionHandler extends ThreeWayHandshakeClientHandler<Join
     }
 
     @Override
-    protected ExceptionMessage.Error validateSessionOffer(final WelcomeMessage offerMessage) {
+    protected ErrorMessage.Error validateSessionOffer(final WelcomeMessage offerMessage) {
         final CompressedPublicKey serverPublicKey = offerMessage.getSender();
 
         if (!environment.getEndpoint().getPublicKey().equals(serverPublicKey)) {

@@ -42,7 +42,7 @@ import org.drasyl.peer.connection.client.TestClientChannelInitializer;
 import org.drasyl.peer.connection.client.TestSuperPeerClient;
 import org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler;
 import org.drasyl.peer.connection.message.ApplicationMessage;
-import org.drasyl.peer.connection.message.ExceptionMessage;
+import org.drasyl.peer.connection.message.ErrorMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.PingMessage;
@@ -50,7 +50,7 @@ import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.ResponseMessage;
 import org.drasyl.peer.connection.message.SignedMessage;
-import org.drasyl.peer.connection.message.StatusMessage;
+import org.drasyl.peer.connection.message.SuccessMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
 import org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler;
 import org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler;
@@ -80,14 +80,14 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.awaitility.Awaitility.await;
-import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_HANDSHAKE_TIMEOUT;
-import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_INITIALIZATION;
-import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_PEER_UNAVAILABLE;
-import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_PING_PONG;
-import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_PROOF_OF_WORK_INVALID;
-import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_UNEXPECTED_MESSAGE;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_HANDSHAKE_TIMEOUT;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_INITIALIZATION;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_INVALID_SIGNATURE;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_PEER_UNAVAILABLE;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_PING_PONG;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_PROOF_OF_WORK_INVALID;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_UNEXPECTED_MESSAGE;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_NEW_SESSION;
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 import static org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler.DIRECT_CONNECTION_MESSAGE_SINK_HANDLER;
 import static org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler.LOOPBACK_MESSAGE_SINK_HANDLER;
 import static org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler.SUPER_PEER_SINK_HANDLER;
@@ -324,12 +324,12 @@ class ServerIT {
                 // send messages
                 final RequestMessage request1 = new JoinMessage(networkId, session1.getIdentity().getPublicKey(), session1.getIdentity().getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), true);
                 final ResponseMessage<?> response1 = session1.sendRequest(request1).get();
-                session1.send(new StatusMessage(session1.getPublicKey(), session1.getProofOfWork(), STATUS_OK, response1.getId()));
+                session1.send(new SuccessMessage(session1.getPublicKey(), session1.getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), response1.getId()));
                 await().until(() -> channelGroup.find(session1.getIdentity().getPublicKey()) != null);
 
                 final RequestMessage request2 = new JoinMessage(networkId, session1.getIdentity().getPublicKey(), session1.getIdentity().getProofOfWork(), configClient2.getSuperPeerEndpoints().iterator().next().getPublicKey(), true);
                 final ResponseMessage<?> response2 = session2.sendRequest(request2).join();
-                session2.send(new StatusMessage(session2.getPublicKey(), session2.getProofOfWork(), STATUS_OK, response2.getId()));
+                session2.send(new SuccessMessage(session2.getPublicKey(), session2.getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), response2.getId()));
 
                 // verify responses
                 receivedMessages1.awaitCount(2);
@@ -360,14 +360,14 @@ class ServerIT {
     void notJoiningClientsShouldBeDroppedAfterTimeout() throws InterruptedException {
         // create connection
         try (final TestSuperPeerClient session = clientSession(configClient1, server, identitySession1)) {
-            final TestObserver<Message> receivedMessages = session.receivedMessages().filter(m -> m instanceof ExceptionMessage).test();
+            final TestObserver<Message> receivedMessages = session.receivedMessages().filter(m -> m instanceof ErrorMessage).test();
 
             // wait for timeout
             Thread.sleep(serverConfig.getServerHandshakeTimeout().plusSeconds(2).toMillis());// NOSONAR
 
             // verify response
             receivedMessages.awaitCount(1);
-            receivedMessages.assertValueAt(0, new ExceptionMessage(serverIdentityManager.getPublicKey(), serverIdentityManager.getProofOfWork(), ERROR_HANDSHAKE_TIMEOUT));
+            receivedMessages.assertValueAt(0, new ErrorMessage(serverIdentityManager.getPublicKey(), serverIdentityManager.getProofOfWork(), ERROR_HANDSHAKE_TIMEOUT));
         }
     }
 
@@ -383,7 +383,7 @@ class ServerIT {
 
             // verify response
             receivedMessages.awaitCount(1);
-            receivedMessages.assertValueAt(0, val -> ((ExceptionMessage) val).getError() == ERROR_INITIALIZATION);
+            receivedMessages.assertValueAt(0, val -> ((ErrorMessage) val).getError() == ERROR_INITIALIZATION);
         }
     }
 
@@ -392,14 +392,14 @@ class ServerIT {
     void clientsNotSendingPongMessageShouldBeDroppedAfterTimeout() throws InterruptedException {
         // create connection
         try (final TestSuperPeerClient session = clientSession(configClient1, identitySession1, false)) {
-            final TestObserver<Message> receivedMessages = session.receivedMessages().filter(m -> m instanceof ExceptionMessage).test();
+            final TestObserver<Message> receivedMessages = session.receivedMessages().filter(m -> m instanceof ErrorMessage).test();
 
             // wait until timeout
             Thread.sleep(serverConfig.getServerIdleTimeout().toMillis() * (serverConfig.getServerIdleRetries() + 1) + 1000);// NOSONAR
 
             // verify responses
             receivedMessages.awaitCount(1);
-            receivedMessages.assertValueAt(0, new ExceptionMessage(serverIdentityManager.getPublicKey(), serverIdentityManager.getProofOfWork(), ERROR_PING_PONG));
+            receivedMessages.assertValueAt(0, new ErrorMessage(serverIdentityManager.getPublicKey(), serverIdentityManager.getProofOfWork(), ERROR_PING_PONG));
         }
     }
 
@@ -437,7 +437,7 @@ class ServerIT {
     void nonAuthorizedClientSendingNonJoinMessageShouldBeRespondedWithExceptionMessage() throws CryptoException {
         // create connection
         try (final TestSuperPeerClient session = clientSession(configClient1, server, identitySession1)) {
-            final TestObserver<Message> receivedMessages = session.receivedMessages().filter(m -> m instanceof ExceptionMessage).test();
+            final TestObserver<Message> receivedMessages = session.receivedMessages().filter(m -> m instanceof ErrorMessage).test();
 
             // send message
             final CompressedPublicKey sender = CompressedPublicKey.of("023ce7bb9756b5aa68fb82914ecafb71c3bb86701d4f200ae68420d13eddda7ebf");
@@ -451,7 +451,7 @@ class ServerIT {
 
             // verify responses
             receivedMessages.awaitCount(1);
-            receivedMessages.assertValueAt(0, new ExceptionMessage(serverConfig.getIdentityPublicKey(), serverConfig.getIdentityProofOfWork(), ERROR_UNEXPECTED_MESSAGE, request.getId()));
+            receivedMessages.assertValueAt(0, new ErrorMessage(serverConfig.getIdentityPublicKey(), serverConfig.getIdentityProofOfWork(), recipient, ERROR_UNEXPECTED_MESSAGE, request.getId()));
         }
     }
 
@@ -533,7 +533,7 @@ class ServerIT {
     void shuttingDownServerShouldRejectNewConnections() {
         try (final TestSuperPeerClient session = clientSession(configClient1, server, identitySession1)) {
             acceptNewConnections.set(false);
-            final TestObserver<Message> receivedMessages = session.receivedMessages().filter(msg -> msg instanceof ExceptionMessage).test();
+            final TestObserver<Message> receivedMessages = session.receivedMessages().filter(msg -> msg instanceof ErrorMessage).test();
 
             // send message
             final RequestMessage request = new JoinMessage(networkId, session.getIdentity().getPublicKey(), session.getIdentity().getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), true);
@@ -541,7 +541,7 @@ class ServerIT {
 
             // verify response
             receivedMessages.awaitCount(1);
-            receivedMessages.assertValueAt(0, val -> ((ExceptionMessage) val).getError() == ERROR_PEER_UNAVAILABLE);
+            receivedMessages.assertValueAt(0, val -> ((ErrorMessage) val).getError() == ERROR_PEER_UNAVAILABLE);
         }
     }
 
@@ -550,7 +550,7 @@ class ServerIT {
     void messageWithWrongSignatureShouldProduceExceptionMessage() throws CryptoException, JsonProcessingException {
         // create connection
         try (final TestSuperPeerClient session = clientSession(configClient1, identitySession1, false)) {
-            final TestObserver<Message> receivedMessages = session.receivedMessages().filter(msg -> msg instanceof StatusMessage).test();
+            final TestObserver<Message> receivedMessages = session.receivedMessages().filter(msg -> msg instanceof ErrorMessage).test();
 
             // send message
             final Message request = new PingMessage(configClient1.getIdentityPublicKey(), configClient1.getIdentityProofOfWork());
@@ -561,7 +561,7 @@ class ServerIT {
 
             // verify response
             receivedMessages.awaitCount(1);
-            receivedMessages.assertValueAt(0, val -> ((StatusMessage) val).getCode() == StatusMessage.Code.STATUS_INVALID_SIGNATURE);
+            receivedMessages.assertValueAt(0, val -> ((ErrorMessage) val).getError() == ERROR_INVALID_SIGNATURE);
         }
     }
 
@@ -570,7 +570,7 @@ class ServerIT {
     void wrongPoWShouldResultInError() {
         // create connections
         try (final TestSuperPeerClient session = clientSession(configClient1, server, identitySession1)) {
-            final TestObserver<Message> receivedMessages = session.receivedMessages().filter(msg -> msg instanceof ExceptionMessage).test();
+            final TestObserver<Message> receivedMessages = session.receivedMessages().filter(msg -> msg instanceof ErrorMessage).test();
 
             // send messages
             final RequestMessage request1 = new JoinMessage(networkId, session.getIdentity().getPublicKey(), identitySession2.getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), true);
@@ -578,7 +578,7 @@ class ServerIT {
 
             // verify response
             receivedMessages.awaitCount(1);
-            receivedMessages.assertValueAt(0, val -> ((ExceptionMessage) val).getError() == ERROR_PROOF_OF_WORK_INVALID);
+            receivedMessages.assertValueAt(0, val -> ((ErrorMessage) val).getError() == ERROR_PROOF_OF_WORK_INVALID);
         }
     }
 

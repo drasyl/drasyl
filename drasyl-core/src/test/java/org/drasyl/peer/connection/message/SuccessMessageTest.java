@@ -22,6 +22,7 @@ import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -31,8 +32,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.IOException;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
-import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_HANDSHAKE_TIMEOUT;
-import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_PING_PONG;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -40,28 +39,35 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
-class ExceptionMessageTest {
+class SuccessMessageTest {
+    @Mock
+    private MessageId correspondingId;
+    @Mock
+    private MessageId correspondingId2;
     @Mock
     private CompressedPublicKey sender;
     @Mock
     private ProofOfWork proofOfWork;
+    @Mock
+    private CompressedPublicKey recipient;
+
+    @BeforeEach
+    void setUp() {
+        correspondingId = MessageId.of("412176952b5b81fd13f84a7c");
+    }
 
     @Nested
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
-            final String json = "{\"@type\":\"" + ExceptionMessage.class.getSimpleName() + "\",\"proofOfWork\":3556154,\"sender\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\",\"userAgent\":\"\",\"id\":\"89ba3cd9efb7570eb3126d11\"," +
-                    "\"error\":\"" + ERROR_PING_PONG.getDescription() + "\"}";
+            final String json = "{\"@type\":\"" + SuccessMessage.class.getSimpleName() + "\",\"id\":\"c78fe75d4c93bc07e916e539\",\"sender\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"proofOfWork\":6657650,\"recipient\":\"0234789936c7941f850c382ea9d14ecb0aad03b99a9e29a9c15b42f5f1b0c4cf3d\",\"correspondingId\":\"412176952b5b81fd13f84a7c\",\"userAgent\":\"\"}";
 
-            assertEquals(new ExceptionMessage(
-                    CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"),
-                    ProofOfWork.of(3556154),
-                    ERROR_PING_PONG), JACKSON_READER.readValue(json, Message.class));
+            assertEquals(new SuccessMessage(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), ProofOfWork.of(6657650), CompressedPublicKey.of("0234789936c7941f850c382ea9d14ecb0aad03b99a9e29a9c15b42f5f1b0c4cf3d"), MessageId.of("412176952b5b81fd13f84a7c")), JACKSON_READER.readValue(json, Message.class));
         }
 
         @Test
         void shouldRejectIncompleteData() {
-            final String json = "{\"@type\":\"" + ExceptionMessage.class.getSimpleName() + "\",\"id\":\"89ba3cd9efb7570eb3126d11\"}";
+            final String json = "{\"@type\":\"" + SuccessMessage.class.getSimpleName() + "\",\"id\":\"c78fe75d4c93bc07e916e539\",\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
 
             assertThrows(ValueInstantiationException.class, () -> JACKSON_READER.readValue(json, Message.class));
         }
@@ -71,33 +77,22 @@ class ExceptionMessageTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException, CryptoException {
-            final ExceptionMessage message = new ExceptionMessage(
-                    CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"),
-                    ProofOfWork.of(3556154),
-                    ERROR_PING_PONG);
+            final SuccessMessage message = new SuccessMessage(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), ProofOfWork.of(6657650), CompressedPublicKey.of("0234789936c7941f850c382ea9d14ecb0aad03b99a9e29a9c15b42f5f1b0c4cf3d"), correspondingId);
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
-                    .containsEntry("@type", ExceptionMessage.class.getSimpleName())
-                    .containsKeys("id", "error", "sender", "proofOfWork", "userAgent");
-        }
-    }
-
-    @Nested
-    class Constructor {
-        @Test
-        void shouldRejectNullValues() {
-            assertThrows(NullPointerException.class, () -> new ExceptionMessage(sender, proofOfWork, null), "ConnectionExceptionMessage requires an error type");
+                    .containsEntry("@type", SuccessMessage.class.getSimpleName())
+                    .containsKeys("id", "correspondingId", "sender", "proofOfWork", "recipient", "userAgent");
         }
     }
 
     @Nested
     class Equals {
         @Test
-        void notSameBecauseOfDifferentError() {
-            final ExceptionMessage message1 = new ExceptionMessage(sender, proofOfWork, ERROR_PING_PONG);
-            final ExceptionMessage message2 = new ExceptionMessage(sender, proofOfWork, ERROR_PING_PONG);
-            final ExceptionMessage message3 = new ExceptionMessage(sender, proofOfWork, ERROR_HANDSHAKE_TIMEOUT);
+        void shouldReturnTrue() {
+            final SuccessMessage message1 = new SuccessMessage(sender, proofOfWork, recipient, correspondingId);
+            final SuccessMessage message2 = new SuccessMessage(sender, proofOfWork, recipient, correspondingId);
+            final SuccessMessage message3 = new SuccessMessage(sender, proofOfWork, recipient, correspondingId2);
 
             assertEquals(message1, message2);
             assertNotEquals(message2, message3);
@@ -107,10 +102,10 @@ class ExceptionMessageTest {
     @Nested
     class HashCode {
         @Test
-        void notSameBecauseOfDifferentError() {
-            final ExceptionMessage message1 = new ExceptionMessage(sender, proofOfWork, ERROR_PING_PONG);
-            final ExceptionMessage message2 = new ExceptionMessage(sender, proofOfWork, ERROR_PING_PONG);
-            final ExceptionMessage message3 = new ExceptionMessage(sender, proofOfWork, ERROR_HANDSHAKE_TIMEOUT);
+        void shouldReturnTrue() {
+            final SuccessMessage message1 = new SuccessMessage(sender, proofOfWork, recipient, correspondingId);
+            final SuccessMessage message2 = new SuccessMessage(sender, proofOfWork, recipient, correspondingId);
+            final SuccessMessage message3 = new SuccessMessage(sender, proofOfWork, recipient, correspondingId2);
 
             assertEquals(message1.hashCode(), message2.hashCode());
             assertNotEquals(message2.hashCode(), message3.hashCode());

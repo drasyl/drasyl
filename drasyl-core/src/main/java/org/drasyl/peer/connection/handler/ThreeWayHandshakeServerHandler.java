@@ -21,11 +21,11 @@ package org.drasyl.peer.connection.handler;
 import io.netty.channel.ChannelHandlerContext;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.message.ExceptionMessage;
+import org.drasyl.peer.connection.message.ErrorMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.ResponseMessage;
-import org.drasyl.peer.connection.message.StatusMessage;
+import org.drasyl.peer.connection.message.SuccessMessage;
 import org.drasyl.pipeline.Pipeline;
 
 import java.time.Duration;
@@ -65,7 +65,7 @@ public abstract class ThreeWayHandshakeServerHandler<R extends RequestMessage, O
         try {
             if (message instanceof RequestMessage && this.requestMessage == null) {
                 this.requestMessage = (R) message;
-                final ExceptionMessage.Error error = validateSessionRequest(requestMessage);
+                final ErrorMessage.Error error = validateSessionRequest(requestMessage);
                 if (error == null) {
                     offerMessage = offerSession(ctx, requestMessage);
                     ctx.writeAndFlush(offerMessage);
@@ -74,13 +74,13 @@ public abstract class ThreeWayHandshakeServerHandler<R extends RequestMessage, O
                     rejectSession(ctx, error);
                 }
             }
-            else if (message instanceof StatusMessage && offerMessage.getId().equals(((StatusMessage) message).getCorrespondingId())) {
+            else if (message instanceof SuccessMessage && offerMessage.getId().equals(((SuccessMessage) message).getCorrespondingId())) {
                 confirmSession(ctx);
             }
-            else if (message instanceof ExceptionMessage && offerMessage.getId().equals(((ExceptionMessage) message).getCorrespondingId())) {
-                final ExceptionMessage exceptionMessage = (ExceptionMessage) message;
+            else if (message instanceof ErrorMessage && offerMessage.getId().equals(((ErrorMessage) message).getCorrespondingId())) {
+                final ErrorMessage errorMessage = (ErrorMessage) message;
 
-                final String errorDescription = exceptionMessage.getError().getDescription();
+                final String errorDescription = errorMessage.getError().getDescription();
                 if (getLogger().isTraceEnabled()) {
                     getLogger().trace("[{}]: {}", ctx.channel().id().asShortText(), errorDescription);
                 }
@@ -96,7 +96,7 @@ public abstract class ThreeWayHandshakeServerHandler<R extends RequestMessage, O
         }
     }
 
-    protected abstract ExceptionMessage.Error validateSessionRequest(R requestMessage);
+    protected abstract ErrorMessage.Error validateSessionRequest(R requestMessage);
 
     protected abstract O offerSession(ChannelHandlerContext ctx, R requestMessage);
 

@@ -27,17 +27,17 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ChunkedMessage;
+import org.drasyl.peer.connection.message.ErrorMessage;
 import org.drasyl.peer.connection.message.MessageId;
-import org.drasyl.peer.connection.message.StatusMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.Objects;
 import java.util.concurrent.TimeUnit;
 
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_PAYLOAD_TOO_LARGE;
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_PRECONDITION_FAILED;
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_REQUEST_TIMEOUT;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_CHUNKED_MESSAGE_INVALID_CHECKSUM;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_CHUNKED_MESSAGE_PAYLOAD_TOO_LARGE;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_CHUNKED_MESSAGE_TIMEOUT;
 
 /**
  * This class is responsible for merging incoming {@link ChunkedMessage}s into one {@link
@@ -46,8 +46,6 @@ import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_REQUE
 @SuppressWarnings({ "java:S107" })
 public class ChunkedMessageOutput {
     private static final Logger LOG = LoggerFactory.getLogger(ChunkedMessageOutput.class);
-    private final CompressedPublicKey myPublicKey;
-    private final ProofOfWork myProofOfWork;
     private final ChannelHandlerContext ctx;
     private final CompressedPublicKey sender;
     private final ProofOfWork proofOfWork;
@@ -64,8 +62,6 @@ public class ChunkedMessageOutput {
      * Generates a new ChunkedMessageOutput with combines multiple {@link ChunkedMessage}s into one
      * {@link ApplicationMessage}.
      *
-     * @param myPublicKey      this node's public key
-     * @param myProofOfWork    this node's proof of work
      * @param ctx              the channel handler context
      * @param sender           the sender of the chunks
      * @param proofOfWork      the sender's proof of work
@@ -80,9 +76,7 @@ public class ChunkedMessageOutput {
      * @param timeout          the timeout for receiving all chunks, after this timeout the {@link
      *                         #removeAction} is called
      */
-    public ChunkedMessageOutput(final CompressedPublicKey myPublicKey,
-                                final ProofOfWork myProofOfWork,
-                                final ChannelHandlerContext ctx,
+    public ChunkedMessageOutput(final ChannelHandlerContext ctx,
                                 final CompressedPublicKey sender,
                                 final ProofOfWork proofOfWork,
                                 final CompressedPublicKey recipient,
@@ -92,9 +86,9 @@ public class ChunkedMessageOutput {
                                 final int maxContentLength,
                                 final Runnable removeAction,
                                 final long timeout) {
-        this(myPublicKey, myProofOfWork, ctx, sender, proofOfWork, recipient, contentLength, checksum, msgID, maxContentLength, Unpooled.buffer(), 0, removeAction);
+        this(ctx, sender, proofOfWork, recipient, contentLength, checksum, msgID, maxContentLength, Unpooled.buffer(), 0, removeAction);
         this.ctx.executor().schedule(() -> {
-            this.ctx.writeAndFlush(new StatusMessage(sender, proofOfWork, STATUS_REQUEST_TIMEOUT, this.msgID));
+            this.ctx.writeAndFlush(new ErrorMessage(sender, proofOfWork, recipient, ERROR_CHUNKED_MESSAGE_TIMEOUT, this.msgID));
             removeAction.run();
             payload.release();
 
@@ -102,9 +96,7 @@ public class ChunkedMessageOutput {
         }, timeout, TimeUnit.MILLISECONDS);
     }
 
-    ChunkedMessageOutput(final CompressedPublicKey myPublicKey,
-                         final ProofOfWork myProofOfWork,
-                         final ChannelHandlerContext ctx,
+    ChunkedMessageOutput(final ChannelHandlerContext ctx,
                          final CompressedPublicKey sender,
                          final ProofOfWork proofOfWork,
                          final CompressedPublicKey recipient,
@@ -115,8 +107,6 @@ public class ChunkedMessageOutput {
                          final ByteBuf payload,
                          final int progress,
                          final Runnable removeAction) {
-        this.myPublicKey = myPublicKey;
-        this.myProofOfWork = myProofOfWork;
         this.ctx = ctx;
         this.sender = sender;
         this.proofOfWork = proofOfWork;
@@ -139,7 +129,7 @@ public class ChunkedMessageOutput {
         try {
             final int length = chunk.getPayload().length;
             if ((length + progress) > maxContentLength || (length + progress) > contentLength) {
-                ctx.writeAndFlush(new StatusMessage(sender, proofOfWork, STATUS_PAYLOAD_TOO_LARGE, msgID));
+                ctx.writeAndFlush(new ErrorMessage(sender, proofOfWork, recipient, ERROR_CHUNKED_MESSAGE_PAYLOAD_TOO_LARGE, msgID));
 
                 // Release resources on invalid chunk
                 payload.release();
@@ -158,7 +148,7 @@ public class ChunkedMessageOutput {
                 // truncated zeros
                 payload.capacity(progress);
                 if (!checksum.equals(Hashing.murmur3x64Hex(payload.array()))) {
-                    ctx.writeAndFlush(new StatusMessage(sender, proofOfWork, STATUS_PRECONDITION_FAILED, msgID));
+                    ctx.writeAndFlush(new ErrorMessage(sender, proofOfWork, recipient, ERROR_CHUNKED_MESSAGE_INVALID_CHECKSUM, msgID));
                     logDebug("Dropped chunked message `{}` because checksum was invalid", ctx, msgID);
                 }
                 else {

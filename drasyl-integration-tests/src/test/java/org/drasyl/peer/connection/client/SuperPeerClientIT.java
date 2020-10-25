@@ -40,13 +40,14 @@ import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.peer.connection.message.ErrorMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.PingMessage;
 import org.drasyl.peer.connection.message.PongMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.RequestMessage;
-import org.drasyl.peer.connection.message.StatusMessage;
+import org.drasyl.peer.connection.message.SuccessMessage;
 import org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler;
 import org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler;
 import org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler;
@@ -72,9 +73,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_SIZE;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_CHUNKED_MESSAGE_PAYLOAD_TOO_LARGE;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_PAYLOAD_TOO_LARGE;
 import static org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler.DIRECT_CONNECTION_MESSAGE_SINK_HANDLER;
 import static org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler.LOOPBACK_MESSAGE_SINK_HANDLER;
 import static org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler.SUPER_PEER_SINK_HANDLER;
@@ -290,7 +290,7 @@ class SuperPeerClientIT {
     @Disabled("disabled, because StatusMessage is currently not used and therefore has been removed.")
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void clientShouldRespondToApplicationMessageWithStatusOk() {
-        final TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof StatusMessage).test();
+        final TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof SuccessMessage).test();
 
         // start client
         try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, () -> true)) {
@@ -306,7 +306,7 @@ class SuperPeerClientIT {
 
             // verify received message
             receivedMessages.awaitCount(2);
-            receivedMessages.assertValueAt(1, new StatusMessage(identityManager.getPublicKey(), identityManager.getProofOfWork(), STATUS_OK, request.getId()));
+            receivedMessages.assertValueAt(1, new SuccessMessage(identityManager.getPublicKey(), identityManager.getProofOfWork(), identityManagerServer.getPublicKey(), request.getId()));
         }
     }
 
@@ -388,7 +388,7 @@ class SuperPeerClientIT {
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void messageExceedingMaxSizeShouldNotBeSend() {
-        final TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof StatusMessage).test();
+        final TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof SuccessMessage || m instanceof ErrorMessage).test();
         final TestObserver<Event> emittedEvents = emittedEventsSubject.filter(e -> e instanceof MessageEvent).test();
 
         // start client
@@ -406,7 +406,7 @@ class SuperPeerClientIT {
 
             receivedMessages.awaitCount(2);
             emittedEvents.assertNoValues();
-            receivedMessages.assertValueAt(1, new StatusMessage(identityManagerServer.getPublicKey(), identityManagerServer.getProofOfWork(), STATUS_PAYLOAD_TOO_LARGE, request.getId()));
+            receivedMessages.assertValueAt(1, new ErrorMessage(identityManagerServer.getPublicKey(), identityManagerServer.getProofOfWork(), identityManager.getPublicKey(), ERROR_CHUNKED_MESSAGE_PAYLOAD_TOO_LARGE, request.getId()));
         }
     }
 

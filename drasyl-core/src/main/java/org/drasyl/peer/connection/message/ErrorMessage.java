@@ -32,61 +32,68 @@ import java.util.Objects;
 import static java.util.Objects.requireNonNull;
 
 /**
- * A message representing an exception. Such an exception should always be handled.
+ * A message representing an error. Such an error should always be handled.
  * <p>
  * This is an immutable object.
  */
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public class ExceptionMessage extends AbstractMessage implements RequestMessage, ResponseMessage<RequestMessage> {
+public class ErrorMessage extends AbstractMessage implements RequestMessage, ResponseMessage<RequestMessage> {
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    private final CompressedPublicKey recipient;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final Error error;
     @JsonInclude(JsonInclude.Include.NON_NULL)
     private final MessageId correspondingId;
 
     @JsonCreator
-    private ExceptionMessage(@JsonProperty("id") final MessageId id,
-                             @JsonProperty("userAgent") final String userAgent,
-                             @JsonProperty("sender") final CompressedPublicKey sender,
-                             @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
-                             @JsonProperty("error") final Error error,
-                             @JsonProperty("correspondingId") final MessageId correspondingId) {
+    private ErrorMessage(@JsonProperty("id") final MessageId id,
+                         @JsonProperty("userAgent") final String userAgent,
+                         @JsonProperty("sender") final CompressedPublicKey sender,
+                         @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
+                         @JsonProperty("recipient") final CompressedPublicKey recipient,
+                         @JsonProperty("error") final Error error,
+                         @JsonProperty("correspondingId") final MessageId correspondingId) {
         super(id, userAgent, sender, proofOfWork);
+        this.recipient = recipient;
         this.error = requireNonNull(error);
         this.correspondingId = correspondingId;
     }
 
     /**
-     * Creates a new exception message.
+     * Creates a new error message.
      *
      * @param sender          the message's sender
      * @param proofOfWork     sender's proof of work
-     * @param error           the exception type
+     * @param recipient       the message's recipient
+     * @param error           the error type
      * @param correspondingId the corresponding id of the previous message
      */
-    public ExceptionMessage(final CompressedPublicKey sender,
-                            final ProofOfWork proofOfWork,
-                            final Error error,
-                            final MessageId correspondingId) {
+    public ErrorMessage(final CompressedPublicKey sender,
+                        final ProofOfWork proofOfWork,
+                        CompressedPublicKey recipient,
+                        final Error error,
+                        final MessageId correspondingId) {
         super(sender, proofOfWork);
+        this.recipient = recipient;
         this.error = requireNonNull(error);
         this.correspondingId = correspondingId;
     }
 
     /**
-     * Creates a new exception message.
+     * Creates a new error message.
      *
      * @param sender      the message's sender
      * @param proofOfWork sender's proof of work
-     * @param error       the exception type
+     * @param error       the error type
      */
-    public ExceptionMessage(final CompressedPublicKey sender,
-                            final ProofOfWork proofOfWork,
-                            final Error error) {
-        this(sender, proofOfWork, error, null);
+    public ErrorMessage(final CompressedPublicKey sender,
+                        final ProofOfWork proofOfWork,
+                        final Error error) {
+        this(sender, proofOfWork, null, error, null);
     }
 
     /**
-     * @return the exception
+     * @return the error
      */
     public Error getError() {
         return error;
@@ -94,7 +101,7 @@ public class ExceptionMessage extends AbstractMessage implements RequestMessage,
 
     @Override
     public String toString() {
-        return "ConnectionExceptionMessage{" +
+        return "ErrorMessage{" +
                 "sender='" + sender + '\'' +
                 "proofOfWork='" + proofOfWork + '\'' +
                 ", error='" + error + '\'' +
@@ -113,7 +120,7 @@ public class ExceptionMessage extends AbstractMessage implements RequestMessage,
         if (!super.equals(o)) {
             return false;
         }
-        final ExceptionMessage that = (ExceptionMessage) o;
+        final ErrorMessage that = (ErrorMessage) o;
         return error == that.error;
     }
 
@@ -122,13 +129,17 @@ public class ExceptionMessage extends AbstractMessage implements RequestMessage,
         return Objects.hash(super.hashCode(), error);
     }
 
+    public CompressedPublicKey getRecipient() {
+        return recipient;
+    }
+
     @Override
     public MessageId getCorrespondingId() {
         return correspondingId;
     }
 
     /**
-     * Specifies the type of the {@link ExceptionMessage}.
+     * Specifies the type of the {@link ErrorMessage}.
      */
     public enum Error {
         ERROR_INITIALIZATION("Error occurred during initialization stage."),
@@ -143,7 +154,12 @@ public class ExceptionMessage extends AbstractMessage implements RequestMessage,
         ERROR_PEER_UNAVAILABLE("Peer is currently not able to accept (new) connections."),
         ERROR_INTERNAL("Internal Error occurred."),
         ERROR_FORMAT("Invalid Message format."),
-        ERROR_UNEXPECTED_MESSAGE("Unexpected message.");
+        ERROR_UNEXPECTED_MESSAGE("Unexpected message."),
+        ERROR_INITIAL_CHUNK_MISSING("Dropped chunked message because start chunk was not sent."),
+        ERROR_CHUNKED_MESSAGE_TIMEOUT("Dropped chunked message because timeout has expired."),
+        ERROR_CHUNKED_MESSAGE_PAYLOAD_TOO_LARGE("Dropped chunked message because payload is bigger than the allowed content length."),
+        ERROR_CHUNKED_MESSAGE_INVALID_CHECKSUM("Dropped chunked message because checksum was invalid"),
+        ERROR_INVALID_SIGNATURE("Signature of the message was invalid.");
         private static final Map<String, Error> errors = new HashMap<>();
 
         static {

@@ -31,7 +31,7 @@ import org.drasyl.peer.connection.server.Server;
 @JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
 @JsonSubTypes({
         @JsonSubTypes.Type(value = ApplicationMessage.class),
-        @JsonSubTypes.Type(value = ExceptionMessage.class),
+        @JsonSubTypes.Type(value = ErrorMessage.class),
         @JsonSubTypes.Type(value = ChunkedMessage.class),
         @JsonSubTypes.Type(value = IdentityMessage.class),
         @JsonSubTypes.Type(value = JoinMessage.class),
@@ -39,7 +39,7 @@ import org.drasyl.peer.connection.server.Server;
         @JsonSubTypes.Type(value = PongMessage.class),
         @JsonSubTypes.Type(value = QuitMessage.class),
         @JsonSubTypes.Type(value = SignedMessage.class),
-        @JsonSubTypes.Type(value = StatusMessage.class),
+        @JsonSubTypes.Type(value = SuccessMessage.class),
         @JsonSubTypes.Type(value = WelcomeMessage.class),
         @JsonSubTypes.Type(value = WhoisMessage.class),
 })

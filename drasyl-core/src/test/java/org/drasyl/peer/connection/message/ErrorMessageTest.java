@@ -22,7 +22,6 @@ import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,8 +31,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.io.IOException;
 
 import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_FORBIDDEN;
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_HANDSHAKE_TIMEOUT;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_PING_PONG;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -41,30 +40,28 @@ import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
-class StatusMessageTest {
-    private MessageId correspondingId;
+class ErrorMessageTest {
     @Mock
     private CompressedPublicKey sender;
     @Mock
     private ProofOfWork proofOfWork;
 
-    @BeforeEach
-    void setUp() {
-        correspondingId = MessageId.of("412176952b5b81fd13f84a7c");
-    }
-
     @Nested
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
-            final String json = "{\"@type\":\"" + StatusMessage.class.getSimpleName() + "\",\"id\":\"c78fe75d4c93bc07e916e539\",\"code\":" + STATUS_OK.getNumber() + ",\"sender\":\"030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3\",\"proofOfWork\":6657650,\"correspondingId\":\"412176952b5b81fd13f84a7c\",\"userAgent\":\"\"}";
+            final String json = "{\"@type\":\"" + ErrorMessage.class.getSimpleName() + "\",\"proofOfWork\":3556154,\"sender\":\"034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d\",\"userAgent\":\"\",\"id\":\"89ba3cd9efb7570eb3126d11\"," +
+                    "\"error\":\"" + ERROR_PING_PONG.getDescription() + "\"}";
 
-            assertEquals(new StatusMessage(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), ProofOfWork.of(6657650), STATUS_OK, MessageId.of("412176952b5b81fd13f84a7c")), JACKSON_READER.readValue(json, Message.class));
+            assertEquals(new ErrorMessage(
+                    CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"),
+                    ProofOfWork.of(3556154),
+                    ERROR_PING_PONG), JACKSON_READER.readValue(json, Message.class));
         }
 
         @Test
         void shouldRejectIncompleteData() {
-            final String json = "{\"@type\":\"" + StatusMessage.class.getSimpleName() + "\",\"id\":\"c78fe75d4c93bc07e916e539\",\"correspondingId\":\"412176952b5b81fd13f84a7c\"}";
+            final String json = "{\"@type\":\"" + ErrorMessage.class.getSimpleName() + "\",\"id\":\"89ba3cd9efb7570eb3126d11\"}";
 
             assertThrows(ValueInstantiationException.class, () -> JACKSON_READER.readValue(json, Message.class));
         }
@@ -74,22 +71,33 @@ class StatusMessageTest {
     class JsonSerialization {
         @Test
         void shouldSerializeToCorrectJson() throws IOException, CryptoException {
-            final StatusMessage message = new StatusMessage(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), ProofOfWork.of(6657650), STATUS_OK, correspondingId);
+            final ErrorMessage message = new ErrorMessage(
+                    CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"),
+                    ProofOfWork.of(3556154),
+                    ERROR_PING_PONG);
 
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
-                    .containsEntry("@type", StatusMessage.class.getSimpleName())
-                    .containsKeys("id", "correspondingId", "code", "sender", "proofOfWork", "userAgent");
+                    .containsEntry("@type", ErrorMessage.class.getSimpleName())
+                    .containsKeys("id", "error", "sender", "proofOfWork", "userAgent");
+        }
+    }
+
+    @Nested
+    class Constructor {
+        @Test
+        void shouldRejectNullValues() {
+            assertThrows(NullPointerException.class, () -> new ErrorMessage(sender, proofOfWork, null), "ConnectionExceptionMessage requires an error type");
         }
     }
 
     @Nested
     class Equals {
         @Test
-        void shouldReturnTrue() {
-            final StatusMessage message1 = new StatusMessage(sender, proofOfWork, STATUS_OK, correspondingId);
-            final StatusMessage message2 = new StatusMessage(sender, proofOfWork, STATUS_OK, correspondingId);
-            final StatusMessage message3 = new StatusMessage(sender, proofOfWork, STATUS_FORBIDDEN, correspondingId);
+        void notSameBecauseOfDifferentError() {
+            final ErrorMessage message1 = new ErrorMessage(sender, proofOfWork, ERROR_PING_PONG);
+            final ErrorMessage message2 = new ErrorMessage(sender, proofOfWork, ERROR_PING_PONG);
+            final ErrorMessage message3 = new ErrorMessage(sender, proofOfWork, ERROR_HANDSHAKE_TIMEOUT);
 
             assertEquals(message1, message2);
             assertNotEquals(message2, message3);
@@ -99,10 +107,10 @@ class StatusMessageTest {
     @Nested
     class HashCode {
         @Test
-        void shouldReturnTrue() {
-            final StatusMessage message1 = new StatusMessage(sender, proofOfWork, STATUS_OK, correspondingId);
-            final StatusMessage message2 = new StatusMessage(sender, proofOfWork, STATUS_OK, correspondingId);
-            final StatusMessage message3 = new StatusMessage(sender, proofOfWork, STATUS_FORBIDDEN, correspondingId);
+        void notSameBecauseOfDifferentError() {
+            final ErrorMessage message1 = new ErrorMessage(sender, proofOfWork, ERROR_PING_PONG);
+            final ErrorMessage message2 = new ErrorMessage(sender, proofOfWork, ERROR_PING_PONG);
+            final ErrorMessage message3 = new ErrorMessage(sender, proofOfWork, ERROR_HANDSHAKE_TIMEOUT);
 
             assertEquals(message1.hashCode(), message2.hashCode());
             assertNotEquals(message2.hashCode(), message3.hashCode());

@@ -21,10 +21,10 @@ package org.drasyl.peer.connection.client;
 import io.netty.channel.embedded.EmbeddedChannel;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.peer.connection.message.ErrorMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.MessageId;
 import org.drasyl.peer.connection.message.QuitMessage;
-import org.drasyl.peer.connection.message.StatusMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
 import org.drasyl.pipeline.Pipeline;
 import org.junit.jupiter.api.Nested;
@@ -36,7 +36,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.concurrent.CompletableFuture;
 
 import static java.time.Duration.ofMillis;
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_SERVICE_UNAVAILABLE;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_IDENTITY_COLLISION;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
@@ -75,18 +75,18 @@ class ClientConnectionHandlerTest {
     }
 
     @Test
-    void shouldFailHandshakeIfServerReplyWithStatusUnavailableOnWelcomeMessage(@Mock final StatusMessage statusMessage) {
+    void shouldFailHandshakeIfServerReplyWithStatusUnavailableOnWelcomeMessage(@Mock final ErrorMessage errorMessage) {
         when(handshakeFuture.isDone()).thenReturn(false);
         when(requestMessage.getId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
-        when(statusMessage.getCorrespondingId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
-        when(statusMessage.getCode()).thenReturn(STATUS_SERVICE_UNAVAILABLE);
+        when(errorMessage.getCorrespondingId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
+        when(errorMessage.getError()).thenReturn(ERROR_IDENTITY_COLLISION);
 
         final ClientConnectionHandler handler = new ClientConnectionHandler(environment, ofMillis(1000), pipeline, handshakeFuture, timeoutFuture, requestMessage);
         underTest = new EmbeddedChannel(handler);
         underTest.readOutbound(); // join message
         underTest.flush();
 
-        underTest.writeInbound(statusMessage);
+        underTest.writeInbound(errorMessage);
 
         verify(handshakeFuture).completeExceptionally(any());
     }

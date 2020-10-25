@@ -23,17 +23,15 @@ import io.netty.util.AttributeKey;
 import io.netty.util.concurrent.ScheduledFuture;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.message.ExceptionMessage;
+import org.drasyl.peer.connection.message.ErrorMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.ResponseMessage;
-import org.drasyl.peer.connection.message.StatusMessage;
+import org.drasyl.peer.connection.message.SuccessMessage;
 import org.drasyl.pipeline.Pipeline;
 
 import java.time.Duration;
 import java.util.concurrent.CompletableFuture;
-
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_OK;
 
 /**
  * This handler performs the client-side part of a three-way handshake to create a session. It
@@ -66,18 +64,18 @@ public abstract class ThreeWayHandshakeClientHandler<R extends RequestMessage, O
     @Override
     protected void doHandshake(final ChannelHandlerContext ctx, final Message message) {
         if (message instanceof ResponseMessage && ((ResponseMessage<?>) message).getCorrespondingId().equals(requestMessage.getId())) {
-            if (message instanceof StatusMessage && ((StatusMessage) message).getCode() != STATUS_OK) {
-                requestFailed(ctx, ((StatusMessage) message).getCode());
+            if (message instanceof ErrorMessage) {
+                requestFailed(ctx, ((ErrorMessage) message).getError());
             }
             else {
                 try {
                     @SuppressWarnings("unchecked") final O offerMessage = (O) message;
-                    final ExceptionMessage.Error error = validateSessionOffer(offerMessage);
+                    final ErrorMessage.Error error = validateSessionOffer(offerMessage);
                     if (error == null) {
                         confirmSession(ctx, offerMessage);
 
                         // send confirmation
-                        ctx.writeAndFlush(new StatusMessage(identity.getPublicKey(), identity.getProofOfWork(), STATUS_OK, offerMessage.getId()));
+                        ctx.writeAndFlush(new SuccessMessage(identity.getPublicKey(), identity.getProofOfWork(), message.getSender(), offerMessage.getId()));
                     }
                     else {
                         rejectSession(ctx, error);
@@ -108,24 +106,25 @@ public abstract class ThreeWayHandshakeClientHandler<R extends RequestMessage, O
         ctx.writeAndFlush(requestMessage);
     }
 
-    private void requestFailed(final ChannelHandlerContext ctx, final StatusMessage.Code code) {
+    private void requestFailed(final ChannelHandlerContext ctx,
+                               final ErrorMessage.Error error) {
         if (getLogger().isTraceEnabled()) {
-            getLogger().trace("[{}]: Session request has been rejected: {}", ctx.channel().id().asShortText(), code);
+            getLogger().trace("[{}]: Session request has been rejected: {}", ctx.channel().id().asShortText(), error);
         }
 
         timeoutFuture.cancel(true);
-        handshakeFuture.completeExceptionally(new Exception(code.toString()));
+        handshakeFuture.completeExceptionally(new Exception(error.toString()));
     }
 
     /**
      * This method validates the session offered by the server and must return an {@link
-     * ExceptionMessage.Error} in case of error. Otherwise <code>null</code> must be returned.
+     * ErrorMessage.Error} in case of error. Otherwise <code>null</code> must be returned.
      *
      * @param offerMessage the message that should be validated
-     * @return {@link ExceptionMessage.Error} in case of error, otherwise
+     * @return {@link ErrorMessage.Error} in case of error, otherwise
      * <code>null</code>
      */
-    protected abstract ExceptionMessage.Error validateSessionOffer(O offerMessage);
+    protected abstract ErrorMessage.Error validateSessionOffer(O offerMessage);
 
     protected void confirmSession(final ChannelHandlerContext ctx, final O offerMessage) {
         if (getLogger().isTraceEnabled()) {

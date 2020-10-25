@@ -27,13 +27,13 @@ import io.netty.handler.codec.http.websocketx.BinaryWebSocketFrame;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
-import org.drasyl.peer.connection.message.ExceptionMessage;
+import org.drasyl.peer.connection.message.ErrorMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_FORMAT;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_FORMAT;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -51,12 +51,12 @@ class MessageDecoderTest {
 
     @Test
     void shouldDeserializeInboundJsonStringToMessage() throws JsonProcessingException, CryptoException {
-        final byte[] binary = JACKSON_WRITER.writeValueAsBytes(new ExceptionMessage(CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"), ProofOfWork.of(3556154), ERROR_FORMAT));
+        final byte[] binary = JACKSON_WRITER.writeValueAsBytes(new ErrorMessage(CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"), ProofOfWork.of(3556154), ERROR_FORMAT));
 
         channel.writeInbound(new BinaryWebSocketFrame(Unpooled.wrappedBuffer(binary)));
         channel.flush();
 
-        assertThat(channel.readInbound(), instanceOf(ExceptionMessage.class));
+        assertThat(channel.readInbound(), instanceOf(ErrorMessage.class));
     }
 
     @Test

@@ -26,7 +26,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.connection.handler.ThreeWayHandshakeServerHandler;
-import org.drasyl.peer.connection.message.ExceptionMessage;
+import org.drasyl.peer.connection.message.ErrorMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
 import org.drasyl.pipeline.Pipeline;
@@ -39,10 +39,10 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
 import static org.drasyl.peer.connection.handler.ThreeWayHandshakeClientHandler.ATTRIBUTE_PUBLIC_KEY;
-import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_IDENTITY_COLLISION;
-import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_NOT_A_SUPER_PEER;
-import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_OTHER_NETWORK;
-import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_PROOF_OF_WORK_INVALID;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_IDENTITY_COLLISION;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_NOT_A_SUPER_PEER;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_OTHER_NETWORK;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_PROOF_OF_WORK_INVALID;
 
 /**
  * Acts as a guard for in- and outbound connections. A channel is only created, when a {@link
@@ -79,7 +79,7 @@ public class ServerConnectionHandler extends ThreeWayHandshakeServerHandler<Join
     }
 
     @Override
-    protected ExceptionMessage.Error validateSessionRequest(final JoinMessage requestMessage) {
+    protected ErrorMessage.Error validateSessionRequest(final JoinMessage requestMessage) {
         final CompressedPublicKey clientPublicKey = requestMessage.getSender();
 
         if (!requestMessage.getProofOfWork().isValid(requestMessage.getSender(), POW_DIFFICULTY)) {

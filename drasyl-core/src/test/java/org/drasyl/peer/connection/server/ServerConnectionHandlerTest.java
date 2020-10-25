@@ -29,12 +29,12 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.ApplicationMessage;
-import org.drasyl.peer.connection.message.ExceptionMessage;
+import org.drasyl.peer.connection.message.ErrorMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.MessageId;
 import org.drasyl.peer.connection.message.QuitMessage;
-import org.drasyl.peer.connection.message.StatusMessage;
+import org.drasyl.peer.connection.message.SuccessMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
 import org.drasyl.pipeline.Pipeline;
 import org.junit.jupiter.api.Nested;
@@ -46,11 +46,11 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.concurrent.CompletableFuture;
 
 import static java.time.Duration.ofMillis;
-import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_HANDSHAKE_TIMEOUT;
-import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_IDENTITY_COLLISION;
-import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_NOT_A_SUPER_PEER;
-import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_OTHER_NETWORK;
-import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_UNEXPECTED_MESSAGE;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_HANDSHAKE_TIMEOUT;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_IDENTITY_COLLISION;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_NOT_A_SUPER_PEER;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_OTHER_NETWORK;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_UNEXPECTED_MESSAGE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -94,7 +94,7 @@ class ServerConnectionHandlerTest {
     @Mock
     private PeerChannelGroup channelGroup;
     @Mock
-    private StatusMessage statusMessage;
+    private SuccessMessage successMessage;
     @Mock
     private WelcomeMessage offerMessage;
     @Mock(answer = RETURNS_DEEP_STUBS)
@@ -105,7 +105,7 @@ class ServerConnectionHandlerTest {
         final ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(0), pipeline, handshakeFuture, null, requestMessage, offerMessage);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        assertEquals(new ExceptionMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), ERROR_HANDSHAKE_TIMEOUT), channel.readOutbound());
+        assertEquals(new ErrorMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), ERROR_HANDSHAKE_TIMEOUT), channel.readOutbound());
     }
 
     @Test
@@ -129,7 +129,7 @@ class ServerConnectionHandlerTest {
         channel.writeInbound(joinMessage);
         channel.flush();
 
-        assertEquals(new ExceptionMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), ERROR_IDENTITY_COLLISION), channel.readOutbound());
+        assertEquals(new ErrorMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), ERROR_IDENTITY_COLLISION), channel.readOutbound());
     }
 
     @Test
@@ -144,7 +144,7 @@ class ServerConnectionHandlerTest {
         channel.writeInbound(joinMessage);
         channel.flush();
 
-        assertEquals(new ExceptionMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), ERROR_OTHER_NETWORK), channel.readOutbound());
+        assertEquals(new ErrorMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), ERROR_OTHER_NETWORK), channel.readOutbound());
     }
 
     @Test
@@ -154,7 +154,7 @@ class ServerConnectionHandlerTest {
 
         channel.writeInbound(applicationMessage);
 
-        assertEquals(new ExceptionMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), ERROR_UNEXPECTED_MESSAGE), channel.readOutbound());
+        assertEquals(new ErrorMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), ERROR_UNEXPECTED_MESSAGE), channel.readOutbound());
         assertNull(channel.readInbound());
     }
 
@@ -167,7 +167,7 @@ class ServerConnectionHandlerTest {
         final ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), pipeline, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
         handler.exceptionCaught(ctx, cause);
 
-        verify(ctx).writeAndFlush(any(ExceptionMessage.class));
+        verify(ctx).writeAndFlush(any(ErrorMessage.class));
         verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
     }
 
@@ -193,12 +193,12 @@ class ServerConnectionHandlerTest {
             when(offerMessage.getId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
             when(requestMessage.getSender()).thenReturn(publicKey0);
             when(requestMessage.isChildrenJoin()).thenReturn(true);
-            when(statusMessage.getCorrespondingId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
+            when(successMessage.getCorrespondingId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
 
             final ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), pipeline, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-            channel.writeInbound(statusMessage);
+            channel.writeInbound(successMessage);
             channel.flush();
 
             // update peers manager
@@ -222,7 +222,7 @@ class ServerConnectionHandlerTest {
             channel.writeInbound(joinMessage);
             channel.flush();
 
-            assertEquals(new ExceptionMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), ERROR_NOT_A_SUPER_PEER), channel.readOutbound());
+            assertEquals(new ErrorMessage(environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), ERROR_NOT_A_SUPER_PEER), channel.readOutbound());
         }
     }
 
@@ -235,12 +235,12 @@ class ServerConnectionHandlerTest {
             when(offerMessage.getId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
             when(requestMessage.getSender()).thenReturn(publicKey0);
             when(requestMessage.isChildrenJoin()).thenReturn(false);
-            when(statusMessage.getCorrespondingId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
+            when(successMessage.getCorrespondingId()).thenReturn(MessageId.of("412176952b5b81fd13f84a7c"));
 
             final ServerConnectionHandler handler = new ServerConnectionHandler(environment, ofMillis(1000), pipeline, handshakeFuture, timeoutFuture, requestMessage, offerMessage);
             final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-            channel.writeInbound(statusMessage);
+            channel.writeInbound(successMessage);
             channel.flush();
 
             // update peers manager

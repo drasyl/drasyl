@@ -23,7 +23,7 @@ import io.netty.channel.ChannelHandlerContext;
 import io.netty.channel.ChannelPromise;
 import io.netty.handler.codec.DecoderException;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.message.ExceptionMessage;
+import org.drasyl.peer.connection.message.ErrorMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -31,12 +31,12 @@ import java.net.SocketAddress;
 import java.nio.channels.ClosedChannelException;
 import java.util.Objects;
 
-import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_FORMAT;
-import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_INTERNAL;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_FORMAT;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_INTERNAL;
 
 /**
- * This handler listens to exceptions on the pipeline and sends them as {@link ExceptionMessage} to
- * the peer.
+ * This handler listens to exceptions on the pipeline and sends them as {@link ErrorMessage} to the
+ * peer.
  */
 public class ExceptionHandler extends ChannelDuplexHandler {
     public static final String EXCEPTION_HANDLER = "exceptionHandler";
@@ -140,12 +140,12 @@ public class ExceptionHandler extends ChannelDuplexHandler {
         handledCause = e;
 
         if (ctx.channel().isWritable()) {
-            final ExceptionMessage msg;
+            final ErrorMessage msg;
             if (e instanceof DecoderException) {
-                msg = new ExceptionMessage(identity.getPublicKey(), identity.getProofOfWork(), ERROR_FORMAT);
+                msg = new ErrorMessage(identity.getPublicKey(), identity.getProofOfWork(), ERROR_FORMAT);
             }
             else {
-                msg = new ExceptionMessage(identity.getPublicKey(), identity.getProofOfWork(), ERROR_INTERNAL);
+                msg = new ErrorMessage(identity.getPublicKey(), identity.getProofOfWork(), ERROR_INTERNAL);
             }
             ctx.writeAndFlush(msg);
         }

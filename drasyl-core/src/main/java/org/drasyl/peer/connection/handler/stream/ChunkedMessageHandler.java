@@ -26,15 +26,15 @@ import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.connection.handler.SimpleChannelDuplexHandler;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ChunkedMessage;
+import org.drasyl.peer.connection.message.ErrorMessage;
 import org.drasyl.peer.connection.message.MessageId;
-import org.drasyl.peer.connection.message.StatusMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.time.Duration;
 import java.util.HashMap;
 
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_BAD_REQUEST;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_INITIAL_CHUNK_MISSING;
 
 /**
  * This handler allows you to send messages that are too large for the underlying WebSocket
@@ -85,7 +85,7 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
             chunks.put(
                     msg.getId(),
                     new ChunkedMessageOutput(
-                            myPublicKey, myProofOfWork, ctx,
+                            ctx,
                             msg.getSender(),
                             msg.getProofOfWork(),
                             msg.getRecipient(),
@@ -103,7 +103,7 @@ public class ChunkedMessageHandler extends SimpleChannelDuplexHandler<ChunkedMes
             chunks.get(msg.getId()).addChunk(msg);
         }
         else {
-            ctx.writeAndFlush(new StatusMessage(myPublicKey, myProofOfWork, STATUS_BAD_REQUEST, msg.getId()));
+            ctx.writeAndFlush(new ErrorMessage(myPublicKey, myProofOfWork, msg.getSender(), ERROR_INITIAL_CHUNK_MISSING, msg.getId()));
 
             if (LOG.isDebugEnabled()) {
                 LOG.debug("[{}]: Dropped chunked message `{}` because start chunk was not sent", ctx.channel().id().asShortText(), msg);

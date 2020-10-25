@@ -27,7 +27,7 @@ import io.netty.handler.timeout.IdleStateEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
-import org.drasyl.peer.connection.message.ExceptionMessage;
+import org.drasyl.peer.connection.message.ErrorMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.MessageId;
 import org.drasyl.peer.connection.message.PingMessage;
@@ -39,7 +39,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.atomic.AtomicInteger;
 
-import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_FORMAT;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_FORMAT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.any;
@@ -86,7 +86,7 @@ class PingPongHandlerTest {
         final PingPongHandler handler = new PingPongHandler(identity, (short) 1, new AtomicInteger(2));
         handler.userEventTriggered(ctx, evt);
 
-        verify(ctx).writeAndFlush(any(ExceptionMessage.class));
+        verify(ctx).writeAndFlush(any(ErrorMessage.class));
         verify(channelFuture).addListener(ChannelFutureListener.CLOSE);
     }
 
@@ -144,7 +144,7 @@ class PingPongHandlerTest {
         final PingPongHandler handler = new PingPongHandler(identity, (short) 1, new AtomicInteger(0));
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
 
-        final Message message = new ExceptionMessage(sender, proofOfWork, ERROR_FORMAT);
+        final Message message = new ErrorMessage(sender, proofOfWork, ERROR_FORMAT);
         channel.writeInbound(message);
         channel.flush();
 

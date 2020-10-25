@@ -26,7 +26,7 @@ import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
-import org.drasyl.peer.connection.message.ExceptionMessage;
+import org.drasyl.peer.connection.message.ErrorMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.SignedMessage;
@@ -37,7 +37,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.drasyl.peer.connection.handler.ThreeWayHandshakeClientHandler.ATTRIBUTE_PUBLIC_KEY;
-import static org.drasyl.peer.connection.message.ExceptionMessage.Error.ERROR_FORMAT;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_FORMAT;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -144,7 +144,7 @@ class SignatureHandlerTest {
     void shouldNotPassthroughsMessageWhenPublicKeyCantBeExtracted() {
         final SignatureHandler handler = new SignatureHandler(identity);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
-        final Message message = new ExceptionMessage(sender, proofOfWork, ERROR_FORMAT);
+        final Message message = new ErrorMessage(sender, proofOfWork, ERROR_FORMAT);
 
         assertFalse(channel.writeInbound(message));
         assertNull(channel.readInbound());
@@ -154,7 +154,7 @@ class SignatureHandlerTest {
     void shouldNotPassthroughsWhenMessageIsNotSigned() {
         final SignatureHandler handler = new SignatureHandler(identity);
         final EmbeddedChannel channel = new EmbeddedChannel(handler);
-        final Message message = new ExceptionMessage(sender, proofOfWork, ERROR_FORMAT);
+        final Message message = new ErrorMessage(sender, proofOfWork, ERROR_FORMAT);
 
         assertFalse(channel.writeInbound(message));
         assertNull(channel.readInbound());

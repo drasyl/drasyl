@@ -26,8 +26,8 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ChunkedMessage;
+import org.drasyl.peer.connection.message.ErrorMessage;
 import org.drasyl.peer.connection.message.MessageId;
-import org.drasyl.peer.connection.message.StatusMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -37,9 +37,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.TimeUnit;
 
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_PAYLOAD_TOO_LARGE;
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_PRECONDITION_FAILED;
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_REQUEST_TIMEOUT;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_CHUNKED_MESSAGE_INVALID_CHECKSUM;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_CHUNKED_MESSAGE_PAYLOAD_TOO_LARGE;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_CHUNKED_MESSAGE_TIMEOUT;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
 import static org.mockito.ArgumentMatchers.eq;
@@ -93,21 +93,21 @@ class ChunkedMessageOutputTest {
     void shouldRaiseErrorOnTooBigPayload() {
         progress = 4;
         maxContentLength = 4;
-        final ChunkedMessageOutput output = new ChunkedMessageOutput(myPublicKey, myProofOfWork, ctx, sender, proofOfWork, recipient, contentLength, checksum, msgID, maxContentLength, payload, progress, removeAction);
+        final ChunkedMessageOutput output = new ChunkedMessageOutput(ctx, sender, proofOfWork, recipient, contentLength, checksum, msgID, maxContentLength, payload, progress, removeAction);
 
         when(chunk.getPayload()).thenReturn(rawPayload);
         output.addChunk(chunk);
 
         verify(payload).release();
         verify(removeAction).run();
-        verify(ctx).writeAndFlush(eq(new StatusMessage(sender, proofOfWork, STATUS_PAYLOAD_TOO_LARGE, msgID)));
+        verify(ctx).writeAndFlush(eq(new ErrorMessage(sender, proofOfWork, recipient, ERROR_CHUNKED_MESSAGE_PAYLOAD_TOO_LARGE, msgID)));
     }
 
     @Test
     void shouldAddChunk() {
         maxContentLength = 10;
 
-        final ChunkedMessageOutput output = new ChunkedMessageOutput(myPublicKey, myProofOfWork, ctx, sender, proofOfWork, recipient, contentLength, checksum, msgID, maxContentLength, payload, progress, removeAction);
+        final ChunkedMessageOutput output = new ChunkedMessageOutput(ctx, sender, proofOfWork, recipient, contentLength, checksum, msgID, maxContentLength, payload, progress, removeAction);
         when(chunk.getPayload()).thenReturn(rawPayload);
         when(chunk.payloadAsByteBuf()).thenReturn(Unpooled.wrappedBuffer(rawPayload));
 
@@ -121,13 +121,13 @@ class ChunkedMessageOutputTest {
         when(payload.array()).thenReturn(rawPayload);
         checksum = "abc";
 
-        final ChunkedMessageOutput output = new ChunkedMessageOutput(myPublicKey, myProofOfWork, ctx, sender, proofOfWork, recipient, contentLength, checksum, msgID, maxContentLength, payload, progress, removeAction);
+        final ChunkedMessageOutput output = new ChunkedMessageOutput(ctx, sender, proofOfWork, recipient, contentLength, checksum, msgID, maxContentLength, payload, progress, removeAction);
         when(chunk.getPayload()).thenReturn(rawPayload);
         when(chunk.payloadAsByteBuf()).thenReturn(Unpooled.wrappedBuffer(rawPayload));
 
         output.addChunk(chunk);
         verify(payload, never()).writeBytes(eq(chunk.payloadAsByteBuf()), anyInt(), anyInt());
-        verify(ctx).writeAndFlush(new StatusMessage(sender, proofOfWork, STATUS_PRECONDITION_FAILED, msgID));
+        verify(ctx).writeAndFlush(new ErrorMessage(sender, proofOfWork, recipient, ERROR_CHUNKED_MESSAGE_INVALID_CHECKSUM, msgID));
     }
 
     @Test
@@ -136,7 +136,7 @@ class ChunkedMessageOutputTest {
 
         when(payload.array()).thenReturn(rawPayload);
 
-        final ChunkedMessageOutput output = new ChunkedMessageOutput(myPublicKey, myProofOfWork, ctx, sender, proofOfWork, recipient, contentLength, checksum, msgID, maxContentLength, payload, progress, removeAction);
+        final ChunkedMessageOutput output = new ChunkedMessageOutput(ctx, sender, proofOfWork, recipient, contentLength, checksum, msgID, maxContentLength, payload, progress, removeAction);
         when(chunk.getPayload()).thenReturn(new byte[]{});
         when(chunk.payloadAsByteBuf()).thenReturn(Unpooled.buffer());
 
@@ -153,19 +153,19 @@ class ChunkedMessageOutputTest {
         when(ctx.executor()).thenReturn(eventExecutor);
         final ArgumentCaptor<Runnable> captor = ArgumentCaptor.forClass(Runnable.class);
 
-        new ChunkedMessageOutput(myPublicKey, myProofOfWork, ctx, sender, proofOfWork, recipient, contentLength, checksum, msgID, maxContentLength, removeAction, 1L);
+        new ChunkedMessageOutput(ctx, sender, proofOfWork, recipient, contentLength, checksum, msgID, maxContentLength, removeAction, 1L);
 
         verify(eventExecutor).schedule(captor.capture(), eq(1L), eq(TimeUnit.MILLISECONDS));
         captor.getValue().run();
-        verify(ctx).writeAndFlush(new StatusMessage(sender, proofOfWork, STATUS_REQUEST_TIMEOUT, msgID));
+        verify(ctx).writeAndFlush(new ErrorMessage(sender, proofOfWork, recipient, ERROR_CHUNKED_MESSAGE_TIMEOUT, msgID));
         verify(removeAction).run();
     }
 
     @Test
     void equalsAndHashCodeTest() {
-        final ChunkedMessageOutput output1 = new ChunkedMessageOutput(myPublicKey, myProofOfWork, ctx, sender, proofOfWork, recipient, contentLength, checksum, msgID, maxContentLength, payload, progress, removeAction);
-        final ChunkedMessageOutput output2 = new ChunkedMessageOutput(myPublicKey, myProofOfWork, ctx, sender, proofOfWork, recipient, contentLength, checksum, msgID, maxContentLength, payload, progress, removeAction);
-        final ChunkedMessageOutput output3 = new ChunkedMessageOutput(myPublicKey, myProofOfWork, ctx, sender, proofOfWork, recipient, contentLength, checksum, MessageId.of("412176952b5b81fd13f84a7c"), maxContentLength, payload, progress, removeAction);
+        final ChunkedMessageOutput output1 = new ChunkedMessageOutput(ctx, sender, proofOfWork, recipient, contentLength, checksum, msgID, maxContentLength, payload, progress, removeAction);
+        final ChunkedMessageOutput output2 = new ChunkedMessageOutput(ctx, sender, proofOfWork, recipient, contentLength, checksum, msgID, maxContentLength, payload, progress, removeAction);
+        final ChunkedMessageOutput output3 = new ChunkedMessageOutput(ctx, sender, proofOfWork, recipient, contentLength, checksum, MessageId.of("412176952b5b81fd13f84a7c"), maxContentLength, payload, progress, removeAction);
 
         assertEquals(output1, output2);
         assertEquals(output1.hashCode(), output2.hashCode());

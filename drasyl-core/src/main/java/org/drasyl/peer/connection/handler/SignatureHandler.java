@@ -24,16 +24,16 @@ import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.peer.connection.message.ErrorMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.SignedMessage;
-import org.drasyl.peer.connection.message.StatusMessage;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.security.PublicKey;
 
 import static org.drasyl.peer.connection.handler.ThreeWayHandshakeClientHandler.ATTRIBUTE_PUBLIC_KEY;
-import static org.drasyl.peer.connection.message.StatusMessage.Code.STATUS_INVALID_SIGNATURE;
+import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_INVALID_SIGNATURE;
 
 /**
  * Acts as a guard for in- and outbound messages. <br> Signs automatically outbound messages. <br>
@@ -92,8 +92,8 @@ public class SignatureHandler extends SimpleChannelDuplexHandler<Message, Messag
                 ctx.fireChannelRead(signedMessage.getPayload());
             }
             else {
-                final StatusMessage exceptionMessage = new StatusMessage(identity.getPublicKey(), identity.getProofOfWork(), STATUS_INVALID_SIGNATURE, signedMessage.getPayload().getId());
-                channelWrite0(ctx, exceptionMessage, ctx.channel().newPromise());
+                final ErrorMessage errorMessage = new ErrorMessage(identity.getPublicKey(), identity.getProofOfWork(), signedMessage.getSender(), ERROR_INVALID_SIGNATURE, signedMessage.getPayload().getId());
+                channelWrite0(ctx, errorMessage, ctx.channel().newPromise());
 
                 if (LOG.isInfoEnabled()) {
                     LOG.info("[{}]: Signature of the message `{}` was invalid.", ctx.channel().id().asShortText(), signedMessage);
