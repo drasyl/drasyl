@@ -26,7 +26,6 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ErrorMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.QuitMessage;
-import org.drasyl.peer.connection.message.RelayableMessage;
 import org.drasyl.pipeline.Pipeline;
 import org.slf4j.Logger;
 
@@ -133,17 +132,11 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
     @SuppressWarnings({ "java:S1172" })
     protected void processMessageAfterHandshake(final ChannelHandlerContext ctx,
                                                 final Message message) {
-        if (message instanceof RelayableMessage) {
-            final RelayableMessage relayableMessage = (RelayableMessage) message;
-            pipeline.processOutbound(relayableMessage.getRecipient(), relayableMessage).whenComplete((done, e) -> {
-                if (e != null) {
-                    getLogger().trace("Unable to send Message {}: {}", relayableMessage, e.getMessage());
-                }
-            });
-        }
-        else {
-            getLogger().debug("Could not process the message {}", message);
-        }
+        pipeline.processOutbound(message.getRecipient(), message).whenComplete((done, e) -> {
+            if (e != null) {
+                getLogger().trace("Unable to send Message {}: {}", message, e.getMessage());
+            }
+        });
     }
 
     @Override

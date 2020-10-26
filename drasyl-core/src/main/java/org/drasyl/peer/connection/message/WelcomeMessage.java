@@ -30,8 +30,6 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * A message representing the welcome message of the node server, including fallback information.
- * <p>
- * This is an immutable object.
  */
 public class WelcomeMessage extends AbstractResponseMessage<JoinMessage> {
     private final PeerInformation peerInformation;
@@ -43,9 +41,10 @@ public class WelcomeMessage extends AbstractResponseMessage<JoinMessage> {
                            @JsonProperty("sender") final CompressedPublicKey sender,
                            @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                            @JsonProperty("recipient") final CompressedPublicKey recipient,
+                           @JsonProperty("hopCount") final short hopCount,
                            @JsonProperty("peerInformation") final PeerInformation peerInformation,
                            @JsonProperty("correspondingId") final MessageId correspondingId) {
-        super(id, userAgent, networkId, sender, proofOfWork, recipient, correspondingId);
+        super(id, userAgent, networkId, sender, proofOfWork, recipient, hopCount, correspondingId);
         this.peerInformation = requireNonNull(peerInformation);
     }
 
@@ -100,6 +99,7 @@ public class WelcomeMessage extends AbstractResponseMessage<JoinMessage> {
                 ", sender=" + sender +
                 ", proofOfWork=" + proofOfWork +
                 ", recipient=" + recipient +
+                ", hopCount=" + hopCount +
                 ", peerInformation=" + peerInformation +
                 ", id=" + id +
                 '}';

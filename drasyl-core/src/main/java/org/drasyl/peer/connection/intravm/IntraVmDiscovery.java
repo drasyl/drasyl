@@ -24,7 +24,7 @@ import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.ApplicationMessage;
-import org.drasyl.peer.connection.message.RelayableMessage;
+import org.drasyl.peer.connection.message.Message;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.SimpleOutboundHandler;
@@ -77,11 +77,11 @@ public class IntraVmDiscovery implements DrasylNodeComponent {
                 }
         );
 
-        pipeline.addBefore(LOOPBACK_MESSAGE_SINK_HANDLER, INTRA_VM_SINK_HANDLER, new SimpleOutboundHandler<RelayableMessage, CompressedPublicKey>() {
+        pipeline.addBefore(LOOPBACK_MESSAGE_SINK_HANDLER, INTRA_VM_SINK_HANDLER, new SimpleOutboundHandler<Message, CompressedPublicKey>() {
             @Override
             protected void matchedWrite(final HandlerContext ctx,
                                         final CompressedPublicKey recipient,
-                                        final RelayableMessage msg,
+                                        final Message msg,
                                         final CompletableFuture<Void> future) {
                 if (opened.get()) {
                     final IntraVmDiscovery discoveree = discoveries.get(recipient);

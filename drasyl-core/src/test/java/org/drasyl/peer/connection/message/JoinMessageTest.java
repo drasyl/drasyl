@@ -81,7 +81,7 @@ class JoinMessageTest {
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", JoinMessage.class.getSimpleName())
-                    .containsKeys("id", "userAgent", "proofOfWork", "sender", "recipient", "joinTime", "networkId");
+                    .containsKeys("id", "userAgent", "proofOfWork", "sender", "recipient", "joinTime", "networkId", "hopCount");
         }
     }
 

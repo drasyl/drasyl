@@ -153,21 +153,21 @@ class ApplicationMessageTest {
     class HashCode {
         @Test
         void notSameBecauseOfDifferentPayload() {
-            final ApplicationMessage message1 = new ApplicationMessage(id, networkId, sender, proofOfWork, recipient, new byte[]{
+            final ApplicationMessage message1 = new ApplicationMessage(id, networkId, sender, proofOfWork, recipient, hopCount, new byte[]{
                     0x00,
                     0x01,
                     0x02
-            }, hopCount);
-            final ApplicationMessage message2 = new ApplicationMessage(id, networkId, sender, proofOfWork, recipient, new byte[]{
+            });
+            final ApplicationMessage message2 = new ApplicationMessage(id, networkId, sender, proofOfWork, recipient, hopCount, new byte[]{
                     0x00,
                     0x01,
                     0x02
-            }, hopCount);
-            final ApplicationMessage message3 = new ApplicationMessage(id, networkId, sender, proofOfWork, recipient, new byte[]{
+            });
+            final ApplicationMessage message3 = new ApplicationMessage(id, networkId, sender, proofOfWork, recipient, hopCount, new byte[]{
                     0x03,
                     0x02,
                     0x01
-            }, hopCount);
+            });
 
             assertEquals(message1.hashCode(), message2.hashCode());
             assertEquals(message1.hashCode(), message2.hashCode());

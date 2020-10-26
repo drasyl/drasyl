@@ -73,7 +73,7 @@ class PingMessageTest {
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", PingMessage.class.getSimpleName())
-                    .containsKeys("id", "sender", "proofOfWork", "recipient", "userAgent", "networkId");
+                    .containsKeys("id", "sender", "proofOfWork", "recipient", "userAgent", "networkId", "hopCount");
         }
     }
 

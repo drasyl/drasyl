@@ -25,7 +25,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.IdentityMessage;
-import org.drasyl.peer.connection.message.RelayableMessage;
+import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.WhoisMessage;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.codec.TypeValidator;
@@ -61,7 +61,7 @@ class LoopbackMessageSinkHandlerTest {
                 TypeValidator.ofOutboundValidator(config),
                 new LoopbackMessageSinkHandler(new AtomicBoolean(false), networkId, identity, peersManager, Set.of())
         );
-        final TestObserver<RelayableMessage> outboundMessages = pipeline.outboundMessages(RelayableMessage.class).test();
+        final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
 
         pipeline.processOutbound(recipient, message);
 
@@ -77,7 +77,7 @@ class LoopbackMessageSinkHandlerTest {
                 TypeValidator.ofOutboundValidator(config),
                 new LoopbackMessageSinkHandler(new AtomicBoolean(true), networkId, identity, peersManager, Set.of())
         );
-        final TestObserver<RelayableMessage> outboundMessages = pipeline.outboundMessages(RelayableMessage.class).test();
+        final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
 
         pipeline.processOutbound(recipient, message);
 
@@ -95,7 +95,7 @@ class LoopbackMessageSinkHandlerTest {
                 TypeValidator.ofOutboundValidator(config),
                 new LoopbackMessageSinkHandler(new AtomicBoolean(true), networkId, identity, peersManager, Set.of())
         );
-        final TestObserver<RelayableMessage> outboundMessages = pipeline.outboundMessages(RelayableMessage.class).test();
+        final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
         final CompletableFuture<Void> future = pipeline.processOutbound(recipient, message);
 
         future.join();
@@ -115,7 +115,7 @@ class LoopbackMessageSinkHandlerTest {
                 TypeValidator.ofOutboundValidator(config),
                 new LoopbackMessageSinkHandler(new AtomicBoolean(true), networkId, identity, peersManager, Set.of())
         );
-        final TestObserver<RelayableMessage> outboundMessages = pipeline.outboundMessages(RelayableMessage.class).test();
+        final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
         final CompletableFuture<Void> future = pipeline.processOutbound(recipient, message);
 
         future.join();
@@ -135,7 +135,7 @@ class LoopbackMessageSinkHandlerTest {
                 TypeValidator.ofOutboundValidator(config),
                 new LoopbackMessageSinkHandler(new AtomicBoolean(true), networkId, identity, peersManager, Set.of())
         );
-        final TestObserver<RelayableMessage> outboundMessages = pipeline.outboundMessages(RelayableMessage.class).test();
+        final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
         final CompletableFuture<Void> future = pipeline.processOutbound(recipient, message);
 
         future.join();

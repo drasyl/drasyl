@@ -72,6 +72,7 @@ class SignedMessageTest {
                             CompressedPublicKey.of("0300f9df12eed957a17b2b373978ea32177b3e1ce00c92003b5dd2c68de253b35c"),
                             ProofOfWork.of(6657650),
                             CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458"),
+                            (short) 0,
                             new Signature(
                                     HexUtil.fromString("7b224074797065223a2250696e674d657373616765222c226964223a22346134623661326334616630343439653361643065393266222c2273656e646572223a22303330306639646631326565643935376131376232623337333937386561333231373762336531636530306339323030336235646432633638646532353362333563222c2270726f6f664f66576f726b223a363635373635307d")
                             ),
@@ -114,7 +115,7 @@ class SignedMessageTest {
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", SignedMessage.class.getSimpleName())
-                    .containsKeys("id", "payload", "sender", "proofOfWork", "recipient", "signature", "userAgent", "networkId");
+                    .containsKeys("id", "payload", "sender", "proofOfWork", "recipient", "signature", "userAgent", "networkId", "hopCount");
         }
     }
 

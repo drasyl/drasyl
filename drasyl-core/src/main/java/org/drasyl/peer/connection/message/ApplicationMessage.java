@@ -36,10 +36,8 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * A message that is sent by an application running on drasyl.
- * <p>
- * This is an immutable object.
  */
-public class ApplicationMessage extends RelayableMessage implements RequestMessage {
+public class ApplicationMessage extends AbstractMessage implements RequestMessage {
     @JsonInclude(JsonInclude.Include.NON_EMPTY)
     protected final Map<String, String> headers;
     protected final byte[] payload;
@@ -51,9 +49,9 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
                                @JsonProperty("sender") final CompressedPublicKey sender,
                                @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                                @JsonProperty("recipient") final CompressedPublicKey recipient,
+                               @JsonProperty("hopCount") final short hopCount,
                                @JsonProperty("headers") final Map<String, String> headers,
-                               @JsonProperty("payload") final byte[] payload,
-                               @JsonProperty("hopCount") final short hopCount) {
+                               @JsonProperty("payload") final byte[] payload) {
         super(id, userAgent, networkId, sender, proofOfWork, recipient, hopCount);
         if (headers != null) {
             this.headers = Map.copyOf(headers);
@@ -72,8 +70,7 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
                               final CompressedPublicKey sender,
                               final ProofOfWork proofOfWork,
                               final CompressedPublicKey recipient,
-                              final byte[] payload,
-                              final short hopCount) {
+                              final short hopCount, final byte[] payload) {
         super(id, userAgent, networkId, sender, proofOfWork, recipient, hopCount);
         this.headers = Map.of();
         this.payload = requireNonNull(payload);
@@ -84,8 +81,7 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
                               final CompressedPublicKey sender,
                               final ProofOfWork proofOfWork,
                               final CompressedPublicKey recipient,
-                              final byte[] payload,
-                              final short hopCount) {
+                              final short hopCount, final byte[] payload) {
         super(id, networkId, sender, proofOfWork, recipient, hopCount);
         this.headers = Map.of();
         this.payload = requireNonNull(payload);
@@ -200,9 +196,9 @@ public class ApplicationMessage extends RelayableMessage implements RequestMessa
                 ", sender=" + sender +
                 ", proofOfWork=" + proofOfWork +
                 ", recipient=" + recipient +
+                ", hopCount=" + hopCount +
                 ", headers=" + headers +
                 ", payload=byte[" + Optional.ofNullable(payload).orElse(new byte[]{}).length + "] { ... }" +
-                ", hopCount=" + hopCount +
                 ", id='" + id + '\'' +
                 '}';
     }

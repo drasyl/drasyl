@@ -73,8 +73,7 @@ public class ChunkedMessageOutput {
      * @param msgID            the message id of all chunks and the resulting {@link
      *                         ApplicationMessage}
      * @param maxContentLength the max content length on this node
-     * @param removeAction     the remove action to remove this class from the {@link
-     *                         ChunkedMessageHandler#chunks}
+     * @param removeAction     the remove action to remove this class from the chunks list
      * @param timeout          the timeout for receiving all chunks, after this timeout the {@link
      *                         #removeAction} is called
      */
@@ -158,7 +157,7 @@ public class ChunkedMessageOutput {
                 }
                 else {
                     try {
-                        ctx.fireChannelRead(new ApplicationMessage(msgID, networkId, sender, proofOfWork, recipient, payload.array(), (short) 0));
+                        ctx.fireChannelRead(new ApplicationMessage(msgID, networkId, sender, proofOfWork, recipient, (short) 0, payload.array()));
                     }
                     finally {
                         payload.release();

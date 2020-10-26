@@ -28,7 +28,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.ApplicationMessage;
-import org.drasyl.peer.connection.message.RelayableMessage;
+import org.drasyl.peer.connection.message.Message;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.junit.jupiter.api.Test;
@@ -64,7 +64,7 @@ class SuperPeerMessageSinkHandlerTest {
                 TypeValidator.ofOutboundValidator(config),
                 new SuperPeerMessageSinkHandler(channelGroup, peersManager)
         );
-        final TestObserver<RelayableMessage> outboundMessages = pipeline.outboundMessages(RelayableMessage.class).test();
+        final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
         final Channel channel = mock(Channel.class);
         final ChannelPromise promise = new DefaultChannelPromise(channel);
         when(channelGroup.writeAndFlush(any(CompressedPublicKey.class), any(Object.class))).thenReturn(promise);
@@ -89,7 +89,7 @@ class SuperPeerMessageSinkHandlerTest {
                 TypeValidator.ofOutboundValidator(config),
                 new SuperPeerMessageSinkHandler(channelGroup, peersManager)
         );
-        final TestObserver<RelayableMessage> outboundMessages = pipeline.outboundMessages(RelayableMessage.class).test();
+        final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
 
         pipeline.processOutbound(recipient, message);
 
@@ -107,7 +107,7 @@ class SuperPeerMessageSinkHandlerTest {
                 TypeValidator.ofOutboundValidator(config),
                 new SuperPeerMessageSinkHandler(channelGroup, peersManager)
         );
-        final TestObserver<RelayableMessage> outboundMessages = pipeline.outboundMessages(RelayableMessage.class).test();
+        final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
         final Channel channel = mock(Channel.class);
         final ChannelPromise promise = new DefaultChannelPromise(channel);
         when(channelGroup.writeAndFlush(any(CompressedPublicKey.class), any(Object.class))).thenReturn(promise);

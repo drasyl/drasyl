@@ -26,7 +26,7 @@ import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.IdentityMessage;
-import org.drasyl.peer.connection.message.RelayableMessage;
+import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.WhoisMessage;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.SimpleOutboundHandler;
@@ -41,7 +41,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * This handler delivers outgoing messages addressed to the local node.
  */
-public class LoopbackMessageSinkHandler extends SimpleOutboundHandler<RelayableMessage, CompressedPublicKey> {
+public class LoopbackMessageSinkHandler extends SimpleOutboundHandler<Message, CompressedPublicKey> {
     public static final String LOOPBACK_MESSAGE_SINK_HANDLER = "LOOPBACK_MESSAGE_SINK_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(LoopbackMessageSinkHandler.class);
     private final AtomicBoolean started;
@@ -65,7 +65,7 @@ public class LoopbackMessageSinkHandler extends SimpleOutboundHandler<RelayableM
     @Override
     protected void matchedWrite(final HandlerContext ctx,
                                 final CompressedPublicKey recipient,
-                                final RelayableMessage msg,
+                                final Message msg,
                                 final CompletableFuture<Void> future) {
         if (!started.get()) {
             ctx.write(recipient, msg, future);

@@ -91,7 +91,7 @@ class ChunkedMessageTest {
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", ChunkedMessage.class.getSimpleName())
-                    .containsKeys("id", "networkId", "recipient", "hopCount", "sender", "payload", "contentLength", "checksum", "proofOfWork", "userAgent");
+                    .containsKeys("id", "networkId", "recipient", "hopCount", "sender", "payload", "contentLength", "checksum", "proofOfWork", "userAgent", "hopCount");
         }
 
         @Test

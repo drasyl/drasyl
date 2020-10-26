@@ -76,7 +76,7 @@ class IdentityMessageTest {
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", IdentityMessage.class.getSimpleName())
-                    .containsKeys("id", "recipient", "sender", "peerInformation", "proofOfWork", "userAgent", "networkId");
+                    .containsKeys("id", "recipient", "sender", "peerInformation", "proofOfWork", "userAgent", "networkId", "hopCount");
         }
     }
 

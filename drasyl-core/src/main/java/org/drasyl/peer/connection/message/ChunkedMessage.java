@@ -38,8 +38,6 @@ import java.util.Optional;
  * #hopCount}, {@link #id} and {@link #payload}
  * <br> n. ChunkedMessage {@link #recipient}, {@link #sender}, {@link #hopCount}, {@link #id} and
  * {@link #payload payload := new byte[]{}}
- * <p>
- * This is an immutable object.
  */
 public class ChunkedMessage extends ApplicationMessage {
     /*
@@ -66,11 +64,11 @@ public class ChunkedMessage extends ApplicationMessage {
                            @JsonProperty("sender") final CompressedPublicKey sender,
                            @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                            @JsonProperty("recipient") final CompressedPublicKey recipient,
-                           @JsonProperty("payload") final byte[] payload,
                            @JsonProperty("hopCount") final short hopCount,
+                           @JsonProperty("payload") final byte[] payload,
                            @JsonProperty("contentLength") final int contentLength,
                            @JsonProperty("checksum") final String checksum) {
-        super(id, networkId, userAgent, sender, proofOfWork, recipient, payload, hopCount);
+        super(id, networkId, userAgent, sender, proofOfWork, recipient, hopCount, payload);
         this.contentLength = contentLength;
         this.checksum = checksum;
     }
@@ -96,7 +94,7 @@ public class ChunkedMessage extends ApplicationMessage {
                    final byte[] payload,
                    final int contentLength,
                    final String checksum) {
-        super(id, networkId, sender, proofOfWork, recipient, payload, (short) 0);
+        super(id, networkId, sender, proofOfWork, recipient, (short) 0, payload);
         this.contentLength = contentLength;
         this.checksum = checksum;
     }
@@ -139,9 +137,9 @@ public class ChunkedMessage extends ApplicationMessage {
                 ", sender=" + sender +
                 ", proofOfWork=" + proofOfWork +
                 ", recipient=" + recipient +
+                ", hopCount=" + hopCount +
                 ", headers=" + headers +
                 ", payload=byte[" + Optional.ofNullable(payload).orElse(new byte[]{}).length + "] { ... }" +
-                ", hopCount=" + hopCount +
                 ", contentLength=" + contentLength +
                 ", checksum=" + checksum +
                 ", id=" + id +

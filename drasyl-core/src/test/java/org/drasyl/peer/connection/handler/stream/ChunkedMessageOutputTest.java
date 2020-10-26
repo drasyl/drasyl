@@ -143,7 +143,7 @@ class ChunkedMessageOutputTest {
 
         output.addChunk(chunk);
         verify(payload, never()).writeBytes(eq(chunk.payloadAsByteBuf()), anyInt(), anyInt());
-        verify(ctx).fireChannelRead(eq(new ApplicationMessage(msgID, networkId, sender, proofOfWork, recipient, payload.array(), (short) 0)));
+        verify(ctx).fireChannelRead(eq(new ApplicationMessage(msgID, networkId, sender, proofOfWork, recipient, (short) 0, payload.array())));
         verify(payload).release();
         verify(removeAction).run();
     }

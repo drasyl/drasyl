@@ -31,7 +31,7 @@ import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.client.DirectClient;
-import org.drasyl.peer.connection.message.RelayableMessage;
+import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.WhoisMessage;
 import org.drasyl.pipeline.HandlerAdapter;
 import org.drasyl.pipeline.HandlerContext;
@@ -152,11 +152,11 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
                     super.eventTriggered(ctx, event, future);
                 }
             });
-            pipeline.addAfter(LOOPBACK_MESSAGE_SINK_HANDLER, DIRECT_CONNECTIONS_MANAGER_COMMUNICATION_OCCURRED, new SimpleOutboundHandler<RelayableMessage, CompressedPublicKey>() {
+            pipeline.addAfter(LOOPBACK_MESSAGE_SINK_HANDLER, DIRECT_CONNECTIONS_MANAGER_COMMUNICATION_OCCURRED, new SimpleOutboundHandler<Message, CompressedPublicKey>() {
                 @Override
                 protected void matchedWrite(final HandlerContext ctx,
                                             final CompressedPublicKey recipient,
-                                            final RelayableMessage msg,
+                                            final Message msg,
                                             final CompletableFuture<Void> future) {
                     communicationOccurred(msg.getRecipient());
                     ctx.write(recipient, msg, future);

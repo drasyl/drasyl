@@ -25,8 +25,6 @@ import org.drasyl.identity.ProofOfWork;
 
 /**
  * A message representing a PING request.
- * <p>
- * This is an immutable object.
  */
 public class PingMessage extends AbstractMessage implements RequestMessage {
     @JsonCreator
@@ -35,8 +33,9 @@ public class PingMessage extends AbstractMessage implements RequestMessage {
                         @JsonProperty("networkId") final int networkId,
                         @JsonProperty("sender") final CompressedPublicKey sender,
                         @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
-                        @JsonProperty("recipient") final CompressedPublicKey recipient) {
-        super(id, userAgent, networkId, sender, proofOfWork, recipient);
+                        @JsonProperty("recipient") final CompressedPublicKey recipient,
+                        @JsonProperty("hopCount") final short hopCount) {
+        super(id, userAgent, networkId, sender, proofOfWork, recipient, hopCount);
     }
 
     public PingMessage(final int networkId,
@@ -53,6 +52,7 @@ public class PingMessage extends AbstractMessage implements RequestMessage {
                 ", sender=" + sender +
                 ", proofOfWork='" + proofOfWork +
                 ", recipient='" + recipient +
+                ", hopCount=" + hopCount +
                 ", id='" + id +
                 '}';
     }

@@ -96,5 +96,15 @@ class MessageEncoderTest {
         public CompressedPublicKey getRecipient() {
             return recipient;
         }
+
+        @Override
+        public short getHopCount() {
+            return 0;
+        }
+
+        @Override
+        public void incrementHopCount() {
+            // do nothing
+        }
     }
 }

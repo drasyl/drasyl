@@ -32,8 +32,6 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * A message representing a termination of a connection.
- * <p>
- * This is an immutable object.
  */
 public class QuitMessage extends AbstractMessage implements RequestMessage {
     private final CloseReason reason;
@@ -45,8 +43,9 @@ public class QuitMessage extends AbstractMessage implements RequestMessage {
                         @JsonProperty("sender") final CompressedPublicKey sender,
                         @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                         @JsonProperty("recipient") final CompressedPublicKey recipient,
+                        @JsonProperty("hopCount") final short hopCount,
                         @JsonProperty("reason") final CloseReason reason) {
-        super(id, userAgent, networkId, sender, proofOfWork, recipient);
+        super(id, userAgent, networkId, sender, proofOfWork, recipient, hopCount);
         this.reason = requireNonNull(reason);
     }
 
@@ -86,6 +85,7 @@ public class QuitMessage extends AbstractMessage implements RequestMessage {
                 ", sender=" + sender +
                 ", proofOfWork=" + proofOfWork +
                 ", recipient=" + recipient +
+                ", hopCount=" + hopCount +
                 ", reason=" + reason +
                 ", id=" + id +
                 '}';

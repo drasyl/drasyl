@@ -21,7 +21,7 @@ package org.drasyl.peer.connection.pipeline;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
-import org.drasyl.peer.connection.message.RelayableMessage;
+import org.drasyl.peer.connection.message.Message;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.SimpleOutboundHandler;
 import org.drasyl.util.FutureUtil;
@@ -30,7 +30,7 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.util.FutureUtil.toFuture;
 
-public class SuperPeerMessageSinkHandler extends SimpleOutboundHandler<RelayableMessage, CompressedPublicKey> {
+public class SuperPeerMessageSinkHandler extends SimpleOutboundHandler<Message, CompressedPublicKey> {
     public static final String SUPER_PEER_SINK_HANDLER = "SUPER_PEER_SINK_HANDLER";
     private final PeerChannelGroup channelGroup;
     private final PeersManager peersManager;
@@ -44,7 +44,7 @@ public class SuperPeerMessageSinkHandler extends SimpleOutboundHandler<Relayable
     @Override
     protected void matchedWrite(final HandlerContext ctx,
                                 final CompressedPublicKey recipient,
-                                final RelayableMessage msg,
+                                final Message msg,
                                 final CompletableFuture<Void> future) {
         final CompressedPublicKey superPeer = peersManager.getSuperPeerKey();
         if (superPeer != null && !recipient.equals(superPeer)) {

@@ -79,7 +79,7 @@ class PongMessageTest {
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", PongMessage.class.getSimpleName())
-                    .containsKeys("id", "correspondingId", "userAgent", "sender", "proofOfWork", "recipient", "networkId");
+                    .containsKeys("id", "correspondingId", "userAgent", "sender", "proofOfWork", "recipient", "networkId", "hopCount");
         }
     }
 

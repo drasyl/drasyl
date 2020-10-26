@@ -27,8 +27,6 @@ import java.util.Objects;
 
 /**
  * A message representing a join to the node server.
- * <p>
- * This is an immutable object.
  */
 public class JoinMessage extends AbstractMessage implements RequestMessage {
     private final long joinTime;
@@ -42,7 +40,7 @@ public class JoinMessage extends AbstractMessage implements RequestMessage {
                         @JsonProperty("recipient") final CompressedPublicKey recipient,
                         @JsonProperty("hopCount") final short hopCount,
                         @JsonProperty("childrenTime") final long joinTime) {
-        super(id, userAgent, networkId, sender, proofOfWork, recipient);
+        super(id, userAgent, networkId, sender, proofOfWork, recipient, hopCount);
         this.joinTime = joinTime;
     }
 
@@ -99,6 +97,7 @@ public class JoinMessage extends AbstractMessage implements RequestMessage {
                 ", sender=" + sender +
                 ", proofOfWork=" + proofOfWork +
                 ", recipient=" + recipient +
+                ", hopCount=" + hopCount +
                 ", joinTime=" + joinTime +
                 ", id=" + id +
                 '}';

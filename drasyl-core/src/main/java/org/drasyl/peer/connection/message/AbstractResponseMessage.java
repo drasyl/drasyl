@@ -48,6 +48,19 @@ abstract class AbstractResponseMessage<R extends RequestMessage> extends Abstrac
         this.correspondingId = requireNonNull(correspondingId);
     }
 
+    @SuppressWarnings({ "java:S107" })
+    public AbstractResponseMessage(final MessageId id,
+                                   final String userAgent,
+                                   final int networkId,
+                                   final CompressedPublicKey sender,
+                                   final ProofOfWork proofOfWork,
+                                   final CompressedPublicKey recipient,
+                                   final short hopCount,
+                                   final MessageId correspondingId) {
+        super(id, userAgent, networkId, sender, proofOfWork, recipient, hopCount);
+        this.correspondingId = requireNonNull(correspondingId);
+    }
+
     @Override
     public MessageId getCorrespondingId() {
         return correspondingId;

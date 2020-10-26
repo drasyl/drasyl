@@ -31,10 +31,8 @@ import static java.util.Objects.requireNonNull;
 /**
  * This message is used to request information (like public key and endpoints) for a specific
  * identity.
- * <p>
- * This is an immutable object.
  */
-public class WhoisMessage extends RelayableMessage implements RequestMessage {
+public class WhoisMessage extends AbstractMessage implements RequestMessage {
     private final PeerInformation peerInformation;
 
     @JsonCreator
@@ -90,8 +88,8 @@ public class WhoisMessage extends RelayableMessage implements RequestMessage {
                 ", sender=" + sender +
                 ", proofOfWork=" + proofOfWork +
                 ", recipient=" + recipient +
-                ", peerInformation=" + peerInformation +
                 ", hopCount=" + hopCount +
+                ", peerInformation=" + peerInformation +
                 ", id='" + id + '\'' +
                 '}';
     }

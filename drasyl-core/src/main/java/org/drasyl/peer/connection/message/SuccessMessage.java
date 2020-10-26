@@ -25,8 +25,6 @@ import org.drasyl.identity.ProofOfWork;
 
 /**
  * Represents a confirmation of a previous sent {@link RequestMessage}.
- * <p>
- * This is an immutable object.
  */
 public class SuccessMessage extends AbstractResponseMessage<RequestMessage> {
     @JsonCreator
@@ -36,8 +34,9 @@ public class SuccessMessage extends AbstractResponseMessage<RequestMessage> {
                            @JsonProperty("sender") final CompressedPublicKey sender,
                            @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                            @JsonProperty("recipient") final CompressedPublicKey recipient,
+                           @JsonProperty("hopCount") final short hopCount,
                            @JsonProperty("correspondingId") final MessageId correspondingId) {
-        super(id, userAgent, networkId, sender, proofOfWork, recipient, correspondingId);
+        super(id, userAgent, networkId, sender, proofOfWork, recipient, hopCount, correspondingId);
     }
 
     /**
@@ -65,6 +64,7 @@ public class SuccessMessage extends AbstractResponseMessage<RequestMessage> {
                 ", sender=" + sender +
                 ", proofOfWork=" + proofOfWork +
                 ", recipient=" + recipient +
+                ", hopCount=" + hopCount +
                 ", correspondingId=" + correspondingId +
                 ", id=" + id +
                 '}';

@@ -32,8 +32,6 @@ import static java.util.Objects.requireNonNull;
 
 /**
  * A message representing an error. Such an error should always be handled.
- * <p>
- * This is an immutable object.
  */
 @SuppressWarnings("common-java:DuplicatedBlocks")
 public class ErrorMessage extends AbstractResponseMessage<RequestMessage> {
@@ -46,9 +44,10 @@ public class ErrorMessage extends AbstractResponseMessage<RequestMessage> {
                          @JsonProperty("sender") final CompressedPublicKey sender,
                          @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                          @JsonProperty("recipient") final CompressedPublicKey recipient,
+                         @JsonProperty("hopCount") final short hopCount,
                          @JsonProperty("error") final Error error,
                          @JsonProperty("correspondingId") final MessageId correspondingId) {
-        super(id, userAgent, networkId, sender, proofOfWork, recipient, correspondingId);
+        super(id, userAgent, networkId, sender, proofOfWork, recipient, hopCount, correspondingId);
         this.error = requireNonNull(error);
     }
 
@@ -106,6 +105,7 @@ public class ErrorMessage extends AbstractResponseMessage<RequestMessage> {
                 ", sender=" + sender +
                 ", proofOfWork=" + proofOfWork +
                 ", recipient=" + recipient +
+                ", hopCount=" + hopCount +
                 ", error=" + error +
                 ", correspondingId=" + correspondingId +
                 ", id=" + id +

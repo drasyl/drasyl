@@ -44,6 +44,23 @@ abstract class AbstractMessage implements Message {
     protected final CompressedPublicKey sender;
     protected final ProofOfWork proofOfWork;
     protected final CompressedPublicKey recipient;
+    protected short hopCount;
+
+    protected AbstractMessage(final MessageId id,
+                              final String userAgent,
+                              final int networkId,
+                              final CompressedPublicKey sender,
+                              final ProofOfWork proofOfWork,
+                              final CompressedPublicKey recipient,
+                              final short hopCount) {
+        this.id = requireNonNull(id);
+        this.userAgent = requireNonNull(userAgent);
+        this.networkId = networkId;
+        this.sender = requireNonNull(sender);
+        this.proofOfWork = requireNonNull(proofOfWork);
+        this.recipient = requireNonNull(recipient);
+        this.hopCount = hopCount;
+    }
 
     protected AbstractMessage(final MessageId id,
                               final String userAgent,
@@ -51,19 +68,31 @@ abstract class AbstractMessage implements Message {
                               final CompressedPublicKey sender,
                               final ProofOfWork proofOfWork,
                               final CompressedPublicKey recipient) {
-        this.id = requireNonNull(id);
-        this.userAgent = requireNonNull(userAgent);
-        this.networkId = networkId;
-        this.sender = requireNonNull(sender);
-        this.proofOfWork = requireNonNull(proofOfWork);
-        this.recipient = requireNonNull(recipient);
+        this(id, userAgent, networkId, sender, proofOfWork, recipient, (short) 0);
+    }
+
+    protected AbstractMessage(final int networkId,
+                              final CompressedPublicKey sender,
+                              final ProofOfWork proofOfWork,
+                              final CompressedPublicKey recipient,
+                              final short hopCount) {
+        this(randomMessageId(), userAgentGenerator.get(), networkId, sender, proofOfWork, recipient, hopCount);
     }
 
     protected AbstractMessage(final int networkId,
                               final CompressedPublicKey sender,
                               final ProofOfWork proofOfWork,
                               final CompressedPublicKey recipient) {
-        this(randomMessageId(), userAgentGenerator.get(), networkId, sender, proofOfWork, recipient);
+        this(networkId, sender, proofOfWork, recipient, (short) 0);
+    }
+
+    public AbstractMessage(final MessageId id,
+                           final int networkId,
+                           final CompressedPublicKey sender,
+                           final ProofOfWork proofOfWork,
+                           final CompressedPublicKey recipient,
+                           final short hopCount) {
+        this(id, userAgentGenerator.get(), networkId, sender, proofOfWork, recipient, hopCount);
     }
 
     @Override
@@ -97,6 +126,16 @@ abstract class AbstractMessage implements Message {
     }
 
     @Override
+    public short getHopCount() {
+        return hopCount;
+    }
+
+    @Override
+    public void incrementHopCount() {
+        hopCount++;
+    }
+
+    @Override
     public boolean equals(final Object o) {
         if (this == o) {
             return true;
@@ -113,6 +152,6 @@ abstract class AbstractMessage implements Message {
 
     @Override
     public int hashCode() {
-        return Objects.hash(networkId, sender, proofOfWork, recipient);
+        return Objects.hash(networkId, sender, proofOfWork, recipient, hopCount);
     }
 }

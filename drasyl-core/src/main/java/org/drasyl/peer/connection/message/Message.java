@@ -87,4 +87,18 @@ public interface Message {
      * @return this message's recipient.
      */
     CompressedPublicKey getRecipient();
+
+    /**
+     * Returns this message's hop count. Starts at 0 and is incremented every time it is sent. Once
+     * the message reaches the limit defined in config {@code drasyl.message.hop-limit} it will be
+     * dropped.
+     *
+     * @return this message's hop count.
+     */
+    short getHopCount();
+
+    /**
+     * Increases the message's hop count.
+     */
+    void incrementHopCount();
 }

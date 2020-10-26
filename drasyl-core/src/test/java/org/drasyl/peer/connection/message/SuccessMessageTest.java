@@ -83,7 +83,7 @@ class SuccessMessageTest {
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", SuccessMessage.class.getSimpleName())
-                    .containsKeys("id", "correspondingId", "sender", "proofOfWork", "recipient", "userAgent", "networkId");
+                    .containsKeys("id", "correspondingId", "sender", "proofOfWork", "recipient", "userAgent", "networkId", "hopCount");
         }
     }
 

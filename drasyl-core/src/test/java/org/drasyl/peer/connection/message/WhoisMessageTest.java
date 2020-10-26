@@ -80,7 +80,7 @@ class WhoisMessageTest {
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", WhoisMessage.class.getSimpleName())
-                    .containsKeys("id", "recipient", "sender", "peerInformation", "userAgent", "proofOfWork", "networkId");
+                    .containsKeys("id", "recipient", "sender", "peerInformation", "userAgent", "proofOfWork", "networkId", "hopCount");
         }
     }
 

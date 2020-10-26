@@ -20,7 +20,7 @@ package org.drasyl.peer.connection.pipeline;
 
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.PeerChannelGroup;
-import org.drasyl.peer.connection.message.RelayableMessage;
+import org.drasyl.peer.connection.message.Message;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.SimpleOutboundHandler;
 
@@ -29,7 +29,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * This handler tries to send outgoing messages via TCP-based direct connection to another peers.
  */
-public class DirectConnectionMessageSinkHandler extends SimpleOutboundHandler<RelayableMessage, CompressedPublicKey> {
+public class DirectConnectionMessageSinkHandler extends SimpleOutboundHandler<Message, CompressedPublicKey> {
     public static final String DIRECT_CONNECTION_MESSAGE_SINK_HANDLER = "DIRECT_CONNECTION_MESSAGE_SINK_HANDLER";
     private final PeerChannelGroup channelGroup;
 
@@ -40,7 +40,7 @@ public class DirectConnectionMessageSinkHandler extends SimpleOutboundHandler<Re
     @Override
     protected void matchedWrite(final HandlerContext ctx,
                                 final CompressedPublicKey recipient,
-                                final RelayableMessage msg,
+                                final Message msg,
                                 final CompletableFuture<Void> future) {
         channelGroup.writeAndFlush(recipient, msg).addListener(result -> {
             if (result.isSuccess()) {

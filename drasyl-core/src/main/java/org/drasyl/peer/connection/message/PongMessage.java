@@ -25,8 +25,6 @@ import org.drasyl.identity.ProofOfWork;
 
 /**
  * A message representing a PONG response.
- * <p>
- * This is an immutable object.
  */
 public class PongMessage extends AbstractResponseMessage<PingMessage> {
     @JsonCreator
@@ -36,8 +34,9 @@ public class PongMessage extends AbstractResponseMessage<PingMessage> {
                         @JsonProperty("sender") final CompressedPublicKey sender,
                         @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                         @JsonProperty("recipient") final CompressedPublicKey recipient,
+                        @JsonProperty("hopCount") final short hopCount,
                         @JsonProperty("correspondingId") final MessageId correspondingId) {
-        super(id, userAgent, networkId, sender, proofOfWork, recipient, correspondingId);
+        super(id, userAgent, networkId, sender, proofOfWork, recipient, hopCount, correspondingId);
     }
 
     public PongMessage(final int networkId,
@@ -55,6 +54,7 @@ public class PongMessage extends AbstractResponseMessage<PingMessage> {
                 ", sender=" + sender +
                 ", proofOfWork=" + proofOfWork +
                 ", recipient=" + recipient +
+                ", hopCount=" + hopCount +
                 ", correspondingId=" + correspondingId +
                 ", id=" + id +
                 '}';

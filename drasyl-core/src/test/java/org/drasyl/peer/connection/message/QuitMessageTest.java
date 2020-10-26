@@ -70,7 +70,7 @@ class QuitMessageTest {
             assertThatJson(JACKSON_WRITER.writeValueAsString(message))
                     .isObject()
                     .containsEntry("@type", QuitMessage.class.getSimpleName())
-                    .containsKeys("id", "sender", "proofOfWork", "recipient", "reason", "userAgent", "networkId");
+                    .containsKeys("id", "sender", "proofOfWork", "recipient", "reason", "userAgent", "networkId", "hopCount");
         }
     }
 

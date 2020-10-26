@@ -22,7 +22,7 @@ import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.PeerChannelGroup;
-import org.drasyl.peer.connection.message.RelayableMessage;
+import org.drasyl.peer.connection.message.Message;
 import org.drasyl.pipeline.HandlerContext;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -50,12 +50,12 @@ class DirectConnectionMessageSinkHandlerTest {
         @Test
         void shouldPassMessageIfWriteAndFlushSucceeded(@Mock final HandlerContext ctx,
                                                        @Mock final CompressedPublicKey recipient,
-                                                       @Mock final RelayableMessage msg,
+                                                       @Mock final Message msg,
                                                        @Mock final CompletableFuture<Void> future,
                                                        @Mock final Future<?> writeAndFlushFuture) {
             when(writeAndFlushFuture.isSuccess()).thenReturn(true);
             when(channelGroup.writeAndFlush(any(CompressedPublicKey.class), any(Object.class)).addListener(any())).then(invocation -> {
-                GenericFutureListener<Future<?>> listener = invocation.getArgument(0, GenericFutureListener.class);
+                @SuppressWarnings("unchecked") final GenericFutureListener<Future<?>> listener = invocation.getArgument(0, GenericFutureListener.class);
                 listener.operationComplete(writeAndFlushFuture);
                 return null;
             });
@@ -68,12 +68,12 @@ class DirectConnectionMessageSinkHandlerTest {
         @Test
         void shouldPassMessageIfWriteAndFlushFails(@Mock final HandlerContext ctx,
                                                    @Mock final CompressedPublicKey recipient,
-                                                   @Mock final RelayableMessage msg,
+                                                   @Mock final Message msg,
                                                    @Mock final CompletableFuture<Void> future,
                                                    @Mock final Future<?> writeAndFlushFuture) {
             when(writeAndFlushFuture.isSuccess()).thenReturn(false);
             when(channelGroup.writeAndFlush(any(CompressedPublicKey.class), any(Object.class)).addListener(any())).then(invocation -> {
-                GenericFutureListener<Future<?>> listener = invocation.getArgument(0, GenericFutureListener.class);
+                @SuppressWarnings("unchecked") final GenericFutureListener<Future<?>> listener = invocation.getArgument(0, GenericFutureListener.class);
                 listener.operationComplete(writeAndFlushFuture);
                 return null;
             });

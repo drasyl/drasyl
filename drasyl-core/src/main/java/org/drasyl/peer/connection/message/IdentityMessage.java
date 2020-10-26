@@ -31,12 +31,9 @@ import static java.util.Objects.requireNonNull;
 /**
  * This message is used as a response to a {@link WhoisMessage} and contains information about a
  * peer (like public key and endpoints).
- * <p>
- * This is an immutable object.
  */
-public class IdentityMessage extends RelayableMessage implements ResponseMessage<WhoisMessage> {
+public class IdentityMessage extends AbstractResponseMessage<WhoisMessage> implements ResponseMessage<WhoisMessage> {
     private final PeerInformation peerInformation;
-    private final MessageId correspondingId;
 
     @JsonCreator
     private IdentityMessage(@JsonProperty("id") final MessageId id,
@@ -45,12 +42,11 @@ public class IdentityMessage extends RelayableMessage implements ResponseMessage
                             @JsonProperty("sender") final CompressedPublicKey sender,
                             @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                             @JsonProperty("recipient") final CompressedPublicKey recipient,
+                            @JsonProperty("hopCount") final short hopCount,
                             @JsonProperty("peerInformation") final PeerInformation peerInformation,
-                            @JsonProperty("correspondingId") final MessageId correspondingId,
-                            @JsonProperty("hopCount") final short hopCount) {
-        super(id, userAgent, networkId, sender, proofOfWork, recipient, hopCount);
+                            @JsonProperty("correspondingId") final MessageId correspondingId) {
+        super(id, userAgent, networkId, sender, proofOfWork, recipient, hopCount, correspondingId);
         this.peerInformation = requireNonNull(peerInformation);
-        this.correspondingId = requireNonNull(correspondingId);
     }
 
     public IdentityMessage(final int networkId,
@@ -59,9 +55,8 @@ public class IdentityMessage extends RelayableMessage implements ResponseMessage
                            final CompressedPublicKey recipient,
                            final PeerInformation peerInformation,
                            final MessageId correspondingId) {
-        super(networkId, sender, proofOfWork, recipient);
+        super(networkId, sender, proofOfWork, recipient, correspondingId);
         this.peerInformation = requireNonNull(peerInformation);
-        this.correspondingId = requireNonNull(correspondingId);
     }
 
     public PeerInformation getPeerInformation() {
@@ -69,13 +64,8 @@ public class IdentityMessage extends RelayableMessage implements ResponseMessage
     }
 
     @Override
-    public MessageId getCorrespondingId() {
-        return correspondingId;
-    }
-
-    @Override
     public int hashCode() {
-        return Objects.hash(super.hashCode(), peerInformation, correspondingId);
+        return Objects.hash(super.hashCode(), peerInformation);
     }
 
     @Override
@@ -90,8 +80,7 @@ public class IdentityMessage extends RelayableMessage implements ResponseMessage
             return false;
         }
         final IdentityMessage that = (IdentityMessage) o;
-        return Objects.equals(peerInformation, that.peerInformation) &&
-                Objects.equals(correspondingId, that.correspondingId);
+        return Objects.equals(peerInformation, that.peerInformation);
     }
 
     @Override
@@ -99,10 +88,10 @@ public class IdentityMessage extends RelayableMessage implements ResponseMessage
         return "IdentityMessage{" +
                 "networkId=" + networkId +
                 ", sender=" + sender +
-                "proofOfWork=" + proofOfWork +
+                ", proofOfWork=" + proofOfWork +
                 ", recipient=" + recipient +
-                ", peerInformation=" + peerInformation +
                 ", hopCount=" + hopCount +
+                ", peerInformation=" + peerInformation +
                 ", correspondingId='" + correspondingId + '\'' +
                 ", id='" + id + '\'' +
                 '}';

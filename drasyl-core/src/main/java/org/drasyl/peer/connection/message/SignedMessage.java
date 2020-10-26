@@ -41,8 +41,6 @@ import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
  * #payload}, but only guarantees that the {@link #payload} was sent by the identity with the {@link
  * #sender public key} (as the last node in a relay chain).
  * </b>
- * <p>
- * This is an immutable object.
  */
 public class SignedMessage extends AbstractMessage implements Signable {
     private Signature signature;
@@ -55,9 +53,10 @@ public class SignedMessage extends AbstractMessage implements Signable {
                   @JsonProperty("sender") final CompressedPublicKey sender,
                   @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
                   @JsonProperty("recipient") final CompressedPublicKey recipient,
+                  @JsonProperty("hopCount") final short hopCount,
                   @JsonProperty("signature") final Signature signature,
                   @JsonProperty("payload") final Message payload) {
-        super(id, userAgent, networkId, sender, proofOfWork, recipient);
+        super(id, userAgent, networkId, sender, proofOfWork, recipient, hopCount);
         this.signature = signature;
         this.payload = requireNonNull(payload);
     }
@@ -99,6 +98,7 @@ public class SignedMessage extends AbstractMessage implements Signable {
                 ", sender=" + sender +
                 ", proofOfWork=" + proofOfWork +
                 ", recipient=" + recipient +
+                ", hopCount=" + hopCount +
                 ", signature=" + signature +
                 ", payload=" + payload +
                 '}';

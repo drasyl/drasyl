@@ -22,7 +22,7 @@ import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.connection.message.RelayableMessage;
+import org.drasyl.peer.connection.message.Message;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.slf4j.Logger;
@@ -291,7 +291,7 @@ public abstract class DefaultPipeline implements Pipeline {
     }
 
     @Override
-    public CompletableFuture<Void> processInbound(final RelayableMessage msg) {
+    public CompletableFuture<Void> processInbound(final Message msg) {
         return processInbound(msg.getSender(), msg);
     }
 
