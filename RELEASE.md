@@ -1,6 +1,6 @@
 # Release
 
-This file describes how to make the various kinds of releases
+This file describes how to make the various kinds of releases.
 
 ## Making a release
 
