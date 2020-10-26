@@ -28,7 +28,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.connection.message.ApplicationMessage;
-import org.drasyl.peer.connection.message.ChunkedMessage;
+import org.drasyl.peer.connection.message.ErrorMessage;
 import org.drasyl.pipeline.codec.ApplicationMessage2ObjectHolderHandler;
 import org.drasyl.pipeline.codec.DefaultCodec;
 import org.drasyl.pipeline.codec.ObjectHolder;
@@ -185,7 +185,7 @@ class SimpleInboundHandlerTest {
 
     @Test
     void shouldPassthroughsNotMatchingEvents() {
-        final SimpleInboundHandler<ChunkedMessage, NodeUpEvent, CompressedPublicKey> handler = new SimpleInboundHandler<>() {
+        final SimpleInboundHandler<ErrorMessage, NodeUpEvent, CompressedPublicKey> handler = new SimpleInboundHandler<>() {
             @Override
             protected void matchedEventTriggered(final HandlerContext ctx,
                                                  final NodeUpEvent event,
@@ -196,7 +196,7 @@ class SimpleInboundHandlerTest {
             @Override
             protected void matchedRead(final HandlerContext ctx,
                                        final CompressedPublicKey sender,
-                                       final ChunkedMessage msg,
+                                       final ErrorMessage msg,
                                        final CompletableFuture<Void> future) {
                 ctx.fireRead(sender, msg, future);
             }

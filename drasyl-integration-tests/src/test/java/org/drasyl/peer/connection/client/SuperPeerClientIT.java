@@ -27,7 +27,6 @@ import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
-import org.drasyl.event.MessageEvent;
 import org.drasyl.event.Node;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
@@ -40,13 +39,11 @@ import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.ApplicationMessage;
-import org.drasyl.peer.connection.message.ErrorMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.PingMessage;
 import org.drasyl.peer.connection.message.PongMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
-import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.SuccessMessage;
 import org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler;
 import org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler;
@@ -65,21 +62,16 @@ import org.junit.jupiter.api.parallel.ExecutionMode;
 
 import java.util.HashSet;
 import java.util.List;
-import java.util.Random;
 import java.util.Set;
-import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_SIZE;
-import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_CHUNKED_MESSAGE_PAYLOAD_TOO_LARGE;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 import static org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler.DIRECT_CONNECTION_MESSAGE_SINK_HANDLER;
 import static org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler.LOOPBACK_MESSAGE_SINK_HANDLER;
 import static org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler.SUPER_PEER_SINK_HANDLER;
 import static org.drasyl.util.NetworkUtil.createInetAddress;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static testutils.AnsiColor.COLOR_CYAN;
 import static testutils.AnsiColor.STYLE_REVERSED;
 import static testutils.TestHelper.colorizedPrintln;
@@ -136,7 +128,6 @@ class SuperPeerClientIT {
                 .superPeerRetryDelays(List.of(ofSeconds(0), ofSeconds(1), ofSeconds(2), ofSeconds(4), ofSeconds(8), ofSeconds(16), ofSeconds(32), ofSeconds(60)))
                 .superPeerIdleTimeout(ofSeconds(1))
                 .superPeerIdleRetries((short) 1)
-                .messageMaxContentLength(CHUNK_SIZE + 1)
                 .build();
         identityManager = new IdentityManager(config);
         identityManager.loadOrCreateIdentity();
@@ -155,7 +146,6 @@ class SuperPeerClientIT {
                 .serverIdleTimeout(ofSeconds(1))
                 .serverIdleRetries((short) 1)
                 .superPeerEnabled(false)
-                .messageMaxContentLength(CHUNK_SIZE + 2)
                 .build();
         identityManagerServer = new IdentityManager(serverConfig);
         identityManagerServer.loadOrCreateIdentity();
@@ -196,7 +186,6 @@ class SuperPeerClientIT {
                 .superPeerRetryDelays(List.of(ofSeconds(0), ofSeconds(1), ofSeconds(2), ofSeconds(4), ofSeconds(8), ofSeconds(16), ofSeconds(32), ofSeconds(60)))
                 .superPeerIdleTimeout(ofSeconds(1))
                 .superPeerIdleRetries((short) 1)
-                .messageMaxContentLength(CHUNK_SIZE + 1)
                 .build();
         identityManager = new IdentityManager(config);
         identityManager.loadOrCreateIdentity();
@@ -382,49 +371,6 @@ class SuperPeerClientIT {
             emittedEvents.assertValueAt(1, new NodeOnlineEvent(Node.of(identityManager.getIdentity(), Set.of())));
             emittedEvents.assertValueAt(2, new NodeOfflineEvent(Node.of(identityManager.getIdentity(), Set.of())));
             emittedEvents.assertValueAt(4, new NodeOnlineEvent(Node.of(identityManager.getIdentity(), Set.of())));
-        }
-    }
-
-    @Test
-    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void messageExceedingMaxSizeShouldNotBeSend() {
-        final TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof SuccessMessage || m instanceof ErrorMessage).test();
-        final TestObserver<Event> emittedEvents = emittedEventsSubject.filter(e -> e instanceof MessageEvent).test();
-
-        // start client
-        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, () -> true)) {
-            client.open();
-            server.awaitClient(identityManager.getPublicKey());
-
-            // create message with exceeded payload size of the client, but not of the server
-            final byte[] bigPayload = new byte[serverConfig.getMessageMaxContentLength()];
-            new Random().nextBytes(bigPayload);
-
-            // send message
-            final RequestMessage request = new ApplicationMessage(networkId, identityManagerServer.getPublicKey(), identityManagerServer.getProofOfWork(), identityManager.getPublicKey(), bigPayload);
-            server.sendMessage(identityManager.getPublicKey(), request);
-
-            receivedMessages.awaitCount(2);
-            emittedEvents.assertNoValues();
-            receivedMessages.assertValueAt(1, new ErrorMessage(networkId, identityManagerServer.getPublicKey(), identityManagerServer.getProofOfWork(), identityManager.getPublicKey(), ERROR_CHUNKED_MESSAGE_PAYLOAD_TOO_LARGE, request.getId()));
-        }
-    }
-
-    @Test
-    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void messageExceedingMaxSizeShouldOnSendShouldThrowException() {
-        // start client
-        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, () -> true)) {
-            client.open();
-            server.awaitClient(identityManager.getPublicKey());
-
-            // create message with exceeded payload size of client and server
-            final byte[] bigPayload = new byte[serverConfig.getMessageMaxContentLength() + 1];
-            new Random().nextBytes(bigPayload);
-
-            // send message
-            final RequestMessage request = new ApplicationMessage(networkId, identityManagerServer.getPublicKey(), identityManagerServer.getProofOfWork(), identityManager.getPublicKey(), bigPayload);
-            assertThrows(ExecutionException.class, () -> server.sendMessage(identityManager.getPublicKey(), request).get());
         }
     }
 }
