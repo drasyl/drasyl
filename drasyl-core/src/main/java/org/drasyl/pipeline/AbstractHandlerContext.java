@@ -44,13 +44,13 @@ abstract class AbstractHandlerContext implements HandlerContext {
     private volatile AbstractHandlerContext prev;
     private volatile AbstractHandlerContext next;
 
-    public AbstractHandlerContext(final String name,
-                                  final DrasylConfig config,
-                                  final Pipeline pipeline,
-                                  final Scheduler scheduler,
-                                  final Identity identity,
-                                  final TypeValidator inboundValidator,
-                                  final TypeValidator outboundValidator) {
+    protected AbstractHandlerContext(final String name,
+                                     final DrasylConfig config,
+                                     final Pipeline pipeline,
+                                     final Scheduler scheduler,
+                                     final Identity identity,
+                                     final TypeValidator inboundValidator,
+                                     final TypeValidator outboundValidator) {
         this(null, null, name, config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
     }
 

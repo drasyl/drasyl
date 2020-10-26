@@ -32,13 +32,13 @@ import java.util.concurrent.CompletableFuture;
  */
 @SuppressWarnings({ "common-java:DuplicatedBlocks" })
 abstract class AbstractEndHandler extends AbstractHandlerContext implements Handler {
-    public AbstractEndHandler(final String name,
-                              final DrasylConfig config,
-                              final Pipeline pipeline,
-                              final Scheduler scheduler,
-                              final Identity identity,
-                              final TypeValidator inboundValidator,
-                              final TypeValidator outboundValidator) {
+    protected AbstractEndHandler(final String name,
+                                 final DrasylConfig config,
+                                 final Pipeline pipeline,
+                                 final Scheduler scheduler,
+                                 final Identity identity,
+                                 final TypeValidator inboundValidator,
+                                 final TypeValidator outboundValidator) {
         super(name, config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
     }
 

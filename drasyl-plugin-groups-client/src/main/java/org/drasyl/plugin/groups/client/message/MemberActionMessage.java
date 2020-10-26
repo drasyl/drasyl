@@ -29,9 +29,8 @@ import static java.util.Objects.requireNonNull;
 abstract class MemberActionMessage extends GroupActionMessage {
     protected final CompressedPublicKey member;
 
-    public MemberActionMessage(
-            @JsonProperty("member") final CompressedPublicKey member,
-            @JsonProperty("group") final Group group) {
+    protected MemberActionMessage(@JsonProperty("member") final CompressedPublicKey member,
+                                  @JsonProperty("group") final Group group) {
         super(group);
         this.member = requireNonNull(member);
     }
