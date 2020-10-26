@@ -27,11 +27,9 @@ import io.netty.handler.ssl.SslContext;
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.InsecureTrustManagerFactory;
-import io.netty.handler.stream.ChunkedWriteHandler;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.RelayableMessageGuard;
 import org.drasyl.peer.connection.handler.SignatureHandler;
-import org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -43,7 +41,6 @@ import static org.drasyl.peer.connection.client.ClientConnectionHandler.CLIENT_C
 import static org.drasyl.peer.connection.handler.ExceptionHandler.EXCEPTION_HANDLER;
 import static org.drasyl.peer.connection.handler.RelayableMessageGuard.HOP_COUNT_GUARD;
 import static org.drasyl.peer.connection.handler.SignatureHandler.SIGNATURE_HANDLER;
-import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_HANDLER;
 
 /**
  * Creates a newly configured {@link ChannelPipeline} for a ClientConnection to a node server.
@@ -64,8 +61,6 @@ public class DefaultClientChannelInitializer extends ClientChannelInitializer {
     protected void afterPojoMarshalStage(final ChannelPipeline pipeline) {
         pipeline.addLast(SIGNATURE_HANDLER, new SignatureHandler(environment.getConfig().getNetworkId(), environment.getIdentity()));
         pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(environment.getConfig().getMessageHopLimit()));
-        pipeline.addLast(CHUNKED_WRITER, new ChunkedWriteHandler());
-        pipeline.addLast(CHUNK_HANDLER, new ChunkedMessageHandler(environment.getConfig().getMessageMaxContentLength(), environment.getConfig().getNetworkId(), environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), environment.getConfig().getMessageComposedMessageTransferTimeout()));
     }
 
     @Override

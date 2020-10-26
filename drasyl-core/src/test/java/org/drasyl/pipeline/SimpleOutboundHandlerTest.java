@@ -24,7 +24,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.connection.message.ApplicationMessage;
-import org.drasyl.peer.connection.message.ChunkedMessage;
+import org.drasyl.peer.connection.message.ErrorMessage;
 import org.drasyl.pipeline.codec.ApplicationMessage2ObjectHolderHandler;
 import org.drasyl.pipeline.codec.DefaultCodec;
 import org.drasyl.pipeline.codec.ObjectHolder;
@@ -94,11 +94,11 @@ class SimpleOutboundHandlerTest {
 
     @Test
     void shouldPassthroughsNotMatchingMessage() {
-        final SimpleOutboundHandler<ChunkedMessage, CompressedPublicKey> handler = new SimpleOutboundHandler<>(ChunkedMessage.class, CompressedPublicKey.class) {
+        final SimpleOutboundHandler<ErrorMessage, CompressedPublicKey> handler = new SimpleOutboundHandler<>(ErrorMessage.class, CompressedPublicKey.class) {
             @Override
             protected void matchedWrite(final HandlerContext ctx,
                                         final CompressedPublicKey recipient,
-                                        final ChunkedMessage msg,
+                                        final ErrorMessage msg,
                                         final CompletableFuture<Void> future) {
                 // Emit this message as inbound message to test
                 ctx.pipeline().processInbound(msg);

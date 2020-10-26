@@ -21,7 +21,6 @@ package org.drasyl.peer.connection.server;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import io.netty.buffer.Unpooled;
 import io.netty.channel.EventLoopGroup;
-import io.netty.util.ResourceLeakDetector;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
@@ -40,7 +39,6 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.client.TestClientChannelInitializer;
 import org.drasyl.peer.connection.client.TestSuperPeerClient;
-import org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ErrorMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
@@ -71,7 +69,6 @@ import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Objects;
-import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -436,60 +433,6 @@ class ServerIT {
             // verify responses
             receivedMessages.awaitCount(1);
             receivedMessages.assertValueAt(0, new ErrorMessage(networkId, serverConfig.getIdentityPublicKey(), serverConfig.getIdentityProofOfWork(), sender, ERROR_UNEXPECTED_MESSAGE, request.getId()));
-        }
-    }
-
-    @Test
-    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void messageWithMaxSizeShouldArrive() {
-        ResourceLeakDetector.setLevel(ResourceLeakDetector.Level.DISABLED);
-        // create connection
-        try (final TestSuperPeerClient session1 = clientSessionAfterJoin(configClient1, identitySession1)) {
-            try (final TestSuperPeerClient session2 = clientSessionAfterJoin(configClient2, identitySession2)) {
-
-                final TestObserver<Message> receivedMessages = session2.receivedMessages().test();
-
-                // create message with max allowed payload size
-                final byte[] bigPayload = new byte[configClient1.getMessageMaxContentLength()];
-                new Random().nextBytes(bigPayload);
-
-                // send message
-                final RequestMessage request = new ApplicationMessage(networkId, session1.getPublicKey(), session1.getProofOfWork(), session2.getPublicKey(), bigPayload);
-                session2.send(request);
-
-                // verify response
-                receivedMessages.awaitCount(1);
-                receivedMessages.assertValueAt(0, request);
-            }
-        }
-    }
-
-    @Test
-    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void messageExceedingChunkSizeShouldBeSend() {
-        // create connections
-        try (final TestSuperPeerClient session1 = clientSessionAfterJoin(configClient1, identitySession1)) {
-            try (final TestSuperPeerClient session2 = clientSessionAfterJoin(configClient2, identitySession2)) {
-                final TestObserver<Message> receivedMessages2 = session2.receivedMessages().test();
-
-                // create message with exceeded chunk size
-                final byte[] bigPayload = new byte[Math.min(ChunkedMessageHandler.CHUNK_SIZE * 2 + ChunkedMessageHandler.CHUNK_SIZE / 2, configClient1.getMessageMaxContentLength())];
-                new Random().nextBytes(bigPayload);
-
-                // send message
-                final RequestMessage request = new ApplicationMessage(networkId, session1.getPublicKey(), session1.getProofOfWork(), session2.getPublicKey(), bigPayload);
-
-                session1.send(request);
-                receivedMessages2.awaitCount(1);
-                receivedMessages2.assertValueAt(0, val -> {
-                    if (!(val instanceof ApplicationMessage)) {
-                        return false;
-                    }
-                    final ApplicationMessage msg = (ApplicationMessage) val;
-
-                    return Objects.equals(session1.getPublicKey(), msg.getSender()) && Objects.equals(session2.getPublicKey(), msg.getRecipient()) && Arrays.equals(bigPayload, msg.getPayload());
-                });
-            }
         }
     }
 

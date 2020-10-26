@@ -27,11 +27,9 @@ import io.netty.handler.codec.http.websocketx.extensions.compression.WebSocketSe
 import io.netty.handler.ssl.SslContextBuilder;
 import io.netty.handler.ssl.SslHandler;
 import io.netty.handler.ssl.util.SelfSignedCertificate;
-import io.netty.handler.stream.ChunkedWriteHandler;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.RelayableMessageGuard;
 import org.drasyl.peer.connection.handler.SignatureHandler;
-import org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler;
 import org.drasyl.peer.connection.server.handler.ServerHttpHandler;
 import org.drasyl.peer.connection.server.handler.ServerNewConnectionsGuard;
 
@@ -41,7 +39,6 @@ import java.security.cert.CertificateException;
 import static org.drasyl.peer.connection.handler.ExceptionHandler.EXCEPTION_HANDLER;
 import static org.drasyl.peer.connection.handler.RelayableMessageGuard.HOP_COUNT_GUARD;
 import static org.drasyl.peer.connection.handler.SignatureHandler.SIGNATURE_HANDLER;
-import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_HANDLER;
 import static org.drasyl.peer.connection.server.ServerConnectionHandler.SERVER_CONNECTION_HANDLER;
 import static org.drasyl.peer.connection.server.handler.ServerNewConnectionsGuard.CONNECTION_GUARD;
 
@@ -71,8 +68,6 @@ public class DefaultServerChannelInitializer extends ServerChannelInitializer {
         pipeline.addLast(SIGNATURE_HANDLER, new SignatureHandler(environment.getConfig().getNetworkId(), environment.getIdentity()));
         pipeline.addLast(HOP_COUNT_GUARD, new RelayableMessageGuard(environment.getConfig().getMessageHopLimit()));
         pipeline.addLast(CONNECTION_GUARD, new ServerNewConnectionsGuard(environment.getConfig().getNetworkId(), environment.getIdentity(), environment.getAcceptNewConnectionsSupplier()));
-        pipeline.addLast(CHUNKED_WRITER, new ChunkedWriteHandler());
-        pipeline.addLast(CHUNK_HANDLER, new ChunkedMessageHandler(environment.getConfig().getMessageMaxContentLength(), environment.getConfig().getNetworkId(), environment.getIdentity().getPublicKey(), environment.getIdentity().getProofOfWork(), environment.getConfig().getMessageComposedMessageTransferTimeout()));
     }
 
     @Override

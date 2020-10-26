@@ -53,7 +53,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import static org.awaitility.Awaitility.await;
-import static org.drasyl.peer.connection.handler.stream.ChunkedMessageHandler.CHUNK_HANDLER;
+import static org.drasyl.peer.connection.handler.RelayableMessageGuard.HOP_COUNT_GUARD;
 import static org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler.DIRECT_CONNECTION_MESSAGE_SINK_HANDLER;
 import static org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler.LOOPBACK_MESSAGE_SINK_HANDLER;
 import static org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler.SUPER_PEER_SINK_HANDLER;
@@ -194,7 +194,7 @@ public class TestSuperPeerClient extends SuperPeerClient {
         super.open();
 
         await().until(() -> channel != null);
-        channel.pipeline().addAfter(CHUNK_HANDLER, "TestSuperPeerClient", new SimpleChannelDuplexHandler<Message, Message>(false, false, false) {
+        channel.pipeline().addAfter(HOP_COUNT_GUARD, "TestSuperPeerClient", new SimpleChannelDuplexHandler<Message, Message>(false, false, false) {
             @Override
             protected void channelRead0(final ChannelHandlerContext ctx,
                                         final Message msg) {

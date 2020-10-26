@@ -50,7 +50,6 @@ import static org.drasyl.peer.connection.handler.MessageEncoder.MESSAGE_ENCODER;
 @SuppressWarnings("java:S4818")
 public abstract class DefaultSessionInitializer extends ChannelInitializer<SocketChannel> {
     public static final String IDLE_EVENT = "idleEvent";
-    public static final String CHUNKED_WRITER = "chunkedWriter";
     private final int networkId;
     private final Identity identity;
     private final int flushBufferSize;
