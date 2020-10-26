@@ -28,6 +28,17 @@ import static java.util.Objects.requireNonNull;
 abstract class AbstractResponseMessage<R extends RequestMessage> extends AbstractMessage implements ResponseMessage<R> {
     protected final MessageId correspondingId;
 
+    protected AbstractResponseMessage(final MessageId id,
+                                      final String userAgent,
+                                      final int networkId,
+                                      final CompressedPublicKey sender,
+                                      final ProofOfWork proofOfWork,
+                                      final CompressedPublicKey recipient,
+                                      final MessageId correspondingId) {
+        super(id, userAgent, networkId, sender, proofOfWork, recipient);
+        this.correspondingId = requireNonNull(correspondingId);
+    }
+
     protected AbstractResponseMessage(final int networkId,
                                       final CompressedPublicKey sender,
                                       final ProofOfWork proofOfWork,
@@ -38,14 +49,14 @@ abstract class AbstractResponseMessage<R extends RequestMessage> extends Abstrac
     }
 
     @SuppressWarnings({ "java:S107" })
-    protected AbstractResponseMessage(final MessageId id,
-                                      final String userAgent,
-                                      final int networkId,
-                                      final CompressedPublicKey sender,
-                                      final ProofOfWork proofOfWork,
-                                      final CompressedPublicKey recipient,
-                                      final short hopCount,
-                                      final MessageId correspondingId) {
+    public AbstractResponseMessage(final MessageId id,
+                                   final String userAgent,
+                                   final int networkId,
+                                   final CompressedPublicKey sender,
+                                   final ProofOfWork proofOfWork,
+                                   final CompressedPublicKey recipient,
+                                   final short hopCount,
+                                   final MessageId correspondingId) {
         super(id, userAgent, networkId, sender, proofOfWork, recipient, hopCount);
         this.correspondingId = requireNonNull(correspondingId);
     }
