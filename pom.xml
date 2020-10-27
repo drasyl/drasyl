@@ -125,7 +125,7 @@
         <maven.scm>1.11.2</maven.scm>
         <nexus.staging>1.6.8</nexus.staging>
         <portmapper.version>2.0.5</portmapper.version>
-        <slf4j.version>1.7.21</slf4j.version>
+        <slf4j.version>1.7.30</slf4j.version>
     </properties>
 
     <dependencyManagement>
