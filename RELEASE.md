@@ -4,7 +4,7 @@ This file describes how to make the various kinds of releases.
 
 ## Making a release
 
-* Remove the nightly/snapshot information from the [getting-started/quick-start.md](docs/content/getting-started/quick-start.md) and the [index.md](docs/content/index.md).
+* Remove the nightly/snapshot information from the [getting-started.md](docs/content/getting-started.md) and the [index.md](docs/content/index.md).
 + Ensure [CHANGELOG](CHANGELOG.md) is up-to-date.
 * Build software and push to maven repository:
 ```bash
@@ -35,6 +35,8 @@ docker push drasyl/drasyl:1.2
 docker push drasyl/drasyl:1
 docker push drasyl/drasyl:latest
 ```
+
+* Re-add the nightly/snapshot information to the [getting-started.md](docs/content/getting-started.md) and the [index.md](docs/content/index.md).
 
 ## Making a manual build of docker
 
