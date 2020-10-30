@@ -5,7 +5,8 @@ This file describes how to make the various kinds of releases.
 ## Making a release
 
 * Remove the nightly/snapshot information from the [getting-started.md](docs/content/getting-started.md) and the [index.md](docs/content/index.md).
-+ Ensure [CHANGELOG](CHANGELOG.md) is up-to-date.
+* Update version in [README.md](README.md) and [swagger.json](drasyl-plugin-groups-manager/src/main/resources/public/swagger.json)
+* Ensure [CHANGELOG](CHANGELOG.md) is up-to-date (e.g. version and release date is set).
 * Build software and push to maven repository:
 ```bash
 rm -f release.properties

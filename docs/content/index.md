@@ -1,9 +1,5 @@
 # Welcome
 
-!!! important "Nightly Version"
-
-    You're currently on a nightly version branch. If you're only interested  in the latest stable version, please click [here](/).
-
 ![drasyl architecture](https://github.com/drasyl-overlay/drasyl/raw/master/drasyl-architecture.png)
 
 drasyl is an [open-source](https://github.com/drasyl-overlay/drasyl) general-purpose overlay network framework for rapid development of distributed P2P applications.
