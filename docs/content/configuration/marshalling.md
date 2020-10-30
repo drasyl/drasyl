@@ -4,7 +4,7 @@ drasyl can automatically (un-) marshall given objects. To prevent security risks
 
 !!! info
 
-    Since version 0.4.0-SNAPSHOT, drasyl differs between in- and outbound messages. 
+    Since version 0.3.0, drasyl differs between in- and outbound messages. 
 
 ## [`marshalling.inbound.allowed-types`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.Builder.html#marshallingInboundAllowedTypes(java.util.List)) / [`marshalling.outbound.allowed-types`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.Builder.html#marshallingOutboundAllowedTypes(java.util.List))
 
