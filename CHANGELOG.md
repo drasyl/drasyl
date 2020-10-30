@@ -13,6 +13,7 @@ peers use the same network ID. The main network has ID 1 (see configuration `dra
 - Plugins can now access the node's identity.
 
 ### Changed
+- All `drasyl.marshalling` config properties will now distinct between allowed outgoing and ingoing types. Config must be updated according to our documentation.
 - `drasyl-core` now only depends on slf4j and no longer on logback. As part of this, the methods.
 `DrasylNode.getLogLevel()` and `DrasylNode.setLogLevel()` have been removed and the configuration.
 `drasyl.loglevel` has been removed.

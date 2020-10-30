@@ -58,7 +58,7 @@ i.e. The environment variable `CONFIG_FORCE_a_b__c___d` set the configuration ke
 
 Example:
 ```bash
-$ CONFIG_FORCE_drasyl_identity_path= /Users/heiko/drasyl.identity.json \
+$ CONFIG_FORCE_drasyl_identity_path=/Users/heiko/drasyl.identity.json \
     CONFIG_FORCE_drasyl_network_id=-25421 \
     CONFIG_FORCE_drasyl_super__peer_endpoints_0=wss://staging.env.drasyl.org#03096ae3080a369829a44847d5af1f652bef3f9921e9e1bbad64970babe6d3c502 \
     CONFIG_FORCE_drasyl_server_enabled=false \

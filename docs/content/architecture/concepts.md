@@ -15,7 +15,7 @@ The super peer helps to discover other nodes and establish direct connections to
 
 drasyl uses different methods to find other peers.
 Peers running within a JVM are automatically discovered via shared memory.
-In a [future release](https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/75) local peers running in other JVMs on the same computer are found via the file system.
+Local peers running in other JVMs on the same computer are found via the file system.
 Remote nodes are found using the Super Peer, which acts as a rendezvous server.
 
 Nodes always try to communicate with each other via a direct connection.
