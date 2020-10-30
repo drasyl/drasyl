@@ -157,9 +157,5 @@
             <groupId>io.micrometer</groupId>
             <artifactId>micrometer-registry-influx</artifactId>
         </dependency>
-        <dependency>
-            <groupId>io.netty</groupId>
-            <artifactId>netty-all</artifactId>
-        </dependency>
     </dependencies>
 </project>
