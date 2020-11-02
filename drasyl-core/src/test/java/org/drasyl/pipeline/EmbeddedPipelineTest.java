@@ -41,6 +41,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.Map;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -130,5 +131,13 @@ class EmbeddedPipelineTest {
         outboundMessageTestObserver.assertValue(new ApplicationMessage(1, sender, senderProofOfWork, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, msg.getClass().getName()), msg));
         inboundMessageTestObserver.assertNoValues();
         eventTestObserver.assertNoValues();
+    }
+
+    @Test
+    void shouldSetDrasylConfig() {
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(mock(Identity.class), mock(TypeValidator.class), mock(TypeValidator.class));
+        pipeline.setConfig(config);
+
+        assertEquals(config, pipeline.config);
     }
 }

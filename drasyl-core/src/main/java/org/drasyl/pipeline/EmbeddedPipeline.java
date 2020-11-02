@@ -21,6 +21,7 @@ package org.drasyl.pipeline;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
+import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
@@ -122,5 +123,14 @@ public class EmbeddedPipeline extends DefaultPipeline {
     public <T> Observable<T> outboundMessages(final Class<T> clazz) {
         @SuppressWarnings("unchecked") final Observable<T> result = (Observable<T>) outboundMessages.filter(clazz::isInstance);
         return result;
+    }
+
+    /**
+     * Sets the corresponding {@link DrasylConfig}.
+     *
+     * @param config the corresponding {@link DrasylConfig}
+     */
+    public void setConfig(final DrasylConfig config) {
+        this.config = config;
     }
 }
