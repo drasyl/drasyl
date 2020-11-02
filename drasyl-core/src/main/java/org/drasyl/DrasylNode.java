@@ -49,6 +49,7 @@ import org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler;
 import org.drasyl.peer.connection.server.Server;
 import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.pipeline.OtherNetworkFilter;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.codec.Codec;
 import org.drasyl.plugins.PluginManager;
@@ -73,6 +74,7 @@ import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_
 import static org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler.DIRECT_CONNECTION_MESSAGE_SINK_HANDLER;
 import static org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler.LOOPBACK_MESSAGE_SINK_HANDLER;
 import static org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler.SUPER_PEER_SINK_HANDLER;
+import static org.drasyl.pipeline.OtherNetworkFilter.OTHER_NETWORK_FILTER;
 import static org.drasyl.util.DrasylScheduler.getInstanceHeavy;
 
 /**
@@ -193,6 +195,8 @@ public abstract class DrasylNode {
                 this.components.add(new Monitoring(config, peersManager,
                         identity.getPublicKey(), pipeline));
             }
+
+            pipeline.addLast(OTHER_NETWORK_FILTER, new OtherNetworkFilter());
 
             this.pluginManager = new PluginManager(config, identity, pipeline);
             this.startSequence = new CompletableFuture<>();

@@ -62,9 +62,36 @@ public class EmbeddedPipeline extends DefaultPipeline {
         List.of(handlers).forEach(handler -> addLast(handler.getClass().getSimpleName() + Crypto.randomString(8), handler));
     }
 
+    /**
+     * Creates a new embedded pipeline and adds all given handler to it. Handler are added with
+     * their simple class name.
+     *
+     * @param config            the config
+     * @param identity          the identity
+     * @param inboundValidator  the inbound validator
+     * @param outboundValidator the outbound validator
+     * @param handlers          the handlers
+     */
+    public EmbeddedPipeline(final DrasylConfig config,
+                            final Identity identity,
+                            final TypeValidator inboundValidator,
+                            final TypeValidator outboundValidator,
+                            final Handler... handlers) {
+        this(config, identity, inboundValidator, outboundValidator);
+        List.of(handlers).forEach(handler -> addLast(handler.getClass().getSimpleName() + Crypto.randomString(8), handler));
+    }
+
     public EmbeddedPipeline(final Identity identity,
                             final TypeValidator inboundValidator,
                             final TypeValidator outboundValidator) {
+        this(null, identity, inboundValidator, outboundValidator);
+    }
+
+    public EmbeddedPipeline(final DrasylConfig config,
+                            final Identity identity,
+                            final TypeValidator inboundValidator,
+                            final TypeValidator outboundValidator) {
+        this.config = config;
         inboundMessages = ReplaySubject.create();
         inboundEvents = ReplaySubject.create();
         outboundMessages = ReplaySubject.create();
