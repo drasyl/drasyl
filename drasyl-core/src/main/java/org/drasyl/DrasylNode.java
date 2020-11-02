@@ -49,6 +49,7 @@ import org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler;
 import org.drasyl.peer.connection.server.Server;
 import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.pipeline.HopCountGuard;
 import org.drasyl.pipeline.InvalidProofOfWorkFilter;
 import org.drasyl.pipeline.OtherNetworkFilter;
 import org.drasyl.pipeline.Pipeline;
@@ -75,6 +76,7 @@ import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_
 import static org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler.DIRECT_CONNECTION_MESSAGE_SINK_HANDLER;
 import static org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler.LOOPBACK_MESSAGE_SINK_HANDLER;
 import static org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler.SUPER_PEER_SINK_HANDLER;
+import static org.drasyl.pipeline.HopCountGuard.HOP_COUNT_GUARD;
 import static org.drasyl.pipeline.InvalidProofOfWorkFilter.INVALID_PROOF_OF_WORK_FILTER;
 import static org.drasyl.pipeline.OtherNetworkFilter.OTHER_NETWORK_FILTER;
 import static org.drasyl.util.DrasylScheduler.getInstanceHeavy;
@@ -200,6 +202,7 @@ public abstract class DrasylNode {
 
             pipeline.addLast(INVALID_PROOF_OF_WORK_FILTER, new InvalidProofOfWorkFilter());
             pipeline.addLast(OTHER_NETWORK_FILTER, new OtherNetworkFilter());
+            pipeline.addLast(HOP_COUNT_GUARD, new HopCountGuard());
 
             this.pluginManager = new PluginManager(config, identity, pipeline);
             this.startSequence = new CompletableFuture<>();
