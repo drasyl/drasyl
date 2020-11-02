@@ -17,10 +17,10 @@ public class HopCountGuard extends SimpleOutboundHandler<Message, CompressedPubl
     private static final Logger LOG = LoggerFactory.getLogger(HopCountGuard.class);
 
     @Override
-    protected void matchedWrite(HandlerContext ctx,
-                                CompressedPublicKey recipient,
-                                Message msg,
-                                CompletableFuture<Void> future) {
+    protected void matchedWrite(final HandlerContext ctx,
+                                final CompressedPublicKey recipient,
+                                final Message msg,
+                                final CompletableFuture<Void> future) {
         if (msg.getHopCount() < ctx.config().getMessageHopLimit()) {
             // route message to next hop (node)
             msg.incrementHopCount();

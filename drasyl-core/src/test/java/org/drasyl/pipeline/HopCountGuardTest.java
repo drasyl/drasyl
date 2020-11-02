@@ -28,31 +28,31 @@ class HopCountGuardTest {
     private TypeValidator outboundValidator;
 
     @Test
-    void shouldPassMessagesThatHaveNotReachedTheirHopCountLimitAndIncrementHopCount(@Mock CompressedPublicKey address,
-                                                                                    @Mock ApplicationMessage message) {
+    void shouldPassMessagesThatHaveNotReachedTheirHopCountLimitAndIncrementHopCount(@Mock final CompressedPublicKey address,
+                                                                                    @Mock final ApplicationMessage message) {
         when(config.getMessageHopLimit()).thenReturn((short) 2);
         when(message.getHopCount()).thenReturn((short) 1);
 
         final HopCountGuard handler = new HopCountGuard();
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
-        TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
+        final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
 
         pipeline.processOutbound(address, message);
 
-        verify(message).incrementHopCount();
         outboundMessages.awaitCount(1).assertValueCount(1);
         outboundMessages.assertValue(m -> m instanceof ApplicationMessage);
+        verify(message).incrementHopCount();
     }
 
     @Test
-    void shouldDiscardMessagesThatHaveReachedTheirHopCountLimit(@Mock CompressedPublicKey address,
-                                                                @Mock ApplicationMessage message) throws InterruptedException {
+    void shouldDiscardMessagesThatHaveReachedTheirHopCountLimit(@Mock final CompressedPublicKey address,
+                                                                @Mock final ApplicationMessage message) throws InterruptedException {
         when(config.getMessageHopLimit()).thenReturn((short) 1);
         when(message.getHopCount()).thenReturn((short) 1);
 
         final HopCountGuard handler = new HopCountGuard();
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
-        TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
+        final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
 
         pipeline.processOutbound(address, message);
 
