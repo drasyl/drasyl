@@ -46,6 +46,16 @@ abstract class AbstractMessage implements Message {
     protected final CompressedPublicKey recipient;
     protected short hopCount;
 
+    /**
+     * @param id          message's identifier
+     * @param userAgent   message's user agent
+     * @param networkId   message's network
+     * @param sender      message's sender
+     * @param proofOfWork sender's proof of work
+     * @param recipient   message'srecipient
+     * @param hopCount    message's hop count
+     * @throws IllegalArgumentException if hopCount is negative
+     */
     protected AbstractMessage(final MessageId id,
                               final String userAgent,
                               final int networkId,
@@ -59,6 +69,9 @@ abstract class AbstractMessage implements Message {
         this.sender = requireNonNull(sender);
         this.proofOfWork = requireNonNull(proofOfWork);
         this.recipient = requireNonNull(recipient);
+        if (hopCount < 0) {
+            throw new IllegalArgumentException("hopCount must not be negative.");
+        }
         this.hopCount = hopCount;
     }
 
