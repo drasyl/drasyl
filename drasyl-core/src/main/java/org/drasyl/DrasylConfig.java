@@ -954,8 +954,26 @@ public class DrasylConfig {
                 '}';
     }
 
+    /**
+     * Parses a file into a Config instance as with
+     *
+     * @param file the file to parse
+     * @return the parsed configuration
+     * @throws ConfigException on IO or parse errors
+     */
     public static DrasylConfig parseFile(final File file) {
         return new DrasylConfig(ConfigFactory.parseFile(file).withFallback(ConfigFactory.load()));
+    }
+
+    /**
+     * Parses a file into a Config instance as with
+     *
+     * @param s string to parse
+     * @return the parsed configuration
+     * @throws ConfigException on IO or parse errors
+     */
+    public static DrasylConfig parseString(final String s) {
+        return new DrasylConfig(ConfigFactory.parseString(s).withFallback(ConfigFactory.load()));
     }
 
     /**

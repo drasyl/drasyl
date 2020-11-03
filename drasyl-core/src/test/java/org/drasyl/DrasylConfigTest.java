@@ -37,15 +37,19 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.api.io.TempDir;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
 
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.URI;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -511,6 +515,25 @@ class DrasylConfigTest {
             final Config config = ConfigFactory.parseString("foo.bar { \"" + MyPluginWithInvocationTargetException.class.getName() + "\" { enabled = true } }");
 
             assertThrows(ConfigException.class, () -> getPlugins(config, "foo.bar"));
+        }
+    }
+
+    @Nested
+    class ParseFile {
+        @Test
+        void shouldReadConfigFromFile(@TempDir final Path dir) throws IOException {
+            final Path path = Paths.get(dir.toString(), "drasyl.conf");
+            Files.writeString(path, "drasyl.network.id = 1337", StandardOpenOption.CREATE);
+
+            assertEquals(1337, DrasylConfig.parseFile(path.toFile()).getNetworkId());
+        }
+    }
+
+    @Nested
+    class ParseString {
+        @Test
+        void shouldReadConfigFromString() {
+            assertEquals(1337, DrasylConfig.parseString("drasyl.network.id = 1337").getNetworkId());
         }
     }
 
