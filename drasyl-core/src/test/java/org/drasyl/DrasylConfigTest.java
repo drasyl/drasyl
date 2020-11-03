@@ -56,6 +56,7 @@ import static org.drasyl.DrasylConfig.DEFAULT;
 import static org.drasyl.DrasylConfig.DIRECT_CONNECTIONS_CHANNEL_INITIALIZER;
 import static org.drasyl.DrasylConfig.DIRECT_CONNECTIONS_ENABLED;
 import static org.drasyl.DrasylConfig.DIRECT_CONNECTIONS_HANDSHAKE_TIMEOUT;
+import static org.drasyl.DrasylConfig.DIRECT_CONNECTIONS_MAX_CONCURRENT_CONNECTIONS;
 import static org.drasyl.DrasylConfig.DIRECT_CONNECTIONS_RETRY_DELAYS;
 import static org.drasyl.DrasylConfig.FLUSH_BUFFER_SIZE;
 import static org.drasyl.DrasylConfig.IDENTITY_PATH;
@@ -101,6 +102,15 @@ import static org.drasyl.DrasylConfig.SUPER_PEER_ENABLED;
 import static org.drasyl.DrasylConfig.SUPER_PEER_ENDPOINTS;
 import static org.drasyl.DrasylConfig.SUPER_PEER_HANDSHAKE_TIMEOUT;
 import static org.drasyl.DrasylConfig.SUPER_PEER_RETRY_DELAYS;
+import static org.drasyl.DrasylConfig.getChannelInitializer;
+import static org.drasyl.DrasylConfig.getEndpointList;
+import static org.drasyl.DrasylConfig.getInetAddress;
+import static org.drasyl.DrasylConfig.getPath;
+import static org.drasyl.DrasylConfig.getPlugins;
+import static org.drasyl.DrasylConfig.getPrivateKey;
+import static org.drasyl.DrasylConfig.getProofOfWork;
+import static org.drasyl.DrasylConfig.getPublicKey;
+import static org.drasyl.DrasylConfig.getShort;
 import static org.drasyl.DrasylConfig.getURI;
 import static org.drasyl.util.NetworkUtil.createInetAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -109,6 +119,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -120,9 +131,9 @@ class DrasylConfigTest {
     private final List<Duration> directConnectionsRetryDelays = List.of(ofSeconds(0), ofSeconds(1), ofSeconds(2), ofSeconds(4), ofSeconds(8));
     private int networkId;
     @Mock
-    private ProofOfWork proofOfWork;
-    @Mock
     private CompressedPublicKey identityPublicKey;
+    @Mock
+    private ProofOfWork identityProofOfWork;
     @Mock
     private CompressedPrivateKey identityPrivateKey;
     @Mock
@@ -145,7 +156,7 @@ class DrasylConfigTest {
     private Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer;
     private short superPeerIdleRetries;
     private Duration superPeerIdleTimeout;
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private Config typesafeConfig;
     private String identityPathAsString;
     private Duration superPeerHandshakeTimeout;
@@ -231,11 +242,12 @@ class DrasylConfigTest {
     class Constructor {
         @Test
         @SuppressWarnings("java:S5961")
-        void shouldReadConfigProperly() {
+        void shouldReadConfigProperly() throws CryptoException {
             when(typesafeConfig.getInt(NETWORK_ID)).thenReturn(networkId);
             when(typesafeConfig.getInt(IDENTITY_PROOF_OF_WORK)).thenReturn(-1);
-            when(typesafeConfig.getString(IDENTITY_PUBLIC_KEY)).thenReturn("");
-            when(typesafeConfig.getString(IDENTITY_PRIVATE_KEY)).thenReturn("");
+            when(typesafeConfig.getString(IDENTITY_PUBLIC_KEY)).thenReturn("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3");
+            when(typesafeConfig.getString(IDENTITY_PRIVATE_KEY)).thenReturn("0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d");
+            when(typesafeConfig.getInt(IDENTITY_PROOF_OF_WORK)).thenReturn(123);
             when(typesafeConfig.getString(IDENTITY_PATH)).thenReturn(identityPathAsString);
             when(typesafeConfig.getBoolean(SERVER_ENABLED)).thenReturn(serverEnabled);
             when(typesafeConfig.getString(SERVER_BIND_HOST)).thenReturn(serverBindHost.getHostAddress());
@@ -261,6 +273,7 @@ class DrasylConfigTest {
             when(typesafeConfig.getString(LOCAL_HOST_DISCOVERY_PATH)).thenReturn(localHostDiscoveryPathAsString);
             when(typesafeConfig.getDuration(LOCAL_HOST_DISCOVERY_LEASE_TIME)).thenReturn(localHostDiscoveryLeaseTime);
             when(typesafeConfig.getBoolean(DIRECT_CONNECTIONS_ENABLED)).thenReturn(directConnectionsEnabled);
+            when(typesafeConfig.getInt(DIRECT_CONNECTIONS_MAX_CONCURRENT_CONNECTIONS)).thenReturn(directConnectionsMaxConcurrentConnections);
             when(typesafeConfig.getDurationList(DIRECT_CONNECTIONS_RETRY_DELAYS)).thenReturn(directConnectionsRetryDelays);
             when(typesafeConfig.getDuration(DIRECT_CONNECTIONS_HANDSHAKE_TIMEOUT)).thenReturn(directConnectionsHandshakeTimeout);
             when(typesafeConfig.getString(DIRECT_CONNECTIONS_CHANNEL_INITIALIZER)).thenReturn(directConnectionsChannelInitializer.getCanonicalName());
@@ -280,15 +293,16 @@ class DrasylConfigTest {
             when(typesafeConfig.getBoolean(MARSHALLING_OUTBOUND_ALLOW_ALL_PRIMITIVES)).thenReturn(marshallingOutboundAllowAllPrimitives);
             when(typesafeConfig.getBoolean(MARSHALLING_OUTBOUND_ALLOW_ARRAY_OF_DEFINED_TYPES)).thenReturn(marshallingOutboundAllowArrayOfDefinedTypes);
             when(typesafeConfig.getStringList(MARSHALLING_OUTBOUND_ALLOWED_PACKAGES)).thenReturn(marshallingOutboundAllowedPackages);
+            when(typesafeConfig.getObject(PLUGINS)).thenReturn(ConfigFactory.parseString("plugins { \"" + MyPlugin.class.getName() + "\" { enabled = true } }").getObject("plugins"));
 
             final DrasylConfig config = new DrasylConfig(typesafeConfig);
 
             assertEquals(networkId, config.getNetworkId());
             assertEquals(serverBindHost, config.getServerBindHost());
             assertEquals(serverBindPort, config.getServerBindPort());
-            assertNull(config.getIdentityProofOfWork());
-            assertNull(config.getIdentityPublicKey());
-            assertNull(config.getIdentityPrivateKey());
+            assertEquals(ProofOfWork.of(123), config.getIdentityProofOfWork());
+            assertEquals(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), config.getIdentityPublicKey());
+            assertEquals(CompressedPrivateKey.of("0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d"), config.getIdentityPrivateKey());
             assertEquals(Paths.get("drasyl.identity.json"), config.getIdentityPath());
             assertEquals(serverEnabled, config.isServerEnabled());
             assertEquals(serverSSLEnabled, config.getServerSSLEnabled());
@@ -312,6 +326,7 @@ class DrasylConfigTest {
             assertEquals(Path.of(localHostDiscoveryPathAsString), config.getLocalHostDiscoveryPath());
             assertEquals(localHostDiscoveryLeaseTime, config.getLocalHostDiscoveryLeaseTime());
             assertEquals(directConnectionsEnabled, config.areDirectConnectionsEnabled());
+            assertEquals(directConnectionsMaxConcurrentConnections, config.getDirectConnectionsMaxConcurrentConnections());
             assertEquals(directConnectionsRetryDelays, config.getDirectConnectionsRetryDelays());
             assertEquals(directConnectionsHandshakeTimeout, config.getDirectConnectionsHandshakeTimeout());
             assertEquals(directConnectionsChannelInitializer, config.getDirectConnectionsChannelInitializer());
@@ -339,7 +354,7 @@ class DrasylConfigTest {
         void shouldMaskSecrets() throws CryptoException {
             identityPrivateKey = CompressedPrivateKey.of("07e98a2f8162a4002825f810c0fbd69b0c42bd9cb4f74a21bc7807bc5acb4f5f");
 
-            final DrasylConfig config = new DrasylConfig(networkId, proofOfWork, identityPublicKey, identityPrivateKey, identityPath,
+            final DrasylConfig config = new DrasylConfig(networkId, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath,
                     serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize,
                     serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer,
                     serverExposeEnabled, messageMaxContentLength, messageHopLimit, composedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints,
@@ -396,6 +411,110 @@ class DrasylConfigTest {
     }
 
     @Nested
+    class GetProofOfWork {
+        @Test
+        void shouldThrowExceptionForInvalidValue() {
+            final Config config = ConfigFactory.parseString("foo.bar = -1");
+
+            assertThrows(ConfigException.class, () -> getProofOfWork(config, "foo.bar"));
+        }
+    }
+
+    @Nested
+    class GetPublicKey {
+        @Test
+        void shouldThrowExceptionForInvalidValue() {
+            final Config config = ConfigFactory.parseString("foo.bar = bla");
+
+            assertThrows(ConfigException.class, () -> getPublicKey(config, "foo.bar"));
+        }
+    }
+
+    @Nested
+    class GetPrivateKey {
+        @Test
+        void shouldThrowExceptionForInvalidValue() {
+            final Config config = ConfigFactory.parseString("foo.bar = bla");
+
+            assertThrows(ConfigException.class, () -> getPrivateKey(config, "foo.bar"));
+        }
+    }
+
+    @Nested
+    class GetPath {
+        @Test
+        void shouldThrowExceptionForInvalidValue() {
+            final Config config = ConfigFactory.parseString("");
+
+            assertThrows(ConfigException.class, () -> getPath(config, "foo.bar"));
+        }
+    }
+
+    @Nested
+    class GetShort {
+        @Test
+        void shouldThrowExceptionForInvalidValue() {
+            final Config config = ConfigFactory.parseString("foo.bar = 123456789");
+
+            assertThrows(ConfigException.class, () -> getShort(config, "foo.bar"));
+        }
+    }
+
+    @Nested
+    class GetEndpointList {
+        @Test
+        void shouldThrowExceptionForInvalidValue() {
+            final Config config = ConfigFactory.parseString("foo.bar = [\"http://foo.bar\"]");
+
+            assertThrows(ConfigException.class, () -> getEndpointList(config, "foo.bar"));
+        }
+    }
+
+    @Nested
+    class GetChannelInitializer {
+        @Test
+        void shouldThrowExceptionForInvalidValue() {
+            final Config config = ConfigFactory.parseString("foo.bar = baz");
+
+            assertThrows(ConfigException.class, () -> getChannelInitializer(config, "foo.bar"));
+        }
+    }
+
+    @Nested
+    class GetInetAddress {
+        @Test
+        void shouldThrowExceptionForInvalidValue() {
+            final Config config = ConfigFactory.parseString("foo.bar = baz");
+
+            assertThrows(ConfigException.class, () -> getInetAddress(config, "foo.bar"));
+        }
+    }
+
+    @Nested
+    class GetPlugins {
+        @Test
+        void shouldThrowExceptionForNonExistingClasses() {
+            final Config config = ConfigFactory.parseString("foo.bar { \"non.existing.class\" { enabled = true } }");
+
+            assertThrows(ConfigException.class, () -> getPlugins(config, "foo.bar"));
+        }
+
+        @Test
+        void shouldThrowExceptionForClassWithMissingMethod() {
+            final Config config = ConfigFactory.parseString("foo.bar { \"" + MyPluginWithMissingMethod.class.getName() + "\" { enabled = true } }");
+
+            assertThrows(ConfigException.class, () -> getPlugins(config, "foo.bar"));
+        }
+
+        @Test
+        void shouldThrowExceptionForClassWithInvocationTargetException() {
+            final Config config = ConfigFactory.parseString("foo.bar { \"" + MyPluginWithInvocationTargetException.class.getName() + "\" { enabled = true } }");
+
+            assertThrows(ConfigException.class, () -> getPlugins(config, "foo.bar"));
+        }
+    }
+
+    @Nested
     class Builder {
         @Test
         void shouldCreateCorrectConfig() {
@@ -427,8 +546,10 @@ class DrasylConfigTest {
                     .superPeerIdleRetries(DEFAULT.getSuperPeerIdleRetries())
                     .superPeerIdleTimeout(DEFAULT.getSuperPeerIdleTimeout())
                     .intraVmDiscoveryEnabled(DEFAULT.isIntraVmDiscoveryEnabled())
+                    .localHostDiscoveryEnabled(DEFAULT.isLocalHostDiscoveryEnabled())
                     .localHostDiscoveryLeaseTime(DEFAULT.getLocalHostDiscoveryLeaseTime())
                     .directConnectionsEnabled(DEFAULT.areDirectConnectionsEnabled())
+                    .directConnectionsMaxConcurrentConnections(DEFAULT.getDirectConnectionsMaxConcurrentConnections())
                     .directConnectionsRetryDelays(DEFAULT.getDirectConnectionsRetryDelays())
                     .directConnectionsHandshakeTimeout(DEFAULT.getDirectConnectionsHandshakeTimeout())
                     .directConnectionsChannelInitializer(DEFAULT.getDirectConnectionsChannelInitializer())
@@ -453,6 +574,26 @@ class DrasylConfigTest {
                     .build();
 
             assertEquals(DEFAULT, config);
+        }
+    }
+
+    static class MyPlugin implements DrasylPlugin {
+        public MyPlugin(final Config config) {
+        }
+    }
+
+    static class MyPluginWithMissingMethod implements DrasylPlugin {
+    }
+
+    static class MyPluginWithInvocationTargetException implements DrasylPlugin {
+        public MyPluginWithInvocationTargetException(final Config config) throws IllegalAccessException {
+            throw new IllegalAccessException("boom");
+        }
+    }
+
+    static class MyPluginWithExceptionallyConstructor implements DrasylPlugin {
+        private MyPluginWithExceptionallyConstructor(final Config config) {
+            throw new IllegalArgumentException("boom");
         }
     }
 }
