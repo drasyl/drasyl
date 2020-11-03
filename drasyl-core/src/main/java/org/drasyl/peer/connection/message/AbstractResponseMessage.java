@@ -28,17 +28,6 @@ import static java.util.Objects.requireNonNull;
 abstract class AbstractResponseMessage<R extends RequestMessage> extends AbstractMessage implements ResponseMessage<R> {
     protected final MessageId correspondingId;
 
-    protected AbstractResponseMessage(final MessageId id,
-                                      final String userAgent,
-                                      final int networkId,
-                                      final CompressedPublicKey sender,
-                                      final ProofOfWork proofOfWork,
-                                      final CompressedPublicKey recipient,
-                                      final MessageId correspondingId) {
-        super(id, userAgent, networkId, sender, proofOfWork, recipient);
-        this.correspondingId = requireNonNull(correspondingId);
-    }
-
     protected AbstractResponseMessage(final int networkId,
                                       final CompressedPublicKey sender,
                                       final ProofOfWork proofOfWork,
