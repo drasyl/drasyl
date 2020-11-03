@@ -29,7 +29,7 @@ import org.drasyl.identity.ProofOfWork;
 public class PongMessage extends AbstractResponseMessage<PingMessage> {
     @JsonCreator
     private PongMessage(@JsonProperty("id") final MessageId id,
-                        @JsonProperty("userAgent") final String userAgent,
+                        @JsonProperty("userAgent") final UserAgent userAgent,
                         @JsonProperty("networkId") final int networkId,
                         @JsonProperty("sender") final CompressedPublicKey sender,
                         @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,

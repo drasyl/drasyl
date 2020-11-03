@@ -39,7 +39,7 @@ abstract class AbstractMessage implements Message {
             + ")";
     public static Supplier<String> userAgentGenerator = defaultUserAgentGenerator;
     protected final MessageId id;
-    protected final String userAgent;
+    protected final UserAgent userAgent;
     protected final int networkId;
     protected final CompressedPublicKey sender;
     protected final ProofOfWork proofOfWork;
@@ -57,7 +57,7 @@ abstract class AbstractMessage implements Message {
      * @throws IllegalArgumentException if hopCount is negative
      */
     protected AbstractMessage(final MessageId id,
-                              final String userAgent,
+                              final UserAgent userAgent,
                               final int networkId,
                               final CompressedPublicKey sender,
                               final ProofOfWork proofOfWork,
@@ -80,7 +80,7 @@ abstract class AbstractMessage implements Message {
                               final ProofOfWork proofOfWork,
                               final CompressedPublicKey recipient,
                               final short hopCount) {
-        this(randomMessageId(), userAgentGenerator.get(), networkId, sender, proofOfWork, recipient, hopCount);
+        this(randomMessageId(), UserAgent.generate(), networkId, sender, proofOfWork, recipient, hopCount);
     }
 
     protected AbstractMessage(final int networkId,
@@ -96,7 +96,7 @@ abstract class AbstractMessage implements Message {
                            final ProofOfWork proofOfWork,
                            final CompressedPublicKey recipient,
                            final short hopCount) {
-        this(id, userAgentGenerator.get(), networkId, sender, proofOfWork, recipient, hopCount);
+        this(id, UserAgent.generate(), networkId, sender, proofOfWork, recipient, hopCount);
     }
 
     @Override
@@ -105,7 +105,7 @@ abstract class AbstractMessage implements Message {
     }
 
     @Override
-    public String getUserAgent() {
+    public UserAgent getUserAgent() {
         return userAgent;
     }
 

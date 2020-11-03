@@ -44,7 +44,7 @@ public class ApplicationMessage extends AbstractMessage implements RequestMessag
 
     @JsonCreator
     private ApplicationMessage(@JsonProperty("id") final MessageId id,
-                               @JsonProperty("userAgent") final String userAgent,
+                               @JsonProperty("userAgent") final UserAgent userAgent,
                                @JsonProperty("networkId") final int networkId,
                                @JsonProperty("sender") final CompressedPublicKey sender,
                                @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
@@ -66,7 +66,7 @@ public class ApplicationMessage extends AbstractMessage implements RequestMessag
     @SuppressWarnings({ "java:S107" })
     public ApplicationMessage(final MessageId id,
                               final int networkId,
-                              final String userAgent,
+                              final UserAgent userAgent,
                               final CompressedPublicKey sender,
                               final ProofOfWork proofOfWork,
                               final CompressedPublicKey recipient,

@@ -26,6 +26,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.MessageId;
+import org.drasyl.peer.connection.message.UserAgent;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -73,8 +74,8 @@ class MessageEncoderTest {
         }
 
         @Override
-        public String getUserAgent() {
-            return "";
+        public UserAgent getUserAgent() {
+            return UserAgent.generate();
         }
 
         @Override

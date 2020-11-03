@@ -67,7 +67,7 @@ class SignedMessageTest {
             assertEquals(
                     new SignedMessage(
                             MessageId.of("89ba3cd9efb7570eb3126d11"),
-                            "",
+                            UserAgent.generate(),
                             1,
                             CompressedPublicKey.of("0300f9df12eed957a17b2b373978ea32177b3e1ce00c92003b5dd2c68de253b35c"),
                             ProofOfWork.of(6657650),

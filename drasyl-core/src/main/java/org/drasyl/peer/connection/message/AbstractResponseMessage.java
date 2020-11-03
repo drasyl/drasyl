@@ -39,7 +39,7 @@ abstract class AbstractResponseMessage<R extends RequestMessage> extends Abstrac
 
     @SuppressWarnings({ "java:S107" })
     public AbstractResponseMessage(final MessageId id,
-                                   final String userAgent,
+                                   final UserAgent userAgent,
                                    final int networkId,
                                    final CompressedPublicKey sender,
                                    final ProofOfWork proofOfWork,

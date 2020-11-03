@@ -44,7 +44,6 @@ public class UserAgent {
         this.text = text;
     }
 
-    @JsonValue
     @Override
     public String toString() {
         return text;

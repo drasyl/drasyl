@@ -57,7 +57,7 @@ public interface Message {
      *
      * @return the user agent of the sender's node.
      */
-    String getUserAgent();
+    UserAgent getUserAgent();
 
     /**
      * Returns the network the sender belongs to.

@@ -33,7 +33,7 @@ public class JoinMessage extends AbstractMessage implements RequestMessage {
 
     @JsonCreator
     private JoinMessage(@JsonProperty("id") final MessageId id,
-                        @JsonProperty("userAgent") final String userAgent,
+                        @JsonProperty("userAgent") final UserAgent userAgent,
                         @JsonProperty("networkId") final int networkId,
                         @JsonProperty("sender") final CompressedPublicKey sender,
                         @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
