@@ -90,7 +90,7 @@ abstract class AbstractMessage implements Message {
         this(networkId, sender, proofOfWork, recipient, (short) 0);
     }
 
-    public AbstractMessage(final MessageId id,
+    protected AbstractMessage(final MessageId id,
                            final int networkId,
                            final CompressedPublicKey sender,
                            final ProofOfWork proofOfWork,

@@ -44,7 +44,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
     private volatile AbstractHandlerContext prev;
     private volatile AbstractHandlerContext next;
 
-    public AbstractHandlerContext(final String name,
+    protected AbstractHandlerContext(final String name,
                                   final DrasylConfig config,
                                   final Pipeline pipeline,
                                   final Scheduler scheduler,

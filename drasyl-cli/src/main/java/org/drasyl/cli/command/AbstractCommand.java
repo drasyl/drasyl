@@ -48,7 +48,7 @@ abstract class AbstractCommand implements Command {
     private static final Logger log = LoggerFactory.getLogger(AbstractCommand.class);
     protected final PrintStream printStream;
 
-    public AbstractCommand(
+    protected AbstractCommand(
             final PrintStream printStream) {
         this.printStream = printStream;
     }
