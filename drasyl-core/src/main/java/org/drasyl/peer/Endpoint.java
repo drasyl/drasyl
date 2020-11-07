@@ -188,7 +188,7 @@ public class Endpoint implements Comparable<Endpoint> {
      * @throws IllegalArgumentException if {@code endpoint} is an invalid {@code Endpoint}
      */
     public static Endpoint of(final URI endpoint) {
-        if (endpoint.getFragment() != null) {
+        if (endpoint.getFragment() != null && !endpoint.getFragment().isEmpty()) {
             try {
                 return of(endpoint, CompressedPublicKey.of(endpoint.getFragment()));
             }
