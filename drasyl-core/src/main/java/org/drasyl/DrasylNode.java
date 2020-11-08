@@ -43,9 +43,6 @@ import org.drasyl.peer.connection.direct.DirectConnectionsManager;
 import org.drasyl.peer.connection.intravm.IntraVmDiscovery;
 import org.drasyl.peer.connection.localhost.LocalHostDiscovery;
 import org.drasyl.peer.connection.message.QuitMessage;
-import org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler;
-import org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler;
-import org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler;
 import org.drasyl.peer.connection.server.Server;
 import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.HandlerContext;
@@ -73,9 +70,6 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.drasyl.peer.connection.handler.ThreeWayHandshakeClientHandler.ATTRIBUTE_PUBLIC_KEY;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
-import static org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler.DIRECT_CONNECTION_MESSAGE_SINK_HANDLER;
-import static org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler.LOOPBACK_MESSAGE_SINK_HANDLER;
-import static org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler.SUPER_PEER_SINK_HANDLER;
 import static org.drasyl.pipeline.HopCountGuard.HOP_COUNT_GUARD;
 import static org.drasyl.pipeline.InvalidProofOfWorkFilter.INVALID_PROOF_OF_WORK_FILTER;
 import static org.drasyl.pipeline.OtherNetworkFilter.OTHER_NETWORK_FILTER;
@@ -164,11 +158,8 @@ public abstract class DrasylNode {
             this.channelGroup = new PeerChannelGroup(this.config.getNetworkId(), identity);
             this.endpoints = new CopyOnWriteArraySet<>();
             this.acceptNewConnections = new AtomicBoolean();
-            this.pipeline = new DrasylPipeline(this::onEvent, this.config, identity);
             this.started = new AtomicBoolean();
-            pipeline.addFirst(SUPER_PEER_SINK_HANDLER, new SuperPeerMessageSinkHandler(channelGroup, peersManager));
-            pipeline.addAfter(SUPER_PEER_SINK_HANDLER, DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, new DirectConnectionMessageSinkHandler(channelGroup));
-            pipeline.addAfter(DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, LOOPBACK_MESSAGE_SINK_HANDLER, new LoopbackMessageSinkHandler(started, this.config.getNetworkId(), identity, peersManager, endpoints));
+            this.pipeline = new DrasylPipeline(this::onEvent, this.config, identity, channelGroup, peersManager, started, endpoints);
             this.components = new ArrayList<>();
 
             if (config.areDirectConnectionsEnabled()) {

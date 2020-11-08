@@ -28,6 +28,9 @@ import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.peer.Endpoint;
+import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.ObjectHolder;
@@ -35,8 +38,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
 import java.util.Map;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.stream.IntStream;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -75,7 +80,11 @@ class DrasylPipelineIT {
                 .identityPrivateKey(identity1.getPrivateKey())
                 .build();
 
-        pipeline = new DrasylPipeline(receivedEvents::onNext, config, identity1);
+        final PeerChannelGroup channelGroup = new PeerChannelGroup(config.getNetworkId(), identity1);
+        final PeersManager peersManager = new PeersManager(receivedEvents::onNext, identity1);
+        final AtomicBoolean started = new AtomicBoolean(true);
+        final Set<Endpoint> endpoints = Set.of();
+        pipeline = new DrasylPipeline(receivedEvents::onNext, config, identity1, channelGroup, peersManager, started, endpoints);
         pipeline.addFirst("outboundMessages", new SimpleOutboundHandler<ApplicationMessage, CompressedPublicKey>() {
             @Override
             protected void matchedWrite(final HandlerContext ctx,

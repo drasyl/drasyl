@@ -43,7 +43,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class LoopbackMessageSinkHandlerTest {
+class LoopbackOutboundMessageSinkHandlerTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
     @Mock(answer = RETURNS_DEEP_STUBS)
@@ -59,7 +59,7 @@ class LoopbackMessageSinkHandlerTest {
                 identity,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                new LoopbackMessageSinkHandler(new AtomicBoolean(false), networkId, identity, peersManager, Set.of())
+                new LoopbackOutboundMessageSinkHandler(new AtomicBoolean(false), networkId, identity, peersManager, Set.of())
         );
         final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
 
@@ -75,7 +75,7 @@ class LoopbackMessageSinkHandlerTest {
                 identity,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                new LoopbackMessageSinkHandler(new AtomicBoolean(true), networkId, identity, peersManager, Set.of())
+                new LoopbackOutboundMessageSinkHandler(new AtomicBoolean(true), networkId, identity, peersManager, Set.of())
         );
         final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
 
@@ -93,7 +93,7 @@ class LoopbackMessageSinkHandlerTest {
                 identity,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                new LoopbackMessageSinkHandler(new AtomicBoolean(true), networkId, identity, peersManager, Set.of())
+                new LoopbackOutboundMessageSinkHandler(new AtomicBoolean(true), networkId, identity, peersManager, Set.of())
         );
         final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
         final CompletableFuture<Void> future = pipeline.processOutbound(recipient, message);
@@ -113,7 +113,7 @@ class LoopbackMessageSinkHandlerTest {
                 identity,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                new LoopbackMessageSinkHandler(new AtomicBoolean(true), networkId, identity, peersManager, Set.of())
+                new LoopbackOutboundMessageSinkHandler(new AtomicBoolean(true), networkId, identity, peersManager, Set.of())
         );
         final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
         final CompletableFuture<Void> future = pipeline.processOutbound(recipient, message);
@@ -133,7 +133,7 @@ class LoopbackMessageSinkHandlerTest {
                 identity,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                new LoopbackMessageSinkHandler(new AtomicBoolean(true), networkId, identity, peersManager, Set.of())
+                new LoopbackOutboundMessageSinkHandler(new AtomicBoolean(true), networkId, identity, peersManager, Set.of())
         );
         final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
         final CompletableFuture<Void> future = pipeline.processOutbound(recipient, message);

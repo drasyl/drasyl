@@ -39,11 +39,11 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class DirectConnectionMessageSinkHandlerTest {
+class DirectConnectionOutboundMessageSinkHandlerTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private PeerChannelGroup channelGroup;
     @InjectMocks
-    private DirectConnectionMessageSinkHandler underTest;
+    private DirectConnectionOutboundMessageSinkHandler underTest;
 
     @Nested
     class MatchedWrite {

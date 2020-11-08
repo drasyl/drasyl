@@ -39,22 +39,22 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 /**
- * This handler delivers outgoing messages addressed to the local node.
+ * This handler processes outbound messages addressed to the local node.
  */
-public class LoopbackMessageSinkHandler extends SimpleOutboundHandler<Message, CompressedPublicKey> {
-    public static final String LOOPBACK_MESSAGE_SINK_HANDLER = "LOOPBACK_MESSAGE_SINK_HANDLER";
-    private static final Logger LOG = LoggerFactory.getLogger(LoopbackMessageSinkHandler.class);
+public class LoopbackOutboundMessageSinkHandler extends SimpleOutboundHandler<Message, CompressedPublicKey> {
+    public static final String LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER = "LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER";
+    private static final Logger LOG = LoggerFactory.getLogger(LoopbackOutboundMessageSinkHandler.class);
     private final AtomicBoolean started;
     private final int networkId;
     private final Identity identity;
     private final PeersManager peersManager;
     private final Set<Endpoint> endpoints;
 
-    public LoopbackMessageSinkHandler(final AtomicBoolean started,
-                                      final int networkId,
-                                      final Identity identity,
-                                      final PeersManager peersManager,
-                                      final Set<Endpoint> endpoints) {
+    public LoopbackOutboundMessageSinkHandler(final AtomicBoolean started,
+                                              final int networkId,
+                                              final Identity identity,
+                                              final PeersManager peersManager,
+                                              final Set<Endpoint> endpoints) {
         this.started = started;
         this.networkId = networkId;
         this.identity = identity;
