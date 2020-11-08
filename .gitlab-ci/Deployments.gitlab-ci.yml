@@ -49,6 +49,9 @@ review:
   <<: *deploy-base-kubernetes
   stage: review
   variables:
+    DRASYL_PROOF_OF_WORK: 3338929
+    DRASYL_PUBLIC_KEY: 031a31ad3c6e04c5755c7cdd266759c27be9e96d2e42a9063d4e816643bfd37f8c
+    # DRASYL_PRIVATE_KEY is defined securely in GitLab CI/CD Settings
     JAVA_OPTS: "-Dio.netty.leakDetectionLevel=PARANOID"
   environment:
     name: review/$CI_COMMIT_REF_NAME
@@ -65,6 +68,10 @@ review:
 stop_review:
   <<: *stop-base-kubernetes
   stage: cleanup
+  variables:
+    DRASYL_PROOF_OF_WORK: 3338929
+    DRASYL_PUBLIC_KEY: 031a31ad3c6e04c5755c7cdd266759c27be9e96d2e42a9063d4e816643bfd37f8c
+    # DRASYL_PRIVATE_KEY is defined securely in GitLab CI/CD Settings
   except:
     - master
   when: manual
