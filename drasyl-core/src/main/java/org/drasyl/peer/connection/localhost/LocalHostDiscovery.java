@@ -51,7 +51,7 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler.LOOPBACK_MESSAGE_SINK_HANDLER;
+import static org.drasyl.peer.connection.pipeline.LoopbackOutboundMessageSinkHandler.LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER;
 import static org.drasyl.util.JSONUtil.JACKSON_READER;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 
@@ -149,7 +149,7 @@ public class LocalHostDiscovery implements DrasylNodeComponent {
                 tryWatchDirectory();
                 scan();
                 keepOwnInformationUpToDate();
-                pipeline.addAfter(LOOPBACK_MESSAGE_SINK_HANDLER, LOCAL_HOST_DISCOVERY_COMMUNICATION_OCCURRED, new SimpleOutboundHandler<Message, CompressedPublicKey>() {
+                pipeline.addAfter(LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER, LOCAL_HOST_DISCOVERY_COMMUNICATION_OCCURRED, new SimpleOutboundHandler<Message, CompressedPublicKey>() {
                     @Override
                     protected void matchedWrite(final HandlerContext ctx,
                                                 final CompressedPublicKey recipient,

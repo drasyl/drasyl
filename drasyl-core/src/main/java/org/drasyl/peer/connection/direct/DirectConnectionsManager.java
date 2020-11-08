@@ -51,7 +51,7 @@ import java.util.function.BooleanSupplier;
 import java.util.function.Supplier;
 
 import static java.time.Duration.ofSeconds;
-import static org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler.LOOPBACK_MESSAGE_SINK_HANDLER;
+import static org.drasyl.peer.connection.pipeline.LoopbackOutboundMessageSinkHandler.LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER;
 
 /**
  * This class is responsible for establishing and managing direct connections with other drasyl
@@ -152,7 +152,7 @@ public class DirectConnectionsManager implements DrasylNodeComponent {
                     super.eventTriggered(ctx, event, future);
                 }
             });
-            pipeline.addAfter(LOOPBACK_MESSAGE_SINK_HANDLER, DIRECT_CONNECTIONS_MANAGER_COMMUNICATION_OCCURRED, new SimpleOutboundHandler<Message, CompressedPublicKey>() {
+            pipeline.addAfter(LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER, DIRECT_CONNECTIONS_MANAGER_COMMUNICATION_OCCURRED, new SimpleOutboundHandler<Message, CompressedPublicKey>() {
                 @Override
                 protected void matchedWrite(final HandlerContext ctx,
                                             final CompressedPublicKey recipient,

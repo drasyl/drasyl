@@ -45,7 +45,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class SuperPeerMessageSinkHandlerTest {
+class SuperPeerOutboundMessageSinkHandlerTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
     @Mock(answer = RETURNS_DEEP_STUBS)
@@ -62,7 +62,7 @@ class SuperPeerMessageSinkHandlerTest {
                 identity,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                new SuperPeerMessageSinkHandler(channelGroup, peersManager)
+                new SuperPeerOutboundMessageSinkHandler(channelGroup, peersManager)
         );
         final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
         final Channel channel = mock(Channel.class);
@@ -87,7 +87,7 @@ class SuperPeerMessageSinkHandlerTest {
                 identity,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                new SuperPeerMessageSinkHandler(channelGroup, peersManager)
+                new SuperPeerOutboundMessageSinkHandler(channelGroup, peersManager)
         );
         final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
 
@@ -105,7 +105,7 @@ class SuperPeerMessageSinkHandlerTest {
                 identity,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                new SuperPeerMessageSinkHandler(channelGroup, peersManager)
+                new SuperPeerOutboundMessageSinkHandler(channelGroup, peersManager)
         );
         final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
         final Channel channel = mock(Channel.class);

@@ -50,9 +50,6 @@ import org.drasyl.peer.connection.message.ResponseMessage;
 import org.drasyl.peer.connection.message.SignedMessage;
 import org.drasyl.peer.connection.message.SuccessMessage;
 import org.drasyl.peer.connection.message.WelcomeMessage;
-import org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler;
-import org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler;
-import org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler;
 import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.Pipeline;
 import org.junit.jupiter.api.AfterAll;
@@ -82,9 +79,6 @@ import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_PEER_U
 import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_PROOF_OF_WORK_INVALID;
 import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_UNEXPECTED_MESSAGE;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_NEW_SESSION;
-import static org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler.DIRECT_CONNECTION_MESSAGE_SINK_HANDLER;
-import static org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler.LOOPBACK_MESSAGE_SINK_HANDLER;
-import static org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler.SUPER_PEER_SINK_HANDLER;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.drasyl.util.NetworkUtil.createInetAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -154,11 +148,9 @@ class ServerIT {
         peersManager = new PeersManager(event -> {
         }, serverIdentityManager.getIdentity());
         channelGroup = new PeerChannelGroup(networkId, serverIdentityManager.getIdentity());
+        final AtomicBoolean started = new AtomicBoolean(true);
         pipeline = new DrasylPipeline(event -> {
-        }, serverConfig, serverIdentityManager.getIdentity());
-        pipeline.addFirst(SUPER_PEER_SINK_HANDLER, new SuperPeerMessageSinkHandler(channelGroup, peersManager));
-        pipeline.addAfter(SUPER_PEER_SINK_HANDLER, DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, new DirectConnectionMessageSinkHandler(channelGroup));
-        pipeline.addAfter(DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, LOOPBACK_MESSAGE_SINK_HANDLER, new LoopbackMessageSinkHandler(new AtomicBoolean(true), networkId, serverIdentityManager.getIdentity(), peersManager, endpoints));
+        }, serverConfig, serverIdentityManager.getIdentity(), channelGroup, peersManager, started, endpoints);
         opened = new AtomicBoolean(false);
         endpoints = new HashSet<>();
         acceptNewConnections = new AtomicBoolean(true);

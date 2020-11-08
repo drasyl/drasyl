@@ -45,9 +45,6 @@ import org.drasyl.peer.connection.message.PingMessage;
 import org.drasyl.peer.connection.message.PongMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.SuccessMessage;
-import org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler;
-import org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler;
-import org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler;
 import org.drasyl.peer.connection.server.TestServer;
 import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.Pipeline;
@@ -68,9 +65,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
-import static org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler.DIRECT_CONNECTION_MESSAGE_SINK_HANDLER;
-import static org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler.LOOPBACK_MESSAGE_SINK_HANDLER;
-import static org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler.SUPER_PEER_SINK_HANDLER;
 import static org.drasyl.util.NetworkUtil.createInetAddress;
 import static testutils.AnsiColor.COLOR_CYAN;
 import static testutils.AnsiColor.STYLE_REVERSED;
@@ -154,16 +148,12 @@ class SuperPeerClientIT {
         peersManagerServer = new PeersManager(event -> {
         }, identityManagerServer.getIdentity());
         channelGroupServer = new PeerChannelGroup(networkId, identityManagerServer.getIdentity());
+        final AtomicBoolean started = new AtomicBoolean(true);
         pipeline = new DrasylPipeline(event -> {
-        }, config, identityManager.getIdentity());
-        pipeline.addFirst(SUPER_PEER_SINK_HANDLER, new SuperPeerMessageSinkHandler(channelGroup, peersManager));
-        pipeline.addAfter(SUPER_PEER_SINK_HANDLER, DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, new DirectConnectionMessageSinkHandler(channelGroup));
-        pipeline.addAfter(DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, LOOPBACK_MESSAGE_SINK_HANDLER, new LoopbackMessageSinkHandler(new AtomicBoolean(true), networkId, identityManager.getIdentity(), peersManager, endpoints));
+        }, config, identityManager.getIdentity(), channelGroup, peersManager, started, endpoints);
+        final AtomicBoolean startedServer = new AtomicBoolean(true);
         pipelineServer = new DrasylPipeline(event -> {
-        }, serverConfig, identityManagerServer.getIdentity());
-        pipelineServer.addFirst(SUPER_PEER_SINK_HANDLER, new SuperPeerMessageSinkHandler(channelGroup, peersManagerServer));
-        pipelineServer.addAfter(SUPER_PEER_SINK_HANDLER, DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, new DirectConnectionMessageSinkHandler(channelGroup));
-        pipelineServer.addAfter(DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, LOOPBACK_MESSAGE_SINK_HANDLER, new LoopbackMessageSinkHandler(new AtomicBoolean(true), networkId, identityManagerServer.getIdentity(), peersManagerServer, endpoints));
+        }, serverConfig, identityManagerServer.getIdentity(), channelGroup, peersManager, started, endpoints);
         endpoints = new HashSet<>();
 
         server = new TestServer(identityManagerServer.getIdentity(), pipelineServer, peersManagerServer, serverConfig, channelGroupServer, serverWorkerGroup, bossGroup, endpoints);

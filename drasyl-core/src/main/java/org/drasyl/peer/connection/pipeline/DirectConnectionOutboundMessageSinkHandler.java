@@ -27,13 +27,14 @@ import org.drasyl.pipeline.SimpleOutboundHandler;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * This handler tries to send outgoing messages via TCP-based direct connection to another peers.
+ * This handler tries to process outbound messages via TCP-based direct connection to another
+ * peers.
  */
-public class DirectConnectionMessageSinkHandler extends SimpleOutboundHandler<Message, CompressedPublicKey> {
-    public static final String DIRECT_CONNECTION_MESSAGE_SINK_HANDLER = "DIRECT_CONNECTION_MESSAGE_SINK_HANDLER";
+public class DirectConnectionOutboundMessageSinkHandler extends SimpleOutboundHandler<Message, CompressedPublicKey> {
+    public static final String DIRECT_CONNECTION_OUTBOUND_MESSAGE_SINK_HANDLER = "DIRECT_CONNECTION_OUTBOUND_MESSAGE_SINK_HANDLER";
     private final PeerChannelGroup channelGroup;
 
-    public DirectConnectionMessageSinkHandler(final PeerChannelGroup channelGroup) {
+    public DirectConnectionOutboundMessageSinkHandler(final PeerChannelGroup channelGroup) {
         this.channelGroup = channelGroup;
     }
 

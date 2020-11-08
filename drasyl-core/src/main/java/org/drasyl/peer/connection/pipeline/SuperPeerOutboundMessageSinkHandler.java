@@ -30,13 +30,16 @@ import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.util.FutureUtil.toFuture;
 
-public class SuperPeerMessageSinkHandler extends SimpleOutboundHandler<Message, CompressedPublicKey> {
-    public static final String SUPER_PEER_SINK_HANDLER = "SUPER_PEER_SINK_HANDLER";
+/**
+ * This handler sends all outbound messages to the super peer.
+ */
+public class SuperPeerOutboundMessageSinkHandler extends SimpleOutboundHandler<Message, CompressedPublicKey> {
+    public static final String SUPER_PEER_OUTBOUND_MESSAGE_SINK_HANDLER = "SUPER_PEER_OUTBOUND_MESSAGE_SINK_HANDLER";
     private final PeerChannelGroup channelGroup;
     private final PeersManager peersManager;
 
-    public SuperPeerMessageSinkHandler(final PeerChannelGroup channelGroup,
-                                       final PeersManager peersManager) {
+    public SuperPeerOutboundMessageSinkHandler(final PeerChannelGroup channelGroup,
+                                               final PeersManager peersManager) {
         this.channelGroup = channelGroup;
         this.peersManager = peersManager;
     }

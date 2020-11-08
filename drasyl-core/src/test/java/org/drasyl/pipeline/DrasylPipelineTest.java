@@ -23,6 +23,9 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.peer.Endpoint;
+import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -32,7 +35,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.concurrent.CompletableFuture;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
 import static org.drasyl.pipeline.HeadContext.DRASYL_HEAD_HANDLER;
@@ -66,10 +71,18 @@ class DrasylPipelineTest {
     private DrasylConfig config;
     @Mock
     private Identity identity;
+    @Mock
+    private PeerChannelGroup channelGroup;
+    @Mock
+    private PeersManager peersManager;
+    @Mock
+    private AtomicBoolean started;
+    @Mock
+    private Set<Endpoint> endpoints;
 
     @Test
     void shouldCreateNewPipeline() {
-        final Pipeline pipeline = new DrasylPipeline(eventConsumer, config, identity);
+        final Pipeline pipeline = new DrasylPipeline(eventConsumer, config, identity, channelGroup, peersManager, started, endpoints);
 
         assertNull(pipeline.get(DRASYL_HEAD_HANDLER));
         assertNull(pipeline.context(DRASYL_HEAD_HANDLER));

@@ -40,7 +40,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
-import static org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler.LOOPBACK_MESSAGE_SINK_HANDLER;
+import static org.drasyl.peer.connection.pipeline.LoopbackOutboundMessageSinkHandler.LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER;
 
 /**
  * Uses shared memory to discover other drasyl nodes running on same JVM.
@@ -77,7 +77,7 @@ public class IntraVmDiscovery implements DrasylNodeComponent {
                 }
         );
 
-        pipeline.addBefore(LOOPBACK_MESSAGE_SINK_HANDLER, INTRA_VM_SINK_HANDLER, new SimpleOutboundHandler<Message, CompressedPublicKey>() {
+        pipeline.addBefore(LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER, INTRA_VM_SINK_HANDLER, new SimpleOutboundHandler<Message, CompressedPublicKey>() {
             @Override
             protected void matchedWrite(final HandlerContext ctx,
                                         final CompressedPublicKey recipient,

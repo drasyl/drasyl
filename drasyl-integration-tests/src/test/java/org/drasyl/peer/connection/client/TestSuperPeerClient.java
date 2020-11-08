@@ -42,9 +42,6 @@ import org.drasyl.peer.connection.handler.SimpleChannelDuplexHandler;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.ResponseMessage;
-import org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler;
-import org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler;
-import org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler;
 import org.drasyl.pipeline.DrasylPipeline;
 
 import java.util.Set;
@@ -54,9 +51,6 @@ import java.util.function.Consumer;
 
 import static org.awaitility.Awaitility.await;
 import static org.drasyl.peer.connection.handler.RelayableMessageGuard.HOP_COUNT_GUARD;
-import static org.drasyl.peer.connection.pipeline.DirectConnectionMessageSinkHandler.DIRECT_CONNECTION_MESSAGE_SINK_HANDLER;
-import static org.drasyl.peer.connection.pipeline.LoopbackMessageSinkHandler.LOOPBACK_MESSAGE_SINK_HANDLER;
-import static org.drasyl.peer.connection.pipeline.SuperPeerMessageSinkHandler.SUPER_PEER_SINK_HANDLER;
 
 public class TestSuperPeerClient extends SuperPeerClient {
     private final Identity identity;
@@ -225,11 +219,17 @@ public class TestSuperPeerClient extends SuperPeerClient {
                             final Consumer<Event> eventConsumer,
                             final DrasylConfig config,
                             final Identity identity) {
-            super(eventConsumer, config, identity);
+            this(peersManager, channelGroup, eventConsumer, config, identity, new AtomicBoolean(true), Set.of());
+        }
 
-            addFirst(SUPER_PEER_SINK_HANDLER, new SuperPeerMessageSinkHandler(channelGroup, peersManager));
-            addAfter(SUPER_PEER_SINK_HANDLER, DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, new DirectConnectionMessageSinkHandler(channelGroup));
-            addAfter(DIRECT_CONNECTION_MESSAGE_SINK_HANDLER, LOOPBACK_MESSAGE_SINK_HANDLER, new LoopbackMessageSinkHandler(new AtomicBoolean(true), config.getNetworkId(), identity, peersManager, Set.of()));
+        private TestPipeline(final PeersManager peersManager,
+                             final PeerChannelGroup channelGroup,
+                             final Consumer<Event> eventConsumer,
+                             final DrasylConfig config,
+                             final Identity identity,
+                             final AtomicBoolean started,
+                             final Set<Endpoint> endpoints) {
+            super(eventConsumer, config, identity, channelGroup, peersManager, started, endpoints);
         }
     }
 }
