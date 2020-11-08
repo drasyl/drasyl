@@ -74,7 +74,7 @@ public class DrasylPipeline extends DefaultPipeline {
         addFirst(OBJECT_HOLDER2APP_MSG, new ObjectHolder2ApplicationMessageHandler(config.getNetworkId()));
 
         // message sinks for outgoing messages
-        addFirst(LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER, new LoopbackOutboundMessageSinkHandler(started, this.config.getNetworkId(), identity, peersManager, endpoints));
+        addFirst(LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER, new LoopbackOutboundMessageSinkHandler(started, peersManager, endpoints));
         addFirst(DIRECT_CONNECTION_OUTBOUND_MESSAGE_SINK_HANDLER, new DirectConnectionOutboundMessageSinkHandler(channelGroup));
         addFirst(SUPER_PEER_OUTBOUND_MESSAGE_SINK_HANDLER, new SuperPeerOutboundMessageSinkHandler(channelGroup, peersManager));
     }

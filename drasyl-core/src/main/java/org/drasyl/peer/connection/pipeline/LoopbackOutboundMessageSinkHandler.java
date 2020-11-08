@@ -19,7 +19,6 @@
 package org.drasyl.peer.connection.pipeline;
 
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeerInformation;
@@ -45,19 +44,13 @@ public class LoopbackOutboundMessageSinkHandler extends SimpleOutboundHandler<Me
     public static final String LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER = "LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(LoopbackOutboundMessageSinkHandler.class);
     private final AtomicBoolean started;
-    private final int networkId;
-    private final Identity identity;
     private final PeersManager peersManager;
     private final Set<Endpoint> endpoints;
 
     public LoopbackOutboundMessageSinkHandler(final AtomicBoolean started,
-                                              final int networkId,
-                                              final Identity identity,
                                               final PeersManager peersManager,
                                               final Set<Endpoint> endpoints) {
         this.started = started;
-        this.networkId = networkId;
-        this.identity = identity;
         this.peersManager = peersManager;
         this.endpoints = endpoints;
     }
@@ -70,7 +63,7 @@ public class LoopbackOutboundMessageSinkHandler extends SimpleOutboundHandler<Me
         if (!started.get()) {
             ctx.write(recipient, msg, future);
         }
-        else if (!identity.getPublicKey().equals(recipient)) {
+        else if (!ctx.identity().getPublicKey().equals(recipient)) {
             ctx.write(recipient, msg, future);
         }
         else if (msg instanceof ApplicationMessage) {
@@ -82,10 +75,10 @@ public class LoopbackOutboundMessageSinkHandler extends SimpleOutboundHandler<Me
             peersManager.setPeerInformation(whoisMessage.getSender(),
                     whoisMessage.getPeerInformation());
 
-            final CompressedPublicKey myPublicKey = identity.getPublicKey();
-            final ProofOfWork myProofOfWork = identity.getProofOfWork();
+            final CompressedPublicKey myPublicKey = ctx.identity().getPublicKey();
+            final ProofOfWork myProofOfWork = ctx.identity().getProofOfWork();
             final PeerInformation myPeerInformation = PeerInformation.of(endpoints);
-            final IdentityMessage identityMessage = new IdentityMessage(networkId, myPublicKey, myProofOfWork, whoisMessage.getSender(),
+            final IdentityMessage identityMessage = new IdentityMessage(ctx.config().getNetworkId(), myPublicKey, myProofOfWork, whoisMessage.getSender(),
                     myPeerInformation, whoisMessage.getId());
 
             FutureUtil.completeOnAllOf(future, ctx.pipeline().processOutbound(identityMessage.getRecipient(), identityMessage));
