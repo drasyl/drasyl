@@ -30,8 +30,12 @@ import java.util.concurrent.CompletableFuture;
  * This handler filters out all messages received from other networks.
  */
 public class OtherNetworkFilter extends SimpleInboundHandler<Message, Event, Address> {
+    public static final OtherNetworkFilter INSTANCE = new OtherNetworkFilter();
     public static final String OTHER_NETWORK_FILTER = "OTHER_NETWORK_FILTER";
     private static final Logger LOG = LoggerFactory.getLogger(OtherNetworkFilter.class);
+
+    private OtherNetworkFilter() {
+    }
 
     @Override
     protected void matchedEventTriggered(final HandlerContext ctx,

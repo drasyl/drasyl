@@ -50,7 +50,7 @@ class InvalidProofOfWorkFilterTest {
 
     @Test
     void shouldPassAllEvents(@Mock final Event event) {
-        final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter();
+        final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
         final TestObserver<Event> inboundEvents = pipeline.inboundEvents().test();
 
@@ -64,7 +64,7 @@ class InvalidProofOfWorkFilterTest {
     void shouldDropMessagesWithInvalidProofOfWork(@Mock(answer = RETURNS_DEEP_STUBS) final Message message) throws InterruptedException {
         when(message.getProofOfWork().isValid(any(), anyShort())).thenReturn(false);
 
-        final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter();
+        final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
         final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessages = pipeline.inboundMessages().test();
 
@@ -78,7 +78,7 @@ class InvalidProofOfWorkFilterTest {
     void shouldPassMessagesWithValidProofOfWork(@Mock(answer = RETURNS_DEEP_STUBS) final Message message) {
         when(message.getProofOfWork().isValid(any(), anyShort())).thenReturn(true);
 
-        final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter();
+        final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
         final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessages = pipeline.inboundMessages().test();
 

@@ -86,8 +86,8 @@ public class DrasylPipeline extends DefaultPipeline {
         addFirst(SUPER_PEER_OUTBOUND_MESSAGE_SINK_HANDLER, new SuperPeerOutboundMessageSinkHandler(channelGroup, peersManager));
 
         // inbound message guards
-        addFirst(INVALID_PROOF_OF_WORK_FILTER, new InvalidProofOfWorkFilter());
-        addFirst(OTHER_NETWORK_FILTER, new OtherNetworkFilter());
+        addFirst(INVALID_PROOF_OF_WORK_FILTER, InvalidProofOfWorkFilter.INSTANCE);
+        addFirst(OTHER_NETWORK_FILTER, OtherNetworkFilter.INSTANCE);
     }
 
     DrasylPipeline(final Map<String, AbstractHandlerContext> handlerNames,

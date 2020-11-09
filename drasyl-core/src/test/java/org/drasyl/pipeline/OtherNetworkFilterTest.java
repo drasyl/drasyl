@@ -48,7 +48,7 @@ class OtherNetworkFilterTest {
 
     @Test
     void shouldPassAllEvents(@Mock final Event event) {
-        final OtherNetworkFilter handler = new OtherNetworkFilter();
+        final OtherNetworkFilter handler = OtherNetworkFilter.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
         final TestObserver<Event> inboundEvents = pipeline.inboundEvents().test();
 
@@ -63,7 +63,7 @@ class OtherNetworkFilterTest {
         when(config.getNetworkId()).thenReturn(123);
         when(message.getNetworkId()).thenReturn(456);
 
-        final OtherNetworkFilter handler = new OtherNetworkFilter();
+        final OtherNetworkFilter handler = OtherNetworkFilter.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
         final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessages = pipeline.inboundMessages().test();
 
@@ -78,7 +78,7 @@ class OtherNetworkFilterTest {
         when(config.getNetworkId()).thenReturn(123);
         when(message.getNetworkId()).thenReturn(123);
 
-        final OtherNetworkFilter handler = new OtherNetworkFilter();
+        final OtherNetworkFilter handler = OtherNetworkFilter.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
         final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessages = pipeline.inboundMessages().test();
 
