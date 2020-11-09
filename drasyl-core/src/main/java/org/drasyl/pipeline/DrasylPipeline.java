@@ -75,10 +75,10 @@ public class DrasylPipeline extends DefaultPipeline {
         // add default codec
         addFirst(DEFAULT_CODEC, DefaultCodec.INSTANCE);
         addFirst(APP_MSG2OBJECT_HOLDER, ApplicationMessage2ObjectHolderHandler.INSTANCE);
-        addFirst(OBJECT_HOLDER2APP_MSG, new ObjectHolder2ApplicationMessageHandler(config.getNetworkId()));
+        addFirst(OBJECT_HOLDER2APP_MSG, ObjectHolder2ApplicationMessageHandler.INSTANCE);
 
         // outbound message guards
-        addFirst(HOP_COUNT_GUARD, new HopCountGuard());
+        addFirst(HOP_COUNT_GUARD, HopCountGuard.INSTANCE);
 
         // message sinks for outbound messages
         addFirst(LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER, new LoopbackOutboundMessageSinkHandler(started, peersManager, endpoints));

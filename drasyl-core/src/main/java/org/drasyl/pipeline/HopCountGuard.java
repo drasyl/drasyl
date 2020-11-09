@@ -31,8 +31,12 @@ import java.util.concurrent.CompletableFuture;
  * is discarded. Otherwise the message can pass.
  */
 public class HopCountGuard extends SimpleOutboundHandler<Message, CompressedPublicKey> {
+    public static final HopCountGuard INSTANCE = new HopCountGuard();
     public static final String HOP_COUNT_GUARD = "HOP_COUNT_GUARD";
     private static final Logger LOG = LoggerFactory.getLogger(HopCountGuard.class);
+
+    private HopCountGuard() {
+    }
 
     @Override
     protected void matchedWrite(final HandlerContext ctx,
