@@ -76,11 +76,12 @@ class SimpleOutboundHandlerTest {
         };
 
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                config,
                 identity,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
                 ApplicationMessage2ObjectHolderHandler.INSTANCE,
-                new ObjectHolder2ApplicationMessageHandler(networkId),
+                ObjectHolder2ApplicationMessageHandler.INSTANCE,
                 DefaultCodec.INSTANCE, handler);
         final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
         final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
@@ -106,11 +107,12 @@ class SimpleOutboundHandlerTest {
         };
 
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                config,
                 identity,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
                 ApplicationMessage2ObjectHolderHandler.INSTANCE,
-                new ObjectHolder2ApplicationMessageHandler(networkId),
+                ObjectHolder2ApplicationMessageHandler.INSTANCE,
                 DefaultCodec.INSTANCE, handler);
         final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
         final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();

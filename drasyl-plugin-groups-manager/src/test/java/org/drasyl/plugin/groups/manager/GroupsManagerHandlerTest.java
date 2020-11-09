@@ -21,6 +21,7 @@ package org.drasyl.plugin.groups.manager;
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.observers.TestObserver;
+import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
@@ -92,6 +93,8 @@ class GroupsManagerHandlerTest {
     @Mock
     private Disposable staleTask;
     @Mock
+    private DrasylConfig config;
+    @Mock
     private Identity identity;
     @Mock
     private ProofOfWork proofOfWork;
@@ -158,6 +161,7 @@ class GroupsManagerHandlerTest {
             final Event event = mock(GroupJoinedEvent.class);
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                    config,
                     identity,
                     inboundValidator,
                     outboundValidator,
@@ -177,6 +181,7 @@ class GroupsManagerHandlerTest {
         void shouldHandleJoinRequest() throws DatabaseException {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                    config,
                     identity,
                     inboundValidator,
                     outboundValidator,
@@ -202,6 +207,7 @@ class GroupsManagerHandlerTest {
         void shouldSendErrorOnNotExistingGroup() throws DatabaseException {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                    config,
                     identity,
                     inboundValidator,
                     outboundValidator,
@@ -223,6 +229,7 @@ class GroupsManagerHandlerTest {
         void shouldSendErrorOnNotWeakProofOfWork() throws DatabaseException {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                    config,
                     identity,
                     inboundValidator,
                     outboundValidator,
@@ -245,6 +252,7 @@ class GroupsManagerHandlerTest {
         void shouldSendErrorOnUnknownException() throws DatabaseException {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                    config,
                     identity,
                     inboundValidator,
                     outboundValidator,
@@ -269,6 +277,7 @@ class GroupsManagerHandlerTest {
         void shouldCompleteFutureExceptionallyOnDatabaseException() throws DatabaseException {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                    config,
                     identity,
                     inboundValidator,
                     outboundValidator,
@@ -290,6 +299,7 @@ class GroupsManagerHandlerTest {
         void shouldHandleLeaveRequest() throws DatabaseException {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                    config,
                     identity,
                     inboundValidator,
                     outboundValidator,
@@ -313,6 +323,7 @@ class GroupsManagerHandlerTest {
         void shouldCompleteExceptionallyOnError() throws DatabaseException {
             final GroupsManagerHandler handler = new GroupsManagerHandler(databaseAdapter);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                    config,
                     identity,
                     inboundValidator,
                     outboundValidator,

@@ -20,6 +20,7 @@ package org.drasyl.plugin.groups.client;
 
 import io.reactivex.rxjava3.disposables.Disposable;
 import io.reactivex.rxjava3.observers.TestObserver;
+import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
@@ -75,6 +76,8 @@ class GroupsClientHandlerTest {
     @Mock
     private Map<Group, GroupUri> groups;
     @Mock
+    private DrasylConfig config;
+    @Mock
     private Identity identity;
     @Mock
     private ProofOfWork proofOfWork;
@@ -120,6 +123,7 @@ class GroupsClientHandlerTest {
             final Map<Group, GroupUri> groups = Map.of(group, uri);
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new ArrayList<>());
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                    config,
                     identity,
                     inboundValidator,
                     outboundValidator);
@@ -140,6 +144,7 @@ class GroupsClientHandlerTest {
             final Event event = mock(NodeOfflineEvent.class);
             final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                    config,
                     identity,
                     inboundValidator,
                     outboundValidator,
@@ -159,6 +164,7 @@ class GroupsClientHandlerTest {
             final Map<Group, GroupUri> groups = Map.of(group, uri);
             final GroupsClientHandler handler = new GroupsClientHandler(groups, new ArrayList<>());
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                    config,
                     identity,
                     inboundValidator,
                     outboundValidator,
@@ -186,6 +192,7 @@ class GroupsClientHandlerTest {
         void shouldProcessMemberJoined() {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                    config,
                     identity,
                     inboundValidator,
                     outboundValidator,
@@ -204,6 +211,7 @@ class GroupsClientHandlerTest {
         void shouldProcessMemberLeft() {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                    config,
                     identity,
                     inboundValidator,
                     outboundValidator,
@@ -222,6 +230,7 @@ class GroupsClientHandlerTest {
         void shouldProcessWelcome() {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                    config,
                     identity,
                     inboundValidator,
                     outboundValidator,
@@ -247,6 +256,7 @@ class GroupsClientHandlerTest {
         void shouldProcessJoinFailed() {
             final GroupsClientHandler handler = new GroupsClientHandler(groups, renewTasks);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                    config,
                     identity,
                     inboundValidator,
                     outboundValidator,

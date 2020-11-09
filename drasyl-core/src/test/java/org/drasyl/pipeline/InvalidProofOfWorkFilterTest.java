@@ -51,7 +51,7 @@ class InvalidProofOfWorkFilterTest {
     @Test
     void shouldPassAllEvents(@Mock final Event event) {
         final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter();
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
         final TestObserver<Event> inboundEvents = pipeline.inboundEvents().test();
 
         pipeline.processInbound(event);
@@ -65,7 +65,7 @@ class InvalidProofOfWorkFilterTest {
         when(message.getProofOfWork().isValid(any(), anyShort())).thenReturn(false);
 
         final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter();
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
         final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessages = pipeline.inboundMessages().test();
 
         pipeline.processInbound(message);
@@ -79,7 +79,7 @@ class InvalidProofOfWorkFilterTest {
         when(message.getProofOfWork().isValid(any(), anyShort())).thenReturn(true);
 
         final InvalidProofOfWorkFilter handler = new InvalidProofOfWorkFilter();
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
         final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessages = pipeline.inboundMessages().test();
 
         pipeline.processInbound(message);

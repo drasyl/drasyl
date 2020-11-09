@@ -41,7 +41,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.List;
 import java.util.Map;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -62,11 +61,12 @@ class EmbeddedPipelineTest {
     @Test
     void shouldReturnInboundMessagesAndEvents() {
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                config,
                 identity,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.of(List.of(), List.of(), false, false),
                 ApplicationMessage2ObjectHolderHandler.INSTANCE,
-                new ObjectHolder2ApplicationMessageHandler(config.getNetworkId()),
+                ObjectHolder2ApplicationMessageHandler.INSTANCE,
                 DefaultCodec.INSTANCE,
                 new HandlerAdapter(),
                 new HandlerAdapter());
@@ -107,10 +107,11 @@ class EmbeddedPipelineTest {
     @Test
     void shouldReturnOutboundMessages() {
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                config,
                 identity,
                 TypeValidator.of(List.of(), List.of(), false, false),
                 TypeValidator.ofOutboundValidator(config),
-                new ObjectHolder2ApplicationMessageHandler(config.getNetworkId()),
+                ObjectHolder2ApplicationMessageHandler.INSTANCE,
                 DefaultCodec.INSTANCE,
                 new HandlerAdapter(),
                 new HandlerAdapter()
@@ -131,13 +132,5 @@ class EmbeddedPipelineTest {
         outboundMessageTestObserver.assertValue(new ApplicationMessage(1, sender, senderProofOfWork, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, msg.getClass().getName()), msg));
         inboundMessageTestObserver.assertNoValues();
         eventTestObserver.assertNoValues();
-    }
-
-    @Test
-    void shouldSetDrasylConfig() {
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(mock(Identity.class), mock(TypeValidator.class), mock(TypeValidator.class));
-        pipeline.setConfig(config);
-
-        assertEquals(config, pipeline.config);
     }
 }

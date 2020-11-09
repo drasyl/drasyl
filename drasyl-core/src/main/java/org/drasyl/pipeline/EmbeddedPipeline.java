@@ -49,23 +49,6 @@ public class EmbeddedPipeline extends DefaultPipeline {
      * Creates a new embedded pipeline and adds all given handler to it. Handler are added with
      * their simple class name.
      *
-     * @param identity          the identity
-     * @param inboundValidator  the inbound validator
-     * @param outboundValidator the outbound validator
-     * @param handlers          the handlers
-     */
-    public EmbeddedPipeline(final Identity identity,
-                            final TypeValidator inboundValidator,
-                            final TypeValidator outboundValidator,
-                            final Handler... handlers) {
-        this(identity, inboundValidator, outboundValidator);
-        List.of(handlers).forEach(handler -> addLast(handler.getClass().getSimpleName() + Crypto.randomString(8), handler));
-    }
-
-    /**
-     * Creates a new embedded pipeline and adds all given handler to it. Handler are added with
-     * their simple class name.
-     *
      * @param config            the config
      * @param identity          the identity
      * @param inboundValidator  the inbound validator
@@ -79,12 +62,6 @@ public class EmbeddedPipeline extends DefaultPipeline {
                             final Handler... handlers) {
         this(config, identity, inboundValidator, outboundValidator);
         List.of(handlers).forEach(handler -> addLast(handler.getClass().getSimpleName() + Crypto.randomString(8), handler));
-    }
-
-    public EmbeddedPipeline(final Identity identity,
-                            final TypeValidator inboundValidator,
-                            final TypeValidator outboundValidator) {
-        this(null, identity, inboundValidator, outboundValidator);
     }
 
     public EmbeddedPipeline(final DrasylConfig config,
@@ -150,14 +127,5 @@ public class EmbeddedPipeline extends DefaultPipeline {
     public <T> Observable<T> outboundMessages(final Class<T> clazz) {
         @SuppressWarnings("unchecked") final Observable<T> result = (Observable<T>) outboundMessages.filter(clazz::isInstance);
         return result;
-    }
-
-    /**
-     * Sets the corresponding {@link DrasylConfig}.
-     *
-     * @param config the corresponding {@link DrasylConfig}
-     */
-    public void setConfig(final DrasylConfig config) {
-        this.config = config;
     }
 }

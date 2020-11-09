@@ -59,6 +59,7 @@ class SuperPeerOutboundMessageSinkHandlerTest {
     void shouldSendMessageToSuperPeer(@Mock final CompressedPublicKey recipient,
                                       @Mock final ApplicationMessage message) {
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                config,
                 identity,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
@@ -84,6 +85,7 @@ class SuperPeerOutboundMessageSinkHandlerTest {
         when(channelGroup.writeAndFlush(any(CompressedPublicKey.class), any(Object.class))).thenThrow(IllegalArgumentException.class);
 
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                config,
                 identity,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
@@ -102,6 +104,7 @@ class SuperPeerOutboundMessageSinkHandlerTest {
         when(peersManager.getSuperPeerKey()).thenReturn(null);
 
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                config,
                 identity,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),

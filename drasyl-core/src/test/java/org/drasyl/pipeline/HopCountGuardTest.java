@@ -51,7 +51,7 @@ class HopCountGuardTest {
         when(config.getMessageHopLimit()).thenReturn((short) 2);
         when(message.getHopCount()).thenReturn((short) 1);
 
-        final HopCountGuard handler = new HopCountGuard();
+        final HopCountGuard handler = HopCountGuard.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
         final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
 
@@ -68,7 +68,7 @@ class HopCountGuardTest {
         when(config.getMessageHopLimit()).thenReturn((short) 1);
         when(message.getHopCount()).thenReturn((short) 1);
 
-        final HopCountGuard handler = new HopCountGuard();
+        final HopCountGuard handler = HopCountGuard.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
         final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
 

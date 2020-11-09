@@ -62,7 +62,7 @@ class SimpleDuplexHandlerTest {
     @BeforeEach
     void setUp() {
         config = DrasylConfig.newBuilder()
-                .networkId(0)
+                .networkId(1)
                 .build();
     }
 
@@ -103,6 +103,7 @@ class SimpleDuplexHandlerTest {
             };
 
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                    config,
                     identity,
                     TypeValidator.ofInboundValidator(config),
                     TypeValidator.ofOutboundValidator(config),
@@ -146,11 +147,12 @@ class SimpleDuplexHandlerTest {
             };
 
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                    config,
                     identity,
                     TypeValidator.ofInboundValidator(config),
                     TypeValidator.ofOutboundValidator(config),
                     ApplicationMessage2ObjectHolderHandler.INSTANCE,
-                    new ObjectHolder2ApplicationMessageHandler(networkId),
+                    ObjectHolder2ApplicationMessageHandler.INSTANCE,
                     DefaultCodec.INSTANCE, handler);
             final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
             final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
@@ -200,11 +202,12 @@ class SimpleDuplexHandlerTest {
             };
 
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                    config,
                     identity,
                     TypeValidator.ofInboundValidator(config),
                     TypeValidator.ofOutboundValidator(config),
                     ApplicationMessage2ObjectHolderHandler.INSTANCE,
-                    new ObjectHolder2ApplicationMessageHandler(networkId),
+                    ObjectHolder2ApplicationMessageHandler.INSTANCE,
                     DefaultCodec.INSTANCE, handler);
             final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
             final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
@@ -252,11 +255,12 @@ class SimpleDuplexHandlerTest {
             };
 
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                    config,
                     identity,
                     TypeValidator.ofInboundValidator(config),
                     TypeValidator.ofOutboundValidator(config),
                     ApplicationMessage2ObjectHolderHandler.INSTANCE,
-                    new ObjectHolder2ApplicationMessageHandler(networkId),
+                    ObjectHolder2ApplicationMessageHandler.INSTANCE,
                     DefaultCodec.INSTANCE, handler);
             final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
             final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
@@ -305,7 +309,7 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, mock(TypeValidator.class), mock(TypeValidator.class), handler);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, mock(TypeValidator.class), mock(TypeValidator.class), handler);
             final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
             final NodeUpEvent event = mock(NodeUpEvent.class);
@@ -342,7 +346,7 @@ class SimpleDuplexHandlerTest {
                 }
             };
 
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, mock(TypeValidator.class), mock(TypeValidator.class), handler);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, mock(TypeValidator.class), mock(TypeValidator.class), handler);
             final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
             final Event event = mock(Event.class);

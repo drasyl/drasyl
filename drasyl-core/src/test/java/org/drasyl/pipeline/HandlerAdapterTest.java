@@ -19,6 +19,7 @@
 package org.drasyl.pipeline;
 
 import io.reactivex.rxjava3.observers.TestObserver;
+import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
@@ -44,6 +45,8 @@ import static org.mockito.Mockito.when;
 class HandlerAdapterTest {
     @Mock
     private HandlerContext ctx;
+    @Mock
+    private DrasylConfig config;
     @Mock
     private Identity identity;
     @Mock
@@ -126,7 +129,7 @@ class HandlerAdapterTest {
 
         @Test
         void shouldPassthroughsOnEventTriggeredWithMultipleHandler() {
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, inboundValidator, outboundValidator, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new));
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new));
             final TestObserver<Event> events = pipeline.inboundEvents().test();
 
             final Event event = mock(Event.class);
@@ -138,7 +141,7 @@ class HandlerAdapterTest {
 
         @Test
         void shouldPassthroughsOnReadWithMultipleHandler() {
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(identity, inboundValidator, outboundValidator, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new));
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new));
             final TestObserver<Pair<CompressedPublicKey, Object>> events = pipeline.inboundMessages().test();
 
             final CompressedPublicKey sender = mock(CompressedPublicKey.class);

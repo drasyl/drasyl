@@ -55,6 +55,7 @@ class LoopbackOutboundMessageSinkHandlerTest {
     void shouldPassMessageIfNodeIsNotStarted(@Mock final CompressedPublicKey recipient,
                                              @Mock final ApplicationMessage message) {
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                config,
                 identity,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
@@ -71,6 +72,7 @@ class LoopbackOutboundMessageSinkHandlerTest {
     void shouldPassMessageIfRecipientIsNotLocalNode(@Mock final CompressedPublicKey recipient,
                                                     @Mock final ApplicationMessage message) {
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                config,
                 identity,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
@@ -89,6 +91,7 @@ class LoopbackOutboundMessageSinkHandlerTest {
         when(identity.getPublicKey()).thenReturn(recipient);
 
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                config,
                 identity,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
@@ -130,6 +133,7 @@ class LoopbackOutboundMessageSinkHandlerTest {
         when(identity.getPublicKey()).thenReturn(recipient);
 
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                config,
                 identity,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),

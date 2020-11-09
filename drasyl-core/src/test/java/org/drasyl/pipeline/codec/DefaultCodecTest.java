@@ -77,11 +77,12 @@ class DefaultCodecTest {
         void shouldSkippByteArrays() {
             final byte[] msg = new byte[]{};
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                    config,
                     identity,
                     TypeValidator.ofOutboundValidator(config),
                     TypeValidator.of(List.of(), List.of(), false, false),
                     ApplicationMessage2ObjectHolderHandler.INSTANCE,
-                    new ObjectHolder2ApplicationMessageHandler(networkId),
+                    ObjectHolder2ApplicationMessageHandler.INSTANCE,
                     DefaultCodec.INSTANCE);
             final TestObserver<ApplicationMessage> testObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
 
@@ -121,11 +122,12 @@ class DefaultCodecTest {
         void shouldEncodePOJOs() throws JsonProcessingException {
             final Integer msg = Integer.valueOf("10000");
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                    config,
                     identity,
                     TypeValidator.of(List.of(), List.of(), false, false),
                     TypeValidator.ofOutboundValidator(config),
                     ApplicationMessage2ObjectHolderHandler.INSTANCE,
-                    new ObjectHolder2ApplicationMessageHandler(networkId),
+                    ObjectHolder2ApplicationMessageHandler.INSTANCE,
                     DefaultCodec.INSTANCE);
             final TestObserver<ApplicationMessage> testObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
 
@@ -146,11 +148,12 @@ class DefaultCodecTest {
         void shouldSkippByteArrays() {
             final ApplicationMessage msg = new ApplicationMessage(networkId, sender, proofOfWork, recipient, new byte[]{});
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                    config,
                     identity,
                     TypeValidator.of(List.of(), List.of(), false, false),
                     TypeValidator.ofInboundValidator(config),
                     ApplicationMessage2ObjectHolderHandler.INSTANCE,
-                    new ObjectHolder2ApplicationMessageHandler(networkId),
+                    ObjectHolder2ApplicationMessageHandler.INSTANCE,
                     DefaultCodec.INSTANCE);
             final TestObserver<Pair<CompressedPublicKey, Object>> testObserver = pipeline.inboundMessages().test();
 
@@ -198,11 +201,12 @@ class DefaultCodecTest {
             final Integer integer = Integer.valueOf("10000");
             final ApplicationMessage msg = new ApplicationMessage(networkId, sender, proofOfWork, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, Integer.class.getName()), JSONUtil.JACKSON_WRITER.writeValueAsBytes(integer));
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                    config,
                     identity,
                     TypeValidator.ofInboundValidator(config),
                     TypeValidator.of(List.of(), List.of(), false, false),
                     ApplicationMessage2ObjectHolderHandler.INSTANCE,
-                    new ObjectHolder2ApplicationMessageHandler(networkId),
+                    ObjectHolder2ApplicationMessageHandler.INSTANCE,
                     DefaultCodec.INSTANCE);
             final TestObserver<Pair<CompressedPublicKey, Object>> testObserver = pipeline.inboundMessages().test();
 
@@ -219,11 +223,12 @@ class DefaultCodecTest {
         void shouldPassEvents() {
             final Event event = mock(Event.class);
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
+                    config,
                     identity,
                     TypeValidator.of(List.of(), List.of(), false, false),
                     TypeValidator.ofInboundValidator(config),
                     ApplicationMessage2ObjectHolderHandler.INSTANCE,
-                    new ObjectHolder2ApplicationMessageHandler(networkId),
+                    ObjectHolder2ApplicationMessageHandler.INSTANCE,
                     DefaultCodec.INSTANCE);
             final TestObserver<Event> testObserver = pipeline.inboundEvents().test();
 
