@@ -46,9 +46,6 @@ import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.server.Server;
 import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.HopCountGuard;
-import org.drasyl.pipeline.InvalidProofOfWorkFilter;
-import org.drasyl.pipeline.OtherNetworkFilter;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.codec.Codec;
 import org.drasyl.plugins.PluginManager;
@@ -70,9 +67,6 @@ import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
 import static org.drasyl.peer.connection.handler.ThreeWayHandshakeClientHandler.ATTRIBUTE_PUBLIC_KEY;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
-import static org.drasyl.pipeline.HopCountGuard.HOP_COUNT_GUARD;
-import static org.drasyl.pipeline.InvalidProofOfWorkFilter.INVALID_PROOF_OF_WORK_FILTER;
-import static org.drasyl.pipeline.OtherNetworkFilter.OTHER_NETWORK_FILTER;
 import static org.drasyl.util.DrasylScheduler.getInstanceHeavy;
 
 /**
@@ -190,10 +184,6 @@ public abstract class DrasylNode {
                 this.components.add(new Monitoring(config, peersManager,
                         identity.getPublicKey(), pipeline));
             }
-
-            pipeline.addLast(INVALID_PROOF_OF_WORK_FILTER, new InvalidProofOfWorkFilter());
-            pipeline.addLast(OTHER_NETWORK_FILTER, new OtherNetworkFilter());
-            pipeline.addLast(HOP_COUNT_GUARD, new HopCountGuard());
 
             this.pluginManager = new PluginManager(config, identity, pipeline);
             this.startSequence = new CompletableFuture<>();

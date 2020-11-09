@@ -43,7 +43,11 @@ import java.util.function.Consumer;
 import static org.drasyl.peer.connection.pipeline.DirectConnectionOutboundMessageSinkHandler.DIRECT_CONNECTION_OUTBOUND_MESSAGE_SINK_HANDLER;
 import static org.drasyl.peer.connection.pipeline.LoopbackOutboundMessageSinkHandler.LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER;
 import static org.drasyl.peer.connection.pipeline.SuperPeerOutboundMessageSinkHandler.SUPER_PEER_OUTBOUND_MESSAGE_SINK_HANDLER;
+import static org.drasyl.pipeline.HopCountGuard.HOP_COUNT_GUARD;
+import static org.drasyl.pipeline.InvalidProofOfWorkFilter.INVALID_PROOF_OF_WORK_FILTER;
+import static org.drasyl.pipeline.OtherNetworkFilter.OTHER_NETWORK_FILTER;
 import static org.drasyl.pipeline.codec.ApplicationMessage2ObjectHolderHandler.APP_MSG2OBJECT_HOLDER;
+import static org.drasyl.pipeline.codec.DefaultCodec.DEFAULT_CODEC;
 import static org.drasyl.pipeline.codec.ObjectHolder2ApplicationMessageHandler.OBJECT_HOLDER2APP_MSG;
 
 /**
@@ -69,9 +73,13 @@ public class DrasylPipeline extends DefaultPipeline {
         initPointer();
 
         // add default codec
-        addFirst(DefaultCodec.DEFAULT_CODEC, DefaultCodec.INSTANCE);
+        addFirst(DEFAULT_CODEC, DefaultCodec.INSTANCE);
         addFirst(APP_MSG2OBJECT_HOLDER, ApplicationMessage2ObjectHolderHandler.INSTANCE);
         addFirst(OBJECT_HOLDER2APP_MSG, new ObjectHolder2ApplicationMessageHandler(config.getNetworkId()));
+
+        addFirst(INVALID_PROOF_OF_WORK_FILTER, new InvalidProofOfWorkFilter());
+        addFirst(HOP_COUNT_GUARD, new HopCountGuard());
+        addFirst(OTHER_NETWORK_FILTER, new OtherNetworkFilter());
 
         // message sinks for outgoing messages
         addFirst(LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER, new LoopbackOutboundMessageSinkHandler(started, peersManager, endpoints));
