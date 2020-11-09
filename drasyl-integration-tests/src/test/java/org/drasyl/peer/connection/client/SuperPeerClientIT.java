@@ -153,7 +153,7 @@ class SuperPeerClientIT {
         }, config, identityManager.getIdentity(), channelGroup, peersManager, started, endpoints);
         final AtomicBoolean startedServer = new AtomicBoolean(true);
         pipelineServer = new DrasylPipeline(event -> {
-        }, serverConfig, identityManagerServer.getIdentity(), channelGroup, peersManager, started, endpoints);
+        }, serverConfig, identityManagerServer.getIdentity(), channelGroup, peersManager, startedServer, endpoints);
         endpoints = new HashSet<>();
 
         server = new TestServer(identityManagerServer.getIdentity(), pipelineServer, peersManagerServer, serverConfig, channelGroupServer, serverWorkerGroup, bossGroup, endpoints);
