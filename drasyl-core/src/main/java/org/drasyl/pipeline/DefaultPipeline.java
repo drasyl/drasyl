@@ -48,7 +48,6 @@ public abstract class DefaultPipeline implements Pipeline {
     protected TypeValidator outboundValidator;
 
     protected void initPointer() {
-        this.head.setPrevHandlerContext(this.head);
         this.head.setNextHandlerContext(this.tail);
         this.tail.setPrevHandlerContext(this.head);
         try {
