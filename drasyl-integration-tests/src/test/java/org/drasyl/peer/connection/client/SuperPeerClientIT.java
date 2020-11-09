@@ -66,8 +66,8 @@ import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 import static org.drasyl.util.NetworkUtil.createInetAddress;
-import static testutils.AnsiColor.COLOR_CYAN;
-import static testutils.AnsiColor.STYLE_REVERSED;
+import static org.drasyl.util.AnsiColor.COLOR_CYAN;
+import static org.drasyl.util.AnsiColor.STYLE_REVERSED;
 import static testutils.TestHelper.colorizedPrintln;
 
 @Execution(ExecutionMode.SAME_THREAD)

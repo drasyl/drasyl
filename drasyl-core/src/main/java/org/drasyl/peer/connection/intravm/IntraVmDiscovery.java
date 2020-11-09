@@ -19,14 +19,15 @@
 package org.drasyl.peer.connection.intravm;
 
 import org.drasyl.DrasylNodeComponent;
+import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
+import org.drasyl.pipeline.SimpleInboundHandler;
 import org.drasyl.pipeline.SimpleOutboundHandler;
 import org.drasyl.util.FutureUtil;
 import org.slf4j.Logger;
@@ -39,7 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import static java.util.concurrent.CompletableFuture.completedFuture;
+import static org.drasyl.peer.connection.pipeline.DirectConnectionInboundMessageSinkHandler.DIRECT_CONNECTION_INBOUND_MESSAGE_SINK_HANDLER;
 import static org.drasyl.peer.connection.pipeline.LoopbackOutboundMessageSinkHandler.LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER;
 
 /**
@@ -48,7 +49,8 @@ import static org.drasyl.peer.connection.pipeline.LoopbackOutboundMessageSinkHan
  * Inspired by: https://github.com/actoron/jadex/blob/10e464b230d7695dfd9bf2b36f736f93d69ee314/platform/base/src/main/java/jadex/platform/service/awareness/IntraVMAwarenessAgent.java
  */
 public class IntraVmDiscovery implements DrasylNodeComponent {
-    public static final String INTRA_VM_SINK_HANDLER = "intraVmSink";
+    public static final String INTRA_VM_INBOUND_MESSAGE_SINK_HANDLER = "INTRA_VM_INBOUND_MESSAGE_SINK_HANDLER";
+    public static final String INTRA_VM_OUTBOUND_MESSAGE_SINK_HANDLER = "INTRA_VM_OUTBOUND_MESSAGE_SINK_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(IntraVmDiscovery.class);
     static final Map<CompressedPublicKey, IntraVmDiscovery> discoveries = new HashMap<>();
     private static final ReadWriteLock lock = new ReentrantReadWriteLock(true);
@@ -65,39 +67,11 @@ public class IntraVmDiscovery implements DrasylNodeComponent {
         this(
                 publicKey,
                 peersManager,
-                message -> {
-                    if (!(message instanceof ApplicationMessage)) {
-                        throw new IllegalArgumentException("IntraVmDiscovery.messageSink can only handle messages of type " + ApplicationMessage.class.getSimpleName());
-                    }
-
-                    final ApplicationMessage applicationMessage = (ApplicationMessage) message;
-                    pipeline.processInbound(applicationMessage);
-
-                    return completedFuture(null);
-                }
+                pipeline::processInbound
         );
 
-        pipeline.addBefore(LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER, INTRA_VM_SINK_HANDLER, new SimpleOutboundHandler<Message, CompressedPublicKey>() {
-            @Override
-            protected void matchedWrite(final HandlerContext ctx,
-                                        final CompressedPublicKey recipient,
-                                        final Message msg,
-                                        final CompletableFuture<Void> future) {
-                if (opened.get()) {
-                    final IntraVmDiscovery discoveree = discoveries.get(recipient);
-
-                    if (discoveree == null) {
-                        ctx.write(recipient, msg, future);
-                    }
-                    else {
-                        FutureUtil.completeOnAllOf(future, discoveree.path.send(msg));
-                    }
-                }
-                else {
-                    ctx.write(recipient, msg, future);
-                }
-            }
-        });
+        pipeline.addBefore(DIRECT_CONNECTION_INBOUND_MESSAGE_SINK_HANDLER, INTRA_VM_INBOUND_MESSAGE_SINK_HANDLER, new InboundMessageHandler(opened));
+        pipeline.addBefore(LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER, INTRA_VM_OUTBOUND_MESSAGE_SINK_HANDLER, new OutboundMessageHandler(opened));
     }
 
     IntraVmDiscovery(final CompressedPublicKey publicKey,
@@ -157,6 +131,70 @@ public class IntraVmDiscovery implements DrasylNodeComponent {
         }
         finally {
             lock.writeLock().unlock();
+        }
+    }
+
+    static class InboundMessageHandler extends SimpleInboundHandler<Message, Event, CompressedPublicKey> {
+        private final AtomicBoolean opened;
+
+        public InboundMessageHandler(final AtomicBoolean opened) {
+            this.opened = opened;
+        }
+
+        @Override
+        protected void matchedEventTriggered(final HandlerContext ctx,
+                                             final Event event,
+                                             final CompletableFuture<Void> future) {
+            ctx.fireEventTriggered(event, future);
+        }
+
+        @Override
+        protected void matchedRead(final HandlerContext ctx,
+                                   final CompressedPublicKey sender,
+                                   final Message msg,
+                                   final CompletableFuture<Void> future) {
+            final CompressedPublicKey recipient = msg.getRecipient();
+            if (opened.get() && !ctx.identity().getPublicKey().equals(recipient)) {
+                final IntraVmDiscovery discoveree = discoveries.get(recipient);
+
+                if (discoveree == null) {
+                    ctx.fireRead(sender, msg, future);
+                }
+                else {
+                    FutureUtil.completeOnAllOf(future, discoveree.path.send(msg));
+                }
+            }
+            else {
+                ctx.fireRead(sender, msg, future);
+            }
+        }
+    }
+
+    static class OutboundMessageHandler extends SimpleOutboundHandler<Message, CompressedPublicKey> {
+        private final AtomicBoolean opened;
+
+        public OutboundMessageHandler(final AtomicBoolean opened) {
+            this.opened = opened;
+        }
+
+        @Override
+        protected void matchedWrite(final HandlerContext ctx,
+                                    final CompressedPublicKey recipient,
+                                    final Message msg,
+                                    final CompletableFuture<Void> future) {
+            if (opened.get()) {
+                final IntraVmDiscovery discoveree = discoveries.get(recipient);
+
+                if (discoveree == null) {
+                    ctx.write(recipient, msg, future);
+                }
+                else {
+                    FutureUtil.completeOnAllOf(future, discoveree.path.send(msg));
+                }
+            }
+            else {
+                ctx.write(recipient, msg, future);
+            }
         }
     }
 }

@@ -119,7 +119,7 @@ class DrasylPipelineIT {
             }
         });
 
-        final ApplicationMessage msg = new ApplicationMessage(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), payload);
+        final ApplicationMessage msg = new ApplicationMessage(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), payload);
 
         pipeline.processInbound(msg);
 
@@ -147,7 +147,7 @@ class DrasylPipelineIT {
             }
         });
 
-        final ApplicationMessage msg = new ApplicationMessage(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), payload);
+        final ApplicationMessage msg = new ApplicationMessage(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), payload);
 
         pipeline.processInbound(msg);
 
@@ -190,7 +190,7 @@ class DrasylPipelineIT {
             }
         });
 
-        final ApplicationMessage msg = new ApplicationMessage(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), payload);
+        final ApplicationMessage msg = new ApplicationMessage(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), payload);
 
         pipeline.processInbound(msg);
 
