@@ -87,8 +87,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static testutils.AnsiColor.COLOR_CYAN;
-import static testutils.AnsiColor.STYLE_REVERSED;
+import static org.drasyl.util.AnsiColor.COLOR_CYAN;
+import static org.drasyl.util.AnsiColor.STYLE_REVERSED;
 import static testutils.TestHelper.colorizedPrintln;
 
 //import net.jcip.annotations.NotThreadSafe;

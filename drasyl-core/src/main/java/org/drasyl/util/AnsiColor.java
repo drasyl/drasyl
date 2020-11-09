@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package testutils;
+package org.drasyl.util;
 
 public enum AnsiColor {
     COLOR_RESET("\u001B[0m"),

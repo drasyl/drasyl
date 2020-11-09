@@ -25,8 +25,11 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
+import org.drasyl.peer.connection.pipeline.DirectConnectionInboundMessageSinkHandler;
 import org.drasyl.peer.connection.pipeline.DirectConnectionOutboundMessageSinkHandler;
+import org.drasyl.peer.connection.pipeline.LoopbackInboundMessageSinkHandler;
 import org.drasyl.peer.connection.pipeline.LoopbackOutboundMessageSinkHandler;
+import org.drasyl.peer.connection.pipeline.SuperPeerInboundMessageSinkHandler;
 import org.drasyl.peer.connection.pipeline.SuperPeerOutboundMessageSinkHandler;
 import org.drasyl.pipeline.codec.ApplicationMessage2ObjectHolderHandler;
 import org.drasyl.pipeline.codec.DefaultCodec;
@@ -40,8 +43,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+import static org.drasyl.peer.connection.pipeline.DirectConnectionInboundMessageSinkHandler.DIRECT_CONNECTION_INBOUND_MESSAGE_SINK_HANDLER;
 import static org.drasyl.peer.connection.pipeline.DirectConnectionOutboundMessageSinkHandler.DIRECT_CONNECTION_OUTBOUND_MESSAGE_SINK_HANDLER;
+import static org.drasyl.peer.connection.pipeline.LoopbackInboundMessageSinkHandler.LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER;
 import static org.drasyl.peer.connection.pipeline.LoopbackOutboundMessageSinkHandler.LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER;
+import static org.drasyl.peer.connection.pipeline.SuperPeerInboundMessageSinkHandler.SUPER_PEER_INBOUND_MESSAGE_SINK_HANDLER;
 import static org.drasyl.peer.connection.pipeline.SuperPeerOutboundMessageSinkHandler.SUPER_PEER_OUTBOUND_MESSAGE_SINK_HANDLER;
 import static org.drasyl.pipeline.HopCountGuard.HOP_COUNT_GUARD;
 import static org.drasyl.pipeline.InvalidProofOfWorkFilter.INVALID_PROOF_OF_WORK_FILTER;
@@ -80,8 +86,13 @@ public class DrasylPipeline extends DefaultPipeline {
         // outbound message guards
         addFirst(HOP_COUNT_GUARD, HopCountGuard.INSTANCE);
 
-        // message sinks for outbound messages
-        addFirst(LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER, new LoopbackOutboundMessageSinkHandler(started, peersManager, endpoints));
+        // local message delivery
+        addFirst(LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER, new LoopbackInboundMessageSinkHandler(started, peersManager, endpoints));
+        addFirst(LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER, LoopbackOutboundMessageSinkHandler.INSTANCE);
+
+        // remote message delivery
+        addFirst(SUPER_PEER_INBOUND_MESSAGE_SINK_HANDLER, new SuperPeerInboundMessageSinkHandler(channelGroup, peersManager));
+        addFirst(DIRECT_CONNECTION_INBOUND_MESSAGE_SINK_HANDLER, new DirectConnectionInboundMessageSinkHandler(channelGroup));
         addFirst(DIRECT_CONNECTION_OUTBOUND_MESSAGE_SINK_HANDLER, new DirectConnectionOutboundMessageSinkHandler(channelGroup));
         addFirst(SUPER_PEER_OUTBOUND_MESSAGE_SINK_HANDLER, new SuperPeerOutboundMessageSinkHandler(channelGroup, peersManager));
 

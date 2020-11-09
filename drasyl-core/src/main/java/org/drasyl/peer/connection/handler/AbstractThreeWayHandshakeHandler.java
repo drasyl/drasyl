@@ -132,7 +132,7 @@ abstract class AbstractThreeWayHandshakeHandler extends SimpleChannelDuplexHandl
     @SuppressWarnings({ "java:S1172" })
     protected void processMessageAfterHandshake(final ChannelHandlerContext ctx,
                                                 final Message message) {
-        pipeline.processOutbound(message.getRecipient(), message).whenComplete((done, e) -> {
+        pipeline.processInbound(message.getSender(), message).whenComplete((done, e) -> {
             if (e != null) {
                 getLogger().trace("Unable to send Message {}: {}", message, e.getMessage());
             }

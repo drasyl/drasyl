@@ -18,10 +18,12 @@
  */
 package org.drasyl.pipeline;
 
+import org.drasyl.util.AnsiColor;
+
 /**
  * Helper class to visualize the {@link Handler} order of a given {@link DefaultPipeline}.
  */
-@SuppressWarnings({ "java:S106" })
+@SuppressWarnings({ "java:S106", "java:S1192" })
 public class VisualPipeline {
     private static final int MAX_LINE_WIDTH = 76;
     private static final String DIV_LINE = "--------------------------------------------------------------------------------";
@@ -39,21 +41,21 @@ public class VisualPipeline {
 
         System.out.println("\nInbound Handler Order:");
 
-        for (boolean first = true;
-             currentContext.getNext() != null;
-             currentContext = currentContext.findNextInbound(),
-                     first = false) {
-            if (!first) {
-                printArrow();
-            }
+        printPretty("NETWORK", AnsiColor.COLOR_RED);
 
-            printPretty(currentContext.name());
+        for (; currentContext.getNext() != null;
+             currentContext = currentContext.findNextInbound()) {
+            printArrow(AnsiColor.COLOR_GREEN);
+            printPretty(currentContext.name(), AnsiColor.COLOR_GREEN);
         }
+
+        printArrow(AnsiColor.COLOR_GREEN);
+        printPretty("APPLICATION", AnsiColor.COLOR_PURPLE);
     }
 
     /**
-     * Prints the current outbound {@link SimpleOutboundHandler}s in the sequence of execution to
-     * the console.
+     * Prints the current outbound {@link SimpleInboundHandler}s in the sequence of execution to the
+     * console.
      *
      * @param pipeline the pipeline that should be printed
      */
@@ -62,14 +64,19 @@ public class VisualPipeline {
 
         System.out.println("\nSimpleInbound Handler Order:");
 
+        printPretty("NETWORK", AnsiColor.COLOR_RED);
+
         for (;
              currentContext.getNext() != null;
              currentContext = currentContext.findNextInbound()) {
             if (currentContext.handler() instanceof SimpleInboundHandler) {
-                printArrow();
-                printPretty(currentContext.name());
+                printArrow(AnsiColor.COLOR_GREEN);
+                printPretty(currentContext.name(), AnsiColor.COLOR_GREEN);
             }
         }
+
+        printArrow(AnsiColor.COLOR_GREEN);
+        printPretty("APPLICATION", AnsiColor.COLOR_PURPLE);
     }
 
     /**
@@ -82,15 +89,17 @@ public class VisualPipeline {
 
         System.out.println("\nOutbound Handler Order:");
 
-        for (boolean first = true;
-             currentContext.getPrev() != null;
-             currentContext = currentContext.findPrevOutbound(), first = false) {
-            if (!first) {
-                printArrow();
-            }
+        printPretty("APPLICATION", AnsiColor.COLOR_PURPLE);
 
-            printPretty(currentContext.name());
+        for (;
+             currentContext.getPrev() != null;
+             currentContext = currentContext.findPrevOutbound()) {
+            printArrow(AnsiColor.COLOR_BLUE);
+            printPretty(currentContext.name(), AnsiColor.COLOR_BLUE);
         }
+
+        printArrow(AnsiColor.COLOR_BLUE);
+        printPretty("NETWORK", AnsiColor.COLOR_RED);
     }
 
     /**
@@ -104,23 +113,28 @@ public class VisualPipeline {
 
         System.out.println("\nSimpleOutbound Handler Order:");
 
+        printPretty("APPLICATION", AnsiColor.COLOR_PURPLE);
+
         for (;
              currentContext.getPrev() != null;
              currentContext = currentContext.findPrevOutbound()) {
             if (currentContext.handler() instanceof SimpleOutboundHandler || currentContext.handler() instanceof SimpleDuplexHandler) {
-                printArrow();
-                printPretty(currentContext.name());
+                printArrow(AnsiColor.COLOR_BLUE);
+                printPretty(currentContext.name(), AnsiColor.COLOR_BLUE);
             }
         }
+
+        printArrow(AnsiColor.COLOR_BLUE);
+        printPretty("NETWORK", AnsiColor.COLOR_RED);
     }
 
-    private static void printPretty(final String s) {
-        System.out.println(DIV_LINE);
-        System.out.println("| " + String.format("%-" + MAX_LINE_WIDTH + "." + MAX_LINE_WIDTH + "s", s) + " |");
-        System.out.println(DIV_LINE);
+    private static void printPretty(final String s, final AnsiColor color) {
+        System.out.println(color.getColor() + DIV_LINE + AnsiColor.COLOR_RESET.getColor());
+        System.out.println(color.getColor() + "| " + String.format("%-" + MAX_LINE_WIDTH + "." + MAX_LINE_WIDTH + "s", s) + " |" + AnsiColor.COLOR_RESET.getColor());
+        System.out.println(color.getColor() + DIV_LINE + AnsiColor.COLOR_RESET.getColor());
     }
 
-    private static void printArrow() {
-        System.out.printf("%41.41s%n", "↓↓↓");
+    private static void printArrow(final AnsiColor color) {
+        System.out.print(color.getColor() + String.format("%41.41s%n", "↓↓↓") + AnsiColor.COLOR_RESET.getColor());
     }
 }

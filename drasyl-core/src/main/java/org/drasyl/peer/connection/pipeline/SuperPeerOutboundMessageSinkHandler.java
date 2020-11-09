@@ -50,7 +50,7 @@ public class SuperPeerOutboundMessageSinkHandler extends SimpleOutboundHandler<M
                                 final Message msg,
                                 final CompletableFuture<Void> future) {
         final CompressedPublicKey superPeer = peersManager.getSuperPeerKey();
-        if (superPeer != null && !recipient.equals(superPeer)) {
+        if (superPeer != null) {
             try {
                 FutureUtil.completeOnAllOf(future, toFuture(channelGroup.writeAndFlush(superPeer, msg)));
             }

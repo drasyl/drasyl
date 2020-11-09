@@ -18,10 +18,11 @@
  */
 package testutils;
 
+import org.drasyl.util.AnsiColor;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import static testutils.AnsiColor.COLOR_RESET;
+import static org.drasyl.util.AnsiColor.COLOR_RESET;
 
 public final class TestHelper {
     private static final Logger LOG = LoggerFactory.getLogger(TestHelper.class);

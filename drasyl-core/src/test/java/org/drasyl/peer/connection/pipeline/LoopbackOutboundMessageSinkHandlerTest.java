@@ -22,24 +22,17 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.ApplicationMessage;
-import org.drasyl.peer.connection.message.IdentityMessage;
 import org.drasyl.peer.connection.message.Message;
-import org.drasyl.peer.connection.message.WhoisMessage;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.codec.TypeValidator;
+import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Set;
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
-
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -47,26 +40,7 @@ class LoopbackOutboundMessageSinkHandlerTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
     @Mock(answer = RETURNS_DEEP_STUBS)
-    private PeersManager peersManager;
-    @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylConfig config;
-
-    @Test
-    void shouldPassMessageIfNodeIsNotStarted(@Mock final CompressedPublicKey recipient,
-                                             @Mock final ApplicationMessage message) {
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                config,
-                identity,
-                TypeValidator.ofInboundValidator(config),
-                TypeValidator.ofOutboundValidator(config),
-                new LoopbackOutboundMessageSinkHandler(new AtomicBoolean(false), peersManager, Set.of())
-        );
-        final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
-
-        pipeline.processOutbound(recipient, message);
-
-        outboundMessages.awaitCount(1).assertValueCount(1);
-    }
 
     @Test
     void shouldPassMessageIfRecipientIsNotLocalNode(@Mock final CompressedPublicKey recipient,
@@ -76,7 +50,7 @@ class LoopbackOutboundMessageSinkHandlerTest {
                 identity,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                new LoopbackOutboundMessageSinkHandler(new AtomicBoolean(true), peersManager, Set.of())
+                LoopbackOutboundMessageSinkHandler.INSTANCE
         );
         final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
 
@@ -86,8 +60,8 @@ class LoopbackOutboundMessageSinkHandlerTest {
     }
 
     @Test
-    void shouldAddPeerAndProcessMessageOnApplicationMessage(@Mock final CompressedPublicKey recipient,
-                                                            @Mock final ApplicationMessage message) {
+    void shouldBounceMessageIfRecipientIsLocalNode(@Mock final CompressedPublicKey recipient,
+                                                   @Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
         when(identity.getPublicKey()).thenReturn(recipient);
 
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
@@ -95,56 +69,12 @@ class LoopbackOutboundMessageSinkHandlerTest {
                 identity,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                new LoopbackOutboundMessageSinkHandler(new AtomicBoolean(true), peersManager, Set.of())
+                LoopbackOutboundMessageSinkHandler.INSTANCE
         );
-        final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
-        final CompletableFuture<Void> future = pipeline.processOutbound(recipient, message);
+        final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessages = pipeline.inboundMessages().test();
 
-        future.join();
+        pipeline.processOutbound(recipient, message);
 
-        outboundMessages.assertNoValues();
-        verify(peersManager).addPeer(message.getSender());
-    }
-
-    @Test
-    void shouldSetPeerInformationAndSendIdentityMessageOnWhoisMessage(@Mock final CompressedPublicKey recipient,
-                                                                      @Mock(answer = RETURNS_DEEP_STUBS) final WhoisMessage message) {
-        when(identity.getPublicKey()).thenReturn(recipient);
-
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                config,
-                identity,
-                TypeValidator.ofInboundValidator(config),
-                TypeValidator.ofOutboundValidator(config),
-                new LoopbackOutboundMessageSinkHandler(new AtomicBoolean(true), peersManager, Set.of())
-        );
-        final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
-        final CompletableFuture<Void> future = pipeline.processOutbound(recipient, message);
-
-        future.join();
-
-        outboundMessages.awaitCount(1).assertValueCount(1);
-        verify(peersManager).setPeerInformation(message.getSender(), message.getPeerInformation());
-    }
-
-    @Test
-    void shouldSetPeerInformationOnIdentityMessage(@Mock final CompressedPublicKey recipient,
-                                                   @Mock(answer = RETURNS_DEEP_STUBS) final IdentityMessage message) {
-        when(identity.getPublicKey()).thenReturn(recipient);
-
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                config,
-                identity,
-                TypeValidator.ofInboundValidator(config),
-                TypeValidator.ofOutboundValidator(config),
-                new LoopbackOutboundMessageSinkHandler(new AtomicBoolean(true), peersManager, Set.of())
-        );
-        final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
-        final CompletableFuture<Void> future = pipeline.processOutbound(recipient, message);
-
-        future.join();
-
-        outboundMessages.assertNoValues();
-        verify(peersManager).setPeerInformation(message.getSender(), message.getPeerInformation());
+        inboundMessages.awaitCount(1).assertValueCount(1);
     }
 }
