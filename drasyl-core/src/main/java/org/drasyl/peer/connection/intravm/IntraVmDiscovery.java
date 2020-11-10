@@ -19,7 +19,6 @@
 package org.drasyl.peer.connection.intravm;
 
 import org.drasyl.DrasylNodeComponent;
-import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
@@ -141,18 +140,11 @@ public class IntraVmDiscovery implements DrasylNodeComponent {
         }
     }
 
-    static class InboundMessageHandler extends SimpleInboundHandler<Message, Event, CompressedPublicKey> {
+    static class InboundMessageHandler extends SimpleInboundHandler<Message, CompressedPublicKey> {
         private final AtomicBoolean opened;
 
         public InboundMessageHandler(final AtomicBoolean opened) {
             this.opened = opened;
-        }
-
-        @Override
-        protected void matchedEventTriggered(final HandlerContext ctx,
-                                             final Event event,
-                                             final CompletableFuture<Void> future) {
-            ctx.fireEventTriggered(event, future);
         }
 
         @Override

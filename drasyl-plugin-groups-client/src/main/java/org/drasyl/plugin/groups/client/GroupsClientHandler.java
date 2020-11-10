@@ -19,12 +19,11 @@
 package org.drasyl.plugin.groups.client;
 
 import io.reactivex.rxjava3.disposables.Disposable;
-import org.drasyl.event.Event;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.SimpleInboundHandler;
+import org.drasyl.pipeline.SimpleInboundEventAwareHandler;
 import org.drasyl.plugin.groups.client.event.GroupJoinFailedEvent;
 import org.drasyl.plugin.groups.client.event.GroupJoinedEvent;
 import org.drasyl.plugin.groups.client.event.GroupLeftEvent;
@@ -52,7 +51,7 @@ import java.util.stream.Collectors;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
-public class GroupsClientHandler extends SimpleInboundHandler<GroupsServerMessage, Event, CompressedPublicKey> {
+public class GroupsClientHandler extends SimpleInboundEventAwareHandler<GroupsServerMessage, NodeOnlineEvent, CompressedPublicKey> {
     private static final Logger LOG = LoggerFactory.getLogger(GroupsClientHandler.class);
     private final Map<Group, GroupUri> groups;
     private final List<Disposable> renewTasks;
@@ -99,13 +98,10 @@ public class GroupsClientHandler extends SimpleInboundHandler<GroupsServerMessag
 
     @Override
     protected void matchedEventTriggered(final HandlerContext ctx,
-                                         final Event event,
+                                         final NodeOnlineEvent event,
                                          final CompletableFuture<Void> future) {
-        if (event instanceof NodeOnlineEvent) {
-            // join every group
-            ctx.scheduler().scheduleDirect(() -> groups.values().forEach(group -> joinGroup(ctx, group)));
-        }
-
+        // join every group
+        ctx.scheduler().scheduleDirect(() -> groups.values().forEach(group -> joinGroup(ctx, group)));
         ctx.fireEventTriggered(event, future);
     }
 

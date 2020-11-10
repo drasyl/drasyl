@@ -18,7 +18,6 @@
  */
 package org.drasyl.peer.connection.pipeline;
 
-import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
@@ -34,7 +33,7 @@ import static org.drasyl.util.FutureUtil.toFuture;
 /**
  * This handler sends all inbound messages to the super peer.
  */
-public class SuperPeerInboundMessageSinkHandler extends SimpleInboundHandler<Message, Event, CompressedPublicKey> {
+public class SuperPeerInboundMessageSinkHandler extends SimpleInboundHandler<Message, CompressedPublicKey> {
     public static final String SUPER_PEER_INBOUND_MESSAGE_SINK_HANDLER = "SUPER_PEER_INBOUND_MESSAGE_SINK_HANDLER";
     private final PeerChannelGroup channelGroup;
     private final PeersManager peersManager;
@@ -43,13 +42,6 @@ public class SuperPeerInboundMessageSinkHandler extends SimpleInboundHandler<Mes
                                               final PeersManager peersManager) {
         this.channelGroup = channelGroup;
         this.peersManager = peersManager;
-    }
-
-    @Override
-    protected void matchedEventTriggered(final HandlerContext ctx,
-                                         final Event event,
-                                         final CompletableFuture<Void> future) {
-        ctx.fireEventTriggered(event, future);
     }
 
     @Override

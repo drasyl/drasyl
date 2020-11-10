@@ -18,7 +18,6 @@
  */
 package org.drasyl.pipeline;
 
-import org.drasyl.event.Event;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.pipeline.address.Address;
 import org.slf4j.Logger;
@@ -29,19 +28,12 @@ import java.util.concurrent.CompletableFuture;
 /**
  * This handler filters out all messages received from other networks.
  */
-public class OtherNetworkFilter extends SimpleInboundHandler<Message, Event, Address> {
+public class OtherNetworkFilter extends SimpleInboundHandler<Message, Address> {
     public static final OtherNetworkFilter INSTANCE = new OtherNetworkFilter();
     public static final String OTHER_NETWORK_FILTER = "OTHER_NETWORK_FILTER";
     private static final Logger LOG = LoggerFactory.getLogger(OtherNetworkFilter.class);
 
     private OtherNetworkFilter() {
-    }
-
-    @Override
-    protected void matchedEventTriggered(final HandlerContext ctx,
-                                         final Event event,
-                                         final CompletableFuture<Void> future) {
-        ctx.fireEventTriggered(event, future);
     }
 
     @Override

@@ -77,7 +77,7 @@ class SimpleDuplexHandlerTest {
             final byte[] payload = new byte[]{};
             final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
 
-            final SimpleDuplexHandler<Object, Event, byte[], CompressedPublicKey> handler = new SimpleDuplexHandler<>() {
+            final SimpleDuplexHandler<Object, byte[], CompressedPublicKey> handler = new SimpleDuplexHandler<>() {
                 @Override
                 protected void matchedEventTriggered(final HandlerContext ctx, final Event event,
                                                      final CompletableFuture<Void> future) {
@@ -120,7 +120,7 @@ class SimpleDuplexHandlerTest {
 
         @Test
         void shouldPassthroughsNotMatchingMessage() {
-            final SimpleDuplexHandler<Object, Event, ErrorMessage, CompressedPublicKey> handler = new SimpleDuplexHandler<>(Object.class, Event.class, ErrorMessage.class, CompressedPublicKey.class) {
+            final SimpleDuplexEventAwareHandler<Object, Event, ErrorMessage, CompressedPublicKey> handler = new SimpleDuplexEventAwareHandler<>(Object.class, Event.class, ErrorMessage.class, CompressedPublicKey.class) {
                 @Override
                 protected void matchedEventTriggered(final HandlerContext ctx,
                                                      final Event event,
@@ -175,7 +175,7 @@ class SimpleDuplexHandlerTest {
     class InboundTest {
         @Test
         void shouldTriggerOnMatchedMessage() throws JsonProcessingException {
-            final SimpleDuplexHandler<byte[], Event, Object, CompressedPublicKey> handler = new SimpleDuplexHandler<>() {
+            final SimpleDuplexEventAwareHandler<byte[], Event, Object, CompressedPublicKey> handler = new SimpleDuplexEventAwareHandler<>() {
                 @Override
                 protected void matchedWrite(final HandlerContext ctx,
                                             final CompressedPublicKey recipient,
@@ -228,7 +228,7 @@ class SimpleDuplexHandlerTest {
 
         @Test
         void shouldPassthroughsNotMatchingMessage() {
-            final SimpleDuplexHandler<List<?>, Event, Object, CompressedPublicKey> handler = new SimpleDuplexHandler<>() {
+            final SimpleDuplexHandler<List<?>, Object, CompressedPublicKey> handler = new SimpleDuplexHandler<>() {
                 @Override
                 protected void matchedWrite(final HandlerContext ctx,
                                             final CompressedPublicKey recipient,
@@ -284,7 +284,7 @@ class SimpleDuplexHandlerTest {
 
         @Test
         void shouldTriggerOnMatchedEvent() throws InterruptedException {
-            final SimpleDuplexHandler<ApplicationMessage, NodeUpEvent, Object, CompressedPublicKey> handler = new SimpleDuplexHandler<>(ApplicationMessage.class, NodeUpEvent.class, Object.class, CompressedPublicKey.class) {
+            final SimpleDuplexEventAwareHandler<ApplicationMessage, NodeUpEvent, Object, CompressedPublicKey> handler = new SimpleDuplexEventAwareHandler<>(ApplicationMessage.class, NodeUpEvent.class, Object.class, CompressedPublicKey.class) {
                 @Override
                 protected void matchedWrite(final HandlerContext ctx,
                                             final CompressedPublicKey recipient,
@@ -321,7 +321,7 @@ class SimpleDuplexHandlerTest {
 
         @Test
         void shouldPassthroughsNotMatchingEvents() {
-            final SimpleDuplexHandler<ErrorMessage, NodeUpEvent, Object, CompressedPublicKey> handler = new SimpleDuplexHandler<>() {
+            final SimpleDuplexEventAwareHandler<ErrorMessage, NodeUpEvent, Object, CompressedPublicKey> handler = new SimpleDuplexEventAwareHandler<>() {
                 @Override
                 protected void matchedWrite(final HandlerContext ctx,
                                             final CompressedPublicKey recipient,
