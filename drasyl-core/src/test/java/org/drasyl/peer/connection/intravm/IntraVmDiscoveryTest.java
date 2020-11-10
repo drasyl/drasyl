@@ -47,6 +47,7 @@ import static org.mockito.Mockito.verify;
 
 @ExtendWith(MockitoExtension.class)
 class IntraVmDiscoveryTest {
+    private final int networkId = 1;
     @Mock
     private CompressedPublicKey publicKey;
     @Mock
@@ -62,7 +63,7 @@ class IntraVmDiscoveryTest {
     class Constructor {
         @Test
         void shouldAddHandlerToPipeline() {
-            try (final IntraVmDiscovery underTest = new IntraVmDiscovery(publicKey, peersManager, pipeline)) {
+            try (final IntraVmDiscovery underTest = new IntraVmDiscovery(networkId, publicKey, peersManager, pipeline)) {
                 verify(pipeline, times(2)).addBefore(anyString(), anyString(), any());
             }
         }
@@ -72,7 +73,7 @@ class IntraVmDiscoveryTest {
     class Open {
         @Test
         void shouldAddToDiscoveries() {
-            try (final IntraVmDiscovery underTest = new IntraVmDiscovery(publicKey, peersManager, path, peerInformation, new AtomicBoolean(false))) {
+            try (final IntraVmDiscovery underTest = new IntraVmDiscovery(networkId, publicKey, peersManager, path, peerInformation, new AtomicBoolean(false))) {
                 underTest.open();
 
                 assertThat(IntraVmDiscovery.discoveries, aMapWithSize(1));
@@ -84,7 +85,7 @@ class IntraVmDiscoveryTest {
     class Close {
         @Test
         void shouldRemovePeerInformation() {
-            try (final IntraVmDiscovery underTest = new IntraVmDiscovery(publicKey, peersManager, path, peerInformation, new AtomicBoolean(true))) {
+            try (final IntraVmDiscovery underTest = new IntraVmDiscovery(networkId, publicKey, peersManager, path, peerInformation, new AtomicBoolean(true))) {
                 underTest.close();
 
                 assertThat(IntraVmDiscovery.discoveries, aMapWithSize(0));
