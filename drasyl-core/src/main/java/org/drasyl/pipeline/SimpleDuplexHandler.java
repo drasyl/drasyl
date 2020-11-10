@@ -18,7 +18,7 @@
  */
 package org.drasyl.pipeline;
 
-import io.netty.util.internal.TypeParameterMatcher;
+import org.drasyl.event.Event;
 import org.drasyl.pipeline.address.Address;
 
 import java.util.concurrent.CompletableFuture;
@@ -28,54 +28,20 @@ import java.util.concurrent.CompletableFuture;
  * events.
  */
 @SuppressWarnings("common-java:DuplicatedBlocks")
-public abstract class SimpleDuplexHandler<I, E, O, A extends Address> extends SimpleInboundHandler<I, E, A> {
-    private final TypeParameterMatcher outboundMessageMatcher;
-
+public abstract class SimpleDuplexHandler<I, O, A extends Address> extends SimpleDuplexEventAwareHandler<I, Event, O, A> {
     protected SimpleDuplexHandler() {
-        outboundMessageMatcher = TypeParameterMatcher.find(this, SimpleDuplexHandler.class, "O");
     }
 
     protected SimpleDuplexHandler(final Class<? extends I> inboundMessageType,
-                                  final Class<? extends E> inboundEventType,
                                   final Class<? extends O> outboundMessageType,
                                   final Class<? extends A> addressType) {
-        super(inboundMessageType, inboundEventType, addressType);
-        outboundMessageMatcher = TypeParameterMatcher.get(outboundMessageType);
+        super(inboundMessageType, Event.class, outboundMessageType, addressType);
     }
 
     @Override
-    public void write(final HandlerContext ctx,
-                      final Address recipient,
-                      final Object msg,
-                      final CompletableFuture<Void> future) {
-        if (acceptOutbound(msg) && acceptAddress(recipient)) {
-            @SuppressWarnings("unchecked") final O castedMsg = (O) msg;
-            @SuppressWarnings("unchecked") final A castedAddress = (A) recipient;
-            matchedWrite(ctx, castedAddress, castedMsg, future);
-        }
-        else {
-            ctx.write(recipient, msg, future);
-        }
+    protected void matchedEventTriggered(final HandlerContext ctx,
+                                         final Event event,
+                                         final CompletableFuture<Void> future) {
+        ctx.fireEventTriggered(event, future);
     }
-
-    /**
-     * Returns {@code true} if the given message should be handled. If {@code false} it will be
-     * passed to the next {@link Handler} in the {@link Pipeline}.
-     */
-    protected boolean acceptOutbound(final Object msg) {
-        return outboundMessageMatcher.match(msg);
-    }
-
-    /**
-     * Is called for each message of type {@link O}.
-     *
-     * @param ctx       handler context
-     * @param recipient the recipient of the message
-     * @param msg       the message
-     * @param future    a future for the message
-     */
-    protected abstract void matchedWrite(HandlerContext ctx,
-                                         A recipient,
-                                         O msg,
-                                         CompletableFuture<Void> future);
 }

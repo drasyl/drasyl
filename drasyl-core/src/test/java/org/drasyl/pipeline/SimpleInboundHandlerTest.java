@@ -56,7 +56,6 @@ class SimpleInboundHandlerTest {
     @Mock
     private Identity identity;
     private DrasylConfig config;
-    private final int networkId = 1;
 
     @BeforeEach
     void setUp() {
@@ -65,7 +64,7 @@ class SimpleInboundHandlerTest {
 
     @Test
     void shouldTriggerOnMatchedMessage() throws JsonProcessingException {
-        final SimpleInboundHandler<byte[], Event, CompressedPublicKey> handler = new SimpleInboundHandler<>() {
+        final SimpleInboundEventAwareHandler<byte[], Event, CompressedPublicKey> handler = new SimpleInboundEventAwareHandler<>() {
             @Override
             protected void matchedEventTriggered(final HandlerContext ctx,
                                                  final Event event,
@@ -100,6 +99,7 @@ class SimpleInboundHandlerTest {
         final ProofOfWork proofOfWork = mock(ProofOfWork.class);
         when(identity.getProofOfWork()).thenReturn(proofOfWork);
         final byte[] msg = JSONUtil.JACKSON_WRITER.writeValueAsBytes(new byte[]{});
+        final int networkId = 1;
         pipeline.processInbound(new ApplicationMessage(networkId, sender, proofOfWork, sender, msg));
 
         outboundMessageTestObserver.awaitCount(1).assertValueCount(1);
@@ -110,7 +110,7 @@ class SimpleInboundHandlerTest {
 
     @Test
     void shouldPassthroughsNotMatchingMessage() {
-        final SimpleInboundHandler<List<?>, Event, CompressedPublicKey> handler = new SimpleInboundHandler<>() {
+        final SimpleInboundEventAwareHandler<List<?>, Event, CompressedPublicKey> handler = new SimpleInboundEventAwareHandler<>() {
             @Override
             protected void matchedEventTriggered(final HandlerContext ctx,
                                                  final Event event,
@@ -158,7 +158,7 @@ class SimpleInboundHandlerTest {
 
     @Test
     void shouldTriggerOnMatchedEvent() throws InterruptedException {
-        final SimpleInboundHandler<ApplicationMessage, NodeUpEvent, CompressedPublicKey> handler = new SimpleInboundHandler<>(ApplicationMessage.class, NodeUpEvent.class, CompressedPublicKey.class) {
+        final SimpleInboundEventAwareHandler<ApplicationMessage, NodeUpEvent, CompressedPublicKey> handler = new SimpleInboundEventAwareHandler<>(ApplicationMessage.class, NodeUpEvent.class, CompressedPublicKey.class) {
             @Override
             protected void matchedEventTriggered(final HandlerContext ctx,
                                                  final NodeUpEvent event,
@@ -187,7 +187,7 @@ class SimpleInboundHandlerTest {
 
     @Test
     void shouldPassthroughsNotMatchingEvents() {
-        final SimpleInboundHandler<ErrorMessage, NodeUpEvent, CompressedPublicKey> handler = new SimpleInboundHandler<>() {
+        final SimpleInboundEventAwareHandler<ErrorMessage, NodeUpEvent, CompressedPublicKey> handler = new SimpleInboundEventAwareHandler<>() {
             @Override
             protected void matchedEventTriggered(final HandlerContext ctx,
                                                  final NodeUpEvent event,

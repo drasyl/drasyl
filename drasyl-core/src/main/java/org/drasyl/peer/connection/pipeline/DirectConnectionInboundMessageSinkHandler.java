@@ -18,7 +18,6 @@
  */
 package org.drasyl.peer.connection.pipeline;
 
-import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.Message;
@@ -30,19 +29,12 @@ import java.util.concurrent.CompletableFuture;
 /**
  * This handler tries to process inbound messages via TCP-based direct connection to another peers.
  */
-public class DirectConnectionInboundMessageSinkHandler extends SimpleInboundHandler<Message, Event, CompressedPublicKey> {
+public class DirectConnectionInboundMessageSinkHandler extends SimpleInboundHandler<Message, CompressedPublicKey> {
     public static final String DIRECT_CONNECTION_INBOUND_MESSAGE_SINK_HANDLER = "DIRECT_CONNECTION_INBOUND_MESSAGE_SINK_HANDLER";
     private final PeerChannelGroup channelGroup;
 
     public DirectConnectionInboundMessageSinkHandler(final PeerChannelGroup channelGroup) {
         this.channelGroup = channelGroup;
-    }
-
-    @Override
-    protected void matchedEventTriggered(final HandlerContext ctx,
-                                         final Event event,
-                                         final CompletableFuture<Void> future) {
-        ctx.fireEventTriggered(event, future);
     }
 
     @Override

@@ -18,7 +18,6 @@
  */
 package org.drasyl.peer.connection.intravm;
 
-import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
@@ -95,19 +94,6 @@ class IntraVmDiscoveryTest {
 
     @Nested
     class InboundMessageHandlerTest {
-        @Nested
-        class MatchedEventTriggered {
-            @Test
-            void shouldPassAllEvents(@Mock final HandlerContext ctx,
-                                     @Mock final Event event,
-                                     @Mock final CompletableFuture<Void> future) {
-                final InboundMessageHandler underTest = new InboundMessageHandler(new AtomicBoolean(false));
-                underTest.matchedEventTriggered(ctx, event, future);
-
-                verify(ctx).fireEventTriggered(event, future);
-            }
-        }
-
         @Nested
         class MatchedRead {
             @Test

@@ -18,7 +18,6 @@
  */
 package org.drasyl.pipeline.codec;
 
-import org.drasyl.event.Event;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.SimpleDuplexHandler;
 import org.drasyl.pipeline.address.Address;
@@ -40,19 +39,11 @@ import java.util.function.Consumer;
  *
  * <p>
  * <b>Note</b>: You can use the {@link HandlerContext#inboundValidator()}} or {@link
- * HandlerContext#outboundValidator()}} to check if a given {@code
- * Class} is allowed to be encode/decode.
+ * HandlerContext#outboundValidator()}} to check if a given {@code Class} is allowed to be
+ * encode/decode.
  * </p>
  */
-public abstract class Codec<E, D, A extends Address> extends SimpleDuplexHandler<E, Event, D, A> {
-    @Override
-    protected void matchedEventTriggered(final HandlerContext ctx,
-                                         final Event event,
-                                         final CompletableFuture<Void> future) {
-        // Skip
-        ctx.fireEventTriggered(event, future);
-    }
-
+public abstract class Codec<E, D, A extends Address> extends SimpleDuplexHandler<E, D, A> {
     @Override
     protected void matchedRead(final HandlerContext ctx,
                                final A sender,

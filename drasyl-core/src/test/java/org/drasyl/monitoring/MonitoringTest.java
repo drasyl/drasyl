@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.monitoring;
 
 import io.micrometer.core.instrument.MeterRegistry;
@@ -82,7 +81,7 @@ class MonitoringTest {
         void shouldAddHandlerToPipelineAndListenOnPeerRelayEvents(@Mock(answer = Answers.RETURNS_DEEP_STUBS) final HandlerContext ctx) {
             when(registrySupplier.get()).thenReturn(registry);
             when(pipeline.addFirst(eq(MONITORING_HANDLER), any())).then(invocation -> {
-                final SimpleDuplexHandler<?, ?, ?, Address> handler = invocation.getArgument(1);
+                final SimpleDuplexHandler<?, ?, Address> handler = invocation.getArgument(1);
                 handler.eventTriggered(ctx, mock(Event.class), new CompletableFuture<>());
                 handler.read(ctx, mock(Address.class), mock(Object.class), new CompletableFuture<>());
                 handler.write(ctx, mock(Address.class), mock(Object.class), new CompletableFuture<>());

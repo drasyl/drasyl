@@ -18,9 +18,7 @@
  */
 package org.drasyl.pipeline;
 
-import io.netty.util.internal.TypeParameterMatcher;
 import org.drasyl.event.Event;
-import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.address.Address;
@@ -28,21 +26,14 @@ import org.drasyl.pipeline.address.Address;
 import java.util.concurrent.CompletableFuture;
 
 /**
- * {@link HandlerAdapter} which allows to explicit only handle a specific type of messages and
- * events.
+ * {@link HandlerAdapter} which allows to explicit only handle a specific type of inbound messages.
  * <p>
- * For example here is an implementation which only handle {@link MessageEvent} events.
+ * For example here is an implementation which only handle inbound {@link ApplicationMessage}
+ * messages.
  *
  * <pre>
  *     public class MessageEventHandler extends
- *             {@link SimpleInboundHandler}&lt;{@link ApplicationMessage}, {@link MessageEvent},
- *             {@link CompressedPublicKey}&gt; {
- *
- *        {@code @Override}
- *         protected void matchedEventTriggered({@link HandlerContext} ctx,
- *             {@link MessageEvent} event) {
- *             System.out.println(event);
- *         }
+ *             {@link SimpleInboundHandler}&lt;{@link ApplicationMessage}, {@link CompressedPublicKey}&gt; {
  *
  *        {@code @Override}
  *         protected void matchedRead({@link HandlerContext} ctx,
@@ -53,99 +44,25 @@ import java.util.concurrent.CompletableFuture;
  *     }
  * </pre>
  */
-public abstract class SimpleInboundHandler<I, E, A extends Address> extends AddressHandlerAdapter<A> {
-    private final TypeParameterMatcher matcherMessage;
-    private final TypeParameterMatcher matcherEvent;
-
-    /**
-     * Create a new instance which will try to detect the types to match out of the type parameter
-     * of the class.
-     */
+public abstract class SimpleInboundHandler<I, A extends Address> extends SimpleInboundEventAwareHandler<I, Event, A> {
     protected SimpleInboundHandler() {
-        matcherMessage = TypeParameterMatcher.find(this, SimpleInboundHandler.class, "I");
-        matcherEvent = TypeParameterMatcher.find(this, SimpleInboundHandler.class, "E");
     }
 
     /**
      * Create a new instance
      *
      * @param inboundMessageType the type of messages to match
-     * @param inboundEventType   the type of events to match
      * @param addressType        the type of the address to match
      */
     protected SimpleInboundHandler(final Class<? extends I> inboundMessageType,
-                                   final Class<? extends E> inboundEventType,
                                    final Class<? extends A> addressType) {
-        super(addressType);
-        matcherMessage = TypeParameterMatcher.get(inboundMessageType);
-        matcherEvent = TypeParameterMatcher.get(inboundEventType);
+        super(inboundMessageType, Event.class, addressType);
     }
 
     @Override
-    public void read(final HandlerContext ctx,
-                     final Address sender,
-                     final Object msg,
-                     final CompletableFuture<Void> future) {
-        if (acceptInbound(msg) && acceptAddress(sender)) {
-            @SuppressWarnings("unchecked") final I castedMsg = (I) msg;
-            @SuppressWarnings("unchecked") final A castedAddress = (A) sender;
-            matchedRead(ctx, castedAddress, castedMsg, future);
-        }
-        else {
-            ctx.fireRead(sender, msg, future);
-        }
+    protected void matchedEventTriggered(final HandlerContext ctx,
+                                         final Event event,
+                                         final CompletableFuture<Void> future) {
+        ctx.fireEventTriggered(event, future);
     }
-
-    @Override
-    public void eventTriggered(final HandlerContext ctx,
-                               final Event event,
-                               final CompletableFuture<Void> future) {
-        if (acceptEvent(event)) {
-            @SuppressWarnings("unchecked") final E castedEvent = (E) event;
-            matchedEventTriggered(ctx, castedEvent, future);
-        }
-        else {
-            ctx.fireEventTriggered(event, future);
-        }
-    }
-
-    /**
-     * Returns {@code true} if the given event should be handled. If {@code false} it will be passed
-     * to the next {@link Handler} in the {@link Pipeline}.
-     */
-    protected boolean acceptEvent(final Event msg) {
-        return matcherEvent.match(msg);
-    }
-
-    /**
-     * Is called for each event of type {@link E}.
-     *
-     * @param ctx    handler context
-     * @param event  the event
-     * @param future the future of the message
-     */
-    protected abstract void matchedEventTriggered(HandlerContext ctx,
-                                                  E event,
-                                                  CompletableFuture<Void> future);
-
-    /**
-     * Returns {@code true} if the given message should be handled. If {@code false} it will be
-     * passed to the next {@link Handler} in the {@link Pipeline}.
-     */
-    protected boolean acceptInbound(final Object msg) {
-        return matcherMessage.match(msg);
-    }
-
-    /**
-     * Is called for each message of type {@link I}.
-     *
-     * @param ctx    handler context
-     * @param sender the sender of the message
-     * @param msg    the message
-     * @param future the future of the message
-     */
-    protected abstract void matchedRead(HandlerContext ctx,
-                                        A sender,
-                                        I msg,
-                                        CompletableFuture<Void> future);
 }

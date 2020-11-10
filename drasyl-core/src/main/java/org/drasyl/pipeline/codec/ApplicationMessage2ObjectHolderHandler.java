@@ -18,7 +18,6 @@
  */
 package org.drasyl.pipeline.codec;
 
-import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.HandlerContext;
@@ -29,18 +28,11 @@ import java.util.concurrent.CompletableFuture;
 /**
  * Handler that converts a given {@link ApplicationMessage} to an {@link ObjectHolder}.
  */
-public class ApplicationMessage2ObjectHolderHandler extends SimpleInboundHandler<ApplicationMessage, Event, CompressedPublicKey> {
+public class ApplicationMessage2ObjectHolderHandler extends SimpleInboundHandler<ApplicationMessage, CompressedPublicKey> {
     public static final ApplicationMessage2ObjectHolderHandler INSTANCE = new ApplicationMessage2ObjectHolderHandler();
     public static final String APP_MSG2OBJECT_HOLDER = "applicationMessage2ObjectHolderHandler";
 
     private ApplicationMessage2ObjectHolderHandler() {
-    }
-
-    @Override
-    protected void matchedEventTriggered(final HandlerContext ctx,
-                                         final Event event,
-                                         final CompletableFuture<Void> future) {
-        ctx.fireEventTriggered(event, future);
     }
 
     @Override

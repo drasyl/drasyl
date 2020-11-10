@@ -140,7 +140,7 @@ public class Monitoring implements DrasylNodeComponent {
             Gauge.builder("peersManager.children", peersManager, pm -> pm.getChildrenKeys().size()).register(registry);
 
             // monitor Pipeline
-            pipeline.addFirst(MONITORING_HANDLER, new SimpleDuplexHandler<Object, Event, Object, Address>() {
+            pipeline.addFirst(MONITORING_HANDLER, new SimpleDuplexHandler<>() {
                 private final Map<String, Counter> counters = new HashMap<>();
 
                 @Override

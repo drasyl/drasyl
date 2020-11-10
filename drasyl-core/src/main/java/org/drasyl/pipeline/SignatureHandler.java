@@ -2,7 +2,6 @@ package org.drasyl.pipeline;
 
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.SignedMessage;
@@ -19,19 +18,12 @@ import java.util.concurrent.CompletableFuture;
  * validation is impossible, e.g. the public key of the sender is unknown. In this case, drop
  * information is written to the log.
  */
-public class SignatureHandler extends SimpleDuplexHandler<Message, Event, Message, Address> {
+public class SignatureHandler extends SimpleDuplexHandler<Message, Message, Address> {
     public static final SignatureHandler INSTANCE = new SignatureHandler();
     public static final String SIGNATURE_HANDLER = "SIGNATURE_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(SignatureHandler.class);
 
     private SignatureHandler() {
-    }
-
-    @Override
-    protected void matchedEventTriggered(final HandlerContext ctx,
-                                         final Event event,
-                                         final CompletableFuture<Void> future) {
-        ctx.fireEventTriggered(event, future);
     }
 
     @Override

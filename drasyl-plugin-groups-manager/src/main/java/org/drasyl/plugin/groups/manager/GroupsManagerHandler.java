@@ -22,7 +22,6 @@ import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.SimpleInboundHandler;
-import org.drasyl.plugin.groups.client.event.GroupEvent;
 import org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage;
 import org.drasyl.plugin.groups.client.message.GroupJoinMessage;
 import org.drasyl.plugin.groups.client.message.GroupLeaveMessage;
@@ -49,7 +48,7 @@ import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Err
 import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error.ERROR_PROOF_TO_WEAK;
 import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Error.ERROR_UNKNOWN;
 
-public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessage, GroupEvent, CompressedPublicKey> {
+public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessage, CompressedPublicKey> {
     private static final Logger LOG = LoggerFactory.getLogger(GroupsManagerHandler.class);
     private final DatabaseAdapter database;
     private Disposable staleTask;
@@ -121,13 +120,6 @@ public class GroupsManagerHandler extends SimpleInboundHandler<GroupsClientMessa
                 LOG.debug("Error occurred on getting members of group '{}': ", group, e);
             }
         }
-    }
-
-    @Override
-    protected void matchedEventTriggered(final HandlerContext ctx,
-                                         final GroupEvent event,
-                                         final CompletableFuture<Void> future) {
-        ctx.fireEventTriggered(event, future);
     }
 
     @Override

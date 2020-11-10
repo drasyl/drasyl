@@ -18,7 +18,6 @@
  */
 package org.drasyl.pipeline;
 
-import org.drasyl.event.Event;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.pipeline.address.Address;
 import org.slf4j.Logger;
@@ -31,19 +30,12 @@ import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
 /**
  * This handler filters out all messages received with invalid proof of work.
  */
-public class InvalidProofOfWorkFilter extends SimpleInboundHandler<Message, Event, Address> {
+public class InvalidProofOfWorkFilter extends SimpleInboundHandler<Message, Address> {
     public static final InvalidProofOfWorkFilter INSTANCE = new InvalidProofOfWorkFilter();
     public static final String INVALID_PROOF_OF_WORK_FILTER = "INVALID_PROOF_OF_WORK_FILTER";
     private static final Logger LOG = LoggerFactory.getLogger(InvalidProofOfWorkFilter.class);
 
     private InvalidProofOfWorkFilter() {
-    }
-
-    @Override
-    protected void matchedEventTriggered(final HandlerContext ctx,
-                                         final Event event,
-                                         final CompletableFuture<Void> future) {
-        ctx.fireEventTriggered(event, future);
     }
 
     @Override

@@ -1,6 +1,5 @@
 package org.drasyl.peer.connection.pipeline;
 
-import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
@@ -20,7 +19,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * This handler processes inbound messages addressed to the local node.
  */
-public class LoopbackInboundMessageSinkHandler extends SimpleInboundHandler<Message, Event, CompressedPublicKey> {
+public class LoopbackInboundMessageSinkHandler extends SimpleInboundHandler<Message, CompressedPublicKey> {
     public static final String LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER = "LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER";
     private final AtomicBoolean started;
     private final PeersManager peersManager;
@@ -32,13 +31,6 @@ public class LoopbackInboundMessageSinkHandler extends SimpleInboundHandler<Mess
         this.started = started;
         this.peersManager = peersManager;
         this.endpoints = endpoints;
-    }
-
-    @Override
-    protected void matchedEventTriggered(final HandlerContext ctx,
-                                         final Event event,
-                                         final CompletableFuture<Void> future) {
-        ctx.fireEventTriggered(event, future);
     }
 
     @Override
