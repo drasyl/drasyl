@@ -81,8 +81,6 @@ class LocalHostDiscoveryTest {
     @Mock
     private Disposable postDisposable;
     @Mock
-    private Disposable communicationObserver;
-    @Mock
     private Pipeline pipeline;
     private LocalHostDiscovery underTest;
 
@@ -104,7 +102,7 @@ class LocalHostDiscoveryTest {
             underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, endpoints, opened, doScan, scheduler, watchDisposable, postDisposable, pipeline);
             underTest.open();
 
-            verify(discoveryPath.toFile()).mkdir();
+            verify(discoveryPath.toFile()).mkdirs();
         }
 
         @Test

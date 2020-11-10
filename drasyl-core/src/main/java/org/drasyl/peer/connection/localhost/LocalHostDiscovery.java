@@ -95,7 +95,7 @@ public class LocalHostDiscovery implements DrasylNodeComponent {
                               final Set<Endpoint> endpoints,
                               final Pipeline pipeline) {
         this(
-                config.getLocalHostDiscoveryPath(),
+                config.getLocalHostDiscoveryPath().resolve(String.valueOf(config.getNetworkId())),
                 config.getLocalHostDiscoveryLeaseTime(),
                 ownPublicKey,
                 peersManager,
@@ -139,7 +139,7 @@ public class LocalHostDiscovery implements DrasylNodeComponent {
         if (opened.compareAndSet(false, true)) {
             LOG.debug("Start Local Host Discovery...");
             final File directory = discoveryPath.toFile();
-            if (!directory.exists() && !directory.mkdir()) {
+            if (!directory.exists() && !directory.mkdirs()) {
                 LOG.warn("Discovery directory '{}' could not be created.", discoveryPath.toAbsolutePath());
             }
             else if (!(directory.isDirectory() && directory.canRead() && directory.canWrite())) {
