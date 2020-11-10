@@ -20,16 +20,12 @@ package org.drasyl.peer.connection.pipeline;
 
 import io.netty.util.concurrent.Future;
 import io.netty.util.concurrent.GenericFutureListener;
-import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
-import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.Message;
-import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.codec.TypeValidator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -52,23 +48,6 @@ class DirectConnectionInboundMessageSinkHandlerTest {
     private PeerChannelGroup channelGroup;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylConfig config;
-
-    @Test
-    void shouldPassAllEvents(@Mock final Event event) {
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                config,
-                identity,
-                TypeValidator.ofInboundValidator(config),
-                TypeValidator.ofOutboundValidator(config),
-                new DirectConnectionInboundMessageSinkHandler(channelGroup)
-        );
-        final TestObserver<Event> inboundEvents = pipeline.inboundEvents().test();
-
-        pipeline.processInbound(event);
-
-        inboundEvents.awaitCount(1).assertValueCount(1);
-        inboundEvents.assertValue(event);
-    }
 
     @Nested
     class MatchedWrite {

@@ -20,7 +20,6 @@ package org.drasyl.peer.connection.pipeline;
 
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
-import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
@@ -52,23 +51,6 @@ class LoopbackInboundMessageSinkHandlerTest {
     private PeersManager peersManager;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylConfig config;
-
-    @Test
-    void shouldPassAllEvents(@Mock final Event event) {
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                config,
-                identity,
-                TypeValidator.ofInboundValidator(config),
-                TypeValidator.ofOutboundValidator(config),
-                new LoopbackInboundMessageSinkHandler(new AtomicBoolean(false), peersManager, Set.of())
-        );
-        final TestObserver<Event> inboundEvents = pipeline.inboundEvents().test();
-
-        pipeline.processInbound(event);
-
-        inboundEvents.awaitCount(1).assertValueCount(1);
-        inboundEvents.assertValue(event);
-    }
 
     @Test
     void shouldConsumeMessageIfNodeIsNotStarted(@Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message,

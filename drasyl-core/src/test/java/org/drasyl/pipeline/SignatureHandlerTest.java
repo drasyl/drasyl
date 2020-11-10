@@ -4,7 +4,6 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
@@ -44,18 +43,6 @@ class SignatureHandlerTest {
     private ProofOfWork proofOfWork;
     @Mock
     private CompressedPublicKey recipient;
-
-    @Test
-    void shouldPassAllEvents(@Mock final Event event) {
-        final SignatureHandler handler = SignatureHandler.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
-        final TestObserver<Event> inboundEvents = pipeline.inboundEvents().test();
-
-        pipeline.processInbound(event);
-
-        inboundEvents.awaitCount(1).assertValueCount(1);
-        inboundEvents.assertValue(event);
-    }
 
     @Test
     void shouldSignUnsignedOutgoingMessages(@Mock final CompressedPublicKey recipient) throws CryptoException {

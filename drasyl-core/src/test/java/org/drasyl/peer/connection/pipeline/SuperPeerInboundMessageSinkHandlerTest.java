@@ -23,7 +23,6 @@ import io.netty.channel.ChannelPromise;
 import io.netty.channel.DefaultChannelPromise;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
-import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
@@ -57,23 +56,6 @@ class SuperPeerInboundMessageSinkHandlerTest {
     private PeersManager peersManager;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylConfig config;
-
-    @Test
-    void shouldPassAllEvents(@Mock final Event event) {
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(
-                config,
-                identity,
-                TypeValidator.ofInboundValidator(config),
-                TypeValidator.ofOutboundValidator(config),
-                new SuperPeerInboundMessageSinkHandler(channelGroup, peersManager)
-        );
-        final TestObserver<Event> inboundEvents = pipeline.inboundEvents().test();
-
-        pipeline.processInbound(event);
-
-        inboundEvents.awaitCount(1).assertValueCount(1);
-        inboundEvents.assertValue(event);
-    }
 
     @Test
     void shouldSendMessageToSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {

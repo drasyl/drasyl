@@ -20,7 +20,6 @@ package org.drasyl.pipeline;
 
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
-import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.pipeline.address.Address;
@@ -47,18 +46,6 @@ class InvalidProofOfWorkFilterTest {
     private TypeValidator outboundValidator;
     @Mock
     private DrasylConfig config;
-
-    @Test
-    void shouldPassAllEvents(@Mock final Event event) {
-        final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
-        final TestObserver<Event> inboundEvents = pipeline.inboundEvents().test();
-
-        pipeline.processInbound(event);
-
-        inboundEvents.awaitCount(1).assertValueCount(1);
-        inboundEvents.assertValue(event);
-    }
 
     @Test
     void shouldDropMessagesWithInvalidProofOfWork(@Mock(answer = RETURNS_DEEP_STUBS) final Message message) throws InterruptedException {
