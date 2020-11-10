@@ -29,6 +29,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ErrorMessage;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.ApplicationMessage2ObjectHolderHandler;
 import org.drasyl.pipeline.codec.DefaultCodec;
 import org.drasyl.pipeline.codec.ObjectHolder;
@@ -90,7 +91,7 @@ class SimpleInboundHandlerTest {
                 ApplicationMessage2ObjectHolderHandler.INSTANCE,
                 ObjectHolder2ApplicationMessageHandler.INSTANCE,
                 DefaultCodec.INSTANCE, handler);
-        final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
+        final TestObserver<Pair<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
         final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
         final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
@@ -136,7 +137,7 @@ class SimpleInboundHandlerTest {
                 ApplicationMessage2ObjectHolderHandler.INSTANCE,
                 ObjectHolder2ApplicationMessageHandler.INSTANCE,
                 DefaultCodec.INSTANCE, handler);
-        final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
+        final TestObserver<Pair<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
         final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
         final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 

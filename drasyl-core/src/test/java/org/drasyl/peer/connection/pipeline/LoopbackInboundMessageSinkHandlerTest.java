@@ -28,6 +28,7 @@ import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.IdentityMessage;
 import org.drasyl.peer.connection.message.WhoisMessage;
 import org.drasyl.pipeline.EmbeddedPipeline;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Test;
@@ -82,7 +83,7 @@ class LoopbackInboundMessageSinkHandlerTest {
                 TypeValidator.ofOutboundValidator(config),
                 new LoopbackInboundMessageSinkHandler(new AtomicBoolean(false), peersManager, Set.of())
         );
-        final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessages = pipeline.inboundMessages().test();
+        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
 
         pipeline.processInbound(message);
 
@@ -98,7 +99,7 @@ class LoopbackInboundMessageSinkHandlerTest {
                 TypeValidator.ofOutboundValidator(config),
                 new LoopbackInboundMessageSinkHandler(new AtomicBoolean(true), peersManager, Set.of())
         );
-        final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessages = pipeline.inboundMessages().test();
+        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
 
         pipeline.processInbound(message);
 
@@ -118,7 +119,7 @@ class LoopbackInboundMessageSinkHandlerTest {
                 TypeValidator.ofOutboundValidator(config),
                 new LoopbackInboundMessageSinkHandler(new AtomicBoolean(true), peersManager, Set.of())
         );
-        final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessages = pipeline.inboundMessages().test();
+        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
         final CompletableFuture<Void> future = pipeline.processInbound(message);
 
         future.join();
@@ -140,7 +141,7 @@ class LoopbackInboundMessageSinkHandlerTest {
                 TypeValidator.ofOutboundValidator(config),
                 new LoopbackInboundMessageSinkHandler(new AtomicBoolean(true), peersManager, Set.of())
         );
-        final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessages = pipeline.inboundMessages().test();
+        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
         final CompletableFuture<Void> future = pipeline.processInbound(message);
 
         future.join();
@@ -162,7 +163,7 @@ class LoopbackInboundMessageSinkHandlerTest {
                 TypeValidator.ofOutboundValidator(config),
                 new LoopbackInboundMessageSinkHandler(new AtomicBoolean(true), peersManager, Set.of())
         );
-        final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessages = pipeline.inboundMessages().test();
+        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
         final CompletableFuture<Void> future = pipeline.processInbound(message);
 
         future.join();

@@ -21,9 +21,9 @@ package org.drasyl.pipeline;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
-import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.Message;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Test;
@@ -65,7 +65,7 @@ class OtherNetworkFilterTest {
 
         final OtherNetworkFilter handler = OtherNetworkFilter.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
-        final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessages = pipeline.inboundMessages().test();
+        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
 
         pipeline.processInbound(message);
 
@@ -80,7 +80,7 @@ class OtherNetworkFilterTest {
 
         final OtherNetworkFilter handler = OtherNetworkFilter.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
-        final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessages = pipeline.inboundMessages().test();
+        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
 
         pipeline.processInbound(message);
 

@@ -24,6 +24,7 @@ import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Nested;
@@ -142,7 +143,7 @@ class HandlerAdapterTest {
         @Test
         void shouldPassthroughsOnReadWithMultipleHandler() {
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new));
-            final TestObserver<Pair<CompressedPublicKey, Object>> events = pipeline.inboundMessages().test();
+            final TestObserver<Pair<Address, Object>> events = pipeline.inboundMessages().test();
 
             final CompressedPublicKey sender = mock(CompressedPublicKey.class);
             final ApplicationMessage msg = mock(ApplicationMessage.class);

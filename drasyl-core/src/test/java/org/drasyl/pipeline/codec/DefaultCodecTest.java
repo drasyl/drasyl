@@ -28,6 +28,7 @@ import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.util.JSONUtil;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.BeforeEach;
@@ -155,7 +156,7 @@ class DefaultCodecTest {
                     ApplicationMessage2ObjectHolderHandler.INSTANCE,
                     ObjectHolder2ApplicationMessageHandler.INSTANCE,
                     DefaultCodec.INSTANCE);
-            final TestObserver<Pair<CompressedPublicKey, Object>> testObserver = pipeline.inboundMessages().test();
+            final TestObserver<Pair<Address, Object>> testObserver = pipeline.inboundMessages().test();
 
             pipeline.processInbound(msg);
 
@@ -208,7 +209,7 @@ class DefaultCodecTest {
                     ApplicationMessage2ObjectHolderHandler.INSTANCE,
                     ObjectHolder2ApplicationMessageHandler.INSTANCE,
                     DefaultCodec.INSTANCE);
-            final TestObserver<Pair<CompressedPublicKey, Object>> testObserver = pipeline.inboundMessages().test();
+            final TestObserver<Pair<Address, Object>> testObserver = pipeline.inboundMessages().test();
 
             pipeline.processInbound(msg);
 

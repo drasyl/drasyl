@@ -31,6 +31,7 @@ import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.pipeline.EmbeddedPipeline;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Test;
@@ -108,7 +109,7 @@ class SuperPeerInboundMessageSinkHandlerTest {
                 TypeValidator.ofOutboundValidator(config),
                 new SuperPeerInboundMessageSinkHandler(channelGroup, peersManager)
         );
-        final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessages = pipeline.inboundMessages().test();
+        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
 
         pipeline.processInbound(message);
 
@@ -126,7 +127,7 @@ class SuperPeerInboundMessageSinkHandlerTest {
                 TypeValidator.ofOutboundValidator(config),
                 new SuperPeerInboundMessageSinkHandler(channelGroup, peersManager)
         );
-        final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessages = pipeline.inboundMessages().test();
+        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
         final Channel channel = mock(Channel.class);
         final ChannelPromise promise = new DefaultChannelPromise(channel);
         when(channelGroup.writeAndFlush(any(CompressedPublicKey.class), any(Object.class))).thenReturn(promise);

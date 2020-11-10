@@ -12,6 +12,7 @@ import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.SignedMessage;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Test;
@@ -113,7 +114,7 @@ class SignatureHandlerTest {
 
         final SignatureHandler handler = SignatureHandler.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
-        final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessages = pipeline.inboundMessages().test();
+        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
 
         pipeline.processInbound(signedMessage);
 
@@ -132,7 +133,7 @@ class SignatureHandlerTest {
 
         final SignatureHandler handler = SignatureHandler.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
-        final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessages = pipeline.inboundMessages().test();
+        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
 
         assertThrows(ExecutionException.class, () -> pipeline.processInbound(signedMessage).get());
         inboundMessages.await(1, SECONDS);
@@ -151,7 +152,7 @@ class SignatureHandlerTest {
 
         final SignatureHandler handler = SignatureHandler.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
-        final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessages = pipeline.inboundMessages().test();
+        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
 
         assertThrows(ExecutionException.class, () -> pipeline.processInbound(signedMessage).get());
         inboundMessages.await(1, SECONDS);
@@ -162,7 +163,7 @@ class SignatureHandlerTest {
     void shouldPassthroughIncomingMessagesForOtherRecipient(@Mock(answer = RETURNS_DEEP_STUBS) final QuitMessage message) {
         final SignatureHandler handler = SignatureHandler.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
-        final TestObserver<Pair<CompressedPublicKey, Object>> inboundMessages = pipeline.inboundMessages().test();
+        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
 
         pipeline.processInbound(message);
 

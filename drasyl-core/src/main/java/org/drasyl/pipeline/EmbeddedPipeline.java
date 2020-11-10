@@ -41,7 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
  */
 @SuppressWarnings({ "java:S107" })
 public class EmbeddedPipeline extends DefaultPipeline {
-    private final Subject<Pair<CompressedPublicKey, Object>> inboundMessages;
+    private final Subject<Pair<Address, Object>> inboundMessages;
     private final Subject<Event> inboundEvents;
     private final Subject<Object> outboundMessages;
 
@@ -93,8 +93,8 @@ public class EmbeddedPipeline extends DefaultPipeline {
                 if (sender instanceof CompressedPublicKey) {
                     final CompressedPublicKey senderAddress = (CompressedPublicKey) sender;
                     inboundEvents.onNext(new MessageEvent(senderAddress, msg));
-                    inboundMessages.onNext(Pair.of(senderAddress, msg));
                 }
+                inboundMessages.onNext(Pair.of(sender, msg));
 
                 future.complete(null);
             }
@@ -110,7 +110,7 @@ public class EmbeddedPipeline extends DefaultPipeline {
     /**
      * @return all messages that passes the pipeline until the end
      */
-    public Observable<Pair<CompressedPublicKey, Object>> inboundMessages() {
+    public Observable<Pair<Address, Object>> inboundMessages() {
         return inboundMessages;
     }
 
