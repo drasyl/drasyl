@@ -41,7 +41,7 @@ import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import static org.drasyl.peer.connection.pipeline.DirectConnectionInboundMessageSinkHandler.DIRECT_CONNECTION_INBOUND_MESSAGE_SINK_HANDLER;
-import static org.drasyl.peer.connection.pipeline.LoopbackOutboundMessageSinkHandler.LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER;
+import static org.drasyl.peer.connection.pipeline.DirectConnectionOutboundMessageSinkHandler.DIRECT_CONNECTION_OUTBOUND_MESSAGE_SINK_HANDLER;
 
 /**
  * Uses shared memory to discover other drasyl nodes running on same JVM.
@@ -71,7 +71,7 @@ public class IntraVmDiscovery implements DrasylNodeComponent {
         );
 
         pipeline.addBefore(DIRECT_CONNECTION_INBOUND_MESSAGE_SINK_HANDLER, INTRA_VM_INBOUND_MESSAGE_SINK_HANDLER, new InboundMessageHandler(opened));
-        pipeline.addBefore(LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER, INTRA_VM_OUTBOUND_MESSAGE_SINK_HANDLER, new OutboundMessageHandler(opened));
+        pipeline.addBefore(DIRECT_CONNECTION_OUTBOUND_MESSAGE_SINK_HANDLER, INTRA_VM_OUTBOUND_MESSAGE_SINK_HANDLER, new OutboundMessageHandler(opened));
     }
 
     IntraVmDiscovery(final CompressedPublicKey publicKey,

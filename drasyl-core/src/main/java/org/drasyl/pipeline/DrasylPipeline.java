@@ -52,6 +52,7 @@ import static org.drasyl.peer.connection.pipeline.SuperPeerOutboundMessageSinkHa
 import static org.drasyl.pipeline.HopCountGuard.HOP_COUNT_GUARD;
 import static org.drasyl.pipeline.InvalidProofOfWorkFilter.INVALID_PROOF_OF_WORK_FILTER;
 import static org.drasyl.pipeline.OtherNetworkFilter.OTHER_NETWORK_FILTER;
+import static org.drasyl.pipeline.SignatureHandler.SIGNATURE_HANDLER;
 import static org.drasyl.pipeline.codec.ApplicationMessage2ObjectHolderHandler.APP_MSG2OBJECT_HOLDER;
 import static org.drasyl.pipeline.codec.DefaultCodec.DEFAULT_CODEC;
 import static org.drasyl.pipeline.codec.ObjectHolder2ApplicationMessageHandler.OBJECT_HOLDER2APP_MSG;
@@ -89,6 +90,8 @@ public class DrasylPipeline extends DefaultPipeline {
         // local message delivery
         addFirst(LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER, new LoopbackInboundMessageSinkHandler(started, peersManager, endpoints));
         addFirst(LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER, LoopbackOutboundMessageSinkHandler.INSTANCE);
+
+        addFirst(SIGNATURE_HANDLER, SignatureHandler.INSTANCE);
 
         // remote message delivery
         addFirst(SUPER_PEER_INBOUND_MESSAGE_SINK_HANDLER, new SuperPeerInboundMessageSinkHandler(channelGroup, peersManager));
