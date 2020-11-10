@@ -23,6 +23,7 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import io.reactivex.rxjava3.plugins.RxJavaPlugins;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import org.drasyl.DrasylConfig;
+import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
@@ -32,6 +33,8 @@ import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.peer.connection.message.Message;
+import org.drasyl.peer.connection.message.SignedMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.ObjectHolder;
 import org.junit.jupiter.api.BeforeEach;
@@ -53,7 +56,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class DrasylPipelineIT {
     private PublishSubject<Event> receivedEvents;
-    private PublishSubject<ApplicationMessage> outboundMessages;
+    private PublishSubject<Message> outboundMessages;
     private Pipeline pipeline;
     private Identity identity1;
     private Identity identity2;
@@ -85,11 +88,11 @@ class DrasylPipelineIT {
         final AtomicBoolean started = new AtomicBoolean(true);
         final Set<Endpoint> endpoints = Set.of();
         pipeline = new DrasylPipeline(receivedEvents::onNext, config, identity1, channelGroup, peersManager, started, endpoints);
-        pipeline.addFirst("outboundMessages", new SimpleOutboundHandler<ApplicationMessage, CompressedPublicKey>() {
+        pipeline.addFirst("outboundMessages", new SimpleOutboundHandler<Message, CompressedPublicKey>() {
             @Override
             protected void matchedWrite(final HandlerContext ctx,
                                         final CompressedPublicKey recipient,
-                                        final ApplicationMessage msg,
+                                        final Message msg,
                                         final CompletableFuture<Void> future) {
                 if (!future.isDone()) {
                     outboundMessages.onNext(msg);
@@ -100,7 +103,7 @@ class DrasylPipelineIT {
     }
 
     @Test
-    void passMessageThroughThePipeline() {
+    void passMessageThroughThePipeline() throws CryptoException {
         final TestObserver<Event> events = receivedEvents.test();
 
         final byte[] newPayload = new byte[]{
@@ -120,15 +123,17 @@ class DrasylPipelineIT {
         });
 
         final ApplicationMessage msg = new ApplicationMessage(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), payload);
+        final SignedMessage signedMessage = new SignedMessage(0, identity2.getPublicKey(), identity2.getProofOfWork(), msg.getRecipient(), msg);
+        Crypto.sign(identity2.getPrivateKey().toUncompressedKey(), signedMessage);
 
-        pipeline.processInbound(msg);
+        pipeline.processInbound(signedMessage);
 
         events.awaitCount(1).assertValueCount(1);
         events.assertValue(new MessageEvent(identity2.getPublicKey(), newPayload));
     }
 
     @Test
-    void passEventThroughThePipeline() {
+    void passEventThroughThePipeline() throws CryptoException {
         final TestObserver<Event> events = receivedEvents.test();
 
         final Event testEvent = new Event() {
@@ -148,8 +153,10 @@ class DrasylPipelineIT {
         });
 
         final ApplicationMessage msg = new ApplicationMessage(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), payload);
+        final SignedMessage signedMessage = new SignedMessage(0, identity2.getPublicKey(), identity2.getProofOfWork(), msg.getRecipient(), msg);
+        Crypto.sign(identity2.getPrivateKey().toUncompressedKey(), signedMessage);
 
-        pipeline.processInbound(msg);
+        pipeline.processInbound(signedMessage);
 
         events.awaitCount(2);
         events.assertValueAt(0, new MessageEvent(msg.getSender(), payload));
@@ -157,7 +164,7 @@ class DrasylPipelineIT {
     }
 
     @Test
-    void exceptionShouldPassThroughThePipeline() {
+    void exceptionShouldPassThroughThePipeline() throws CryptoException {
         final PublishSubject<Throwable> receivedExceptions = PublishSubject.create();
         final TestObserver<Throwable> exceptions = receivedExceptions.test();
 
@@ -191,8 +198,10 @@ class DrasylPipelineIT {
         });
 
         final ApplicationMessage msg = new ApplicationMessage(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), payload);
+        final SignedMessage signedMessage = new SignedMessage(0, identity2.getPublicKey(), identity2.getProofOfWork(), msg.getRecipient(), msg);
+        Crypto.sign(identity2.getPrivateKey().toUncompressedKey(), signedMessage);
 
-        pipeline.processInbound(msg);
+        pipeline.processInbound(signedMessage);
 
         exceptions.awaitCount(1).assertValueCount(1);
         exceptions.assertValue(exception);
@@ -200,7 +209,7 @@ class DrasylPipelineIT {
 
     @Test
     void passOutboundThroughThePipeline() {
-        final TestObserver<ApplicationMessage> outbounds = outboundMessages.test();
+        final TestObserver<Message> outbounds = outboundMessages.test();
 
         final byte[] newPayload = new byte[]{
                 0x05
@@ -223,7 +232,7 @@ class DrasylPipelineIT {
         final CompletableFuture<Void> future = pipeline.processOutbound(identity1.getPublicKey(), payload);
 
         outbounds.awaitCount(1).assertValueCount(1);
-        outbounds.assertValue(newMsg);
+        outbounds.assertValue(m -> m instanceof SignedMessage && ((SignedMessage) m).getPayload().equals(newMsg));
         future.join();
         assertTrue(future.isDone());
         assertFalse(future.isCancelled());
@@ -232,7 +241,7 @@ class DrasylPipelineIT {
 
     @Test
     void shouldNotPassthroughsMessagesWithDoneFuture() {
-        final TestObserver<ApplicationMessage> outbounds = outboundMessages.test();
+        final TestObserver<Message> outbounds = outboundMessages.test();
         final ApplicationMessage msg = new ApplicationMessage(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), payload);
 
         IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
@@ -259,7 +268,7 @@ class DrasylPipelineIT {
 
     @Test
     void shouldNotPassthroughsMessagesWithExceptionallyFuture() {
-        final TestObserver<ApplicationMessage> outbounds = outboundMessages.test();
+        final TestObserver<Message> outbounds = outboundMessages.test();
         final ApplicationMessage msg = new ApplicationMessage(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), payload);
 
         IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
@@ -286,7 +295,7 @@ class DrasylPipelineIT {
 
     @Test
     void shouldNotPassthroughsMessagesWithNotAllowedType() {
-        final TestObserver<ApplicationMessage> outbounds = outboundMessages.test();
+        final TestObserver<Message> outbounds = outboundMessages.test();
         final StringBuilder msg = new StringBuilder();
 
         IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));

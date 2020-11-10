@@ -56,10 +56,10 @@ import java.util.concurrent.ExecutionException;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.awaitility.Awaitility.await;
-import static org.drasyl.util.NetworkUtil.createInetAddress;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.drasyl.util.AnsiColor.COLOR_CYAN;
 import static org.drasyl.util.AnsiColor.STYLE_REVERSED;
+import static org.drasyl.util.NetworkUtil.createInetAddress;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static testutils.TestHelper.colorizedPrintln;
 
 class DrasylNodeIT {
