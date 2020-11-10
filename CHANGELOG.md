@@ -20,7 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -
 
 ### Fixed
--
+- Other nodes running within the same JVM that belong to a different network are now ignored (IntraVmDiscovery).
 -
 -
 -

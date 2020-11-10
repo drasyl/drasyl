@@ -163,7 +163,7 @@ public abstract class DrasylNode {
                         acceptNewConnections::get, endpoints));
             }
             if (config.isIntraVmDiscoveryEnabled()) {
-                this.components.add(new IntraVmDiscovery(identity.getPublicKey(),
+                this.components.add(new IntraVmDiscovery(config.getNetworkId(), identity.getPublicKey(),
                         peersManager, pipeline));
             }
             if (config.isSuperPeerEnabled()) {
