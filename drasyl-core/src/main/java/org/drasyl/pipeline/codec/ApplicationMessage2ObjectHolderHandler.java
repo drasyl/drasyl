@@ -18,17 +18,17 @@
  */
 package org.drasyl.pipeline.codec;
 
-import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.SimpleInboundHandler;
+import org.drasyl.pipeline.address.Address;
 
 import java.util.concurrent.CompletableFuture;
 
 /**
  * Handler that converts a given {@link ApplicationMessage} to an {@link ObjectHolder}.
  */
-public class ApplicationMessage2ObjectHolderHandler extends SimpleInboundHandler<ApplicationMessage, CompressedPublicKey> {
+public class ApplicationMessage2ObjectHolderHandler extends SimpleInboundHandler<ApplicationMessage, Address> {
     public static final ApplicationMessage2ObjectHolderHandler INSTANCE = new ApplicationMessage2ObjectHolderHandler();
     public static final String APP_MSG2OBJECT_HOLDER = "applicationMessage2ObjectHolderHandler";
 
@@ -37,7 +37,7 @@ public class ApplicationMessage2ObjectHolderHandler extends SimpleInboundHandler
 
     @Override
     protected void matchedRead(final HandlerContext ctx,
-                               final CompressedPublicKey sender,
+                               final Address sender,
                                final ApplicationMessage msg,
                                final CompletableFuture<Void> future) {
         ctx.fireRead(msg.getSender(), ObjectHolder.of(msg.getHeader(ObjectHolder.CLASS_KEY_NAME), msg.getPayload()), future);

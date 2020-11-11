@@ -28,6 +28,7 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.SimpleInboundHandler;
 import org.drasyl.pipeline.SimpleOutboundHandler;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.util.FutureUtil;
 import org.drasyl.util.Pair;
 import org.slf4j.Logger;
@@ -140,7 +141,7 @@ public class IntraVmDiscovery implements DrasylNodeComponent {
         }
     }
 
-    static class InboundMessageHandler extends SimpleInboundHandler<Message, CompressedPublicKey> {
+    static class InboundMessageHandler extends SimpleInboundHandler<Message, Address> {
         private final AtomicBoolean opened;
 
         public InboundMessageHandler(final AtomicBoolean opened) {
@@ -149,7 +150,7 @@ public class IntraVmDiscovery implements DrasylNodeComponent {
 
         @Override
         protected void matchedRead(final HandlerContext ctx,
-                                   final CompressedPublicKey sender,
+                                   final Address sender,
                                    final Message msg,
                                    final CompletableFuture<Void> future) {
             final CompressedPublicKey recipient = msg.getRecipient();

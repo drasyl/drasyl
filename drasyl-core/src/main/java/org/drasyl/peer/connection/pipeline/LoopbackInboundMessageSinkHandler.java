@@ -11,6 +11,7 @@ import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.WhoisMessage;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.SimpleInboundHandler;
+import org.drasyl.pipeline.address.Address;
 
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
@@ -19,7 +20,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 /**
  * This handler processes inbound messages addressed to the local node.
  */
-public class LoopbackInboundMessageSinkHandler extends SimpleInboundHandler<Message, CompressedPublicKey> {
+public class LoopbackInboundMessageSinkHandler extends SimpleInboundHandler<Message, Address> {
     public static final String LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER = "LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER";
     private final AtomicBoolean started;
     private final PeersManager peersManager;
@@ -35,7 +36,7 @@ public class LoopbackInboundMessageSinkHandler extends SimpleInboundHandler<Mess
 
     @Override
     protected void matchedRead(final HandlerContext ctx,
-                               final CompressedPublicKey sender,
+                               final Address sender,
                                final Message msg,
                                final CompletableFuture<Void> future) {
         if (!ctx.identity().getPublicKey().equals(msg.getRecipient())) {

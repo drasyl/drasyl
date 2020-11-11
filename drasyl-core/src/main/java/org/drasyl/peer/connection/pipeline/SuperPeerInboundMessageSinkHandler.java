@@ -24,6 +24,7 @@ import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.SimpleInboundHandler;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.util.FutureUtil;
 
 import java.util.concurrent.CompletableFuture;
@@ -33,7 +34,7 @@ import static org.drasyl.util.FutureUtil.toFuture;
 /**
  * This handler sends all inbound messages to the super peer.
  */
-public class SuperPeerInboundMessageSinkHandler extends SimpleInboundHandler<Message, CompressedPublicKey> {
+public class SuperPeerInboundMessageSinkHandler extends SimpleInboundHandler<Message, Address> {
     public static final String SUPER_PEER_INBOUND_MESSAGE_SINK_HANDLER = "SUPER_PEER_INBOUND_MESSAGE_SINK_HANDLER";
     private final PeerChannelGroup channelGroup;
     private final PeersManager peersManager;
@@ -46,7 +47,7 @@ public class SuperPeerInboundMessageSinkHandler extends SimpleInboundHandler<Mes
 
     @Override
     protected void matchedRead(final HandlerContext ctx,
-                               final CompressedPublicKey sender,
+                               final Address sender,
                                final Message msg,
                                final CompletableFuture<Void> future) {
         if (ctx.identity().getPublicKey().equals(msg.getRecipient())) {
