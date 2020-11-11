@@ -40,6 +40,6 @@ public class ApplicationMessage2ObjectHolderHandler extends SimpleInboundHandler
                                final CompressedPublicKey sender,
                                final ApplicationMessage msg,
                                final CompletableFuture<Void> future) {
-        ctx.fireRead(sender, ObjectHolder.of(msg.getHeader(ObjectHolder.CLASS_KEY_NAME), msg.getPayload()), future);
+        ctx.fireRead(msg.getSender(), ObjectHolder.of(msg.getHeader(ObjectHolder.CLASS_KEY_NAME), msg.getPayload()), future);
     }
 }
