@@ -65,9 +65,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
-import static org.drasyl.util.NetworkUtil.createInetAddress;
 import static org.drasyl.util.AnsiColor.COLOR_CYAN;
 import static org.drasyl.util.AnsiColor.STYLE_REVERSED;
+import static org.drasyl.util.NetworkUtil.createInetAddress;
 import static testutils.TestHelper.colorizedPrintln;
 
 @Execution(ExecutionMode.SAME_THREAD)
@@ -153,7 +153,7 @@ class SuperPeerClientIT {
         }, config, identityManager.getIdentity(), channelGroup, peersManager, started, endpoints);
         final AtomicBoolean startedServer = new AtomicBoolean(true);
         pipelineServer = new DrasylPipeline(event -> {
-        }, serverConfig, identityManagerServer.getIdentity(), channelGroup, peersManager, startedServer, endpoints);
+        }, serverConfig, identityManagerServer.getIdentity(), channelGroupServer, peersManagerServer, startedServer, endpoints);
         endpoints = new HashSet<>();
 
         server = new TestServer(identityManagerServer.getIdentity(), pipelineServer, peersManagerServer, serverConfig, channelGroupServer, serverWorkerGroup, bossGroup, endpoints);
