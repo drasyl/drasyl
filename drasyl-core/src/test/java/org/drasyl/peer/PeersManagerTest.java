@@ -30,7 +30,6 @@ import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.util.Pair;
-import org.drasyl.util.Triple;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -126,7 +125,7 @@ class PeersManagerTest {
             peers.put(superPeer, peerInformation);
             paths.put(superPeer, path);
 
-            assertEquals(Triple.of(superPeer, peerInformation, Set.of(path)), underTest.getSuperPeer());
+            assertEquals(Pair.of(superPeer, peerInformation), underTest.getSuperPeer());
         }
 
         @AfterEach
@@ -348,9 +347,9 @@ class PeersManagerTest {
                                                                @Mock final Path path) {
             underTest.setPeerInformationAndAddPathAndSetSuperPeer(publicKey, peerInformation, path);
 
-            final Triple<CompressedPublicKey, PeerInformation, Set<Path>> superPeer = underTest.getSuperPeer();
+            final Pair<CompressedPublicKey, PeerInformation> superPeer = underTest.getSuperPeer();
             assertEquals(publicKey, superPeer.first());
-            assertEquals(Set.of(path), superPeer.third());
+            assertEquals(PeerInformation.of(), superPeer.second());
         }
 
         @Test

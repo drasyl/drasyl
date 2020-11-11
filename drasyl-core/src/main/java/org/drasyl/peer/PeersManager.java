@@ -31,7 +31,6 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.util.Pair;
 import org.drasyl.util.SetUtil;
-import org.drasyl.util.Triple;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -131,7 +130,7 @@ public class PeersManager {
      * @return public key and information about Super Peer. If no Super Peer is defined, then
      * <code>null</code> is returned
      */
-    public Triple<CompressedPublicKey, PeerInformation, Set<Path>> getSuperPeer() {
+    public Pair<CompressedPublicKey, PeerInformation> getSuperPeer() {
         try {
             lock.readLock().lock();
 
@@ -140,7 +139,7 @@ public class PeersManager {
             }
             else {
                 final PeerInformation peerInformation = peers.getOrDefault(superPeer, PeerInformation.of());
-                return Triple.of(superPeer, peerInformation, paths.get(superPeer));
+                return Pair.of(superPeer, peerInformation);
             }
         }
         finally {
