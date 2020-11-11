@@ -59,7 +59,7 @@ public class SuccessMessage extends AbstractResponseMessage<RequestMessage> {
 
     @Override
     public String toString() {
-        return "OkMessage{" +
+        return "SuccessMessage{" +
                 "networkId=" + networkId +
                 ", sender=" + sender +
                 ", proofOfWork=" + proofOfWork +
