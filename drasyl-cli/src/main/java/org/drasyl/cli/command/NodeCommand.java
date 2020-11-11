@@ -47,7 +47,10 @@ public class NodeCommand extends AbstractCommand {
     private static final Logger log = LoggerFactory.getLogger(NodeCommand.class);
 
     static {
-        Sentry.getStoredClient().setRelease(DrasylNode.getVersion());
+        Sentry.init(options -> {
+            options.setEnableExternalConfiguration(true);
+            options.setRelease(DrasylNode.getVersion());
+        });
     }
 
     private final Function<DrasylConfig, Pair<DrasylNode, CompletableFuture<Void>>> nodeSupplier;
