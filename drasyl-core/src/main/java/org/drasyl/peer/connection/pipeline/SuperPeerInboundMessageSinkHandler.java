@@ -50,7 +50,7 @@ public class SuperPeerInboundMessageSinkHandler extends SimpleInboundHandler<Mes
                                final Message msg,
                                final CompletableFuture<Void> future) {
         if (ctx.identity().getPublicKey().equals(msg.getRecipient())) {
-            ctx.fireRead(msg.getSender(), msg, future);
+            ctx.fireRead(sender, msg, future);
         }
         else {
             final CompressedPublicKey superPeer = peersManager.getSuperPeerKey();
