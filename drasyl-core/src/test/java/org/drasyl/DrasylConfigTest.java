@@ -97,8 +97,6 @@ import static org.drasyl.DrasylConfig.SERVER_ENABLED;
 import static org.drasyl.DrasylConfig.SERVER_ENDPOINTS;
 import static org.drasyl.DrasylConfig.SERVER_EXPOSE_ENABLED;
 import static org.drasyl.DrasylConfig.SERVER_HANDSHAKE_TIMEOUT;
-import static org.drasyl.DrasylConfig.SERVER_IDLE_RETRIES;
-import static org.drasyl.DrasylConfig.SERVER_IDLE_TIMEOUT;
 import static org.drasyl.DrasylConfig.SERVER_SSL_ENABLED;
 import static org.drasyl.DrasylConfig.SERVER_SSL_PROTOCOLS;
 import static org.drasyl.DrasylConfig.SUPER_PEER_CHANNEL_INITIALIZER;
@@ -121,7 +119,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
@@ -145,8 +142,6 @@ class DrasylConfigTest {
     private InetAddress serverBindHost;
     private boolean serverEnabled;
     private int serverBindPort;
-    private short serverIdleRetries;
-    private Duration serverIdleTimeout;
     private int flushBufferSize;
     private boolean serverSSLEnabled;
     private Duration serverHandshakeTimeout;
@@ -197,8 +192,6 @@ class DrasylConfigTest {
         serverBindHost = createInetAddress("0.0.0.0");
         serverEnabled = true;
         serverBindPort = 22527;
-        serverIdleRetries = 3;
-        serverIdleTimeout = ofSeconds(60);
         flushBufferSize = 256;
         serverSSLEnabled = false;
         serverHandshakeTimeout = ofSeconds(30);
@@ -256,8 +249,6 @@ class DrasylConfigTest {
             when(typesafeConfig.getBoolean(SERVER_ENABLED)).thenReturn(serverEnabled);
             when(typesafeConfig.getString(SERVER_BIND_HOST)).thenReturn(serverBindHost.getHostAddress());
             when(typesafeConfig.getInt(SERVER_BIND_PORT)).thenReturn(serverBindPort);
-            when(typesafeConfig.getInt(SERVER_IDLE_RETRIES)).thenReturn(Short.valueOf(serverIdleRetries).intValue());
-            when(typesafeConfig.getDuration(SERVER_IDLE_TIMEOUT)).thenReturn(serverIdleTimeout);
             when(typesafeConfig.getInt(FLUSH_BUFFER_SIZE)).thenReturn(flushBufferSize);
             when(typesafeConfig.getDuration(SERVER_HANDSHAKE_TIMEOUT)).thenReturn(serverHandshakeTimeout);
             when(typesafeConfig.getString(SERVER_CHANNEL_INITIALIZER)).thenReturn(serverChannelInitializer.getCanonicalName());
@@ -310,8 +301,6 @@ class DrasylConfigTest {
             assertEquals(Paths.get("drasyl.identity.json"), config.getIdentityPath());
             assertEquals(serverEnabled, config.isServerEnabled());
             assertEquals(serverSSLEnabled, config.getServerSSLEnabled());
-            assertEquals(serverIdleRetries, config.getServerIdleRetries());
-            assertEquals(serverIdleTimeout, config.getServerIdleTimeout());
             assertEquals(flushBufferSize, config.getFlushBufferSize());
             assertEquals(serverSSLProtocols, config.getServerSSLProtocols());
             assertEquals(serverHandshakeTimeout, config.getServerHandshakeTimeout());
@@ -359,7 +348,7 @@ class DrasylConfigTest {
             identityPrivateKey = CompressedPrivateKey.of("07e98a2f8162a4002825f810c0fbd69b0c42bd9cb4f74a21bc7807bc5acb4f5f");
 
             final DrasylConfig config = new DrasylConfig(networkId, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath,
-                    serverBindHost, serverEnabled, serverBindPort, serverIdleRetries, serverIdleTimeout, flushBufferSize,
+                    serverBindHost, serverEnabled, serverBindPort, flushBufferSize,
                     serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer,
                     serverExposeEnabled, messageMaxContentLength, messageHopLimit, composedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints,
                     superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries,
@@ -550,8 +539,6 @@ class DrasylConfigTest {
                     .serverBindHost(DEFAULT.getServerBindHost())
                     .serverEnabled(DEFAULT.isServerEnabled())
                     .serverBindPort(DEFAULT.getServerBindPort())
-                    .serverIdleRetries(DEFAULT.getServerIdleRetries())
-                    .serverIdleTimeout(DEFAULT.getServerIdleTimeout())
                     .flushBufferSize(DEFAULT.getFlushBufferSize())
                     .serverSSLEnabled(DEFAULT.getServerSSLEnabled())
                     .serverSSLProtocols(DEFAULT.getServerSSLProtocols())

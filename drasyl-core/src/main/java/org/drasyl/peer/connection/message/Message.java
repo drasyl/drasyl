@@ -34,8 +34,6 @@ import org.drasyl.peer.connection.server.Server;
         @JsonSubTypes.Type(value = ErrorMessage.class),
         @JsonSubTypes.Type(value = IdentityMessage.class),
         @JsonSubTypes.Type(value = JoinMessage.class),
-        @JsonSubTypes.Type(value = PingMessage.class),
-        @JsonSubTypes.Type(value = PongMessage.class),
         @JsonSubTypes.Type(value = QuitMessage.class),
         @JsonSubTypes.Type(value = SignedMessage.class),
         @JsonSubTypes.Type(value = SuccessMessage.class),

@@ -104,7 +104,6 @@ public class TestSuperPeerClient extends SuperPeerClient {
                                 config.getSuperPeerIdleTimeout(),
                                 config.getSuperPeerHandshakeTimeout()
                         ),
-                                doPingPong,
                                 doJoin
                         ))
                         .remoteAddress(endpoint.getHost(), endpoint.getPort())

@@ -22,21 +22,14 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.flush.FlushConsolidationHandler;
 import io.netty.handler.ssl.SslHandler;
-import io.netty.handler.timeout.IdleStateHandler;
 import org.drasyl.DrasylException;
-import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.handler.MessageDecoder;
 import org.drasyl.peer.connection.handler.MessageEncoder;
-import org.drasyl.peer.connection.handler.PingPongHandler;
-import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-
-import java.lang.reflect.Field;
-import java.time.Duration;
 
 import static org.mockito.Mockito.any;
 import static org.mockito.Mockito.eq;
@@ -54,16 +47,6 @@ class DefaultSessionInitializerTest {
     private SslHandler sslHandler;
     @Mock
     private SocketChannel ch;
-    @Mock
-    private Identity identity;
-    private final int networkId = 1;
-
-    @BeforeEach
-    void setUp() throws IllegalAccessException, NoSuchFieldException {
-        final Field field = DefaultSessionInitializer.class.getDeclaredField("readIdleTimeout");
-        field.setAccessible(true);
-        field.set(classUnderTest, Duration.ZERO);
-    }
 
     // should call all stages of the pipeline
     @Test
@@ -92,10 +75,6 @@ class DefaultSessionInitializerTest {
         verify(classUnderTest).beforePojoMarshalStage(pipeline);
         verify(classUnderTest).pojoMarshalStage(pipeline);
         verify(classUnderTest).afterPojoMarshalStage(pipeline);
-
-        verify(classUnderTest).beforeIdleStage(pipeline);
-        verify(classUnderTest).idleStage(pipeline);
-        verify(classUnderTest).afterIdleStage(pipeline);
 
         verify(classUnderTest).customStage(pipeline);
 
@@ -137,38 +116,5 @@ class DefaultSessionInitializerTest {
 
         verify(pipeline).addLast(eq("messageDecoder"), any(MessageDecoder.class));
         verify(pipeline).addLast(eq("messageEncoder"), any(MessageEncoder.class));
-    }
-
-    @Test
-    void testIdleStage() {
-        final DefaultSessionInitializer classUnderTest = new DefaultSessionInitializer(networkId, identity, 1, Duration.ofMillis(1L), (short) 1) {
-            @Override
-            protected void beforeMarshalStage(final ChannelPipeline pipeline) {
-
-            }
-
-            @Override
-            protected void customStage(final ChannelPipeline pipeline) {
-
-            }
-
-            @Override
-            protected SslHandler generateSslContext(final SocketChannel ch) {
-                return null;
-            }
-        };
-
-        classUnderTest.idleStage(pipeline);
-
-        verify(pipeline).addLast(eq("idleEvent"), any(IdleStateHandler.class));
-        verify(pipeline).addLast(eq("pingPongHandler"), any(PingPongHandler.class));
-    }
-
-    @Test
-    void testIdleStageDisabled() {
-        classUnderTest.idleStage(pipeline);
-
-        verify(pipeline, never()).addLast(eq("idleEvent"), any(IdleStateHandler.class));
-        verify(pipeline).addLast(eq("pingPongHandler"), any(PingPongHandler.class));
     }
 }

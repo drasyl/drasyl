@@ -19,21 +19,14 @@
 package org.drasyl.peer.connection.server;
 
 import io.netty.channel.ChannelPipeline;
-import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.DefaultSessionInitializer;
-
-import java.time.Duration;
 
 /**
  * Creates a newly configured {@link ChannelPipeline} for every incoming connection to a node
  * server.
  */
 public abstract class ServerChannelInitializer extends DefaultSessionInitializer {
-    protected ServerChannelInitializer(final int networkId,
-                                       final Identity identity,
-                                       final int flushBufferSize,
-                                       final Duration readIdleTimeout,
-                                       final short pingPongRetries) {
-        super(networkId, identity, flushBufferSize, readIdleTimeout, pingPongRetries);
+    protected ServerChannelInitializer(final int flushBufferSize) {
+        super(flushBufferSize);
     }
 }

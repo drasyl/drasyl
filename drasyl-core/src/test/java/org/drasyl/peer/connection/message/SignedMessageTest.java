@@ -62,7 +62,7 @@ class SignedMessageTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
-            final String json = "{\"@type\":\"SignedMessage\",\"id\":\"89ba3cd9efb7570eb3126d11\",\"userAgent\":\"\",\"networkId\":1,\"sender\":\"0300f9df12eed957a17b2b373978ea32177b3e1ce00c92003b5dd2c68de253b35c\",\"proofOfWork\":6657650,\"recipient\":\"0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458\",\"signature\":{\"bytes\":\"eyJAdHlwZSI6IlBpbmdNZXNzYWdlIiwiaWQiOiI0YTRiNmEyYzRhZjA0NDllM2FkMGU5MmYiLCJzZW5kZXIiOiIwMzAwZjlkZjEyZWVkOTU3YTE3YjJiMzczOTc4ZWEzMjE3N2IzZTFjZTAwYzkyMDAzYjVkZDJjNjhkZTI1M2IzNWMiLCJwcm9vZk9mV29yayI6NjY1NzY1MH0=\"},\"payload\":{\"@type\":\"PingMessage\",\"id\":\"24fdb15d698dfbf146cc945c\",\"userAgent\":\"drasyl/0.3.0-SNAPSHOT (${git.commit.id.abbrev}) (Mac OS X; x86_64; Java/14:2020-07-14)\",\"networkId\":1,\"sender\":\"0300f9df12eed957a17b2b373978ea32177b3e1ce00c92003b5dd2c68de253b35c\",\"proofOfWork\":6657650,\"recipient\":\"0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458\"}}";
+            final String json = "{\"@type\":\"SignedMessage\",\"id\":\"89ba3cd9efb7570eb3126d11\",\"userAgent\":\"\",\"networkId\":1,\"sender\":\"0300f9df12eed957a17b2b373978ea32177b3e1ce00c92003b5dd2c68de253b35c\",\"proofOfWork\":6657650,\"recipient\":\"0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458\",\"signature\":{\"bytes\":\"eyJAdHlwZSI6IlBpbmdNZXNzYWdlIiwiaWQiOiI0YTRiNmEyYzRhZjA0NDllM2FkMGU5MmYiLCJzZW5kZXIiOiIwMzAwZjlkZjEyZWVkOTU3YTE3YjJiMzczOTc4ZWEzMjE3N2IzZTFjZTAwYzkyMDAzYjVkZDJjNjhkZTI1M2IzNWMiLCJwcm9vZk9mV29yayI6NjY1NzY1MH0=\"},\"payload\":{\"@type\":\"QuitMessage\",\"id\":\"24fdb15d698dfbf146cc945c\",\"userAgent\":\"drasyl/0.3.0-SNAPSHOT (${git.commit.id.abbrev}) (Mac OS X; x86_64; Java/14:2020-07-14)\",\"networkId\":1,\"sender\":\"0300f9df12eed957a17b2b373978ea32177b3e1ce00c92003b5dd2c68de253b35c\",\"proofOfWork\":6657650,\"recipient\":\"0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458\", \"reason\":\"Peer is shutting down.\"}}";
 
             assertEquals(
                     new SignedMessage(
@@ -76,11 +76,12 @@ class SignedMessageTest {
                             new Signature(
                                     HexUtil.fromString("7b224074797065223a2250696e674d657373616765222c226964223a22346134623661326334616630343439653361643065393266222c2273656e646572223a22303330306639646631326565643935376131376232623337333937386561333231373762336531636530306339323030336235646432633638646532353362333563222c2270726f6f664f66576f726b223a363635373635307d")
                             ),
-                            new PingMessage(
+                            new QuitMessage(
                                     1,
                                     CompressedPublicKey.of("0300f9df12eed957a17b2b373978ea32177b3e1ce00c92003b5dd2c68de253b35c"),
                                     ProofOfWork.of(6657650),
-                                    CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458")
+                                    CompressedPublicKey.of("0364417e6f350d924b254deb44c0a6dce726876822c44c28ce221a777320041458"),
+                                    QuitMessage.CloseReason.REASON_SHUTTING_DOWN
                             )
                     ),
                     JACKSON_READER.readValue(json, Message.class)
@@ -104,11 +105,12 @@ class SignedMessageTest {
                     CompressedPublicKey.of(keyPair.getPublic()),
                     proofOfWork,
                     recipient,
-                    new PingMessage(
+                    new QuitMessage(
                             1,
                             CompressedPublicKey.of(keyPair.getPublic()),
                             ProofOfWork.of(6657650),
-                            CompressedPublicKey.of("0300f9df12eed957a17b2b373978ea32177b3e1ce00c92003b5dd2c68de253b35c")
+                            CompressedPublicKey.of("0300f9df12eed957a17b2b373978ea32177b3e1ce00c92003b5dd2c68de253b35c"),
+                            QuitMessage.CloseReason.REASON_SHUTTING_DOWN
                     ));
             Crypto.sign(keyPair.getPrivate(), message);
 
@@ -123,7 +125,7 @@ class SignedMessageTest {
     class Equals {
         @Test
         void shouldReturnTrue() throws CryptoException {
-            final PingMessage message = new PingMessage(networkId, sender, proofOfWork, recipient);
+            final QuitMessage message = new QuitMessage(networkId, sender, proofOfWork, recipient, QuitMessage.CloseReason.REASON_SHUTTING_DOWN);
             final SignedMessage signedMessage1 = new SignedMessage(networkId, CompressedPublicKey.of(keyPair.getPublic()), proofOfWork, recipient, message);
             final SignedMessage signedMessage2 = new SignedMessage(networkId, CompressedPublicKey.of(keyPair.getPublic()), proofOfWork, recipient, message);
 
@@ -135,7 +137,7 @@ class SignedMessageTest {
     class HashCode {
         @Test
         void shouldReturnTrue() throws CryptoException {
-            final PingMessage message = new PingMessage(networkId, sender, proofOfWork, recipient);
+            final QuitMessage message = new QuitMessage(networkId, sender, proofOfWork, recipient, QuitMessage.CloseReason.REASON_SHUTTING_DOWN);
             final SignedMessage signedMessage1 = new SignedMessage(networkId, CompressedPublicKey.of(keyPair.getPublic()), proofOfWork, recipient, message);
             final SignedMessage signedMessage2 = new SignedMessage(networkId, CompressedPublicKey.of(keyPair.getPublic()), proofOfWork, recipient, message);
 

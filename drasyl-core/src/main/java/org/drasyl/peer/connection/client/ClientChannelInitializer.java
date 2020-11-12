@@ -26,11 +26,8 @@ import io.netty.handler.codec.http.websocketx.WebSocketClientHandshaker;
 import io.netty.handler.codec.http.websocketx.WebSocketClientHandshakerFactory;
 import io.netty.handler.codec.http.websocketx.WebSocketClientProtocolHandler;
 import io.netty.handler.codec.http.websocketx.WebSocketVersion;
-import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.connection.DefaultSessionInitializer;
-
-import java.time.Duration;
 
 /**
  * Creates a newly configured {@link ChannelPipeline} for a connection to a node server.
@@ -42,26 +39,13 @@ public abstract class ClientChannelInitializer extends DefaultSessionInitializer
     /**
      * Initialize a netty Channel for an outbound connection to a node server.
      *
-     * @param networkId       the network the node belongs to
-     * @param identity        the node's identity
      * @param flushBufferSize The size of the flush buffer, to minimize IO overhead. A high value is
      *                        good for throughput. A low value is good for latency.
-     * @param readIdleTimeout The maximum time that an active connection can spend in idle before
-     *                        the client checks with a PING request whether the remote station is
-     *                        still alive. Note: every long value &lt;= 0 s deactivates the idle
-     *                        function.
-     * @param pingPongRetries The maximum amount that a remote station cannot reply to a PING
-     *                        request in succession in the interval {@code readIdleTimeout}. Min
-     *                        value is 1, max 32767
      * @param target          the target URI
      */
-    protected ClientChannelInitializer(final int networkId,
-                                       final Identity identity,
-                                       final int flushBufferSize,
-                                       final Duration readIdleTimeout,
-                                       final short pingPongRetries,
+    protected ClientChannelInitializer(final int flushBufferSize,
                                        final Endpoint target) {
-        super(networkId, identity, flushBufferSize, readIdleTimeout, pingPongRetries);
+        super(flushBufferSize);
         this.target = target;
     }
 

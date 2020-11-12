@@ -41,8 +41,6 @@ import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.Message;
-import org.drasyl.peer.connection.message.PingMessage;
-import org.drasyl.peer.connection.message.PongMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.SuccessMessage;
 import org.drasyl.peer.connection.server.TestServer;
@@ -116,8 +114,6 @@ class SuperPeerClientIT {
                 .serverBindPort(0)
                 .serverHandshakeTimeout(ofSeconds(5))
                 .serverSSLEnabled(true)
-                .serverIdleTimeout(ofSeconds(1))
-                .serverIdleRetries((short) 1)
                 .superPeerEndpoints(Set.of(Endpoint.of("wss://127.0.0.1:22527#0234789936c7941f850c382ea9d14ecb0aad03b99a9e29a9c15b42f5f1b0c4cf3d")))
                 .superPeerRetryDelays(List.of(ofSeconds(0), ofSeconds(1), ofSeconds(2), ofSeconds(4), ofSeconds(8), ofSeconds(16), ofSeconds(32), ofSeconds(60)))
                 .superPeerIdleTimeout(ofSeconds(1))
@@ -137,8 +133,6 @@ class SuperPeerClientIT {
                 .serverExposeEnabled(false)
                 .serverHandshakeTimeout(ofSeconds(5))
                 .serverSSLEnabled(true)
-                .serverIdleTimeout(ofSeconds(1))
-                .serverIdleRetries((short) 1)
                 .superPeerEnabled(false)
                 .build();
         identityManagerServer = new IdentityManager(serverConfig);
@@ -169,8 +163,6 @@ class SuperPeerClientIT {
                 .serverBindPort(0)
                 .serverHandshakeTimeout(ofSeconds(5))
                 .serverSSLEnabled(true)
-                .serverIdleTimeout(ofSeconds(1))
-                .serverIdleRetries((short) 1)
                 .superPeerEndpoints(endpoints)
                 .serverBindPort(0)
                 .superPeerRetryDelays(List.of(ofSeconds(0), ofSeconds(1), ofSeconds(2), ofSeconds(4), ofSeconds(8), ofSeconds(16), ofSeconds(32), ofSeconds(60)))
@@ -244,25 +236,6 @@ class SuperPeerClientIT {
         // verify emitted events
         emittedEvents.awaitCount(3);
         emittedEvents.assertValueAt(2, new NodeOfflineEvent(Node.of(identityManager.getIdentity())));
-    }
-
-    @Test
-    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientShouldRespondToPingMessageWithPongMessage() {
-        final PingMessage request = new PingMessage(networkId, config.getIdentityPublicKey(), config.getIdentityProofOfWork(), identityManager.getPublicKey());
-        final TestObserver<Message> receivedMessages = server.receivedMessages().filter(m -> m instanceof PongMessage && ((PongMessage) m).getCorrespondingId().equals(request.getId())).test();
-
-        // start client
-        try (final SuperPeerClient client = new SuperPeerClient(config, identityManager.getIdentity(), peersManager, pipeline, channelGroup, workerGroup, () -> true)) {
-            client.open();
-            server.awaitClient(identityManager.getPublicKey());
-
-            // send message
-            server.sendMessage(identityManager.getPublicKey(), request);
-
-            // verify received message
-            receivedMessages.awaitCount(1).assertValueCount(1);
-        }
     }
 
     @Test

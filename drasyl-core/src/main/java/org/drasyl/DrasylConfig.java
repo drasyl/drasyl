@@ -73,8 +73,6 @@ public class DrasylConfig {
     static final String SERVER_BIND_HOST = "drasyl.server.bind-host";
     static final String SERVER_BIND_PORT = "drasyl.server.bind-port";
     static final String SERVER_ENDPOINTS = "drasyl.server.endpoints";
-    static final String SERVER_IDLE_RETRIES = "drasyl.server.idle.retries";
-    static final String SERVER_IDLE_TIMEOUT = "drasyl.server.idle.timeout";
     static final String SERVER_SSL_ENABLED = "drasyl.server.ssl.enabled";
     static final String SERVER_SSL_PROTOCOLS = "drasyl.server.ssl.protocols";
     static final String SERVER_HANDSHAKE_TIMEOUT = "drasyl.server.handshake-timeout";
@@ -122,8 +120,6 @@ public class DrasylConfig {
     private final InetAddress serverBindHost;
     private final boolean serverEnabled;
     private final int serverBindPort;
-    private final short serverIdleRetries;
-    private final Duration serverIdleTimeout;
     private final int flushBufferSize;
     private final boolean serverSSLEnabled;
     private final Set<String> serverSSLProtocols;
@@ -207,8 +203,6 @@ public class DrasylConfig {
         this.serverEnabled = config.getBoolean(SERVER_ENABLED);
         this.serverBindHost = getInetAddress(config, SERVER_BIND_HOST);
         this.serverBindPort = config.getInt(SERVER_BIND_PORT);
-        this.serverIdleRetries = getShort(config, SERVER_IDLE_RETRIES);
-        this.serverIdleTimeout = config.getDuration(SERVER_IDLE_TIMEOUT);
         this.flushBufferSize = config.getInt(FLUSH_BUFFER_SIZE);
         this.serverHandshakeTimeout = config.getDuration(SERVER_HANDSHAKE_TIMEOUT);
         this.serverChannelInitializer = getChannelInitializer(config, SERVER_CHANNEL_INITIALIZER);
@@ -496,8 +490,6 @@ public class DrasylConfig {
                  final InetAddress serverBindHost,
                  final boolean serverEnabled,
                  final int serverBindPort,
-                 final short serverIdleRetries,
-                 final Duration serverIdleTimeout,
                  final int flushBufferSize,
                  final boolean serverSSLEnabled,
                  final Set<String> serverSSLProtocols,
@@ -548,8 +540,6 @@ public class DrasylConfig {
         this.serverBindHost = serverBindHost;
         this.serverEnabled = serverEnabled;
         this.serverBindPort = serverBindPort;
-        this.serverIdleRetries = serverIdleRetries;
-        this.serverIdleTimeout = serverIdleTimeout;
         this.flushBufferSize = flushBufferSize;
         this.serverSSLEnabled = serverSSLEnabled;
         this.serverSSLProtocols = serverSSLProtocols;
@@ -655,16 +645,8 @@ public class DrasylConfig {
         return serverSSLEnabled;
     }
 
-    public short getServerIdleRetries() {
-        return serverIdleRetries;
-    }
-
     public Duration getSuperPeerHandshakeTimeout() {
         return superPeerHandshakeTimeout;
-    }
-
-    public Duration getServerIdleTimeout() {
-        return serverIdleTimeout;
     }
 
     public int getFlushBufferSize() {
@@ -811,9 +793,9 @@ public class DrasylConfig {
     @Override
     public int hashCode() {
         return Objects.hash(networkId, identityProofOfWork, identityPublicKey, identityPrivateKey,
-                identityPath, serverBindHost, serverEnabled, serverBindPort, serverIdleRetries,
-                serverIdleTimeout, flushBufferSize, serverSSLEnabled, serverSSLProtocols,
-                serverHandshakeTimeout, serverEndpoints, serverChannelInitializer,
+                identityPath, serverBindHost, serverEnabled, serverBindPort, flushBufferSize,
+                serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout,
+                serverEndpoints, serverChannelInitializer,
                 serverExposeEnabled, messageMaxContentLength, messageHopLimit,
                 messageComposedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints,
                 superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer,
@@ -843,7 +825,6 @@ public class DrasylConfig {
         return networkId == that.networkId &&
                 serverEnabled == that.serverEnabled &&
                 serverBindPort == that.serverBindPort &&
-                serverIdleRetries == that.serverIdleRetries &&
                 flushBufferSize == that.flushBufferSize &&
                 serverSSLEnabled == that.serverSSLEnabled &&
                 messageMaxContentLength == that.messageMaxContentLength &&
@@ -861,7 +842,6 @@ public class DrasylConfig {
                 Objects.equals(identityPrivateKey, that.identityPrivateKey) &&
                 Objects.equals(identityPath, that.identityPath) &&
                 Objects.equals(serverBindHost, that.serverBindHost) &&
-                Objects.equals(serverIdleTimeout, that.serverIdleTimeout) &&
                 Objects.equals(serverSSLProtocols, that.serverSSLProtocols) &&
                 Objects.equals(serverHandshakeTimeout, that.serverHandshakeTimeout) &&
                 Objects.equals(serverEndpoints, that.serverEndpoints) &&
@@ -906,8 +886,6 @@ public class DrasylConfig {
                 ", serverBindHost='" + serverBindHost + '\'' +
                 ", serverEnabled=" + serverEnabled +
                 ", serverBindPort=" + serverBindPort +
-                ", serverIdleRetries=" + serverIdleRetries +
-                ", serverIdleTimeout=" + serverIdleTimeout +
                 ", flushBufferSize=" + flushBufferSize +
                 ", serverSSLEnabled=" + serverSSLEnabled +
                 ", serverSSLProtocols=" + serverSSLProtocols +
@@ -997,8 +975,6 @@ public class DrasylConfig {
                 config.serverBindHost,
                 config.serverEnabled,
                 config.serverBindPort,
-                config.serverIdleRetries,
-                config.serverIdleTimeout,
                 config.flushBufferSize,
                 config.serverSSLEnabled,
                 config.serverSSLProtocols,
@@ -1058,8 +1034,6 @@ public class DrasylConfig {
         private InetAddress serverBindHost;
         private boolean serverEnabled;
         private int serverBindPort;
-        private short serverIdleRetries;
-        private Duration serverIdleTimeout;
         private int flushBufferSize;
         private boolean serverSSLEnabled;
         private Set<String> serverSSLProtocols;
@@ -1113,8 +1087,6 @@ public class DrasylConfig {
                         final InetAddress serverBindHost,
                         final boolean serverEnabled,
                         final int serverBindPort,
-                        final short serverIdleRetries,
-                        final Duration serverIdleTimeout,
                         final int flushBufferSize,
                         final boolean serverSSLEnabled,
                         final Set<String> serverSSLProtocols,
@@ -1166,8 +1138,6 @@ public class DrasylConfig {
             this.serverBindHost = serverBindHost;
             this.serverEnabled = serverEnabled;
             this.serverBindPort = serverBindPort;
-            this.serverIdleRetries = serverIdleRetries;
-            this.serverIdleTimeout = serverIdleTimeout;
             this.flushBufferSize = flushBufferSize;
             this.serverSSLEnabled = serverSSLEnabled;
             this.serverSSLProtocols = serverSSLProtocols;
@@ -1250,16 +1220,6 @@ public class DrasylConfig {
 
         public Builder serverBindPort(final int serverBindPort) {
             this.serverBindPort = serverBindPort;
-            return this;
-        }
-
-        public Builder serverIdleRetries(final short serverIdleRetries) {
-            this.serverIdleRetries = serverIdleRetries;
-            return this;
-        }
-
-        public Builder serverIdleTimeout(final Duration serverIdleTimeout) {
-            this.serverIdleTimeout = serverIdleTimeout;
             return this;
         }
 
@@ -1481,7 +1441,7 @@ public class DrasylConfig {
         public DrasylConfig build() {
             return new DrasylConfig(networkId, identityProofOfWork, identityPublicKey,
                     identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort,
-                    serverIdleRetries, serverIdleTimeout, flushBufferSize, serverSSLEnabled,
+                    flushBufferSize, serverSSLEnabled,
                     serverSSLProtocols, serverHandshakeTimeout, serverEndpoints,
                     serverChannelInitializer, serverExposeEnabled, messageMaxContentLength, messageHopLimit,
                     messageComposedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints,
