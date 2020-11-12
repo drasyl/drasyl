@@ -19,30 +19,14 @@
 package org.drasyl.peer.connection.client;
 
 import io.netty.channel.ChannelPipeline;
-import org.drasyl.peer.connection.client.ClientEnvironment;
-import org.drasyl.peer.connection.client.DefaultClientChannelInitializer;
-
-import static org.drasyl.peer.connection.handler.PingPongHandler.PING_PONG_HANDLER;
 
 public class TestClientChannelInitializer extends DefaultClientChannelInitializer {
-    private final boolean doPingPong;
     private final boolean doJoin;
 
     public TestClientChannelInitializer(final ClientEnvironment environment,
-                                        final boolean doPingPong,
                                         final boolean doJoin) {
         super(environment);
-        this.doPingPong = doPingPong;
         this.doJoin = doJoin;
-    }
-
-    @Override
-    protected void idleStage(final ChannelPipeline pipeline) {
-        super.idleStage(pipeline);
-
-        if (!doPingPong) {
-            pipeline.remove(PING_PONG_HANDLER);
-        }
     }
 
     @Override

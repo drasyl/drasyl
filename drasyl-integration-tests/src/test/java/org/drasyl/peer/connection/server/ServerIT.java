@@ -43,7 +43,6 @@ import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.ErrorMessage;
 import org.drasyl.peer.connection.message.JoinMessage;
 import org.drasyl.peer.connection.message.Message;
-import org.drasyl.peer.connection.message.PingMessage;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.message.RequestMessage;
 import org.drasyl.peer.connection.message.ResponseMessage;
@@ -79,16 +78,15 @@ import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_PEER_U
 import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_PROOF_OF_WORK_INVALID;
 import static org.drasyl.peer.connection.message.ErrorMessage.Error.ERROR_UNEXPECTED_MESSAGE;
 import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_NEW_SESSION;
+import static org.drasyl.util.AnsiColor.COLOR_CYAN;
+import static org.drasyl.util.AnsiColor.STYLE_REVERSED;
 import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.drasyl.util.NetworkUtil.createInetAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.drasyl.util.AnsiColor.COLOR_CYAN;
-import static org.drasyl.util.AnsiColor.STYLE_REVERSED;
 import static testutils.TestHelper.colorizedPrintln;
 
 //import net.jcip.annotations.NotThreadSafe;
@@ -138,8 +136,6 @@ class ServerIT {
                 .serverEndpoints(Set.of(Endpoint.of("wss://127.0.0.1:0#023d34f317616c3bb0fa1e4b425e9419d1704ef57f6e53afe9790e00998134f5ff")))
                 .serverHandshakeTimeout(ofSeconds(5))
                 .serverSSLEnabled(true)
-                .serverIdleTimeout(ofSeconds(1))
-                .serverIdleRetries((short) 1)
                 .superPeerEnabled(false)
                 .messageMaxContentLength(1024 * 1024)
                 .build();
@@ -366,47 +362,6 @@ class ServerIT {
 
     @Test
     @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientsNotSendingPongMessageShouldBeDroppedAfterTimeout() {
-        // create connection
-        try (final TestSuperPeerClient session = clientSession(configClient1, identitySession1, false)) {
-            // wait for timeout
-            await()
-                    .atMost(serverConfig.getServerIdleTimeout().multipliedBy(serverConfig.getServerIdleRetries()).plus(ofSeconds(5)))
-                    .untilAsserted(() -> assertTrue(session.isClosed()));
-        }
-    }
-
-    @Test
-    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void clientsSendingPongMessageShouldNotBeDroppedAfterTimeout() throws InterruptedException {
-        // create connection
-        try (final TestSuperPeerClient session = clientSessionAfterJoin(configClient1, identitySession1)) {
-            // wait until timeout
-            Thread.sleep(serverConfig.getServerIdleTimeout().toMillis() * (serverConfig.getServerIdleRetries() + 1) + 1000);// NOSONAR
-
-            // verify session status
-            assertFalse(session.isClosed());
-        }
-    }
-
-    @Test
-    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
-    void pingMessageShouldBeRespondedWithPongMessage() throws ExecutionException, InterruptedException {
-        // create connection
-        try (final TestSuperPeerClient session = clientSession(configClient1, identitySession1, false)) {
-            // send message
-            final RequestMessage request = new PingMessage(networkId, configClient1.getIdentityPublicKey(), configClient1.getIdentityProofOfWork(), serverConfig.getIdentityPublicKey());
-            final CompletableFuture<ResponseMessage<?>> send = session.sendRequest(request);
-
-            // verify response
-            final ResponseMessage<?> response = send.get();
-
-            assertEquals(request.getId(), response.getCorrespondingId());
-        }
-    }
-
-    @Test
-    @Timeout(value = TIMEOUT, unit = MILLISECONDS)
     void nonAuthorizedClientSendingNonJoinMessageShouldBeRespondedWithExceptionMessage() throws CryptoException {
         // create connection
         try (final TestSuperPeerClient session = clientSession(configClient1, server, identitySession1)) {
@@ -472,7 +427,7 @@ class ServerIT {
             final TestObserver<Message> receivedMessages = session.receivedMessages().filter(msg -> msg instanceof ErrorMessage).test();
 
             // send message
-            final Message request = new PingMessage(networkId, configClient1.getIdentityPublicKey(), configClient1.getIdentityProofOfWork(), serverConfig.getIdentityPublicKey());
+            final Message request = new QuitMessage(networkId, configClient1.getIdentityPublicKey(), configClient1.getIdentityProofOfWork(), serverConfig.getIdentityPublicKey(), QuitMessage.CloseReason.REASON_SHUTTING_DOWN);
             final SignedMessage signedMessage = new SignedMessage(networkId, session.getPublicKey(), session.getProofOfWork(), serverConfig.getIdentityPublicKey(), request);
             Crypto.sign(identitySession2.getPrivateKey().toUncompressedKey(), signedMessage);
             final byte[] binary = JACKSON_WRITER.writeValueAsBytes(signedMessage);

@@ -50,7 +50,7 @@ public class DefaultServerChannelInitializer extends ServerChannelInitializer {
     protected final ServerEnvironment environment;
 
     public DefaultServerChannelInitializer(final ServerEnvironment environment) {
-        super(environment.getConfig().getNetworkId(), environment.getIdentity(), environment.getConfig().getFlushBufferSize(), environment.getConfig().getServerIdleTimeout(), environment.getConfig().getServerIdleRetries());
+        super(environment.getConfig().getFlushBufferSize());
         this.environment = environment;
     }
 

@@ -24,16 +24,10 @@ import io.netty.channel.ChannelPipeline;
 import io.netty.channel.socket.SocketChannel;
 import io.netty.handler.flush.FlushConsolidationHandler;
 import io.netty.handler.ssl.SslHandler;
-import io.netty.handler.timeout.IdleStateHandler;
 import org.drasyl.DrasylException;
-import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.handler.ExceptionHandler;
 import org.drasyl.peer.connection.handler.MessageDecoder;
 import org.drasyl.peer.connection.handler.MessageEncoder;
-import org.drasyl.peer.connection.handler.PingPongHandler;
-
-import java.time.Duration;
-import java.util.concurrent.TimeUnit;
 
 import static org.drasyl.peer.connection.handler.MessageDecoder.MESSAGE_DECODER;
 import static org.drasyl.peer.connection.handler.MessageEncoder.MESSAGE_ENCODER;
@@ -49,23 +43,10 @@ import static org.drasyl.peer.connection.handler.MessageEncoder.MESSAGE_ENCODER;
  */
 @SuppressWarnings("java:S4818")
 public abstract class DefaultSessionInitializer extends ChannelInitializer<SocketChannel> {
-    public static final String IDLE_EVENT = "idleEvent";
-    private final int networkId;
-    private final Identity identity;
     private final int flushBufferSize;
-    private final Duration readIdleTimeout;
-    private final short pingPongRetries;
 
-    protected DefaultSessionInitializer(final int networkId,
-                                        final Identity identity,
-                                        final int flushBufferSize,
-                                        final Duration readIdleTimeout,
-                                        final short pingPongRetries) {
-        this.networkId = networkId;
-        this.identity = identity;
+    protected DefaultSessionInitializer(final int flushBufferSize) {
         this.flushBufferSize = flushBufferSize;
-        this.readIdleTimeout = readIdleTimeout;
-        this.pingPongRetries = pingPongRetries;
     }
 
     @Override
@@ -91,10 +72,6 @@ public abstract class DefaultSessionInitializer extends ChannelInitializer<Socke
         beforePojoMarshalStage(pipeline);
         pojoMarshalStage(pipeline);
         afterPojoMarshalStage(pipeline);
-
-        beforeIdleStage(pipeline);
-        idleStage(pipeline);
-        afterIdleStage(pipeline);
 
         customStage(pipeline);
 
@@ -183,25 +160,6 @@ public abstract class DefaultSessionInitializer extends ChannelInitializer<Socke
     }
 
     protected void afterPojoMarshalStage(final ChannelPipeline pipeline) {
-    }
-
-    protected void beforeIdleStage(final ChannelPipeline pipeline) {
-    }
-
-    /**
-     * Adds {@link ChannelHandler} for idle handling to the {@link ChannelPipeline}.
-     *
-     * @param pipeline the {@link ChannelPipeline}
-     */
-    protected void idleStage(final ChannelPipeline pipeline) {
-        // Add handler to emit idle event for ping/pong requests
-        if (!readIdleTimeout.isZero()) {
-            pipeline.addLast(IDLE_EVENT, new IdleStateHandler(readIdleTimeout.toMillis(), 0, 0, TimeUnit.MILLISECONDS));
-        }
-        pipeline.addLast(PingPongHandler.PING_PONG_HANDLER, new PingPongHandler(networkId, identity, pingPongRetries));
-    }
-
-    protected void afterIdleStage(final ChannelPipeline pipeline) {
     }
 
     /**
