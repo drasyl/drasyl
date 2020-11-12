@@ -91,13 +91,6 @@ public class DrasylConfig {
     static final String LOCAL_HOST_DISCOVERY_ENABLED = "drasyl.local-host-discovery.enabled";
     static final String LOCAL_HOST_DISCOVERY_PATH = "drasyl.local-host-discovery.path";
     static final String LOCAL_HOST_DISCOVERY_LEASE_TIME = "drasyl.local-host-discovery.lease-time";
-    static final String DIRECT_CONNECTIONS_ENABLED = "drasyl.direct-connections.enabled";
-    static final String DIRECT_CONNECTIONS_MAX_CONCURRENT_CONNECTIONS = "drasyl.direct-connections.max-concurrent-connections";
-    static final String DIRECT_CONNECTIONS_RETRY_DELAYS = "drasyl.direct-connections.retry-delays";
-    static final String DIRECT_CONNECTIONS_HANDSHAKE_TIMEOUT = "drasyl.direct-connections.handshake-timeout";
-    static final String DIRECT_CONNECTIONS_CHANNEL_INITIALIZER = "drasyl.direct-connections.channel-initializer";
-    static final String DIRECT_CONNECTIONS_IDLE_RETRIES = "drasyl.direct-connections.idle.retries";
-    static final String DIRECT_CONNECTIONS_IDLE_TIMEOUT = "drasyl.direct-connections.idle.timeout";
     static final String MONITORING_ENABLED = "drasyl.monitoring.enabled";
     static final String MONITORING_INFLUX_URI = "drasyl.monitoring.influx.uri";
     static final String MONITORING_INFLUX_USER = "drasyl.monitoring.influx.user";
@@ -145,13 +138,6 @@ public class DrasylConfig {
     private final boolean localHostDiscoveryEnabled;
     private final Path localHostDiscoveryPath;
     private final Duration localHostDiscoveryLeaseTime;
-    private final boolean directConnectionsEnabled;
-    private final int directConnectionsMaxConcurrentConnections;
-    private final List<Duration> directConnectionsRetryDelays;
-    private final Duration directConnectionsHandshakeTimeout;
-    private final Class<? extends ChannelInitializer<SocketChannel>> directConnectionsChannelInitializer;
-    private final short directConnectionsIdleRetries;
-    private final Duration directConnectionsIdleTimeout;
     private final boolean monitoringEnabled;
     private final URI monitoringInfluxUri;
     private final String monitoringInfluxUser;
@@ -240,15 +226,6 @@ public class DrasylConfig {
             this.localHostDiscoveryPath = Paths.get(System.getProperty("java.io.tmpdir"), "drasyl-discovery");
         }
         this.localHostDiscoveryLeaseTime = config.getDuration(LOCAL_HOST_DISCOVERY_LEASE_TIME);
-
-        // Init direct connections config
-        this.directConnectionsEnabled = config.getBoolean(DIRECT_CONNECTIONS_ENABLED);
-        this.directConnectionsMaxConcurrentConnections = config.getInt(DIRECT_CONNECTIONS_MAX_CONCURRENT_CONNECTIONS);
-        this.directConnectionsRetryDelays = List.copyOf(config.getDurationList(DIRECT_CONNECTIONS_RETRY_DELAYS));
-        this.directConnectionsHandshakeTimeout = config.getDuration(DIRECT_CONNECTIONS_HANDSHAKE_TIMEOUT);
-        this.directConnectionsChannelInitializer = getChannelInitializer(config, DIRECT_CONNECTIONS_CHANNEL_INITIALIZER);
-        this.directConnectionsIdleRetries = getShort(config, DIRECT_CONNECTIONS_IDLE_RETRIES);
-        this.directConnectionsIdleTimeout = config.getDuration(DIRECT_CONNECTIONS_IDLE_TIMEOUT);
 
         // Init monitoring config
         monitoringEnabled = config.getBoolean(MONITORING_ENABLED);
@@ -518,13 +495,7 @@ public class DrasylConfig {
                  final boolean intraVmDiscoveryEnabled,
                  final boolean localHostDiscoveryEnabled,
                  final Path localHostDiscoveryPath,
-                 final Duration localHostDiscoveryLeaseTime, final boolean directConnectionsEnabled,
-                 final int directConnectionsMaxConcurrentConnections,
-                 final List<Duration> directConnectionsRetryDelays,
-                 final Duration directConnectionsHandshakeTimeout,
-                 final Class<? extends ChannelInitializer<SocketChannel>> directConnectionsChannelInitializer,
-                 final short directConnectionsIdleRetries,
-                 final Duration directConnectionsIdleTimeout,
+                 final Duration localHostDiscoveryLeaseTime,
                  final boolean monitoringEnabled,
                  final URI monitoringInfluxUri,
                  final String monitoringInfluxUser,
@@ -571,13 +542,6 @@ public class DrasylConfig {
         this.localHostDiscoveryEnabled = localHostDiscoveryEnabled;
         this.localHostDiscoveryPath = localHostDiscoveryPath;
         this.localHostDiscoveryLeaseTime = localHostDiscoveryLeaseTime;
-        this.directConnectionsEnabled = directConnectionsEnabled;
-        this.directConnectionsMaxConcurrentConnections = directConnectionsMaxConcurrentConnections;
-        this.directConnectionsRetryDelays = directConnectionsRetryDelays;
-        this.directConnectionsHandshakeTimeout = directConnectionsHandshakeTimeout;
-        this.directConnectionsChannelInitializer = directConnectionsChannelInitializer;
-        this.directConnectionsIdleRetries = directConnectionsIdleRetries;
-        this.directConnectionsIdleTimeout = directConnectionsIdleTimeout;
         this.monitoringEnabled = monitoringEnabled;
         this.monitoringInfluxUri = monitoringInfluxUri;
         this.monitoringInfluxUser = monitoringInfluxUser;
@@ -739,30 +703,6 @@ public class DrasylConfig {
         return localHostDiscoveryLeaseTime;
     }
 
-    public boolean areDirectConnectionsEnabled() {
-        return directConnectionsEnabled;
-    }
-
-    public int getDirectConnectionsMaxConcurrentConnections() {
-        return directConnectionsMaxConcurrentConnections;
-    }
-
-    public Duration getDirectConnectionsIdleTimeout() {
-        return directConnectionsIdleTimeout;
-    }
-
-    public short getDirectConnectionsIdleRetries() {
-        return directConnectionsIdleRetries;
-    }
-
-    public Duration getDirectConnectionsHandshakeTimeout() {
-        return directConnectionsHandshakeTimeout;
-    }
-
-    public List<Duration> getDirectConnectionsRetryDelays() {
-        return directConnectionsRetryDelays;
-    }
-
     public Set<DrasylPlugin> getPlugins() {
         return pluginSet;
     }
@@ -819,11 +759,8 @@ public class DrasylConfig {
                 superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer,
                 superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled,
                 localHostDiscoveryEnabled, localHostDiscoveryPath, localHostDiscoveryLeaseTime,
-                directConnectionsEnabled, directConnectionsMaxConcurrentConnections,
-                directConnectionsRetryDelays, directConnectionsHandshakeTimeout,
-                directConnectionsChannelInitializer, directConnectionsIdleRetries,
-                directConnectionsIdleTimeout, monitoringEnabled, monitoringInfluxUri,
-                monitoringInfluxUser, monitoringInfluxPassword, monitoringInfluxDatabase,
+                monitoringEnabled, monitoringInfluxUri, monitoringInfluxUser,
+                monitoringInfluxPassword, monitoringInfluxDatabase,
                 monitoringInfluxReportingFrequency, pluginSet, marshallingInboundAllowedTypes,
                 marshallingInboundAllowAllPrimitives, marshallingInboundAllowArrayOfDefinedTypes,
                 marshallingInboundAllowedPackages, marshallingOutboundAllowedTypes,
@@ -852,9 +789,6 @@ public class DrasylConfig {
                 superPeerIdleRetries == that.superPeerIdleRetries &&
                 intraVmDiscoveryEnabled == that.intraVmDiscoveryEnabled &&
                 localHostDiscoveryEnabled == that.localHostDiscoveryEnabled &&
-                directConnectionsEnabled == that.directConnectionsEnabled &&
-                directConnectionsMaxConcurrentConnections == that.directConnectionsMaxConcurrentConnections &&
-                directConnectionsIdleRetries == that.directConnectionsIdleRetries &&
                 monitoringEnabled == that.monitoringEnabled &&
                 Objects.equals(identityProofOfWork, that.identityProofOfWork) &&
                 Objects.equals(identityPublicKey, that.identityPublicKey) &&
@@ -875,10 +809,6 @@ public class DrasylConfig {
                 Objects.equals(superPeerIdleTimeout, that.superPeerIdleTimeout) &&
                 Objects.equals(localHostDiscoveryPath, that.localHostDiscoveryPath) &&
                 Objects.equals(localHostDiscoveryLeaseTime, that.localHostDiscoveryLeaseTime) &&
-                Objects.equals(directConnectionsRetryDelays, that.directConnectionsRetryDelays) &&
-                Objects.equals(directConnectionsHandshakeTimeout, that.directConnectionsHandshakeTimeout) &&
-                Objects.equals(directConnectionsChannelInitializer, that.directConnectionsChannelInitializer) &&
-                Objects.equals(directConnectionsIdleTimeout, that.directConnectionsIdleTimeout) &&
                 Objects.equals(monitoringInfluxUri, that.monitoringInfluxUri) &&
                 Objects.equals(monitoringInfluxUser, that.monitoringInfluxUser) &&
                 Objects.equals(monitoringInfluxPassword, that.monitoringInfluxPassword) &&
@@ -929,13 +859,6 @@ public class DrasylConfig {
                 ", localHostDiscoveryEnabled=" + localHostDiscoveryEnabled +
                 ", localHostDiscoveryPath=" + localHostDiscoveryPath +
                 ", localHostDiscoveryLeaseTime=" + localHostDiscoveryLeaseTime +
-                ", directConnectionsEnabled=" + directConnectionsEnabled +
-                ", directConnectionsMaxConcurrentConnections=" + directConnectionsMaxConcurrentConnections +
-                ", directConnectionsRetryDelays=" + directConnectionsRetryDelays +
-                ", directConnectionsHandshakeTimeout=" + directConnectionsHandshakeTimeout +
-                ", directConnectionsChannelInitializer=" + directConnectionsChannelInitializer +
-                ", directConnectionsIdleRetries=" + directConnectionsIdleRetries +
-                ", directConnectionsIdleTimeout=" + directConnectionsIdleTimeout +
                 ", monitoringEnabled=" + monitoringEnabled +
                 ", monitoringInfluxUri='" + monitoringInfluxUri + '\'' +
                 ", monitoringInfluxUser='" + monitoringInfluxUser + '\'' +
@@ -1020,13 +943,6 @@ public class DrasylConfig {
                 config.localHostDiscoveryEnabled,
                 config.localHostDiscoveryPath,
                 config.localHostDiscoveryLeaseTime,
-                config.directConnectionsEnabled,
-                config.directConnectionsMaxConcurrentConnections,
-                config.directConnectionsRetryDelays,
-                config.directConnectionsHandshakeTimeout,
-                config.directConnectionsChannelInitializer,
-                config.directConnectionsIdleRetries,
-                config.directConnectionsIdleTimeout,
                 config.monitoringEnabled,
                 config.monitoringInfluxUri,
                 config.monitoringInfluxUser,
@@ -1081,13 +997,6 @@ public class DrasylConfig {
         private boolean localHostDiscoveryEnabled;
         private final Path localHostDiscoveryPath;
         private Duration localHostDiscoveryLeaseTime;
-        private boolean directConnectionsEnabled;
-        private int directConnectionsMaxConcurrentConnections;
-        private List<Duration> directConnectionsRetryDelays;
-        private Duration directConnectionsHandshakeTimeout;
-        private Class<? extends ChannelInitializer<SocketChannel>> directConnectionsChannelInitializer;
-        private short directConnectionsIdleRetries;
-        private Duration directConnectionsIdleTimeout;
         private boolean monitoringEnabled;
         private URI monitoringInfluxUri;
         private String monitoringInfluxUser;
@@ -1136,13 +1045,6 @@ public class DrasylConfig {
                         final boolean localHostDiscoveryEnabled,
                         final Path localHostDiscoveryPath,
                         final Duration localHostDiscoveryLeaseTime,
-                        final boolean directConnectionsEnabled,
-                        final int directConnectionsMaxConcurrentConnections,
-                        final List<Duration> directConnectionsRetryDelays,
-                        final Duration directConnectionsHandshakeTimeout,
-                        final Class<? extends ChannelInitializer<SocketChannel>> directConnectionsChannelInitializer,
-                        final short directConnectionsIdleRetries,
-                        final Duration directConnectionsIdleTimeout,
                         final boolean monitoringEnabled,
                         final URI monitoringInfluxUri,
                         final String monitoringInfluxUser,
@@ -1188,13 +1090,6 @@ public class DrasylConfig {
             this.localHostDiscoveryEnabled = localHostDiscoveryEnabled;
             this.localHostDiscoveryPath = localHostDiscoveryPath;
             this.localHostDiscoveryLeaseTime = localHostDiscoveryLeaseTime;
-            this.directConnectionsEnabled = directConnectionsEnabled;
-            this.directConnectionsMaxConcurrentConnections = directConnectionsMaxConcurrentConnections;
-            this.directConnectionsRetryDelays = directConnectionsRetryDelays;
-            this.directConnectionsHandshakeTimeout = directConnectionsHandshakeTimeout;
-            this.directConnectionsChannelInitializer = directConnectionsChannelInitializer;
-            this.directConnectionsIdleRetries = directConnectionsIdleRetries;
-            this.directConnectionsIdleTimeout = directConnectionsIdleTimeout;
             this.monitoringEnabled = monitoringEnabled;
             this.monitoringInfluxUri = monitoringInfluxUri;
             this.monitoringInfluxUser = monitoringInfluxUser;
@@ -1358,41 +1253,6 @@ public class DrasylConfig {
             return this;
         }
 
-        public Builder directConnectionsEnabled(final boolean directConnectionsEnabled) {
-            this.directConnectionsEnabled = directConnectionsEnabled;
-            return this;
-        }
-
-        public Builder directConnectionsMaxConcurrentConnections(final int directConnectionsMaxConcurrentConnections) {
-            this.directConnectionsMaxConcurrentConnections = directConnectionsMaxConcurrentConnections;
-            return this;
-        }
-
-        public Builder directConnectionsRetryDelays(final List<Duration> directConnectionsRetryDelays) {
-            this.directConnectionsRetryDelays = directConnectionsRetryDelays;
-            return this;
-        }
-
-        public Builder directConnectionsHandshakeTimeout(final Duration directConnectionsHandshakeTimeout) {
-            this.directConnectionsHandshakeTimeout = directConnectionsHandshakeTimeout;
-            return this;
-        }
-
-        public Builder directConnectionsChannelInitializer(final Class<? extends ChannelInitializer<SocketChannel>> directConnectionsChannelInitializer) {
-            this.directConnectionsChannelInitializer = directConnectionsChannelInitializer;
-            return this;
-        }
-
-        public Builder directConnectionsIdleRetries(final short directConnectionsIdleRetries) {
-            this.directConnectionsIdleRetries = directConnectionsIdleRetries;
-            return this;
-        }
-
-        public Builder directConnectionsIdleTimeout(final Duration directConnectionsIdleTimeout) {
-            this.directConnectionsIdleTimeout = directConnectionsIdleTimeout;
-            return this;
-        }
-
         public Builder monitoringEnabled(final boolean monitoringEnabled) {
             this.monitoringEnabled = monitoringEnabled;
             return this;
@@ -1488,10 +1348,7 @@ public class DrasylConfig {
                     superPeerRetryDelays, superPeerHandshakeTimeout,
                     superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout,
                     intraVmDiscoveryEnabled, localHostDiscoveryEnabled, localHostDiscoveryPath,
-                    localHostDiscoveryLeaseTime, directConnectionsEnabled,
-                    directConnectionsMaxConcurrentConnections, directConnectionsRetryDelays,
-                    directConnectionsHandshakeTimeout, directConnectionsChannelInitializer,
-                    directConnectionsIdleRetries, directConnectionsIdleTimeout, monitoringEnabled,
+                    localHostDiscoveryLeaseTime, monitoringEnabled,
                     monitoringInfluxUri, monitoringInfluxUser, monitoringInfluxPassword,
                     monitoringInfluxDatabase, monitoringInfluxReportingFrequency,
                     plugins, marshallingInboundAllowedTypes, marshallingInboundAllowAllPrimitives,

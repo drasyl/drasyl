@@ -30,10 +30,8 @@ import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeOfflineEvent;
 import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.event.Peer;
 import org.drasyl.event.PeerDirectEvent;
 import org.drasyl.event.PeerEvent;
-import org.drasyl.event.PeerRelayEvent;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -142,7 +140,6 @@ class DrasylNodeIT {
                         .serverBindHost(createInetAddress("127.0.0.1"))
                         .serverBindPort(0)
                         .superPeerEnabled(false)
-                        .directConnectionsEnabled(false)
                         .intraVmDiscoveryEnabled(false)
                         .localHostDiscoveryEnabled(false)
                         .build();
@@ -160,7 +157,6 @@ class DrasylNodeIT {
                         .serverExposeEnabled(false)
                         .serverEnabled(false)
                         .superPeerEndpoints(Set.of(Endpoint.of("ws://127.0.0.1:" + superPeerPort + "#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")))
-                        .directConnectionsEnabled(false)
                         .intraVmDiscoveryEnabled(false)
                         .localHostDiscoveryEnabled(false)
                         .build();
@@ -176,7 +172,6 @@ class DrasylNodeIT {
                         .serverExposeEnabled(false)
                         .serverEnabled(false)
                         .superPeerEndpoints(Set.of(Endpoint.of("ws://127.0.0.1:" + superPeerPort + "#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")))
-                        .directConnectionsEnabled(false)
                         .intraVmDiscoveryEnabled(false)
                         .localHostDiscoveryEnabled(false)
                         .build();
@@ -265,112 +260,6 @@ class DrasylNodeIT {
 
                 client1Events.awaitCount(1).assertValueCount(1);
                 client2Events.awaitCount(1).assertValueCount(1);
-            }
-        }
-    }
-
-    @Nested
-    class TestDirectConnectionsManager {
-        /**
-         * Network Layout:
-         * <pre>
-         *        +---+---+
-         *        | Super |
-         *        | Peer  |
-         *        +-+--+--+
-         *          |  |
-         *     +----+  +-----+
-         *     |             |
-         * +---+----+   +----+---+
-         * |Client 1|   |Client 2|
-         * +--------+   +--------+
-         * </pre>
-         */
-        @Nested
-        class SuperPeerAndTwoClientWhenOnlyServerAndSuperPeerClientAndDirectConnectionsManagerAreEnabled {
-            private Pair<DrasylNode, Observable<Event>> superPeer;
-            private Pair<DrasylNode, Observable<Event>> client1;
-            private Pair<DrasylNode, Observable<Event>> client2;
-
-            @BeforeEach
-            void setUp() throws DrasylException, CryptoException {
-                //
-                // create nodes
-                //
-                DrasylConfig config;
-
-                // super peer
-                config = DrasylConfig.newBuilder()
-                        .networkId(0)
-                        .identityProofOfWork(ProofOfWork.of(6518542))
-                        .identityPublicKey(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
-                        .identityPrivateKey(CompressedPrivateKey.of("6b4df6d8b8b509cb984508a681076efce774936c17cf450819e2262a9862f8"))
-                        .serverExposeEnabled(false)
-                        .serverBindHost(createInetAddress("127.0.0.1"))
-                        .serverBindPort(0)
-                        .superPeerEnabled(false)
-                        .intraVmDiscoveryEnabled(false)
-                        .localHostDiscoveryEnabled(false)
-                        .build();
-                superPeer = createStartedNode(config);
-                final NodeEvent superPeerNodeUp = (NodeEvent) superPeer.second().filter(e -> e instanceof NodeUpEvent).firstElement().blockingGet();
-                final int superPeerPort = superPeerNodeUp.getNode().getEndpoints().iterator().next().getPort();
-                colorizedPrintln("CREATED superPeer", COLOR_CYAN, STYLE_REVERSED);
-
-                // client1
-                config = DrasylConfig.newBuilder()
-                        .networkId(0)
-                        .identityProofOfWork(ProofOfWork.of(12304070))
-                        .identityPublicKey(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))
-                        .identityPrivateKey(CompressedPrivateKey.of("073a34ecaff06fdf3fbe44ddf3abeace43e3547033493b1ac4c0ae3c6ecd6173"))
-                        .serverExposeEnabled(false)
-                        .serverBindHost(createInetAddress("127.0.0.1"))
-                        .serverBindPort(0)
-                        .superPeerEndpoints(Set.of(Endpoint.of("ws://127.0.0.1:" + superPeerPort, CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))))
-                        .intraVmDiscoveryEnabled(false)
-                        .localHostDiscoveryEnabled(false)
-                        .build();
-                client1 = createStartedNode(config);
-                colorizedPrintln("CREATED client1", COLOR_CYAN, STYLE_REVERSED);
-
-                // client2
-                config = DrasylConfig.newBuilder()
-                        .networkId(0)
-                        .identityProofOfWork(ProofOfWork.of(33957767))
-                        .identityPublicKey(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))
-                        .identityPrivateKey(CompressedPrivateKey.of("0310991def7b530fced318876ac71025ebc0449a95967a0efc2e423086198f54"))
-                        .serverExposeEnabled(false)
-                        .serverBindHost(createInetAddress("127.0.0.1"))
-                        .serverBindPort(0)
-                        .superPeerEndpoints(Set.of(Endpoint.of("ws://127.0.0.1:" + superPeerPort + "#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")))
-                        .intraVmDiscoveryEnabled(false)
-                        .localHostDiscoveryEnabled(false)
-                        .build();
-                client2 = createStartedNode(config);
-                colorizedPrintln("CREATED client2", COLOR_CYAN, STYLE_REVERSED);
-
-                superPeer.second().filter(e -> e instanceof NodeUpEvent || e instanceof PeerDirectEvent).test().awaitCount(3).assertValueCount(3);
-                client1.second().filter(e -> e instanceof NodeOnlineEvent || e instanceof PeerDirectEvent).test().awaitCount(2).assertValueCount(2);
-                client2.second().filter(e -> e instanceof NodeOnlineEvent || e instanceof PeerDirectEvent).test().awaitCount(2).assertValueCount(2);
-            }
-
-            /**
-             * This test checks that a direct connection is established when two peers communicate.
-             */
-            @Test
-            void shouldEstablishDirectConnectionToOtherPeer() throws CryptoException {
-                final TestObserver<Event> client1RelayEvents = client1.second().filter(e -> e instanceof PeerEvent && ((PeerEvent) e).getPeer().getPublicKey().equals(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))).test();
-                final TestObserver<Event> client2RelayEvents = client2.second().filter(e -> e instanceof PeerEvent && ((PeerEvent) e).getPeer().getPublicKey().equals(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4")) || e instanceof MessageEvent).test();
-
-                client1.first().send("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e", "Hallo Welt");
-
-                client1RelayEvents.awaitCount(2).assertValueCount(2);
-                client1RelayEvents.assertValueAt(0, new PeerRelayEvent(Peer.of(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))));
-                client1RelayEvents.assertValueAt(1, new PeerDirectEvent(Peer.of(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))));
-                client2RelayEvents.awaitCount(3).assertValueCount(3);
-                client2RelayEvents.assertValueAt(0, new PeerRelayEvent(Peer.of(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))));
-                client2RelayEvents.assertValueAt(1, e -> e instanceof MessageEvent);
-                client2RelayEvents.assertValueAt(2, new PeerDirectEvent(Peer.of(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))));
             }
         }
     }
@@ -560,7 +449,6 @@ class DrasylNodeIT {
                         .serverEnabled(true)
                         .serverBindPort(0)
                         .superPeerEnabled(false)
-                        .directConnectionsEnabled(true)
                         .intraVmDiscoveryEnabled(false)
                         .build();
                 node1 = createStartedNode(config);
@@ -576,7 +464,6 @@ class DrasylNodeIT {
                         .serverEnabled(true)
                         .serverBindPort(0)
                         .superPeerEnabled(false)
-                        .directConnectionsEnabled(true)
                         .intraVmDiscoveryEnabled(false)
                         .build();
                 node2 = createStartedNode(config);
@@ -592,7 +479,6 @@ class DrasylNodeIT {
                         .serverEnabled(true)
                         .serverBindPort(0)
                         .superPeerEnabled(false)
-                        .directConnectionsEnabled(true)
                         .intraVmDiscoveryEnabled(false)
                         .build();
                 node3 = createStartedNode(config);
@@ -608,7 +494,6 @@ class DrasylNodeIT {
                         .serverEnabled(true)
                         .serverBindPort(0)
                         .superPeerEnabled(false)
-                        .directConnectionsEnabled(true)
                         .intraVmDiscoveryEnabled(false)
                         .build();
                 node4 = createStartedNode(config);

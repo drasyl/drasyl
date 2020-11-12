@@ -66,8 +66,7 @@ import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
  * <p>
  * This discovery mechanism does not itself establish connections to other peers. Only {@link
  * PeerInformation} are discovered and passed to the {@link PeersManager}. These information can
- * then be used by the {@link org.drasyl.peer.connection.direct.DirectConnectionsManager} to
- * establish connections.
+ * then be used to establish p2p connections.
  * <p>
  * Inspired by: https://github.com/actoron/jadex/blob/10e464b230d7695dfd9bf2b36f736f93d69ee314/platform/base/src/main/java/jadex/platform/service/awareness/LocalHostAwarenessAgent.java
  */

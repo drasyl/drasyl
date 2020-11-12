@@ -57,11 +57,6 @@ import java.util.Set;
 
 import static java.time.Duration.ofSeconds;
 import static org.drasyl.DrasylConfig.DEFAULT;
-import static org.drasyl.DrasylConfig.DIRECT_CONNECTIONS_CHANNEL_INITIALIZER;
-import static org.drasyl.DrasylConfig.DIRECT_CONNECTIONS_ENABLED;
-import static org.drasyl.DrasylConfig.DIRECT_CONNECTIONS_HANDSHAKE_TIMEOUT;
-import static org.drasyl.DrasylConfig.DIRECT_CONNECTIONS_MAX_CONCURRENT_CONNECTIONS;
-import static org.drasyl.DrasylConfig.DIRECT_CONNECTIONS_RETRY_DELAYS;
 import static org.drasyl.DrasylConfig.FLUSH_BUFFER_SIZE;
 import static org.drasyl.DrasylConfig.IDENTITY_PATH;
 import static org.drasyl.DrasylConfig.IDENTITY_PRIVATE_KEY;
@@ -121,7 +116,6 @@ import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.Mockito.mock;
@@ -276,11 +270,6 @@ class DrasylConfigTest {
             when(typesafeConfig.getBoolean(LOCAL_HOST_DISCOVERY_ENABLED)).thenReturn(localHostDiscoveryEnabled);
             when(typesafeConfig.getString(LOCAL_HOST_DISCOVERY_PATH)).thenReturn(localHostDiscoveryPathAsString);
             when(typesafeConfig.getDuration(LOCAL_HOST_DISCOVERY_LEASE_TIME)).thenReturn(localHostDiscoveryLeaseTime);
-            when(typesafeConfig.getBoolean(DIRECT_CONNECTIONS_ENABLED)).thenReturn(directConnectionsEnabled);
-            when(typesafeConfig.getInt(DIRECT_CONNECTIONS_MAX_CONCURRENT_CONNECTIONS)).thenReturn(directConnectionsMaxConcurrentConnections);
-            when(typesafeConfig.getDurationList(DIRECT_CONNECTIONS_RETRY_DELAYS)).thenReturn(directConnectionsRetryDelays);
-            when(typesafeConfig.getDuration(DIRECT_CONNECTIONS_HANDSHAKE_TIMEOUT)).thenReturn(directConnectionsHandshakeTimeout);
-            when(typesafeConfig.getString(DIRECT_CONNECTIONS_CHANNEL_INITIALIZER)).thenReturn(directConnectionsChannelInitializer.getCanonicalName());
             when(typesafeConfig.getDuration(MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT)).thenReturn(composedMessageTransferTimeout);
             when(typesafeConfig.getBoolean(MONITORING_ENABLED)).thenReturn(monitoringEnabled);
             when(typesafeConfig.getString(MONITORING_INFLUX_URI)).thenReturn(monitoringInfluxUri.toString());
@@ -329,11 +318,6 @@ class DrasylConfigTest {
             assertEquals(localHostDiscoveryEnabled, config.isLocalHostDiscoveryEnabled());
             assertEquals(Path.of(localHostDiscoveryPathAsString), config.getLocalHostDiscoveryPath());
             assertEquals(localHostDiscoveryLeaseTime, config.getLocalHostDiscoveryLeaseTime());
-            assertEquals(directConnectionsEnabled, config.areDirectConnectionsEnabled());
-            assertEquals(directConnectionsMaxConcurrentConnections, config.getDirectConnectionsMaxConcurrentConnections());
-            assertEquals(directConnectionsRetryDelays, config.getDirectConnectionsRetryDelays());
-            assertEquals(directConnectionsHandshakeTimeout, config.getDirectConnectionsHandshakeTimeout());
-            assertEquals(directConnectionsChannelInitializer, config.getDirectConnectionsChannelInitializer());
             assertEquals(composedMessageTransferTimeout, config.getMessageComposedMessageTransferTimeout());
             assertEquals(monitoringEnabled, config.isMonitoringEnabled());
             assertEquals(monitoringInfluxUri, config.getMonitoringInfluxUri());
@@ -364,9 +348,7 @@ class DrasylConfigTest {
                     serverExposeEnabled, messageMaxContentLength, messageHopLimit, composedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints,
                     superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries,
                     superPeerIdleTimeout, intraVmDiscoveryEnabled, localHostDiscoveryEnabled, Path.of(localHostDiscoveryPathAsString),
-                    localHostDiscoveryLeaseTime, directConnectionsEnabled, directConnectionsMaxConcurrentConnections,
-                    directConnectionsRetryDelays, directConnectionsHandshakeTimeout, directConnectionsChannelInitializer,
-                    directConnectionsIdleRetries, directConnectionsIdleTimeout, monitoringEnabled, monitoringInfluxUri, monitoringInfluxUser,
+                    localHostDiscoveryLeaseTime, monitoringEnabled, monitoringInfluxUri, monitoringInfluxUser,
                     monitoringInfluxPassword, monitoringInfluxDatabase, monitoringInfluxReportingFrequency, plugins,
                     marshallingInboundAllowedTypes, marshallingInboundAllowAllPrimitives, marshallingInboundAllowArrayOfDefinedTypes, marshallingInboundAllowedPackages,
                     marshallingOutboundAllowedTypes, marshallingOutboundAllowAllPrimitives, marshallingOutboundAllowArrayOfDefinedTypes, marshallingOutboundAllowedPackages);
@@ -571,13 +553,6 @@ class DrasylConfigTest {
                     .intraVmDiscoveryEnabled(DEFAULT.isIntraVmDiscoveryEnabled())
                     .localHostDiscoveryEnabled(DEFAULT.isLocalHostDiscoveryEnabled())
                     .localHostDiscoveryLeaseTime(DEFAULT.getLocalHostDiscoveryLeaseTime())
-                    .directConnectionsEnabled(DEFAULT.areDirectConnectionsEnabled())
-                    .directConnectionsMaxConcurrentConnections(DEFAULT.getDirectConnectionsMaxConcurrentConnections())
-                    .directConnectionsRetryDelays(DEFAULT.getDirectConnectionsRetryDelays())
-                    .directConnectionsHandshakeTimeout(DEFAULT.getDirectConnectionsHandshakeTimeout())
-                    .directConnectionsChannelInitializer(DEFAULT.getDirectConnectionsChannelInitializer())
-                    .directConnectionsIdleRetries(DEFAULT.getDirectConnectionsIdleRetries())
-                    .directConnectionsIdleTimeout(DEFAULT.getDirectConnectionsIdleTimeout())
                     .messageComposedMessageTransferTimeout(DEFAULT.getMessageComposedMessageTransferTimeout())
                     .monitoringEnabled(DEFAULT.isMonitoringEnabled())
                     .monitoringInfluxUri(DEFAULT.getMonitoringInfluxUri())
