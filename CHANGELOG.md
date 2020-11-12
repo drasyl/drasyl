@@ -13,8 +13,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 -
 
 ### Changed
--
--
+- 
+- As a preparation for the switch to UDP-based connections in a future release, the P2P connection functionality was temporarily removed.
 -
 -
 -
