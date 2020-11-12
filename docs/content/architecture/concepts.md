@@ -18,11 +18,6 @@ Peers running within a JVM are automatically discovered via shared memory.
 Local peers running in other JVMs on the same computer are found via the file system.
 Remote nodes are found using the Super Peer, which acts as a rendezvous server.
 
-Nodes always try to communicate with each other via a direct connection.
-If this is not possible, messages are relayed through the super peer.
-Currently, direct connections are only possible for nodes within the same local network.
-In a [future release](https://git.informatik.uni-hamburg.de/sane-public/drasyl/-/issues/73), direct connections across networks are planned] using NAT traversal techniques.
-
 ## Addressing
 
 Each node generates on the first start a unique identity consisting of a public/private key-pair and a proof of work (PoW).
