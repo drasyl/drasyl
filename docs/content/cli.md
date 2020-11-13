@@ -56,4 +56,12 @@ $ docker run -i -t -p 22527:22527 \
     drasyl/drasyl node
 ```
 
-This command passes the just generated identity to the docker container and then launch the `drasyl node` command. 
+This command passes the just generated identity to the docker container and then launch the `drasyl node` command.
+
+## Homebrew
+
+The `drasyl` command can also be downloaded with [Homebrew](https://brew.sh/):
+
+```bash
+$ brew install drasyl-ovrlay/drasyl/drasyl
+```
