@@ -162,7 +162,7 @@ class ServerIT {
                 .identityPrivateKey(identitySession1.getPrivateKey())
                 .serverExposeEnabled(false)
                 .serverSSLEnabled(true)
-                .superPeerEndpoints(endpoints)
+                .superPeerEndpoint(endpoints.iterator().next())
                 .superPeerChannelInitializer(TestClientChannelInitializer.class)
                 .messageComposedMessageTransferTimeout(ofSeconds(60))
                 .messageMaxContentLength(1024 * 1024)
@@ -193,7 +193,7 @@ class ServerIT {
         // create connection
         try (final TestSuperPeerClient session = clientSession(configClient1, server, identitySession1)) {
             // send message
-            final RequestMessage request = new JoinMessage(networkId, session.getIdentity().getPublicKey(), session.getIdentity().getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), System.currentTimeMillis());
+            final RequestMessage request = new JoinMessage(networkId, session.getIdentity().getPublicKey(), session.getIdentity().getProofOfWork(), Set.of(configClient1.getSuperPeerEndpoint()).iterator().next().getPublicKey(), System.currentTimeMillis());
             final CompletableFuture<ResponseMessage<?>> send = session.sendRequest(request);
 
             // verify response
@@ -234,7 +234,7 @@ class ServerIT {
 
     private TestSuperPeerClient clientSessionAfterJoin(final DrasylConfig config,
                                                        final Identity identity) {
-        final TestSuperPeerClient client = new TestSuperPeerClient(config, identity, workerGroup, true, true, endpoints);
+        final TestSuperPeerClient client = new TestSuperPeerClient(config, identity, workerGroup, true, true, endpoints.iterator().next());
         client.open();
         awaitClientJoin(identity);
         return client;
@@ -251,10 +251,10 @@ class ServerIT {
         try (final TestSuperPeerClient session1 = clientSession(configClient1, server, identitySession1)) {
             try (final TestSuperPeerClient session2 = clientSession(configClient2, server, identitySession2)) {
                 // send messages
-                final RequestMessage request1 = new JoinMessage(networkId, session1.getIdentity().getPublicKey(), session1.getIdentity().getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), System.currentTimeMillis());
+                final RequestMessage request1 = new JoinMessage(networkId, session1.getIdentity().getPublicKey(), session1.getIdentity().getProofOfWork(), Set.of(configClient1.getSuperPeerEndpoint()).iterator().next().getPublicKey(), System.currentTimeMillis());
                 final CompletableFuture<ResponseMessage<?>> send1 = session1.sendRequest(request1);
 
-                final RequestMessage request2 = new JoinMessage(networkId, session2.getIdentity().getPublicKey(), session2.getIdentity().getProofOfWork(), configClient2.getSuperPeerEndpoints().iterator().next().getPublicKey(), System.currentTimeMillis());
+                final RequestMessage request2 = new JoinMessage(networkId, session2.getIdentity().getPublicKey(), session2.getIdentity().getProofOfWork(), Set.of(configClient2.getSuperPeerEndpoint()).iterator().next().getPublicKey(), System.currentTimeMillis());
                 final CompletableFuture<ResponseMessage<?>> send2 = session2.sendRequest(request2);
 
                 // verify responses
@@ -276,7 +276,7 @@ class ServerIT {
     private TestSuperPeerClient clientSession(final DrasylConfig config,
                                               final Identity identity,
                                               final boolean doPingPong) {
-        final TestSuperPeerClient client = new TestSuperPeerClient(config, identity, workerGroup, doPingPong, false, endpoints);
+        final TestSuperPeerClient client = new TestSuperPeerClient(config, identity, workerGroup, doPingPong, false, endpoints.iterator().next());
         client.open();
         return client;
     }
@@ -304,14 +304,14 @@ class ServerIT {
                 final TestObserver<Message> receivedMessages2 = session2.receivedMessages().test();
 
                 // send messages
-                final RequestMessage request1 = new JoinMessage(networkId, session1.getIdentity().getPublicKey(), session1.getIdentity().getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), System.currentTimeMillis());
+                final RequestMessage request1 = new JoinMessage(networkId, session1.getIdentity().getPublicKey(), session1.getIdentity().getProofOfWork(), Set.of(configClient1.getSuperPeerEndpoint()).iterator().next().getPublicKey(), System.currentTimeMillis());
                 final ResponseMessage<?> response1 = session1.sendRequest(request1).get();
-                session1.send(new SuccessMessage(networkId, session1.getPublicKey(), session1.getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), response1.getId()));
+                session1.send(new SuccessMessage(networkId, session1.getPublicKey(), session1.getProofOfWork(), Set.of(configClient1.getSuperPeerEndpoint()).iterator().next().getPublicKey(), response1.getId()));
                 await().until(() -> channelGroup.find(session1.getIdentity().getPublicKey()) != null);
 
-                final RequestMessage request2 = new JoinMessage(networkId, session1.getIdentity().getPublicKey(), session1.getIdentity().getProofOfWork(), configClient2.getSuperPeerEndpoints().iterator().next().getPublicKey(), System.currentTimeMillis());
+                final RequestMessage request2 = new JoinMessage(networkId, session1.getIdentity().getPublicKey(), session1.getIdentity().getProofOfWork(), Set.of(configClient2.getSuperPeerEndpoint()).iterator().next().getPublicKey(), System.currentTimeMillis());
                 final ResponseMessage<?> response2 = session2.sendRequest(request2).join();
-                session2.send(new SuccessMessage(networkId, session2.getPublicKey(), session2.getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), response2.getId()));
+                session2.send(new SuccessMessage(networkId, session2.getPublicKey(), session2.getProofOfWork(), Set.of(configClient1.getSuperPeerEndpoint()).iterator().next().getPublicKey(), response2.getId()));
 
                 // verify responses
                 receivedMessages1.awaitCount(2);
@@ -410,7 +410,7 @@ class ServerIT {
             final TestObserver<Message> receivedMessages = session.receivedMessages().filter(msg -> msg instanceof ErrorMessage).test();
 
             // send message
-            final RequestMessage request = new JoinMessage(networkId, session.getIdentity().getPublicKey(), session.getIdentity().getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), System.currentTimeMillis());
+            final RequestMessage request = new JoinMessage(networkId, session.getIdentity().getPublicKey(), session.getIdentity().getProofOfWork(), Set.of(configClient1.getSuperPeerEndpoint()).iterator().next().getPublicKey(), System.currentTimeMillis());
             session.sendRequest(request);
 
             // verify response
@@ -447,7 +447,7 @@ class ServerIT {
             final TestObserver<Message> receivedMessages = session.receivedMessages().filter(msg -> msg instanceof ErrorMessage).test();
 
             // send messages
-            final RequestMessage request1 = new JoinMessage(networkId, session.getIdentity().getPublicKey(), identitySession2.getProofOfWork(), configClient1.getSuperPeerEndpoints().iterator().next().getPublicKey(), System.currentTimeMillis());
+            final RequestMessage request1 = new JoinMessage(networkId, session.getIdentity().getPublicKey(), identitySession2.getProofOfWork(), Set.of(configClient1.getSuperPeerEndpoint()).iterator().next().getPublicKey(), System.currentTimeMillis());
             session.sendRequest(request1);
 
             // verify response

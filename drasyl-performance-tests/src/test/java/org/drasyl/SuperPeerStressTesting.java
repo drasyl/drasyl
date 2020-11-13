@@ -29,7 +29,6 @@ import org.drasyl.identity.IdentityManager;
 import org.drasyl.peer.Endpoint;
 
 import java.time.Duration;
-import java.util.Set;
 
 import static java.time.Duration.ofSeconds;
 
@@ -46,7 +45,7 @@ public class SuperPeerStressTesting {
 
     public static void main(final String[] args) throws DrasylException {
         final DrasylConfig baseConfig = DrasylConfig.newBuilder()
-                .superPeerEndpoints(Set.of(Endpoint.of("wss://review-monitoring-md6yhe.env.drasyl.org")))
+                .superPeerEndpoint(Endpoint.of("wss://review-monitoring-md6yhe.env.drasyl.org"))
                 .serverEnabled(false)
                 .build();
 

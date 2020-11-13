@@ -74,7 +74,7 @@ public class SuperPeerClient extends AbstractClient {
         super(
                 config.getSuperPeerRetryDelays(),
                 workerGroup,
-                config::getSuperPeerEndpoints,
+                () -> Set.of(config.getSuperPeerEndpoint()),
                 doNewConnectionsSupplier,
                 bootstrapSupplier);
     }
@@ -89,7 +89,7 @@ public class SuperPeerClient extends AbstractClient {
         super(
                 config.getSuperPeerRetryDelays(),
                 workerGroup,
-                config::getSuperPeerEndpoints,
+                () -> Set.of(config.getSuperPeerEndpoint()),
                 doNewConnectionsSupplier,
                 identity,
                 pipeline,

@@ -156,7 +156,7 @@ class DrasylNodeIT {
                         .identityPrivateKey(CompressedPrivateKey.of("073a34ecaff06fdf3fbe44ddf3abeace43e3547033493b1ac4c0ae3c6ecd6173"))
                         .serverExposeEnabled(false)
                         .serverEnabled(false)
-                        .superPeerEndpoints(Set.of(Endpoint.of("ws://127.0.0.1:" + superPeerPort + "#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")))
+                        .superPeerEndpoint(Endpoint.of("ws://127.0.0.1:" + superPeerPort + "#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
                         .intraVmDiscoveryEnabled(false)
                         .localHostDiscoveryEnabled(false)
                         .build();
@@ -171,7 +171,7 @@ class DrasylNodeIT {
                         .identityPrivateKey(CompressedPrivateKey.of("0310991def7b530fced318876ac71025ebc0449a95967a0efc2e423086198f54"))
                         .serverExposeEnabled(false)
                         .serverEnabled(false)
-                        .superPeerEndpoints(Set.of(Endpoint.of("ws://127.0.0.1:" + superPeerPort + "#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")))
+                        .superPeerEndpoint(Endpoint.of("ws://127.0.0.1:" + superPeerPort + "#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
                         .intraVmDiscoveryEnabled(false)
                         .localHostDiscoveryEnabled(false)
                         .build();

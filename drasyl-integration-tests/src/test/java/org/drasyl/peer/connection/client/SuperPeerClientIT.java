@@ -114,7 +114,7 @@ class SuperPeerClientIT {
                 .serverBindPort(0)
                 .serverHandshakeTimeout(ofSeconds(5))
                 .serverSSLEnabled(true)
-                .superPeerEndpoints(Set.of(Endpoint.of("wss://127.0.0.1:22527#0234789936c7941f850c382ea9d14ecb0aad03b99a9e29a9c15b42f5f1b0c4cf3d")))
+                .superPeerEndpoint(Endpoint.of("wss://127.0.0.1:22527#0234789936c7941f850c382ea9d14ecb0aad03b99a9e29a9c15b42f5f1b0c4cf3d"))
                 .superPeerRetryDelays(List.of(ofSeconds(0), ofSeconds(1), ofSeconds(2), ofSeconds(4), ofSeconds(8), ofSeconds(16), ofSeconds(32), ofSeconds(60)))
                 .build();
         identityManager = new IdentityManager(config);
@@ -161,7 +161,7 @@ class SuperPeerClientIT {
                 .serverBindPort(0)
                 .serverHandshakeTimeout(ofSeconds(5))
                 .serverSSLEnabled(true)
-                .superPeerEndpoints(endpoints)
+                .superPeerEndpoint(endpoints.iterator().next())
                 .serverBindPort(0)
                 .superPeerRetryDelays(List.of(ofSeconds(0), ofSeconds(1), ofSeconds(2), ofSeconds(4), ofSeconds(8), ofSeconds(16), ofSeconds(32), ofSeconds(60)))
                 .build();
@@ -193,7 +193,7 @@ class SuperPeerClientIT {
 
             // verify received messages
             receivedMessages.awaitCount(1);
-            receivedMessages.assertValue(message -> message.equals(new JoinMessage(networkId, identityManager.getPublicKey(), identityManager.getProofOfWork(), config.getSuperPeerEndpoints().iterator().next().getPublicKey(), ((JoinMessage) message).getJoinTime())));
+            receivedMessages.assertValue(message -> message.equals(new JoinMessage(networkId, identityManager.getPublicKey(), identityManager.getProofOfWork(), Set.of(config.getSuperPeerEndpoint()).iterator().next().getPublicKey(), ((JoinMessage) message).getJoinTime())));
         }
     }
 
