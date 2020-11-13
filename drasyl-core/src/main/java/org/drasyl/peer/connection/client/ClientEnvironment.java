@@ -40,8 +40,6 @@ public class ClientEnvironment {
     private final PeerChannelGroup channelGroup;
     private final PeersManager peersManager;
     private final boolean joinAsChildren;
-    private final short idleRetries;
-    private final Duration idleTimeout;
     private final Duration handshakeTimeout;
 
     @SuppressWarnings({ "java:S107" })
@@ -52,8 +50,6 @@ public class ClientEnvironment {
                              final PeerChannelGroup channelGroup,
                              final PeersManager peersManager,
                              final boolean joinAsChildren,
-                             final short idleRetries,
-                             final Duration idleTimeout,
                              final Duration handshakeTimeout) {
         this.config = requireNonNull(config);
         this.identity = requireNonNull(identity);
@@ -62,8 +58,6 @@ public class ClientEnvironment {
         this.channelGroup = requireNonNull(channelGroup);
         this.peersManager = requireNonNull(peersManager);
         this.joinAsChildren = joinAsChildren;
-        this.idleRetries = idleRetries;
-        this.idleTimeout = requireNonNull(idleTimeout);
         this.handshakeTimeout = requireNonNull(handshakeTimeout);
     }
 
@@ -93,14 +87,6 @@ public class ClientEnvironment {
 
     public Duration getHandshakeTimeout() {
         return handshakeTimeout;
-    }
-
-    public Duration getIdleTimeout() {
-        return idleTimeout;
-    }
-
-    public short getIdleRetries() {
-        return idleRetries;
     }
 
     public PeerChannelGroup getChannelGroup() {

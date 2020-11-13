@@ -83,8 +83,6 @@ public class DrasylConfig {
     static final String SUPER_PEER_RETRY_DELAYS = "drasyl.super-peer.retry-delays";
     static final String SUPER_PEER_HANDSHAKE_TIMEOUT = "drasyl.super-peer.handshake-timeout";
     static final String SUPER_PEER_CHANNEL_INITIALIZER = "drasyl.super-peer.channel-initializer";
-    static final String SUPER_PEER_IDLE_RETRIES = "drasyl.super-peer.idle.retries";
-    static final String SUPER_PEER_IDLE_TIMEOUT = "drasyl.super-peer.idle.timeout";
     static final String INTRA_VM_DISCOVERY_ENABLED = "drasyl.intra-vm-discovery.enabled";
     static final String LOCAL_HOST_DISCOVERY_ENABLED = "drasyl.local-host-discovery.enabled";
     static final String LOCAL_HOST_DISCOVERY_PATH = "drasyl.local-host-discovery.path";
@@ -128,8 +126,6 @@ public class DrasylConfig {
     private final List<Duration> superPeerRetryDelays;
     private final Duration superPeerHandshakeTimeout;
     private final Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer;
-    private final short superPeerIdleRetries;
-    private final Duration superPeerIdleTimeout;
     private final boolean intraVmDiscoveryEnabled;
     private final boolean localHostDiscoveryEnabled;
     private final Path localHostDiscoveryPath;
@@ -206,8 +202,6 @@ public class DrasylConfig {
         this.superPeerRetryDelays = List.copyOf(config.getDurationList(SUPER_PEER_RETRY_DELAYS));
         this.superPeerHandshakeTimeout = config.getDuration(SUPER_PEER_HANDSHAKE_TIMEOUT);
         this.superPeerChannelInitializer = getChannelInitializer(config, SUPER_PEER_CHANNEL_INITIALIZER);
-        this.superPeerIdleRetries = getShort(config, SUPER_PEER_IDLE_RETRIES);
-        this.superPeerIdleTimeout = config.getDuration(SUPER_PEER_IDLE_TIMEOUT);
 
         this.intraVmDiscoveryEnabled = config.getBoolean(INTRA_VM_DISCOVERY_ENABLED);
 
@@ -482,8 +476,6 @@ public class DrasylConfig {
                  final List<Duration> superPeerRetryDelays,
                  final Duration superPeerHandshakeTimeout,
                  final Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer,
-                 final short superPeerIdleRetries,
-                 final Duration superPeerIdleTimeout,
                  final boolean intraVmDiscoveryEnabled,
                  final boolean localHostDiscoveryEnabled,
                  final Path localHostDiscoveryPath,
@@ -526,8 +518,6 @@ public class DrasylConfig {
         this.superPeerRetryDelays = superPeerRetryDelays;
         this.superPeerHandshakeTimeout = superPeerHandshakeTimeout;
         this.superPeerChannelInitializer = superPeerChannelInitializer;
-        this.superPeerIdleRetries = superPeerIdleRetries;
-        this.superPeerIdleTimeout = superPeerIdleTimeout;
         this.intraVmDiscoveryEnabled = intraVmDiscoveryEnabled;
         this.localHostDiscoveryEnabled = localHostDiscoveryEnabled;
         this.localHostDiscoveryPath = localHostDiscoveryPath;
@@ -661,14 +651,6 @@ public class DrasylConfig {
         return superPeerChannelInitializer;
     }
 
-    public short getSuperPeerIdleRetries() {
-        return superPeerIdleRetries;
-    }
-
-    public Duration getSuperPeerIdleTimeout() {
-        return superPeerIdleTimeout;
-    }
-
     public boolean isIntraVmDiscoveryEnabled() {
         return intraVmDiscoveryEnabled;
     }
@@ -739,7 +721,7 @@ public class DrasylConfig {
                 serverExposeEnabled, messageMaxContentLength, messageHopLimit,
                 messageComposedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints,
                 superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer,
-                superPeerIdleRetries, superPeerIdleTimeout, intraVmDiscoveryEnabled,
+                intraVmDiscoveryEnabled,
                 localHostDiscoveryEnabled, localHostDiscoveryPath, localHostDiscoveryLeaseTime,
                 monitoringEnabled, monitoringInfluxUri, monitoringInfluxUser,
                 monitoringInfluxPassword, monitoringInfluxDatabase,
@@ -767,7 +749,6 @@ public class DrasylConfig {
                 messageMaxContentLength == that.messageMaxContentLength &&
                 messageHopLimit == that.messageHopLimit &&
                 superPeerEnabled == that.superPeerEnabled &&
-                superPeerIdleRetries == that.superPeerIdleRetries &&
                 intraVmDiscoveryEnabled == that.intraVmDiscoveryEnabled &&
                 localHostDiscoveryEnabled == that.localHostDiscoveryEnabled &&
                 monitoringEnabled == that.monitoringEnabled &&
@@ -786,7 +767,6 @@ public class DrasylConfig {
                 Objects.equals(superPeerRetryDelays, that.superPeerRetryDelays) &&
                 Objects.equals(superPeerHandshakeTimeout, that.superPeerHandshakeTimeout) &&
                 Objects.equals(superPeerChannelInitializer, that.superPeerChannelInitializer) &&
-                Objects.equals(superPeerIdleTimeout, that.superPeerIdleTimeout) &&
                 Objects.equals(localHostDiscoveryPath, that.localHostDiscoveryPath) &&
                 Objects.equals(localHostDiscoveryLeaseTime, that.localHostDiscoveryLeaseTime) &&
                 Objects.equals(monitoringInfluxUri, that.monitoringInfluxUri) &&
@@ -831,8 +811,6 @@ public class DrasylConfig {
                 ", superPeerRetryDelays=" + superPeerRetryDelays +
                 ", superPeerHandshakeTimeout=" + superPeerHandshakeTimeout +
                 ", superPeerChannelInitializer=" + superPeerChannelInitializer +
-                ", superPeerIdleRetries=" + superPeerIdleRetries +
-                ", superPeerIdleTimeout=" + superPeerIdleTimeout +
                 ", intraVmDiscoveryEnabled=" + intraVmDiscoveryEnabled +
                 ", localHostDiscoveryEnabled=" + localHostDiscoveryEnabled +
                 ", localHostDiscoveryPath=" + localHostDiscoveryPath +
@@ -913,8 +891,6 @@ public class DrasylConfig {
                 config.superPeerRetryDelays,
                 config.superPeerHandshakeTimeout,
                 config.superPeerChannelInitializer,
-                config.superPeerIdleRetries,
-                config.superPeerIdleTimeout,
                 config.intraVmDiscoveryEnabled,
                 config.localHostDiscoveryEnabled,
                 config.localHostDiscoveryPath,
@@ -965,8 +941,6 @@ public class DrasylConfig {
         private List<Duration> superPeerRetryDelays;
         private Duration superPeerHandshakeTimeout;
         private Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer;
-        private short superPeerIdleRetries;
-        private Duration superPeerIdleTimeout;
         private boolean intraVmDiscoveryEnabled;
         private boolean localHostDiscoveryEnabled;
         private final Path localHostDiscoveryPath;
@@ -1011,8 +985,6 @@ public class DrasylConfig {
                         final List<Duration> superPeerRetryDelays,
                         final Duration superPeerHandshakeTimeout,
                         final Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer,
-                        final short superPeerIdleRetries,
-                        final Duration superPeerIdleTimeout,
                         final boolean intraVmDiscoveryEnabled,
                         final boolean localHostDiscoveryEnabled,
                         final Path localHostDiscoveryPath,
@@ -1054,8 +1026,6 @@ public class DrasylConfig {
             this.superPeerRetryDelays = superPeerRetryDelays;
             this.superPeerHandshakeTimeout = superPeerHandshakeTimeout;
             this.superPeerChannelInitializer = superPeerChannelInitializer;
-            this.superPeerIdleRetries = superPeerIdleRetries;
-            this.superPeerIdleTimeout = superPeerIdleTimeout;
             this.intraVmDiscoveryEnabled = intraVmDiscoveryEnabled;
             this.localHostDiscoveryEnabled = localHostDiscoveryEnabled;
             this.localHostDiscoveryPath = localHostDiscoveryPath;
@@ -1188,16 +1158,6 @@ public class DrasylConfig {
             return this;
         }
 
-        public Builder superPeerIdleRetries(final short superPeerIdleRetries) {
-            this.superPeerIdleRetries = superPeerIdleRetries;
-            return this;
-        }
-
-        public Builder superPeerIdleTimeout(final Duration superPeerIdleTimeout) {
-            this.superPeerIdleTimeout = superPeerIdleTimeout;
-            return this;
-        }
-
         public Builder intraVmDiscoveryEnabled(final boolean intraVmDiscoveryEnabled) {
             this.intraVmDiscoveryEnabled = intraVmDiscoveryEnabled;
             return this;
@@ -1306,7 +1266,7 @@ public class DrasylConfig {
                     serverChannelInitializer, serverExposeEnabled, messageMaxContentLength, messageHopLimit,
                     messageComposedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints,
                     superPeerRetryDelays, superPeerHandshakeTimeout,
-                    superPeerChannelInitializer, superPeerIdleRetries, superPeerIdleTimeout,
+                    superPeerChannelInitializer,
                     intraVmDiscoveryEnabled, localHostDiscoveryEnabled, localHostDiscoveryPath,
                     localHostDiscoveryLeaseTime, monitoringEnabled,
                     monitoringInfluxUri, monitoringInfluxUser, monitoringInfluxPassword,

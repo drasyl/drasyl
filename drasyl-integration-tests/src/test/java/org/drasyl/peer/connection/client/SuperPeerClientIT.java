@@ -116,8 +116,6 @@ class SuperPeerClientIT {
                 .serverSSLEnabled(true)
                 .superPeerEndpoints(Set.of(Endpoint.of("wss://127.0.0.1:22527#0234789936c7941f850c382ea9d14ecb0aad03b99a9e29a9c15b42f5f1b0c4cf3d")))
                 .superPeerRetryDelays(List.of(ofSeconds(0), ofSeconds(1), ofSeconds(2), ofSeconds(4), ofSeconds(8), ofSeconds(16), ofSeconds(32), ofSeconds(60)))
-                .superPeerIdleTimeout(ofSeconds(1))
-                .superPeerIdleRetries((short) 1)
                 .build();
         identityManager = new IdentityManager(config);
         identityManager.loadOrCreateIdentity();
@@ -166,8 +164,6 @@ class SuperPeerClientIT {
                 .superPeerEndpoints(endpoints)
                 .serverBindPort(0)
                 .superPeerRetryDelays(List.of(ofSeconds(0), ofSeconds(1), ofSeconds(2), ofSeconds(4), ofSeconds(8), ofSeconds(16), ofSeconds(32), ofSeconds(60)))
-                .superPeerIdleTimeout(ofSeconds(1))
-                .superPeerIdleRetries((short) 1)
                 .build();
         identityManager = new IdentityManager(config);
         identityManager.loadOrCreateIdentity();

@@ -96,8 +96,6 @@ public class SuperPeerClient extends AbstractClient {
                 peersManager,
                 config,
                 channelGroup,
-                config.getSuperPeerIdleRetries(),
-                config.getSuperPeerIdleTimeout(),
                 config.getSuperPeerHandshakeTimeout(),
                 true,
                 config.getSuperPeerChannelInitializer()

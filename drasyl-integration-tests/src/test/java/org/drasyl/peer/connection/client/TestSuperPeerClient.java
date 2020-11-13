@@ -100,8 +100,6 @@ public class TestSuperPeerClient extends SuperPeerClient {
                                 channelGroup,
                                 peersManager,
                                 true,
-                                config.getSuperPeerIdleRetries(),
-                                config.getSuperPeerIdleTimeout(),
                                 config.getSuperPeerHandshakeTimeout()
                         ),
                                 doJoin
