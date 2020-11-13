@@ -72,8 +72,6 @@ abstract class AbstractClient implements DrasylNodeComponent {
                              final PeersManager peersManager,
                              final DrasylConfig config,
                              final PeerChannelGroup channelGroup,
-                             final short idleRetries,
-                             final Duration idleTimeout,
                              final Duration handshakeTimeout,
                              final boolean joinsAsChildren,
                              final Class<? extends ChannelInitializer<SocketChannel>> channelInitializerClazz) {
@@ -93,8 +91,6 @@ abstract class AbstractClient implements DrasylNodeComponent {
                                         channelGroup,
                                         peersManager,
                                         joinsAsChildren,
-                                        idleRetries,
-                                        idleTimeout,
                                         handshakeTimeout
                                 ),
                                 channelInitializerClazz))

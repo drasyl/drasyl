@@ -124,7 +124,6 @@ import static org.mockito.Mockito.when;
 class DrasylConfigTest {
     private final Set<String> serverSSLProtocols = Set.of("TLSv1.3", "TLSv1.2");
     private final List<Duration> superPeerRetryDelays = List.of(ofSeconds(0), ofSeconds(1), ofSeconds(2), ofSeconds(4), ofSeconds(8));
-    private final List<Duration> directConnectionsRetryDelays = List.of(ofSeconds(0), ofSeconds(1), ofSeconds(2), ofSeconds(4), ofSeconds(8));
     private int networkId;
     @Mock
     private CompressedPublicKey identityPublicKey;
@@ -148,8 +147,6 @@ class DrasylConfigTest {
     private boolean superPeerEnabled;
     private Set<Endpoint> superPeerEndpoints;
     private Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer;
-    private short superPeerIdleRetries;
-    private Duration superPeerIdleTimeout;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Config typesafeConfig;
     private String identityPathAsString;
@@ -158,12 +155,6 @@ class DrasylConfigTest {
     private boolean localHostDiscoveryEnabled;
     private String localHostDiscoveryPathAsString;
     private Duration localHostDiscoveryLeaseTime;
-    private boolean directConnectionsEnabled;
-    private int directConnectionsMaxConcurrentConnections;
-    private Duration directConnectionsHandshakeTimeout;
-    private Class<? extends ChannelInitializer<SocketChannel>> directConnectionsChannelInitializer;
-    private short directConnectionsIdleRetries;
-    private Duration directConnectionsIdleTimeout;
     private Duration composedMessageTransferTimeout;
     private boolean monitoringEnabled;
     private URI monitoringInfluxUri;
@@ -198,20 +189,12 @@ class DrasylConfigTest {
         superPeerEnabled = true;
         superPeerEndpoints = Set.of(Endpoint.of("ws://foo.bar:123#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"), Endpoint.of("wss://example.com#033de3da699f6f9ffbd427c56725910655ba3913be4ff55b13c628e957c860fd55"));
         superPeerChannelInitializer = DefaultClientChannelInitializer.class;
-        superPeerIdleRetries = 3;
         superPeerHandshakeTimeout = ofSeconds(30);
-        superPeerIdleTimeout = ofSeconds(60);
         identityPathAsString = "drasyl.identity.json";
         intraVmDiscoveryEnabled = true;
         localHostDiscoveryEnabled = true;
         localHostDiscoveryPathAsString = "foo/bar";
         localHostDiscoveryLeaseTime = ofSeconds(60);
-        directConnectionsEnabled = true;
-        directConnectionsMaxConcurrentConnections = 10;
-        directConnectionsIdleRetries = 3;
-        directConnectionsHandshakeTimeout = ofSeconds(30);
-        directConnectionsIdleTimeout = ofSeconds(60);
-        directConnectionsChannelInitializer = DefaultClientChannelInitializer.class;
         composedMessageTransferTimeout = ofSeconds(60);
         monitoringEnabled = true;
         monitoringInfluxUri = URI.create("http://localhost:8086");
@@ -336,8 +319,8 @@ class DrasylConfigTest {
                     serverBindHost, serverEnabled, serverBindPort, flushBufferSize,
                     serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer,
                     serverExposeEnabled, messageMaxContentLength, messageHopLimit, composedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints,
-                    superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer, superPeerIdleRetries,
-                    superPeerIdleTimeout, intraVmDiscoveryEnabled, localHostDiscoveryEnabled, Path.of(localHostDiscoveryPathAsString),
+                    superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer,
+                    intraVmDiscoveryEnabled, localHostDiscoveryEnabled, Path.of(localHostDiscoveryPathAsString),
                     localHostDiscoveryLeaseTime, monitoringEnabled, monitoringInfluxUri, monitoringInfluxUser,
                     monitoringInfluxPassword, monitoringInfluxDatabase, monitoringInfluxReportingFrequency, plugins,
                     marshallingInboundAllowedTypes, marshallingInboundAllowAllPrimitives, marshallingInboundAllowArrayOfDefinedTypes, marshallingInboundAllowedPackages,
@@ -536,8 +519,6 @@ class DrasylConfigTest {
                     .superPeerRetryDelays(DEFAULT.getSuperPeerRetryDelays())
                     .superPeerHandshakeTimeout(DEFAULT.getSuperPeerHandshakeTimeout())
                     .superPeerChannelInitializer(DEFAULT.getSuperPeerChannelInitializer())
-                    .superPeerIdleRetries(DEFAULT.getSuperPeerIdleRetries())
-                    .superPeerIdleTimeout(DEFAULT.getSuperPeerIdleTimeout())
                     .intraVmDiscoveryEnabled(DEFAULT.isIntraVmDiscoveryEnabled())
                     .localHostDiscoveryEnabled(DEFAULT.isLocalHostDiscoveryEnabled())
                     .localHostDiscoveryLeaseTime(DEFAULT.getLocalHostDiscoveryLeaseTime())
