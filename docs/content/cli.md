@@ -63,5 +63,5 @@ This command passes the just generated identity to the docker container and then
 The `drasyl` command can also be downloaded with [Homebrew](https://brew.sh/):
 
 ```bash
-$ brew install drasyl-ovrlay/drasyl/drasyl
+$ brew install drasyl-overlay/drasyl/drasyl
 ```
