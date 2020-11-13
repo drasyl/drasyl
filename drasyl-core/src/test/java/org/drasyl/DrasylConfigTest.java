@@ -96,7 +96,7 @@ import static org.drasyl.DrasylConfig.SERVER_SSL_ENABLED;
 import static org.drasyl.DrasylConfig.SERVER_SSL_PROTOCOLS;
 import static org.drasyl.DrasylConfig.SUPER_PEER_CHANNEL_INITIALIZER;
 import static org.drasyl.DrasylConfig.SUPER_PEER_ENABLED;
-import static org.drasyl.DrasylConfig.SUPER_PEER_ENDPOINTS;
+import static org.drasyl.DrasylConfig.SUPER_PEER_ENDPOINT;
 import static org.drasyl.DrasylConfig.SUPER_PEER_HANDSHAKE_TIMEOUT;
 import static org.drasyl.DrasylConfig.SUPER_PEER_RETRY_DELAYS;
 import static org.drasyl.DrasylConfig.getChannelInitializer;
@@ -145,7 +145,7 @@ class DrasylConfigTest {
     private int messageMaxContentLength;
     private short messageHopLimit;
     private boolean superPeerEnabled;
-    private Set<Endpoint> superPeerEndpoints;
+    private Endpoint superPeerEndpoint;
     private Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Config typesafeConfig;
@@ -187,7 +187,7 @@ class DrasylConfigTest {
         messageMaxContentLength = 1024;
         messageHopLimit = 64;
         superPeerEnabled = true;
-        superPeerEndpoints = Set.of(Endpoint.of("ws://foo.bar:123#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"), Endpoint.of("wss://example.com#033de3da699f6f9ffbd427c56725910655ba3913be4ff55b13c628e957c860fd55"));
+        superPeerEndpoint = Endpoint.of("ws://foo.bar:123#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
         superPeerChannelInitializer = DefaultClientChannelInitializer.class;
         superPeerHandshakeTimeout = ofSeconds(30);
         identityPathAsString = "drasyl.identity.json";
@@ -237,7 +237,7 @@ class DrasylConfigTest {
             when(typesafeConfig.getStringList(SERVER_ENDPOINTS)).thenReturn(List.of());
             when(typesafeConfig.getBoolean(SERVER_EXPOSE_ENABLED)).thenReturn(serverExposeEnabled);
             when(typesafeConfig.getBoolean(SUPER_PEER_ENABLED)).thenReturn(superPeerEnabled);
-            when(typesafeConfig.getStringList(SUPER_PEER_ENDPOINTS)).thenReturn(List.of("ws://foo.bar:123#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22", "wss://example.com#033de3da699f6f9ffbd427c56725910655ba3913be4ff55b13c628e957c860fd55"));
+            when(typesafeConfig.getString(SUPER_PEER_ENDPOINT)).thenReturn("ws://foo.bar:123#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
             when(typesafeConfig.getDurationList(SUPER_PEER_RETRY_DELAYS)).thenReturn(superPeerRetryDelays);
             when(typesafeConfig.getDuration(SUPER_PEER_HANDSHAKE_TIMEOUT)).thenReturn(superPeerHandshakeTimeout);
             when(typesafeConfig.getString(SUPER_PEER_CHANNEL_INITIALIZER)).thenReturn(superPeerChannelInitializer.getCanonicalName());
@@ -283,7 +283,7 @@ class DrasylConfigTest {
             assertEquals(messageMaxContentLength, config.getMessageMaxContentLength());
             assertEquals(messageHopLimit, config.getMessageHopLimit());
             assertEquals(superPeerEnabled, config.isSuperPeerEnabled());
-            assertEquals(superPeerEndpoints, config.getSuperPeerEndpoints());
+            assertEquals(superPeerEndpoint, config.getSuperPeerEndpoint());
             assertEquals(superPeerRetryDelays, config.getSuperPeerRetryDelays());
             assertEquals(superPeerHandshakeTimeout, config.getSuperPeerHandshakeTimeout());
             assertEquals(superPeerChannelInitializer, config.getSuperPeerChannelInitializer());
@@ -318,7 +318,7 @@ class DrasylConfigTest {
             final DrasylConfig config = new DrasylConfig(networkId, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath,
                     serverBindHost, serverEnabled, serverBindPort, flushBufferSize,
                     serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer,
-                    serverExposeEnabled, messageMaxContentLength, messageHopLimit, composedMessageTransferTimeout, superPeerEnabled, superPeerEndpoints,
+                    serverExposeEnabled, messageMaxContentLength, messageHopLimit, composedMessageTransferTimeout, superPeerEnabled, superPeerEndpoint,
                     superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer,
                     intraVmDiscoveryEnabled, localHostDiscoveryEnabled, Path.of(localHostDiscoveryPathAsString),
                     localHostDiscoveryLeaseTime, monitoringEnabled, monitoringInfluxUri, monitoringInfluxUser,
@@ -515,7 +515,7 @@ class DrasylConfigTest {
                     .messageMaxContentLength(DEFAULT.getMessageMaxContentLength())
                     .messageHopLimit(DEFAULT.getMessageHopLimit())
                     .superPeerEnabled(DEFAULT.isSuperPeerEnabled())
-                    .superPeerEndpoints(DEFAULT.getSuperPeerEndpoints())
+                    .superPeerEndpoint(DEFAULT.getSuperPeerEndpoint())
                     .superPeerRetryDelays(DEFAULT.getSuperPeerRetryDelays())
                     .superPeerHandshakeTimeout(DEFAULT.getSuperPeerHandshakeTimeout())
                     .superPeerChannelInitializer(DEFAULT.getSuperPeerChannelInitializer())

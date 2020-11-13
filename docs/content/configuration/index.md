@@ -22,7 +22,7 @@ Example:
 DrasylConfig config = DrasylConfig.newBuilder()
     .identityPath(Path.of("/Users/heiko/drasyl.identity.json"))
     .networkId(-25421)
-    .superPeerEndpoints(Set.of(Endpoint.of("wss://staging.env.drasyl.org#03096ae3080a369829a44847d5af1f652bef3f9921e9e1bbad64970babe6d3c502")))
+    .superPeerEndpoint(Endpoint.of("wss://staging.env.drasyl.org#03096ae3080a369829a44847d5af1f652bef3f9921e9e1bbad64970babe6d3c502"))
     .serverEnabled(false)
     .build();
 ```
