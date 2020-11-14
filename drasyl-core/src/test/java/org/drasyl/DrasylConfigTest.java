@@ -45,6 +45,7 @@ import org.mockito.quality.Strictness;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -102,6 +103,7 @@ import static org.drasyl.DrasylConfig.SUPER_PEER_RETRY_DELAYS;
 import static org.drasyl.DrasylConfig.getChannelInitializer;
 import static org.drasyl.DrasylConfig.getEndpointList;
 import static org.drasyl.DrasylConfig.getInetAddress;
+import static org.drasyl.DrasylConfig.getInetSocketAddress;
 import static org.drasyl.DrasylConfig.getPath;
 import static org.drasyl.DrasylConfig.getPlugins;
 import static org.drasyl.DrasylConfig.getPrivateKey;
@@ -446,6 +448,44 @@ class DrasylConfigTest {
             final Config config = ConfigFactory.parseString("foo.bar = baz");
 
             assertThrows(ConfigException.class, () -> getInetAddress(config, "foo.bar"));
+        }
+    }
+
+    @Nested
+    class GetInetSocketAddress {
+        @Test
+        void shouldParseIPv4Address() {
+            final Config config = ConfigFactory.parseString("foo.bar = \"203.0.113.149:22527\"");
+
+            assertEquals(InetSocketAddress.createUnresolved("203.0.113.149", 22527), getInetSocketAddress(config, "foo.bar"));
+        }
+
+        @Test
+        void shouldParseIPv6Address() {
+            final Config config = ConfigFactory.parseString("foo.bar = \"[2001:db8::1]:8080\"");
+
+            assertEquals(InetSocketAddress.createUnresolved("[2001:db8::1]", 8080), getInetSocketAddress(config, "foo.bar"));
+        }
+
+        @Test
+        void shouldParseHostname() {
+            final Config config = ConfigFactory.parseString("foo.bar = \"production.env.drasyl.org:1234\"");
+
+            assertEquals(InetSocketAddress.createUnresolved("production.env.drasyl.org", 1234), getInetSocketAddress(config, "foo.bar"));
+        }
+
+        @Test
+        void shouldThrowExceptionAddressWithoutHostname() {
+            final Config config = ConfigFactory.parseString("foo.bar = \"1234\"");
+
+            assertThrows(ConfigException.class, () -> getInetSocketAddress(config, "foo.bar"));
+        }
+
+        @Test
+        void shouldThrowExceptionAddressWithoutPort() {
+            final Config config = ConfigFactory.parseString("foo.bar = \"production.env.drasyl.org\"");
+
+            assertThrows(ConfigException.class, () -> getInetSocketAddress(config, "foo.bar"));
         }
     }
 

@@ -35,6 +35,7 @@ import java.io.File;
 import java.lang.reflect.Constructor;
 import java.lang.reflect.InvocationTargetException;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.UnknownHostException;
@@ -441,6 +442,23 @@ public class DrasylConfig {
         }
         catch (final UnknownHostException e) {
             throw new ConfigException.WrongType(config.getValue(path).origin(), path, "inet address", "unknown-host: " + e.getMessage());
+        }
+    }
+
+    /**
+     * @throws ConfigException if value at path is invalid
+     */
+    public static InetSocketAddress getInetSocketAddress(final Config config, final String path) {
+        final String stringValue = config.getString(path);
+        try {
+            final URI uriValue = new URI("my://" + stringValue);
+            final String host = uriValue.getHost();
+            final int port = uriValue.getPort();
+
+            return InetSocketAddress.createUnresolved(host, port);
+        }
+        catch (final URISyntaxException | IllegalArgumentException e) {
+            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "inet socket address", e.getMessage());
         }
     }
 
