@@ -16,23 +16,30 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection.pipeline;
+package org.drasyl.pipeline;
 
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.Message;
-import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.SimpleOutboundHandler;
+import org.drasyl.util.FutureUtil;
 
 import java.util.concurrent.CompletableFuture;
 
-/**
- * This handler processes outbound messages addressed to the local node.
- */
-public class LoopbackOutboundMessageSinkHandler extends SimpleOutboundHandler<Message, CompressedPublicKey> {
-    public static final LoopbackOutboundMessageSinkHandler INSTANCE = new LoopbackOutboundMessageSinkHandler();
-    public static final String LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER = "LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER";
+import static org.drasyl.util.FutureUtil.toFuture;
 
-    private LoopbackOutboundMessageSinkHandler() {
+/**
+ * This handler sends all outbound messages to the super peer.
+ */
+public class SuperPeerOutboundMessageSinkHandler extends SimpleOutboundHandler<Message, CompressedPublicKey> {
+    public static final String SUPER_PEER_OUTBOUND_MESSAGE_SINK_HANDLER = "SUPER_PEER_OUTBOUND_MESSAGE_SINK_HANDLER";
+    private final PeerChannelGroup channelGroup;
+    private final PeersManager peersManager;
+
+    public SuperPeerOutboundMessageSinkHandler(final PeerChannelGroup channelGroup,
+                                               final PeersManager peersManager) {
+        this.channelGroup = channelGroup;
+        this.peersManager = peersManager;
     }
 
     @Override
@@ -40,8 +47,14 @@ public class LoopbackOutboundMessageSinkHandler extends SimpleOutboundHandler<Me
                                 final CompressedPublicKey recipient,
                                 final Message msg,
                                 final CompletableFuture<Void> future) {
-        if (ctx.identity().getPublicKey().equals(recipient)) {
-            ctx.fireRead(msg.getSender(), msg, future);
+        final CompressedPublicKey superPeer = peersManager.getSuperPeerKey();
+        if (superPeer != null) {
+            try {
+                FutureUtil.completeOnAllOf(future, toFuture(channelGroup.writeAndFlush(superPeer, msg)));
+            }
+            catch (final IllegalArgumentException e2) {
+                ctx.write(recipient, msg, future);
+            }
         }
         else {
             ctx.write(recipient, msg, future);

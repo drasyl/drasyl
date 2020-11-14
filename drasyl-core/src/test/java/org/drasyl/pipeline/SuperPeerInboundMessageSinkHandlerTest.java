@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.peer.connection.pipeline;
+package org.drasyl.pipeline;
 
 import io.netty.channel.Channel;
 import io.netty.channel.ChannelPromise;
@@ -29,8 +29,9 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.Message;
-import org.drasyl.pipeline.EmbeddedPipeline;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
+import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -45,7 +46,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class SuperPeerOutboundMessageSinkHandlerTest {
+class SuperPeerInboundMessageSinkHandlerTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
     @Mock(answer = RETURNS_DEEP_STUBS)
@@ -56,21 +57,20 @@ class SuperPeerOutboundMessageSinkHandlerTest {
     private DrasylConfig config;
 
     @Test
-    void shouldSendMessageToSuperPeer(@Mock final CompressedPublicKey recipient,
-                                      @Mock final ApplicationMessage message) {
+    void shouldSendMessageToSuperPeer(@Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                 config,
                 identity,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                new SuperPeerOutboundMessageSinkHandler(channelGroup, peersManager)
+                new SuperPeerInboundMessageSinkHandler(channelGroup, peersManager)
         );
         final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
         final Channel channel = mock(Channel.class);
         final ChannelPromise promise = new DefaultChannelPromise(channel);
         when(channelGroup.writeAndFlush(any(CompressedPublicKey.class), any(Object.class))).thenReturn(promise);
 
-        final CompletableFuture<Void> future = pipeline.processOutbound(recipient, message);
+        final CompletableFuture<Void> future = pipeline.processInbound(message);
         promise.setSuccess();
 
         future.join();
@@ -80,8 +80,7 @@ class SuperPeerOutboundMessageSinkHandlerTest {
     }
 
     @Test
-    void shouldPassMessageIfWriteAndFlushFails(@Mock final CompressedPublicKey recipient,
-                                               @Mock final ApplicationMessage message) {
+    void shouldPassMessageIfWriteAndFlushFails(@Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
         when(channelGroup.writeAndFlush(any(CompressedPublicKey.class), any(Object.class))).thenThrow(IllegalArgumentException.class);
 
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
@@ -89,18 +88,17 @@ class SuperPeerOutboundMessageSinkHandlerTest {
                 identity,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                new SuperPeerOutboundMessageSinkHandler(channelGroup, peersManager)
+                new SuperPeerInboundMessageSinkHandler(channelGroup, peersManager)
         );
-        final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
+        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
 
-        pipeline.processOutbound(recipient, message);
+        pipeline.processInbound(message);
 
-        outboundMessages.awaitCount(1).assertValueCount(1);
+        inboundMessages.awaitCount(1).assertValueCount(1);
     }
 
     @Test
-    void shouldPassMessageIfNoSuperPeerExist(@Mock final CompressedPublicKey recipient,
-                                             @Mock final ApplicationMessage message) {
+    void shouldPassMessageIfNoSuperPeerExist(@Mock(answer = RETURNS_DEEP_STUBS) final ApplicationMessage message) {
         when(peersManager.getSuperPeerKey()).thenReturn(null);
 
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
@@ -108,18 +106,18 @@ class SuperPeerOutboundMessageSinkHandlerTest {
                 identity,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                new SuperPeerOutboundMessageSinkHandler(channelGroup, peersManager)
+                new SuperPeerInboundMessageSinkHandler(channelGroup, peersManager)
         );
-        final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
+        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
         final Channel channel = mock(Channel.class);
         final ChannelPromise promise = new DefaultChannelPromise(channel);
         when(channelGroup.writeAndFlush(any(CompressedPublicKey.class), any(Object.class))).thenReturn(promise);
 
-        final CompletableFuture<Void> future = pipeline.processOutbound(recipient, message);
+        final CompletableFuture<Void> future = pipeline.processInbound(message);
         promise.setSuccess();
 
         future.join();
 
-        outboundMessages.awaitCount(1).assertValueCount(1);
+        inboundMessages.awaitCount(1).assertValueCount(1);
     }
 }

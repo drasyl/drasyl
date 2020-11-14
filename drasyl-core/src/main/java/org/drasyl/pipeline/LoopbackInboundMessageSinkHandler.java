@@ -1,4 +1,4 @@
-package org.drasyl.peer.connection.pipeline;
+package org.drasyl.pipeline;
 
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -9,8 +9,6 @@ import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.IdentityMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.WhoisMessage;
-import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.SimpleInboundHandler;
 import org.drasyl.pipeline.address.Address;
 
 import java.util.Set;
