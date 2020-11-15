@@ -633,24 +633,4 @@ class DrasylNodeIT {
             }
         }
     }
-
-    @Nested
-    class FaultyDrasylNode {
-        @Test
-        void shouldHandleFaultyOnEvent() throws DrasylException {
-            final DrasylConfig config = DrasylConfig.newBuilder()
-                    .serverEnabled(false)
-                    .superPeerEnabled(false)
-                    .intraVmDiscoveryEnabled(false)
-                    .localHostDiscoveryEnabled(false)
-                    .build();
-            final DrasylNode node = new DrasylNode(config) {
-                @Override
-                public void onEvent(final Event event) {
-                    throw new RuntimeException("Boom");
-                }
-            };
-            node.start().join();
-        }
-    }
 }
