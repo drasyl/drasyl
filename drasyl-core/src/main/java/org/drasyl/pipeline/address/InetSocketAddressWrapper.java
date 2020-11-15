@@ -20,32 +20,34 @@ package org.drasyl.pipeline.address;
 
 import org.drasyl.pipeline.Pipeline;
 
-import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.util.Objects;
 
+import static java.util.Objects.requireNonNull;
+
 /**
- * This class holds an {@link java.net.InetAddress} for the processing inside the {@link Pipeline}
- * as an {@link Address}.
+ * This class holds an {@link InetSocketAddress} for the processing inside the {@link Pipeline} as
+ * an {@link Address}.
  */
-public class InetAddressWrapper implements Address {
-    private final InetAddress inetAddress;
+public class InetSocketAddressWrapper implements Address {
+    private final InetSocketAddress address;
 
-    public InetAddressWrapper(final InetAddress inetAddress) {
-        this.inetAddress = Objects.requireNonNull(inetAddress);
+    public InetSocketAddressWrapper(final InetSocketAddress address) {
+        this.address = requireNonNull(address);
     }
 
-    public static InetAddressWrapper of(final InetAddress inetAddress) {
-        return new InetAddressWrapper(inetAddress);
+    public static InetSocketAddressWrapper of(final InetSocketAddress address) {
+        return new InetSocketAddressWrapper(address);
     }
 
-    public InetAddress getInetAddress() {
-        return inetAddress;
+    public InetSocketAddress getAddress() {
+        return address;
     }
 
     @Override
     public String toString() {
         return "InetAddressWrapper{" +
-                "inetAddress=" + inetAddress +
+                "address=" + address +
                 '}';
     }
 
@@ -57,12 +59,12 @@ public class InetAddressWrapper implements Address {
         if (o == null || getClass() != o.getClass()) {
             return false;
         }
-        final InetAddressWrapper that = (InetAddressWrapper) o;
-        return Objects.equals(inetAddress, that.inetAddress);
+        final InetSocketAddressWrapper that = (InetSocketAddressWrapper) o;
+        return Objects.equals(address, that.address);
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(inetAddress);
+        return Objects.hash(address);
     }
 }
