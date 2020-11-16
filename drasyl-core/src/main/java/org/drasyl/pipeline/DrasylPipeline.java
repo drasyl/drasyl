@@ -26,7 +26,9 @@ import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.pipeline.codec.ApplicationMessage2ObjectHolderHandler;
+import org.drasyl.pipeline.codec.ByteBuf2MessageHandler;
 import org.drasyl.pipeline.codec.DefaultCodec;
+import org.drasyl.pipeline.codec.Message2ByteBufHandler;
 import org.drasyl.pipeline.codec.ObjectHolder2ApplicationMessageHandler;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.DrasylScheduler;
@@ -48,7 +50,9 @@ import static org.drasyl.pipeline.SignatureHandler.SIGNATURE_HANDLER;
 import static org.drasyl.pipeline.SuperPeerInboundMessageSinkHandler.SUPER_PEER_INBOUND_MESSAGE_SINK_HANDLER;
 import static org.drasyl.pipeline.SuperPeerOutboundMessageSinkHandler.SUPER_PEER_OUTBOUND_MESSAGE_SINK_HANDLER;
 import static org.drasyl.pipeline.codec.ApplicationMessage2ObjectHolderHandler.APP_MSG2OBJECT_HOLDER;
+import static org.drasyl.pipeline.codec.ByteBuf2MessageHandler.BYTE_BUF_2_MESSAGE_HANDLER;
 import static org.drasyl.pipeline.codec.DefaultCodec.DEFAULT_CODEC;
+import static org.drasyl.pipeline.codec.Message2ByteBufHandler.MESSAGE_2_BYTE_BUF_HANDLER;
 import static org.drasyl.pipeline.codec.ObjectHolder2ApplicationMessageHandler.OBJECT_HOLDER2APP_MSG;
 
 /**
@@ -96,6 +100,10 @@ public class DrasylPipeline extends DefaultPipeline {
         // inbound message guards
         addFirst(INVALID_PROOF_OF_WORK_FILTER, InvalidProofOfWorkFilter.INSTANCE);
         addFirst(OTHER_NETWORK_FILTER, OtherNetworkFilter.INSTANCE);
+
+        // (de)serialize messages
+        addFirst(MESSAGE_2_BYTE_BUF_HANDLER, Message2ByteBufHandler.INSTANCE);
+        addFirst(BYTE_BUF_2_MESSAGE_HANDLER, ByteBuf2MessageHandler.INSTANCE);
     }
 
     DrasylPipeline(final Map<String, AbstractHandlerContext> handlerNames,

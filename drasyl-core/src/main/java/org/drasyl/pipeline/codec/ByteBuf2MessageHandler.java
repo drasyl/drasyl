@@ -22,7 +22,7 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
  */
 public class ByteBuf2MessageHandler extends SimpleInboundHandler<ByteBuf, Address> {
     public static final ByteBuf2MessageHandler INSTANCE = new ByteBuf2MessageHandler();
-    public static final String BYTE_BUF_HANDLER_2_MESSAGE = "BYTE_BUF_HANDLER_2_MESSAGE";
+    public static final String BYTE_BUF_2_MESSAGE_HANDLER = "BYTE_BUF_2_MESSAGE_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(ByteBuf2MessageHandler.class);
 
     private ByteBuf2MessageHandler() {
