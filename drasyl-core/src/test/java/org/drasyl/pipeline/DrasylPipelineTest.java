@@ -40,9 +40,25 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+import static org.drasyl.pipeline.DirectConnectionInboundMessageSinkHandler.DIRECT_CONNECTION_INBOUND_MESSAGE_SINK_HANDLER;
+import static org.drasyl.pipeline.DirectConnectionOutboundMessageSinkHandler.DIRECT_CONNECTION_OUTBOUND_MESSAGE_SINK_HANDLER;
 import static org.drasyl.pipeline.HeadContext.DRASYL_HEAD_HANDLER;
+import static org.drasyl.pipeline.HopCountGuard.HOP_COUNT_GUARD;
+import static org.drasyl.pipeline.InvalidProofOfWorkFilter.INVALID_PROOF_OF_WORK_FILTER;
+import static org.drasyl.pipeline.LoopbackInboundMessageSinkHandler.LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER;
+import static org.drasyl.pipeline.LoopbackOutboundMessageSinkHandler.LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER;
+import static org.drasyl.pipeline.OtherNetworkFilter.OTHER_NETWORK_FILTER;
+import static org.drasyl.pipeline.SignatureHandler.SIGNATURE_HANDLER;
+import static org.drasyl.pipeline.SuperPeerInboundMessageSinkHandler.SUPER_PEER_INBOUND_MESSAGE_SINK_HANDLER;
+import static org.drasyl.pipeline.SuperPeerOutboundMessageSinkHandler.SUPER_PEER_OUTBOUND_MESSAGE_SINK_HANDLER;
 import static org.drasyl.pipeline.TailContext.DRASYL_TAIL_HANDLER;
+import static org.drasyl.pipeline.codec.ApplicationMessage2ObjectHolderHandler.APP_MSG2OBJECT_HOLDER;
+import static org.drasyl.pipeline.codec.ByteBuf2MessageHandler.BYTE_BUF_2_MESSAGE_HANDLER;
+import static org.drasyl.pipeline.codec.DefaultCodec.DEFAULT_CODEC;
+import static org.drasyl.pipeline.codec.Message2ByteBufHandler.MESSAGE_2_BYTE_BUF_HANDLER;
+import static org.drasyl.pipeline.codec.ObjectHolder2ApplicationMessageHandler.OBJECT_HOLDER2APP_MSG;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertSame;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -84,10 +100,28 @@ class DrasylPipelineTest {
     void shouldCreateNewPipeline() {
         final Pipeline pipeline = new DrasylPipeline(eventConsumer, config, identity, channelGroup, peersManager, started, endpoints);
 
+        // Test if head and tail handlers are added
         assertNull(pipeline.get(DRASYL_HEAD_HANDLER));
         assertNull(pipeline.context(DRASYL_HEAD_HANDLER));
         assertNull(pipeline.get(DRASYL_TAIL_HANDLER));
         assertNull(pipeline.context(DRASYL_TAIL_HANDLER));
+
+        // Test if default handler are added
+        assertNotNull(pipeline.get(DEFAULT_CODEC), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(APP_MSG2OBJECT_HOLDER), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(OBJECT_HOLDER2APP_MSG), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(HOP_COUNT_GUARD), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(SIGNATURE_HANDLER), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(SUPER_PEER_INBOUND_MESSAGE_SINK_HANDLER), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(DIRECT_CONNECTION_INBOUND_MESSAGE_SINK_HANDLER), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(DIRECT_CONNECTION_OUTBOUND_MESSAGE_SINK_HANDLER), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(SUPER_PEER_OUTBOUND_MESSAGE_SINK_HANDLER), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(INVALID_PROOF_OF_WORK_FILTER), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(OTHER_NETWORK_FILTER), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(MESSAGE_2_BYTE_BUF_HANDLER), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(BYTE_BUF_2_MESSAGE_HANDLER), "This handler is required in the DrasylPipeline");
     }
 
     @Test
