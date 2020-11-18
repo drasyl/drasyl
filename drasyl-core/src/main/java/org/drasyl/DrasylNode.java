@@ -52,6 +52,8 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.io.IOException;
+import java.lang.reflect.Field;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -102,6 +104,25 @@ public abstract class DrasylNode {
         // https://github.com/netty/netty/issues/7817
         System.setProperty("io.netty.tryReflectionSetAccessible", "true");
         INSTANCES = Collections.synchronizedList(new ArrayList<>());
+
+        // dirty fix from Stack Overflow: https://stackoverflow.com/questions/46454995/how-to-hide-warning-illegal-reflective-access-in-java-9-without-jvm-argument/53517025#53517025
+        try {
+            final Class<?> unsafeClass = Class.forName("sun.misc.Unsafe");
+            final Field field = unsafeClass.getDeclaredField("theUnsafe");
+            field.setAccessible(true); // NOSONAR
+            final Object unsafe = field.get(null);
+
+            final Method putObjectVolatile = unsafeClass.getDeclaredMethod("putObjectVolatile", Object.class, long.class, Object.class);
+            final Method staticFieldOffset = unsafeClass.getDeclaredMethod("staticFieldOffset", Field.class);
+
+            final Class<?> loggerClass = Class.forName("jdk.internal.module.IllegalAccessLogger");
+            final Field loggerField = loggerClass.getDeclaredField("logger");
+            final Long offset = (Long) staticFieldOffset.invoke(unsafe, loggerField);
+            putObjectVolatile.invoke(unsafe, loggerClass, offset, null);
+        }
+        catch (final Exception ignored) {
+            // ignore
+        }
     }
 
     private final DrasylConfig config;
