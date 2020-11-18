@@ -72,14 +72,14 @@ class HeadContext extends AbstractEndHandler {
 
         if (future.isDone()) {
             if (LOG.isDebugEnabled()) {
-                LOG.debug("Message `{}` has arrived at the end of the pipeline and was already completed.", msg);
+                LOG.debug("Message `{}` with recipient `{}` has arrived at the end of the pipeline and was already completed.", msg, recipient);
             }
         }
         else {
             if (LOG.isWarnEnabled()) {
-                LOG.warn("Message `{}` has arrived at the end of the pipeline and was not consumed before by a handler. Therefore the message was dropped.\n" +
+                LOG.warn("Message `{}` with recipient `{}` has arrived at the end of the pipeline and was not consumed before by a handler. Therefore the message was dropped.\n" +
                         "This can happen due to a missing codec. You can find more information regarding this here: " +
-                        "https://docs.drasyl.org/configuration/marshalling/", msg);
+                        "https://docs.drasyl.org/configuration/marshalling/", msg, recipient);
             }
             future.completeExceptionally(new IllegalStateException("Message must be consumed before end of the pipeline."));
         }
