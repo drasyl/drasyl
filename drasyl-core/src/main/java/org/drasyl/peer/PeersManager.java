@@ -220,7 +220,9 @@ public class PeersManager {
             existingPathCount = existingPaths.size();
         }
         final int newPathCount = newPaths.size();
-        peers.put(publicKey, PeerInformation.of(newInformation.getEndpoints()));
+        if (newInformation != null) {
+            peers.put(publicKey, PeerInformation.of(newInformation.getEndpoints()));
+        }
         paths.replaceValues(publicKey, newPaths);
 
         if (existingPathCount == 0 && newPathCount > 0) {
