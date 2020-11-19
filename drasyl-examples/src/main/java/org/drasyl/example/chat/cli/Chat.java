@@ -66,7 +66,7 @@ public class Chat {
                 }
                 else if (event instanceof NodeOnlineEvent) {
                     if (online.isDone()) {
-                        addBeforePrompt("Back online! Now messages can be sent again.");
+                        addBeforePrompt("Back online! Messages can be sent again.");
                     }
                     else {
                         addBeforePrompt("Online! Your Public Key (address) is: " + ((NodeEvent) event).getNode().getIdentity().getPublicKey());
