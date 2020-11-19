@@ -23,7 +23,6 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
-import org.drasyl.peer.connection.message.Message;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.Pair;
@@ -52,7 +51,7 @@ class LoopbackOutboundMessageSinkHandlerTest {
                 TypeValidator.ofOutboundValidator(config),
                 LoopbackOutboundMessageSinkHandler.INSTANCE
         );
-        final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
+        final TestObserver<Object> outboundMessages = pipeline.outboundOnlyMessages().test();
 
         pipeline.processOutbound(recipient, message);
 

@@ -92,7 +92,7 @@ class SimpleInboundHandlerTest {
                 ObjectHolder2ApplicationMessageHandler.INSTANCE,
                 DefaultCodec.INSTANCE, handler);
         final TestObserver<Pair<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
-        final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
+        final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundOnlyMessages(ApplicationMessage.class).test();
         final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
         final CompressedPublicKey sender = mock(CompressedPublicKey.class);
@@ -138,7 +138,7 @@ class SimpleInboundHandlerTest {
                 ObjectHolder2ApplicationMessageHandler.INSTANCE,
                 DefaultCodec.INSTANCE, handler);
         final TestObserver<Pair<Address, Object>> inboundMessageTestObserver = pipeline.inboundMessages().test();
-        final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
+        final TestObserver<ApplicationMessage> outboundMessageTestObserver = pipeline.outboundOnlyMessages(ApplicationMessage.class).test();
         final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
         final byte[] payload = new byte[]{ 0x01 };

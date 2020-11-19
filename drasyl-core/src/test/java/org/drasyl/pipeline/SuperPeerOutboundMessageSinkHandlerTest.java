@@ -28,7 +28,6 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.ApplicationMessage;
-import org.drasyl.peer.connection.message.Message;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -64,7 +63,7 @@ class SuperPeerOutboundMessageSinkHandlerTest {
                 TypeValidator.ofOutboundValidator(config),
                 new SuperPeerOutboundMessageSinkHandler(channelGroup, peersManager)
         );
-        final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
+        final TestObserver<Object> outboundMessages = pipeline.outboundOnlyMessages().test();
         final Channel channel = mock(Channel.class);
         final ChannelPromise promise = new DefaultChannelPromise(channel);
         when(channelGroup.writeAndFlush(any(CompressedPublicKey.class), any(Object.class))).thenReturn(promise);
@@ -90,7 +89,7 @@ class SuperPeerOutboundMessageSinkHandlerTest {
                 TypeValidator.ofOutboundValidator(config),
                 new SuperPeerOutboundMessageSinkHandler(channelGroup, peersManager)
         );
-        final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
+        final TestObserver<Object> outboundMessages = pipeline.outboundOnlyMessages().test();
 
         pipeline.processOutbound(recipient, message);
 
@@ -109,7 +108,7 @@ class SuperPeerOutboundMessageSinkHandlerTest {
                 TypeValidator.ofOutboundValidator(config),
                 new SuperPeerOutboundMessageSinkHandler(channelGroup, peersManager)
         );
-        final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
+        final TestObserver<Object> outboundMessages = pipeline.outboundOnlyMessages().test();
         final Channel channel = mock(Channel.class);
         final ChannelPromise promise = new DefaultChannelPromise(channel);
         when(channelGroup.writeAndFlush(any(CompressedPublicKey.class), any(Object.class))).thenReturn(promise);

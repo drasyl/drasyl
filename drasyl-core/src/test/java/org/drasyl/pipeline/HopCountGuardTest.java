@@ -23,7 +23,6 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.connection.message.ApplicationMessage;
-import org.drasyl.peer.connection.message.Message;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -53,7 +52,7 @@ class HopCountGuardTest {
 
         final HopCountGuard handler = HopCountGuard.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
-        final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
+        final TestObserver<Object> outboundMessages = pipeline.outboundOnlyMessages().test();
 
         pipeline.processOutbound(address, message);
 
@@ -70,7 +69,7 @@ class HopCountGuardTest {
 
         final HopCountGuard handler = HopCountGuard.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
-        final TestObserver<Message> outboundMessages = pipeline.outboundMessages(Message.class).test();
+        final TestObserver<Object> outboundMessages = pipeline.outboundOnlyMessages().test();
 
         pipeline.processOutbound(address, message);
 

@@ -85,7 +85,7 @@ class DefaultCodecTest {
                     ApplicationMessage2ObjectHolderHandler.INSTANCE,
                     ObjectHolder2ApplicationMessageHandler.INSTANCE,
                     DefaultCodec.INSTANCE);
-            final TestObserver<ApplicationMessage> testObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
+            final TestObserver<ApplicationMessage> testObserver = pipeline.outboundOnlyMessages(ApplicationMessage.class).test();
 
             when(identity.getPublicKey()).thenReturn(sender);
             when(identity.getProofOfWork()).thenReturn(proofOfWork);
@@ -130,7 +130,7 @@ class DefaultCodecTest {
                     ApplicationMessage2ObjectHolderHandler.INSTANCE,
                     ObjectHolder2ApplicationMessageHandler.INSTANCE,
                     DefaultCodec.INSTANCE);
-            final TestObserver<ApplicationMessage> testObserver = pipeline.outboundMessages(ApplicationMessage.class).test();
+            final TestObserver<ApplicationMessage> testObserver = pipeline.outboundOnlyMessages(ApplicationMessage.class).test();
 
             when(identity.getPublicKey()).thenReturn(sender);
             when(identity.getProofOfWork()).thenReturn(proofOfWork);

@@ -127,7 +127,7 @@ class GroupsClientHandlerTest {
                     identity,
                     inboundValidator,
                     outboundValidator);
-            final TestObserver<GroupLeaveMessage> testObserver = pipeline.outboundMessages(GroupLeaveMessage.class).test();
+            final TestObserver<GroupLeaveMessage> testObserver = pipeline.outboundOnlyMessages(GroupLeaveMessage.class).test();
 
             pipeline.addLast("handler", handler);
             pipeline.remove("handler");
@@ -170,7 +170,7 @@ class GroupsClientHandlerTest {
                     outboundValidator,
                     handler);
             final TestObserver<Event> eventObserver = pipeline.inboundEvents().test();
-            final TestObserver<GroupJoinMessage> outboundObserver = pipeline.outboundMessages(GroupJoinMessage.class).test();
+            final TestObserver<GroupJoinMessage> outboundObserver = pipeline.outboundOnlyMessages(GroupJoinMessage.class).test();
 
             when(uri.getGroup()).thenReturn(group);
             when(uri.getCredentials()).thenReturn(credentials);

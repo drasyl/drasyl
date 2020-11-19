@@ -43,7 +43,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class EmbeddedPipeline extends DefaultPipeline {
     private final Subject<Pair<Address, Object>> inboundMessages;
     private final Subject<Event> inboundEvents;
-    private final Subject<Object> outboundMessages;
+    private final Subject<Pair<Address, Object>> outboundMessages;
 
     /**
      * Creates a new embedded pipeline and adds all given handler to it. Handler are added with
@@ -80,7 +80,7 @@ public class EmbeddedPipeline extends DefaultPipeline {
                               final Address recipient,
                               final Object msg,
                               final CompletableFuture<Void> future) {
-                outboundMessages.onNext(msg);
+                outboundMessages.onNext(Pair.of(recipient, msg));
                 future.complete(null);
             }
         };
@@ -124,8 +124,22 @@ public class EmbeddedPipeline extends DefaultPipeline {
     /**
      * @return all messages that passes the pipeline until the end
      */
-    public <T> Observable<T> outboundMessages(final Class<T> clazz) {
-        @SuppressWarnings("unchecked") final Observable<T> result = (Observable<T>) outboundMessages.filter(clazz::isInstance);
+    public <T> Observable<T> outboundOnlyMessages(final Class<T> clazz) {
+        @SuppressWarnings("unchecked") final Observable<T> result = (Observable<T>) outboundMessages.map(Pair::second).filter(clazz::isInstance);
         return result;
+    }
+
+    /**
+     * @return all messages that passes the pipeline until the end
+     */
+    public Observable<Object> outboundOnlyMessages() {
+        return outboundMessages.map(Pair::second);
+    }
+
+    /**
+     * @return all messages that passes the pipeline until the end
+     */
+    public Observable<Pair<Address, Object>> outboundMessages() {
+        return outboundMessages;
     }
 }

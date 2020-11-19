@@ -186,7 +186,7 @@ class GroupsManagerHandlerTest {
                     inboundValidator,
                     outboundValidator,
                     handler);
-            final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundMessages(GroupsServerMessage.class).test();
+            final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundOnlyMessages(GroupsServerMessage.class).test();
             final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork);
 
             when(databaseAdapter.addGroupMember(any())).thenReturn(true);
@@ -212,7 +212,7 @@ class GroupsManagerHandlerTest {
                     inboundValidator,
                     outboundValidator,
                     handler);
-            final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundMessages(GroupsServerMessage.class).test();
+            final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundOnlyMessages(GroupsServerMessage.class).test();
             final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork);
 
             when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(null);
@@ -234,7 +234,7 @@ class GroupsManagerHandlerTest {
                     inboundValidator,
                     outboundValidator,
                     handler);
-            final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundMessages(GroupsServerMessage.class).test();
+            final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundOnlyMessages(GroupsServerMessage.class).test();
             final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork);
 
             when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(group);
@@ -257,7 +257,7 @@ class GroupsManagerHandlerTest {
                     inboundValidator,
                     outboundValidator,
                     handler);
-            final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundMessages(GroupsServerMessage.class).test();
+            final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundOnlyMessages(GroupsServerMessage.class).test();
             final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork);
 
             when(databaseAdapter.addGroupMember(any())).thenThrow(DatabaseException.class);
@@ -282,7 +282,7 @@ class GroupsManagerHandlerTest {
                     inboundValidator,
                     outboundValidator,
                     handler);
-            final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundMessages(GroupsServerMessage.class).test();
+            final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundOnlyMessages(GroupsServerMessage.class).test();
             final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork);
 
             when(databaseAdapter.getGroup(any())).thenThrow(DatabaseException.class);
@@ -304,7 +304,7 @@ class GroupsManagerHandlerTest {
                     inboundValidator,
                     outboundValidator,
                     handler);
-            final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundMessages(GroupsServerMessage.class).test();
+            final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundOnlyMessages(GroupsServerMessage.class).test();
             final GroupLeaveMessage msg = new GroupLeaveMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()));
 
             when(databaseAdapter.getGroupMembers(group.getName())).thenReturn(memberships);
@@ -328,7 +328,7 @@ class GroupsManagerHandlerTest {
                     inboundValidator,
                     outboundValidator,
                     handler);
-            final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundMessages(GroupsServerMessage.class).test();
+            final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundOnlyMessages(GroupsServerMessage.class).test();
             final GroupLeaveMessage msg = new GroupLeaveMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()));
 
             doThrow(DatabaseException.class).when(databaseAdapter).removeGroupMember(any(), anyString());
