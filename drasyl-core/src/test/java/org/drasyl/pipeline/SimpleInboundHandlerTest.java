@@ -28,7 +28,9 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.connection.message.ApplicationMessage;
-import org.drasyl.peer.connection.message.ErrorMessage;
+import org.drasyl.peer.connection.message.Message;
+import org.drasyl.peer.connection.message.MessageId;
+import org.drasyl.peer.connection.message.UserAgent;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.ApplicationMessage2ObjectHolderHandler;
 import org.drasyl.pipeline.codec.DefaultCodec;
@@ -188,7 +190,7 @@ class SimpleInboundHandlerTest {
 
     @Test
     void shouldPassthroughsNotMatchingEvents() {
-        final SimpleInboundEventAwareHandler<ErrorMessage, NodeUpEvent, CompressedPublicKey> handler = new SimpleInboundEventAwareHandler<>() {
+        final SimpleInboundEventAwareHandler<MyMessage, NodeUpEvent, CompressedPublicKey> handler = new SimpleInboundEventAwareHandler<>() {
             @Override
             protected void matchedEventTriggered(final HandlerContext ctx,
                                                  final NodeUpEvent event,
@@ -199,7 +201,7 @@ class SimpleInboundHandlerTest {
             @Override
             protected void matchedRead(final HandlerContext ctx,
                                        final CompressedPublicKey sender,
-                                       final ErrorMessage msg,
+                                       final MyMessage msg,
                                        final CompletableFuture<Void> future) {
                 ctx.fireRead(sender, msg, future);
             }
@@ -213,5 +215,47 @@ class SimpleInboundHandlerTest {
 
         eventTestObserver.awaitCount(1).assertValueCount(1);
         eventTestObserver.assertValue(event);
+    }
+
+    static class MyMessage implements Message {
+        @Override
+        public MessageId getId() {
+            return null;
+        }
+
+        @Override
+        public UserAgent getUserAgent() {
+            return null;
+        }
+
+        @Override
+        public int getNetworkId() {
+            return 0;
+        }
+
+        @Override
+        public CompressedPublicKey getSender() {
+            return null;
+        }
+
+        @Override
+        public ProofOfWork getProofOfWork() {
+            return null;
+        }
+
+        @Override
+        public CompressedPublicKey getRecipient() {
+            return null;
+        }
+
+        @Override
+        public short getHopCount() {
+            return 0;
+        }
+
+        @Override
+        public void incrementHopCount() {
+
+        }
     }
 }

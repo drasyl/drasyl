@@ -20,7 +20,6 @@ package org.drasyl.pipeline;
 
 import io.netty.util.internal.TypeParameterMatcher;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.peer.connection.message.ErrorMessage;
 import org.drasyl.pipeline.address.Address;
 
 import java.util.concurrent.CompletableFuture;
@@ -28,15 +27,16 @@ import java.util.concurrent.CompletableFuture;
 /**
  * {@link HandlerAdapter} which allows to explicit only handle a specific type of messages.
  * <p>
- * For example here is an implementation which only handle {@link ErrorMessage}s.
+ * For example here is an implementation which only handle {@link org.drasyl.peer.connection.message.Message}s
+ * of type {@code MyMessage}.
  *
  * <pre>
  *     public class ChunkedHandler extends
- *             {@link SimpleOutboundHandler}&lt;{@link ErrorMessage}, {@link CompressedPublicKey}&gt; {
+ *             {@link SimpleOutboundHandler}&lt;{@code MyMessage}, {@link CompressedPublicKey}&gt; {
  *
  *        {@code @Override}
  *         protected void matchedWrite({@link HandlerContext} ctx,
- *             {@link CompressedPublicKey} recipient, {@link ErrorMessage} msg,
+ *             {@link CompressedPublicKey} recipient, {@code MyMessage} msg,
  *             {@link CompletableFuture}&lt;{@link Void}&gt; future) {
  *             System.out.println(msg);
  *         }
