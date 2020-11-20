@@ -18,7 +18,7 @@
  */
 
 /**
- * Link between application and drasyl overlay network. Every message and every event is sent
- * through the pipeline.
+ * Contains skeleton implementations for the most often used idioms (e.g., in- or outbound-only
+ * handlers).
  */
-package org.drasyl.pipeline;
+package org.drasyl.pipeline.skeletons;

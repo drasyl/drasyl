@@ -18,7 +18,6 @@
  */
 
 /**
- * Link between application and drasyl overlay network. Every message and every event is sent
- * through the pipeline.
+ * Contains application specific implementations of handler.
  */
-package org.drasyl.pipeline;
+package org.drasyl.handler;
