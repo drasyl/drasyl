@@ -23,7 +23,7 @@ import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.skeletons.SimpleInboundEventAwareHandler;
+import org.drasyl.pipeline.skeleton.SimpleInboundEventAwareHandler;
 import org.drasyl.plugin.groups.client.event.GroupJoinFailedEvent;
 import org.drasyl.plugin.groups.client.event.GroupJoinedEvent;
 import org.drasyl.plugin.groups.client.event.GroupLeftEvent;

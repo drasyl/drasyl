@@ -21,7 +21,7 @@ package org.drasyl.plugin.groups.manager;
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.skeletons.SimpleInboundHandler;
+import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
 import org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage;
 import org.drasyl.plugin.groups.client.message.GroupJoinMessage;
 import org.drasyl.plugin.groups.client.message.GroupLeaveMessage;

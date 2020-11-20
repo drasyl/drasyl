@@ -29,7 +29,7 @@ import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
-import org.drasyl.plugins.DrasylPlugin;
+import org.drasyl.plugin.DrasylPlugin;
 
 import java.io.File;
 import java.lang.reflect.Constructor;

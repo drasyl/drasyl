@@ -20,7 +20,7 @@ package org.drasyl.pipeline;
 
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.Message;
-import org.drasyl.pipeline.skeletons.SimpleOutboundHandler;
+import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

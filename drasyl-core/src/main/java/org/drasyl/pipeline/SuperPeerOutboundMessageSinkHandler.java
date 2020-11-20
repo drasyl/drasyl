@@ -22,7 +22,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.Message;
-import org.drasyl.pipeline.skeletons.SimpleOutboundHandler;
+import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.drasyl.util.FutureUtil;
 
 import java.util.concurrent.CompletableFuture;

@@ -34,7 +34,7 @@ import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.pipeline.Pipeline;
-import org.drasyl.plugins.PluginManager;
+import org.drasyl.plugin.PluginManager;
 
 import java.io.PrintStream;
 import java.util.List;

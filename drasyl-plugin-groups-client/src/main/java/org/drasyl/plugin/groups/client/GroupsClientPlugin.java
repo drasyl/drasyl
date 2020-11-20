@@ -19,8 +19,8 @@
 package org.drasyl.plugin.groups.client;
 
 import com.typesafe.config.Config;
-import org.drasyl.plugins.DrasylPlugin;
-import org.drasyl.plugins.PluginEnvironment;
+import org.drasyl.plugin.DrasylPlugin;
+import org.drasyl.plugin.PluginEnvironment;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

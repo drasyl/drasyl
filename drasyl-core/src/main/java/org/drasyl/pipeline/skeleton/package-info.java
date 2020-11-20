@@ -18,6 +18,7 @@
  */
 
 /**
- * Contains application specific implementations of handler.
+ * Contains skeleton implementations for the most often used idioms (e.g., in- or outbound-only
+ * handlers).
  */
-package org.drasyl.handler;
+package org.drasyl.pipeline.skeleton;

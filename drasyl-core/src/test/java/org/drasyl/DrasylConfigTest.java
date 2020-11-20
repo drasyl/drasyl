@@ -32,7 +32,7 @@ import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.connection.client.DefaultClientChannelInitializer;
 import org.drasyl.peer.connection.server.DefaultServerChannelInitializer;
-import org.drasyl.plugins.DrasylPlugin;
+import org.drasyl.plugin.DrasylPlugin;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

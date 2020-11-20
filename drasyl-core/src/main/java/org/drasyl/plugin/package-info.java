@@ -18,7 +18,7 @@
  */
 
 /**
- * Contains skeleton implementations for the most often used idioms (e.g., in- or outbound-only
- * handlers).
+ * Flexible extensions of drasyl via plugins that can be loaded into the pipeline together with
+ * user-defined settings.
  */
-package org.drasyl.pipeline.skeletons;
+package org.drasyl.plugin;

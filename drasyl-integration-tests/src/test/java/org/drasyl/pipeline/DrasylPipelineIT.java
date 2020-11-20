@@ -37,7 +37,7 @@ import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.SignedMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.ObjectHolder;
-import org.drasyl.pipeline.skeletons.SimpleOutboundHandler;
+import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 

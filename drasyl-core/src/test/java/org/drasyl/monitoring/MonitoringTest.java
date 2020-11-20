@@ -24,7 +24,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
-import org.drasyl.pipeline.skeletons.SimpleDuplexHandler;
+import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.pipeline.address.Address;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

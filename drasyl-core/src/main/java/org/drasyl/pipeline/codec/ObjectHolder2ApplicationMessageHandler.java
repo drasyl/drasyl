@@ -21,7 +21,7 @@ package org.drasyl.pipeline.codec;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.skeletons.SimpleOutboundHandler;
+import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;

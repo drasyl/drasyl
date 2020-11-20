@@ -20,7 +20,7 @@ package org.drasyl.plugin.groups.client;
 
 import org.drasyl.DrasylConfig;
 import org.drasyl.pipeline.Pipeline;
-import org.drasyl.plugins.PluginEnvironment;
+import org.drasyl.plugin.PluginEnvironment;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;

@@ -23,7 +23,7 @@ import org.drasyl.pipeline.Pipeline;
 import org.drasyl.plugin.groups.manager.data.Group;
 import org.drasyl.plugin.groups.manager.database.DatabaseAdapter;
 import org.drasyl.plugin.groups.manager.database.DatabaseException;
-import org.drasyl.plugins.PluginEnvironment;
+import org.drasyl.plugin.PluginEnvironment;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;

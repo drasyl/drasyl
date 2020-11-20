@@ -17,7 +17,7 @@
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.drasyl.plugins;
+package org.drasyl.plugin;
 
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;

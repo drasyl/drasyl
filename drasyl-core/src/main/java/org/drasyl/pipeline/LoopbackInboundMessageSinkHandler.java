@@ -10,7 +10,7 @@ import org.drasyl.peer.connection.message.IdentityMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.WhoisMessage;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.skeletons.SimpleInboundHandler;
+import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
 
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
