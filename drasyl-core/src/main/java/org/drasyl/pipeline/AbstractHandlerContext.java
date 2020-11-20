@@ -45,12 +45,12 @@ abstract class AbstractHandlerContext implements HandlerContext {
     private volatile AbstractHandlerContext next;
 
     protected AbstractHandlerContext(final String name,
-                                  final DrasylConfig config,
-                                  final Pipeline pipeline,
-                                  final Scheduler scheduler,
-                                  final Identity identity,
-                                  final TypeValidator inboundValidator,
-                                  final TypeValidator outboundValidator) {
+                                     final DrasylConfig config,
+                                     final Pipeline pipeline,
+                                     final Scheduler scheduler,
+                                     final Identity identity,
+                                     final TypeValidator inboundValidator,
+                                     final TypeValidator outboundValidator) {
         this(null, null, name, config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
     }
 
@@ -112,9 +112,10 @@ abstract class AbstractHandlerContext implements HandlerContext {
         }
 
         final AbstractHandlerContext inboundCtx = findNextInbound();
-
         try {
-            inboundCtx.handler().exceptionCaught(inboundCtx, cause);
+            if (inboundCtx != null) {
+                inboundCtx.handler().exceptionCaught(inboundCtx, cause);
+            }
         }
         catch (final PipelineException e) {
             throw e;
@@ -131,7 +132,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
      */
     AbstractHandlerContext findNextInbound() {
         AbstractHandlerContext nextInbound = next;
-        while (nextInbound.handler() == null) {
+        while (nextInbound != null && nextInbound.handler() == null) {
             nextInbound = nextInbound.getNext();
         }
 
@@ -143,7 +144,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
      */
     AbstractHandlerContext findPrevOutbound() {
         AbstractHandlerContext prevOutbound = prev;
-        while (prevOutbound.handler() == null) {
+        while (prevOutbound != null && prevOutbound.handler() == null) {
             prevOutbound = prevOutbound.getPrev();
         }
 
@@ -162,7 +163,9 @@ abstract class AbstractHandlerContext implements HandlerContext {
                                                final CompletableFuture<Void> future) {
         final AbstractHandlerContext inboundCtx = findNextInbound();
         try {
-            inboundCtx.handler().read(inboundCtx, sender, msg, future);
+            if (inboundCtx != null) {
+                inboundCtx.handler().read(inboundCtx, sender, msg, future);
+            }
         }
         catch (final Exception e) {
             if (LOG.isWarnEnabled()) {
@@ -184,9 +187,10 @@ abstract class AbstractHandlerContext implements HandlerContext {
     private CompletableFuture<Void> invokeEventTriggered(final Event event,
                                                          final CompletableFuture<Void> future) {
         final AbstractHandlerContext inboundCtx = findNextInbound();
-
         try {
-            inboundCtx.handler().eventTriggered(inboundCtx, event, future);
+            if (inboundCtx != null) {
+                inboundCtx.handler().eventTriggered(inboundCtx, event, future);
+            }
         }
         catch (final Exception e) {
             if (LOG.isWarnEnabled()) {
@@ -210,9 +214,10 @@ abstract class AbstractHandlerContext implements HandlerContext {
                                                 final Object msg,
                                                 final CompletableFuture<Void> future) {
         final AbstractHandlerContext outboundCtx = findPrevOutbound();
-
         try {
-            outboundCtx.handler().write(outboundCtx, recipient, msg, future);
+            if (outboundCtx != null) {
+                outboundCtx.handler().write(outboundCtx, recipient, msg, future);
+            }
         }
         catch (final Exception e) {
             if (LOG.isWarnEnabled()) {
