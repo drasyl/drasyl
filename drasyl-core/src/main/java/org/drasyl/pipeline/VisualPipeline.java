@@ -18,6 +18,9 @@
  */
 package org.drasyl.pipeline;
 
+import org.drasyl.pipeline.skeletons.SimpleDuplexHandler;
+import org.drasyl.pipeline.skeletons.SimpleInboundHandler;
+import org.drasyl.pipeline.skeletons.SimpleOutboundHandler;
 import org.drasyl.util.AnsiColor;
 
 /**

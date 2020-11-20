@@ -5,7 +5,7 @@ import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.PooledByteBufAllocator;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.SimpleOutboundHandler;
+import org.drasyl.pipeline.skeletons.SimpleOutboundHandler;
 import org.drasyl.pipeline.address.Address;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

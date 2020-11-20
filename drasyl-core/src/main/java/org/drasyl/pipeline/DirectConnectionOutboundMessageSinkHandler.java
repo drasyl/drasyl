@@ -21,6 +21,7 @@ package org.drasyl.pipeline;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.Message;
+import org.drasyl.pipeline.skeletons.SimpleOutboundHandler;
 
 import java.util.concurrent.CompletableFuture;
 

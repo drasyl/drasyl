@@ -19,7 +19,7 @@
 package org.drasyl.pipeline.codec;
 
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.SimpleDuplexHandler;
+import org.drasyl.pipeline.skeletons.SimpleDuplexHandler;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.util.FutureUtil;
 

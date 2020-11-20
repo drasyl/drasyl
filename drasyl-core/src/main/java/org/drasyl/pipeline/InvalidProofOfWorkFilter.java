@@ -20,6 +20,7 @@ package org.drasyl.pipeline;
 
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.pipeline.address.Address;
+import org.drasyl.pipeline.skeletons.SimpleInboundHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

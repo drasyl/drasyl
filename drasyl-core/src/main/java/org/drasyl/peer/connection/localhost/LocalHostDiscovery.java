@@ -30,7 +30,7 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
-import org.drasyl.pipeline.SimpleOutboundHandler;
+import org.drasyl.pipeline.skeletons.SimpleOutboundHandler;
 import org.drasyl.util.DrasylScheduler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

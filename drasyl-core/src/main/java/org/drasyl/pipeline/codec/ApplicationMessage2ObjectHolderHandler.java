@@ -20,7 +20,7 @@ package org.drasyl.pipeline.codec;
 
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.SimpleInboundHandler;
+import org.drasyl.pipeline.skeletons.SimpleInboundHandler;
 import org.drasyl.pipeline.address.Address;
 
 import java.util.concurrent.CompletableFuture;

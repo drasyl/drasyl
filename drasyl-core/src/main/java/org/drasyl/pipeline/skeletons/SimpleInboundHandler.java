@@ -16,11 +16,13 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.pipeline;
+package org.drasyl.pipeline.skeletons;
 
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.pipeline.HandlerAdapter;
+import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 
 import java.util.concurrent.CompletableFuture;

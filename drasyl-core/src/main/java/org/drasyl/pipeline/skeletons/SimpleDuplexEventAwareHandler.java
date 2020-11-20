@@ -16,54 +16,35 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.pipeline;
+package org.drasyl.pipeline.skeletons;
 
 import io.netty.util.internal.TypeParameterMatcher;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.pipeline.Handler;
+import org.drasyl.pipeline.HandlerAdapter;
+import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.address.Address;
 
 import java.util.concurrent.CompletableFuture;
 
 /**
- * {@link HandlerAdapter} which allows to explicit only handle a specific type of messages.
- * <p>
- * For example here is an implementation which only handle {@link org.drasyl.peer.connection.message.Message}s
- * of type {@code MyMessage}.
- *
- * <pre>
- *     public class ChunkedHandler extends
- *             {@link SimpleOutboundHandler}&lt;{@code MyMessage}, {@link CompressedPublicKey}&gt; {
- *
- *        {@code @Override}
- *         protected void matchedWrite({@link HandlerContext} ctx,
- *             {@link CompressedPublicKey} recipient, {@code MyMessage} msg,
- *             {@link CompletableFuture}&lt;{@link Void}&gt; future) {
- *             System.out.println(msg);
- *         }
- *     }
- * </pre>
+ * {@link HandlerAdapter} which allows to explicit only handle a specific type of messages and
+ * events.
  */
-public abstract class SimpleOutboundHandler<O, A extends Address> extends AddressHandlerAdapter<A> {
-    private final TypeParameterMatcher matcherMessage;
+@SuppressWarnings("common-java:DuplicatedBlocks")
+public abstract class SimpleDuplexEventAwareHandler<I, E, O, A extends Address> extends SimpleInboundEventAwareHandler<I, E, A> {
+    private final TypeParameterMatcher outboundMessageMatcher;
 
-    /**
-     * Create a new instance which will try to detect the types to match out of the type parameter
-     * of the class.
-     */
-    protected SimpleOutboundHandler() {
-        matcherMessage = TypeParameterMatcher.find(this, SimpleOutboundHandler.class, "O");
+    protected SimpleDuplexEventAwareHandler() {
+        outboundMessageMatcher = TypeParameterMatcher.find(this, SimpleDuplexEventAwareHandler.class, "O");
     }
 
-    /**
-     * Create a new instance
-     *
-     * @param outboundMessageType the type of messages to match
-     * @param addressType         the type of the address to match
-     */
-    protected SimpleOutboundHandler(final Class<? extends O> outboundMessageType,
-                                    final Class<? extends A> addressType) {
-        super(addressType);
-        matcherMessage = TypeParameterMatcher.get(outboundMessageType);
+    protected SimpleDuplexEventAwareHandler(final Class<? extends I> inboundMessageType,
+                                            final Class<? extends E> inboundEventType,
+                                            final Class<? extends O> outboundMessageType,
+                                            final Class<? extends A> addressType) {
+        super(inboundMessageType, inboundEventType, addressType);
+        outboundMessageMatcher = TypeParameterMatcher.get(outboundMessageType);
     }
 
     @Override
@@ -86,7 +67,7 @@ public abstract class SimpleOutboundHandler<O, A extends Address> extends Addres
      * passed to the next {@link Handler} in the {@link Pipeline}.
      */
     protected boolean acceptOutbound(final Object msg) {
-        return matcherMessage.match(msg);
+        return outboundMessageMatcher.match(msg);
     }
 
     /**

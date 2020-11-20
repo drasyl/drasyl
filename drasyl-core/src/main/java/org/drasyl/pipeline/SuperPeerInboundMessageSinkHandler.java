@@ -23,6 +23,7 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.pipeline.address.Address;
+import org.drasyl.pipeline.skeletons.SimpleInboundHandler;
 import org.drasyl.util.FutureUtil;
 
 import java.util.concurrent.CompletableFuture;

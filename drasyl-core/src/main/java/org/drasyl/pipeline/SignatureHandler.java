@@ -6,6 +6,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.SignedMessage;
 import org.drasyl.pipeline.address.Address;
+import org.drasyl.pipeline.skeletons.SimpleDuplexHandler;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 

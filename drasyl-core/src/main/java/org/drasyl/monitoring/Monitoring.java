@@ -31,7 +31,7 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
-import org.drasyl.pipeline.SimpleDuplexHandler;
+import org.drasyl.pipeline.skeletons.SimpleDuplexHandler;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.util.NetworkUtil;
 import org.jetbrains.annotations.NotNull;
