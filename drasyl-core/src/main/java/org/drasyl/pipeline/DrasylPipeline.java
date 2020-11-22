@@ -25,6 +25,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
+import org.drasyl.peer.connection.intravm.IntraVmDiscovery;
 import org.drasyl.pipeline.codec.ApplicationMessage2ObjectHolderHandler;
 import org.drasyl.pipeline.codec.ByteBuf2MessageHandler;
 import org.drasyl.pipeline.codec.DefaultCodec;
@@ -39,6 +40,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+import static org.drasyl.peer.connection.intravm.IntraVmDiscovery.INTRA_VM_DISCOVERY;
 import static org.drasyl.pipeline.DirectConnectionInboundMessageSinkHandler.DIRECT_CONNECTION_INBOUND_MESSAGE_SINK_HANDLER;
 import static org.drasyl.pipeline.DirectConnectionOutboundMessageSinkHandler.DIRECT_CONNECTION_OUTBOUND_MESSAGE_SINK_HANDLER;
 import static org.drasyl.pipeline.HopCountGuard.HOP_COUNT_GUARD;
@@ -89,6 +91,11 @@ public class DrasylPipeline extends DefaultPipeline {
         // local message delivery
         addFirst(LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER, new LoopbackInboundMessageSinkHandler(started, endpoints));
         addFirst(LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER, LoopbackOutboundMessageSinkHandler.INSTANCE);
+
+        // we trust peers within the same jvm. therefore we do not use signatures
+        if (config.isIntraVmDiscoveryEnabled()) {
+            addFirst(INTRA_VM_DISCOVERY, IntraVmDiscovery.INSTANCE);
+        }
 
         addFirst(SIGNATURE_HANDLER, SignatureHandler.INSTANCE);
 

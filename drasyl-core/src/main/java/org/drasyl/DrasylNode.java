@@ -39,7 +39,6 @@ import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.client.SuperPeerClient;
-import org.drasyl.peer.connection.intravm.IntraVmDiscovery;
 import org.drasyl.peer.connection.localhost.LocalHostDiscovery;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.server.Server;
@@ -174,10 +173,6 @@ public abstract class DrasylNode {
             this.pipeline = new DrasylPipeline(this::onEvent, this.config, identity, channelGroup, peersManager, started, endpoints);
             this.components = new ArrayList<>();
 
-            if (config.isIntraVmDiscoveryEnabled()) {
-                this.components.add(new IntraVmDiscovery(config.getNetworkId(), identity.getPublicKey(),
-                        peersManager, pipeline));
-            }
             if (config.isSuperPeerEnabled()) {
                 this.components.add(new SuperPeerClient(this.config, identity, peersManager,
                         pipeline, channelGroup, LazyWorkerGroupHolder.INSTANCE,

@@ -18,18 +18,16 @@
  */
 package org.drasyl.peer.connection.intravm;
 
-import org.drasyl.DrasylNodeComponent;
+import org.drasyl.event.Event;
+import org.drasyl.event.NodeDownEvent;
+import org.drasyl.event.NodeUnrecoverableErrorEvent;
+import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.Path;
 import org.drasyl.peer.PeerInformation;
-import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.Pipeline;
-import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
-import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
-import org.drasyl.pipeline.address.Address;
-import org.drasyl.util.FutureUtil;
+import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.util.Pair;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -37,82 +35,109 @@ import org.slf4j.LoggerFactory;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
-import static org.drasyl.pipeline.DirectConnectionInboundMessageSinkHandler.DIRECT_CONNECTION_INBOUND_MESSAGE_SINK_HANDLER;
-import static org.drasyl.pipeline.DirectConnectionOutboundMessageSinkHandler.DIRECT_CONNECTION_OUTBOUND_MESSAGE_SINK_HANDLER;
+import static java.util.concurrent.CompletableFuture.completedFuture;
 
 /**
  * Uses shared memory to discover other drasyl nodes running on same JVM.
  * <p>
  * Inspired by: https://github.com/actoron/jadex/blob/10e464b230d7695dfd9bf2b36f736f93d69ee314/platform/base/src/main/java/jadex/platform/service/awareness/IntraVMAwarenessAgent.java
  */
-public class IntraVmDiscovery implements DrasylNodeComponent {
-    public static final String INTRA_VM_INBOUND_MESSAGE_SINK_HANDLER = "INTRA_VM_INBOUND_MESSAGE_SINK_HANDLER";
-    public static final String INTRA_VM_OUTBOUND_MESSAGE_SINK_HANDLER = "INTRA_VM_OUTBOUND_MESSAGE_SINK_HANDLER";
+@SuppressWarnings({ "java:S110" })
+public class IntraVmDiscovery extends SimpleDuplexHandler<Message, Message, CompressedPublicKey> {
+    public static final IntraVmDiscovery INSTANCE = new IntraVmDiscovery();
+    public static final String INTRA_VM_DISCOVERY = "INTRA_VM_DISCOVERY";
     private static final Logger LOG = LoggerFactory.getLogger(IntraVmDiscovery.class);
-    static final Map<Pair<Integer, CompressedPublicKey>, IntraVmDiscovery> discoveries = new HashMap<>();
-    private static final ReadWriteLock lock = new ReentrantReadWriteLock(true);
-    private final Path path;
-    private final CompressedPublicKey publicKey;
-    private final PeersManager peersManager;
-    private final PeerInformation peerInformation;
-    private final AtomicBoolean opened;
-    private final int networkId;
+    private static final PeerInformation peerInformation = PeerInformation.of();
+    private static final Path path = m -> completedFuture(null);
+    private final Map<Pair<Integer, CompressedPublicKey>, HandlerContext> discoveries;
+    private final ReadWriteLock lock;
 
-    @SuppressWarnings({ "java:S1905" })
-    public IntraVmDiscovery(final int networkId,
-                            final CompressedPublicKey publicKey,
-                            final PeersManager peersManager,
-                            final Pipeline pipeline) {
-        this(
-                networkId,
-                publicKey,
-                peersManager,
-                pipeline::processInbound
-        );
-
-        pipeline.addBefore(DIRECT_CONNECTION_INBOUND_MESSAGE_SINK_HANDLER, INTRA_VM_INBOUND_MESSAGE_SINK_HANDLER, new InboundMessageHandler(opened));
-        pipeline.addBefore(DIRECT_CONNECTION_OUTBOUND_MESSAGE_SINK_HANDLER, INTRA_VM_OUTBOUND_MESSAGE_SINK_HANDLER, new OutboundMessageHandler(opened));
+    IntraVmDiscovery() {
+        this(new HashMap<>(), new ReentrantReadWriteLock(true));
     }
 
-    IntraVmDiscovery(final int networkId,
-                     final CompressedPublicKey publicKey,
-                     final PeersManager peersManager,
-                     final Path path) {
-        this(networkId, publicKey, peersManager, path, PeerInformation.of(), new AtomicBoolean(false));
-    }
-
-    IntraVmDiscovery(final int networkId,
-                     final CompressedPublicKey publicKey,
-                     final PeersManager peersManager,
-                     final Path path,
-                     final PeerInformation peerInformation,
-                     final AtomicBoolean opened) {
-        this.networkId = networkId;
-        this.publicKey = publicKey;
-        this.peersManager = peersManager;
-        this.opened = opened;
-        this.peerInformation = peerInformation;
-        this.path = path;
+    IntraVmDiscovery(final Map<Pair<Integer, CompressedPublicKey>, HandlerContext> discoveries,
+                     final ReadWriteLock lock) {
+        this.discoveries = discoveries;
+        this.lock = lock;
     }
 
     @Override
-    public void open() {
+    public void eventTriggered(final HandlerContext ctx,
+                               final Event event,
+                               final CompletableFuture<Void> future) {
+        if (event instanceof NodeUpEvent) {
+            startDiscovery(ctx);
+        }
+        else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
+            stopDiscovery(ctx);
+        }
+
+        // passthrough event
+        ctx.fireEventTriggered(event, future);
+    }
+
+    @Override
+    protected void matchedRead(final HandlerContext ctx,
+                               final CompressedPublicKey sender,
+                               final Message msg,
+                               final CompletableFuture<Void> future) {
+        final CompressedPublicKey recipient = msg.getRecipient();
+        if (!ctx.identity().getPublicKey().equals(recipient)) {
+            final HandlerContext discoveree = discoveries.get(Pair.of(ctx.config().getNetworkId(), recipient));
+
+            if (discoveree == null) {
+                // passthrough message
+                ctx.fireRead(sender, msg, future);
+            }
+            else {
+                discoveree.fireRead(msg.getSender(), msg, future);
+            }
+        }
+        else {
+            // passthrough message
+            ctx.fireRead(sender, msg, future);
+        }
+    }
+
+    @Override
+    protected void matchedWrite(final HandlerContext ctx,
+                                final CompressedPublicKey recipient,
+                                final Message msg,
+                                final CompletableFuture<Void> future) {
+        final HandlerContext discoveree = discoveries.get(Pair.of(ctx.config().getNetworkId(), msg.getRecipient()));
+
+        if (discoveree == null) {
+            // passthrough message
+            ctx.write(recipient, msg, future);
+        }
+        else {
+            discoveree.fireRead(msg.getSender(), msg, future);
+        }
+    }
+
+    private synchronized void startDiscovery(final HandlerContext myCtx) {
         try {
             lock.writeLock().lock();
             LOG.debug("Start Intra VM Discovery...");
 
-            if (opened.compareAndSet(false, true)) {
-                // store peer information
-                discoveries.values().stream().filter(d -> networkId == d.networkId).forEach(d -> {
-                    d.peersManager.setPeerInformationAndAddPath(publicKey, peerInformation, path);
-                    peersManager.setPeerInformationAndAddPath(d.publicKey, d.peerInformation, d.path);
-                });
-                discoveries.put(Pair.of(networkId, publicKey), this);
-            }
+            // store peer information
+            discoveries.forEach((key, otherCtx) -> {
+                final Integer networkId = key.first();
+                final CompressedPublicKey publicKey = key.second();
+                if (myCtx.config().getNetworkId() == networkId) {
+                    otherCtx.peersManager().setPeerInformationAndAddPath(myCtx.identity().getPublicKey(), peerInformation, path);
+                    myCtx.peersManager().setPeerInformationAndAddPath(publicKey, peerInformation, path);
+                }
+            });
+            discoveries.put(
+                    Pair.of(myCtx.config().getNetworkId(), myCtx.identity().getPublicKey()),
+                    myCtx
+            );
+
             LOG.debug("Intra VM Discovery started.");
         }
         finally {
@@ -120,81 +145,26 @@ public class IntraVmDiscovery implements DrasylNodeComponent {
         }
     }
 
-    @Override
-    public void close() {
+    private synchronized void stopDiscovery(final HandlerContext ctx) {
         try {
             lock.writeLock().lock();
             LOG.debug("Stop Intra VM Discovery...");
 
-            if (opened.compareAndSet(true, false)) {
-                // remove peer information
-                discoveries.remove(Pair.of(networkId, publicKey));
-                discoveries.values().stream().filter(d -> networkId == d.networkId).forEach(d -> {
-                    d.peersManager.removePath(publicKey, path);
-                    peersManager.removePath(d.publicKey, path);
-                });
-            }
+            // remove peer information
+            discoveries.remove(Pair.of(ctx.config().getNetworkId(), ctx.identity().getPublicKey()));
+            discoveries.forEach((key, otherCtx) -> {
+                final Integer networkId = key.first();
+                final CompressedPublicKey publicKey = key.second();
+                if (ctx.config().getNetworkId() == networkId) {
+                    otherCtx.peersManager().removePath(publicKey, path);
+                    ctx.peersManager().removePath(publicKey, path);
+                }
+            });
+
             LOG.debug("Intra VM Discovery stopped.");
         }
         finally {
             lock.writeLock().unlock();
-        }
-    }
-
-    static class InboundMessageHandler extends SimpleInboundHandler<Message, Address> {
-        private final AtomicBoolean opened;
-
-        public InboundMessageHandler(final AtomicBoolean opened) {
-            this.opened = opened;
-        }
-
-        @Override
-        protected void matchedRead(final HandlerContext ctx,
-                                   final Address sender,
-                                   final Message msg,
-                                   final CompletableFuture<Void> future) {
-            final CompressedPublicKey recipient = msg.getRecipient();
-            if (opened.get() && !ctx.identity().getPublicKey().equals(recipient)) {
-                final IntraVmDiscovery discoveree = discoveries.get(Pair.of(ctx.config().getNetworkId(), recipient));
-
-                if (discoveree == null) {
-                    ctx.fireRead(sender, msg, future);
-                }
-                else {
-                    FutureUtil.completeOnAllOf(future, discoveree.path.send(msg));
-                }
-            }
-            else {
-                ctx.fireRead(sender, msg, future);
-            }
-        }
-    }
-
-    static class OutboundMessageHandler extends SimpleOutboundHandler<Message, CompressedPublicKey> {
-        private final AtomicBoolean opened;
-
-        public OutboundMessageHandler(final AtomicBoolean opened) {
-            this.opened = opened;
-        }
-
-        @Override
-        protected void matchedWrite(final HandlerContext ctx,
-                                    final CompressedPublicKey recipient,
-                                    final Message msg,
-                                    final CompletableFuture<Void> future) {
-            if (opened.get()) {
-                final IntraVmDiscovery discoveree = discoveries.get(Pair.of(ctx.config().getNetworkId(), recipient));
-
-                if (discoveree == null) {
-                    ctx.write(recipient, msg, future);
-                }
-                else {
-                    FutureUtil.completeOnAllOf(future, discoveree.path.send(msg));
-                }
-            }
-            else {
-                ctx.write(recipient, msg, future);
-            }
         }
     }
 }

@@ -18,133 +18,158 @@
  */
 package org.drasyl.peer.connection.intravm;
 
+import io.reactivex.rxjava3.observers.TestObserver;
+import org.drasyl.DrasylConfig;
+import org.drasyl.event.NodeDownEvent;
+import org.drasyl.event.NodeUnrecoverableErrorEvent;
+import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.peer.Path;
-import org.drasyl.peer.PeerInformation;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.intravm.IntraVmDiscovery.InboundMessageHandler;
-import org.drasyl.peer.connection.intravm.IntraVmDiscovery.OutboundMessageHandler;
 import org.drasyl.peer.connection.message.Message;
+import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.Pipeline;
+import org.drasyl.pipeline.address.Address;
+import org.drasyl.pipeline.codec.TypeValidator;
+import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.util.HashMap;
+import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.ReadWriteLock;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.aMapWithSize;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class IntraVmDiscoveryTest {
-    private final int networkId = 1;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private DrasylConfig config;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private Identity identity;
     @Mock
-    private CompressedPublicKey publicKey;
+    private TypeValidator inboundValidator;
     @Mock
-    private Pipeline pipeline;
+    private TypeValidator outboundValidator;
     @Mock
     private PeersManager peersManager;
-    @Mock
-    private Path path;
-    @Mock
-    private PeerInformation peerInformation;
+    private final Map<Pair<Integer, CompressedPublicKey>, HandlerContext> discoveries = new HashMap<>();
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private ReadWriteLock lock;
 
     @Nested
-    class Constructor {
+    class StartDiscovery {
         @Test
-        void shouldAddHandlerToPipeline() {
-            try (final IntraVmDiscovery underTest = new IntraVmDiscovery(networkId, publicKey, peersManager, pipeline)) {
-                verify(pipeline, times(2)).addBefore(anyString(), anyString(), any());
-            }
+        void shouldStartDiscoveryOnNodeUpEvent(@Mock final NodeUpEvent event) {
+            final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+
+            pipeline.processInbound(event).join();
+
+            assertThat(discoveries, aMapWithSize(1));
         }
     }
 
     @Nested
-    class Open {
+    class StopDiscovery {
         @Test
-        void shouldAddToDiscoveries() {
-            try (final IntraVmDiscovery underTest = new IntraVmDiscovery(networkId, publicKey, peersManager, path, peerInformation, new AtomicBoolean(false))) {
-                underTest.open();
+        void shouldStopDiscoveryOnNodeUnrecoverableErrorEvent(@Mock final NodeUnrecoverableErrorEvent event,
+                                                              @Mock final HandlerContext ctx) {
+            discoveries.put(Pair.of(0, identity.getPublicKey()), ctx);
+            final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
 
-                assertThat(IntraVmDiscovery.discoveries, aMapWithSize(1));
-            }
+            pipeline.processInbound(event).join();
+
+            assertThat(discoveries, aMapWithSize(0));
         }
-    }
 
-    @Nested
-    class Close {
         @Test
-        void shouldRemovePeerInformation() {
-            try (final IntraVmDiscovery underTest = new IntraVmDiscovery(networkId, publicKey, peersManager, path, peerInformation, new AtomicBoolean(true))) {
-                underTest.close();
+        void shouldStopDiscoveryOnNodeDownEvent(@Mock final NodeDownEvent event,
+                                                @Mock final HandlerContext ctx) {
+            discoveries.put(Pair.of(0, identity.getPublicKey()), ctx);
 
-                assertThat(IntraVmDiscovery.discoveries, aMapWithSize(0));
-            }
+            final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+
+            pipeline.processInbound(event).join();
+
+            assertThat(discoveries, aMapWithSize(0));
         }
     }
 
     @Nested
-    class InboundMessageHandlerTest {
-        @Nested
-        class MatchedRead {
-            @Test
-            void shouldPassMessageIfNotStarted(@Mock final HandlerContext ctx,
-                                               @Mock final CompressedPublicKey sender,
-                                               @Mock final Message msg,
-                                               @Mock final CompletableFuture<Void> future) {
-                final InboundMessageHandler underTest = new InboundMessageHandler(new AtomicBoolean(false));
-                underTest.matchedRead(ctx, sender, msg, future);
+    class MessagePassing {
+        @Test
+        void shouldSendOutgoingMessageToKnownRecipient(@Mock final CompressedPublicKey recipient,
+                                                       @Mock(answer = RETURNS_DEEP_STUBS) final Message message,
+                                                       @Mock final HandlerContext ctx) {
+            discoveries.put(Pair.of(0, message.getRecipient()), ctx);
+            when(ctx.fireRead(any(), any(), any())).thenAnswer(invocation -> {
+                @SuppressWarnings("unchecked") final CompletableFuture<Void> future = invocation.getArgument(2, CompletableFuture.class);
+                future.complete(null);
+                return null;
+            });
 
-                verify(ctx).fireRead(sender, msg, future);
-            }
+            final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
 
-            @Test
-            void shouldPassMessageIfRecipientIsNotKnown(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
-                                                        @Mock final CompressedPublicKey sender,
-                                                        @Mock final Message msg,
-                                                        @Mock final CompletableFuture<Void> future) {
-                final InboundMessageHandler underTest = new InboundMessageHandler(new AtomicBoolean(true));
-                underTest.matchedRead(ctx, sender, msg, future);
+            pipeline.processOutbound(recipient, message).join();
 
-                verify(ctx).fireRead(sender, msg, future);
-            }
+            verify(ctx).fireRead(any(), any(), any());
         }
-    }
 
-    @Nested
-    class OutboundMessageHandlerTest {
-        @Nested
-        class MatchedWrite {
-            @Test
-            void shouldPassMessageIfNotStarted(@Mock final HandlerContext ctx,
-                                               @Mock final CompressedPublicKey recipient,
-                                               @Mock final Message msg,
-                                               @Mock final CompletableFuture<Void> future) {
-                final OutboundMessageHandler underTest = new OutboundMessageHandler(new AtomicBoolean(false));
-                underTest.matchedWrite(ctx, recipient, msg, future);
+        @Test
+        void shouldPasstroughOutgoingMessageForUnknownRecipients(@Mock final CompressedPublicKey recipient,
+                                                                 @Mock(answer = RETURNS_DEEP_STUBS) final Message message) {
 
-                verify(ctx).write(recipient, msg, future);
-            }
+            final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+            final TestObserver<Pair<Address, Object>> outboundMessages = pipeline.outboundMessages().test();
 
-            @Test
-            void shouldPassMessageIfRecipientIsNotKnown(@Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx,
-                                                        @Mock final CompressedPublicKey recipient,
-                                                        @Mock final Message msg,
-                                                        @Mock final CompletableFuture<Void> future) {
-                final OutboundMessageHandler underTest = new OutboundMessageHandler(new AtomicBoolean(true));
-                underTest.matchedWrite(ctx, recipient, msg, future);
+            pipeline.processOutbound(recipient, message).join();
 
-                verify(ctx).write(recipient, msg, future);
-            }
+            outboundMessages.assertValueCount(1);
+        }
+
+        @Test
+        void shouldSendIngoingMessageToKnownRecipient(@Mock final CompressedPublicKey sender,
+                                                      @Mock(answer = RETURNS_DEEP_STUBS) final Message message,
+                                                      @Mock final HandlerContext ctx) {
+            discoveries.put(Pair.of(0, message.getRecipient()), ctx);
+            when(ctx.fireRead(any(), any(), any())).thenAnswer(invocation -> {
+                @SuppressWarnings("unchecked") final CompletableFuture<Void> future = invocation.getArgument(2, CompletableFuture.class);
+                future.complete(null);
+                return null;
+            });
+
+            final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+
+            pipeline.processInbound(sender, message).join();
+
+            verify(ctx).fireRead(any(), any(), any());
+        }
+
+        @Test
+        void shouldPasstroughIngoingMessageForUnknownRecipients(@Mock final CompressedPublicKey sender,
+                                                                @Mock(answer = RETURNS_DEEP_STUBS) final Message message) {
+            final IntraVmDiscovery handler = new IntraVmDiscovery(discoveries, lock);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+            final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
+
+            pipeline.processInbound(sender, message).join();
+
+            inboundMessages.assertValueCount(1);
         }
     }
 }
