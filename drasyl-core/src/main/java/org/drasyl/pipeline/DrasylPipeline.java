@@ -22,6 +22,7 @@ import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
+import org.drasyl.monitoring.Monitoring;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
@@ -40,6 +41,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+import static org.drasyl.monitoring.Monitoring.MONITORING_HANDLER;
 import static org.drasyl.peer.connection.intravm.IntraVmDiscovery.INTRA_VM_DISCOVERY;
 import static org.drasyl.pipeline.DirectConnectionInboundMessageSinkHandler.DIRECT_CONNECTION_INBOUND_MESSAGE_SINK_HANDLER;
 import static org.drasyl.pipeline.DirectConnectionOutboundMessageSinkHandler.DIRECT_CONNECTION_OUTBOUND_MESSAGE_SINK_HANDLER;
@@ -95,6 +97,10 @@ public class DrasylPipeline extends DefaultPipeline {
         // we trust peers within the same jvm. therefore we do not use signatures
         if (config.isIntraVmDiscoveryEnabled()) {
             addFirst(INTRA_VM_DISCOVERY, IntraVmDiscovery.INSTANCE);
+        }
+
+        if (config.isMonitoringEnabled()) {
+            addFirst(MONITORING_HANDLER, new Monitoring());
         }
 
         addFirst(SIGNATURE_HANDLER, SignatureHandler.INSTANCE);

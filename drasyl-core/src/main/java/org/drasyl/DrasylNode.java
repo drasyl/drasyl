@@ -34,7 +34,6 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
-import org.drasyl.monitoring.Monitoring;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
@@ -186,10 +185,6 @@ public abstract class DrasylNode {
             if (config.isLocalHostDiscoveryEnabled()) {
                 this.components.add(new LocalHostDiscovery(this.config, identity.getPublicKey(),
                         peersManager, endpoints, pipeline));
-            }
-            if (config.isMonitoringEnabled()) {
-                this.components.add(new Monitoring(config, peersManager,
-                        identity.getPublicKey(), pipeline));
             }
 
             this.pluginManager = new PluginManager(config, identity, pipeline);

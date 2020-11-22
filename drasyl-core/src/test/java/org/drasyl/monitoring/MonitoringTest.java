@@ -18,102 +18,130 @@
  */
 package org.drasyl.monitoring;
 
+import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
+import io.reactivex.rxjava3.observers.TestObserver;
+import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
-import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.event.NodeDownEvent;
+import org.drasyl.event.NodeUnrecoverableErrorEvent;
+import org.drasyl.event.NodeUpEvent;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.peer.connection.message.Message;
+import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.Pipeline;
-import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.pipeline.address.Address;
+import org.drasyl.pipeline.codec.TypeValidator;
+import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.Answers;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.function.Function;
 
-import static org.drasyl.monitoring.Monitoring.MONITORING_HANDLER;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class MonitoringTest {
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private DrasylConfig config;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private Identity identity;
+    @Mock
+    private TypeValidator inboundValidator;
+    @Mock
+    private TypeValidator outboundValidator;
     @Mock
     private PeersManager peersManager;
+    private final Map<String, Counter> counters = new HashMap<>();
     @Mock
-    private CompressedPublicKey publicKey;
+    private Function<HandlerContext, MeterRegistry> registrySupplier;
     @Mock
-    private Pipeline pipeline;
-    @Mock
-    private AtomicBoolean opened;
-    @Mock
-    private Supplier<MeterRegistry> registrySupplier;
-    @Mock(answer = Answers.RETURNS_DEEP_STUBS)
     private MeterRegistry registry;
-    @InjectMocks
-    private Monitoring underTest;
 
     @Nested
-    class Open {
+    class StartMonitoring {
         @Test
-        void shouldSetOpenToTrue() {
-            opened = new AtomicBoolean();
-            when(registrySupplier.get()).thenReturn(registry);
-            underTest = new Monitoring(peersManager, publicKey, pipeline, registrySupplier, opened, registry);
-            underTest.open();
+        void shouldStartDiscoveryOnNodeUpEvent(@Mock final NodeUpEvent event,
+                                               @Mock(answer = RETURNS_DEEP_STUBS) final MeterRegistry registry) {
+            when(registrySupplier.apply(any())).thenReturn(registry);
 
-            assertTrue(opened.get());
-        }
+            final Monitoring handler = new Monitoring(counters, registrySupplier, null);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
 
-        @Test
-        void shouldAddHandlerToPipelineAndListenOnPeerRelayEvents(@Mock(answer = Answers.RETURNS_DEEP_STUBS) final HandlerContext ctx) {
-            when(registrySupplier.get()).thenReturn(registry);
-            when(pipeline.addFirst(eq(MONITORING_HANDLER), any())).then(invocation -> {
-                final SimpleDuplexHandler<?, ?, Address> handler = invocation.getArgument(1);
-                handler.eventTriggered(ctx, mock(Event.class), new CompletableFuture<>());
-                handler.read(ctx, mock(Address.class), mock(Object.class), new CompletableFuture<>());
-                handler.write(ctx, mock(Address.class), mock(Object.class), new CompletableFuture<>());
-                return invocation.getMock();
-            });
+            pipeline.processInbound(event).join();
 
-            underTest = new Monitoring(peersManager, publicKey, pipeline, registrySupplier, new AtomicBoolean(), registry);
-            underTest.open();
-
-            verify(pipeline).addFirst(eq(MONITORING_HANDLER), any());
-            verify(ctx.scheduler(), times(3)).scheduleDirect(any());
+            verify(registrySupplier).apply(any());
         }
     }
 
     @Nested
-    class Close {
+    class StopDiscovery {
         @Test
-        void shouldSetOpenToFalse() {
-            underTest = new Monitoring(peersManager, publicKey, pipeline, registrySupplier, new AtomicBoolean(true), registry);
+        void shouldStopDiscoveryOnNodeUnrecoverableErrorEvent(@Mock final NodeUnrecoverableErrorEvent event) {
+            final Monitoring handler = new Monitoring(counters, registrySupplier, registry);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
 
-            underTest.close();
+            pipeline.processInbound(event).join();
 
-            assertFalse(opened.get());
+            verify(registry).close();
         }
 
         @Test
-        void shouldRemoveHandlerFromPipeline() {
-            underTest = new Monitoring(peersManager, publicKey, pipeline, registrySupplier, new AtomicBoolean(true), registry);
+        void shouldStopDiscoveryOnNodeDownEvent(@Mock final NodeDownEvent event) {
+            final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
 
-            underTest.close();
+            pipeline.processInbound(event).join();
 
-            verify(pipeline).remove(MONITORING_HANDLER);
+            verify(registry).close();
+        }
+    }
+
+    @Nested
+    class MessagePassing {
+        @Test
+        void shouldPassthroughAllEvents(@Mock final Event event) {
+            final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+            final TestObserver<Event> inboundEvents = pipeline.inboundEvents().test();
+
+            pipeline.processInbound(event);
+
+            inboundEvents.awaitCount(1).assertValue(event);
+        }
+
+        @Test
+        void shouldPassthroughInboundMessages(@Mock final Address sender,
+                                              @Mock final Message message) {
+            final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+            final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
+
+            pipeline.processInbound(sender, message);
+
+            inboundMessages.awaitCount(1).assertValueCount(1);
+        }
+
+        @Test
+        void shouldPassthroughOutboundMessages(@Mock final Address recipient,
+                                               @Mock final Message message) {
+            final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+            final TestObserver<Pair<Address, Object>> outboundMessages = pipeline.outboundMessages().test();
+
+            pipeline.processOutbound(recipient, message);
+
+            outboundMessages.awaitCount(1).assertValueCount(1);
         }
     }
 }

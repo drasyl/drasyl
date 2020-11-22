@@ -24,15 +24,14 @@ import io.micrometer.core.instrument.Gauge;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.micrometer.influx.InfluxConfig;
 import io.micrometer.influx.InfluxMeterRegistry;
-import org.drasyl.DrasylConfig;
-import org.drasyl.DrasylNodeComponent;
 import org.drasyl.event.Event;
-import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.peer.PeersManager;
+import org.drasyl.event.NodeDownEvent;
+import org.drasyl.event.NodeUnrecoverableErrorEvent;
+import org.drasyl.event.NodeUpEvent;
+import org.drasyl.peer.connection.message.Message;
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.Pipeline;
-import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.pipeline.address.Address;
+import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.util.NetworkUtil;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;
@@ -42,150 +41,149 @@ import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.function.Supplier;
+import java.util.function.Function;
 
+import static java.util.Objects.requireNonNull;
 import static java.util.Optional.ofNullable;
 
 /**
- * Monitors various states or events in the drasyl Node.
+ * Monitors various states or events in the drasyl node.
  */
-public class Monitoring implements DrasylNodeComponent {
+@SuppressWarnings({ "java:S110" })
+public class Monitoring extends SimpleDuplexHandler<Message, Message, Address> {
+    public static final String MONITORING_HANDLER = "MONITORING_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(Monitoring.class);
-    static final String MONITORING_HANDLER = "MONITORING_HANDLER";
-    private final PeersManager peersManager;
-    private final CompressedPublicKey publicKey;
-    private final Pipeline pipeline;
-    private final AtomicBoolean opened;
-    private final Supplier<MeterRegistry> registrySupplier;
+    private final Map<String, Counter> counters;
+    private final Function<HandlerContext, MeterRegistry> registrySupplier;
     private MeterRegistry registry;
 
-    public Monitoring(final DrasylConfig config,
-                      final PeersManager peersManager,
-                      final CompressedPublicKey publicKey,
-                      final Pipeline pipeline) {
+    Monitoring(final Map<String, Counter> counters,
+               final Function<HandlerContext, MeterRegistry> registrySupplier,
+               final MeterRegistry registry) {
+        this.counters = requireNonNull(counters);
+        this.registrySupplier = requireNonNull(registrySupplier);
+        this.registry = registry;
+    }
+
+    public Monitoring() {
         this(
-                peersManager,
-                publicKey,
-                pipeline,
-                () -> new InfluxMeterRegistry(new InfluxConfig() {
-                    @Override
-                    public @NotNull String uri() {
-                        return config.getMonitoringInfluxUri().toString();
-                    }
+                new HashMap<>(),
+                ctx -> {
+                    final MeterRegistry newRegistry = new InfluxMeterRegistry(new InfluxConfig() {
+                        @Override
+                        public @NotNull String uri() {
+                            return ctx.config().getMonitoringInfluxUri().toString();
+                        }
 
-                    @Override
-                    public String userName() {
-                        return config.getMonitoringInfluxUser();
-                    }
+                        @Override
+                        public String userName() {
+                            return ctx.config().getMonitoringInfluxUser();
+                        }
 
-                    @Override
-                    public String password() {
-                        return config.getMonitoringInfluxPassword();
-                    }
+                        @Override
+                        public String password() {
+                            return ctx.config().getMonitoringInfluxPassword();
+                        }
 
-                    @Override
-                    public @NotNull String db() {
-                        return config.getMonitoringInfluxDatabase();
-                    }
+                        @Override
+                        public @NotNull String db() {
+                            return ctx.config().getMonitoringInfluxDatabase();
+                        }
 
-                    @Override
-                    public boolean autoCreateDb() {
-                        return false;
-                    }
+                        @Override
+                        public boolean autoCreateDb() {
+                            return false;
+                        }
 
-                    @Override
-                    public @NotNull Duration step() {
-                        return config.getMonitoringInfluxReportingFrequency();
-                    }
+                        @Override
+                        public @NotNull Duration step() {
+                            return ctx.config().getMonitoringInfluxReportingFrequency();
+                        }
 
-                    @Override
-                    public String get(final @NotNull String key) {
-                        return null;
-                    }
-                }, Clock.SYSTEM), new AtomicBoolean(),
+                        @Override
+                        public String get(final @NotNull String key) {
+                            return null;
+                        }
+                    }, Clock.SYSTEM);
+
+                    // add common tags
+                    newRegistry.config().commonTags(
+                            "public_key", ctx.identity().getPublicKey().toString(),
+                            "host", ofNullable(NetworkUtil.getLocalHostName()).orElse("")
+                    );
+
+                    // monitor PeersManager
+                    Gauge.builder("peersManager.peers", ctx.peersManager(), pm -> pm.getPeers().size()).register(newRegistry);
+                    Gauge.builder("peersManager.superPeer", ctx.peersManager(), pm -> pm.getSuperPeerKey() != null ? 1 : 0).register(newRegistry);
+                    Gauge.builder("peersManager.children", ctx.peersManager(), pm -> pm.getChildrenKeys().size()).register(newRegistry);
+
+                    return newRegistry;
+                },
                 null
         );
     }
 
-    Monitoring(final PeersManager peersManager,
-               final CompressedPublicKey publicKey,
-               final Pipeline pipeline,
-               final Supplier<MeterRegistry> registrySupplier,
-               final AtomicBoolean opened,
-               final MeterRegistry registry) {
-        this.peersManager = peersManager;
-        this.publicKey = publicKey;
-        this.pipeline = pipeline;
-        this.opened = opened;
-        this.registrySupplier = registrySupplier;
-        this.registry = registry;
+    @Override
+    public void eventTriggered(final HandlerContext ctx,
+                               final Event event,
+                               final CompletableFuture<Void> future) {
+        ctx.scheduler().scheduleDirect(() -> incrementObjectTypeCounter("pipeline.events", event));
+
+        if (event instanceof NodeUpEvent) {
+            startMonitoring(ctx);
+        }
+        else if (event instanceof NodeUnrecoverableErrorEvent || event instanceof NodeDownEvent) {
+            stopMonitoring();
+        }
+
+        // passthrough event
+        ctx.fireEventTriggered(event, future);
     }
 
     @Override
-    public void open() {
-        if (opened.compareAndSet(false, true)) {
+    protected void matchedRead(final HandlerContext ctx,
+                               final Address sender,
+                               final Message msg,
+                               final CompletableFuture<Void> future) {
+        ctx.scheduler().scheduleDirect(() -> incrementObjectTypeCounter("pipeline.inbound_messages", msg));
+
+        // passthrough message
+        ctx.fireRead(sender, msg, future);
+    }
+
+    @Override
+    protected void matchedWrite(final HandlerContext ctx,
+                                final Address recipient,
+                                final Message msg,
+                                final CompletableFuture<Void> future) {
+        ctx.scheduler().scheduleDirect(() -> incrementObjectTypeCounter("pipeline.outbound_messages", msg));
+
+        // passthrough message
+        ctx.write(recipient, msg, future);
+    }
+
+    synchronized void startMonitoring(final HandlerContext ctx) {
+        if (registry == null) {
             LOG.debug("Start Monitoring...");
-            registry = registrySupplier.get();
+            registry = registrySupplier.apply(ctx);
 
-            // add common tags
-            registry.config().commonTags(
-                    "public_key", publicKey.toString(),
-                    "host", ofNullable(NetworkUtil.getLocalHostName()).orElse("")
-            );
-
-            // monitor PeersManager
-            Gauge.builder("peersManager.peers", peersManager, pm -> pm.getPeers().size()).register(registry);
-            Gauge.builder("peersManager.superPeer", peersManager, pm -> pm.getSuperPeerKey() != null ? 1 : 0).register(registry);
-            Gauge.builder("peersManager.children", peersManager, pm -> pm.getChildrenKeys().size()).register(registry);
-
-            // monitor Pipeline
-            pipeline.addFirst(MONITORING_HANDLER, new SimpleDuplexHandler<>() {
-                private final Map<String, Counter> counters = new HashMap<>();
-
-                @Override
-                protected void matchedEventTriggered(final HandlerContext ctx,
-                                                     final Event event,
-                                                     final CompletableFuture<Void> future) {
-                    ctx.scheduler().scheduleDirect(() -> incrementObjectTypeCounter("pipeline.events", event));
-                    ctx.fireEventTriggered(event, future);
-                }
-
-                @Override
-                protected void matchedRead(final HandlerContext ctx,
-                                           final Address sender,
-                                           final Object msg,
-                                           final CompletableFuture<Void> future) {
-                    ctx.scheduler().scheduleDirect(() -> incrementObjectTypeCounter("pipeline.inbound_messages", msg));
-                    ctx.fireRead(sender, msg, future);
-                }
-
-                @Override
-                protected void matchedWrite(final HandlerContext ctx,
-                                            final Address recipient,
-                                            final Object msg,
-                                            final CompletableFuture<Void> future) {
-                    ctx.scheduler().scheduleDirect(() -> incrementObjectTypeCounter("pipeline.outbound_messages", msg));
-                    ctx.write(recipient, msg, future);
-                }
-
-                private void incrementObjectTypeCounter(final String metric, final Object o) {
-                    final Counter counter = counters.computeIfAbsent(o.getClass().getSimpleName(), clazz -> Counter.builder(metric).tag("clazz", clazz).register(registry));
-                    counter.increment();
-                }
-            });
             LOG.debug("Monitoring started.");
         }
     }
 
-    @Override
-    public void close() {
-        if (opened.compareAndSet(true, false)) {
+    synchronized void stopMonitoring() {
+        if (registry != null) {
             LOG.debug("Stop Monitoring...");
-            pipeline.remove(MONITORING_HANDLER);
             registry.close();
             registry = null;
             LOG.debug("Monitoring stopped.");
+        }
+    }
+
+    private void incrementObjectTypeCounter(final String metric, final Object o) {
+        if (registry != null) {
+            final Counter counter = counters.computeIfAbsent(o.getClass().getSimpleName(), clazz -> Counter.builder(metric).tag("clazz", clazz).register(registry));
+            counter.increment();
         }
     }
 }
