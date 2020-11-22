@@ -22,6 +22,7 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
@@ -38,6 +39,8 @@ import static org.mockito.Mockito.when;
 class LoopbackOutboundMessageSinkHandlerTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
+    @Mock
+    private PeersManager peersManager;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private DrasylConfig config;
 
@@ -47,7 +50,7 @@ class LoopbackOutboundMessageSinkHandlerTest {
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                 config,
                 identity,
-                TypeValidator.ofInboundValidator(config),
+                peersManager, TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
                 LoopbackOutboundMessageSinkHandler.INSTANCE
         );
@@ -66,7 +69,7 @@ class LoopbackOutboundMessageSinkHandlerTest {
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                 config,
                 identity,
-                TypeValidator.ofInboundValidator(config),
+                peersManager, TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
                 LoopbackOutboundMessageSinkHandler.INSTANCE
         );

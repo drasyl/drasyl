@@ -69,11 +69,12 @@ public class DrasylPipeline extends DefaultPipeline {
         this.handlerNames = new ConcurrentHashMap<>();
         this.inboundValidator = TypeValidator.ofInboundValidator(config);
         this.outboundValidator = TypeValidator.ofOutboundValidator(config);
-        this.head = new HeadContext(config, this, DrasylScheduler.getInstanceHeavy(), identity, inboundValidator, outboundValidator);
-        this.tail = new TailContext(eventConsumer, config, this, DrasylScheduler.getInstanceHeavy(), identity, inboundValidator, outboundValidator);
+        this.head = new HeadContext(config, this, DrasylScheduler.getInstanceHeavy(), identity, peersManager, inboundValidator, outboundValidator);
+        this.tail = new TailContext(eventConsumer, config, this, DrasylScheduler.getInstanceHeavy(), identity, peersManager, inboundValidator, outboundValidator);
         this.scheduler = DrasylScheduler.getInstanceLight();
         this.config = config;
         this.identity = identity;
+        this.peersManager = peersManager;
 
         initPointer();
 
@@ -86,16 +87,16 @@ public class DrasylPipeline extends DefaultPipeline {
         addFirst(HOP_COUNT_GUARD, HopCountGuard.INSTANCE);
 
         // local message delivery
-        addFirst(LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER, new LoopbackInboundMessageSinkHandler(started, peersManager, endpoints));
+        addFirst(LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER, new LoopbackInboundMessageSinkHandler(started, endpoints));
         addFirst(LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER, LoopbackOutboundMessageSinkHandler.INSTANCE);
 
         addFirst(SIGNATURE_HANDLER, SignatureHandler.INSTANCE);
 
         // remote message delivery
-        addFirst(SUPER_PEER_INBOUND_MESSAGE_SINK_HANDLER, new SuperPeerInboundMessageSinkHandler(channelGroup, peersManager));
+        addFirst(SUPER_PEER_INBOUND_MESSAGE_SINK_HANDLER, new SuperPeerInboundMessageSinkHandler(channelGroup));
         addFirst(DIRECT_CONNECTION_INBOUND_MESSAGE_SINK_HANDLER, new DirectConnectionInboundMessageSinkHandler(channelGroup));
         addFirst(DIRECT_CONNECTION_OUTBOUND_MESSAGE_SINK_HANDLER, new DirectConnectionOutboundMessageSinkHandler(channelGroup));
-        addFirst(SUPER_PEER_OUTBOUND_MESSAGE_SINK_HANDLER, new SuperPeerOutboundMessageSinkHandler(channelGroup, peersManager));
+        addFirst(SUPER_PEER_OUTBOUND_MESSAGE_SINK_HANDLER, new SuperPeerOutboundMessageSinkHandler(channelGroup));
 
         // inbound message guards
         addFirst(INVALID_PROOF_OF_WORK_FILTER, InvalidProofOfWorkFilter.INSTANCE);

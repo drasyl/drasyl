@@ -21,6 +21,7 @@ package org.drasyl.pipeline;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
@@ -41,6 +42,8 @@ class InvalidProofOfWorkFilterTest {
     @Mock
     private Identity identity;
     @Mock
+    private PeersManager peersManager;
+    @Mock
     private TypeValidator inboundValidator;
     @Mock
     private TypeValidator outboundValidator;
@@ -52,7 +55,7 @@ class InvalidProofOfWorkFilterTest {
         when(message.getProofOfWork().isValid(any(), anyShort())).thenReturn(false);
 
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
         final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
 
         pipeline.processInbound(message);
@@ -66,7 +69,7 @@ class InvalidProofOfWorkFilterTest {
         when(message.getProofOfWork().isValid(any(), anyShort())).thenReturn(true);
 
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
         final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
 
         pipeline.processInbound(message);

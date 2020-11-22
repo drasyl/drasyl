@@ -21,6 +21,7 @@ package org.drasyl.pipeline;
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.codec.TypeValidator;
 
 /**
@@ -39,6 +40,7 @@ public class DefaultHandlerContext extends AbstractHandlerContext {
      * @param pipeline          the corresponding pipeline object
      * @param scheduler         the corresponding scheduler
      * @param identity          the identity of the corresponding node
+     * @param peersManager      the peers manager of the corresponding node
      * @param inboundValidator  the inbound validator of the pipeline
      * @param outboundValidator the outbound validator of the pipeline
      */
@@ -48,9 +50,10 @@ public class DefaultHandlerContext extends AbstractHandlerContext {
                                  final Pipeline pipeline,
                                  final Scheduler scheduler,
                                  final Identity identity,
+                                 final PeersManager peersManager,
                                  final TypeValidator inboundValidator,
                                  final TypeValidator outboundValidator) {
-        super(name, config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
+        super(name, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
         this.handler = handler;
     }
 

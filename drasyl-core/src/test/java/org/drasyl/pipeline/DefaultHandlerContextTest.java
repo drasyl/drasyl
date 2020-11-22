@@ -21,6 +21,7 @@ package org.drasyl.pipeline;
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -42,13 +43,15 @@ class DefaultHandlerContextTest {
     @Mock
     private Identity identity;
     @Mock
+    private PeersManager peersManager;
+    @Mock
     private TypeValidator inboundValidator;
     @Mock
     private TypeValidator outboundValidator;
 
     @Test
     void shouldCreateDefaultHandler() {
-        final DefaultHandlerContext ctx = new DefaultHandlerContext("ctx", handler, config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
+        final DefaultHandlerContext ctx = new DefaultHandlerContext("ctx", handler, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
 
         assertEquals(handler, ctx.handler());
     }

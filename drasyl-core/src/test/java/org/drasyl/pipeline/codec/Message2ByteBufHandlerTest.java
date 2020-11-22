@@ -26,6 +26,7 @@ import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.pipeline.EmbeddedPipeline;
@@ -44,6 +45,8 @@ class Message2ByteBufHandlerTest {
     @Mock
     private Identity identity;
     @Mock
+    private PeersManager peersManager;
+    @Mock
     private TypeValidator inboundValidator;
     @Mock
     private TypeValidator outboundValidator;
@@ -59,7 +62,7 @@ class Message2ByteBufHandlerTest {
         );
 
         final Message2ByteBufHandler handler = Message2ByteBufHandler.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
         final TestObserver<ByteBuf> outboundMessages = pipeline.outboundOnlyMessages(ByteBuf.class).test();
         pipeline.processOutbound(recipient, message);
 

@@ -25,6 +25,7 @@ import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.ApplicationMessage2ObjectHolderHandler;
@@ -50,6 +51,8 @@ import static org.mockito.Mockito.when;
 class EmbeddedPipelineTest {
     @Mock
     private Identity identity;
+    @Mock
+    private PeersManager peersManager;
     private DrasylConfig config;
 
     @BeforeEach
@@ -64,6 +67,7 @@ class EmbeddedPipelineTest {
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                 config,
                 identity,
+                peersManager,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.of(List.of(), List.of(), false, false),
                 ApplicationMessage2ObjectHolderHandler.INSTANCE,
@@ -110,7 +114,7 @@ class EmbeddedPipelineTest {
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                 config,
                 identity,
-                TypeValidator.of(List.of(), List.of(), false, false),
+                peersManager, TypeValidator.of(List.of(), List.of(), false, false),
                 TypeValidator.ofOutboundValidator(config),
                 ObjectHolder2ApplicationMessageHandler.INSTANCE,
                 DefaultCodec.INSTANCE,

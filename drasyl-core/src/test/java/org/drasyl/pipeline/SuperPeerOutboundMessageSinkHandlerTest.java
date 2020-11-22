@@ -59,9 +59,9 @@ class SuperPeerOutboundMessageSinkHandlerTest {
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                 config,
                 identity,
-                TypeValidator.ofInboundValidator(config),
+                peersManager, TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                new SuperPeerOutboundMessageSinkHandler(channelGroup, peersManager)
+                new SuperPeerOutboundMessageSinkHandler(channelGroup)
         );
         final TestObserver<Object> outboundMessages = pipeline.outboundOnlyMessages().test();
         final Channel channel = mock(Channel.class);
@@ -85,9 +85,9 @@ class SuperPeerOutboundMessageSinkHandlerTest {
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                 config,
                 identity,
-                TypeValidator.ofInboundValidator(config),
+                peersManager, TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                new SuperPeerOutboundMessageSinkHandler(channelGroup, peersManager)
+                new SuperPeerOutboundMessageSinkHandler(channelGroup)
         );
         final TestObserver<Object> outboundMessages = pipeline.outboundOnlyMessages().test();
 
@@ -104,9 +104,9 @@ class SuperPeerOutboundMessageSinkHandlerTest {
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                 config,
                 identity,
-                TypeValidator.ofInboundValidator(config),
+                peersManager, TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                new SuperPeerOutboundMessageSinkHandler(channelGroup, peersManager)
+                new SuperPeerOutboundMessageSinkHandler(channelGroup)
         );
         final TestObserver<Object> outboundMessages = pipeline.outboundOnlyMessages().test();
         final Channel channel = mock(Channel.class);

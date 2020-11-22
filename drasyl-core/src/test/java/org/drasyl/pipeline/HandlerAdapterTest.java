@@ -23,6 +23,7 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
@@ -50,6 +51,8 @@ class HandlerAdapterTest {
     private DrasylConfig config;
     @Mock
     private Identity identity;
+    @Mock
+    private PeersManager peersManager;
     @Mock
     private TypeValidator inboundValidator;
     @Mock
@@ -130,7 +133,7 @@ class HandlerAdapterTest {
 
         @Test
         void shouldPassthroughsOnEventTriggeredWithMultipleHandler() {
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new));
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new));
             final TestObserver<Event> events = pipeline.inboundEvents().test();
 
             final Event event = mock(Event.class);
@@ -142,7 +145,7 @@ class HandlerAdapterTest {
 
         @Test
         void shouldPassthroughsOnReadWithMultipleHandler() {
-            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new));
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, IntStream.rangeClosed(1, 10).mapToObj(i -> new HandlerAdapter()).toArray(HandlerAdapter[]::new));
             final TestObserver<Pair<Address, Object>> events = pipeline.inboundMessages().test();
 
             final CompressedPublicKey sender = mock(CompressedPublicKey.class);

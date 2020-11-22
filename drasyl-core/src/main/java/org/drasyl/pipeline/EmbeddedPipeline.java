@@ -27,6 +27,7 @@ import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.DrasylScheduler;
@@ -51,21 +52,24 @@ public class EmbeddedPipeline extends DefaultPipeline {
      *
      * @param config            the config
      * @param identity          the identity
+     * @param peersManager      the peers manager
      * @param inboundValidator  the inbound validator
      * @param outboundValidator the outbound validator
      * @param handlers          the handlers
      */
     public EmbeddedPipeline(final DrasylConfig config,
                             final Identity identity,
+                            final PeersManager peersManager,
                             final TypeValidator inboundValidator,
                             final TypeValidator outboundValidator,
                             final Handler... handlers) {
-        this(config, identity, inboundValidator, outboundValidator);
+        this(config, identity, peersManager, inboundValidator, outboundValidator);
         List.of(handlers).forEach(handler -> addLast(handler.getClass().getSimpleName() + Crypto.randomString(8), handler));
     }
 
     public EmbeddedPipeline(final DrasylConfig config,
                             final Identity identity,
+                            final PeersManager peersManager,
                             final TypeValidator inboundValidator,
                             final TypeValidator outboundValidator) {
         this.config = config;
@@ -74,7 +78,7 @@ public class EmbeddedPipeline extends DefaultPipeline {
         outboundMessages = ReplaySubject.create();
 
         this.handlerNames = new ConcurrentHashMap<>();
-        this.head = new AbstractEndHandler(HeadContext.DRASYL_HEAD_HANDLER, config, this, DrasylScheduler.getInstanceHeavy(), identity, inboundValidator, outboundValidator) {
+        this.head = new AbstractEndHandler(HeadContext.DRASYL_HEAD_HANDLER, config, this, DrasylScheduler.getInstanceHeavy(), identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public void write(final HandlerContext ctx,
                               final Address recipient,
@@ -84,7 +88,7 @@ public class EmbeddedPipeline extends DefaultPipeline {
                 future.complete(null);
             }
         };
-        this.tail = new TailContext(inboundEvents::onNext, config, this, DrasylScheduler.getInstanceHeavy(), identity, inboundValidator, outboundValidator) {
+        this.tail = new TailContext(inboundEvents::onNext, config, this, DrasylScheduler.getInstanceHeavy(), identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public void read(final HandlerContext ctx,
                              final Address sender,
@@ -101,6 +105,7 @@ public class EmbeddedPipeline extends DefaultPipeline {
         };
         this.scheduler = DrasylScheduler.getInstanceLight();
         this.identity = identity;
+        this.peersManager = peersManager;
         this.inboundValidator = inboundValidator;
         this.outboundValidator = outboundValidator;
 

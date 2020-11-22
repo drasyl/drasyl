@@ -27,6 +27,7 @@ import org.drasyl.event.NodeOnlineEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.codec.TypeValidator;
@@ -80,6 +81,8 @@ class GroupsClientHandlerTest {
     @Mock
     private Identity identity;
     @Mock
+    private PeersManager peersManager;
+    @Mock
     private ProofOfWork proofOfWork;
     @Mock
     private Group group;
@@ -125,6 +128,7 @@ class GroupsClientHandlerTest {
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                     config,
                     identity,
+                    peersManager,
                     inboundValidator,
                     outboundValidator);
             final TestObserver<GroupLeaveMessage> testObserver = pipeline.outboundOnlyMessages(GroupLeaveMessage.class).test();
@@ -146,6 +150,7 @@ class GroupsClientHandlerTest {
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                     config,
                     identity,
+                    peersManager,
                     inboundValidator,
                     outboundValidator,
                     handler);
@@ -166,6 +171,7 @@ class GroupsClientHandlerTest {
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                     config,
                     identity,
+                    peersManager,
                     inboundValidator,
                     outboundValidator,
                     handler);
@@ -194,6 +200,7 @@ class GroupsClientHandlerTest {
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                     config,
                     identity,
+                    peersManager,
                     inboundValidator,
                     outboundValidator,
                     handler);
@@ -213,6 +220,7 @@ class GroupsClientHandlerTest {
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                     config,
                     identity,
+                    peersManager,
                     inboundValidator,
                     outboundValidator,
                     handler);
@@ -232,6 +240,7 @@ class GroupsClientHandlerTest {
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                     config,
                     identity,
+                    peersManager,
                     inboundValidator,
                     outboundValidator,
                     handler);
@@ -258,6 +267,7 @@ class GroupsClientHandlerTest {
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                     config,
                     identity,
+                    peersManager,
                     inboundValidator,
                     outboundValidator,
                     handler);

@@ -1,10 +1,28 @@
+/*
+ * Copyright (c) 2020.
+ *
+ * This file is part of drasyl.
+ *
+ *  drasyl is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  drasyl is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package org.drasyl.pipeline;
 
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeerInformation;
-import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.IdentityMessage;
 import org.drasyl.peer.connection.message.Message;
@@ -22,14 +40,11 @@ import java.util.concurrent.atomic.AtomicBoolean;
 public class LoopbackInboundMessageSinkHandler extends SimpleInboundHandler<Message, Address> {
     public static final String LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER = "LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER";
     private final AtomicBoolean started;
-    private final PeersManager peersManager;
     private final Set<Endpoint> endpoints;
 
     public LoopbackInboundMessageSinkHandler(final AtomicBoolean started,
-                                             final PeersManager peersManager,
                                              final Set<Endpoint> endpoints) {
         this.started = started;
-        this.peersManager = peersManager;
         this.endpoints = endpoints;
     }
 
@@ -45,12 +60,12 @@ public class LoopbackInboundMessageSinkHandler extends SimpleInboundHandler<Mess
             future.completeExceptionally(new Exception("Node is not running"));
         }
         else if (msg instanceof ApplicationMessage) {
-            peersManager.addPeer(msg.getSender());
+            ctx.peersManager().addPeer(msg.getSender());
             ctx.fireRead(sender, msg, future);
         }
         else if (msg instanceof WhoisMessage) {
             final WhoisMessage whoisMessage = (WhoisMessage) msg;
-            peersManager.setPeerInformation(whoisMessage.getSender(),
+            ctx.peersManager().setPeerInformation(whoisMessage.getSender(),
                     whoisMessage.getPeerInformation());
 
             final CompressedPublicKey myPublicKey = ctx.identity().getPublicKey();
@@ -63,7 +78,7 @@ public class LoopbackInboundMessageSinkHandler extends SimpleInboundHandler<Mess
         }
         else if (msg instanceof IdentityMessage) {
             final IdentityMessage identityMessage = (IdentityMessage) msg;
-            peersManager.setPeerInformation(identityMessage.getSender(),
+            ctx.peersManager().setPeerInformation(identityMessage.getSender(),
                     identityMessage.getPeerInformation());
             future.complete(null);
         }

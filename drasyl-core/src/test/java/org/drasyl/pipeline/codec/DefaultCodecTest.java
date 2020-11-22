@@ -25,6 +25,7 @@ import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
@@ -57,6 +58,8 @@ class DefaultCodecTest {
     @Mock
     private Identity identity;
     @Mock
+    private PeersManager peersManager;
+    @Mock
     private CompressedPublicKey sender;
     @Mock
     private ProofOfWork proofOfWork;
@@ -80,6 +83,7 @@ class DefaultCodecTest {
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                     config,
                     identity,
+                    peersManager,
                     TypeValidator.ofOutboundValidator(config),
                     TypeValidator.of(List.of(), List.of(), false, false),
                     ApplicationMessage2ObjectHolderHandler.INSTANCE,
@@ -125,6 +129,7 @@ class DefaultCodecTest {
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                     config,
                     identity,
+                    peersManager,
                     TypeValidator.of(List.of(), List.of(), false, false),
                     TypeValidator.ofOutboundValidator(config),
                     ApplicationMessage2ObjectHolderHandler.INSTANCE,
@@ -151,6 +156,7 @@ class DefaultCodecTest {
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                     config,
                     identity,
+                    peersManager,
                     TypeValidator.of(List.of(), List.of(), false, false),
                     TypeValidator.ofInboundValidator(config),
                     ApplicationMessage2ObjectHolderHandler.INSTANCE,
@@ -204,6 +210,7 @@ class DefaultCodecTest {
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                     config,
                     identity,
+                    peersManager,
                     TypeValidator.ofInboundValidator(config),
                     TypeValidator.of(List.of(), List.of(), false, false),
                     ApplicationMessage2ObjectHolderHandler.INSTANCE,
@@ -226,6 +233,7 @@ class DefaultCodecTest {
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                     config,
                     identity,
+                    peersManager,
                     TypeValidator.of(List.of(), List.of(), false, false),
                     TypeValidator.ofInboundValidator(config),
                     ApplicationMessage2ObjectHolderHandler.INSTANCE,

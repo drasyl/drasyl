@@ -22,6 +22,7 @@ import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.slf4j.Logger;
@@ -39,6 +40,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
     private final Pipeline pipeline;
     private final Scheduler scheduler;
     private final Identity identity;
+    private final PeersManager peersManager;
     private final TypeValidator inboundValidator;
     private final TypeValidator outboundValidator;
     private volatile AbstractHandlerContext prev;
@@ -49,9 +51,10 @@ abstract class AbstractHandlerContext implements HandlerContext {
                                      final Pipeline pipeline,
                                      final Scheduler scheduler,
                                      final Identity identity,
+                                     final PeersManager peersManager,
                                      final TypeValidator inboundValidator,
                                      final TypeValidator outboundValidator) {
-        this(null, null, name, config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
+        this(null, null, name, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
     }
 
     AbstractHandlerContext(final AbstractHandlerContext prev,
@@ -61,6 +64,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
                            final Pipeline pipeline,
                            final Scheduler scheduler,
                            final Identity identity,
+                           final PeersManager peersManager,
                            final TypeValidator inboundValidator,
                            final TypeValidator outboundValidator) {
         this.prev = prev;
@@ -70,6 +74,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
         this.pipeline = pipeline;
         this.scheduler = scheduler;
         this.identity = identity;
+        this.peersManager = peersManager;
         this.inboundValidator = inboundValidator;
         this.outboundValidator = outboundValidator;
     }
@@ -248,6 +253,11 @@ abstract class AbstractHandlerContext implements HandlerContext {
     @Override
     public Identity identity() {
         return this.identity;
+    }
+
+    @Override
+    public PeersManager peersManager() {
+        return this.peersManager;
     }
 
     @Override

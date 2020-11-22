@@ -21,6 +21,7 @@ package org.drasyl.pipeline;
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.slf4j.Logger;
@@ -41,9 +42,10 @@ class HeadContext extends AbstractEndHandler {
                        final Pipeline pipeline,
                        final Scheduler scheduler,
                        final Identity identity,
+                       final PeersManager peersManager,
                        final TypeValidator inboundValidator,
                        final TypeValidator outboundValidator) {
-        super(DRASYL_HEAD_HANDLER, config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
+        super(DRASYL_HEAD_HANDLER, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
     }
 
     @Override

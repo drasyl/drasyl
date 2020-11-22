@@ -26,6 +26,7 @@ import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.MessageId;
 import org.drasyl.peer.connection.message.SignedMessage;
@@ -52,6 +53,8 @@ class SignatureHandlerTest {
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Identity identity;
     @Mock
+    private PeersManager peersManager;
+    @Mock
     private TypeValidator inboundValidator;
     @Mock
     private TypeValidator outboundValidator;
@@ -71,7 +74,7 @@ class SignatureHandlerTest {
         final Message message = new MyMessage(identity.getPublicKey(), proofOfWork, recipient);
 
         final SignatureHandler handler = SignatureHandler.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
         final TestObserver<Object> outboundMessages = pipeline.outboundOnlyMessages().test();
 
         pipeline.processOutbound(recipient, message);
@@ -87,7 +90,7 @@ class SignatureHandlerTest {
         final Message message = new MyMessage(identity.getPublicKey(), proofOfWork, recipient);
 
         final SignatureHandler handler = SignatureHandler.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
         final TestObserver<Object> outboundMessages = pipeline.outboundOnlyMessages().test();
 
         assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, message).get());
@@ -99,7 +102,7 @@ class SignatureHandlerTest {
     void shouldPassthroughOutgoingMessagesFromOtherSender(@Mock final CompressedPublicKey recipient,
                                                           @Mock final Message message) {
         final SignatureHandler handler = SignatureHandler.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
         final TestObserver<Object> outboundMessages = pipeline.outboundOnlyMessages().test();
 
         pipeline.processOutbound(recipient, message);
@@ -118,7 +121,7 @@ class SignatureHandlerTest {
         Crypto.sign(identity.getPrivateKey().toUncompressedKey(), signedMessage);
 
         final SignatureHandler handler = SignatureHandler.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
         final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
 
         pipeline.processInbound(signedMessage);
@@ -137,7 +140,7 @@ class SignatureHandlerTest {
         Crypto.sign(identity.getPrivateKey().toUncompressedKey(), signedMessage);
 
         final SignatureHandler handler = SignatureHandler.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
         final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
 
         assertThrows(ExecutionException.class, () -> pipeline.processInbound(signedMessage).get());
@@ -156,7 +159,7 @@ class SignatureHandlerTest {
         Crypto.sign(identity.getPrivateKey().toUncompressedKey(), signedMessage);
 
         final SignatureHandler handler = SignatureHandler.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
         final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
 
         assertThrows(ExecutionException.class, () -> pipeline.processInbound(signedMessage).get());
@@ -167,7 +170,7 @@ class SignatureHandlerTest {
     @Test
     void shouldPassthroughIncomingMessagesForOtherRecipient(@Mock(answer = RETURNS_DEEP_STUBS) final Message message) {
         final SignatureHandler handler = SignatureHandler.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, inboundValidator, outboundValidator, handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
         final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
 
         pipeline.processInbound(message);

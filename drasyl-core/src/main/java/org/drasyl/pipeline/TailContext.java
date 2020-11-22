@@ -24,6 +24,7 @@ import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.slf4j.Logger;
@@ -41,14 +42,16 @@ class TailContext extends AbstractEndHandler {
     private static final Logger LOG = LoggerFactory.getLogger(TailContext.class);
     private final Consumer<Event> eventConsumer;
 
+    @SuppressWarnings({ "java:S107" })
     public TailContext(final Consumer<Event> eventConsumer,
                        final DrasylConfig config,
                        final Pipeline pipeline,
                        final Scheduler scheduler,
                        final Identity identity,
+                       final PeersManager peersManager,
                        final TypeValidator inboundValidator,
                        final TypeValidator outboundValidator) {
-        super(DRASYL_TAIL_HANDLER, config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
+        super(DRASYL_TAIL_HANDLER, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
         this.eventConsumer = eventConsumer;
     }
 

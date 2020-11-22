@@ -23,6 +23,7 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,6 +64,8 @@ class AbstractHandlerContextTest {
     @Mock
     private Identity identity;
     @Mock
+    private PeersManager peersManager;
+    @Mock
     private TypeValidator inboundValidator;
     @Mock
     private TypeValidator outboundValidator;
@@ -77,7 +80,7 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldSetCorrectPrevHandlerContext() {
-        final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, inboundValidator, outboundValidator) {
+        final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public Handler handler() {
                 return handler;
@@ -94,7 +97,7 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldSetCorrectNextHandlerContext() {
-        final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, inboundValidator, outboundValidator) {
+        final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public Handler handler() {
                 return handler;
@@ -111,7 +114,7 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldSetCorrectName() {
-        final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, scheduler, identity, inboundValidator, outboundValidator) {
+        final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public Handler handler() {
                 return handler;
@@ -123,7 +126,7 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldSetCorrectConfig() {
-        final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, scheduler, identity, inboundValidator, outboundValidator) {
+        final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public Handler handler() {
                 return handler;
@@ -135,7 +138,7 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldSetPipeline() {
-        final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, scheduler, identity, inboundValidator, outboundValidator) {
+        final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public Handler handler() {
                 return handler;
@@ -147,7 +150,7 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldSetScheduler() {
-        final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, scheduler, identity, inboundValidator, outboundValidator) {
+        final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public Handler handler() {
                 return handler;
@@ -159,7 +162,7 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldSetIdentity() {
-        final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, scheduler, identity, inboundValidator, outboundValidator) {
+        final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public Handler handler() {
                 return handler;
@@ -171,7 +174,7 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldSetInboundValidator() {
-        final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, scheduler, identity, inboundValidator, outboundValidator) {
+        final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public Handler handler() {
                 return handler;
@@ -183,7 +186,7 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldSetOutboundValidator() {
-        final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, scheduler, identity, inboundValidator, outboundValidator) {
+        final AbstractHandlerContext ctx = new AbstractHandlerContext(name, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public Handler handler() {
                 return handler;
@@ -198,7 +201,7 @@ class AbstractHandlerContextTest {
         final Handler newHandler = mock(Handler.class);
         when(next.handler()).thenReturn(newHandler);
 
-        final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, inboundValidator, outboundValidator) {
+        final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public Handler handler() {
                 return handler;
@@ -218,7 +221,7 @@ class AbstractHandlerContextTest {
         final Handler handler = mock(Handler.class);
         when(next.handler()).thenReturn(handler);
 
-        final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, inboundValidator, outboundValidator) {
+        final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public Handler handler() {
                 return handler;
@@ -235,7 +238,7 @@ class AbstractHandlerContextTest {
         final Handler newHandler = mock(Handler.class);
         when(next.handler()).thenReturn(newHandler);
 
-        final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, inboundValidator, outboundValidator) {
+        final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public Handler handler() {
                 return handler;
@@ -257,7 +260,7 @@ class AbstractHandlerContextTest {
         when(next.handler()).thenReturn(newHandler);
         doThrow(RuntimeException.class).when(newHandler).read(any(), any(), any(), any());
 
-        final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, inboundValidator, outboundValidator) {
+        final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public Handler handler() {
                 return handler;
@@ -279,7 +282,7 @@ class AbstractHandlerContextTest {
         final Handler newHandler = mock(Handler.class);
         when(next.handler()).thenReturn(newHandler);
 
-        final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, inboundValidator, outboundValidator) {
+        final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public Handler handler() {
                 return handler;
@@ -300,7 +303,7 @@ class AbstractHandlerContextTest {
         when(next.handler()).thenReturn(newHandler);
         doThrow(RuntimeException.class).when(newHandler).eventTriggered(any(), any(), any());
 
-        final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, inboundValidator, outboundValidator) {
+        final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public Handler handler() {
                 return handler;
@@ -321,7 +324,7 @@ class AbstractHandlerContextTest {
         final Handler newHandler = mock(Handler.class);
         when(prev.handler()).thenReturn(newHandler);
 
-        final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, inboundValidator, outboundValidator) {
+        final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public Handler handler() {
                 return handler;
@@ -343,7 +346,7 @@ class AbstractHandlerContextTest {
         when(prev.handler()).thenReturn(newHandler);
         doThrow(RuntimeException.class).when(newHandler).write(any(), any(), any(), any());
 
-        final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, inboundValidator, outboundValidator) {
+        final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public Handler handler() {
                 return handler;
@@ -362,7 +365,7 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldThrowExceptionOnPipelineException() {
-        final AbstractHandlerContext context = new AbstractHandlerContext("test", config, pipeline, scheduler, identity, inboundValidator, outboundValidator) {
+        final AbstractHandlerContext context = new AbstractHandlerContext("test", config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public Handler handler() {
                 return null;
@@ -376,7 +379,7 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldThrowExceptionOnPipelineExceptionOnNextHandler() {
-        final AbstractHandlerContext context = new AbstractHandlerContext("test", config, pipeline, scheduler, identity, inboundValidator, outboundValidator) {
+        final AbstractHandlerContext context = new AbstractHandlerContext("test", config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public Handler handler() {
                 return null;
@@ -396,7 +399,7 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldNotThrowExceptionOnNextHandler() {
-        final AbstractHandlerContext context = new AbstractHandlerContext("test", config, pipeline, scheduler, identity, inboundValidator, outboundValidator) {
+        final AbstractHandlerContext context = new AbstractHandlerContext("test", config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public Handler handler() {
                 return null;
@@ -421,7 +424,7 @@ class AbstractHandlerContextTest {
         when(next.getNext()).thenReturn(context);
         when(context.handler()).thenReturn(mock(Handler.class));
 
-        final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, inboundValidator, outboundValidator) {
+        final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public Handler handler() {
                 return handler;
@@ -440,7 +443,7 @@ class AbstractHandlerContextTest {
         when(prev.getPrev()).thenReturn(context);
         when(context.handler()).thenReturn(mock(Handler.class));
 
-        final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, inboundValidator, outboundValidator) {
+        final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator) {
             @Override
             public Handler handler() {
                 return handler;

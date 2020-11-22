@@ -22,6 +22,7 @@ import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.DrasylScheduler;
@@ -119,11 +120,18 @@ public interface HandlerContext {
     Scheduler scheduler();
 
     /**
-     * Returns the identifier of this node.
+     * Returns the identity of this node.
      *
      * @return the identity of this node
      */
     Identity identity();
+
+    /**
+     * Returns the peers manager of this node.
+     *
+     * @return the peers manager of this node
+     */
+    PeersManager peersManager();
 
     /**
      * Returns the inbound type validator of this pipeline.

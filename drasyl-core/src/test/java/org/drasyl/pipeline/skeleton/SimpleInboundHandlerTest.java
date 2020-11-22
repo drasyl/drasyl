@@ -27,6 +27,7 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.MessageId;
@@ -60,6 +61,8 @@ import static org.mockito.Mockito.when;
 class SimpleInboundHandlerTest {
     @Mock
     private Identity identity;
+    @Mock
+    private PeersManager peersManager;
     private DrasylConfig config;
 
     @BeforeEach
@@ -90,6 +93,7 @@ class SimpleInboundHandlerTest {
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                 config,
                 identity,
+                peersManager,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
                 ApplicationMessage2ObjectHolderHandler.INSTANCE,
@@ -136,6 +140,7 @@ class SimpleInboundHandlerTest {
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                 config,
                 identity,
+                peersManager,
                 TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
                 ApplicationMessage2ObjectHolderHandler.INSTANCE,
@@ -180,7 +185,7 @@ class SimpleInboundHandlerTest {
             }
         };
 
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, mock(TypeValidator.class), mock(TypeValidator.class), handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, mock(TypeValidator.class), mock(TypeValidator.class), handler);
         final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
         final NodeUpEvent event = mock(NodeUpEvent.class);
@@ -209,7 +214,7 @@ class SimpleInboundHandlerTest {
             }
         };
 
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, mock(TypeValidator.class), mock(TypeValidator.class), handler);
+        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, mock(TypeValidator.class), mock(TypeValidator.class), handler);
         final TestObserver<Event> eventTestObserver = pipeline.inboundEvents().test();
 
         final Event event = mock(Event.class);

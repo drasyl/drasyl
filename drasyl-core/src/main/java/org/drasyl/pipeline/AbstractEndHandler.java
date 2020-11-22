@@ -22,6 +22,7 @@ import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 
@@ -33,13 +34,14 @@ import java.util.concurrent.CompletableFuture;
 @SuppressWarnings({ "common-java:DuplicatedBlocks" })
 abstract class AbstractEndHandler extends AbstractHandlerContext implements Handler {
     protected AbstractEndHandler(final String name,
-                              final DrasylConfig config,
-                              final Pipeline pipeline,
-                              final Scheduler scheduler,
-                              final Identity identity,
-                              final TypeValidator inboundValidator,
-                              final TypeValidator outboundValidator) {
-        super(name, config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
+                                 final DrasylConfig config,
+                                 final Pipeline pipeline,
+                                 final Scheduler scheduler,
+                                 final Identity identity,
+                                 final PeersManager peersManager,
+                                 final TypeValidator inboundValidator,
+                                 final TypeValidator outboundValidator) {
+        super(name, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
     }
 
     @Override

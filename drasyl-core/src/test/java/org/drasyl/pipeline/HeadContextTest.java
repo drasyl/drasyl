@@ -23,6 +23,7 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
+import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.codec.ObjectHolder;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.junit.jupiter.api.Nested;
@@ -56,6 +57,8 @@ class HeadContextTest {
     @Mock
     private Identity identity;
     @Mock
+    private PeersManager peersManager;
+    @Mock
     private TypeValidator inboundValidator;
     @Mock
     private TypeValidator outboundValidator;
@@ -66,14 +69,14 @@ class HeadContextTest {
     class InGeneral {
         @Test
         void shouldReturnSelfAsHandler() {
-            final HeadContext headContext = new HeadContext(config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
+            final HeadContext headContext = new HeadContext(config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
 
             assertEquals(headContext, headContext.handler());
         }
 
         @Test
         void shouldDoNothingOnHandlerAdded() {
-            final HeadContext headContext = new HeadContext(config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
+            final HeadContext headContext = new HeadContext(config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
 
             headContext.handlerAdded(ctx);
 
@@ -82,7 +85,7 @@ class HeadContextTest {
 
         @Test
         void shouldDoNothingOnHandlerRemoved() {
-            final HeadContext headContext = new HeadContext(config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
+            final HeadContext headContext = new HeadContext(config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
 
             headContext.handlerRemoved(ctx);
 
@@ -94,7 +97,7 @@ class HeadContextTest {
     class OnWrite {
         @Test
         void shouldSkipOnFutureCompleted() {
-            final HeadContext headContext = new HeadContext(config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
+            final HeadContext headContext = new HeadContext(config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
             final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
             final ObjectHolder msg = ObjectHolder.of(byte[].class, new byte[]{});
 
@@ -107,7 +110,7 @@ class HeadContextTest {
 
         @Test
         void shouldWriteCompleteExceptionallyIfFutureIsNotCompleted() {
-            final HeadContext headContext = new HeadContext(config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
+            final HeadContext headContext = new HeadContext(config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
             final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
             final ObjectHolder msg = ObjectHolder.of(byte[].class, new byte[]{});
 
@@ -120,7 +123,7 @@ class HeadContextTest {
 
         @Test
         void shouldCompleteFutureAndNothingElseOnAutoSwallow() {
-            final HeadContext headContext = new HeadContext(config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
+            final HeadContext headContext = new HeadContext(config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
             final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
             final AutoSwallow msg = new AutoSwallow() {
             };
@@ -136,7 +139,7 @@ class HeadContextTest {
     class OnException {
         @Test
         void shouldPassthroughsOnException() {
-            final HeadContext headContext = new HeadContext(config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
+            final HeadContext headContext = new HeadContext(config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
             final Exception exception = mock(Exception.class);
 
             headContext.exceptionCaught(ctx, exception);
@@ -149,7 +152,7 @@ class HeadContextTest {
     class OnEvent {
         @Test
         void shouldPassthroughsOnEvent() {
-            final HeadContext headContext = new HeadContext(config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
+            final HeadContext headContext = new HeadContext(config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
             final Event event = mock(Event.class);
 
             headContext.eventTriggered(ctx, event, future);
@@ -162,7 +165,7 @@ class HeadContextTest {
     class OnRead {
         @Test
         void shouldPassthroughsOnRead() {
-            final HeadContext headContext = new HeadContext(config, pipeline, scheduler, identity, inboundValidator, outboundValidator);
+            final HeadContext headContext = new HeadContext(config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
             final CompressedPublicKey sender = mock(CompressedPublicKey.class);
             final Object msg = mock(Object.class);
 

@@ -60,9 +60,9 @@ class LoopbackInboundMessageSinkHandlerTest {
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                 config,
                 identity,
-                TypeValidator.ofInboundValidator(config),
+                peersManager, TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                new LoopbackInboundMessageSinkHandler(new AtomicBoolean(false), peersManager, Set.of())
+                new LoopbackInboundMessageSinkHandler(new AtomicBoolean(false), Set.of())
         );
         final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
 
@@ -76,9 +76,9 @@ class LoopbackInboundMessageSinkHandlerTest {
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                 config,
                 identity,
-                TypeValidator.ofInboundValidator(config),
+                peersManager, TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                new LoopbackInboundMessageSinkHandler(new AtomicBoolean(true), peersManager, Set.of())
+                new LoopbackInboundMessageSinkHandler(new AtomicBoolean(true), Set.of())
         );
         final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
 
@@ -96,9 +96,9 @@ class LoopbackInboundMessageSinkHandlerTest {
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                 config,
                 identity,
-                TypeValidator.ofInboundValidator(config),
+                peersManager, TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                new LoopbackInboundMessageSinkHandler(new AtomicBoolean(true), peersManager, Set.of())
+                new LoopbackInboundMessageSinkHandler(new AtomicBoolean(true), Set.of())
         );
         final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
         final CompletableFuture<Void> future = pipeline.processInbound(message);
@@ -118,9 +118,9 @@ class LoopbackInboundMessageSinkHandlerTest {
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                 config,
                 identity,
-                TypeValidator.ofInboundValidator(config),
+                peersManager, TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                new LoopbackInboundMessageSinkHandler(new AtomicBoolean(true), peersManager, Set.of())
+                new LoopbackInboundMessageSinkHandler(new AtomicBoolean(true), Set.of())
         );
         final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
         final CompletableFuture<Void> future = pipeline.processInbound(message);
@@ -140,9 +140,9 @@ class LoopbackInboundMessageSinkHandlerTest {
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                 config,
                 identity,
-                TypeValidator.ofInboundValidator(config),
+                peersManager, TypeValidator.ofInboundValidator(config),
                 TypeValidator.ofOutboundValidator(config),
-                new LoopbackInboundMessageSinkHandler(new AtomicBoolean(true), peersManager, Set.of())
+                new LoopbackInboundMessageSinkHandler(new AtomicBoolean(true), Set.of())
         );
         final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
         final CompletableFuture<Void> future = pipeline.processInbound(message);

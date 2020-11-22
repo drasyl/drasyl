@@ -19,7 +19,6 @@
 package org.drasyl.pipeline;
 
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.Message;
 import org.drasyl.pipeline.address.Address;
@@ -36,12 +35,9 @@ import static org.drasyl.util.FutureUtil.toFuture;
 public class SuperPeerInboundMessageSinkHandler extends SimpleInboundHandler<Message, Address> {
     public static final String SUPER_PEER_INBOUND_MESSAGE_SINK_HANDLER = "SUPER_PEER_INBOUND_MESSAGE_SINK_HANDLER";
     private final PeerChannelGroup channelGroup;
-    private final PeersManager peersManager;
 
-    public SuperPeerInboundMessageSinkHandler(final PeerChannelGroup channelGroup,
-                                              final PeersManager peersManager) {
+    public SuperPeerInboundMessageSinkHandler(final PeerChannelGroup channelGroup) {
         this.channelGroup = channelGroup;
-        this.peersManager = peersManager;
     }
 
     @Override
@@ -53,7 +49,7 @@ public class SuperPeerInboundMessageSinkHandler extends SimpleInboundHandler<Mes
             ctx.fireRead(sender, msg, future);
         }
         else {
-            final CompressedPublicKey superPeer = peersManager.getSuperPeerKey();
+            final CompressedPublicKey superPeer = ctx.peersManager().getSuperPeerKey();
             if (superPeer != null) {
                 try {
                     FutureUtil.completeOnAllOf(future, toFuture(channelGroup.writeAndFlush(superPeer, msg)));
