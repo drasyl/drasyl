@@ -16,17 +16,24 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.peer.connection.localhost;
 
 import io.reactivex.rxjava3.core.Scheduler;
 import io.reactivex.rxjava3.disposables.Disposable;
+import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.event.NodeDownEvent;
+import org.drasyl.event.NodeUnrecoverableErrorEvent;
+import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
+import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeerInformation;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.Pipeline;
+import org.drasyl.peer.connection.message.Message;
+import org.drasyl.pipeline.EmbeddedPipeline;
+import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.pipeline.codec.TypeValidator;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -50,11 +57,9 @@ import static java.nio.file.StandardWatchEventKinds.ENTRY_MODIFY;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.drasyl.peer.connection.localhost.LocalHostDiscovery.LOCAL_HOST_DISCOVERY_COMMUNICATION_OCCURRED;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.io.FileMatchers.anExistingFile;
-import static org.junit.jupiter.api.Assertions.assertFalse;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
@@ -63,6 +68,16 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class LocalHostDiscoveryTest {
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private DrasylConfig config;
+    @Mock(answer = RETURNS_DEEP_STUBS)
+    private Identity identity;
+    @Mock
+    private TypeValidator inboundValidator;
+    @Mock
+    private TypeValidator outboundValidator;
+    @Mock
+    private PeersManager peersManager;
     private final Duration leaseTime = ofSeconds(60);
     private final AtomicBoolean doScan = new AtomicBoolean();
     @Mock(answer = Answers.RETURNS_DEEP_STUBS)
@@ -70,70 +85,65 @@ class LocalHostDiscoveryTest {
     @Mock
     private CompressedPublicKey ownPublicKey;
     @Mock
-    private PeersManager peersManager;
-    @Mock
     private Set<Endpoint> endpoints;
     @Mock
     private Scheduler scheduler;
-    private AtomicBoolean opened = new AtomicBoolean();
     @Mock
     private Disposable watchDisposable;
     @Mock
     private Disposable postDisposable;
-    @Mock
-    private Pipeline pipeline;
-    private LocalHostDiscovery underTest;
 
     @Nested
-    class Open {
+    class StartDiscovery {
         @Test
-        void shouldSetOpenToTrue() {
-            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, endpoints, opened, doScan, scheduler, watchDisposable, postDisposable, pipeline);
-            underTest.open();
-
-            assertTrue(opened.get());
-        }
-
-        @Test
-        @SuppressWarnings("all")
-        void shouldCreateDiscoveryDirectory() {
-            when(discoveryPath.toFile().exists()).thenReturn(false);
-
-            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, endpoints, opened, doScan, scheduler, watchDisposable, postDisposable, pipeline);
-            underTest.open();
-
-            verify(discoveryPath.toFile()).mkdirs();
-        }
-
-        @Test
-        void shouldTryToRegisterAWatchService() throws IOException {
+        void shouldStartDiscoveryOnNodeUpEvent(@Mock final NodeUpEvent event) {
             when(discoveryPath.toFile().exists()).thenReturn(true);
             when(discoveryPath.toFile().isDirectory()).thenReturn(true);
             when(discoveryPath.toFile().canRead()).thenReturn(true);
             when(discoveryPath.toFile().canWrite()).thenReturn(true);
 
-            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, endpoints, opened, doScan, scheduler, watchDisposable, postDisposable, pipeline);
-            underTest.open();
+            final LocalHostDiscovery handler = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, endpoints, doScan, scheduler, watchDisposable, postDisposable);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+
+            pipeline.processInbound(event).join();
+
+            verify(scheduler).schedulePeriodicallyDirect(any(), eq(0L), eq(5L), eq(SECONDS));
+        }
+
+        @Test
+        void shouldTryToRegisterAWatchService(@Mock final NodeUpEvent event) throws IOException {
+            when(discoveryPath.toFile().exists()).thenReturn(true);
+            when(discoveryPath.toFile().isDirectory()).thenReturn(true);
+            when(discoveryPath.toFile().canRead()).thenReturn(true);
+            when(discoveryPath.toFile().canWrite()).thenReturn(true);
+
+            final LocalHostDiscovery handler = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, Set.of(Endpoint.of("ws://localhost:123#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")), doScan, scheduler, watchDisposable, postDisposable);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+
+            pipeline.processInbound(event).join();
 
             verify(discoveryPath).register(any(), eq(ENTRY_CREATE), eq(ENTRY_MODIFY), eq(ENTRY_DELETE));
         }
 
         @Test
-        void shouldScheduleTasksForPollingWatchServiceAndPostingOwnInformation() {
+        void shouldScheduleTasksForPollingWatchServiceAndPostingOwnInformation(@Mock final NodeUpEvent event) {
             when(discoveryPath.toFile().exists()).thenReturn(true);
             when(discoveryPath.toFile().isDirectory()).thenReturn(true);
             when(discoveryPath.toFile().canRead()).thenReturn(true);
             when(discoveryPath.toFile().canWrite()).thenReturn(true);
 
-            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, endpoints, opened, doScan, scheduler, watchDisposable, postDisposable, pipeline);
-            underTest.open();
+            final LocalHostDiscovery handler = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, Set.of(Endpoint.of("ws://localhost:123#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")), doScan, scheduler, watchDisposable, postDisposable);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+
+            pipeline.processInbound(event).join();
 
             verify(scheduler).schedulePeriodicallyDirect(any(), eq(0L), eq(5L), eq(SECONDS));
             verify(scheduler).schedulePeriodicallyDirect(any(), eq(0L), eq(ofSeconds(55L).toMillis()), eq(MILLISECONDS));
         }
 
         @Test
-        void scheduledTasksShouldPollWatchServiceAndPostOwnInformationToFileSystem(@TempDir final Path dir) throws IOException {
+        void scheduledTasksShouldPollWatchServiceAndPostOwnInformationToFileSystem(@TempDir final Path dir,
+                                                                                   @Mock final NodeUpEvent event) throws IOException {
             final Path path = Paths.get(dir.toString(), "03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a.json");
             when(discoveryPath.toFile().exists()).thenReturn(true);
             when(discoveryPath.toFile().isDirectory()).thenReturn(true);
@@ -149,8 +159,10 @@ class LocalHostDiscoveryTest {
                 return null;
             });
 
-            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, Set.of(Endpoint.of("ws://localhost:123#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")), opened, doScan, scheduler, watchDisposable, postDisposable, pipeline);
-            underTest.open();
+            final LocalHostDiscovery handler = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, Set.of(Endpoint.of("ws://localhost:123#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")), doScan, scheduler, watchDisposable, postDisposable);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+
+            pipeline.processInbound(event).join();
 
             verify(discoveryPath.getFileSystem().newWatchService()).poll();
             assertThat(path.toFile(), anExistingFile());
@@ -158,42 +170,59 @@ class LocalHostDiscoveryTest {
     }
 
     @Nested
-    class Close {
+    class StopDiscovery {
         @Test
-        void shouldSetOpenToFalse() {
-            opened = new AtomicBoolean(true);
-            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, endpoints, opened, doScan, scheduler, watchDisposable, postDisposable, pipeline);
+        void shouldStopDiscoveryOnNodeUnrecoverableErrorEvent(@Mock final NodeUnrecoverableErrorEvent event,
+                                                              @Mock final HandlerContext ctx) {
+            final LocalHostDiscovery handler = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, endpoints, doScan, scheduler, watchDisposable, postDisposable);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
 
-            underTest.close();
+            pipeline.processInbound(event).join();
 
-            assertFalse(opened.get());
+            verify(watchDisposable).dispose();
+            verify(postDisposable).dispose();
         }
 
         @Test
-        void shouldRemoveAllHandlersAndDisposeAllTasksAndSubscriptions() {
-            opened = new AtomicBoolean(true);
-            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, endpoints, opened, doScan, scheduler, watchDisposable, postDisposable, pipeline);
+        void shouldStopDiscoveryOnNodeDownEvent(@Mock final NodeDownEvent event,
+                                                @Mock final HandlerContext ctx) {
+            final LocalHostDiscovery handler = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, endpoints, doScan, scheduler, watchDisposable, postDisposable);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
 
-            underTest.close();
+            pipeline.processInbound(event).join();
 
-            verify(pipeline).remove(LOCAL_HOST_DISCOVERY_COMMUNICATION_OCCURRED);
             verify(watchDisposable).dispose();
             verify(postDisposable).dispose();
         }
     }
 
     @Nested
+    class MessagePassing {
+        @Test
+        void shouldScheduleScanOnOutgoingMessage(@Mock final CompressedPublicKey recipient,
+                                                 @Mock(answer = RETURNS_DEEP_STUBS) final Message message) {
+            final LocalHostDiscovery handler = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, endpoints, new AtomicBoolean(true), scheduler, watchDisposable, postDisposable);
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+
+            pipeline.processOutbound(recipient, message).join();
+
+            verify(scheduler).scheduleDirect(any());
+        }
+    }
+
+    @Nested
     class Scan {
         @Test
-        void shouldScanDirectory(@TempDir final Path dir) throws IOException, CryptoException {
+        void shouldScanDirectory(@TempDir final Path dir,
+                                 @Mock(answer = RETURNS_DEEP_STUBS) final HandlerContext ctx) throws IOException, CryptoException {
             when(discoveryPath.toFile()).thenReturn(dir.toFile());
             final Path path = Paths.get(dir.toString(), "03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a.json");
             Files.writeString(path, "{\"endpoints\":[\"ws://localhost:123#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22\"]}", StandardOpenOption.CREATE);
 
-            underTest = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, peersManager, Set.of(Endpoint.of("ws://localhost:123#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")), new AtomicBoolean(true), new AtomicBoolean(true), scheduler, watchDisposable, postDisposable, pipeline);
-            underTest.scan();
+            final LocalHostDiscovery handler = new LocalHostDiscovery(discoveryPath, leaseTime, ownPublicKey, Set.of(Endpoint.of("ws://localhost:123#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22")), new AtomicBoolean(true), scheduler, watchDisposable, postDisposable);
+            handler.scan(ctx);
 
-            verify(peersManager).setPeerInformation(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"), PeerInformation.of(Set.of(Endpoint.of("ws://localhost:123#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))));
+            verify(ctx.peersManager()).setPeerInformation(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"), PeerInformation.of(Set.of(Endpoint.of("ws://localhost:123#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))));
         }
     }
 }

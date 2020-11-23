@@ -36,7 +36,6 @@ import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
-import org.drasyl.peer.connection.localhost.LocalHostDiscovery;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -416,7 +415,7 @@ class DrasylNodeIT {
     }
 
     @Nested
-    class TestLocalHostDiscovery {
+    class TestLocalHostDiscoveryOld {
         /**
          * Network Layout:
          * <pre>
@@ -506,8 +505,8 @@ class DrasylNodeIT {
             }
 
             /**
-             * This test checks whether the {@link LocalHostDiscovery} emits the correct {@link
-             * PeerEvent}s after communication occurred.
+             * This test checks whether the {@link org.drasyl.peer.connection.localhost.LocalHostDiscovery}
+             * emits the correct {@link PeerEvent}s after communication occurred.
              */
             @Disabled("Fails in CI for unknown reasons")
             @Test

@@ -38,7 +38,6 @@ import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.client.SuperPeerClient;
-import org.drasyl.peer.connection.localhost.LocalHostDiscovery;
 import org.drasyl.peer.connection.message.QuitMessage;
 import org.drasyl.peer.connection.server.Server;
 import org.drasyl.pipeline.DrasylPipeline;
@@ -181,10 +180,6 @@ public abstract class DrasylNode {
                 this.components.add(new Server(identity, pipeline, peersManager, this.config,
                         channelGroup, LazyWorkerGroupHolder.INSTANCE, LazyBossGroupHolder.INSTANCE,
                         endpoints, acceptNewConnections::get));
-            }
-            if (config.isLocalHostDiscoveryEnabled()) {
-                this.components.add(new LocalHostDiscovery(this.config, identity.getPublicKey(),
-                        peersManager, endpoints, pipeline));
             }
 
             this.pluginManager = new PluginManager(config, identity, pipeline);
