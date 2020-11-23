@@ -52,7 +52,7 @@ review:
     DRASYL_PROOF_OF_WORK: 3338929
     DRASYL_PUBLIC_KEY: 031a31ad3c6e04c5755c7cdd266759c27be9e96d2e42a9063d4e816643bfd37f8c
     # DRASYL_PRIVATE_KEY is defined securely in GitLab CI/CD Settings
-    JAVA_OPTS: "-Dio.netty.leakDetectionLevel=PARANOID"
+    JAVA_OPTS: "-Dio.netty.leakDetectionLevel=PARANOID -Dlogback.configurationFile=/usr/local/share/drasyl/logback.xml"
   environment:
     name: review/$CI_COMMIT_REF_NAME
     url: https://$CI_ENVIRONMENT_SLUG.$APP_HOST
@@ -92,7 +92,7 @@ staging:
     DRASYL_PROOF_OF_WORK: 10724607
     DRASYL_PUBLIC_KEY: 03096ae3080a369829a44847d5af1f652bef3f9921e9e1bbad64970babe6d3c502
     # DRASYL_PRIVATE_KEY is defined securely in GitLab CI/CD Settings
-    JAVA_OPTS: "-Dio.netty.leakDetectionLevel=PARANOID"
+    JAVA_OPTS: "-Dio.netty.leakDetectionLevel=PARANOID -Dlogback.configurationFile=/usr/local/share/drasyl/logback.xml"
   environment:
     name: staging
     url: https://$CI_ENVIRONMENT_SLUG.$APP_HOST
