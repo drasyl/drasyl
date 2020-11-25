@@ -16,27 +16,27 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.pipeline;
+package org.drasyl.handler;
 
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
+import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.message.Message;
-import org.drasyl.pipeline.address.Address;
+import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.codec.TypeValidator;
-import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
-class OtherNetworkFilterTest {
+class HopCountGuardTest {
     @Mock
     private DrasylConfig config;
     @Mock
@@ -49,32 +49,35 @@ class OtherNetworkFilterTest {
     private TypeValidator outboundValidator;
 
     @Test
-    void shouldDropMessagesFromOtherNetworks(@Mock(answer = RETURNS_DEEP_STUBS) final Message message) throws InterruptedException {
-        when(config.getNetworkId()).thenReturn(123);
-        when(message.getNetworkId()).thenReturn(456);
+    void shouldPassMessagesThatHaveNotReachedTheirHopCountLimitAndIncrementHopCount(@Mock final CompressedPublicKey address,
+                                                                                    @Mock final ApplicationMessage message) {
+        when(config.getMessageHopLimit()).thenReturn((short) 2);
+        when(message.getHopCount()).thenReturn((short) 1);
 
-        final OtherNetworkFilter handler = OtherNetworkFilter.INSTANCE;
+        final HopCountGuard handler = HopCountGuard.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
+        final TestObserver<Object> outboundMessages = pipeline.outboundOnlyMessages().test();
 
-        pipeline.processInbound(message);
+        pipeline.processOutbound(address, message);
 
-        inboundMessages.await(1, SECONDS);
-        inboundMessages.assertNoValues();
+        outboundMessages.awaitCount(1).assertValueCount(1);
+        outboundMessages.assertValue(m -> m instanceof ApplicationMessage);
+        verify(message).incrementHopCount();
     }
 
     @Test
-    void shouldPassMessagesFromSameNetwork(@Mock(answer = RETURNS_DEEP_STUBS) final Message message) {
-        when(config.getNetworkId()).thenReturn(123);
-        when(message.getNetworkId()).thenReturn(123);
+    void shouldDiscardMessagesThatHaveReachedTheirHopCountLimit(@Mock final CompressedPublicKey address,
+                                                                @Mock final ApplicationMessage message) throws InterruptedException {
+        when(config.getMessageHopLimit()).thenReturn((short) 1);
+        when(message.getHopCount()).thenReturn((short) 1);
 
-        final OtherNetworkFilter handler = OtherNetworkFilter.INSTANCE;
+        final HopCountGuard handler = HopCountGuard.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
+        final TestObserver<Object> outboundMessages = pipeline.outboundOnlyMessages().test();
 
-        pipeline.processInbound(message);
+        pipeline.processOutbound(address, message);
 
-        inboundMessages.awaitCount(1).assertValueCount(1);
-        inboundMessages.assertValue(Pair.of(message.getSender(), message));
+        outboundMessages.await(1, SECONDS);
+        outboundMessages.assertNoValues();
     }
 }
