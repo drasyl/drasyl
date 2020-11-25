@@ -20,6 +20,7 @@ package org.drasyl.pipeline;
 
 import org.drasyl.event.Event;
 import org.drasyl.pipeline.address.Address;
+import org.drasyl.pipeline.skeleton.HandlerAdapter;
 
 import java.util.concurrent.CompletableFuture;
 

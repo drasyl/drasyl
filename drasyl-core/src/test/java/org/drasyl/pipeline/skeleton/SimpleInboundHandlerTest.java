@@ -34,6 +34,7 @@ import org.drasyl.peer.connection.message.MessageId;
 import org.drasyl.peer.connection.message.UserAgent;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.pipeline.HandlerMask;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.ApplicationMessage2ObjectHolderHandler;
 import org.drasyl.pipeline.codec.DefaultCodec;
@@ -53,6 +54,7 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -222,6 +224,19 @@ class SimpleInboundHandlerTest {
 
         eventTestObserver.awaitCount(1).assertValueCount(1);
         eventTestObserver.assertValue(event);
+    }
+
+    @Test
+    void shouldReturnCorrectHandlerMask() {
+        assertEquals(HandlerMask.READ_MASK, HandlerMask.mask(SimpleInboundHandler.class));
+    }
+
+    @Test
+    void shouldReturnCorrectHandlerMaskForEventAwareHandler() {
+        final int mask = HandlerMask.READ_MASK
+                | HandlerMask.EVENT_TRIGGERED_MASK;
+
+        assertEquals(mask, HandlerMask.mask(SimpleInboundEventAwareHandler.class));
     }
 
     static class MyMessage implements Message {

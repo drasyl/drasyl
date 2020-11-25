@@ -30,12 +30,18 @@ import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 
+import static org.drasyl.pipeline.HandlerMask.EVENT_TRIGGERED_MASK;
+import static org.drasyl.pipeline.HandlerMask.EXCEPTION_CAUGHT_MASK;
+import static org.drasyl.pipeline.HandlerMask.READ_MASK;
+import static org.drasyl.pipeline.HandlerMask.WRITE_MASK;
+
 @SuppressWarnings({ "java:S107", "java:S3077" })
 abstract class AbstractHandlerContext implements HandlerContext {
     private static final Logger LOG = LoggerFactory.getLogger(AbstractHandlerContext.class);
     private final DrasylConfig config;
     private final Object prevLock = new Object();
     private final Object nextLock = new Object();
+    private Integer mask;
     private final String name;
     private final Pipeline pipeline;
     private final Scheduler scheduler;
@@ -116,7 +122,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
             throw (PipelineException) cause;
         }
 
-        final AbstractHandlerContext inboundCtx = findNextInbound();
+        final AbstractHandlerContext inboundCtx = findNextInbound(EXCEPTION_CAUGHT_MASK);
         try {
             if (inboundCtx != null) {
                 inboundCtx.handler().exceptionCaught(inboundCtx, cause);
@@ -133,11 +139,15 @@ abstract class AbstractHandlerContext implements HandlerContext {
     }
 
     /**
-     * Finds the next {@link AbstractHandlerContext} for inbound messages and events.
+     * Finds the next {@link AbstractHandlerContext} for inbound messages and events that matches
+     * the given {@code handlerMask}.
+     *
+     * @param handlerMask the handler mask that must be matched
      */
-    AbstractHandlerContext findNextInbound() {
+    AbstractHandlerContext findNextInbound(final int handlerMask) {
         AbstractHandlerContext nextInbound = next;
-        while (nextInbound != null && nextInbound.handler() == null) {
+        while (nextInbound != null && (nextInbound.handler() == null
+                || (nextInbound.getMask() & handlerMask) == 0)) {
             nextInbound = nextInbound.getNext();
         }
 
@@ -145,11 +155,15 @@ abstract class AbstractHandlerContext implements HandlerContext {
     }
 
     /**
-     * Finds the previous {@link AbstractHandlerContext} for outbound messages.
+     * Finds the previous {@link AbstractHandlerContext} for outbound messages that matches the
+     * given {@code handlerMask}.
+     *
+     * @param handlerMask the handler mask that must be matched
      */
-    AbstractHandlerContext findPrevOutbound() {
+    AbstractHandlerContext findPrevOutbound(final int handlerMask) {
         AbstractHandlerContext prevOutbound = prev;
-        while (prevOutbound != null && prevOutbound.handler() == null) {
+        while (prevOutbound != null && (prevOutbound.handler() == null
+                || (prevOutbound.getMask() & handlerMask) == 0)) {
             prevOutbound = prevOutbound.getPrev();
         }
 
@@ -166,7 +180,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
     private CompletableFuture<Void> invokeRead(final Address sender,
                                                final Object msg,
                                                final CompletableFuture<Void> future) {
-        final AbstractHandlerContext inboundCtx = findNextInbound();
+        final AbstractHandlerContext inboundCtx = findNextInbound(READ_MASK);
         try {
             if (inboundCtx != null) {
                 inboundCtx.handler().read(inboundCtx, sender, msg, future);
@@ -191,7 +205,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
 
     private CompletableFuture<Void> invokeEventTriggered(final Event event,
                                                          final CompletableFuture<Void> future) {
-        final AbstractHandlerContext inboundCtx = findNextInbound();
+        final AbstractHandlerContext inboundCtx = findNextInbound(EVENT_TRIGGERED_MASK);
         try {
             if (inboundCtx != null) {
                 inboundCtx.handler().eventTriggered(inboundCtx, event, future);
@@ -218,7 +232,7 @@ abstract class AbstractHandlerContext implements HandlerContext {
     private CompletableFuture<Void> invokeWrite(final Address recipient,
                                                 final Object msg,
                                                 final CompletableFuture<Void> future) {
-        final AbstractHandlerContext outboundCtx = findPrevOutbound();
+        final AbstractHandlerContext outboundCtx = findPrevOutbound(WRITE_MASK);
         try {
             if (outboundCtx != null) {
                 outboundCtx.handler().write(outboundCtx, recipient, msg, future);
@@ -268,5 +282,14 @@ abstract class AbstractHandlerContext implements HandlerContext {
     @Override
     public TypeValidator outboundValidator() {
         return this.outboundValidator;
+    }
+
+    Integer getMask() {
+        // It is required to do this lazy at runtime to allow also anonymous classes to override the {@link Skip} annotation.
+        if (mask == null) {
+            mask = HandlerMask.mask(this.handler().getClass());
+        }
+
+        return mask;
     }
 }

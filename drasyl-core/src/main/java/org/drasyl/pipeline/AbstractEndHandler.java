@@ -59,6 +59,7 @@ abstract class AbstractEndHandler extends AbstractHandlerContext implements Hand
         // skip
     }
 
+    @Skip
     @Override
     public void read(final HandlerContext ctx,
                      final Address sender,
@@ -68,6 +69,7 @@ abstract class AbstractEndHandler extends AbstractHandlerContext implements Hand
         ctx.fireRead(sender, msg, future);
     }
 
+    @Skip
     @Override
     public void eventTriggered(final HandlerContext ctx,
                                final Event event,
@@ -76,12 +78,14 @@ abstract class AbstractEndHandler extends AbstractHandlerContext implements Hand
         ctx.fireEventTriggered(event, future);
     }
 
+    @Skip
     @Override
     public void exceptionCaught(final HandlerContext ctx, final Exception cause) {
         //skip
         ctx.fireExceptionCaught(cause);
     }
 
+    @Skip
     @Override
     public void write(final HandlerContext ctx,
                       final Address recipient,

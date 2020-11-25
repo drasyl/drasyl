@@ -30,6 +30,7 @@ import org.drasyl.peer.connection.message.MessageId;
 import org.drasyl.peer.connection.message.UserAgent;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.pipeline.HandlerMask;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.ApplicationMessage2ObjectHolderHandler;
 import org.drasyl.pipeline.codec.DefaultCodec;
@@ -46,11 +47,13 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SimpleOutboundHandlerTest {
+    private final int networkId = 1;
     @Mock
     private Identity identity;
     @Mock
@@ -58,7 +61,6 @@ class SimpleOutboundHandlerTest {
     @Mock
     private ProofOfWork proofOfWork;
     private DrasylConfig config;
-    private final int networkId = 1;
 
     @BeforeEach
     void setUp() {
@@ -138,6 +140,11 @@ class SimpleOutboundHandlerTest {
         outboundMessageTestObserver.awaitCount(1).assertValueCount(1);
         outboundMessageTestObserver.assertValue(new ApplicationMessage(networkId, sender, senderProofOfWork, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, payload.getClass().getName()), payload));
         inboundMessageTestObserver.assertNoValues();
+    }
+
+    @Test
+    void shouldReturnCorrectHandlerMask() {
+        assertEquals(HandlerMask.WRITE_MASK, HandlerMask.mask(SimpleOutboundHandler.class));
     }
 
     static class MyMessage implements Message {

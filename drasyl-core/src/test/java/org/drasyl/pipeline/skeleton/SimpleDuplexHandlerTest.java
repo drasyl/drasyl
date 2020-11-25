@@ -33,7 +33,9 @@ import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.MessageId;
 import org.drasyl.peer.connection.message.UserAgent;
 import org.drasyl.pipeline.EmbeddedPipeline;
+import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.pipeline.HandlerMask;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.ApplicationMessage2ObjectHolderHandler;
 import org.drasyl.pipeline.codec.DefaultCodec;
@@ -54,24 +56,67 @@ import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class SimpleDuplexHandlerTest {
+    private final int networkId = 1;
     @Mock
     private Identity identity;
     @Mock
     private PeersManager peersManager;
     private DrasylConfig config;
-    private final int networkId = 1;
 
     @BeforeEach
     void setUp() {
         config = DrasylConfig.newBuilder()
                 .networkId(1)
                 .build();
+    }
+
+    static class MyMessage implements Message {
+        @Override
+        public MessageId getId() {
+            return null;
+        }
+
+        @Override
+        public UserAgent getUserAgent() {
+            return null;
+        }
+
+        @Override
+        public int getNetworkId() {
+            return 0;
+        }
+
+        @Override
+        public CompressedPublicKey getSender() {
+            return null;
+        }
+
+        @Override
+        public ProofOfWork getProofOfWork() {
+            return null;
+        }
+
+        @Override
+        public CompressedPublicKey getRecipient() {
+            return null;
+        }
+
+        @Override
+        public short getHopCount() {
+            return 0;
+        }
+
+        @Override
+        public void incrementHopCount() {
+
+        }
     }
 
     @Nested
@@ -367,47 +412,22 @@ class SimpleDuplexHandlerTest {
             eventTestObserver.awaitCount(1).assertValueCount(1);
             eventTestObserver.assertValue(event);
         }
-    }
 
-    static class MyMessage implements Message {
-        @Override
-        public MessageId getId() {
-            return null;
+        @Test
+        void shouldReturnCorrectHandlerMask() {
+            final int mask = HandlerMask.ALL
+                    & ~HandlerMask.EXCEPTION_CAUGHT_MASK
+                    & ~HandlerMask.EVENT_TRIGGERED_MASK;
+
+            assertEquals(mask, HandlerMask.mask(SimpleDuplexHandler.class));
         }
 
-        @Override
-        public UserAgent getUserAgent() {
-            return null;
-        }
+        @Test
+        void shouldReturnCorrectHandlerMaskForEventAwareHandler() {
+            final int mask = HandlerMask.ALL
+                    & ~HandlerMask.EXCEPTION_CAUGHT_MASK;
 
-        @Override
-        public int getNetworkId() {
-            return 0;
-        }
-
-        @Override
-        public CompressedPublicKey getSender() {
-            return null;
-        }
-
-        @Override
-        public ProofOfWork getProofOfWork() {
-            return null;
-        }
-
-        @Override
-        public CompressedPublicKey getRecipient() {
-            return null;
-        }
-
-        @Override
-        public short getHopCount() {
-            return 0;
-        }
-
-        @Override
-        public void incrementHopCount() {
-
+            assertEquals(mask, HandlerMask.mask(SimpleDuplexEventAwareHandler.class));
         }
     }
 }

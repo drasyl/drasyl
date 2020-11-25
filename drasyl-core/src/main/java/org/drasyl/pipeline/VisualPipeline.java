@@ -38,8 +38,9 @@ public class VisualPipeline {
      * Prints the current inbound {@link Handler}s in the sequence of execution to the console.
      *
      * @param pipeline the pipeline that should be printed
+     * @param mask     the handler mask that should be fulfilled
      */
-    public static void printInboundOrder(final DefaultPipeline pipeline) {
+    public static void printInboundOrder(final DefaultPipeline pipeline, final int mask) {
         AbstractHandlerContext currentContext = pipeline.head.getNext();
 
         System.out.println("\nInbound Handler Order:");
@@ -47,7 +48,7 @@ public class VisualPipeline {
         printPretty("NETWORK", AnsiColor.COLOR_RED);
 
         for (; currentContext.getNext() != null;
-             currentContext = currentContext.findNextInbound()) {
+             currentContext = currentContext.findNextInbound(mask)) {
             printArrow(AnsiColor.COLOR_GREEN);
             printPretty(currentContext.name(), AnsiColor.COLOR_GREEN);
         }
@@ -61,8 +62,10 @@ public class VisualPipeline {
      * console.
      *
      * @param pipeline the pipeline that should be printed
+     * @param mask     the handler mask that should be fulfilled
      */
-    public static void printOnlySimpleInboundHandler(final DefaultPipeline pipeline) {
+    public static void printOnlySimpleInboundHandler(final DefaultPipeline pipeline,
+                                                     final int mask) {
         AbstractHandlerContext currentContext = pipeline.head;
 
         System.out.println("\nSimpleInbound Handler Order:");
@@ -71,7 +74,7 @@ public class VisualPipeline {
 
         for (;
              currentContext.getNext() != null;
-             currentContext = currentContext.findNextInbound()) {
+             currentContext = currentContext.findNextInbound(mask)) {
             if (currentContext.handler() instanceof SimpleInboundHandler) {
                 printArrow(AnsiColor.COLOR_GREEN);
                 printPretty(currentContext.name(), AnsiColor.COLOR_GREEN);
@@ -86,8 +89,9 @@ public class VisualPipeline {
      * Prints the current outbound {@link Handler}s in the sequence of execution to the console.
      *
      * @param pipeline the pipeline that should be printed
+     * @param mask     the handler mask that should be fulfilled
      */
-    public static void printOutboundOrder(final DefaultPipeline pipeline) {
+    public static void printOutboundOrder(final DefaultPipeline pipeline, final int mask) {
         AbstractHandlerContext currentContext = pipeline.tail.getPrev();
 
         System.out.println("\nOutbound Handler Order:");
@@ -96,7 +100,7 @@ public class VisualPipeline {
 
         for (;
              currentContext.getPrev() != null;
-             currentContext = currentContext.findPrevOutbound()) {
+             currentContext = currentContext.findPrevOutbound(mask)) {
             printArrow(AnsiColor.COLOR_BLUE);
             printPretty(currentContext.name(), AnsiColor.COLOR_BLUE);
         }
@@ -110,8 +114,10 @@ public class VisualPipeline {
      * the console.
      *
      * @param pipeline the pipeline that should be printed
+     * @param mask     the handler mask that should be fulfilled
      */
-    public static void printOnlySimpleOutboundHandler(final DefaultPipeline pipeline) {
+    public static void printOnlySimpleOutboundHandler(final DefaultPipeline pipeline,
+                                                      final int mask) {
         AbstractHandlerContext currentContext = pipeline.tail;
 
         System.out.println("\nSimpleOutbound Handler Order:");
@@ -120,7 +126,7 @@ public class VisualPipeline {
 
         for (;
              currentContext.getPrev() != null;
-             currentContext = currentContext.findPrevOutbound()) {
+             currentContext = currentContext.findPrevOutbound(mask)) {
             if (currentContext.handler() instanceof SimpleOutboundHandler || currentContext.handler() instanceof SimpleDuplexHandler) {
                 printArrow(AnsiColor.COLOR_BLUE);
                 printPretty(currentContext.name(), AnsiColor.COLOR_BLUE);
