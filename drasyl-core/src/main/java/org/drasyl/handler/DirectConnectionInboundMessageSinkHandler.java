@@ -16,25 +16,25 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.pipeline;
+package org.drasyl.handler;
 
+import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.Message;
+import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 
 /**
- * This handler filters out all messages received from other networks.
+ * This handler tries to process inbound messages via TCP-based direct connection to another peers.
  */
-public class OtherNetworkFilter extends SimpleInboundHandler<Message, Address> {
-    public static final OtherNetworkFilter INSTANCE = new OtherNetworkFilter();
-    public static final String OTHER_NETWORK_FILTER = "OTHER_NETWORK_FILTER";
-    private static final Logger LOG = LoggerFactory.getLogger(OtherNetworkFilter.class);
+public class DirectConnectionInboundMessageSinkHandler extends SimpleInboundHandler<Message, Address> {
+    public static final String DIRECT_CONNECTION_INBOUND_MESSAGE_SINK_HANDLER = "DIRECT_CONNECTION_INBOUND_MESSAGE_SINK_HANDLER";
+    private final PeerChannelGroup channelGroup;
 
-    private OtherNetworkFilter() {
+    public DirectConnectionInboundMessageSinkHandler(final PeerChannelGroup channelGroup) {
+        this.channelGroup = channelGroup;
     }
 
     @Override
@@ -42,12 +42,13 @@ public class OtherNetworkFilter extends SimpleInboundHandler<Message, Address> {
                                final Address sender,
                                final Message msg,
                                final CompletableFuture<Void> future) {
-        if (ctx.config().getNetworkId() == msg.getNetworkId()) {
-            ctx.fireRead(sender, msg, future);
-        }
-        else {
-            LOG.trace("Message from other network dropped: {}", msg);
-            future.completeExceptionally(new Exception("Message from other network dropped"));
-        }
+        channelGroup.writeAndFlush(msg.getRecipient(), msg).addListener(result -> {
+            if (result.isSuccess()) {
+                future.complete(null);
+            }
+            else {
+                ctx.fireRead(sender, msg, future);
+            }
+        });
     }
 }

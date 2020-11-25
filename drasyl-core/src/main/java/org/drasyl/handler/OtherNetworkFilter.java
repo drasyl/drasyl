@@ -16,28 +16,26 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.pipeline;
+package org.drasyl.handler;
 
-import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.Message;
+import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
-import org.drasyl.util.FutureUtil;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 
-import static org.drasyl.util.FutureUtil.toFuture;
-
 /**
- * This handler sends all inbound messages to the super peer.
+ * This handler filters out all messages received from other networks.
  */
-public class SuperPeerInboundMessageSinkHandler extends SimpleInboundHandler<Message, Address> {
-    public static final String SUPER_PEER_INBOUND_MESSAGE_SINK_HANDLER = "SUPER_PEER_INBOUND_MESSAGE_SINK_HANDLER";
-    private final PeerChannelGroup channelGroup;
+public class OtherNetworkFilter extends SimpleInboundHandler<Message, Address> {
+    public static final OtherNetworkFilter INSTANCE = new OtherNetworkFilter();
+    public static final String OTHER_NETWORK_FILTER = "OTHER_NETWORK_FILTER";
+    private static final Logger LOG = LoggerFactory.getLogger(OtherNetworkFilter.class);
 
-    public SuperPeerInboundMessageSinkHandler(final PeerChannelGroup channelGroup) {
-        this.channelGroup = channelGroup;
+    private OtherNetworkFilter() {
     }
 
     @Override
@@ -45,22 +43,12 @@ public class SuperPeerInboundMessageSinkHandler extends SimpleInboundHandler<Mes
                                final Address sender,
                                final Message msg,
                                final CompletableFuture<Void> future) {
-        if (ctx.identity().getPublicKey().equals(msg.getRecipient())) {
+        if (ctx.config().getNetworkId() == msg.getNetworkId()) {
             ctx.fireRead(sender, msg, future);
         }
         else {
-            final CompressedPublicKey superPeer = ctx.peersManager().getSuperPeerKey();
-            if (superPeer != null) {
-                try {
-                    FutureUtil.completeOnAllOf(future, toFuture(channelGroup.writeAndFlush(superPeer, msg)));
-                }
-                catch (final IllegalArgumentException e2) {
-                    ctx.fireRead(sender, msg, future);
-                }
-            }
-            else {
-                ctx.fireRead(sender, msg, future);
-            }
+            LOG.trace("Message from other network dropped: {}", msg);
+            future.completeExceptionally(new Exception("Message from other network dropped"));
         }
     }
 }

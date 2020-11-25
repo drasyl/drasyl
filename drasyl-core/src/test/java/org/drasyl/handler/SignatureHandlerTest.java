@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.pipeline;
+package org.drasyl.handler;
 
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
@@ -31,6 +31,7 @@ import org.drasyl.peer.connection.message.Message;
 import org.drasyl.peer.connection.message.MessageId;
 import org.drasyl.peer.connection.message.SignedMessage;
 import org.drasyl.peer.connection.message.UserAgent;
+import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.Pair;
@@ -58,8 +59,6 @@ class SignatureHandlerTest {
     private TypeValidator inboundValidator;
     @Mock
     private TypeValidator outboundValidator;
-    @Mock
-    private CompressedPublicKey sender;
     @Mock
     private ProofOfWork proofOfWork;
     @Mock
