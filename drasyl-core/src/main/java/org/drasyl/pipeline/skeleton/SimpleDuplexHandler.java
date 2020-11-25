@@ -19,8 +19,8 @@
 package org.drasyl.pipeline.skeleton;
 
 import org.drasyl.event.Event;
-import org.drasyl.pipeline.HandlerAdapter;
 import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.pipeline.Skip;
 import org.drasyl.pipeline.address.Address;
 
 import java.util.concurrent.CompletableFuture;
@@ -38,6 +38,14 @@ public abstract class SimpleDuplexHandler<I, O, A extends Address> extends Simpl
                                   final Class<? extends O> outboundMessageType,
                                   final Class<? extends A> addressType) {
         super(inboundMessageType, Event.class, outboundMessageType, addressType);
+    }
+
+    @Skip
+    @Override
+    public void eventTriggered(final HandlerContext ctx,
+                               final Event event,
+                               final CompletableFuture<Void> future) {
+        ctx.fireEventTriggered(event, future);
     }
 
     @Override

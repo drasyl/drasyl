@@ -27,8 +27,12 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.Answers;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -49,9 +53,9 @@ import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class AbstractHandlerContextTest {
-    @Mock
+    @Mock(answer = Answers.CALLS_REAL_METHODS)
     private AbstractHandlerContext prev;
-    @Mock
+    @Mock(answer = Answers.CALLS_REAL_METHODS)
     private AbstractHandlerContext next;
     @Mock
     private Handler handler;
@@ -212,7 +216,7 @@ class AbstractHandlerContextTest {
 
         ctx.fireExceptionCaught(exception);
 
-        verify(next, times(2)).handler();
+        verify(next, times(3)).handler();
         verify(newHandler).exceptionCaught(eq(next), eq(exception));
     }
 
@@ -228,7 +232,7 @@ class AbstractHandlerContextTest {
             }
         };
 
-        final AbstractHandlerContext actual = ctx.findNextInbound();
+        final AbstractHandlerContext actual = ctx.findNextInbound(HandlerMask.READ_MASK);
 
         assertEquals(next, actual);
     }
@@ -250,7 +254,7 @@ class AbstractHandlerContextTest {
 
         ctx.fireRead(sender, msg, future);
 
-        verify(next, times(2)).handler();
+        verify(next, times(3)).handler();
         verify(newHandler).read(eq(next), eq(sender), eq(msg), eq(future));
     }
 
@@ -272,7 +276,7 @@ class AbstractHandlerContextTest {
 
         ctx.fireRead(sender, msg, future);
 
-        verify(next, times(2)).handler();
+        verify(next, times(3)).handler();
         verify(newHandler).read(eq(next), eq(sender), eq(msg), eq(future));
         verify(next).fireExceptionCaught(isA(RuntimeException.class));
     }
@@ -293,7 +297,7 @@ class AbstractHandlerContextTest {
 
         ctx.fireEventTriggered(event, future);
 
-        verify(next, times(2)).handler();
+        verify(next, times(3)).handler();
         verify(newHandler).eventTriggered(eq(next), eq(event), eq(future));
     }
 
@@ -314,7 +318,7 @@ class AbstractHandlerContextTest {
 
         ctx.fireEventTriggered(event, future);
 
-        verify(next, times(2)).handler();
+        verify(next, times(3)).handler();
         verify(newHandler).eventTriggered(eq(next), eq(event), eq(future));
         verify(next).fireExceptionCaught(isA(RuntimeException.class));
     }
@@ -336,7 +340,7 @@ class AbstractHandlerContextTest {
 
         ctx.write(recipient, msg, future);
 
-        verify(prev, times(2)).handler();
+        verify(prev, times(3)).handler();
         verify(newHandler).write(eq(prev), eq(recipient), eq(msg), eq(future));
     }
 
@@ -358,7 +362,7 @@ class AbstractHandlerContextTest {
 
         ctx.write(recipient, msg, future);
 
-        verify(prev, times(2)).handler();
+        verify(prev, times(3)).handler();
         verify(newHandler).write(eq(prev), eq(recipient), eq(msg), eq(future));
         verify(prev).fireExceptionCaught(isA(RuntimeException.class));
     }
@@ -387,7 +391,7 @@ class AbstractHandlerContextTest {
         };
 
         final Handler newHandler = mock(Handler.class);
-        final AbstractHandlerContext context1 = mock(AbstractHandlerContext.class);
+        final AbstractHandlerContext context1 = mock(AbstractHandlerContext.class, Answers.CALLS_REAL_METHODS);
         context.setNextHandlerContext(context1);
         when(context1.handler()).thenReturn(newHandler);
         doThrow(PipelineException.class).when(newHandler).exceptionCaught(any(), any());
@@ -407,7 +411,7 @@ class AbstractHandlerContextTest {
         };
 
         final Handler newHandler = mock(Handler.class);
-        final AbstractHandlerContext context1 = mock(AbstractHandlerContext.class);
+        final AbstractHandlerContext context1 = mock(AbstractHandlerContext.class, Answers.CALLS_REAL_METHODS);
         context.setNextHandlerContext(context1);
         when(context1.handler()).thenReturn(newHandler);
         doThrow(IllegalArgumentException.class).when(newHandler).exceptionCaught(any(), any());
@@ -419,7 +423,7 @@ class AbstractHandlerContextTest {
 
     @Test
     void shouldSkipNullHandlerOnInbound() {
-        final AbstractHandlerContext context = mock(AbstractHandlerContext.class);
+        final AbstractHandlerContext context = mock(AbstractHandlerContext.class, Answers.CALLS_REAL_METHODS);
         when(next.handler()).thenReturn(null);
         when(next.getNext()).thenReturn(context);
         when(context.handler()).thenReturn(mock(Handler.class));
@@ -431,14 +435,14 @@ class AbstractHandlerContextTest {
             }
         };
 
-        final AbstractHandlerContext actual = ctx.findNextInbound();
+        final AbstractHandlerContext actual = ctx.findNextInbound(HandlerMask.READ_MASK);
 
         assertEquals(context, actual);
     }
 
     @Test
     void shouldSkipNullHandlerOnOutbound() {
-        final AbstractHandlerContext context = mock(AbstractHandlerContext.class);
+        final AbstractHandlerContext context = mock(AbstractHandlerContext.class, Answers.CALLS_REAL_METHODS);
         when(prev.handler()).thenReturn(null);
         when(prev.getPrev()).thenReturn(context);
         when(context.handler()).thenReturn(mock(Handler.class));
@@ -450,8 +454,67 @@ class AbstractHandlerContextTest {
             }
         };
 
-        final AbstractHandlerContext actual = ctx.findPrevOutbound();
+        final AbstractHandlerContext actual = ctx.findPrevOutbound(HandlerMask.WRITE_MASK);
 
         assertEquals(context, actual);
+    }
+
+    @Nested
+    class Skippable {
+        @ParameterizedTest
+        @ValueSource(ints = {
+                HandlerMask.EVENT_TRIGGERED_MASK,
+                HandlerMask.EXCEPTION_CAUGHT_MASK,
+                HandlerMask.READ_MASK,
+                HandlerMask.WRITE_MASK,
+                HandlerMask.ALL
+        })
+        void shouldSkipSkippableHandlerOnInbound(final int mask) {
+            final AbstractHandlerContext context = mock(AbstractHandlerContext.class);
+            when(next.handler()).thenReturn(mock(Handler.class));
+            when(next.getMask()).thenReturn(HandlerMask.ALL & ~mask);
+            when(next.getNext()).thenReturn(context);
+            when(context.handler()).thenReturn(mock(Handler.class));
+            when(context.getMask()).thenReturn(mask);
+
+            final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator) {
+                @Override
+                public Handler handler() {
+                    return handler;
+                }
+            };
+
+            final AbstractHandlerContext actual = ctx.findNextInbound(mask);
+
+            assertEquals(context, actual);
+        }
+
+        @ParameterizedTest
+        @ValueSource(ints = {
+                HandlerMask.EVENT_TRIGGERED_MASK,
+                HandlerMask.EXCEPTION_CAUGHT_MASK,
+                HandlerMask.READ_MASK,
+                HandlerMask.WRITE_MASK,
+                HandlerMask.ALL
+        })
+        void shouldSkipSkippableHandlerOnOutbound(final int mask) {
+            final AbstractHandlerContext context = mock(AbstractHandlerContext.class);
+            when(prev.handler()).thenReturn(mock(Handler.class));
+            when(prev.getMask()).thenReturn(HandlerMask.ALL & ~mask);
+            when(prev.getPrev()).thenReturn(context);
+            when(context.handler()).thenReturn(mock(Handler.class));
+            when(context.getMask()).thenReturn(mask);
+
+            final AbstractHandlerContext ctx = new AbstractHandlerContext(prev, next, name, config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator) {
+                @Override
+                public Handler handler() {
+                    return handler;
+                }
+            };
+
+            final AbstractHandlerContext actual = ctx.findPrevOutbound(mask);
+
+            assertEquals(context, actual);
+        }
     }
 }

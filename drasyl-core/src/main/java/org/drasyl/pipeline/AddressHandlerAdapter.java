@@ -20,6 +20,7 @@ package org.drasyl.pipeline;
 
 import io.netty.util.internal.TypeParameterMatcher;
 import org.drasyl.pipeline.address.Address;
+import org.drasyl.pipeline.skeleton.HandlerAdapter;
 
 /**
  * {@link HandlerAdapter} which allows to explicit only handle a specific type of address.

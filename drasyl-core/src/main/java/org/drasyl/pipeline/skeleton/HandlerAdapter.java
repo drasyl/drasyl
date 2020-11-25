@@ -16,9 +16,12 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.pipeline;
+package org.drasyl.pipeline.skeleton;
 
 import org.drasyl.event.Event;
+import org.drasyl.pipeline.Handler;
+import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.pipeline.Skip;
 import org.drasyl.pipeline.address.Address;
 
 import java.util.concurrent.CompletableFuture;
@@ -43,6 +46,7 @@ public class HandlerAdapter implements Handler {
         // Do nothing
     }
 
+    @Skip
     @Override
     public void read(final HandlerContext ctx,
                      final Address sender,
@@ -51,6 +55,7 @@ public class HandlerAdapter implements Handler {
         ctx.fireRead(sender, msg, future);
     }
 
+    @Skip
     @Override
     public void eventTriggered(final HandlerContext ctx,
                                final Event event,
@@ -58,11 +63,13 @@ public class HandlerAdapter implements Handler {
         ctx.fireEventTriggered(event, future);
     }
 
+    @Skip
     @Override
     public void exceptionCaught(final HandlerContext ctx, final Exception cause) {
         ctx.fireExceptionCaught(cause);
     }
 
+    @Skip
     @Override
     public void write(final HandlerContext ctx,
                       final Address recipient,

@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.pipeline;
+package org.drasyl.pipeline.skeleton;
 
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
@@ -25,6 +25,8 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.pipeline.EmbeddedPipeline;
+import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.util.Pair;
@@ -84,12 +86,12 @@ class HandlerAdapterTest {
     class Outbound {
         @Test
         void shouldPassthroughsOnWrite() {
-            final HandlerAdapter duplexHandler = new HandlerAdapter();
+            final HandlerAdapter handlerAdapter = new HandlerAdapter();
 
             final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
             final Object msg = mock(Object.class);
 
-            duplexHandler.write(ctx, recipient, msg, future);
+            handlerAdapter.write(ctx, recipient, msg, future);
 
             verify(ctx).write(eq(recipient), eq(msg), eq(future));
         }
@@ -99,34 +101,34 @@ class HandlerAdapterTest {
     class Inbound {
         @Test
         void shouldPassthroughsOnRead() {
-            final HandlerAdapter duplexHandler = new HandlerAdapter();
+            final HandlerAdapter handlerAdapter = new HandlerAdapter();
 
             final CompressedPublicKey sender = mock(CompressedPublicKey.class);
             final Object msg = mock(Object.class);
 
-            duplexHandler.read(ctx, sender, msg, future);
+            handlerAdapter.read(ctx, sender, msg, future);
 
             verify(ctx).fireRead(eq(sender), eq(msg), eq(future));
         }
 
         @Test
         void shouldPassthroughsOnEventTriggered() {
-            final HandlerAdapter duplexHandler = new HandlerAdapter();
+            final HandlerAdapter handlerAdapter = new HandlerAdapter();
 
             final Event event = mock(Event.class);
 
-            duplexHandler.eventTriggered(ctx, event, future);
+            handlerAdapter.eventTriggered(ctx, event, future);
 
             verify(ctx).fireEventTriggered(eq(event), eq(future));
         }
 
         @Test
         void shouldPassthroughsOnExceptionCaught() {
-            final HandlerAdapter duplexHandler = new HandlerAdapter();
+            final HandlerAdapter handlerAdapter = new HandlerAdapter();
 
             final Exception exception = mock(Exception.class);
 
-            duplexHandler.exceptionCaught(ctx, exception);
+            handlerAdapter.exceptionCaught(ctx, exception);
 
             verify(ctx).fireExceptionCaught(eq(exception));
         }

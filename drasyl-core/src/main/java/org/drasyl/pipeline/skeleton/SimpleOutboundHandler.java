@@ -22,7 +22,6 @@ import io.netty.util.internal.TypeParameterMatcher;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.pipeline.AddressHandlerAdapter;
 import org.drasyl.pipeline.Handler;
-import org.drasyl.pipeline.HandlerAdapter;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.pipeline.address.Address;

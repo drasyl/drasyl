@@ -21,8 +21,8 @@ package org.drasyl.pipeline.skeleton;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.message.ApplicationMessage;
-import org.drasyl.pipeline.HandlerAdapter;
 import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.pipeline.Skip;
 import org.drasyl.pipeline.address.Address;
 
 import java.util.concurrent.CompletableFuture;
@@ -59,6 +59,14 @@ public abstract class SimpleInboundHandler<I, A extends Address> extends SimpleI
     protected SimpleInboundHandler(final Class<? extends I> inboundMessageType,
                                    final Class<? extends A> addressType) {
         super(inboundMessageType, Event.class, addressType);
+    }
+
+    @Skip
+    @Override
+    public void eventTriggered(final HandlerContext ctx,
+                               final Event event,
+                               final CompletableFuture<Void> future) {
+        ctx.fireEventTriggered(event, future);
     }
 
     @Override
