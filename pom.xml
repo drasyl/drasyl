@@ -128,7 +128,7 @@
         <typesafe.config.version>1.4.1</typesafe.config.version>
         <jetbrains.annotations.version>20.1.0</jetbrains.annotations.version>
         <commons-codec.version>1.15</commons-codec.version>
-        <json-unit-assertj.version>2.20.0</json-unit-assertj.version>
+        <json-unit-assertj.version>2.22.0</json-unit-assertj.version>
         <commons-cli.version>1.4</commons-cli.version>
     </properties>
 
