@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.example.chat.cli;
+package org.drasyl.example.chat;
 
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
@@ -40,7 +40,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
  * send Text Messages to other drasyl Nodes running this Chat Application.
  */
 @SuppressWarnings({ "squid:S106", "java:S1141", "java:S3776" })
-public class Chat {
+public class ChatCli {
     private static final Scanner scanner = new Scanner(System.in);
     private static String prompt;
 
@@ -140,10 +140,10 @@ public class Chat {
     }
 
     static String newPrompt(final String prompt) {
-        Chat.prompt = prompt;
+        ChatCli.prompt = prompt;
         System.out.print(prompt + " ");
         final String result = scanner.nextLine();
-        Chat.prompt = null;
+        ChatCli.prompt = null;
         return result;
     }
 }
