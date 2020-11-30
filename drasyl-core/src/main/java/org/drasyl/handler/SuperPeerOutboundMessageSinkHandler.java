@@ -16,24 +16,27 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.pipeline;
+package org.drasyl.handler;
 
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.peer.connection.message.Message;
+import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
+import org.drasyl.util.FutureUtil;
 
 import java.util.concurrent.CompletableFuture;
 
+import static org.drasyl.util.FutureUtil.toFuture;
+
 /**
- * This handler tries to process outbound messages via TCP-based direct connection to another
- * peers.
+ * This handler sends all outbound messages to the super peer.
  */
-public class DirectConnectionOutboundMessageSinkHandler extends SimpleOutboundHandler<Message, CompressedPublicKey> {
-    public static final String DIRECT_CONNECTION_OUTBOUND_MESSAGE_SINK_HANDLER = "DIRECT_CONNECTION_OUTBOUND_MESSAGE_SINK_HANDLER";
+public class SuperPeerOutboundMessageSinkHandler extends SimpleOutboundHandler<Message, CompressedPublicKey> {
+    public static final String SUPER_PEER_OUTBOUND_MESSAGE_SINK_HANDLER = "SUPER_PEER_OUTBOUND_MESSAGE_SINK_HANDLER";
     private final PeerChannelGroup channelGroup;
 
-    public DirectConnectionOutboundMessageSinkHandler(final PeerChannelGroup channelGroup) {
+    public SuperPeerOutboundMessageSinkHandler(final PeerChannelGroup channelGroup) {
         this.channelGroup = channelGroup;
     }
 
@@ -42,14 +45,17 @@ public class DirectConnectionOutboundMessageSinkHandler extends SimpleOutboundHa
                                 final CompressedPublicKey recipient,
                                 final Message msg,
                                 final CompletableFuture<Void> future) {
-        channelGroup.writeAndFlush(recipient, msg).addListener(result -> {
-            if (result.isSuccess()) {
-                future.complete(null);
+        final CompressedPublicKey superPeer = ctx.peersManager().getSuperPeerKey();
+        if (superPeer != null) {
+            try {
+                FutureUtil.completeOnAllOf(future, toFuture(channelGroup.writeAndFlush(superPeer, msg)));
             }
-            else {
-                // no direct connection, pass to next handler
+            catch (final IllegalArgumentException e2) {
                 ctx.write(recipient, msg, future);
             }
-        });
+        }
+        else {
+            ctx.write(recipient, msg, future);
+        }
     }
 }
