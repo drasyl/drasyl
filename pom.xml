@@ -112,7 +112,7 @@
         <logback.version>1.2.3</logback.version>
         <junit.version>5.7.0</junit.version>
         <mockito.version>3.6.0</mockito.version>
-        <jackson.version>2.11.2</jackson.version>
+        <jackson.version>2.11.3</jackson.version>
         <hamcrest.version>2.2</hamcrest.version>
         <bouncycastle.version>1.67</bouncycastle.version>
         <awaitility.version>4.0.3</awaitility.version>
@@ -128,7 +128,7 @@
         <typesafe.config.version>1.4.1</typesafe.config.version>
         <jetbrains.annotations.version>20.1.0</jetbrains.annotations.version>
         <commons-codec.version>1.15</commons-codec.version>
-        <json-unit-assertj.version>2.20.0</json-unit-assertj.version>
+        <json-unit-assertj.version>2.22.0</json-unit-assertj.version>
         <commons-cli.version>1.4</commons-cli.version>
     </properties>
 
@@ -312,7 +312,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-assembly-plugin</artifactId>
-                    <version>3.2.0</version>
+                    <version>3.3.0</version>
                 </plugin>
                 <plugin>
                     <groupId>pl.project13.maven</groupId>
@@ -352,7 +352,7 @@
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
                     <artifactId>maven-javadoc-plugin</artifactId>
-                    <version>3.1.1</version>
+                    <version>3.2.0</version>
                 </plugin>
                 <plugin>
                     <groupId>org.apache.maven.plugins</groupId>
