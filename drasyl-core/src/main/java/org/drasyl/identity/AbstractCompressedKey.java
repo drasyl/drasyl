@@ -18,16 +18,18 @@
  */
 package org.drasyl.identity;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.fasterxml.jackson.annotation.JsonValue;
 import org.drasyl.crypto.CryptoException;
+import org.drasyl.crypto.HexUtil;
 import org.drasyl.pipeline.address.Address;
 
-import java.util.Objects;
+import java.util.Arrays;
 
 abstract class AbstractCompressedKey<K> implements Address {
     @JsonValue
-    protected final String compressedKey;
+    protected final byte[] compressedKey;
     @JsonIgnore
     protected K key;
 
@@ -36,25 +38,26 @@ abstract class AbstractCompressedKey<K> implements Address {
         key = null;
     }
 
-    protected AbstractCompressedKey(final String compressedKey) throws CryptoException {
+    @JsonCreator
+    protected AbstractCompressedKey(final byte[] compressedKey) throws CryptoException {
         this.compressedKey = compressedKey;
         this.key = toUncompressedKey();
     }
 
-    protected AbstractCompressedKey(final String compressedKey, final K key) {
+    protected AbstractCompressedKey(final byte[] compressedKey, final K key) {
         this.compressedKey = compressedKey;
         this.key = key;
     }
 
     public abstract K toUncompressedKey() throws CryptoException;
 
-    public String getCompressedKey() {
+    public byte[] getCompressedKey() {
         return this.compressedKey;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hashCode(compressedKey);
+        return Arrays.hashCode(compressedKey);
     }
 
     @Override
@@ -66,11 +69,11 @@ abstract class AbstractCompressedKey<K> implements Address {
             return false;
         }
         final AbstractCompressedKey<?> that = (AbstractCompressedKey<?>) o;
-        return Objects.equals(compressedKey, that.compressedKey);
+        return Arrays.equals(compressedKey, that.compressedKey);
     }
 
     @Override
     public String toString() {
-        return this.compressedKey;
+        return HexUtil.bytesToHex(this.compressedKey);
     }
 }

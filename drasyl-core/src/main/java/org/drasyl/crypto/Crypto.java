@@ -344,10 +344,33 @@ public class Crypto {
      * @return a secure random HEX String
      */
     public static String randomString(final int entropy) {
+        return HexUtil.bytesToHex(randomBytes(entropy));
+    }
+
+    /**
+     * Generates a secure random bytes with the given {@code entropy}.
+     *
+     * <p>
+     * Recommendation:
+     *     <ul>
+     *         <li>4 byte for small sets</li>
+     *         <li>8 bytes for unique internal strings, e.g. hash tables</li>
+     *         <li>16 bytes for global uniqueness, e.g. auth token</li>
+     *     </ul>
+     * <p>
+     * You can also use the following probability table for the "Birthday problem", as a starting point for a suitable
+     * entropy size:
+     * <a href="https://en.wikipedia.org/wiki/Birthday_problem#Probability_table">Birthday problem probability table</a>
+     * </p>
+     *
+     * @param entropy entropy in bytes
+     * @return a secure random bytes
+     */
+    public static byte[] randomBytes(final int entropy) {
         final byte[] token = new byte[entropy];
         SRND.nextBytes(token);
 
-        return HexUtil.bytesToHex(token);
+        return token;
     }
 
     /**

@@ -18,12 +18,15 @@
  */
 package org.drasyl.pipeline;
 
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.Unpooled;
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.ObjectHolder;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.junit.jupiter.api.Nested;
@@ -132,6 +135,17 @@ class HeadContextTest {
 
             verify(future, never()).completeExceptionally(any());
             verify(future).complete(null);
+        }
+
+        @Test
+        void shouldAutoReleaseByteBuf() {
+            final HeadContext headContext = new HeadContext(config, pipeline, scheduler, identity, peersManager, inboundValidator, outboundValidator);
+            final Address address = mock(Address.class);
+            final ByteBuf byteBuf = Unpooled.buffer();
+
+            headContext.write(ctx, address, byteBuf, CompletableFuture.completedFuture(null));
+
+            assertEquals(0, byteBuf.refCnt());
         }
     }
 

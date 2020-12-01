@@ -139,7 +139,7 @@ public class PortMappingUtil {
         TCP(PortType.TCP);
         private final PortType portType;
 
-        Protocol(PortType portType) {
+        Protocol(final PortType portType) {
             this.portType = portType;
         }
 
@@ -178,7 +178,7 @@ public class PortMappingUtil {
 
         PortMapping(final PortMapper mapper,
                     final InetSocketAddress address,
-                    Protocol protocol,
+                    final Protocol protocol,
                     final Subject<Optional<InetSocketAddress>> externalAddressObservable,
                     final Scheduler scheduler) {
             this(mapper, address, protocol, externalAddressObservable, scheduler, null, null);
@@ -201,7 +201,7 @@ public class PortMappingUtil {
          */
         public PortMapping(final PortMapper mapper,
                            final InetSocketAddress address,
-                           Protocol protocol) {
+                           final Protocol protocol) {
             this(mapper, address, protocol, BehaviorSubject.createDefault(Optional.empty()), DrasylScheduler.getInstanceLight());
         }
 

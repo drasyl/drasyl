@@ -50,7 +50,7 @@ Next, you can create your own drasyl node by implementing [`DrasylNode`](https:/
 This class contains the following methods that are now relevant for you:
 
 * [`send(...)`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#send(java.lang.String,java.lang.Object)): allows your application to send arbitrary messages to other drasyl nodes.
-* [`onEvent(...)`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#onEvent(org.drasyl.event.Event)): allows your application to react to certain events (e.g. process received messages). This method must be implemented.
+* [`onEvent(...)`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#onEvent(org.drasyl.event.Event)): allows your application to react to certain events (e.g. process received messages, connection to the network established/lost). This method must be implemented.
 * [`start()`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#start()): starts the node, which will then automatically connect to the drasyl network.
 * [`shutdown()`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylNode.html#shutdown()): disconnects from the drasyl network and shuts down the node.
  
@@ -91,13 +91,13 @@ CompletableFuture<Void> result = node.send("0229041b273dd5ee1c2bef2d77ae17dbd00d
 ```
 
 The returned [Future](https://www.baeldung.com/java-completablefuture) does not give any feedback on whether the message could be delivered. 
-The future is successfully completed if the local node could deliver the message itself or forward it to a super peer.
+The future is successfully completed if the local node could deliver the message itself or forward it to a super peer that acts as a default gateway.
 Otherwise the future is completed exceptionally.
 
 !!! info "Advanced References"
     
     The addresses of recipient nodes must be known, as drasyl-core has no function for querying available addresses.
-    The [Groups Plugin](plugins/groups.md) can be used to get automatically notified about nodes joining and leaving the network.
+    The [Groups Plugin](plugins/groups.md) can be used to get automatically notified about other nodes joining and leaving the network.
 
 ## Receiving Messages
 
@@ -128,6 +128,7 @@ If the node is temporarily or permanently no longer needed, it can be shut down 
 A [`NodeDownEvent`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/event/NodeDownEvent.html) is emitted immediately after this call. The application should now no longer attempt to send messages.
 As soon as the connection to the drasyl network is terminated, an [`NodeOfflineEvent`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/event/NodeOfflineEvent.html) is emitted.
 A [`NodeNormalTerminationEvent`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/event/NodeNormalTerminationEvent.html) is emitted when the shutdown is done.
+
 
 ## Summary
 

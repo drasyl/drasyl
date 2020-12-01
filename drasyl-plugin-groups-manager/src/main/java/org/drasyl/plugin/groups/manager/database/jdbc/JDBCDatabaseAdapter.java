@@ -121,13 +121,13 @@ public class JDBCDatabaseAdapter implements DatabaseAdapter {
 
             try (final PreparedStatement ps = con.prepareStatement(sqlInsertMember)) {
                 ps.setQueryTimeout(QUERY_TIMEOUT);
-                ps.setString(1, membership.getMember().getPublicKey().getCompressedKey());
+                ps.setString(1, membership.getMember().getPublicKey().toString());
                 ps.executeUpdate();
             }
 
             try (final PreparedStatement ps = con.prepareStatement(sqlInsertGroupMember)) {
                 ps.setQueryTimeout(QUERY_TIMEOUT);
-                ps.setString(1, membership.getMember().getPublicKey().getCompressedKey());
+                ps.setString(1, membership.getMember().getPublicKey().toString());
                 ps.setString(2, membership.getGroup().getName());
                 ps.setLong(3, membership.getStaleAt());
                 rtn = ps.executeUpdate() > 0;
@@ -136,7 +136,7 @@ public class JDBCDatabaseAdapter implements DatabaseAdapter {
             try (final PreparedStatement ps = con.prepareStatement(sqlUpdateGroupMember)) {
                 ps.setQueryTimeout(QUERY_TIMEOUT);
                 ps.setLong(1, membership.getStaleAt());
-                ps.setString(2, membership.getMember().getPublicKey().getCompressedKey());
+                ps.setString(2, membership.getMember().getPublicKey().toString());
                 ps.setString(3, membership.getGroup().getName());
                 ps.executeUpdate();
             }
@@ -264,14 +264,14 @@ public class JDBCDatabaseAdapter implements DatabaseAdapter {
 
             try (final PreparedStatement ps = con.prepareStatement(sqlDeleteGroupMember)) {
                 ps.setQueryTimeout(QUERY_TIMEOUT);
-                ps.setString(1, member.getCompressedKey());
+                ps.setString(1, member.toString());
                 ps.setString(2, groupName);
 
                 return ps.executeUpdate() > 0;
             }
         }
         catch (final SQLException e) {
-            throw new DatabaseException("Could not remove member '" + member.getCompressedKey() + "' from group '" + groupName + "'", e);
+            throw new DatabaseException("Could not remove member '" + member.toString() + "' from group '" + groupName + "'", e);
         }
     }
 

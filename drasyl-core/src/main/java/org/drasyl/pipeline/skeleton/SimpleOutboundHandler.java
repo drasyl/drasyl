@@ -31,7 +31,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * {@link HandlerAdapter} which allows to explicit only handle a specific type of messages.
  * <p>
- * For example here is an implementation which only handle {@link org.drasyl.peer.connection.message.Message}s
+ * For example here is an implementation which only handle {@code MyMessage}s
  * of type {@code MyMessage}.
  *
  * <pre>

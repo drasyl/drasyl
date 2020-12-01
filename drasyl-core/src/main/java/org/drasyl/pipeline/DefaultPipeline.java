@@ -23,7 +23,6 @@ import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.message.Message;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.slf4j.Logger;
@@ -289,11 +288,6 @@ public abstract class DefaultPipeline implements Pipeline {
         this.scheduler.scheduleDirect(() -> this.head.fireRead(sender, msg, rtn));
 
         return rtn;
-    }
-
-    @Override
-    public CompletableFuture<Void> processInbound(final Message msg) {
-        return processInbound(msg.getSender(), msg);
     }
 
     @Override

@@ -100,7 +100,7 @@ class DrasylNodeIT {
     }
 
     @Nested
-    class TestServerAndSuperPeerClient {
+    class TestRemote {
         /**
          * Network Layout:
          * <pre>
@@ -117,7 +117,7 @@ class DrasylNodeIT {
          * </pre>
          */
         @Nested
-        class SuperPeerAndTwoClientWhenOnlyNettyBasesDiscoveriesAreEnabled {
+        class SuperPeerAndTwoClientWhenOnlyRemoteIsEnabled {
             private Pair<DrasylNode, Observable<Event>> superPeer;
             private Pair<DrasylNode, Observable<Event>> client1;
             private Pair<DrasylNode, Observable<Event>> client2;
@@ -135,10 +135,10 @@ class DrasylNodeIT {
                         .identityProofOfWork(ProofOfWork.of(6518542))
                         .identityPublicKey(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
                         .identityPrivateKey(CompressedPrivateKey.of("6b4df6d8b8b509cb984508a681076efce774936c17cf450819e2262a9862f8"))
-                        .serverExposeEnabled(false)
-                        .serverBindHost(createInetAddress("127.0.0.1"))
-                        .serverBindPort(0)
-                        .superPeerEnabled(false)
+                        .remoteExposeEnabled(false)
+                        .remoteBindHost(createInetAddress("127.0.0.1"))
+                        .remoteBindPort(0)
+                        .remoteSuperPeerEnabled(false)
                         .intraVmDiscoveryEnabled(false)
                         .localHostDiscoveryEnabled(false)
                         .build();
@@ -153,9 +153,12 @@ class DrasylNodeIT {
                         .identityProofOfWork(ProofOfWork.of(12304070))
                         .identityPublicKey(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))
                         .identityPrivateKey(CompressedPrivateKey.of("073a34ecaff06fdf3fbe44ddf3abeace43e3547033493b1ac4c0ae3c6ecd6173"))
-                        .serverExposeEnabled(false)
-                        .serverEnabled(false)
-                        .superPeerEndpoint(Endpoint.of("ws://127.0.0.1:" + superPeerPort + "#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
+                        .remoteExposeEnabled(false)
+                        .remoteBindHost(createInetAddress("127.0.0.1"))
+                        .remoteBindPort(0)
+                        .remotePingInterval(ofSeconds(1))
+                        .remotePingTimeout(ofSeconds(2))
+                        .remoteSuperPeerEndpoint(Endpoint.of("udp://127.0.0.1:" + superPeerPort + "#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
                         .intraVmDiscoveryEnabled(false)
                         .localHostDiscoveryEnabled(false)
                         .build();
@@ -168,9 +171,12 @@ class DrasylNodeIT {
                         .identityProofOfWork(ProofOfWork.of(33957767))
                         .identityPublicKey(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))
                         .identityPrivateKey(CompressedPrivateKey.of("0310991def7b530fced318876ac71025ebc0449a95967a0efc2e423086198f54"))
-                        .serverExposeEnabled(false)
-                        .serverEnabled(false)
-                        .superPeerEndpoint(Endpoint.of("ws://127.0.0.1:" + superPeerPort + "#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
+                        .remoteExposeEnabled(false)
+                        .remoteBindHost(createInetAddress("127.0.0.1"))
+                        .remoteBindPort(0)
+                        .remotePingInterval(ofSeconds(1))
+                        .remotePingTimeout(ofSeconds(2))
+                        .remoteSuperPeerEndpoint(Endpoint.of("udp://127.0.0.1:" + superPeerPort + "#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
                         .intraVmDiscoveryEnabled(false)
                         .localHostDiscoveryEnabled(false)
                         .build();
@@ -293,9 +299,9 @@ class DrasylNodeIT {
                         .identityProofOfWork(ProofOfWork.of(13290399))
                         .identityPublicKey(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"))
                         .identityPrivateKey(CompressedPrivateKey.of("0c2945e523e1ab27c3b38ba62f0a67a21567dcfcbad4ff3fe7f8f7b202a18c93"))
-                        .serverExposeEnabled(false)
-                        .serverEnabled(false)
-                        .superPeerEnabled(false)
+                        .remoteExposeEnabled(false)
+                        .remoteEnabled(false)
+                        .remoteSuperPeerEnabled(false)
                         .localHostDiscoveryEnabled(false)
                         .build();
                 node1 = createStartedNode(config);
@@ -307,9 +313,9 @@ class DrasylNodeIT {
                         .identityProofOfWork(ProofOfWork.of(6518542))
                         .identityPublicKey(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
                         .identityPrivateKey(CompressedPrivateKey.of("6b4df6d8b8b509cb984508a681076efce774936c17cf450819e2262a9862f8"))
-                        .serverExposeEnabled(false)
-                        .serverEnabled(false)
-                        .superPeerEnabled(false)
+                        .remoteExposeEnabled(false)
+                        .remoteEnabled(false)
+                        .remoteSuperPeerEnabled(false)
                         .localHostDiscoveryEnabled(false)
                         .build();
                 node2 = createStartedNode(config);
@@ -321,9 +327,9 @@ class DrasylNodeIT {
                         .identityProofOfWork(ProofOfWork.of(12304070))
                         .identityPublicKey(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))
                         .identityPrivateKey(CompressedPrivateKey.of("073a34ecaff06fdf3fbe44ddf3abeace43e3547033493b1ac4c0ae3c6ecd6173"))
-                        .serverExposeEnabled(false)
-                        .serverEnabled(false)
-                        .superPeerEnabled(false)
+                        .remoteExposeEnabled(false)
+                        .remoteEnabled(false)
+                        .remoteSuperPeerEnabled(false)
                         .localHostDiscoveryEnabled(false)
                         .build();
                 node3 = createStartedNode(config);
@@ -335,9 +341,9 @@ class DrasylNodeIT {
                         .identityProofOfWork(ProofOfWork.of(33957767))
                         .identityPublicKey(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))
                         .identityPrivateKey(CompressedPrivateKey.of("0310991def7b530fced318876ac71025ebc0449a95967a0efc2e423086198f54"))
-                        .serverExposeEnabled(false)
-                        .serverEnabled(false)
-                        .superPeerEnabled(false)
+                        .remoteExposeEnabled(false)
+                        .remoteEnabled(false)
+                        .remoteSuperPeerEnabled(false)
                         .localHostDiscoveryEnabled(false)
                         .build();
                 node4 = createStartedNode(config);
@@ -350,7 +356,7 @@ class DrasylNodeIT {
             }
 
             /**
-             * This test checks whether the messages sent via {@link org.drasyl.peer.connection.intravm.IntraVmDiscovery}
+             * This test checks whether the messages sent via {@link org.drasyl.intravm.IntraVmDiscovery}
              * are delivered.
              */
             @Test
@@ -395,8 +401,8 @@ class DrasylNodeIT {
             }
 
             /**
-             * This test checks whether the {@link org.drasyl.peer.connection.intravm.IntraVmDiscovery}
-             * emits the correct {@link PeerEvent}s.
+             * This test checks whether the {@link org.drasyl.intravm.IntraVmDiscovery} emits the
+             * correct {@link PeerEvent}s.
              */
             @Test
             @Timeout(value = TIMEOUT, unit = MILLISECONDS)
@@ -415,7 +421,7 @@ class DrasylNodeIT {
     }
 
     @Nested
-    class TestLocalHostDiscoveryOld {
+    class TestLocalHostDiscovery {
         /**
          * Network Layout:
          * <pre>
@@ -444,10 +450,10 @@ class DrasylNodeIT {
                         .identityProofOfWork(ProofOfWork.of(13290399))
                         .identityPublicKey(CompressedPublicKey.of("03409386a22294ee55393eb0f83483c54f847f700df687668cc8aa3caa19a9df7a"))
                         .identityPrivateKey(CompressedPrivateKey.of("0c2945e523e1ab27c3b38ba62f0a67a21567dcfcbad4ff3fe7f8f7b202a18c93"))
-                        .serverExposeEnabled(false)
-                        .serverEnabled(true)
-                        .serverBindPort(0)
-                        .superPeerEnabled(false)
+                        .remoteExposeEnabled(false)
+                        .remoteEnabled(true)
+                        .remoteBindPort(0)
+                        .remoteSuperPeerEnabled(false)
                         .intraVmDiscoveryEnabled(false)
                         .build();
                 node1 = createStartedNode(config);
@@ -459,10 +465,10 @@ class DrasylNodeIT {
                         .identityProofOfWork(ProofOfWork.of(6518542))
                         .identityPublicKey(CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
                         .identityPrivateKey(CompressedPrivateKey.of("6b4df6d8b8b509cb984508a681076efce774936c17cf450819e2262a9862f8"))
-                        .serverExposeEnabled(false)
-                        .serverEnabled(true)
-                        .serverBindPort(0)
-                        .superPeerEnabled(false)
+                        .remoteExposeEnabled(false)
+                        .remoteEnabled(true)
+                        .remoteBindPort(0)
+                        .remoteSuperPeerEnabled(false)
                         .intraVmDiscoveryEnabled(false)
                         .build();
                 node2 = createStartedNode(config);
@@ -474,10 +480,10 @@ class DrasylNodeIT {
                         .identityProofOfWork(ProofOfWork.of(12304070))
                         .identityPublicKey(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))
                         .identityPrivateKey(CompressedPrivateKey.of("073a34ecaff06fdf3fbe44ddf3abeace43e3547033493b1ac4c0ae3c6ecd6173"))
-                        .serverExposeEnabled(false)
-                        .serverEnabled(true)
-                        .serverBindPort(0)
-                        .superPeerEnabled(false)
+                        .remoteExposeEnabled(false)
+                        .remoteEnabled(true)
+                        .remoteBindPort(0)
+                        .remoteSuperPeerEnabled(false)
                         .intraVmDiscoveryEnabled(false)
                         .build();
                 node3 = createStartedNode(config);
@@ -489,10 +495,10 @@ class DrasylNodeIT {
                         .identityProofOfWork(ProofOfWork.of(33957767))
                         .identityPublicKey(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))
                         .identityPrivateKey(CompressedPrivateKey.of("0310991def7b530fced318876ac71025ebc0449a95967a0efc2e423086198f54"))
-                        .serverExposeEnabled(false)
-                        .serverEnabled(true)
-                        .serverBindPort(0)
-                        .superPeerEnabled(false)
+                        .remoteExposeEnabled(false)
+                        .remoteEnabled(true)
+                        .remoteBindPort(0)
+                        .remoteSuperPeerEnabled(false)
                         .intraVmDiscoveryEnabled(false)
                         .build();
                 node4 = createStartedNode(config);
@@ -505,8 +511,8 @@ class DrasylNodeIT {
             }
 
             /**
-             * This test checks whether the {@link org.drasyl.peer.connection.localhost.LocalHostDiscovery}
-             * emits the correct {@link PeerEvent}s after communication occurred.
+             * This test checks whether the {@link org.drasyl.localhost.LocalHostDiscovery} emits
+             * the correct {@link PeerEvent}s after communication occurred.
              */
             @Disabled("Fails in CI for unknown reasons")
             @Test
@@ -560,9 +566,9 @@ class DrasylNodeIT {
                     .identityProofOfWork(ProofOfWork.of(12304070))
                     .identityPublicKey(CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"))
                     .identityPrivateKey(CompressedPrivateKey.of("073a34ecaff06fdf3fbe44ddf3abeace43e3547033493b1ac4c0ae3c6ecd6173"))
-                    .serverExposeEnabled(false)
-                    .serverEnabled(false)
-                    .superPeerEnabled(false)
+                    .remoteExposeEnabled(false)
+                    .remoteEnabled(false)
+                    .remoteSuperPeerEnabled(false)
                     .intraVmDiscoveryEnabled(false)
                     .localHostDiscoveryEnabled(false)
                     .build();
@@ -610,9 +616,9 @@ class DrasylNodeIT {
                         .identityProofOfWork(ProofOfWork.of(33957767))
                         .identityPublicKey(CompressedPublicKey.of("025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e"))
                         .identityPrivateKey(CompressedPrivateKey.of("0310991def7b530fced318876ac71025ebc0449a95967a0efc2e423086198f54"))
-                        .serverExposeEnabled(false)
-                        .serverEnabled(false)
-                        .superPeerEnabled(false)
+                        .remoteExposeEnabled(false)
+                        .remoteEnabled(false)
+                        .remoteSuperPeerEnabled(false)
                         .localHostDiscoveryEnabled(false)
                         .build();
                 node1 = createNode(config);

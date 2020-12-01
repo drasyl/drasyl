@@ -18,6 +18,7 @@
  */
 package org.drasyl.pipeline;
 
+import io.netty.util.ReferenceCountUtil;
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
@@ -67,23 +68,28 @@ class HeadContext extends AbstractEndHandler {
                       final Address recipient,
                       final Object msg,
                       final CompletableFuture<Void> future) {
-        if (msg instanceof AutoSwallow) {
-            future.complete(null);
-            return;
-        }
+        try {
+            if (msg instanceof AutoSwallow) {
+                future.complete(null);
+                return;
+            }
 
-        if (future.isDone()) {
-            if (LOG.isDebugEnabled()) {
-                LOG.debug("Message `{}` with recipient `{}` has arrived at the end of the pipeline and was already completed.", msg, recipient);
+            if (future.isDone()) {
+                if (LOG.isDebugEnabled()) {
+                    LOG.debug("Message `{}` with recipient `{}` has arrived at the end of the pipeline and was already completed.", msg, recipient);
+                }
+            }
+            else {
+                if (LOG.isWarnEnabled()) {
+                    LOG.warn("Message `{}` with recipient `{}` has arrived at the end of the pipeline and was not consumed before by a handler. Therefore the message was dropped.\n" +
+                            "This can happen due to a missing codec. You can find more information regarding this here: " +
+                            "https://docs.drasyl.org/configuration/marshalling/", msg, recipient);
+                }
+                future.completeExceptionally(new IllegalStateException("Message must be consumed before end of the pipeline."));
             }
         }
-        else {
-            if (LOG.isWarnEnabled()) {
-                LOG.warn("Message `{}` with recipient `{}` has arrived at the end of the pipeline and was not consumed before by a handler. Therefore the message was dropped.\n" +
-                        "This can happen due to a missing codec. You can find more information regarding this here: " +
-                        "https://docs.drasyl.org/configuration/marshalling/", msg, recipient);
-            }
-            future.completeExceptionally(new IllegalStateException("Message must be consumed before end of the pipeline."));
+        finally {
+            ReferenceCountUtil.release(msg);
         }
     }
 }

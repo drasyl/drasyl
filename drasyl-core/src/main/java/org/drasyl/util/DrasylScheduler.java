@@ -106,7 +106,7 @@ public class DrasylScheduler {
     }
 
     private static class LazyLightSchedulerHolder {
-        static final DrasylExecutor INSTANCE = new DrasylExecutor("Drasyl-Light-Task-ThreadPool-%d");
+        static final DrasylExecutor INSTANCE = new DrasylExecutor("drasyl-L-%d");
         static final boolean LOCK = lightSchedulerCreated = true;
 
         private LazyLightSchedulerHolder() {
@@ -114,7 +114,7 @@ public class DrasylScheduler {
     }
 
     private static class LazyHeavySchedulerHolder {
-        static final DrasylExecutor INSTANCE = new DrasylExecutor("Drasyl-Heavy-Task-ThreadPool-%d");
+        static final DrasylExecutor INSTANCE = new DrasylExecutor("drasyl-H-%d");
         static final boolean LOCK = heavySchedulerCreated = true;
 
         private LazyHeavySchedulerHolder() {
@@ -135,8 +135,8 @@ public class DrasylScheduler {
                     .setNameFormat(name)
                     .build();
             this.executor = new ThreadPoolExecutor(
-                    Math.min(1, Math.max(1, Runtime.getRuntime().availableProcessors() / 3)),  //corePoolSize
-                    Math.min(2, Math.max(1, Runtime.getRuntime().availableProcessors() / 3)),  //maximumPoolSize
+                    Math.min(1, Math.max(1, (Runtime.getRuntime().availableProcessors() / 2) - 1)),  //corePoolSize
+                    Math.min(2, Math.max(1, (Runtime.getRuntime().availableProcessors() / 2) - 1)),  //maximumPoolSize
                     60L, TimeUnit.MILLISECONDS, //keepAliveTime, unit
                     new LinkedBlockingQueue<>(1000),  //workQueue
                     threadFactory

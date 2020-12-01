@@ -36,10 +36,6 @@ import org.drasyl.identity.Identity;
 import org.drasyl.identity.IdentityManager;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.PeerChannelGroup;
-import org.drasyl.peer.connection.client.SuperPeerClient;
-import org.drasyl.peer.connection.message.QuitMessage;
-import org.drasyl.peer.connection.server.Server;
 import org.drasyl.pipeline.DrasylPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Pipeline;
@@ -58,11 +54,11 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CopyOnWriteArraySet;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static java.util.concurrent.CompletableFuture.completedFuture;
 import static java.util.concurrent.CompletableFuture.failedFuture;
-import static org.drasyl.peer.connection.message.QuitMessage.CloseReason.REASON_SHUTTING_DOWN;
 import static org.drasyl.util.DrasylScheduler.getInstanceHeavy;
 
 /**
@@ -94,7 +90,6 @@ import static org.drasyl.util.DrasylScheduler.getInstanceHeavy;
 public abstract class DrasylNode {
     private static final Logger LOG = LoggerFactory.getLogger(DrasylNode.class);
     private static final List<DrasylNode> INSTANCES;
-    private static volatile boolean workerGroupCreated = false;
     private static volatile boolean bossGroupCreated = false;
 
     static {
@@ -125,11 +120,9 @@ public abstract class DrasylNode {
     private final DrasylConfig config;
     private final Identity identity;
     private final PeersManager peersManager;
-    private final PeerChannelGroup channelGroup;
     private final Set<Endpoint> endpoints;
     private final AtomicBoolean acceptNewConnections;
     private final Pipeline pipeline;
-    private final List<DrasylNodeComponent> components;
     private final AtomicBoolean started;
     private final PluginManager pluginManager;
     private CompletableFuture<Void> startSequence;
@@ -164,24 +157,10 @@ public abstract class DrasylNode {
             identityManager.loadOrCreateIdentity();
             this.identity = identityManager.getIdentity();
             this.peersManager = new PeersManager(this::onInternalEvent, identity);
-            this.channelGroup = new PeerChannelGroup(this.config.getNetworkId(), identity);
             this.endpoints = new CopyOnWriteArraySet<>();
             this.acceptNewConnections = new AtomicBoolean();
             this.started = new AtomicBoolean();
-            this.pipeline = new DrasylPipeline(this::onEvent, this.config, identity, channelGroup, peersManager, started, endpoints);
-            this.components = new ArrayList<>();
-
-            if (config.isSuperPeerEnabled()) {
-                this.components.add(new SuperPeerClient(this.config, identity, peersManager,
-                        pipeline, channelGroup, LazyWorkerGroupHolder.INSTANCE,
-                        acceptNewConnections::get));
-            }
-            if (config.isServerEnabled()) {
-                this.components.add(new Server(identity, pipeline, peersManager, this.config,
-                        channelGroup, LazyWorkerGroupHolder.INSTANCE, LazyBossGroupHolder.INSTANCE,
-                        endpoints, acceptNewConnections::get));
-            }
-
+            this.pipeline = new DrasylPipeline(this::onEvent, this.config, identity, peersManager, started, LazyBossGroupHolder.INSTANCE, endpoints);
             this.pluginManager = new PluginManager(config, identity, pipeline);
             this.startSequence = new CompletableFuture<>();
             this.shutdownSequence = completedFuture(null);
@@ -194,11 +173,9 @@ public abstract class DrasylNode {
     protected DrasylNode(final DrasylConfig config,
                          final Identity identity,
                          final PeersManager peersManager,
-                         final PeerChannelGroup channelGroup,
                          final Set<Endpoint> endpoints,
                          final AtomicBoolean acceptNewConnections,
                          final Pipeline pipeline,
-                         final List<DrasylNodeComponent> components,
                          final PluginManager pluginManager,
                          final AtomicBoolean started,
                          final CompletableFuture<Void> startSequence,
@@ -209,8 +186,6 @@ public abstract class DrasylNode {
         this.endpoints = endpoints;
         this.acceptNewConnections = acceptNewConnections;
         this.pipeline = pipeline;
-        this.channelGroup = channelGroup;
-        this.components = components;
         this.pluginManager = pluginManager;
         this.started = started;
         this.startSequence = startSequence;
@@ -244,14 +219,8 @@ public abstract class DrasylNode {
      * </p>
      */
     public static void irrevocablyTerminate() {
-        if (INSTANCES.isEmpty()) {
-            if (bossGroupCreated) {
-                LazyBossGroupHolder.INSTANCE.shutdownGracefully().syncUninterruptibly();
-            }
-
-            if (workerGroupCreated) {
-                LazyWorkerGroupHolder.INSTANCE.shutdownGracefully().syncUninterruptibly();
-            }
+        if (INSTANCES.isEmpty() && bossGroupCreated) {
+            LazyBossGroupHolder.INSTANCE.shutdownGracefully().syncUninterruptibly();
         }
     }
 
@@ -271,21 +240,6 @@ public abstract class DrasylNode {
     }
 
     /**
-     * Returns the {@link EventLoopGroup} that fits best to the current environment. Under Linux the
-     * more performant {@link EpollEventLoopGroup} is returned.
-     *
-     * @return {@link EventLoopGroup} that fits best to the current environment
-     */
-    public static EventLoopGroup getBestEventLoop() {
-        if (Epoll.isAvailable()) {
-            return new EpollEventLoopGroup();
-        }
-        else {
-            return new NioEventLoopGroup();
-        }
-    }
-
-    /**
      * Sends <code>event</code> to the {@link Pipeline} and tells it information about the local
      * node, other peers, connections or incoming messages.
      * <br>
@@ -294,8 +248,8 @@ public abstract class DrasylNode {
      *
      * @param event the event
      */
-    void onInternalEvent(final Event event) {
-        pipeline.processInbound(event);
+    CompletableFuture<Void> onInternalEvent(final Event event) {
+        return pipeline.processInbound(event);
     }
 
     /**
@@ -387,7 +341,7 @@ public abstract class DrasylNode {
      * completed.
      */
     public CompletableFuture<Void> shutdown() {
-        if (startSequence.isDone() && started.compareAndSet(true, false)) {
+        if (startSequence.isDone() && !startSequence.isCompletedExceptionally() && started.compareAndSet(true, false)) {
             onInternalEvent(new NodeDownEvent(Node.of(identity, endpoints)));
             LOG.info("Shutdown drasyl Node with Identity '{}'...", identity);
             shutdownSequence = new CompletableFuture<>();
@@ -395,13 +349,8 @@ public abstract class DrasylNode {
 
             startSequence.whenComplete((t, exp) -> getInstanceHeavy().scheduleDirect(() -> {
                 rejectNewConnections();
-                closeConnections();
+                onInternalEvent(new NodeNormalTerminationEvent(Node.of(identity, endpoints))).join();
 
-                for (int i = components.size() - 1; i >= 0; i--) {
-                    components.get(i).close();
-                }
-
-                onInternalEvent(new NodeNormalTerminationEvent(Node.of(identity, endpoints)));
                 LOG.info("drasyl Node with Identity '{}' has shut down", identity);
                 pluginManager.afterShutdown();
                 INSTANCES.remove(DrasylNode.this);
@@ -414,13 +363,6 @@ public abstract class DrasylNode {
 
     private void rejectNewConnections() {
         acceptNewConnections.set(false);
-    }
-
-    @SuppressWarnings({ "java:S1905" })
-    private void closeConnections() {
-        // send quit message to all peers and close connections
-        final CompletableFuture<?>[] futures = peersManager.getPeers().keySet().stream().map(publicKey -> pipeline.processOutbound(publicKey, new QuitMessage(config.getNetworkId(), identity.getPublicKey(), identity.getProofOfWork(), publicKey, REASON_SHUTTING_DOWN))).toArray(CompletableFuture[]::new);
-        CompletableFuture.allOf(futures).thenRun(channelGroup::close);
     }
 
     /**
@@ -444,32 +386,21 @@ public abstract class DrasylNode {
             LOG.debug("The following configuration will be used: {}", config);
             startSequence = new CompletableFuture<>();
             shutdownSequence.whenComplete((t, ex) -> getInstanceHeavy().scheduleDirect(() -> {
+                pluginManager.beforeStart();
+                acceptNewConnections();
                 try {
-                    pluginManager.beforeStart();
-                    for (final DrasylNodeComponent component : components) {
-                        component.open();
-                    }
-                    acceptNewConnections();
-
-                    onInternalEvent(new NodeUpEvent(Node.of(identity, endpoints)));
+                    onInternalEvent(new NodeUpEvent(Node.of(identity, endpoints))).get();
                     LOG.info("drasyl Node with Identity '{}' has started", identity);
                     startSequence.complete(null);
                     pluginManager.afterStart();
                 }
-                catch (final DrasylException e) {
-                    onInternalEvent(new NodeUnrecoverableErrorEvent(Node.of(identity, endpoints), e));
-                    LOG.info("Could not start drasyl Node: {}", e.getMessage());
-                    LOG.info("Stop all running components...");
+                catch (final InterruptedException e) {
+                    Thread.currentThread().interrupt();
+                }
+                catch (final ExecutionException e) {
+                    LOG.warn("Could not start drasyl Node: {}", e.getCause().getMessage());
                     pluginManager.beforeShutdown();
-
-                    rejectNewConnections();
-                    closeConnections();
-                    for (int i = components.size() - 1; i >= 0; i--) {
-                        components.get(i).close();
-                    }
-
-                    LOG.info("All components stopped");
-                    started.set(false);
+                    onInternalEvent(new NodeUnrecoverableErrorEvent(Node.of(identity, endpoints), e.getCause())).join();
                     pluginManager.afterShutdown();
                     INSTANCES.remove(DrasylNode.this);
                     startSequence.completeExceptionally(e);
@@ -500,16 +431,6 @@ public abstract class DrasylNode {
      */
     public Identity identity() {
         return identity;
-    }
-
-    private static class LazyWorkerGroupHolder {
-        // https://github.com/netty/netty/issues/639#issuecomment-9263566
-        static final EventLoopGroup INSTANCE = getBestEventLoop(Math.min(2,
-                Math.max(2, Runtime.getRuntime().availableProcessors() * 2 / 3 - 2)));
-        static final boolean LOCK = workerGroupCreated = true;
-
-        private LazyWorkerGroupHolder() {
-        }
     }
 
     private static class LazyBossGroupHolder {

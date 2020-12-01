@@ -21,7 +21,6 @@ package org.drasyl.cli.command.wormhole;
 
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.DrasylConfig;
-import org.drasyl.DrasylNodeComponent;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
@@ -29,7 +28,6 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.plugin.PluginManager;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,7 +39,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.ByteArrayOutputStream;
 import java.io.PrintStream;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -73,8 +70,6 @@ class ReceivingWormholeNodeTest {
     @Mock
     private PeersManager peersManager;
     @Mock
-    private PeerChannelGroup channelGroup;
-    @Mock
     private AtomicBoolean started;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Pipeline pipeline;
@@ -82,8 +77,6 @@ class ReceivingWormholeNodeTest {
     private Set<Endpoint> endpoints;
     @Mock
     private AtomicBoolean acceptNewConnections;
-    @Mock
-    private List<DrasylNodeComponent> components;
     @Mock
     private PluginManager pluginManager;
     @Mock
@@ -94,7 +87,7 @@ class ReceivingWormholeNodeTest {
     void setUp() {
         outputStream = new ByteArrayOutputStream();
         printStream = new PrintStream(outputStream, true);
-        underTest = new ReceivingWormholeNode(doneFuture, printStream, received, sender, timeoutGuard, config, identity, peersManager, channelGroup, endpoints, acceptNewConnections, pipeline, components, pluginManager, started, startSequence, shutdownSequence);
+        underTest = new ReceivingWormholeNode(doneFuture, printStream, received, sender, timeoutGuard, config, identity, peersManager, endpoints, acceptNewConnections, pipeline, pluginManager, started, startSequence, shutdownSequence);
     }
 
     @Nested

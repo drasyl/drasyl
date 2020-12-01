@@ -28,11 +28,11 @@ import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.message.Message;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
+import org.drasyl.remote.message.RemoteMessage;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -122,7 +122,7 @@ class MonitoringTest {
 
         @Test
         void shouldPassthroughInboundMessages(@Mock final Address sender,
-                                              @Mock final Message message) {
+                                              @Mock final RemoteMessage message) {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
             final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
@@ -134,7 +134,7 @@ class MonitoringTest {
 
         @Test
         void shouldPassthroughOutboundMessages(@Mock final Address recipient,
-                                               @Mock final Message message) {
+                                               @Mock final RemoteMessage message) {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
             final TestObserver<Pair<Address, Object>> outboundMessages = pipeline.outboundMessages().test();

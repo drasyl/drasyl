@@ -24,7 +24,6 @@ import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -250,7 +249,7 @@ class AbstractHandlerContextTest {
         };
 
         final CompressedPublicKey sender = mock(CompressedPublicKey.class);
-        final ApplicationMessage msg = mock(ApplicationMessage.class);
+        final Object msg = mock(Object.class);
 
         ctx.fireRead(sender, msg, future);
 
@@ -272,7 +271,7 @@ class AbstractHandlerContextTest {
         };
 
         final CompressedPublicKey sender = mock(CompressedPublicKey.class);
-        final ApplicationMessage msg = mock(ApplicationMessage.class);
+        final Object msg = mock(Object.class);
 
         ctx.fireRead(sender, msg, future);
 
@@ -336,7 +335,7 @@ class AbstractHandlerContextTest {
         };
 
         final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
-        final ApplicationMessage msg = mock(ApplicationMessage.class);
+        final Object msg = mock(Object.class);
 
         ctx.write(recipient, msg, future);
 
@@ -358,7 +357,7 @@ class AbstractHandlerContextTest {
         };
 
         final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
-        final ApplicationMessage msg = mock(ApplicationMessage.class);
+        final Object msg = mock(Object.class);
 
         ctx.write(recipient, msg, future);
 

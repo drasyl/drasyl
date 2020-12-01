@@ -16,14 +16,12 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.cli.command.wormhole;
 
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.DrasylConfig;
 import org.drasyl.DrasylException;
 import org.drasyl.DrasylNode;
-import org.drasyl.DrasylNodeComponent;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeNormalTerminationEvent;
@@ -32,7 +30,6 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.plugin.PluginManager;
 import org.slf4j.Logger;
@@ -66,16 +63,14 @@ public class ReceivingWormholeNode extends DrasylNode {
                           final DrasylConfig config,
                           final Identity identity,
                           final PeersManager peersManager,
-                          final PeerChannelGroup channelGroup,
                           final Set<Endpoint> endpoints,
                           final AtomicBoolean acceptNewConnections,
                           final Pipeline pipeline,
-                          final List<DrasylNodeComponent> components,
                           final PluginManager pluginManager,
                           final AtomicBoolean started,
                           final CompletableFuture<Void> startSequence,
                           final CompletableFuture<Void> shutdownSequence) {
-        super(config, identity, peersManager, channelGroup, endpoints, acceptNewConnections, pipeline, components, pluginManager, started, startSequence, shutdownSequence);
+        super(config, identity, peersManager, endpoints, acceptNewConnections, pipeline, pluginManager, started, startSequence, shutdownSequence);
         this.doneFuture = doneFuture;
         this.printStream = printStream;
         this.received = received;
@@ -86,7 +81,7 @@ public class ReceivingWormholeNode extends DrasylNode {
     public ReceivingWormholeNode(final DrasylConfig config,
                                  final PrintStream printStream) throws DrasylException {
         super(DrasylConfig.newBuilder(config)
-                .serverBindPort(0)
+                .remoteBindPort(0)
                 .marshallingInboundAllowedTypes(List.of(WormholeMessage.class.getName()))
                 .marshallingOutboundAllowedTypes(List.of(WormholeMessage.class.getName()))
                 .build());

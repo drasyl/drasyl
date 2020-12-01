@@ -28,7 +28,6 @@ import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
 import org.drasyl.event.NodeUpEvent;
-import org.drasyl.peer.connection.message.Message;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
@@ -50,7 +49,7 @@ import static java.util.Optional.ofNullable;
  * Monitors various states or events in the drasyl node.
  */
 @SuppressWarnings({ "java:S110" })
-public class Monitoring extends SimpleDuplexHandler<Message, Message, Address> {
+public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
     public static final String MONITORING_HANDLER = "MONITORING_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(Monitoring.class);
     private final Map<String, Counter> counters;
@@ -143,7 +142,7 @@ public class Monitoring extends SimpleDuplexHandler<Message, Message, Address> {
     @Override
     protected void matchedRead(final HandlerContext ctx,
                                final Address sender,
-                               final Message msg,
+                               final Object msg,
                                final CompletableFuture<Void> future) {
         ctx.scheduler().scheduleDirect(() -> incrementObjectTypeCounter("pipeline.inbound_messages", msg));
 
@@ -154,7 +153,7 @@ public class Monitoring extends SimpleDuplexHandler<Message, Message, Address> {
     @Override
     protected void matchedWrite(final HandlerContext ctx,
                                 final Address recipient,
-                                final Message msg,
+                                final Object msg,
                                 final CompletableFuture<Void> future) {
         ctx.scheduler().scheduleDirect(() -> incrementObjectTypeCounter("pipeline.outbound_messages", msg));
 

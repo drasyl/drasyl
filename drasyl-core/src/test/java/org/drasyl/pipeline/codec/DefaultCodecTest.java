@@ -26,10 +26,10 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
+import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.util.JSONUtil;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,7 +41,6 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.InputStream;
 import java.util.List;
-import java.util.Map;
 import java.util.Vector;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Consumer;
@@ -92,11 +91,10 @@ class DefaultCodecTest {
             final TestObserver<ApplicationMessage> testObserver = pipeline.outboundOnlyMessages(ApplicationMessage.class).test();
 
             when(identity.getPublicKey()).thenReturn(sender);
-            when(identity.getProofOfWork()).thenReturn(proofOfWork);
             pipeline.processOutbound(recipient, msg);
 
             testObserver.awaitCount(1).assertValueCount(1);
-            testObserver.assertValue(new ApplicationMessage(networkId, sender, proofOfWork, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, msg.getClass().getName()), msg));
+            testObserver.assertValue(new ApplicationMessage(sender, recipient, ObjectHolder.of(byte[].class, msg)));
         }
 
         @Test
@@ -138,11 +136,10 @@ class DefaultCodecTest {
             final TestObserver<ApplicationMessage> testObserver = pipeline.outboundOnlyMessages(ApplicationMessage.class).test();
 
             when(identity.getPublicKey()).thenReturn(sender);
-            when(identity.getProofOfWork()).thenReturn(proofOfWork);
             final CompletableFuture<Void> future = pipeline.processOutbound(recipient, msg);
 
             testObserver.awaitCount(1).assertValueCount(1);
-            testObserver.assertValue(new ApplicationMessage(networkId, sender, proofOfWork, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, Integer.class.getName()), JSONUtil.JACKSON_WRITER.writeValueAsBytes(msg)));
+            testObserver.assertValue(new ApplicationMessage(sender, recipient, ObjectHolder.of(Integer.class.getName(), JSONUtil.JACKSON_WRITER.writeValueAsBytes(msg))));
             future.join();
             assertTrue(future.isDone());
         }
@@ -152,7 +149,7 @@ class DefaultCodecTest {
     class Decode {
         @Test
         void shouldSkippByteArrays() {
-            final ApplicationMessage msg = new ApplicationMessage(networkId, sender, proofOfWork, recipient, new byte[]{});
+            final ApplicationMessage msg = new ApplicationMessage(sender, recipient, ObjectHolder.of(byte[].class, new byte[]{}));
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                     config,
                     identity,
@@ -164,7 +161,7 @@ class DefaultCodecTest {
                     DefaultCodec.INSTANCE);
             final TestObserver<Pair<Address, Object>> testObserver = pipeline.inboundMessages().test();
 
-            pipeline.processInbound(msg);
+            pipeline.processInbound(msg.getSender(), msg);
 
             testObserver.awaitCount(1).assertValueCount(1);
             testObserver.assertValue(Pair.of(sender, new byte[]{}));
@@ -206,7 +203,7 @@ class DefaultCodecTest {
         @Test
         void shouldDecodePOJOs() throws JsonProcessingException {
             final Integer integer = Integer.valueOf("10000");
-            final ApplicationMessage msg = new ApplicationMessage(networkId, sender, proofOfWork, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, Integer.class.getName()), JSONUtil.JACKSON_WRITER.writeValueAsBytes(integer));
+            final ApplicationMessage msg = new ApplicationMessage(sender, recipient, ObjectHolder.of(Integer.class.getName(), JSONUtil.JACKSON_WRITER.writeValueAsBytes(integer)));
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(
                     config,
                     identity,
@@ -218,7 +215,7 @@ class DefaultCodecTest {
                     DefaultCodec.INSTANCE);
             final TestObserver<Pair<Address, Object>> testObserver = pipeline.inboundMessages().test();
 
-            pipeline.processInbound(msg);
+            pipeline.processInbound(msg.getSender(), msg);
 
             testObserver.awaitCount(1).assertValueCount(1);
             testObserver.assertValue(Pair.of(sender, integer));

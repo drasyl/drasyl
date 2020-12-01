@@ -18,6 +18,7 @@
  */
 package org.drasyl.pipeline;
 
+import io.netty.channel.EventLoopGroup;
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
@@ -25,8 +26,8 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.PeerChannelGroup;
-import org.drasyl.peer.connection.message.ApplicationMessage;
+import org.drasyl.pipeline.message.AddressedEnvelope;
+import org.drasyl.pipeline.message.ApplicationMessage;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -40,23 +41,21 @@ import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
-import static org.drasyl.handler.DirectConnectionInboundMessageSinkHandler.DIRECT_CONNECTION_INBOUND_MESSAGE_SINK_HANDLER;
-import static org.drasyl.handler.DirectConnectionOutboundMessageSinkHandler.DIRECT_CONNECTION_OUTBOUND_MESSAGE_SINK_HANDLER;
+import static org.drasyl.loopback.handler.LoopbackInboundMessageSinkHandler.LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER;
+import static org.drasyl.loopback.handler.LoopbackOutboundMessageSinkHandler.LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER;
 import static org.drasyl.pipeline.HeadContext.DRASYL_HEAD_HANDLER;
-import static org.drasyl.handler.HopCountGuard.HOP_COUNT_GUARD;
-import static org.drasyl.handler.InvalidProofOfWorkFilter.INVALID_PROOF_OF_WORK_FILTER;
-import static org.drasyl.handler.LoopbackInboundMessageSinkHandler.LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER;
-import static org.drasyl.handler.LoopbackOutboundMessageSinkHandler.LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER;
-import static org.drasyl.handler.OtherNetworkFilter.OTHER_NETWORK_FILTER;
-import static org.drasyl.handler.SignatureHandler.SIGNATURE_HANDLER;
-import static org.drasyl.handler.SuperPeerInboundMessageSinkHandler.SUPER_PEER_INBOUND_MESSAGE_SINK_HANDLER;
-import static org.drasyl.handler.SuperPeerOutboundMessageSinkHandler.SUPER_PEER_OUTBOUND_MESSAGE_SINK_HANDLER;
 import static org.drasyl.pipeline.TailContext.DRASYL_TAIL_HANDLER;
 import static org.drasyl.pipeline.codec.ApplicationMessage2ObjectHolderHandler.APP_MSG2OBJECT_HOLDER;
-import static org.drasyl.pipeline.codec.ByteBuf2MessageHandler.BYTE_BUF_2_MESSAGE_HANDLER;
 import static org.drasyl.pipeline.codec.DefaultCodec.DEFAULT_CODEC;
-import static org.drasyl.pipeline.codec.Message2ByteBufHandler.MESSAGE_2_BYTE_BUF_HANDLER;
 import static org.drasyl.pipeline.codec.ObjectHolder2ApplicationMessageHandler.OBJECT_HOLDER2APP_MSG;
+import static org.drasyl.remote.handler.ByteBuf2MessageHandler.BYTE_BUF_2_MESSAGE_HANDLER;
+import static org.drasyl.remote.handler.HopCountGuard.HOP_COUNT_GUARD;
+import static org.drasyl.remote.handler.InvalidProofOfWorkFilter.INVALID_PROOF_OF_WORK_FILTER;
+import static org.drasyl.remote.handler.Message2ByteBufHandler.MESSAGE_2_BYTE_BUF_HANDLER;
+import static org.drasyl.remote.handler.OtherNetworkFilter.OTHER_NETWORK_FILTER;
+import static org.drasyl.remote.handler.SignatureHandler.SIGNATURE_HANDLER;
+import static org.drasyl.remote.handler.UdpDiscoveryHandler.UDP_DISCOVERY_HANDLER;
+import static org.drasyl.remote.handler.UdpServer.UDP_SERVER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertNull;
@@ -88,17 +87,19 @@ class DrasylPipelineTest {
     @Mock
     private Identity identity;
     @Mock
-    private PeerChannelGroup channelGroup;
-    @Mock
     private PeersManager peersManager;
     @Mock
     private AtomicBoolean started;
+    @Mock
+    private EventLoopGroup workerGroup;
     @Mock
     private Set<Endpoint> endpoints;
 
     @Test
     void shouldCreateNewPipeline() {
-        final Pipeline pipeline = new DrasylPipeline(eventConsumer, config, identity, channelGroup, peersManager, started, endpoints);
+        when(config.isRemoteEnabled()).thenReturn(true);
+
+        final Pipeline pipeline = new DrasylPipeline(eventConsumer, config, identity, peersManager, started, workerGroup, endpoints);
 
         // Test if head and tail handlers are added
         assertNull(pipeline.get(DRASYL_HEAD_HANDLER));
@@ -113,15 +114,13 @@ class DrasylPipelineTest {
         assertNotNull(pipeline.get(HOP_COUNT_GUARD), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(UDP_DISCOVERY_HANDLER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(SIGNATURE_HANDLER), "This handler is required in the DrasylPipeline");
-        assertNotNull(pipeline.get(SUPER_PEER_INBOUND_MESSAGE_SINK_HANDLER), "This handler is required in the DrasylPipeline");
-        assertNotNull(pipeline.get(DIRECT_CONNECTION_INBOUND_MESSAGE_SINK_HANDLER), "This handler is required in the DrasylPipeline");
-        assertNotNull(pipeline.get(DIRECT_CONNECTION_OUTBOUND_MESSAGE_SINK_HANDLER), "This handler is required in the DrasylPipeline");
-        assertNotNull(pipeline.get(SUPER_PEER_OUTBOUND_MESSAGE_SINK_HANDLER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(INVALID_PROOF_OF_WORK_FILTER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(OTHER_NETWORK_FILTER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(MESSAGE_2_BYTE_BUF_HANDLER), "This handler is required in the DrasylPipeline");
         assertNotNull(pipeline.get(BYTE_BUF_2_MESSAGE_HANDLER), "This handler is required in the DrasylPipeline");
+        assertNotNull(pipeline.get(UDP_SERVER), "This handler is required in the DrasylPipeline");
     }
 
     @Test
@@ -280,7 +279,7 @@ class DrasylPipelineTest {
         final ApplicationMessage msg = mock(ApplicationMessage.class);
         when(msg.getSender()).thenReturn(sender);
 
-        final CompletableFuture<Void> future = pipeline.processInbound(msg);
+        final CompletableFuture<Void> future = pipeline.processInbound(msg.getSender(), msg);
 
         verify(scheduler).scheduleDirect(captor.capture());
         captor.getValue().run();
@@ -307,7 +306,7 @@ class DrasylPipelineTest {
         final Pipeline pipeline = new DrasylPipeline(handlerNames, head, tail, scheduler, config, identity);
 
         final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
-        final ApplicationMessage msg = mock(ApplicationMessage.class);
+        final AddressedEnvelope<?, ?> msg = mock(AddressedEnvelope.class);
 
         final CompletableFuture<Void> future = pipeline.processOutbound(recipient, msg);
 

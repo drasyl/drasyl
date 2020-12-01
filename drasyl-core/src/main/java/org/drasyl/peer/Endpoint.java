@@ -31,9 +31,6 @@ import java.util.Objects;
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.util.UriUtil.overrideFragment;
 import static org.drasyl.util.UriUtil.removeFragment;
-import static org.drasyl.util.WebSocketUtil.isWebSocketSecureURI;
-import static org.drasyl.util.WebSocketUtil.isWebSocketURI;
-import static org.drasyl.util.WebSocketUtil.webSocketPort;
 
 /**
  * Represents an endpoint of a drasyl node. This is a {@link URI} that must use the WebSocket
@@ -53,8 +50,8 @@ public class Endpoint implements Comparable<Endpoint> {
      * @throws IllegalArgumentException if {@code uri} is an invalid {@code Endpoint}
      */
     Endpoint(final URI uri, final CompressedPublicKey publicKey) {
-        if (!isWebSocketURI(uri)) {
-            throw new IllegalArgumentException("URI must use the WebSocket (Secure) protocol.");
+        if (!isUdpURI(uri)) {
+            throw new IllegalArgumentException("URI must use the UDP protocol.");
         }
         this.uri = requireNonNull(uri);
         this.publicKey = requireNonNull(publicKey);
@@ -122,16 +119,15 @@ public class Endpoint implements Comparable<Endpoint> {
      * @return The port of this endpoint
      */
     public int getPort() {
-        return webSocketPort(uri);
-    }
+        final int port = uri.getPort();
 
-    /**
-     * Returns {@code true} if endpoint uses WebSocket Secure protocol. Otherwise {@code false}.
-     *
-     * @return {@code true} if endpoint uses WebSocket Secure protocol. Otherwise {@code false}
-     */
-    public boolean isSecureEndpoint() {
-        return isWebSocketSecureURI(uri);
+        // port was included in URI
+        if (port != -1) {
+            return port;
+        }
+        else {
+            return 22527;
+        }
     }
 
     /**
@@ -218,5 +214,9 @@ public class Endpoint implements Comparable<Endpoint> {
         catch (final URISyntaxException x) {
             throw new IllegalArgumentException(x.getMessage(), x);
         }
+    }
+
+    private static boolean isUdpURI(final URI uri) {
+        return uri.getScheme() != null && uri.getScheme().equals("udp");
     }
 }

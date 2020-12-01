@@ -60,10 +60,10 @@ class CompressedPublicKeyTest {
     class JsonDeserialization {
         @Test
         void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
-            final String json = "\"0340A4F2ADBDDEEDC8F9ACE30E3F18713A3405F43F4871B4BAC9624FE80D2056A7\"";
+            final String json = "\"AikEGyc91e4cK+8td64X29ANLwouk54i1C7xxL8FFH6p\"";
 
             assertEquals(
-                    CompressedPublicKey.of("0340A4F2ADBDDEEDC8F9ACE30E3F18713A3405F43F4871B4BAC9624FE80D2056A7"),
+                    CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"),
                     JACKSON_READER.readValue(json, CompressedPublicKey.class)
             );
         }
@@ -75,7 +75,7 @@ class CompressedPublicKeyTest {
         void shouldSerializeToCorrectJson() throws IOException {
             assertThatJson(JACKSON_WRITER.writeValueAsString(publicKey))
                     .when(Option.IGNORING_ARRAY_ORDER)
-                    .isEqualTo(publicKey.toString());
+                    .isEqualTo("AikEGyc91e4cK+8td64X29ANLwouk54i1C7xxL8FFH6p");
         }
     }
 }

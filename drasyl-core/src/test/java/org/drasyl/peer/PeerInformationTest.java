@@ -32,9 +32,9 @@ class PeerInformationTest {
     class Equals {
         @Test
         void notSameBecauseOfText() {
-            final PeerInformation information1 = PeerInformation.of(Set.of(Endpoint.of("ws://example.com#030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb")));
-            final PeerInformation information2 = PeerInformation.of(Set.of(Endpoint.of("ws://example.com#030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb")));
-            final PeerInformation information3 = PeerInformation.of(Set.of(Endpoint.of("ws://example.de#033de3da699f6f9ffbd427c56725910655ba3913be4ff55b13c628e957c860fd55")));
+            final PeerInformation information1 = PeerInformation.of(Set.of(Endpoint.of("udp://example.com#030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb")));
+            final PeerInformation information2 = PeerInformation.of(Set.of(Endpoint.of("udp://example.com#030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb")));
+            final PeerInformation information3 = PeerInformation.of(Set.of(Endpoint.of("udp://example.de#033de3da699f6f9ffbd427c56725910655ba3913be4ff55b13c628e957c860fd55")));
 
             assertEquals(information1, information2);
             assertNotEquals(information2, information3);
@@ -45,9 +45,9 @@ class PeerInformationTest {
     class HashCode {
         @Test
         void notSameBecauseOfText() {
-            final PeerInformation information1 = PeerInformation.of(Set.of(Endpoint.of("ws://example.com#030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb")));
-            final PeerInformation information2 = PeerInformation.of(Set.of(Endpoint.of("ws://example.com#030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb")));
-            final PeerInformation information3 = PeerInformation.of(Set.of(Endpoint.of("ws://example.de#033de3da699f6f9ffbd427c56725910655ba3913be4ff55b13c628e957c860fd55")));
+            final PeerInformation information1 = PeerInformation.of(Set.of(Endpoint.of("udp://example.com#030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb")));
+            final PeerInformation information2 = PeerInformation.of(Set.of(Endpoint.of("udp://example.com#030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb")));
+            final PeerInformation information3 = PeerInformation.of(Set.of(Endpoint.of("udp://example.de#033de3da699f6f9ffbd427c56725910655ba3913be4ff55b13c628e957c860fd55")));
 
             assertEquals(information1.hashCode(), information2.hashCode());
             assertNotEquals(information2.hashCode(), information3.hashCode());

@@ -24,11 +24,11 @@ import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
+import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -154,7 +154,7 @@ class HandlerAdapterTest {
             final ApplicationMessage msg = mock(ApplicationMessage.class);
             when(msg.getSender()).thenReturn(sender);
 
-            pipeline.processInbound(msg);
+            pipeline.processInbound(msg.getSender(), msg);
 
             events.awaitCount(1).assertValueCount(1);
             events.assertValue(Pair.of(sender, msg));
