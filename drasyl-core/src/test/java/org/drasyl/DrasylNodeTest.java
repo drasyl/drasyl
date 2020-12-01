@@ -27,18 +27,17 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.PeerChannelGroup;
 import org.drasyl.pipeline.Pipeline;
 import org.drasyl.plugin.PluginManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.ExecutionException;
@@ -48,9 +47,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -72,33 +70,16 @@ class DrasylNodeTest {
     private CompressedPublicKey publicKey;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Pipeline pipeline;
-    @Mock(answer = RETURNS_DEEP_STUBS)
-    private PeerChannelGroup channelGroup;
     @Mock
     private AtomicBoolean acceptNewConnections;
     @Mock
     private PluginManager pluginManager;
-    private List<DrasylNodeComponent> components = List.of();
 
     @Nested
     class Start {
         @Test
-        void shouldStartEnabledComponents(@Mock final DrasylNodeComponent component) throws DrasylException {
-            components = List.of(component);
-            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, channelGroup, endpoints, acceptNewConnections, pipeline, components, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
-                @Override
-                public void onEvent(final Event event) {
-                }
-            });
-            shutdownSequence.complete(null);
-            underTest.start().join();
-
-            verify(component).open();
-        }
-
-        @Test
         void shouldEmitUpEventOnSuccessfulStart() {
-            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, channelGroup, endpoints, acceptNewConnections, pipeline, components, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
+            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, endpoints, acceptNewConnections, pipeline, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(final Event event) {
                 }
@@ -110,12 +91,10 @@ class DrasylNodeTest {
         }
 
         @Test
-        void shouldEmitNodeUnrecoverableErrorEventOnFailedStart(@Mock final DrasylNodeComponent drasylNodeComponent) throws DrasylException {
-            when(peersManager.getPeers().keySet().stream().map(any()).toArray(any())).thenReturn(new CompletableFuture[]{});
-            components = List.of(drasylNodeComponent);
-            doThrow(new DrasylException("error")).when(drasylNodeComponent).open();
+        void shouldEmitNodeUnrecoverableErrorEventOnFailedStart() {
+            when(pipeline.processInbound(any(NodeUpEvent.class))).thenReturn(CompletableFuture.failedFuture(new DrasylException("error")));
 
-            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, channelGroup, endpoints, acceptNewConnections, pipeline, components, pluginManager, started, startSequence, shutdownSequence) {
+            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, endpoints, acceptNewConnections, pipeline, pluginManager, started, startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(final Event event) {
                 }
@@ -123,14 +102,14 @@ class DrasylNodeTest {
             shutdownSequence.complete(null);
             assertThrows(ExecutionException.class, underTest.start()::get);
 
-            verify(underTest).onInternalEvent(new NodeUnrecoverableErrorEvent(Node.of(identity, endpoints), new DrasylException("error")));
-
-            verify(drasylNodeComponent).close();
+            final InOrder inOrder = inOrder(underTest);
+            inOrder.verify(underTest).onInternalEvent(any(NodeUpEvent.class));
+            inOrder.verify(underTest).onInternalEvent(new NodeUnrecoverableErrorEvent(Node.of(identity, endpoints), new DrasylException("error")));
         }
 
         @Test
         void shouldStartPlugins() {
-            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, channelGroup, endpoints, acceptNewConnections, pipeline, components, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
+            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, endpoints, acceptNewConnections, pipeline, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(final Event event) {
                 }
@@ -145,24 +124,8 @@ class DrasylNodeTest {
     @Nested
     class Shutdown {
         @Test
-        void shouldStopEnabledComponents(@Mock final DrasylNodeComponent drasylNodeComponent) {
-            when(peersManager.getPeers().keySet().stream().map(any()).toArray(any())).thenReturn(new CompletableFuture[]{});
-
-            components = List.of(drasylNodeComponent);
-            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, channelGroup, endpoints, acceptNewConnections, pipeline, components, pluginManager, new AtomicBoolean(true), startSequence, shutdownSequence) {
-                @Override
-                public void onEvent(final Event event) {
-                }
-            });
-            startSequence.complete(null);
-            underTest.shutdown().join();
-
-            verify(drasylNodeComponent).close();
-        }
-
-        @Test
         void shouldReturnSameFutureIfShutdownHasAlreadyBeenTriggered() {
-            final DrasylNode drasylNode = spy(new DrasylNode(config, identity, peersManager, channelGroup, endpoints, acceptNewConnections, pipeline, components, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
+            final DrasylNode drasylNode = spy(new DrasylNode(config, identity, peersManager, endpoints, acceptNewConnections, pipeline, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(final Event event) {
                 }
@@ -171,25 +134,8 @@ class DrasylNodeTest {
         }
 
         @Test
-        void shouldSendQuitMessageToAllPeers() {
-            when(peersManager.getPeers().keySet().stream().map(any()).toArray(any())).thenReturn(new CompletableFuture[]{});
-
-            final DrasylNode drasylNode = spy(new DrasylNode(config, identity, peersManager, channelGroup, endpoints, acceptNewConnections, pipeline, components, pluginManager, new AtomicBoolean(true), startSequence, shutdownSequence) {
-                @Override
-                public void onEvent(final Event event) {
-                }
-            });
-            startSequence.complete(null);
-            drasylNode.shutdown().join();
-
-            verify(peersManager, times(2)).getPeers();
-        }
-
-        @Test
         void shouldStopPlugins() {
-            when(peersManager.getPeers().keySet().stream().map(any()).toArray(any())).thenReturn(new CompletableFuture[]{});
-
-            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, channelGroup, endpoints, acceptNewConnections, pipeline, components, pluginManager, new AtomicBoolean(true), startSequence, shutdownSequence) {
+            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, endpoints, acceptNewConnections, pipeline, pluginManager, new AtomicBoolean(true), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(final Event event) {
                 }
@@ -207,7 +153,7 @@ class DrasylNodeTest {
 
         @BeforeEach
         void setUp() {
-            underTest = spy(new DrasylNode(config, identity, peersManager, channelGroup, endpoints, acceptNewConnections, pipeline, components, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
+            underTest = spy(new DrasylNode(config, identity, peersManager, endpoints, acceptNewConnections, pipeline, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(final Event event) {
                 }
@@ -256,7 +202,7 @@ class DrasylNodeTest {
     class PipelineTest {
         @Test
         void shouldReturnPipeline() {
-            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, channelGroup, endpoints, acceptNewConnections, pipeline, components, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
+            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, endpoints, acceptNewConnections, pipeline, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(final Event event) {
                 }
@@ -270,7 +216,7 @@ class DrasylNodeTest {
     class IdentityMethod {
         @Test
         void shouldReturnIdentity() {
-            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, channelGroup, endpoints, acceptNewConnections, pipeline, components, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
+            final DrasylNode underTest = spy(new DrasylNode(config, identity, peersManager, endpoints, acceptNewConnections, pipeline, pluginManager, new AtomicBoolean(false), startSequence, shutdownSequence) {
                 @Override
                 public void onEvent(final Event event) {
                 }

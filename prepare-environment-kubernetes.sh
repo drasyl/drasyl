@@ -30,6 +30,10 @@ if [[ -z "$DRASYL_NETWORK_ID" ]]; then
   DRASYL_NETWORK_ID=$((RANDOM - 32768))
 fi
 
+if [[ -z "$PORT" ]]; then
+  PORT=$((RANDOM + 32768))
+fi
+
 host=$CI_ENVIRONMENT_SLUG.$APP_HOST
 
 cat << EOF
@@ -57,6 +61,10 @@ spec:
       - name: "$CI_PROJECT_NAME"
         image: "${image_repository}:${image_tag}"
         args: ["node", "--verbose", "TRACE"]
+        ports:
+        - protocol: UDP
+          containerPort: 22527
+          hostPort: ${PORT}
         env:
         - name: CONFIG_FORCE_drasyl_network_id
           value: "${DRASYL_NETWORK_ID}"
@@ -66,11 +74,11 @@ spec:
           value: "$DRASYL_PUBLIC_KEY"
         - name: CONFIG_FORCE_drasyl_identity_private__key
           value: "$DRASYL_PRIVATE_KEY"
-        - name: CONFIG_FORCE_drasyl_server_endpoints_0
-          value: "wss://${host}#${DRASYL_PUBLIC_KEY}"
-        - name: CONFIG_FORCE_drasyl_server_expose_enabled
+        - name: CONFIG_FORCE_drasyl_remote_endpoints_0
+          value: "udp://${host}:${PORT}#${DRASYL_PUBLIC_KEY}"
+        - name: CONFIG_FORCE_drasyl_remote_expose_enabled
           value: "false"
-        - name: CONFIG_FORCE_drasyl_super__peer_enabled
+        - name: CONFIG_FORCE_drasyl_remote_super__peer_enabled
           value: "false"
         - name: CONFIG_FORCE_drasyl_monitoring_enabled
           value: "true"
@@ -88,40 +96,4 @@ spec:
           value: "$CI_ENVIRONMENT_NAME"
         - name: JAVA_OPTS
           value: "$JAVA_OPTS"
----
-apiVersion: v1
-kind: Service
-metadata:
-  name: "${CI_PROJECT_NAME}-service"
-  labels:
-    app: "$CI_PROJECT_NAME"
-spec:
-  selector:
-    app: "$CI_PROJECT_NAME"
-  ports:
-  - port: 22527
-    targetPort: 22527
----
-apiVersion: extensions/v1beta1
-kind: Ingress
-metadata:
-  name: "${CI_PROJECT_NAME}-ingress"
-  labels:
-    app: drasyl
-  annotations:
-    kubernetes.io/ingress.class: "nginx"
-    kubernetes.io/tls-acme: 'true'
-spec:
-  tls:
-    - hosts:
-        - "$host"
-      secretName: "${CI_PROJECT_NAME}-secret-tls"
-  rules:
-  - host: "$host"
-    http:
-      paths:
-      - path: /
-        backend:
-          serviceName: "${CI_PROJECT_NAME}-service"
-          servicePort: 22527
 EOF

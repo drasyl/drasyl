@@ -22,7 +22,6 @@ import io.netty.util.internal.TypeParameterMatcher;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.AddressHandlerAdapter;
 import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.HandlerContext;
@@ -35,12 +34,12 @@ import java.util.concurrent.CompletableFuture;
  * {@link HandlerAdapter} which allows to explicit only handle a specific type of inbound messages
  * and events.
  * <p>
- * For example here is an implementation which only handle inbound {@link ApplicationMessage}
- * messages and {@link MessageEvent} events.
+ * For example here is an implementation which only handle inbound {@code MyMessage} messages and
+ * {@link MessageEvent} events.
  *
  * <pre>
  *     public class MessageEventHandler extends
- *             {@link SimpleInboundEventAwareHandler}&lt;{@link ApplicationMessage}, {@link MessageEvent},
+ *             {@link SimpleInboundEventAwareHandler}&lt;{@code MyMessage}, {@link MessageEvent},
  *             {@link CompressedPublicKey}&gt; {
  *
  *        {@code @Override}
@@ -51,7 +50,7 @@ import java.util.concurrent.CompletableFuture;
  *
  *        {@code @Override}
  *         protected void matchedRead({@link HandlerContext} ctx,
- *             {@link CompressedPublicKey} sender, {@link ApplicationMessage} msg,
+ *             {@link CompressedPublicKey} sender, {@code MyMessage} msg,
  *             {@link CompletableFuture}&lt;{@link Void}&gt; future) {
  *             System.out.println(msg);
  *         }

@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl;
 
 import com.google.common.cache.Cache;
@@ -45,8 +44,8 @@ public class SuperPeerStressTesting {
 
     public static void main(final String[] args) throws DrasylException {
         final DrasylConfig baseConfig = DrasylConfig.newBuilder()
-                .superPeerEndpoint(Endpoint.of("wss://review-monitoring-md6yhe.env.drasyl.org"))
-                .serverEnabled(false)
+                .remoteSuperPeerEndpoint(Endpoint.of("udp://review-monitoring-md6yhe.env.drasyl.org"))
+                .remoteEnabled(false)
                 .build();
 
         final SuperPeerStressTesting creator = new SuperPeerStressTesting(100, ofSeconds(300));

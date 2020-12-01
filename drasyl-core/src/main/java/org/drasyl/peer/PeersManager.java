@@ -57,7 +57,7 @@ import static java.util.Objects.requireNonNull;
 public class PeersManager {
     private final ReadWriteLock lock;
     private final Map<CompressedPublicKey, PeerInformation> peers;
-    private final SetMultimap<CompressedPublicKey, Path> paths;
+    private final SetMultimap<CompressedPublicKey, Object> paths;
     private final Set<CompressedPublicKey> children;
     private final Consumer<Event> eventConsumer;
     private final Identity identity;
@@ -69,7 +69,7 @@ public class PeersManager {
 
     PeersManager(final ReadWriteLock lock,
                  final Map<CompressedPublicKey, PeerInformation> peers,
-                 final SetMultimap<CompressedPublicKey, Path> paths,
+                 final SetMultimap<CompressedPublicKey, Object> paths,
                  final Set<CompressedPublicKey> children,
                  final CompressedPublicKey superPeer,
                  final Consumer<Event> eventConsumer,
@@ -169,14 +169,14 @@ public class PeersManager {
         }
     }
 
-    public Pair<PeerInformation, Set<Path>> getPeer(final CompressedPublicKey publicKey) {
+    public Pair<PeerInformation, Set<Object>> getPeer(final CompressedPublicKey publicKey) {
         requireNonNull(publicKey);
 
         try {
             lock.readLock().lock();
 
             final PeerInformation peerInformation = peers.get(publicKey);
-            final Set<Path> myPaths = Set.copyOf(this.paths.get(publicKey));
+            final Set<Object> myPaths = Set.copyOf(this.paths.get(publicKey));
 
             return Pair.of(Objects.requireNonNullElseGet(peerInformation, PeerInformation::of), myPaths);
         }
@@ -187,7 +187,7 @@ public class PeersManager {
 
     public void setPeerInformationAndAddPath(final CompressedPublicKey publicKey,
                                              final PeerInformation peerInformation,
-                                             final Path path) {
+                                             final Object path) {
         requireNonNull(publicKey);
         requireNonNull(peerInformation);
 
@@ -209,9 +209,9 @@ public class PeersManager {
 
     private void handlePeerStateTransition(final CompressedPublicKey publicKey,
                                            final PeerInformation existingInformation,
-                                           final Set<Path> existingPaths,
+                                           final Set<Object> existingPaths,
                                            final PeerInformation newInformation,
-                                           final Set<Path> newPaths) {
+                                           final Set<Object> newPaths) {
         final int existingPathCount;
         if (existingInformation == null) {
             existingPathCount = 0;
@@ -278,7 +278,7 @@ public class PeersManager {
         }
     }
 
-    public void removePath(final CompressedPublicKey publicKey, final Path path) {
+    public void removePath(final CompressedPublicKey publicKey, final Object path) {
         requireNonNull(publicKey);
         requireNonNull(path);
 
@@ -313,7 +313,7 @@ public class PeersManager {
         }
     }
 
-    public void unsetSuperPeerAndRemovePath(final Path path) {
+    public void unsetSuperPeerAndRemovePath(final Object path) {
         requireNonNull(path);
 
         try {
@@ -339,7 +339,7 @@ public class PeersManager {
 
     public void setPeerInformationAndAddPathAndSetSuperPeer(final CompressedPublicKey publicKey,
                                                             final PeerInformation peerInformation,
-                                                            final Path path) {
+                                                            final Object path) {
         requireNonNull(publicKey);
         requireNonNull(peerInformation);
         requireNonNull(path);
@@ -365,7 +365,7 @@ public class PeersManager {
     }
 
     public void removeChildrenAndPath(final CompressedPublicKey publicKey,
-                                      final Path path) {
+                                      final Object path) {
         requireNonNull(publicKey);
         requireNonNull(path);
 
@@ -388,7 +388,7 @@ public class PeersManager {
 
     public void setPeerInformationAndAddPathAndChildren(final CompressedPublicKey publicKey,
                                                         final PeerInformation peerInformation,
-                                                        final Path path) {
+                                                        final Object path) {
         requireNonNull(publicKey);
         requireNonNull(peerInformation);
         requireNonNull(path);

@@ -6,7 +6,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [0.4.0] - 2020-xx-xx
 ### Added
--
+- Hole Punching is now used to traverse NATs. This will allow drasyl to create direct connections to peers behind a NAT.
 -
 -
 -
@@ -14,15 +14,15 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - 
-- As a preparation for the switch to UDP-based connections in a future release, the P2P connection functionality was temporarily removed.
+- UDP is now used instead of TCP for communication with remote peers.
 -
 -
 -
 
 ### Fixed
 - Other nodes running within the same JVM that belong to a different network are now ignored (IntraVmDiscovery).
--
 - Other nodes running on the same local computer that belong to a different network are now ignored (LocalHostDiscovery).
+-
 -
 -
 

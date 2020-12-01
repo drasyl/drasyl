@@ -19,8 +19,8 @@
 package org.drasyl.pipeline.codec;
 
 import org.drasyl.pipeline.HandlerContext;
-import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.pipeline.address.Address;
+import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
 import org.drasyl.util.FutureUtil;
 
 import java.util.ArrayList;

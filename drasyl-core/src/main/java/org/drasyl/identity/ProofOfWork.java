@@ -112,7 +112,7 @@ public class ProofOfWork {
     }
 
     private static String generateHash(final CompressedPublicKey publicKey, final int nonce) {
-        return Hashing.sha256Hex(publicKey.getCompressedKey() + nonce);
+        return Hashing.sha256Hex(publicKey.toString() + nonce);
     }
 
     public static short getDifficulty(final ProofOfWork proofOfWork,

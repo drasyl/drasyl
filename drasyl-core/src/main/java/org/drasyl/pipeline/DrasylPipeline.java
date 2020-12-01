@@ -18,32 +18,32 @@
  */
 package org.drasyl.pipeline;
 
+import io.netty.channel.EventLoopGroup;
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
-import org.drasyl.handler.DirectConnectionInboundMessageSinkHandler;
-import org.drasyl.handler.DirectConnectionOutboundMessageSinkHandler;
-import org.drasyl.handler.HopCountGuard;
-import org.drasyl.handler.InvalidProofOfWorkFilter;
-import org.drasyl.handler.LoopbackInboundMessageSinkHandler;
-import org.drasyl.handler.LoopbackOutboundMessageSinkHandler;
-import org.drasyl.handler.OtherNetworkFilter;
-import org.drasyl.handler.SignatureHandler;
-import org.drasyl.handler.SuperPeerInboundMessageSinkHandler;
-import org.drasyl.handler.SuperPeerOutboundMessageSinkHandler;
 import org.drasyl.identity.Identity;
+import org.drasyl.intravm.IntraVmDiscovery;
+import org.drasyl.localhost.LocalHostDiscovery;
+import org.drasyl.loopback.handler.LoopbackInboundMessageSinkHandler;
+import org.drasyl.loopback.handler.LoopbackOutboundMessageSinkHandler;
 import org.drasyl.monitoring.Monitoring;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.PeerChannelGroup;
-import org.drasyl.peer.connection.intravm.IntraVmDiscovery;
-import org.drasyl.peer.connection.localhost.LocalHostDiscovery;
 import org.drasyl.pipeline.codec.ApplicationMessage2ObjectHolderHandler;
-import org.drasyl.pipeline.codec.ByteBuf2MessageHandler;
 import org.drasyl.pipeline.codec.DefaultCodec;
-import org.drasyl.pipeline.codec.Message2ByteBufHandler;
 import org.drasyl.pipeline.codec.ObjectHolder2ApplicationMessageHandler;
 import org.drasyl.pipeline.codec.TypeValidator;
+import org.drasyl.remote.handler.ApplicationMessage2RemoteMessageHandler;
+import org.drasyl.remote.handler.ByteBuf2MessageHandler;
+import org.drasyl.remote.handler.HopCountGuard;
+import org.drasyl.remote.handler.InvalidProofOfWorkFilter;
+import org.drasyl.remote.handler.Message2ByteBufHandler;
+import org.drasyl.remote.handler.OtherNetworkFilter;
+import org.drasyl.remote.handler.RemoteMessage2ApplicationMessageHandler;
+import org.drasyl.remote.handler.SignatureHandler;
+import org.drasyl.remote.handler.UdpDiscoveryHandler;
+import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.util.DrasylScheduler;
 
 import java.util.Map;
@@ -52,35 +52,36 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+import static org.drasyl.intravm.IntraVmDiscovery.INTRA_VM_DISCOVERY;
+import static org.drasyl.localhost.LocalHostDiscovery.LOCAL_HOST_DISCOVERY;
+import static org.drasyl.loopback.handler.LoopbackInboundMessageSinkHandler.LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER;
+import static org.drasyl.loopback.handler.LoopbackOutboundMessageSinkHandler.LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER;
 import static org.drasyl.monitoring.Monitoring.MONITORING_HANDLER;
-import static org.drasyl.peer.connection.intravm.IntraVmDiscovery.INTRA_VM_DISCOVERY;
-import static org.drasyl.peer.connection.localhost.LocalHostDiscovery.LOCAL_HOST_DISCOVERY;
-import static org.drasyl.handler.DirectConnectionInboundMessageSinkHandler.DIRECT_CONNECTION_INBOUND_MESSAGE_SINK_HANDLER;
-import static org.drasyl.handler.DirectConnectionOutboundMessageSinkHandler.DIRECT_CONNECTION_OUTBOUND_MESSAGE_SINK_HANDLER;
-import static org.drasyl.handler.HopCountGuard.HOP_COUNT_GUARD;
-import static org.drasyl.handler.InvalidProofOfWorkFilter.INVALID_PROOF_OF_WORK_FILTER;
-import static org.drasyl.handler.LoopbackInboundMessageSinkHandler.LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER;
-import static org.drasyl.handler.LoopbackOutboundMessageSinkHandler.LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER;
-import static org.drasyl.handler.OtherNetworkFilter.OTHER_NETWORK_FILTER;
-import static org.drasyl.handler.SignatureHandler.SIGNATURE_HANDLER;
-import static org.drasyl.handler.SuperPeerInboundMessageSinkHandler.SUPER_PEER_INBOUND_MESSAGE_SINK_HANDLER;
-import static org.drasyl.handler.SuperPeerOutboundMessageSinkHandler.SUPER_PEER_OUTBOUND_MESSAGE_SINK_HANDLER;
 import static org.drasyl.pipeline.codec.ApplicationMessage2ObjectHolderHandler.APP_MSG2OBJECT_HOLDER;
-import static org.drasyl.pipeline.codec.ByteBuf2MessageHandler.BYTE_BUF_2_MESSAGE_HANDLER;
 import static org.drasyl.pipeline.codec.DefaultCodec.DEFAULT_CODEC;
-import static org.drasyl.pipeline.codec.Message2ByteBufHandler.MESSAGE_2_BYTE_BUF_HANDLER;
 import static org.drasyl.pipeline.codec.ObjectHolder2ApplicationMessageHandler.OBJECT_HOLDER2APP_MSG;
+import static org.drasyl.remote.handler.ApplicationMessage2RemoteMessageHandler.APPLICATION_MESSAGE_2_REMOTE_MESSAGE_HANDLER;
+import static org.drasyl.remote.handler.ByteBuf2MessageHandler.BYTE_BUF_2_MESSAGE_HANDLER;
+import static org.drasyl.remote.handler.HopCountGuard.HOP_COUNT_GUARD;
+import static org.drasyl.remote.handler.InvalidProofOfWorkFilter.INVALID_PROOF_OF_WORK_FILTER;
+import static org.drasyl.remote.handler.Message2ByteBufHandler.MESSAGE_2_BYTE_BUF_HANDLER;
+import static org.drasyl.remote.handler.OtherNetworkFilter.OTHER_NETWORK_FILTER;
+import static org.drasyl.remote.handler.RemoteMessage2ApplicationMessageHandler.REMOTE_MESSAGE_2_APPLICATION_MESSAGE_HANDLER;
+import static org.drasyl.remote.handler.SignatureHandler.SIGNATURE_HANDLER;
+import static org.drasyl.remote.handler.UdpDiscoveryHandler.UDP_DISCOVERY_HANDLER;
+import static org.drasyl.remote.handler.UdpServer.UDP_SERVER;
 
 /**
  * The default {@link Pipeline} implementation. Used to implement plugins for drasyl.
  */
 public class DrasylPipeline extends DefaultPipeline {
+    @SuppressWarnings({ "java:S107" })
     public DrasylPipeline(final Consumer<Event> eventConsumer,
                           final DrasylConfig config,
                           final Identity identity,
-                          final PeerChannelGroup channelGroup,
                           final PeersManager peersManager,
                           final AtomicBoolean started,
+                          final EventLoopGroup bossGroup,
                           final Set<Endpoint> endpoints) {
         this.handlerNames = new ConcurrentHashMap<>();
         this.inboundValidator = TypeValidator.ofInboundValidator(config);
@@ -99,11 +100,8 @@ public class DrasylPipeline extends DefaultPipeline {
         addFirst(APP_MSG2OBJECT_HOLDER, ApplicationMessage2ObjectHolderHandler.INSTANCE);
         addFirst(OBJECT_HOLDER2APP_MSG, ObjectHolder2ApplicationMessageHandler.INSTANCE);
 
-        // outbound message guards
-        addFirst(HOP_COUNT_GUARD, HopCountGuard.INSTANCE);
-
         // local message delivery
-        addFirst(LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER, new LoopbackInboundMessageSinkHandler(started, endpoints));
+        addFirst(LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER, new LoopbackInboundMessageSinkHandler(started));
         addFirst(LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER, LoopbackOutboundMessageSinkHandler.INSTANCE);
 
         if (config.isLocalHostDiscoveryEnabled()) {
@@ -115,25 +113,32 @@ public class DrasylPipeline extends DefaultPipeline {
             addFirst(INTRA_VM_DISCOVERY, IntraVmDiscovery.INSTANCE);
         }
 
-        if (config.isMonitoringEnabled()) {
-            addFirst(MONITORING_HANDLER, new Monitoring());
+        if (config.isRemoteEnabled()) {
+            addFirst(APPLICATION_MESSAGE_2_REMOTE_MESSAGE_HANDLER, ApplicationMessage2RemoteMessageHandler.INSTANCE);
+            addFirst(REMOTE_MESSAGE_2_APPLICATION_MESSAGE_HANDLER, RemoteMessage2ApplicationMessageHandler.INSTANCE);
+
+            addFirst(UDP_DISCOVERY_HANDLER, new UdpDiscoveryHandler(config));
+
+            // outbound message guards
+            addFirst(HOP_COUNT_GUARD, HopCountGuard.INSTANCE);
+
+            if (config.isMonitoringEnabled()) {
+                addFirst(MONITORING_HANDLER, new Monitoring());
+            }
+
+            addFirst(SIGNATURE_HANDLER, SignatureHandler.INSTANCE);
+
+            // inbound message guards
+            addFirst(INVALID_PROOF_OF_WORK_FILTER, InvalidProofOfWorkFilter.INSTANCE);
+            addFirst(OTHER_NETWORK_FILTER, OtherNetworkFilter.INSTANCE);
+
+            // (de)serialize messages
+            addFirst(MESSAGE_2_BYTE_BUF_HANDLER, Message2ByteBufHandler.INSTANCE);
+            addFirst(BYTE_BUF_2_MESSAGE_HANDLER, ByteBuf2MessageHandler.INSTANCE);
+
+            // udp server
+            addFirst(UDP_SERVER, new UdpServer(bossGroup));
         }
-
-        addFirst(SIGNATURE_HANDLER, SignatureHandler.INSTANCE);
-
-        // remote message delivery
-        addFirst(SUPER_PEER_INBOUND_MESSAGE_SINK_HANDLER, new SuperPeerInboundMessageSinkHandler(channelGroup));
-        addFirst(DIRECT_CONNECTION_INBOUND_MESSAGE_SINK_HANDLER, new DirectConnectionInboundMessageSinkHandler(channelGroup));
-        addFirst(DIRECT_CONNECTION_OUTBOUND_MESSAGE_SINK_HANDLER, new DirectConnectionOutboundMessageSinkHandler(channelGroup));
-        addFirst(SUPER_PEER_OUTBOUND_MESSAGE_SINK_HANDLER, new SuperPeerOutboundMessageSinkHandler(channelGroup));
-
-        // inbound message guards
-        addFirst(INVALID_PROOF_OF_WORK_FILTER, InvalidProofOfWorkFilter.INSTANCE);
-        addFirst(OTHER_NETWORK_FILTER, OtherNetworkFilter.INSTANCE);
-
-        // (de)serialize messages
-        addFirst(MESSAGE_2_BYTE_BUF_HANDLER, Message2ByteBufHandler.INSTANCE);
-        addFirst(BYTE_BUF_2_MESSAGE_HANDLER, ByteBuf2MessageHandler.INSTANCE);
     }
 
     DrasylPipeline(final Map<String, AbstractHandlerContext> handlerNames,

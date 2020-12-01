@@ -1,3 +1,22 @@
+/*
+ * Copyright (c) 2020.
+ *
+ * This file is part of drasyl.
+ *
+ *  drasyl is free software: you can redistribute it and/or modify
+ *  it under the terms of the GNU Lesser General Public License as published by
+ *  the Free Software Foundation, either version 3 of the License, or
+ *  (at your option) any later version.
+ *
+ *  drasyl is distributed in the hope that it will be useful,
+ *  but WITHOUT ANY WARRANTY; without even the implied warranty of
+ *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ *  GNU Lesser General Public License for more details.
+ *
+ *  You should have received a copy of the GNU Lesser General Public License
+ *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
+ */
+
 package org.drasyl.example.groups;
 
 import org.drasyl.DrasylConfig;
@@ -14,8 +33,8 @@ import java.util.Scanner;
 import java.util.Set;
 
 /**
- * This example starts a drasyl node with activated {@link GroupsClientNode}.
- * It can be used to join groups provided by {@link GroupsManagerNode}.
+ * This example starts a drasyl node with activated {@link GroupsClientNode}. It can be used to join
+ * groups provided by {@link GroupsManagerNode}.
  */
 @SuppressWarnings({ "squid:S106" })
 public class GroupsClientNode {
@@ -27,7 +46,7 @@ public class GroupsClientNode {
 
         final DrasylConfig config = DrasylConfig.newBuilder()
                 .identityPath(Path.of("groups-client.identity.json"))
-                .serverBindPort(0)
+                .remoteBindPort(0)
                 .plugins(Set.of(new GroupsClientPlugin(
                         GroupsClientConfig.builder()
                                 .groups(Set.of(group))

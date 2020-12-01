@@ -24,15 +24,14 @@ import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.ApplicationMessage2ObjectHolderHandler;
 import org.drasyl.pipeline.codec.DefaultCodec;
 import org.drasyl.pipeline.codec.ObjectHolder;
 import org.drasyl.pipeline.codec.ObjectHolder2ApplicationMessageHandler;
 import org.drasyl.pipeline.codec.TypeValidator;
+import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.BeforeEach;
@@ -42,9 +41,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
-import java.util.Map;
 
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -84,8 +81,7 @@ class EmbeddedPipelineTest {
         final ApplicationMessage msg = mock(ApplicationMessage.class);
 
         when(msg.getSender()).thenReturn(sender);
-        doReturn(String.class.getName()).when(msg).getHeader(ObjectHolder.CLASS_KEY_NAME);
-        when(msg.getPayload()).thenReturn(new byte[]{
+        when(msg.getContent()).thenReturn(ObjectHolder.of(String.class.getName(), new byte[]{
                 34,
                 72,
                 101,
@@ -99,9 +95,9 @@ class EmbeddedPipelineTest {
                 108,
                 100,
                 34
-        });
+        }));
 
-        pipeline.processInbound(msg);
+        pipeline.processInbound(msg.getSender(), msg);
 
         inboundMessageTestObserver.awaitCount(1).assertValueCount(1);
         inboundMessageTestObserver.assertValue(Pair.of(sender, "Hello World"));
@@ -129,13 +125,11 @@ class EmbeddedPipelineTest {
         final CompressedPublicKey sender = mock(CompressedPublicKey.class);
         final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
         when(identity.getPublicKey()).thenReturn(sender);
-        final ProofOfWork senderProofOfWork = mock(ProofOfWork.class);
-        when(identity.getProofOfWork()).thenReturn(senderProofOfWork);
         final byte[] msg = new byte[]{};
         pipeline.processOutbound(recipient, msg);
 
         outboundMessageTestObserver.awaitCount(1).assertValueCount(1);
-        outboundMessageTestObserver.assertValue(new ApplicationMessage(1, sender, senderProofOfWork, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, msg.getClass().getName()), msg));
+        outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, recipient, ObjectHolder.of(byte[].class, msg)));
         inboundMessageTestObserver.assertNoValues();
         eventTestObserver.assertNoValues();
     }

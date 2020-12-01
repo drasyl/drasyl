@@ -26,14 +26,8 @@ import org.drasyl.event.MessageEvent;
 import org.drasyl.event.NodeUpEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
-import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.message.ApplicationMessage;
-import org.drasyl.peer.connection.message.Message;
-import org.drasyl.peer.connection.message.MessageId;
-import org.drasyl.peer.connection.message.UserAgent;
 import org.drasyl.pipeline.EmbeddedPipeline;
-import org.drasyl.pipeline.Handler;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.HandlerMask;
 import org.drasyl.pipeline.address.Address;
@@ -42,6 +36,8 @@ import org.drasyl.pipeline.codec.DefaultCodec;
 import org.drasyl.pipeline.codec.ObjectHolder;
 import org.drasyl.pipeline.codec.ObjectHolder2ApplicationMessageHandler;
 import org.drasyl.pipeline.codec.TypeValidator;
+import org.drasyl.pipeline.message.AddressedEnvelope;
+import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.util.JSONUtil;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.BeforeEach;
@@ -52,12 +48,10 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.List;
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.TimeUnit;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -77,56 +71,12 @@ class SimpleDuplexHandlerTest {
                 .build();
     }
 
-    static class MyMessage implements Message {
-        @Override
-        public MessageId getId() {
-            return null;
-        }
-
-        @Override
-        public UserAgent getUserAgent() {
-            return null;
-        }
-
-        @Override
-        public int getNetworkId() {
-            return 0;
-        }
-
-        @Override
-        public CompressedPublicKey getSender() {
-            return null;
-        }
-
-        @Override
-        public ProofOfWork getProofOfWork() {
-            return null;
-        }
-
-        @Override
-        public CompressedPublicKey getRecipient() {
-            return null;
-        }
-
-        @Override
-        public short getHopCount() {
-            return 0;
-        }
-
-        @Override
-        public void incrementHopCount() {
-
-        }
-    }
-
     @Nested
     class OutboundTest {
         @Test
         void shouldTriggerOnMatchedMessage() {
             final CompressedPublicKey sender = mock(CompressedPublicKey.class);
             when(identity.getPublicKey()).thenReturn(sender);
-            final ProofOfWork proofOfWork = mock(ProofOfWork.class);
-            when(identity.getProofOfWork()).thenReturn(proofOfWork);
             final byte[] payload = new byte[]{};
             final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
 
@@ -151,7 +101,7 @@ class SimpleDuplexHandlerTest {
                                             final byte[] msg,
                                             final CompletableFuture<Void> future) {
                     // Emit this message as inbound message to test
-                    ctx.pipeline().processInbound(new ApplicationMessage(networkId, identity.getPublicKey(), identity.getProofOfWork(), recipient, msg));
+                    ctx.pipeline().processInbound(identity.getPublicKey(), new ApplicationMessage(identity.getPublicKey(), recipient, ObjectHolder.of(byte[].class, msg)));
                 }
             };
 
@@ -196,7 +146,7 @@ class SimpleDuplexHandlerTest {
                                             final MyMessage msg,
                                             final CompletableFuture<Void> future) {
                     // Emit this message as inbound message to test
-                    ctx.pipeline().processInbound(msg);
+                    ctx.pipeline().processInbound(msg.getSender(), msg);
                 }
             };
 
@@ -214,14 +164,12 @@ class SimpleDuplexHandlerTest {
 
             final CompressedPublicKey sender = mock(CompressedPublicKey.class);
             when(identity.getPublicKey()).thenReturn(sender);
-            final ProofOfWork senderProofOfWork = mock(ProofOfWork.class);
-            when(identity.getProofOfWork()).thenReturn(senderProofOfWork);
             final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
             final byte[] payload = new byte[]{};
             pipeline.processOutbound(recipient, payload);
 
             outboundMessageTestObserver.awaitCount(1).assertValueCount(1);
-            outboundMessageTestObserver.assertValue(new ApplicationMessage(networkId, sender, senderProofOfWork, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, byte[].class.getName()), payload));
+            outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, recipient, ObjectHolder.of(byte[].class, payload)));
             inboundMessageTestObserver.assertNoValues();
         }
     }
@@ -271,13 +219,12 @@ class SimpleDuplexHandlerTest {
 
             final CompressedPublicKey sender = mock(CompressedPublicKey.class);
             when(identity.getPublicKey()).thenReturn(sender);
-            final ProofOfWork senderProofOfWork = mock(ProofOfWork.class);
-            when(identity.getProofOfWork()).thenReturn(senderProofOfWork);
             final byte[] msg = JSONUtil.JACKSON_WRITER.writeValueAsBytes(new byte[]{});
-            pipeline.processInbound(new ApplicationMessage(networkId, sender, senderProofOfWork, sender, msg));
+            final ApplicationMessage msg1 = new ApplicationMessage(sender, sender, ObjectHolder.of(byte[].class, msg));
+            pipeline.processInbound(msg1.getSender(), msg1);
 
             outboundMessageTestObserver.awaitCount(1).assertValueCount(1);
-            outboundMessageTestObserver.assertValue(new ApplicationMessage(networkId, sender, senderProofOfWork, sender, Map.of(ObjectHolder.CLASS_KEY_NAME, byte[].class.getName()), msg));
+            outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, sender, ObjectHolder.of(byte[].class, msg)));
             inboundMessageTestObserver.assertNoValues();
             eventTestObserver.assertNoValues();
         }
@@ -327,10 +274,9 @@ class SimpleDuplexHandlerTest {
             final ApplicationMessage msg = mock(ApplicationMessage.class);
             when(msg.getSender()).thenReturn(mock(CompressedPublicKey.class));
 
-            when(msg.getPayload()).thenReturn(payload);
-            doReturn(payload.getClass().getName()).when(msg).getHeader(ObjectHolder.CLASS_KEY_NAME);
+            when(msg.getContent()).thenReturn(ObjectHolder.of(payload.getClass(), payload));
 
-            pipeline.processInbound(msg);
+            pipeline.processInbound(msg.getSender(), msg);
 
             inboundMessageTestObserver.awaitCount(1).assertValueCount(1);
             inboundMessageTestObserver.assertValue(Pair.of(msg.getSender(), payload));
@@ -430,4 +376,22 @@ class SimpleDuplexHandlerTest {
             assertEquals(mask, HandlerMask.mask(SimpleDuplexEventAwareHandler.class));
         }
     }
+
+    static class MyMessage implements AddressedEnvelope<CompressedPublicKey, Object> {
+        @Override
+        public CompressedPublicKey getSender() {
+            return null;
+        }
+
+        @Override
+        public CompressedPublicKey getRecipient() {
+            return null;
+        }
+
+        @Override
+        public Object getContent() {
+            return null;
+        }
+    }
 }
+

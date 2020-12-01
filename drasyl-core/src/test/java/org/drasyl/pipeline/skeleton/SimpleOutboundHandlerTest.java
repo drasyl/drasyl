@@ -24,10 +24,6 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.message.ApplicationMessage;
-import org.drasyl.peer.connection.message.Message;
-import org.drasyl.peer.connection.message.MessageId;
-import org.drasyl.peer.connection.message.UserAgent;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.HandlerMask;
@@ -37,6 +33,8 @@ import org.drasyl.pipeline.codec.DefaultCodec;
 import org.drasyl.pipeline.codec.ObjectHolder;
 import org.drasyl.pipeline.codec.ObjectHolder2ApplicationMessageHandler;
 import org.drasyl.pipeline.codec.TypeValidator;
+import org.drasyl.pipeline.message.AddressedEnvelope;
+import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -44,7 +42,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -81,7 +78,7 @@ class SimpleOutboundHandlerTest {
                                         final byte[] msg,
                                         final CompletableFuture<Void> future) {
                 // Emit this message as inbound message to test
-                ctx.pipeline().processInbound(new ApplicationMessage(networkId, identity.getPublicKey(), proofOfWork, recipient, msg));
+                ctx.pipeline().processInbound(identity.getPublicKey(), new ApplicationMessage(identity.getPublicKey(), recipient, ObjectHolder.of(byte[].class, msg)));
             }
         };
 
@@ -113,7 +110,7 @@ class SimpleOutboundHandlerTest {
                                         final MyMessage msg,
                                         final CompletableFuture<Void> future) {
                 // Emit this message as inbound message to test
-                ctx.pipeline().processInbound(msg);
+                ctx.pipeline().processInbound(msg.getSender(), msg);
             }
         };
 
@@ -131,14 +128,12 @@ class SimpleOutboundHandlerTest {
 
         final CompressedPublicKey sender = mock(CompressedPublicKey.class);
         when(identity.getPublicKey()).thenReturn(sender);
-        final ProofOfWork senderProofOfWork = mock(ProofOfWork.class);
-        when(identity.getProofOfWork()).thenReturn(senderProofOfWork);
         final CompressedPublicKey recipient = mock(CompressedPublicKey.class);
         final byte[] payload = new byte[]{};
         pipeline.processOutbound(recipient, payload);
 
         outboundMessageTestObserver.awaitCount(1).assertValueCount(1);
-        outboundMessageTestObserver.assertValue(new ApplicationMessage(networkId, sender, senderProofOfWork, recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, payload.getClass().getName()), payload));
+        outboundMessageTestObserver.assertValue(new ApplicationMessage(sender, recipient, ObjectHolder.of(byte[].class, payload)));
         inboundMessageTestObserver.assertNoValues();
     }
 
@@ -147,29 +142,9 @@ class SimpleOutboundHandlerTest {
         assertEquals(HandlerMask.WRITE_MASK, HandlerMask.mask(SimpleOutboundHandler.class));
     }
 
-    static class MyMessage implements Message {
-        @Override
-        public MessageId getId() {
-            return null;
-        }
-
-        @Override
-        public UserAgent getUserAgent() {
-            return null;
-        }
-
-        @Override
-        public int getNetworkId() {
-            return 0;
-        }
-
+    static class MyMessage implements AddressedEnvelope<CompressedPublicKey, Object> {
         @Override
         public CompressedPublicKey getSender() {
-            return null;
-        }
-
-        @Override
-        public ProofOfWork getProofOfWork() {
             return null;
         }
 
@@ -179,13 +154,8 @@ class SimpleOutboundHandlerTest {
         }
 
         @Override
-        public short getHopCount() {
-            return 0;
-        }
-
-        @Override
-        public void incrementHopCount() {
-
+        public Object getContent() {
+            return null;
         }
     }
 }

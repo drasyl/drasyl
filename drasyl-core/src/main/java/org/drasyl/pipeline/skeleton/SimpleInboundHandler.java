@@ -20,7 +20,6 @@ package org.drasyl.pipeline.skeleton;
 
 import org.drasyl.event.Event;
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Skip;
 import org.drasyl.pipeline.address.Address;
@@ -30,16 +29,15 @@ import java.util.concurrent.CompletableFuture;
 /**
  * {@link HandlerAdapter} which allows to explicit only handle a specific type of inbound messages.
  * <p>
- * For example here is an implementation which only handle inbound {@link ApplicationMessage}
- * messages.
+ * For example here is an implementation which only handle inbound {@code MyMessage} messages.
  *
  * <pre>
  *     public class MessageEventHandler extends
- *             {@link SimpleInboundHandler}&lt;{@link ApplicationMessage}, {@link CompressedPublicKey}&gt; {
+ *             {@link SimpleInboundHandler}&lt;{@code MyMessage}, {@link CompressedPublicKey}&gt; {
  *
  *        {@code @Override}
  *         protected void matchedRead({@link HandlerContext} ctx,
- *             {@link CompressedPublicKey} sender, {@link ApplicationMessage} msg,
+ *             {@link CompressedPublicKey} sender, {@code MyMessage} msg,
  *             {@link CompletableFuture}&lt;{@link Void}&gt; future) {
  *             System.out.println(msg);
  *         }

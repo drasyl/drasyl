@@ -21,6 +21,7 @@ package org.drasyl;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
+import org.drasyl.crypto.Crypto;
 import org.drasyl.event.Event;
 import org.drasyl.util.DrasylScheduler;
 
@@ -48,7 +49,7 @@ public class ObservableDrasylNode extends DrasylNode {
     }
 
     public static void main(final String[] args) throws DrasylException {
-        final ObservableDrasylNode node = new ObservableDrasylNode(DrasylConfig.newBuilder().localHostDiscoveryEnabled(false).serverExposeEnabled(false).build());
+        final ObservableDrasylNode node = new ObservableDrasylNode(DrasylConfig.newBuilder().localHostDiscoveryEnabled(false).remoteExposeEnabled(false).build());
         node.events().subscribeOn(DrasylScheduler.getInstanceLight()).subscribe(System.out::println, System.err::println); // NOSONAR
         node.start().join();
     }

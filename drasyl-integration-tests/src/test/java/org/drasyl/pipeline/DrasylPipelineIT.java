@@ -19,6 +19,7 @@
 package org.drasyl.pipeline;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.channel.nio.NioEventLoopGroup;
 import io.reactivex.rxjava3.exceptions.UndeliverableException;
 import io.reactivex.rxjava3.observers.TestObserver;
 import io.reactivex.rxjava3.plugins.RxJavaPlugins;
@@ -32,17 +33,14 @@ import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
 import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.peer.connection.PeerChannelGroup;
-import org.drasyl.peer.connection.message.ApplicationMessage;
-import org.drasyl.peer.connection.message.SignedMessage;
 import org.drasyl.pipeline.address.Address;
-import org.drasyl.pipeline.codec.ObjectHolder;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
+import org.drasyl.remote.message.RemoteApplicationMessage;
+import org.drasyl.remote.message.RemoteMessage;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -85,11 +83,10 @@ class DrasylPipelineIT {
                 .identityPrivateKey(identity1.getPrivateKey())
                 .build();
 
-        final PeerChannelGroup channelGroup = new PeerChannelGroup(config.getNetworkId(), identity1);
         final PeersManager peersManager = new PeersManager(receivedEvents::onNext, identity1);
         final AtomicBoolean started = new AtomicBoolean(true);
         final Set<Endpoint> endpoints = Set.of();
-        pipeline = new DrasylPipeline(receivedEvents::onNext, config, identity1, channelGroup, peersManager, started, endpoints);
+        pipeline = new DrasylPipeline(receivedEvents::onNext, config, identity1, peersManager, started, new NioEventLoopGroup(), endpoints);
         pipeline.addFirst("outboundMessages", new SimpleOutboundHandler<Object, CompressedPublicKey>() {
             @Override
             protected void matchedWrite(final HandlerContext ctx,
@@ -124,11 +121,10 @@ class DrasylPipelineIT {
             }
         });
 
-        final ApplicationMessage msg = new ApplicationMessage(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), payload);
-        final SignedMessage signedMessage = new SignedMessage(0, identity2.getPublicKey(), identity2.getProofOfWork(), msg.getRecipient(), msg);
-        Crypto.sign(identity2.getPrivateKey().toUncompressedKey(), signedMessage);
+        final RemoteMessage message = new RemoteApplicationMessage(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), new byte[]{});
+        Crypto.sign(identity2.getPrivateKey().toUncompressedKey(), message);
 
-        pipeline.processInbound(signedMessage);
+        pipeline.processInbound(message.getSender(), message);
 
         events.awaitCount(1).assertValueCount(1);
         events.assertValue(new MessageEvent(identity2.getPublicKey(), newPayload));
@@ -154,14 +150,13 @@ class DrasylPipelineIT {
             }
         });
 
-        final ApplicationMessage msg = new ApplicationMessage(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), payload);
-        final SignedMessage signedMessage = new SignedMessage(0, identity2.getPublicKey(), identity2.getProofOfWork(), msg.getRecipient(), msg);
-        Crypto.sign(identity2.getPrivateKey().toUncompressedKey(), signedMessage);
+        final RemoteApplicationMessage message = new RemoteApplicationMessage(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), new byte[]{});
+        Crypto.sign(identity2.getPrivateKey().toUncompressedKey(), message);
 
-        pipeline.processInbound(signedMessage);
+        pipeline.processInbound(message.getSender(), message);
 
         events.awaitCount(2);
-        events.assertValueAt(0, new MessageEvent(msg.getSender(), payload));
+        events.assertValueAt(0, new MessageEvent(identity2.getPublicKey(), message.getPayload()));
         events.assertValueAt(1, testEvent);
     }
 
@@ -199,11 +194,10 @@ class DrasylPipelineIT {
             }
         });
 
-        final ApplicationMessage msg = new ApplicationMessage(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), payload);
-        final SignedMessage signedMessage = new SignedMessage(0, identity2.getPublicKey(), identity2.getProofOfWork(), msg.getRecipient(), msg);
-        Crypto.sign(identity2.getPrivateKey().toUncompressedKey(), signedMessage);
+        final RemoteMessage message = new RemoteApplicationMessage(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), new byte[]{});
+        Crypto.sign(identity2.getPrivateKey().toUncompressedKey(), message);
 
-        pipeline.processInbound(signedMessage);
+        pipeline.processInbound(message.getSender(), message);
 
         exceptions.awaitCount(1).assertValueCount(1);
         exceptions.assertValue(exception);
@@ -216,8 +210,6 @@ class DrasylPipelineIT {
         final byte[] newPayload = new byte[]{
                 0x05
         };
-
-        final ApplicationMessage newMsg = new ApplicationMessage(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), Map.of(ObjectHolder.CLASS_KEY_NAME, newPayload.getClass().getName()), newPayload);
 
         IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 
@@ -244,7 +236,7 @@ class DrasylPipelineIT {
     @Test
     void shouldNotPassthroughsMessagesWithDoneFuture() {
         final TestObserver<Object> outbounds = outboundMessages.test();
-        final ApplicationMessage msg = new ApplicationMessage(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), payload);
+        final RemoteApplicationMessage msg = new RemoteApplicationMessage(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), payload);
 
         IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 
@@ -271,7 +263,7 @@ class DrasylPipelineIT {
     @Test
     void shouldNotPassthroughsMessagesWithExceptionallyFuture() {
         final TestObserver<Object> outbounds = outboundMessages.test();
-        final ApplicationMessage msg = new ApplicationMessage(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), payload);
+        final RemoteApplicationMessage msg = new RemoteApplicationMessage(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), payload);
 
         IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 

@@ -23,15 +23,11 @@ import com.typesafe.config.ConfigException;
 import com.typesafe.config.ConfigFactory;
 import com.typesafe.config.ConfigMemorySize;
 import com.typesafe.config.ConfigObject;
-import io.netty.channel.ChannelInitializer;
-import io.netty.channel.socket.SocketChannel;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.peer.Endpoint;
-import org.drasyl.peer.connection.client.DefaultClientChannelInitializer;
-import org.drasyl.peer.connection.server.DefaultServerChannelInitializer;
 import org.drasyl.plugin.DrasylPlugin;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
@@ -52,13 +48,11 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.StandardOpenOption;
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 
 import static java.time.Duration.ofSeconds;
 import static org.drasyl.DrasylConfig.DEFAULT;
-import static org.drasyl.DrasylConfig.FLUSH_BUFFER_SIZE;
 import static org.drasyl.DrasylConfig.IDENTITY_PATH;
 import static org.drasyl.DrasylConfig.IDENTITY_PRIVATE_KEY;
 import static org.drasyl.DrasylConfig.IDENTITY_PROOF_OF_WORK;
@@ -86,20 +80,14 @@ import static org.drasyl.DrasylConfig.MONITORING_INFLUX_URI;
 import static org.drasyl.DrasylConfig.MONITORING_INFLUX_USER;
 import static org.drasyl.DrasylConfig.NETWORK_ID;
 import static org.drasyl.DrasylConfig.PLUGINS;
-import static org.drasyl.DrasylConfig.SERVER_BIND_HOST;
-import static org.drasyl.DrasylConfig.SERVER_BIND_PORT;
-import static org.drasyl.DrasylConfig.SERVER_CHANNEL_INITIALIZER;
-import static org.drasyl.DrasylConfig.SERVER_ENABLED;
-import static org.drasyl.DrasylConfig.SERVER_ENDPOINTS;
-import static org.drasyl.DrasylConfig.SERVER_EXPOSE_ENABLED;
-import static org.drasyl.DrasylConfig.SERVER_HANDSHAKE_TIMEOUT;
-import static org.drasyl.DrasylConfig.SERVER_SSL_ENABLED;
-import static org.drasyl.DrasylConfig.SERVER_SSL_PROTOCOLS;
-import static org.drasyl.DrasylConfig.SUPER_PEER_CHANNEL_INITIALIZER;
-import static org.drasyl.DrasylConfig.SUPER_PEER_ENABLED;
-import static org.drasyl.DrasylConfig.SUPER_PEER_ENDPOINT;
-import static org.drasyl.DrasylConfig.SUPER_PEER_HANDSHAKE_TIMEOUT;
-import static org.drasyl.DrasylConfig.SUPER_PEER_RETRY_DELAYS;
+import static org.drasyl.DrasylConfig.REMOTE_BIND_HOST;
+import static org.drasyl.DrasylConfig.REMOTE_BIND_PORT;
+import static org.drasyl.DrasylConfig.REMOTE_ENABLED;
+import static org.drasyl.DrasylConfig.REMOTE_ENDPOINTS;
+import static org.drasyl.DrasylConfig.REMOTE_EXPOSE_ENABLED;
+import static org.drasyl.DrasylConfig.REMOTE_PING_INTERVAL;
+import static org.drasyl.DrasylConfig.REMOTE_SUPER_PEER_ENABLED;
+import static org.drasyl.DrasylConfig.REMOTE_SUPER_PEER_ENDPOINT;
 import static org.drasyl.DrasylConfig.getChannelInitializer;
 import static org.drasyl.DrasylConfig.getEndpointList;
 import static org.drasyl.DrasylConfig.getInetAddress;
@@ -124,8 +112,6 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.WARN)
 class DrasylConfigTest {
-    private final Set<String> serverSSLProtocols = Set.of("TLSv1.3", "TLSv1.2");
-    private final List<Duration> superPeerRetryDelays = List.of(ofSeconds(0), ofSeconds(1), ofSeconds(2), ofSeconds(4), ofSeconds(8));
     private int networkId;
     @Mock
     private CompressedPublicKey identityPublicKey;
@@ -138,21 +124,16 @@ class DrasylConfigTest {
     private InetAddress serverBindHost;
     private boolean serverEnabled;
     private int serverBindPort;
-    private int flushBufferSize;
-    private boolean serverSSLEnabled;
     private Duration serverHandshakeTimeout;
     private Set<Endpoint> serverEndpoints;
-    private Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer;
-    private boolean serverExposeEnabled;
+    private boolean remoteExposeEnabled;
     private int messageMaxContentLength;
     private short messageHopLimit;
     private boolean superPeerEnabled;
     private Endpoint superPeerEndpoint;
-    private Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer;
     @Mock(answer = RETURNS_DEEP_STUBS)
     private Config typesafeConfig;
     private String identityPathAsString;
-    private Duration superPeerHandshakeTimeout;
     private boolean intraVmDiscoveryEnabled;
     private boolean localHostDiscoveryEnabled;
     private String localHostDiscoveryPathAsString;
@@ -173,6 +154,10 @@ class DrasylConfigTest {
     private boolean marshallingOutboundAllowAllPrimitives;
     private boolean marshallingOutboundAllowArrayOfDefinedTypes;
     private List<String> marshallingOutboundAllowedPackages;
+    private Duration remotePingTimeout;
+    private Duration remotePingCommunicationTimeout;
+    private Duration remoteUniteMinInterval;
+    private int remotePingMaxPeers;
 
     @BeforeEach
     void setUp() {
@@ -180,18 +165,13 @@ class DrasylConfigTest {
         serverBindHost = createInetAddress("0.0.0.0");
         serverEnabled = true;
         serverBindPort = 22527;
-        flushBufferSize = 256;
-        serverSSLEnabled = false;
         serverHandshakeTimeout = ofSeconds(30);
         serverEndpoints = Set.of();
-        serverChannelInitializer = DefaultServerChannelInitializer.class;
-        serverExposeEnabled = true;
+        remoteExposeEnabled = true;
         messageMaxContentLength = 1024;
         messageHopLimit = 64;
         superPeerEnabled = true;
-        superPeerEndpoint = Endpoint.of("ws://foo.bar:123#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
-        superPeerChannelInitializer = DefaultClientChannelInitializer.class;
-        superPeerHandshakeTimeout = ofSeconds(30);
+        superPeerEndpoint = Endpoint.of("udp://foo.bar:123#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
         identityPathAsString = "drasyl.identity.json";
         intraVmDiscoveryEnabled = true;
         localHostDiscoveryEnabled = true;
@@ -226,23 +206,16 @@ class DrasylConfigTest {
             when(typesafeConfig.getString(IDENTITY_PRIVATE_KEY)).thenReturn("0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d");
             when(typesafeConfig.getInt(IDENTITY_PROOF_OF_WORK)).thenReturn(123);
             when(typesafeConfig.getString(IDENTITY_PATH)).thenReturn(identityPathAsString);
-            when(typesafeConfig.getBoolean(SERVER_ENABLED)).thenReturn(serverEnabled);
-            when(typesafeConfig.getString(SERVER_BIND_HOST)).thenReturn(serverBindHost.getHostAddress());
-            when(typesafeConfig.getInt(SERVER_BIND_PORT)).thenReturn(serverBindPort);
-            when(typesafeConfig.getInt(FLUSH_BUFFER_SIZE)).thenReturn(flushBufferSize);
-            when(typesafeConfig.getDuration(SERVER_HANDSHAKE_TIMEOUT)).thenReturn(serverHandshakeTimeout);
-            when(typesafeConfig.getString(SERVER_CHANNEL_INITIALIZER)).thenReturn(serverChannelInitializer.getCanonicalName());
+            when(typesafeConfig.getBoolean(REMOTE_ENABLED)).thenReturn(serverEnabled);
+            when(typesafeConfig.getString(REMOTE_BIND_HOST)).thenReturn(serverBindHost.getHostAddress());
+            when(typesafeConfig.getInt(REMOTE_BIND_PORT)).thenReturn(serverBindPort);
+            when(typesafeConfig.getDuration(REMOTE_PING_INTERVAL)).thenReturn(serverHandshakeTimeout);
             when(typesafeConfig.getMemorySize(MESSAGE_MAX_CONTENT_LENGTH)).thenReturn(ConfigMemorySize.ofBytes(messageMaxContentLength));
             when(typesafeConfig.getInt(MESSAGE_HOP_LIMIT)).thenReturn((int) messageHopLimit);
-            when(typesafeConfig.getBoolean(SERVER_SSL_ENABLED)).thenReturn(serverSSLEnabled);
-            when(typesafeConfig.getStringList(SERVER_SSL_PROTOCOLS)).thenReturn(new ArrayList<>(serverSSLProtocols));
-            when(typesafeConfig.getStringList(SERVER_ENDPOINTS)).thenReturn(List.of());
-            when(typesafeConfig.getBoolean(SERVER_EXPOSE_ENABLED)).thenReturn(serverExposeEnabled);
-            when(typesafeConfig.getBoolean(SUPER_PEER_ENABLED)).thenReturn(superPeerEnabled);
-            when(typesafeConfig.getString(SUPER_PEER_ENDPOINT)).thenReturn("ws://foo.bar:123#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
-            when(typesafeConfig.getDurationList(SUPER_PEER_RETRY_DELAYS)).thenReturn(superPeerRetryDelays);
-            when(typesafeConfig.getDuration(SUPER_PEER_HANDSHAKE_TIMEOUT)).thenReturn(superPeerHandshakeTimeout);
-            when(typesafeConfig.getString(SUPER_PEER_CHANNEL_INITIALIZER)).thenReturn(superPeerChannelInitializer.getCanonicalName());
+            when(typesafeConfig.getStringList(REMOTE_ENDPOINTS)).thenReturn(List.of());
+            when(typesafeConfig.getBoolean(REMOTE_EXPOSE_ENABLED)).thenReturn(remoteExposeEnabled);
+            when(typesafeConfig.getBoolean(REMOTE_SUPER_PEER_ENABLED)).thenReturn(superPeerEnabled);
+            when(typesafeConfig.getString(REMOTE_SUPER_PEER_ENDPOINT)).thenReturn("udp://foo.bar:123#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
             when(typesafeConfig.getBoolean(INTRA_VM_DISCOVERY_ENABLED)).thenReturn(intraVmDiscoveryEnabled);
             when(typesafeConfig.getBoolean(LOCAL_HOST_DISCOVERY_ENABLED)).thenReturn(localHostDiscoveryEnabled);
             when(typesafeConfig.getString(LOCAL_HOST_DISCOVERY_PATH)).thenReturn(localHostDiscoveryPathAsString);
@@ -268,27 +241,20 @@ class DrasylConfigTest {
             final DrasylConfig config = new DrasylConfig(typesafeConfig);
 
             assertEquals(networkId, config.getNetworkId());
-            assertEquals(serverBindHost, config.getServerBindHost());
-            assertEquals(serverBindPort, config.getServerBindPort());
+            assertEquals(serverBindHost, config.getRemoteBindHost());
+            assertEquals(serverBindPort, config.getRemoteBindPort());
             assertEquals(ProofOfWork.of(123), config.getIdentityProofOfWork());
             assertEquals(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"), config.getIdentityPublicKey());
             assertEquals(CompressedPrivateKey.of("0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d"), config.getIdentityPrivateKey());
             assertEquals(Paths.get("drasyl.identity.json"), config.getIdentityPath());
-            assertEquals(serverEnabled, config.isServerEnabled());
-            assertEquals(serverSSLEnabled, config.getServerSSLEnabled());
-            assertEquals(flushBufferSize, config.getFlushBufferSize());
-            assertEquals(serverSSLProtocols, config.getServerSSLProtocols());
-            assertEquals(serverHandshakeTimeout, config.getServerHandshakeTimeout());
-            assertEquals(Set.of(), config.getServerEndpoints());
-            assertEquals(serverChannelInitializer, config.getServerChannelInitializer());
-            assertEquals(serverExposeEnabled, config.isServerExposeEnabled());
+            assertEquals(serverEnabled, config.isRemoteEnabled());
+            assertEquals(serverHandshakeTimeout, config.getRemotePingInterval());
+            assertEquals(Set.of(), config.getRemoteEndpoints());
+            assertEquals(remoteExposeEnabled, config.isRemoteExposeEnabled());
             assertEquals(messageMaxContentLength, config.getMessageMaxContentLength());
             assertEquals(messageHopLimit, config.getMessageHopLimit());
-            assertEquals(superPeerEnabled, config.isSuperPeerEnabled());
-            assertEquals(superPeerEndpoint, config.getSuperPeerEndpoint());
-            assertEquals(superPeerRetryDelays, config.getSuperPeerRetryDelays());
-            assertEquals(superPeerHandshakeTimeout, config.getSuperPeerHandshakeTimeout());
-            assertEquals(superPeerChannelInitializer, config.getSuperPeerChannelInitializer());
+            assertEquals(superPeerEnabled, config.isRemoteSuperPeerEnabled());
+            assertEquals(superPeerEndpoint, config.getRemoteSuperPeerEndpoint());
             assertEquals(intraVmDiscoveryEnabled, config.isIntraVmDiscoveryEnabled());
             assertEquals(localHostDiscoveryEnabled, config.isLocalHostDiscoveryEnabled());
             assertEquals(Path.of(localHostDiscoveryPathAsString), config.getLocalHostDiscoveryPath());
@@ -318,17 +284,16 @@ class DrasylConfigTest {
             identityPrivateKey = CompressedPrivateKey.of("07e98a2f8162a4002825f810c0fbd69b0c42bd9cb4f74a21bc7807bc5acb4f5f");
 
             final DrasylConfig config = new DrasylConfig(networkId, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath,
-                    serverBindHost, serverEnabled, serverBindPort, flushBufferSize,
-                    serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout, serverEndpoints, serverChannelInitializer,
-                    serverExposeEnabled, messageMaxContentLength, messageHopLimit, composedMessageTransferTimeout, superPeerEnabled, superPeerEndpoint,
-                    superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer,
+                    serverBindHost, serverEnabled, serverBindPort,
+                    serverHandshakeTimeout, remotePingTimeout, remotePingCommunicationTimeout, remoteUniteMinInterval, remotePingMaxPeers, serverEndpoints,
+                    remoteExposeEnabled, messageMaxContentLength, messageHopLimit, composedMessageTransferTimeout, superPeerEnabled, superPeerEndpoint,
                     intraVmDiscoveryEnabled, localHostDiscoveryEnabled, Path.of(localHostDiscoveryPathAsString),
                     localHostDiscoveryLeaseTime, monitoringEnabled, monitoringInfluxUri, monitoringInfluxUser,
                     monitoringInfluxPassword, monitoringInfluxDatabase, monitoringInfluxReportingFrequency, plugins,
                     marshallingInboundAllowedTypes, marshallingInboundAllowAllPrimitives, marshallingInboundAllowArrayOfDefinedTypes, marshallingInboundAllowedPackages,
                     marshallingOutboundAllowedTypes, marshallingOutboundAllowAllPrimitives, marshallingOutboundAllowArrayOfDefinedTypes, marshallingOutboundAllowedPackages);
 
-            assertThat(config.toString(), not(containsString(identityPrivateKey.getCompressedKey())));
+            assertThat(config.toString(), not(containsString(identityPrivateKey.toString())));
         }
     }
 
@@ -542,23 +507,16 @@ class DrasylConfigTest {
                     .identityPublicKey(DEFAULT.getIdentityPublicKey())
                     .identityPrivateKey(DEFAULT.getIdentityPrivateKey())
                     .identityPath(DEFAULT.getIdentityPath())
-                    .serverBindHost(DEFAULT.getServerBindHost())
-                    .serverEnabled(DEFAULT.isServerEnabled())
-                    .serverBindPort(DEFAULT.getServerBindPort())
-                    .flushBufferSize(DEFAULT.getFlushBufferSize())
-                    .serverSSLEnabled(DEFAULT.getServerSSLEnabled())
-                    .serverSSLProtocols(DEFAULT.getServerSSLProtocols())
-                    .serverHandshakeTimeout(DEFAULT.getServerHandshakeTimeout())
-                    .serverEndpoints(DEFAULT.getServerEndpoints())
-                    .serverChannelInitializer(DEFAULT.getServerChannelInitializer())
-                    .serverExposeEnabled(DEFAULT.isServerExposeEnabled())
+                    .remoteBindHost(DEFAULT.getRemoteBindHost())
+                    .remoteEnabled(DEFAULT.isRemoteEnabled())
+                    .remoteBindPort(DEFAULT.getRemoteBindPort())
+                    .remotePingInterval(DEFAULT.getRemotePingInterval())
+                    .remoteEndpoints(DEFAULT.getRemoteEndpoints())
+                    .remoteExposeEnabled(DEFAULT.isRemoteExposeEnabled())
                     .messageMaxContentLength(DEFAULT.getMessageMaxContentLength())
                     .messageHopLimit(DEFAULT.getMessageHopLimit())
-                    .superPeerEnabled(DEFAULT.isSuperPeerEnabled())
-                    .superPeerEndpoint(DEFAULT.getSuperPeerEndpoint())
-                    .superPeerRetryDelays(DEFAULT.getSuperPeerRetryDelays())
-                    .superPeerHandshakeTimeout(DEFAULT.getSuperPeerHandshakeTimeout())
-                    .superPeerChannelInitializer(DEFAULT.getSuperPeerChannelInitializer())
+                    .remoteSuperPeerEnabled(DEFAULT.isRemoteSuperPeerEnabled())
+                    .remoteSuperPeerEndpoint(DEFAULT.getRemoteSuperPeerEndpoint())
                     .intraVmDiscoveryEnabled(DEFAULT.isIntraVmDiscoveryEnabled())
                     .localHostDiscoveryEnabled(DEFAULT.isLocalHostDiscoveryEnabled())
                     .localHostDiscoveryLeaseTime(DEFAULT.getLocalHostDiscoveryLeaseTime())

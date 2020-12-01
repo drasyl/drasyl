@@ -19,11 +19,10 @@
 package org.drasyl.pipeline.codec;
 
 import org.drasyl.identity.CompressedPublicKey;
-import org.drasyl.peer.connection.message.ApplicationMessage;
 import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 
-import java.util.Map;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -41,6 +40,6 @@ public class ObjectHolder2ApplicationMessageHandler extends SimpleOutboundHandle
                                 final CompressedPublicKey recipient,
                                 final ObjectHolder msg,
                                 final CompletableFuture<Void> future) {
-        ctx.write(recipient, new ApplicationMessage(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), recipient, Map.of(ObjectHolder.CLASS_KEY_NAME, msg.getClazzAsString()), msg.getObject()), future);
+        ctx.write(recipient, new ApplicationMessage(ctx.identity().getPublicKey(), recipient, msg), future);
     }
 }

@@ -69,21 +69,18 @@ public class DrasylConfig {
     static final String MESSAGE_MAX_CONTENT_LENGTH = "drasyl.message.max-content-length";
     static final String MESSAGE_HOP_LIMIT = "drasyl.message.hop-limit";
     static final String MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT = "drasyl.message.composed-message-transfer-timeout";
-    static final String FLUSH_BUFFER_SIZE = "drasyl.flush-buffer-size";
-    static final String SERVER_ENABLED = "drasyl.server.enabled";
-    static final String SERVER_BIND_HOST = "drasyl.server.bind-host";
-    static final String SERVER_BIND_PORT = "drasyl.server.bind-port";
-    static final String SERVER_ENDPOINTS = "drasyl.server.endpoints";
-    static final String SERVER_SSL_ENABLED = "drasyl.server.ssl.enabled";
-    static final String SERVER_SSL_PROTOCOLS = "drasyl.server.ssl.protocols";
-    static final String SERVER_HANDSHAKE_TIMEOUT = "drasyl.server.handshake-timeout";
-    static final String SERVER_CHANNEL_INITIALIZER = "drasyl.server.channel-initializer";
-    static final String SERVER_EXPOSE_ENABLED = "drasyl.server.expose.enabled";
-    static final String SUPER_PEER_ENABLED = "drasyl.super-peer.enabled";
-    static final String SUPER_PEER_ENDPOINT = "drasyl.super-peer.endpoint";
-    static final String SUPER_PEER_RETRY_DELAYS = "drasyl.super-peer.retry-delays";
-    static final String SUPER_PEER_HANDSHAKE_TIMEOUT = "drasyl.super-peer.handshake-timeout";
-    static final String SUPER_PEER_CHANNEL_INITIALIZER = "drasyl.super-peer.channel-initializer";
+    static final String REMOTE_ENABLED = "drasyl.remote.enabled";
+    static final String REMOTE_BIND_HOST = "drasyl.remote.bind-host";
+    static final String REMOTE_BIND_PORT = "drasyl.remote.bind-port";
+    static final String REMOTE_ENDPOINTS = "drasyl.remote.endpoints";
+    static final String REMOTE_EXPOSE_ENABLED = "drasyl.remote.expose.enabled";
+    static final String REMOTE_PING_INTERVAL = "drasyl.remote.ping.interval";
+    static final String REMOTE_PING_TIMEOUT = "drasyl.remote.ping.timeout";
+    static final String REMOTE_PING_COMMUNICATION_TIMEOUT = "drasyl.remote.ping.communication-timeout";
+    static final String REMOTE_PING_MAX_PEERS = "drasyl.remote.ping.max-peers";
+    static final String REMOTE_UNITE_MIN_INTERVAL = "drasyl.remote.unite.min-interval";
+    static final String REMOTE_SUPER_PEER_ENABLED = "drasyl.remote.super-peer.enabled";
+    static final String REMOTE_SUPER_PEER_ENDPOINT = "drasyl.remote.super-peer.endpoint";
     static final String INTRA_VM_DISCOVERY_ENABLED = "drasyl.intra-vm-discovery.enabled";
     static final String LOCAL_HOST_DISCOVERY_ENABLED = "drasyl.local-host-discovery.enabled";
     static final String LOCAL_HOST_DISCOVERY_PATH = "drasyl.local-host-discovery.path";
@@ -109,24 +106,21 @@ public class DrasylConfig {
     private final CompressedPublicKey identityPublicKey;
     private final CompressedPrivateKey identityPrivateKey;
     private final Path identityPath;
-    private final InetAddress serverBindHost;
-    private final boolean serverEnabled;
-    private final int serverBindPort;
-    private final int flushBufferSize;
-    private final boolean serverSSLEnabled;
-    private final Set<String> serverSSLProtocols;
-    private final Duration serverHandshakeTimeout;
-    private final Set<Endpoint> serverEndpoints;
-    private final Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer;
-    private final boolean serverExposeEnabled;
+    private final InetAddress remoteBindHost;
+    private final boolean remoteEnabled;
+    private final int remoteBindPort;
+    private final Duration remotePingInterval;
+    private final Duration remotePingTimeout;
+    private final Duration remotePingCommunicationTimeout;
+    private final Duration remoteUniteMinInterval;
+    private final int remotePingMaxPeers;
+    private final Set<Endpoint> remoteEndpoints;
+    private final boolean remoteExposeEnabled;
     private final int messageMaxContentLength;
     private final short messageHopLimit;
     private final Duration messageComposedMessageTransferTimeout;
-    private final boolean superPeerEnabled;
-    private final Endpoint superPeerEndpoint;
-    private final List<Duration> superPeerRetryDelays;
-    private final Duration superPeerHandshakeTimeout;
-    private final Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer;
+    private final boolean remoteSuperPeerEnabled;
+    private final Endpoint remoteSuperPeerEndpoint;
     private final boolean intraVmDiscoveryEnabled;
     private final boolean localHostDiscoveryEnabled;
     private final Path localHostDiscoveryPath;
@@ -182,27 +176,23 @@ public class DrasylConfig {
         }
         this.identityPath = getPath(config, IDENTITY_PATH);
 
-        // Init server config
-        this.serverEnabled = config.getBoolean(SERVER_ENABLED);
-        this.serverBindHost = getInetAddress(config, SERVER_BIND_HOST);
-        this.serverBindPort = config.getInt(SERVER_BIND_PORT);
-        this.flushBufferSize = config.getInt(FLUSH_BUFFER_SIZE);
-        this.serverHandshakeTimeout = config.getDuration(SERVER_HANDSHAKE_TIMEOUT);
-        this.serverChannelInitializer = getChannelInitializer(config, SERVER_CHANNEL_INITIALIZER);
+        // Init remote config
+        this.remoteEnabled = config.getBoolean(REMOTE_ENABLED);
+        this.remoteBindHost = getInetAddress(config, REMOTE_BIND_HOST);
+        this.remoteBindPort = config.getInt(REMOTE_BIND_PORT);
+        this.remoteEndpoints = Set.copyOf(getEndpointList(config, REMOTE_ENDPOINTS));
+        this.remoteExposeEnabled = config.getBoolean(REMOTE_EXPOSE_ENABLED);
+        this.remotePingInterval = config.getDuration(REMOTE_PING_INTERVAL);
+        this.remotePingTimeout = config.getDuration(REMOTE_PING_TIMEOUT);
+        this.remotePingCommunicationTimeout = config.getDuration(REMOTE_PING_COMMUNICATION_TIMEOUT);
+        this.remotePingMaxPeers = config.getInt(REMOTE_PING_MAX_PEERS);
+        this.remoteUniteMinInterval = config.getDuration(REMOTE_UNITE_MIN_INTERVAL);
+        this.remoteSuperPeerEnabled = config.getBoolean(REMOTE_SUPER_PEER_ENABLED);
+        this.remoteSuperPeerEndpoint = getEndpoint(config, REMOTE_SUPER_PEER_ENDPOINT);
+
         this.messageMaxContentLength = (int) Math.min(config.getMemorySize(MESSAGE_MAX_CONTENT_LENGTH).toBytes(), Integer.MAX_VALUE);
         this.messageComposedMessageTransferTimeout = config.getDuration(MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT);
         this.messageHopLimit = getShort(config, MESSAGE_HOP_LIMIT);
-        this.serverSSLEnabled = config.getBoolean(SERVER_SSL_ENABLED);
-        this.serverSSLProtocols = Set.copyOf(config.getStringList(SERVER_SSL_PROTOCOLS));
-        this.serverEndpoints = Set.copyOf(getEndpointList(config, SERVER_ENDPOINTS));
-        this.serverExposeEnabled = config.getBoolean(SERVER_EXPOSE_ENABLED);
-
-        // Init super peer config
-        this.superPeerEnabled = config.getBoolean(SUPER_PEER_ENABLED);
-        this.superPeerEndpoint = getEndpoint(config, SUPER_PEER_ENDPOINT);
-        this.superPeerRetryDelays = List.copyOf(config.getDurationList(SUPER_PEER_RETRY_DELAYS));
-        this.superPeerHandshakeTimeout = config.getDuration(SUPER_PEER_HANDSHAKE_TIMEOUT);
-        this.superPeerChannelInitializer = getChannelInitializer(config, SUPER_PEER_CHANNEL_INITIALIZER);
 
         this.intraVmDiscoveryEnabled = config.getBoolean(INTRA_VM_DISCOVERY_ENABLED);
 
@@ -319,22 +309,16 @@ public class DrasylConfig {
     }
 
     /**
-     * Gets the short at the given path. Similar to {@link Config}, an exception is thrown for an
-     * out-of-range value.
-     *
-     * @param config the application's portion of the configuration
-     * @param path   path expression
-     * @return the short value at the requested path
-     * @throws ConfigException.Missing   if value is absent or null
-     * @throws ConfigException.WrongType if value is not convertible to a short
+     * @throws ConfigException if value at path is invalid
      */
-    public static short getShort(final Config config, final String path) {
-        final int integerValue = config.getInt(path);
-        if (integerValue > Short.MAX_VALUE || integerValue < Short.MIN_VALUE) {
-            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "short", "out-of-range-value " + integerValue);
+    public static InetAddress getInetAddress(final Config config, final String path) {
+        final String stringValue = config.getString(path);
+        try {
+            return InetAddress.getByName(stringValue);
         }
-
-        return (short) integerValue;
+        catch (final UnknownHostException e) {
+            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "inet address", "unknown-host: " + e.getMessage());
+        }
     }
 
     /**
@@ -368,17 +352,42 @@ public class DrasylConfig {
     }
 
     /**
+     * Gets the short at the given path. Similar to {@link Config}, an exception is thrown for an
+     * out-of-range value.
+     *
+     * @param config the application's portion of the configuration
+     * @param path   path expression
+     * @return the short value at the requested path
+     * @throws ConfigException.Missing   if value is absent or null
+     * @throws ConfigException.WrongType if value is not convertible to a short
+     */
+    public static short getShort(final Config config, final String path) {
+        final int integerValue = config.getInt(path);
+        if (integerValue > Short.MAX_VALUE || integerValue < Short.MIN_VALUE) {
+            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "short", "out-of-range-value " + integerValue);
+        }
+
+        return (short) integerValue;
+    }
+
+    /**
+     * Gets the {@link URI} at the given path.
+     *
+     * @param config the application's portion of the configuration
+     * @param path   path expression
+     * @return the {@link URI} value at the requested path
      * @throws ConfigException if value at path is invalid
      */
-    @SuppressWarnings("unchecked")
-    public static Class<ChannelInitializer<SocketChannel>> getChannelInitializer(final Config config,
-                                                                                 final String path) {
-        final String className = config.getString(path);
+    public static URI getURI(final Config config, final String path) {
+        final String stringValue = config.getString(path);
         try {
-            return (Class<ChannelInitializer<SocketChannel>>) Class.forName(className);
+            return new URI(stringValue);
         }
-        catch (final ClassNotFoundException e) {
-            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "socket channel", "class-not-found: " + e.getMessage());
+        catch (final NullPointerException e) {
+            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "uri", "null");
+        }
+        catch (final URISyntaxException e) {
+            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "inet address", "violates RFC 2396: " + e.getMessage());
         }
     }
 
@@ -432,81 +441,27 @@ public class DrasylConfig {
         }
     }
 
-    /**
-     * @throws ConfigException if value at path is invalid
-     */
-    public static InetAddress getInetAddress(final Config config, final String path) {
-        final String stringValue = config.getString(path);
-        try {
-            return InetAddress.getByName(stringValue);
-        }
-        catch (final UnknownHostException e) {
-            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "inet address", "unknown-host: " + e.getMessage());
-        }
-    }
-
-    /**
-     * @throws ConfigException if value at path is invalid
-     */
-    public static InetSocketAddress getInetSocketAddress(final Config config, final String path) {
-        final String stringValue = config.getString(path);
-        try {
-            final URI uriValue = new URI("my://" + stringValue);
-            final String host = uriValue.getHost();
-            final int port = uriValue.getPort();
-
-            return InetSocketAddress.createUnresolved(host, port);
-        }
-        catch (final URISyntaxException | IllegalArgumentException e) {
-            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "inet socket address", e.getMessage());
-        }
-    }
-
-    /**
-     * Gets the {@link URI} at the given path.
-     *
-     * @param config the application's portion of the configuration
-     * @param path   path expression
-     * @return the {@link URI} value at the requested path
-     * @throws ConfigException if value at path is invalid
-     */
-    public static URI getURI(final Config config, final String path) {
-        final String stringValue = config.getString(path);
-        try {
-            return new URI(stringValue);
-        }
-        catch (final NullPointerException e) {
-            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "uri", "null");
-        }
-        catch (final URISyntaxException e) {
-            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "inet address", "violates RFC 2396: " + e.getMessage());
-        }
-    }
-
     @SuppressWarnings({ "java:S107" })
     DrasylConfig(final int networkId,
                  final ProofOfWork identityProofOfWork,
                  final CompressedPublicKey identityPublicKey,
                  final CompressedPrivateKey identityPrivateKey,
                  final Path identityPath,
-                 final InetAddress serverBindHost,
-                 final boolean serverEnabled,
-                 final int serverBindPort,
-                 final int flushBufferSize,
-                 final boolean serverSSLEnabled,
-                 final Set<String> serverSSLProtocols,
-                 final Duration serverHandshakeTimeout,
-                 final Set<Endpoint> serverEndpoints,
-                 final Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer,
-                 final boolean serverExposeEnabled,
+                 final InetAddress remoteBindHost,
+                 final boolean remoteEnabled,
+                 final int remoteBindPort,
+                 final Duration remotePingInterval,
+                 final Duration remotePingTimeout,
+                 final Duration remotePingCommunicationTimeout,
+                 final Duration remoteUniteMinInterval,
+                 final int remotePingMaxPeers,
+                 final Set<Endpoint> remoteEndpoints,
+                 final boolean remoteExposeEnabled,
                  final int messageMaxContentLength,
                  final short messageHopLimit,
                  final Duration messageComposedMessageTransferTimeout,
-                 final boolean superPeerEnabled,
-                 final Endpoint superPeerEndpoint,
-                 final List<Duration> superPeerRetryDelays,
-                 final Duration superPeerHandshakeTimeout,
-                 final Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer,
+                 final boolean remoteSuperPeerEnabled,
+                 final Endpoint remoteSuperPeerEndpoint,
                  final boolean intraVmDiscoveryEnabled,
                  final boolean localHostDiscoveryEnabled,
                  final Path localHostDiscoveryPath,
@@ -531,24 +486,21 @@ public class DrasylConfig {
         this.identityPublicKey = identityPublicKey;
         this.identityPrivateKey = identityPrivateKey;
         this.identityPath = identityPath;
-        this.serverBindHost = serverBindHost;
-        this.serverEnabled = serverEnabled;
-        this.serverBindPort = serverBindPort;
-        this.flushBufferSize = flushBufferSize;
-        this.serverSSLEnabled = serverSSLEnabled;
-        this.serverSSLProtocols = serverSSLProtocols;
-        this.serverHandshakeTimeout = serverHandshakeTimeout;
-        this.serverEndpoints = serverEndpoints;
-        this.serverChannelInitializer = serverChannelInitializer;
-        this.serverExposeEnabled = serverExposeEnabled;
+        this.remoteBindHost = remoteBindHost;
+        this.remoteEnabled = remoteEnabled;
+        this.remoteBindPort = remoteBindPort;
+        this.remotePingInterval = remotePingInterval;
+        this.remotePingTimeout = remotePingTimeout;
+        this.remotePingCommunicationTimeout = remotePingCommunicationTimeout;
+        this.remoteUniteMinInterval = remoteUniteMinInterval;
+        this.remotePingMaxPeers = remotePingMaxPeers;
+        this.remoteEndpoints = remoteEndpoints;
+        this.remoteExposeEnabled = remoteExposeEnabled;
         this.messageMaxContentLength = messageMaxContentLength;
         this.messageHopLimit = messageHopLimit;
         this.messageComposedMessageTransferTimeout = messageComposedMessageTransferTimeout;
-        this.superPeerEnabled = superPeerEnabled;
-        this.superPeerEndpoint = superPeerEndpoint;
-        this.superPeerRetryDelays = superPeerRetryDelays;
-        this.superPeerHandshakeTimeout = superPeerHandshakeTimeout;
-        this.superPeerChannelInitializer = superPeerChannelInitializer;
+        this.remoteSuperPeerEnabled = remoteSuperPeerEnabled;
+        this.remoteSuperPeerEndpoint = remoteSuperPeerEndpoint;
         this.intraVmDiscoveryEnabled = intraVmDiscoveryEnabled;
         this.localHostDiscoveryEnabled = localHostDiscoveryEnabled;
         this.localHostDiscoveryPath = localHostDiscoveryPath;
@@ -568,6 +520,122 @@ public class DrasylConfig {
         this.marshallingOutboundAllowAllPrimitives = marshallingOutboundAllowAllPrimitives;
         this.marshallingOutboundAllowArrayOfDefinedTypes = marshallingOutboundAllowArrayOfDefinedTypes;
         this.marshallingOutboundAllowedPackages = marshallingOutboundAllowedPackages;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(networkId, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath, remoteBindHost, remoteEnabled, remoteBindPort, remotePingInterval, remotePingTimeout, remotePingCommunicationTimeout, remoteUniteMinInterval, remotePingMaxPeers, remoteEndpoints, remoteExposeEnabled, messageMaxContentLength, messageHopLimit, messageComposedMessageTransferTimeout, remoteSuperPeerEnabled, remoteSuperPeerEndpoint, intraVmDiscoveryEnabled, localHostDiscoveryEnabled, localHostDiscoveryPath, localHostDiscoveryLeaseTime, monitoringEnabled, monitoringInfluxUri, monitoringInfluxUser, monitoringInfluxPassword, monitoringInfluxDatabase, monitoringInfluxReportingFrequency, pluginSet, marshallingInboundAllowedTypes, marshallingInboundAllowAllPrimitives, marshallingInboundAllowArrayOfDefinedTypes, marshallingInboundAllowedPackages, marshallingOutboundAllowedTypes, marshallingOutboundAllowAllPrimitives, marshallingOutboundAllowArrayOfDefinedTypes, marshallingOutboundAllowedPackages);
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        final DrasylConfig that = (DrasylConfig) o;
+        return networkId == that.networkId &&
+                remoteEnabled == that.remoteEnabled &&
+                remoteBindPort == that.remoteBindPort &&
+                remotePingMaxPeers == that.remotePingMaxPeers &&
+                remoteExposeEnabled == that.remoteExposeEnabled &&
+                messageMaxContentLength == that.messageMaxContentLength &&
+                messageHopLimit == that.messageHopLimit &&
+                remoteSuperPeerEnabled == that.remoteSuperPeerEnabled &&
+                intraVmDiscoveryEnabled == that.intraVmDiscoveryEnabled &&
+                localHostDiscoveryEnabled == that.localHostDiscoveryEnabled &&
+                monitoringEnabled == that.monitoringEnabled &&
+                marshallingInboundAllowAllPrimitives == that.marshallingInboundAllowAllPrimitives &&
+                marshallingInboundAllowArrayOfDefinedTypes == that.marshallingInboundAllowArrayOfDefinedTypes &&
+                marshallingOutboundAllowAllPrimitives == that.marshallingOutboundAllowAllPrimitives &&
+                marshallingOutboundAllowArrayOfDefinedTypes == that.marshallingOutboundAllowArrayOfDefinedTypes &&
+                Objects.equals(identityProofOfWork, that.identityProofOfWork) &&
+                Objects.equals(identityPublicKey, that.identityPublicKey) &&
+                Objects.equals(identityPrivateKey, that.identityPrivateKey) &&
+                Objects.equals(identityPath, that.identityPath) &&
+                Objects.equals(remoteBindHost, that.remoteBindHost) &&
+                Objects.equals(remotePingInterval, that.remotePingInterval) &&
+                Objects.equals(remotePingTimeout, that.remotePingTimeout) &&
+                Objects.equals(remotePingCommunicationTimeout, that.remotePingCommunicationTimeout) &&
+                Objects.equals(remoteUniteMinInterval, that.remoteUniteMinInterval) &&
+                Objects.equals(remoteEndpoints, that.remoteEndpoints) &&
+                Objects.equals(messageComposedMessageTransferTimeout, that.messageComposedMessageTransferTimeout) &&
+                Objects.equals(remoteSuperPeerEndpoint, that.remoteSuperPeerEndpoint) &&
+                Objects.equals(localHostDiscoveryPath, that.localHostDiscoveryPath) &&
+                Objects.equals(localHostDiscoveryLeaseTime, that.localHostDiscoveryLeaseTime) &&
+                Objects.equals(monitoringInfluxUri, that.monitoringInfluxUri) &&
+                Objects.equals(monitoringInfluxUser, that.monitoringInfluxUser) &&
+                Objects.equals(monitoringInfluxPassword, that.monitoringInfluxPassword) &&
+                Objects.equals(monitoringInfluxDatabase, that.monitoringInfluxDatabase) &&
+                Objects.equals(monitoringInfluxReportingFrequency, that.monitoringInfluxReportingFrequency) &&
+                Objects.equals(pluginSet, that.pluginSet) &&
+                Objects.equals(marshallingInboundAllowedTypes, that.marshallingInboundAllowedTypes) &&
+                Objects.equals(marshallingInboundAllowedPackages, that.marshallingInboundAllowedPackages) &&
+                Objects.equals(marshallingOutboundAllowedTypes, that.marshallingOutboundAllowedTypes) &&
+                Objects.equals(marshallingOutboundAllowedPackages, that.marshallingOutboundAllowedPackages);
+    }
+
+    @Override
+    public String toString() {
+        return "DrasylConfig{" +
+                "networkId=" + networkId +
+                ", identityProofOfWork=" + identityProofOfWork +
+                ", identityPublicKey=" + identityPublicKey +
+                ", identityPrivateKey=" + maskSecret(identityPrivateKey) +
+                ", identityPath=" + identityPath +
+                ", remoteBindHost=" + remoteBindHost +
+                ", remoteEnabled=" + remoteEnabled +
+                ", remoteBindPort=" + remoteBindPort +
+                ", remotePingInterval=" + remotePingInterval +
+                ", remotePingTimeout=" + remotePingTimeout +
+                ", remotePingCommunicationTimeout=" + remotePingCommunicationTimeout +
+                ", remoteUniteMinInterval=" + remoteUniteMinInterval +
+                ", remotePingMaxPeers=" + remotePingMaxPeers +
+                ", remoteEndpoints=" + remoteEndpoints +
+                ", remoteExposeEnabled=" + remoteExposeEnabled +
+                ", messageMaxContentLength=" + messageMaxContentLength +
+                ", messageHopLimit=" + messageHopLimit +
+                ", messageComposedMessageTransferTimeout=" + messageComposedMessageTransferTimeout +
+                ", remoteSuperPeerEnabled=" + remoteSuperPeerEnabled +
+                ", remoteSuperPeerEndpoint=" + remoteSuperPeerEndpoint +
+                ", intraVmDiscoveryEnabled=" + intraVmDiscoveryEnabled +
+                ", localHostDiscoveryEnabled=" + localHostDiscoveryEnabled +
+                ", localHostDiscoveryPath=" + localHostDiscoveryPath +
+                ", localHostDiscoveryLeaseTime=" + localHostDiscoveryLeaseTime +
+                ", monitoringEnabled=" + monitoringEnabled +
+                ", monitoringInfluxUri=" + monitoringInfluxUri +
+                ", monitoringInfluxUser='" + monitoringInfluxUser + '\'' +
+                ", monitoringInfluxPassword='" + maskSecret(monitoringInfluxPassword) + '\'' +
+                ", monitoringInfluxDatabase='" + monitoringInfluxDatabase + '\'' +
+                ", monitoringInfluxReportingFrequency=" + monitoringInfluxReportingFrequency +
+                ", pluginSet=" + pluginSet +
+                ", marshallingInboundAllowedTypes=" + marshallingInboundAllowedTypes +
+                ", marshallingInboundAllowAllPrimitives=" + marshallingInboundAllowAllPrimitives +
+                ", marshallingInboundAllowArrayOfDefinedTypes=" + marshallingInboundAllowArrayOfDefinedTypes +
+                ", marshallingInboundAllowedPackages=" + marshallingInboundAllowedPackages +
+                ", marshallingOutboundAllowedTypes=" + marshallingOutboundAllowedTypes +
+                ", marshallingOutboundAllowAllPrimitives=" + marshallingOutboundAllowAllPrimitives +
+                ", marshallingOutboundAllowArrayOfDefinedTypes=" + marshallingOutboundAllowArrayOfDefinedTypes +
+                ", marshallingOutboundAllowedPackages=" + marshallingOutboundAllowedPackages +
+                '}';
+    }
+
+    public Duration getRemotePingTimeout() {
+        return remotePingTimeout;
+    }
+
+    public Duration getRemotePingCommunicationTimeout() {
+        return remotePingCommunicationTimeout;
+    }
+
+    public Duration getRemoteUniteMinInterval() {
+        return remoteUniteMinInterval;
+    }
+
+    public int getRemotePingMaxPeers() {
+        return remotePingMaxPeers;
     }
 
     public int getNetworkId() {
@@ -598,12 +666,36 @@ public class DrasylConfig {
         return monitoringInfluxReportingFrequency;
     }
 
-    public InetAddress getServerBindHost() {
-        return serverBindHost;
+    public boolean isRemoteEnabled() {
+        return remoteEnabled;
     }
 
-    public int getServerBindPort() {
-        return serverBindPort;
+    public InetAddress getRemoteBindHost() {
+        return remoteBindHost;
+    }
+
+    public int getRemoteBindPort() {
+        return remoteBindPort;
+    }
+
+    public Set<Endpoint> getRemoteEndpoints() {
+        return remoteEndpoints;
+    }
+
+    public boolean isRemoteExposeEnabled() {
+        return remoteExposeEnabled;
+    }
+
+    public Duration getRemotePingInterval() {
+        return remotePingInterval;
+    }
+
+    public boolean isRemoteSuperPeerEnabled() {
+        return remoteSuperPeerEnabled;
+    }
+
+    public Endpoint getRemoteSuperPeerEndpoint() {
+        return remoteSuperPeerEndpoint;
     }
 
     public ProofOfWork getIdentityProofOfWork() {
@@ -622,38 +714,6 @@ public class DrasylConfig {
         return identityPath;
     }
 
-    public boolean isServerEnabled() {
-        return serverEnabled;
-    }
-
-    public boolean getServerSSLEnabled() {
-        return serverSSLEnabled;
-    }
-
-    public Duration getSuperPeerHandshakeTimeout() {
-        return superPeerHandshakeTimeout;
-    }
-
-    public int getFlushBufferSize() {
-        return flushBufferSize;
-    }
-
-    public Set<String> getServerSSLProtocols() {
-        return serverSSLProtocols;
-    }
-
-    public Duration getServerHandshakeTimeout() {
-        return serverHandshakeTimeout;
-    }
-
-    public Set<Endpoint> getServerEndpoints() {
-        return serverEndpoints;
-    }
-
-    public Class<? extends ChannelInitializer<SocketChannel>> getServerChannelInitializer() {
-        return serverChannelInitializer;
-    }
-
     public int getMessageMaxContentLength() {
         return messageMaxContentLength;
     }
@@ -664,22 +724,6 @@ public class DrasylConfig {
 
     public Duration getMessageComposedMessageTransferTimeout() {
         return messageComposedMessageTransferTimeout;
-    }
-
-    public boolean isSuperPeerEnabled() {
-        return superPeerEnabled;
-    }
-
-    public Endpoint getSuperPeerEndpoint() {
-        return superPeerEndpoint;
-    }
-
-    public List<Duration> getSuperPeerRetryDelays() {
-        return superPeerRetryDelays;
-    }
-
-    public Class<? extends ChannelInitializer<SocketChannel>> getSuperPeerChannelInitializer() {
-        return superPeerChannelInitializer;
     }
 
     public boolean isIntraVmDiscoveryEnabled() {
@@ -700,11 +744,6 @@ public class DrasylConfig {
 
     public Set<DrasylPlugin> getPlugins() {
         return pluginSet;
-    }
-
-    public Class<? extends ChannelInitializer<SocketChannel>> getDirectConnectionsChannelInitializer
-            () {
-        return getSuperPeerChannelInitializer();
     }
 
     public List<String> getMarshallingInboundAllowedTypes() {
@@ -739,129 +778,36 @@ public class DrasylConfig {
         return marshallingOutboundAllowedPackages;
     }
 
-    public boolean isServerExposeEnabled() {
-        return serverExposeEnabled;
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(networkId, identityProofOfWork, identityPublicKey, identityPrivateKey,
-                identityPath, serverBindHost, serverEnabled, serverBindPort, flushBufferSize,
-                serverSSLEnabled, serverSSLProtocols, serverHandshakeTimeout,
-                serverEndpoints, serverChannelInitializer,
-                serverExposeEnabled, messageMaxContentLength, messageHopLimit,
-                messageComposedMessageTransferTimeout, superPeerEnabled, superPeerEndpoint,
-                superPeerRetryDelays, superPeerHandshakeTimeout, superPeerChannelInitializer,
-                intraVmDiscoveryEnabled,
-                localHostDiscoveryEnabled, localHostDiscoveryPath, localHostDiscoveryLeaseTime,
-                monitoringEnabled, monitoringInfluxUri, monitoringInfluxUser,
-                monitoringInfluxPassword, monitoringInfluxDatabase,
-                monitoringInfluxReportingFrequency, pluginSet, marshallingInboundAllowedTypes,
-                marshallingInboundAllowAllPrimitives, marshallingInboundAllowArrayOfDefinedTypes,
-                marshallingInboundAllowedPackages, marshallingOutboundAllowedTypes,
-                marshallingOutboundAllowAllPrimitives, marshallingOutboundAllowArrayOfDefinedTypes,
-                marshallingOutboundAllowedPackages);
-    }
-
-    @Override
-    public boolean equals(final Object o) {
-        if (this == o) {
-            return true;
+    /**
+     * @throws ConfigException if value at path is invalid
+     */
+    @SuppressWarnings("unchecked")
+    public static Class<ChannelInitializer<SocketChannel>> getChannelInitializer(final Config config,
+                                                                                 final String path) {
+        final String className = config.getString(path);
+        try {
+            return (Class<ChannelInitializer<SocketChannel>>) Class.forName(className);
         }
-        if (o == null || getClass() != o.getClass()) {
-            return false;
+        catch (final ClassNotFoundException e) {
+            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "socket channel", "class-not-found: " + e.getMessage());
         }
-        final DrasylConfig that = (DrasylConfig) o;
-        return networkId == that.networkId &&
-                serverEnabled == that.serverEnabled &&
-                serverBindPort == that.serverBindPort &&
-                flushBufferSize == that.flushBufferSize &&
-                serverSSLEnabled == that.serverSSLEnabled &&
-                messageMaxContentLength == that.messageMaxContentLength &&
-                messageHopLimit == that.messageHopLimit &&
-                superPeerEnabled == that.superPeerEnabled &&
-                intraVmDiscoveryEnabled == that.intraVmDiscoveryEnabled &&
-                localHostDiscoveryEnabled == that.localHostDiscoveryEnabled &&
-                monitoringEnabled == that.monitoringEnabled &&
-                Objects.equals(identityProofOfWork, that.identityProofOfWork) &&
-                Objects.equals(identityPublicKey, that.identityPublicKey) &&
-                Objects.equals(identityPrivateKey, that.identityPrivateKey) &&
-                Objects.equals(identityPath, that.identityPath) &&
-                Objects.equals(serverBindHost, that.serverBindHost) &&
-                Objects.equals(serverSSLProtocols, that.serverSSLProtocols) &&
-                Objects.equals(serverHandshakeTimeout, that.serverHandshakeTimeout) &&
-                Objects.equals(serverEndpoints, that.serverEndpoints) &&
-                Objects.equals(serverChannelInitializer, that.serverChannelInitializer) &&
-                Objects.equals(serverExposeEnabled, that.serverExposeEnabled) &&
-                Objects.equals(messageComposedMessageTransferTimeout, that.messageComposedMessageTransferTimeout) &&
-                Objects.equals(superPeerEndpoint, that.superPeerEndpoint) &&
-                Objects.equals(superPeerRetryDelays, that.superPeerRetryDelays) &&
-                Objects.equals(superPeerHandshakeTimeout, that.superPeerHandshakeTimeout) &&
-                Objects.equals(superPeerChannelInitializer, that.superPeerChannelInitializer) &&
-                Objects.equals(localHostDiscoveryPath, that.localHostDiscoveryPath) &&
-                Objects.equals(localHostDiscoveryLeaseTime, that.localHostDiscoveryLeaseTime) &&
-                Objects.equals(monitoringInfluxUri, that.monitoringInfluxUri) &&
-                Objects.equals(monitoringInfluxUser, that.monitoringInfluxUser) &&
-                Objects.equals(monitoringInfluxPassword, that.monitoringInfluxPassword) &&
-                Objects.equals(monitoringInfluxDatabase, that.monitoringInfluxDatabase) &&
-                Objects.equals(monitoringInfluxReportingFrequency, that.monitoringInfluxReportingFrequency) &&
-                Objects.equals(pluginSet, that.pluginSet) &&
-                Objects.equals(marshallingInboundAllowedTypes, that.marshallingInboundAllowedTypes) &&
-                Objects.equals(marshallingInboundAllowAllPrimitives, that.marshallingInboundAllowAllPrimitives) &&
-                Objects.equals(marshallingInboundAllowArrayOfDefinedTypes, that.marshallingInboundAllowArrayOfDefinedTypes) &&
-                Objects.equals(marshallingInboundAllowedPackages, that.marshallingInboundAllowedPackages) &&
-                Objects.equals(marshallingOutboundAllowedTypes, that.marshallingOutboundAllowedTypes) &&
-                Objects.equals(marshallingOutboundAllowAllPrimitives, that.marshallingOutboundAllowAllPrimitives) &&
-                Objects.equals(marshallingOutboundAllowArrayOfDefinedTypes, that.marshallingOutboundAllowArrayOfDefinedTypes) &&
-                Objects.equals(marshallingOutboundAllowedPackages, that.marshallingOutboundAllowedPackages);
     }
 
-    @Override
-    public String toString() {
-        return "DrasylConfig{" +
-                "networkId=" + networkId +
-                ", identityProofOfWork=" + identityProofOfWork +
-                ", identityPublicKey=" + identityPublicKey +
-                ", identityPrivateKey=" + maskSecret(identityPrivateKey) +
-                ", identityPath=" + identityPath +
-                ", serverBindHost='" + serverBindHost + '\'' +
-                ", serverEnabled=" + serverEnabled +
-                ", serverBindPort=" + serverBindPort +
-                ", flushBufferSize=" + flushBufferSize +
-                ", serverSSLEnabled=" + serverSSLEnabled +
-                ", serverSSLProtocols=" + serverSSLProtocols +
-                ", serverHandshakeTimeout=" + serverHandshakeTimeout +
-                ", serverEndpoints=" + serverEndpoints +
-                ", serverChannelInitializer=" + serverChannelInitializer +
-                ", serverExposeEnabled=" + serverExposeEnabled +
-                ", messageMaxContentLength=" + messageMaxContentLength +
-                ", messageHopLimit=" + messageHopLimit +
-                ", messageComposedMessageTransferTimeout=" + messageComposedMessageTransferTimeout +
-                ", superPeerEnabled=" + superPeerEnabled +
-                ", superPeerEndpoint=" + superPeerEndpoint +
-                ", superPeerRetryDelays=" + superPeerRetryDelays +
-                ", superPeerHandshakeTimeout=" + superPeerHandshakeTimeout +
-                ", superPeerChannelInitializer=" + superPeerChannelInitializer +
-                ", intraVmDiscoveryEnabled=" + intraVmDiscoveryEnabled +
-                ", localHostDiscoveryEnabled=" + localHostDiscoveryEnabled +
-                ", localHostDiscoveryPath=" + localHostDiscoveryPath +
-                ", localHostDiscoveryLeaseTime=" + localHostDiscoveryLeaseTime +
-                ", monitoringEnabled=" + monitoringEnabled +
-                ", monitoringInfluxUri='" + monitoringInfluxUri + '\'' +
-                ", monitoringInfluxUser='" + monitoringInfluxUser + '\'' +
-                ", monitoringInfluxPassword='" + maskSecret(identityPrivateKey) + '\'' +
-                ", monitoringInfluxDatabase='" + monitoringInfluxDatabase + '\'' +
-                ", monitoringInfluxReportingFrequency=" + monitoringInfluxReportingFrequency +
-                ", plugins=" + pluginSet +
-                ", marshallingInboundAllowedTypes=" + marshallingInboundAllowedTypes +
-                ", marshallingInboundAllowAllPrimitives=" + marshallingInboundAllowAllPrimitives +
-                ", marshallingInboundAllowArrayOfDefinedTypes=" + marshallingInboundAllowArrayOfDefinedTypes +
-                ", marshallingInboundAllowedPackages=" + marshallingInboundAllowedPackages +
-                ", marshallingOutboundAllowedTypes=" + marshallingOutboundAllowedTypes +
-                ", marshallingOutboundAllowAllPrimitives=" + marshallingOutboundAllowAllPrimitives +
-                ", marshallingOutboundAllowArrayOfDefinedTypes=" + marshallingOutboundAllowArrayOfDefinedTypes +
-                ", marshallingOutboundAllowedPackages=" + marshallingOutboundAllowedPackages +
-                '}';
+    /**
+     * @throws ConfigException if value at path is invalid
+     */
+    public static InetSocketAddress getInetSocketAddress(final Config config, final String path) {
+        final String stringValue = config.getString(path);
+        try {
+            final URI uriValue = new URI("my://" + stringValue);
+            final String host = uriValue.getHost();
+            final int port = uriValue.getPort();
+
+            return InetSocketAddress.createUnresolved(host, port);
+        }
+        catch (final URISyntaxException | IllegalArgumentException e) {
+            throw new ConfigException.WrongType(config.getValue(path).origin(), path, "inet socket address", e.getMessage());
+        }
     }
 
     /**
@@ -904,24 +850,21 @@ public class DrasylConfig {
                 config.identityPublicKey,
                 config.identityPrivateKey,
                 config.identityPath,
-                config.serverBindHost,
-                config.serverEnabled,
-                config.serverBindPort,
-                config.flushBufferSize,
-                config.serverSSLEnabled,
-                config.serverSSLProtocols,
-                config.serverHandshakeTimeout,
-                config.serverEndpoints,
-                config.serverChannelInitializer,
-                config.serverExposeEnabled,
+                config.remoteBindHost,
+                config.remoteEnabled,
+                config.remoteBindPort,
+                config.remotePingInterval,
+                config.remotePingTimeout,
+                config.remotePingCommunicationTimeout,
+                config.remoteUniteMinInterval,
+                config.remotePingMaxPeers,
+                config.remoteEndpoints,
+                config.remoteExposeEnabled,
                 config.messageMaxContentLength,
                 config.messageHopLimit,
                 config.messageComposedMessageTransferTimeout,
-                config.superPeerEnabled,
-                config.superPeerEndpoint,
-                config.superPeerRetryDelays,
-                config.superPeerHandshakeTimeout,
-                config.superPeerChannelInitializer,
+                config.remoteSuperPeerEnabled,
+                config.remoteSuperPeerEndpoint,
                 config.intraVmDiscoveryEnabled,
                 config.localHostDiscoveryEnabled,
                 config.localHostDiscoveryPath,
@@ -944,9 +887,6 @@ public class DrasylConfig {
         );
     }
 
-    /**
-     * Builder class to create a {@link DrasylConfig} with custom values.
-     */
     public static final class Builder {
         //======================================= Config Values ========================================
         private int networkId;
@@ -954,27 +894,24 @@ public class DrasylConfig {
         private CompressedPublicKey identityPublicKey;
         private CompressedPrivateKey identityPrivateKey;
         private Path identityPath;
-        private InetAddress serverBindHost;
-        private boolean serverEnabled;
-        private int serverBindPort;
-        private int flushBufferSize;
-        private boolean serverSSLEnabled;
-        private Set<String> serverSSLProtocols;
-        private Duration serverHandshakeTimeout;
-        private Set<Endpoint> serverEndpoints;
-        private Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer;
-        private boolean serverExposeEnabled;
+        private InetAddress remoteBindHost;
+        private boolean remoteEnabled;
+        private int remoteBindPort;
+        private Duration remotePingInterval;
+        private Duration remotePingTimeout;
+        private Duration remotePingCommunicationTimeout;
+        private Duration remoteUniteMinInterval;
+        private int remotePingMaxPeers;
+        private Set<Endpoint> remoteEndpoints;
+        private boolean remoteExposeEnabled;
         private int messageMaxContentLength;
         private short messageHopLimit;
         private Duration messageComposedMessageTransferTimeout;
-        private boolean superPeerEnabled;
-        private Endpoint superPeerEndpoint;
-        private List<Duration> superPeerRetryDelays;
-        private Duration superPeerHandshakeTimeout;
-        private Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer;
+        private boolean remoteSuperPeerEnabled;
+        private Endpoint remoteSuperPeerEndpoint;
         private boolean intraVmDiscoveryEnabled;
         private boolean localHostDiscoveryEnabled;
-        private final Path localHostDiscoveryPath;
+        private Path localHostDiscoveryPath;
         private Duration localHostDiscoveryLeaseTime;
         private boolean monitoringEnabled;
         private URI monitoringInfluxUri;
@@ -982,7 +919,7 @@ public class DrasylConfig {
         private String monitoringInfluxPassword;
         private String monitoringInfluxDatabase;
         private Duration monitoringInfluxReportingFrequency;
-        private Set<DrasylPlugin> plugins;
+        private Set<DrasylPlugin> pluginSet;
         private List<String> marshallingInboundAllowedTypes;
         private boolean marshallingInboundAllowAllPrimitives;
         private boolean marshallingInboundAllowArrayOfDefinedTypes;
@@ -992,71 +929,68 @@ public class DrasylConfig {
         private boolean marshallingOutboundAllowArrayOfDefinedTypes;
         private List<String> marshallingOutboundAllowedPackages;
 
-        @SuppressWarnings({ "java:S107" })
-        private Builder(final int networkId,
-                        final ProofOfWork identityProofOfWork,
-                        final CompressedPublicKey identityPublicKey,
-                        final CompressedPrivateKey identityPrivateKey,
-                        final Path identityPath,
-                        final InetAddress serverBindHost,
-                        final boolean serverEnabled,
-                        final int serverBindPort,
-                        final int flushBufferSize,
-                        final boolean serverSSLEnabled,
-                        final Set<String> serverSSLProtocols,
-                        final Duration serverHandshakeTimeout,
-                        final Set<Endpoint> serverEndpoints,
-                        final Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer,
-                        final boolean serverExposeEnabled,
-                        final int messageMaxContentLength,
-                        final short messageHopLimit,
-                        final Duration messageComposedMessageTransferTimeout,
-                        final boolean superPeerEnabled,
-                        final Endpoint superPeerEndpoint,
-                        final List<Duration> superPeerRetryDelays,
-                        final Duration superPeerHandshakeTimeout,
-                        final Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer,
-                        final boolean intraVmDiscoveryEnabled,
-                        final boolean localHostDiscoveryEnabled,
-                        final Path localHostDiscoveryPath,
-                        final Duration localHostDiscoveryLeaseTime,
-                        final boolean monitoringEnabled,
-                        final URI monitoringInfluxUri,
-                        final String monitoringInfluxUser,
-                        final String monitoringInfluxPassword,
-                        final String monitoringInfluxDatabase,
-                        final Duration monitoringInfluxReportingFrequency,
-                        final Set<DrasylPlugin> plugins,
-                        final List<String> marshallingInboundAllowedTypes,
-                        final boolean marshallingInboundAllowAllPrimitives,
-                        final boolean marshallingInboundAllowArrayOfDefinedTypes,
-                        final List<String> marshallingInboundAllowedPackages,
-                        final List<String> marshallingOutboundAllowedTypes,
-                        final boolean marshallingOutboundAllowAllPrimitives,
-                        final boolean marshallingOutboundAllowArrayOfDefinedTypes,
-                        final List<String> marshallingOutboundAllowedPackages) {
+        private Builder() {
+        }
+
+        public Builder(final int networkId,
+                       final ProofOfWork identityProofOfWork,
+                       final CompressedPublicKey identityPublicKey,
+                       final CompressedPrivateKey identityPrivateKey,
+                       final Path identityPath,
+                       final InetAddress remoteBindHost,
+                       final boolean remoteEnabled,
+                       final int remoteBindPort,
+                       final Duration remotePingInterval,
+                       final Duration remotePingTimeout,
+                       final Duration remotePingCommunicationTimeout,
+                       final Duration remoteUniteMinInterval,
+                       final int remotePingMaxPeers,
+                       final Set<Endpoint> remoteEndpoints,
+                       final boolean remoteExposeEnabled,
+                       final int messageMaxContentLength,
+                       final short messageHopLimit,
+                       final Duration messageComposedMessageTransferTimeout,
+                       final boolean remoteSuperPeerEnabled,
+                       final Endpoint remoteSuperPeerEndpoint,
+                       final boolean intraVmDiscoveryEnabled,
+                       final boolean localHostDiscoveryEnabled,
+                       final Path localHostDiscoveryPath,
+                       final Duration localHostDiscoveryLeaseTime,
+                       final boolean monitoringEnabled,
+                       final URI monitoringInfluxUri,
+                       final String monitoringInfluxUser,
+                       final String monitoringInfluxPassword,
+                       final String monitoringInfluxDatabase,
+                       final Duration monitoringInfluxReportingFrequency,
+                       final Set<DrasylPlugin> pluginSet,
+                       final List<String> marshallingInboundAllowedTypes,
+                       final boolean marshallingInboundAllowAllPrimitives,
+                       final boolean marshallingInboundAllowArrayOfDefinedTypes,
+                       final List<String> marshallingInboundAllowedPackages,
+                       final List<String> marshallingOutboundAllowedTypes,
+                       final boolean marshallingOutboundAllowAllPrimitives,
+                       final boolean marshallingOutboundAllowArrayOfDefinedTypes,
+                       final List<String> marshallingOutboundAllowedPackages) {
             this.networkId = networkId;
             this.identityProofOfWork = identityProofOfWork;
             this.identityPublicKey = identityPublicKey;
             this.identityPrivateKey = identityPrivateKey;
             this.identityPath = identityPath;
-            this.serverBindHost = serverBindHost;
-            this.serverEnabled = serverEnabled;
-            this.serverBindPort = serverBindPort;
-            this.flushBufferSize = flushBufferSize;
-            this.serverSSLEnabled = serverSSLEnabled;
-            this.serverSSLProtocols = serverSSLProtocols;
-            this.serverHandshakeTimeout = serverHandshakeTimeout;
-            this.serverEndpoints = serverEndpoints;
-            this.serverChannelInitializer = serverChannelInitializer;
+            this.remoteBindHost = remoteBindHost;
+            this.remoteEnabled = remoteEnabled;
+            this.remoteBindPort = remoteBindPort;
+            this.remotePingInterval = remotePingInterval;
+            this.remotePingTimeout = remotePingTimeout;
+            this.remotePingCommunicationTimeout = remotePingCommunicationTimeout;
+            this.remoteUniteMinInterval = remoteUniteMinInterval;
+            this.remotePingMaxPeers = remotePingMaxPeers;
+            this.remoteEndpoints = remoteEndpoints;
+            this.remoteExposeEnabled = remoteExposeEnabled;
             this.messageMaxContentLength = messageMaxContentLength;
             this.messageHopLimit = messageHopLimit;
             this.messageComposedMessageTransferTimeout = messageComposedMessageTransferTimeout;
-            this.superPeerEnabled = superPeerEnabled;
-            this.superPeerEndpoint = superPeerEndpoint;
-            this.superPeerRetryDelays = superPeerRetryDelays;
-            this.superPeerHandshakeTimeout = superPeerHandshakeTimeout;
-            this.superPeerChannelInitializer = superPeerChannelInitializer;
+            this.remoteSuperPeerEnabled = remoteSuperPeerEnabled;
+            this.remoteSuperPeerEndpoint = remoteSuperPeerEndpoint;
             this.intraVmDiscoveryEnabled = intraVmDiscoveryEnabled;
             this.localHostDiscoveryEnabled = localHostDiscoveryEnabled;
             this.localHostDiscoveryPath = localHostDiscoveryPath;
@@ -1067,7 +1001,7 @@ public class DrasylConfig {
             this.monitoringInfluxPassword = monitoringInfluxPassword;
             this.monitoringInfluxDatabase = monitoringInfluxDatabase;
             this.monitoringInfluxReportingFrequency = monitoringInfluxReportingFrequency;
-            this.plugins = plugins;
+            this.pluginSet = pluginSet;
             this.marshallingInboundAllowedTypes = marshallingInboundAllowedTypes;
             this.marshallingInboundAllowAllPrimitives = marshallingInboundAllowAllPrimitives;
             this.marshallingInboundAllowArrayOfDefinedTypes = marshallingInboundAllowArrayOfDefinedTypes;
@@ -1076,7 +1010,6 @@ public class DrasylConfig {
             this.marshallingOutboundAllowAllPrimitives = marshallingOutboundAllowAllPrimitives;
             this.marshallingOutboundAllowArrayOfDefinedTypes = marshallingOutboundAllowArrayOfDefinedTypes;
             this.marshallingOutboundAllowedPackages = marshallingOutboundAllowedPackages;
-            this.serverExposeEnabled = serverExposeEnabled;
         }
 
         public Builder networkId(final int networkId) {
@@ -1104,48 +1037,53 @@ public class DrasylConfig {
             return this;
         }
 
-        public Builder serverBindHost(final InetAddress serverBindHost) {
-            this.serverBindHost = serverBindHost;
+        public Builder remoteBindHost(final InetAddress remoteBindHost) {
+            this.remoteBindHost = remoteBindHost;
             return this;
         }
 
-        public Builder serverEnabled(final boolean serverEnabled) {
-            this.serverEnabled = serverEnabled;
+        public Builder remoteEnabled(final boolean remoteEnabled) {
+            this.remoteEnabled = remoteEnabled;
             return this;
         }
 
-        public Builder serverBindPort(final int serverBindPort) {
-            this.serverBindPort = serverBindPort;
+        public Builder remoteBindPort(final int remoteBindPort) {
+            this.remoteBindPort = remoteBindPort;
             return this;
         }
 
-        public Builder flushBufferSize(final int flushBufferSize) {
-            this.flushBufferSize = flushBufferSize;
+        public Builder remotePingInterval(final Duration remotePingInterval) {
+            this.remotePingInterval = remotePingInterval;
             return this;
         }
 
-        public Builder serverSSLEnabled(final boolean serverSSLEnabled) {
-            this.serverSSLEnabled = serverSSLEnabled;
+        public Builder remotePingTimeout(final Duration remotePingTimeout) {
+            this.remotePingTimeout = remotePingTimeout;
             return this;
         }
 
-        public Builder serverSSLProtocols(final Set<String> serverSSLProtocols) {
-            this.serverSSLProtocols = serverSSLProtocols;
+        public Builder remotePingCommunicationTimeout(final Duration remotePingCommunicationTimeout) {
+            this.remotePingCommunicationTimeout = remotePingCommunicationTimeout;
             return this;
         }
 
-        public Builder serverHandshakeTimeout(final Duration serverHandshakeTimeout) {
-            this.serverHandshakeTimeout = serverHandshakeTimeout;
+        public Builder remoteUniteMinInterval(final Duration remoteUniteMinInterval) {
+            this.remoteUniteMinInterval = remoteUniteMinInterval;
             return this;
         }
 
-        public Builder serverEndpoints(final Set<Endpoint> serverEndpoints) {
-            this.serverEndpoints = serverEndpoints;
+        public Builder remotePingMaxPeers(final int remotePingMaxPeers) {
+            this.remotePingMaxPeers = remotePingMaxPeers;
             return this;
         }
 
-        public Builder serverChannelInitializer(final Class<? extends ChannelInitializer<SocketChannel>> serverChannelInitializer) {
-            this.serverChannelInitializer = serverChannelInitializer;
+        public Builder remoteEndpoints(final Set<Endpoint> remoteEndpoints) {
+            this.remoteEndpoints = remoteEndpoints;
+            return this;
+        }
+
+        public Builder remoteExposeEnabled(final boolean remoteExposeEnabled) {
+            this.remoteExposeEnabled = remoteExposeEnabled;
             return this;
         }
 
@@ -1159,33 +1097,18 @@ public class DrasylConfig {
             return this;
         }
 
-        public Builder messageComposedMessageTransferTimeout(final Duration composedMessageTransferTimeout) {
-            this.messageComposedMessageTransferTimeout = composedMessageTransferTimeout;
+        public Builder messageComposedMessageTransferTimeout(final Duration messageComposedMessageTransferTimeout) {
+            this.messageComposedMessageTransferTimeout = messageComposedMessageTransferTimeout;
             return this;
         }
 
-        public Builder superPeerEnabled(final boolean superPeerEnabled) {
-            this.superPeerEnabled = superPeerEnabled;
+        public Builder remoteSuperPeerEnabled(final boolean remoteSuperPeerEnabled) {
+            this.remoteSuperPeerEnabled = remoteSuperPeerEnabled;
             return this;
         }
 
-        public Builder superPeerEndpoint(final Endpoint superPeerEndpoint) {
-            this.superPeerEndpoint = superPeerEndpoint;
-            return this;
-        }
-
-        public Builder superPeerRetryDelays(final List<Duration> superPeerRetryDelays) {
-            this.superPeerRetryDelays = superPeerRetryDelays;
-            return this;
-        }
-
-        public Builder superPeerHandshakeTimeout(final Duration superPeerHandshakeTimeout) {
-            this.superPeerHandshakeTimeout = superPeerHandshakeTimeout;
-            return this;
-        }
-
-        public Builder superPeerChannelInitializer(final Class<? extends ChannelInitializer<SocketChannel>> superPeerChannelInitializer) {
-            this.superPeerChannelInitializer = superPeerChannelInitializer;
+        public Builder remoteSuperPeerEndpoint(final Endpoint remoteSuperPeerEndpoint) {
+            this.remoteSuperPeerEndpoint = remoteSuperPeerEndpoint;
             return this;
         }
 
@@ -1196,6 +1119,11 @@ public class DrasylConfig {
 
         public Builder localHostDiscoveryEnabled(final boolean localHostDiscoveryEnabled) {
             this.localHostDiscoveryEnabled = localHostDiscoveryEnabled;
+            return this;
+        }
+
+        public Builder localHostDiscoveryPath(final Path localHostDiscoveryPath) {
+            this.localHostDiscoveryPath = localHostDiscoveryPath;
             return this;
         }
 
@@ -1234,8 +1162,8 @@ public class DrasylConfig {
             return this;
         }
 
-        public Builder plugins(final Set<DrasylPlugin> plugins) {
-            this.plugins = plugins;
+        public Builder plugins(final Set<DrasylPlugin> pluginSet) {
+            this.pluginSet = pluginSet;
             return this;
         }
 
@@ -1279,34 +1207,12 @@ public class DrasylConfig {
             return this;
         }
 
-        public Builder serverExposeEnabled(final boolean serverExposeEnabled) {
-            this.serverExposeEnabled = serverExposeEnabled;
-            return this;
+        public DrasylConfig build() {
+            return new DrasylConfig(networkId, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath, remoteBindHost, remoteEnabled, remoteBindPort, remotePingInterval, remotePingTimeout, remotePingCommunicationTimeout, remoteUniteMinInterval, remotePingMaxPeers, remoteEndpoints, remoteExposeEnabled, messageMaxContentLength, messageHopLimit, messageComposedMessageTransferTimeout, remoteSuperPeerEnabled, remoteSuperPeerEndpoint, intraVmDiscoveryEnabled, localHostDiscoveryEnabled, localHostDiscoveryPath, localHostDiscoveryLeaseTime, monitoringEnabled, monitoringInfluxUri, monitoringInfluxUser, monitoringInfluxPassword, monitoringInfluxDatabase, monitoringInfluxReportingFrequency, pluginSet, marshallingInboundAllowedTypes, marshallingInboundAllowAllPrimitives, marshallingInboundAllowArrayOfDefinedTypes, marshallingInboundAllowedPackages, marshallingOutboundAllowedTypes, marshallingOutboundAllowAllPrimitives, marshallingOutboundAllowArrayOfDefinedTypes, marshallingOutboundAllowedPackages);
         }
 
-        /**
-         * Creates a {@link DrasylConfig} from the builder.
-         *
-         * @return the {@link DrasylConfig} created from the builder
-         */
-        public DrasylConfig build() {
-            return new DrasylConfig(networkId, identityProofOfWork, identityPublicKey,
-                    identityPrivateKey, identityPath, serverBindHost, serverEnabled, serverBindPort,
-                    flushBufferSize, serverSSLEnabled,
-                    serverSSLProtocols, serverHandshakeTimeout, serverEndpoints,
-                    serverChannelInitializer, serverExposeEnabled, messageMaxContentLength, messageHopLimit,
-                    messageComposedMessageTransferTimeout, superPeerEnabled, superPeerEndpoint,
-                    superPeerRetryDelays, superPeerHandshakeTimeout,
-                    superPeerChannelInitializer,
-                    intraVmDiscoveryEnabled, localHostDiscoveryEnabled, localHostDiscoveryPath,
-                    localHostDiscoveryLeaseTime, monitoringEnabled,
-                    monitoringInfluxUri, monitoringInfluxUser, monitoringInfluxPassword,
-                    monitoringInfluxDatabase, monitoringInfluxReportingFrequency,
-                    plugins, marshallingInboundAllowedTypes, marshallingInboundAllowAllPrimitives,
-                    marshallingInboundAllowArrayOfDefinedTypes, marshallingInboundAllowedPackages,
-                    marshallingOutboundAllowedTypes, marshallingOutboundAllowAllPrimitives,
-                    marshallingOutboundAllowArrayOfDefinedTypes, marshallingOutboundAllowedPackages
-            );
+        public static Builder aDrasylConfig() {
+            return new Builder();
         }
     }
 }

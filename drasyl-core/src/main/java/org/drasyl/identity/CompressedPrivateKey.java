@@ -18,6 +18,7 @@
  */
 package org.drasyl.identity;
 
+import com.fasterxml.jackson.annotation.JsonCreator;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.HexUtil;
@@ -31,14 +32,12 @@ import java.security.PrivateKey;
  */
 public class CompressedPrivateKey extends AbstractCompressedKey<PrivateKey> {
     /**
-     * Creates a new compressed private key from the given string.
+     * Creates a new compressed private key from the given byte array.
      *
      * @param compressedKey compressed private key
-     * @throws IllegalArgumentException if string parameter does not conform to a valid hexadecimal
-     *                                  string
-     * @throws CryptoException          if the string parameter does not conform to a valid key
+     * @throws CryptoException if the byte array parameter does not conform to a valid key
      */
-    public CompressedPrivateKey(final String compressedKey) throws CryptoException {
+    private CompressedPrivateKey(final byte[] compressedKey) throws CryptoException {
         super(compressedKey);
     }
 
@@ -50,17 +49,7 @@ public class CompressedPrivateKey extends AbstractCompressedKey<PrivateKey> {
      * @throws CryptoException          if the parameter does not conform to a valid key
      */
     public CompressedPrivateKey(final PrivateKey key) throws CryptoException {
-        this(HexUtil.bytesToHex(Crypto.compressedKey(key)), key);
-    }
-
-    /**
-     * Creates a new compressed private key from the given string and private key.
-     *
-     * @param compressedKey compressed private key
-     * @param key           private key
-     */
-    CompressedPrivateKey(final String compressedKey, final PrivateKey key) {
-        super(compressedKey, key);
+        super(Crypto.compressedKey(key), key);
     }
 
     /**
@@ -73,7 +62,7 @@ public class CompressedPrivateKey extends AbstractCompressedKey<PrivateKey> {
     @Override
     public PrivateKey toUncompressedKey() throws CryptoException {
         if (key == null) {
-            key = Crypto.getPrivateKeyFromBytes(HexUtil.fromString(compressedKey));
+            key = Crypto.getPrivateKeyFromBytes(compressedKey);
         }
         return this.key;
     }
@@ -88,7 +77,7 @@ public class CompressedPrivateKey extends AbstractCompressedKey<PrivateKey> {
      *                                  string
      */
     public static CompressedPrivateKey of(final String compressedKey) throws CryptoException {
-        return new CompressedPrivateKey(compressedKey);
+        return new CompressedPrivateKey(HexUtil.fromString(compressedKey));
     }
 
     /**
@@ -102,5 +91,17 @@ public class CompressedPrivateKey extends AbstractCompressedKey<PrivateKey> {
      */
     public static CompressedPrivateKey of(final PrivateKey key) throws CryptoException {
         return new CompressedPrivateKey(key);
+    }
+
+    /**
+     * Converts a byte[] into a {@link CompressedPrivateKey}.
+     *
+     * @param compressedKey compressed key as byte array
+     * @return {@link CompressedPublicKey}
+     * @throws CryptoException if byte array parameter does not conform to a valid key
+     */
+    @JsonCreator
+    public static CompressedPrivateKey of(final byte[] compressedKey) throws CryptoException {
+        return new CompressedPrivateKey(compressedKey);
     }
 }
