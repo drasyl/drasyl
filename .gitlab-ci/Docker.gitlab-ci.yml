@@ -16,6 +16,7 @@ docker-build:
         export CI_APPLICATION_TAG=${CI_APPLICATION_TAG:-$CI_COMMIT_TAG}
       fi
     - /build/build.sh
-  retry: 3
+  # sometimes cloudflare.docker.com misbehaving
+  retry: 2
   rules:
     - if: '$CI_COMMIT_TAG || $CI_COMMIT_BRANCH'
