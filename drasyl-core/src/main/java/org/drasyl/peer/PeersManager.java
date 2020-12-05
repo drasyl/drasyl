@@ -228,9 +228,7 @@ public class PeersManager {
         if (existingPathCount == 0 && newPathCount > 0) {
             eventConsumer.accept(new PeerDirectEvent(Peer.of(publicKey)));
         }
-        else if ((existingInformation == null || existingPathCount > 0) && newPathCount == 0 &&
-                ((!publicKey.equals(superPeer) && superPeer != null) ||
-                        children.contains(publicKey))) {
+        else if ((existingInformation == null || existingPathCount > 0) && newPathCount == 0 && (!publicKey.equals(superPeer) && superPeer != null || children.contains(publicKey)) && !(existingInformation == null && newInformation == null)) {
             eventConsumer.accept(new PeerRelayEvent(Peer.of(publicKey)));
         }
     }

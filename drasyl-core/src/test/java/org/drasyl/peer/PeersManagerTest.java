@@ -384,6 +384,14 @@ class PeersManagerTest {
             assertEquals(Set.of(), underTest.getChildrenKeys());
         }
 
+        @Test
+        void shouldNotEmitEventWhenRemovingUnknownPeer(@Mock final CompressedPublicKey publicKey,
+                                                       @Mock final Object path) {
+            underTest.removeChildrenAndPath(publicKey, path);
+
+            verify(eventConsumer, never()).accept(any());
+        }
+
         @AfterEach
         void tearDown() {
             verify(lock.writeLock()).lock();
