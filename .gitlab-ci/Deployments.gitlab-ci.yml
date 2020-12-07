@@ -27,6 +27,7 @@ variables:
   image: registry.gitlab.com/gitlab-org/cluster-integration/auto-deploy-image:v0.17.2
   script:
     - sh ./prepare-environment-kubernetes.sh > kubernetes.yml
+    - cat kubernetes.yml
     - kubectl apply -f kubernetes.yml
   # We don't need cache for stop a environment
   cache: {}
