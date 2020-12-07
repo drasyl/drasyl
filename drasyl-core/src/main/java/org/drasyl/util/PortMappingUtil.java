@@ -291,12 +291,11 @@ public class PortMappingUtil {
                 }
                 externalAddressObservable.onNext(Optional.of(externalAdded));
 
-                if (mappedPort.getLifetime() > 0) {
-                    scheduleMappingRefresh(ofSeconds(mappedPort.getLifetime()).dividedBy(2));
-                }
-                else {
-                    throw new IllegalStateException("Non-positive lifetime (" + mappedPort.getLifetime() + "s) received from " + mappingMethod() + " router for " + mappedPort.getPortType() + " port mapping " + externalAdded + " -> " + address);
-                }
+                scheduleMappingRefresh(ofSeconds(mappedPort.getLifetime()).dividedBy(2));
+            }
+            catch (final IllegalArgumentException e) {
+                // can occur when router returns non-positive mapping lifetime
+                throw new IllegalStateException(e);
             }
             catch (final InterruptedException e) {
                 Thread.currentThread().interrupt();
