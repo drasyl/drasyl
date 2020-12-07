@@ -21,7 +21,6 @@ package org.drasyl.identity;
 import com.fasterxml.jackson.annotation.JsonCreator;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.crypto.HexUtil;
 
 import java.security.PrivateKey;
 
@@ -31,6 +30,16 @@ import java.security.PrivateKey;
  * This is an immutable object.
  */
 public class CompressedPrivateKey extends AbstractCompressedKey<PrivateKey> {
+    /**
+     * Creates a new compressed private key from the given string.
+     *
+     * @param compressedKey compressed private key
+     * @throws CryptoException if the string parameter does not conform to a valid key
+     */
+    private CompressedPrivateKey(final String compressedKey) throws CryptoException {
+        super(compressedKey);
+    }
+
     /**
      * Creates a new compressed private key from the given byte array.
      *
@@ -77,7 +86,7 @@ public class CompressedPrivateKey extends AbstractCompressedKey<PrivateKey> {
      *                                  string
      */
     public static CompressedPrivateKey of(final String compressedKey) throws CryptoException {
-        return new CompressedPrivateKey(HexUtil.fromString(compressedKey));
+        return new CompressedPrivateKey(compressedKey);
     }
 
     /**

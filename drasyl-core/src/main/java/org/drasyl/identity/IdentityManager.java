@@ -148,10 +148,10 @@ public class IdentityManager {
             return JACKSON_READER.readValue(path.toFile(), Identity.class);
         }
         catch (final JsonProcessingException e) {
-            throw new IdentityManagerException("Unable to load identity from file '" + path + "': " + e.getMessage());
+            throw new IdentityManagerException("Unable to load identity from file '" + path + "': ", e);
         }
         catch (final IOException e) {
-            throw new IdentityManagerException("Unable to access identity file '" + path + "': " + e.getMessage());
+            throw new IdentityManagerException("Unable to access identity file '" + path + "': ", e);
         }
     }
 
