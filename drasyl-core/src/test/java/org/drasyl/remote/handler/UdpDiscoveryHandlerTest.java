@@ -185,8 +185,8 @@ class UdpDiscoveryHandlerTest {
                                                     @Mock final CompressedPublicKey publicKey,
                                                     @Mock(answer = RETURNS_DEEP_STUBS) final Peer peer,
                                                     @Mock final InetSocketAddressWrapper address) {
-            when(peer.hasContact(any())).thenReturn(true);
-            when(peer.hasCommunication(any())).thenReturn(true);
+            when(peer.hasControlTraffic(any())).thenReturn(true);
+            when(peer.hasApplicationTraffic(any())).thenReturn(true);
 
             final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, new HashMap<>(Map.of(publicKey, peer)), new HashSet<>(Set.of(publicKey)));
             handler.doHeartbeat(ctx);
@@ -217,7 +217,7 @@ class UdpDiscoveryHandlerTest {
 
         outboundMessages.awaitCount(1).assertValueCount(1);
         outboundMessages.assertValue(m -> m instanceof AcknowledgementMessage);
-        verify(peersManager).setPeerInformationAndAddPath(eq(message.getSender()), any(), any());
+        verify(peersManager, never()).setPeerInformationAndAddPath(any(), any(), any());
     }
 
     @Test
@@ -254,6 +254,8 @@ class UdpDiscoveryHandlerTest {
     void shouldRelayInboundMessageForKnownRecipient(@Mock final InetSocketAddressWrapper sender,
                                                     @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message,
                                                     @Mock(answer = RETURNS_DEEP_STUBS) final Peer recipientPeer) {
+        when(recipientPeer.isReachable(any())).thenReturn(true);
+
         final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, Map.of(message.getRecipient(), recipientPeer), rendezvousPeers);
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
         final TestObserver<Pair<Address, Object>> outboundMessages = pipeline.outboundMessages().test();
@@ -271,6 +273,7 @@ class UdpDiscoveryHandlerTest {
                                                                               @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper senderSocketAddress,
                                                                               @Mock(answer = RETURNS_DEEP_STUBS) final Peer recipientPeer,
                                                                               @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper recipientSocketAddress) {
+        when(recipientPeer.isReachable(any())).thenReturn(true);
         when(senderPeer.getAddress()).thenReturn(senderSocketAddress);
         when(recipientPeer.getAddress()).thenReturn(recipientSocketAddress);
 
@@ -291,6 +294,7 @@ class UdpDiscoveryHandlerTest {
                                                    @Mock final InetSocketAddressWrapper recipientSocketAddress,
                                                    @Mock final Peer recipientPeer) {
         when(recipientPeer.getAddress()).thenReturn(recipientSocketAddress);
+        when(recipientPeer.isReachable(any())).thenReturn(true);
 
         final UdpDiscoveryHandler handler = new UdpDiscoveryHandler(openPingsCache, uniteAttemptsCache, Map.of(recipient, recipientPeer), rendezvousPeers);
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
@@ -347,7 +351,7 @@ class UdpDiscoveryHandlerTest {
 
         pipeline.processInbound(sender, message).join();
 
-        verify(peer).newCommunication();
+        verify(peer).applicationTrafficOccurred();
     }
 
     @Test
@@ -361,6 +365,6 @@ class UdpDiscoveryHandlerTest {
 
         pipeline.processOutbound(recipient, message).join();
 
-        verify(peer).newCommunication();
+        verify(peer).applicationTrafficOccurred();
     }
 }

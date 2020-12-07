@@ -115,7 +115,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<RemoteMessage, Remo
                                 final CompletableFuture<Void> future) {
         if (msg instanceof RemoteApplicationMessage && directConnectionPeers.contains(msg.getRecipient())) {
             final Peer peer = peers.computeIfAbsent(msg.getRecipient(), key -> new Peer());
-            peer.newCommunication();
+            peer.applicationTrafficOccurred();
         }
 
         if (recipient instanceof CompressedPublicKey) {
@@ -155,7 +155,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<RemoteMessage, Remo
         else {
             if (msg instanceof RemoteApplicationMessage && directConnectionPeers.contains(msg.getSender())) {
                 final Peer peer = peers.computeIfAbsent(msg.getSender(), key -> new Peer());
-                peer.newCommunication();
+                peer.applicationTrafficOccurred();
             }
 
             // passthrough message
@@ -199,10 +199,10 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<RemoteMessage, Remo
         // check lastContactTimes
         final CompressedPublicKey superPeerKey = ctx.config().getRemoteSuperPeerEndpoint().getPublicKey();
         new HashMap<>(peers).forEach(((publicKey, peer) -> {
-            if (!peer.hasContact(ctx.config())) {
+            if (!peer.hasControlTraffic(ctx.config())) {
                 if (LOG.isDebugEnabled()) {
-                    final long lastContactTime = peer.getLastContactTime();
-                    LOG.debug("Last pong from {} is {}ms ago. Remove peer.", publicKey, System.currentTimeMillis() - lastContactTime);
+                    final long lastInboundControlTrafficTime = peer.getLastInboundControlTrafficTime();
+                    LOG.debug("Last contact from {} is {}ms ago. Remove peer.", publicKey, System.currentTimeMillis() - lastInboundControlTrafficTime);
                 }
                 if (publicKey.equals(superPeerKey)) {
                     ctx.peersManager().unsetSuperPeerAndRemovePath(path);
@@ -241,12 +241,12 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<RemoteMessage, Remo
         new HashSet<>(directConnectionPeers).forEach(publicKey -> {
             final Peer peer = peers.get(publicKey);
             final InetSocketAddressWrapper address = peer.getAddress();
-            if (address != null && peer.hasCommunication(ctx.config())) {
+            if (address != null && peer.hasApplicationTraffic(ctx.config())) {
                 sendPing(ctx, publicKey, address, false, new CompletableFuture<>());
             }
             // remove trivial communications, that does not send any user generated messages
             else {
-                final long lastCommunicationTime = peer.getLastCommunicationTime();
+                final long lastCommunicationTime = peer.getLastApplicationTrafficTime();
                 if (LOG.isDebugEnabled()) {
                     LOG.debug("Last application communication to {} is {}ms ago. Remove peer.", publicKey, System.currentTimeMillis() - lastCommunicationTime);
                 }
@@ -278,21 +278,15 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<RemoteMessage, Remo
         LOG.trace("Got {} from {}", message, senderSocketAddress);
         final Peer peer = peers.computeIfAbsent(message.getSender(), key -> new Peer());
         peer.setAddress(senderSocketAddress);
-        peer.newContact();
+        peer.inboundControlTrafficOccurred();
 
         if (message.isChildrenJoin()) {
+            peer.inboundPongOccurred();
             // store peer information
             if (LOG.isDebugEnabled() && !ctx.peersManager().getChildrenKeys().contains(message.getSender()) && !ctx.peersManager().getPeer(message.getSender()).second().contains(path)) {
                 LOG.debug("PING! Add {} as children", message.getSender());
             }
             ctx.peersManager().setPeerInformationAndAddPathAndChildren(message.getSender(), PeerInformation.of(), path);
-        }
-        else {
-            // store peer information
-            if (LOG.isDebugEnabled() && !ctx.peersManager().getPeer(message.getSender()).second().contains(path)) {
-                LOG.debug("PING! Add {} as peer", message.getSender());
-            }
-            ctx.peersManager().setPeerInformationAndAddPath(message.getSender(), PeerInformation.of(), path);
         }
 
         // reply with pong
@@ -314,7 +308,8 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<RemoteMessage, Remo
         if (openRequest != null) {
             final Peer peer = peers.computeIfAbsent(message.getSender(), key -> new Peer());
             peer.setAddress(senderSocketAddress);
-            peer.newContact();
+            peer.inboundControlTrafficOccurred();
+            peer.inboundPongOccurred();
             if (openRequest.first().isChildrenJoin()) {
                 // store peer information
                 if (LOG.isDebugEnabled() && !ctx.peersManager().getChildrenKeys().contains(message.getSender()) && !ctx.peersManager().getPeer(message.getSender()).second().contains(path)) {
@@ -376,8 +371,8 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<RemoteMessage, Remo
         final InetSocketAddressWrapper socketAddress = new InetSocketAddressWrapper(message.getAddress());
         final Peer peer = peers.computeIfAbsent(message.getPublicKey(), key -> new Peer());
         peer.setAddress(socketAddress);
-        peer.newContact();
-        peer.newCommunication();
+        peer.inboundControlTrafficOccurred();
+        peer.applicationTrafficOccurred();
         directConnectionPeers.add(message.getPublicKey());
         sendPing(ctx, message.getPublicKey(), socketAddress, false, future);
     }
@@ -405,7 +400,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<RemoteMessage, Remo
             superPeerPeer = null;
         }
 
-        if (recipientPeer != null && recipientPeer.getAddress() != null) {
+        if (recipientPeer != null && recipientPeer.getAddress() != null && recipientPeer.isReachable(ctx.config())) {
             final InetSocketAddressWrapper recipientSocketAddress = recipientPeer.getAddress();
             final Peer senderPeer = peers.get(msg.getSender());
 
@@ -436,8 +431,9 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<RemoteMessage, Remo
 
     static class Peer {
         private InetSocketAddressWrapper address;
-        private long lastContactTime;
-        private long lastCommunicationTime;
+        private long lastInboundControlTrafficTime;
+        private long lastInboundPongTime;
+        private long lastApplicationTrafficTime;
 
         public InetSocketAddressWrapper getAddress() {
             return address;
@@ -452,32 +448,40 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<RemoteMessage, Remo
          * message types ({@link DiscoverMessage}, {@link AcknowledgementMessage}, {@link
          * org.drasyl.pipeline.message.ApplicationMessage}, etc.)
          */
-        public long getLastContactTime() {
-            return lastContactTime;
+        public long getLastInboundControlTrafficTime() {
+            return lastInboundControlTrafficTime;
         }
 
-        public void newContact() {
-            lastContactTime = System.currentTimeMillis();
+        public void inboundControlTrafficOccurred() {
+            lastInboundControlTrafficTime = System.currentTimeMillis();
+        }
+
+        public void inboundPongOccurred() {
+            lastInboundPongTime = System.currentTimeMillis();
         }
 
         /**
          * Returns the time when we last sent or received a application-level message to or from
          * this peer. This includes only message type {@link org.drasyl.pipeline.message.ApplicationMessage}
          */
-        public long getLastCommunicationTime() {
-            return lastCommunicationTime;
+        public long getLastApplicationTrafficTime() {
+            return lastApplicationTrafficTime;
         }
 
-        public void newCommunication() {
-            lastCommunicationTime = System.currentTimeMillis();
+        public void applicationTrafficOccurred() {
+            lastApplicationTrafficTime = System.currentTimeMillis();
         }
 
-        public boolean hasCommunication(final DrasylConfig config) {
-            return lastCommunicationTime >= System.currentTimeMillis() - config.getRemotePingCommunicationTimeout().toMillis();
+        public boolean hasApplicationTraffic(final DrasylConfig config) {
+            return lastApplicationTrafficTime >= System.currentTimeMillis() - config.getRemotePingCommunicationTimeout().toMillis();
         }
 
-        public boolean hasContact(final DrasylConfig config) {
-            return lastContactTime >= System.currentTimeMillis() - config.getRemotePingTimeout().toMillis();
+        public boolean hasControlTraffic(final DrasylConfig config) {
+            return lastInboundControlTrafficTime >= System.currentTimeMillis() - config.getRemotePingTimeout().toMillis();
+        }
+
+        public boolean isReachable(final DrasylConfig config) {
+            return lastInboundPongTime >= System.currentTimeMillis() - config.getRemotePingTimeout().toMillis();
         }
     }
 }

@@ -81,6 +81,7 @@ public class ChatGui {
                         messagesArea.append(" To " + recipient + ": " + messageField.getText() + "\n");
                         messageField.setText("");
                         messageField.setEditable(true);
+                        messagesArea.setCaretPosition(messagesArea.getDocument().getLength());
                     });
                 }
             }
