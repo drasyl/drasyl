@@ -19,6 +19,7 @@
 package org.drasyl.identity;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
+import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.drasyl.crypto.CryptoException;
 
@@ -92,6 +93,11 @@ public class CompressedKeyPair {
 
     public static CompressedKeyPair of(final String publicKey,
                                        final String privateKey) throws CryptoException {
+        return new CompressedKeyPair(CompressedPublicKey.of(publicKey), CompressedPrivateKey.of(privateKey));
+    }
+
+    public static CompressedKeyPair of(final byte[] publicKey,
+                                       final byte[] privateKey) throws CryptoException {
         return new CompressedKeyPair(CompressedPublicKey.of(publicKey), CompressedPrivateKey.of(privateKey));
     }
 

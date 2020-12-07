@@ -24,7 +24,9 @@ import com.fasterxml.jackson.annotation.JsonValue;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.pipeline.address.Address;
+import org.drasyl.util.JSONUtil;
 
+import java.io.IOException;
 import java.util.Arrays;
 
 abstract class AbstractCompressedKey<K> implements Address {
@@ -38,9 +40,26 @@ abstract class AbstractCompressedKey<K> implements Address {
         key = null;
     }
 
-    @JsonCreator
     protected AbstractCompressedKey(final byte[] compressedKey) throws CryptoException {
         this.compressedKey = compressedKey;
+        this.key = toUncompressedKey();
+    }
+
+    @JsonCreator
+    protected AbstractCompressedKey(final String compressedKey) throws CryptoException {
+        // For backwards compatibility we check if the given string represents a base64 (new) or
+        // a normal string.
+        if (compressedKey.length() == 44) { // base64 encoded 32 up to 33 bytes long key ((4 * n / 3) + 3) & ~3
+            try {
+                this.compressedKey = JSONUtil.JACKSON_READER.readValue("\"" + compressedKey + "\"", byte[].class);
+            }
+            catch (final IOException e) {
+                throw new CryptoException(e);
+            }
+        }
+        else {
+            this.compressedKey = HexUtil.fromString(compressedKey);
+        }
         this.key = toUncompressedKey();
     }
 

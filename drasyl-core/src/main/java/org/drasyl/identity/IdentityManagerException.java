@@ -31,4 +31,8 @@ public class IdentityManagerException extends DrasylException {
     public IdentityManagerException(final String cause) {
         super(cause);
     }
+
+    public IdentityManagerException(final String cause, final Exception exception) {
+        super(cause, exception);
+    }
 }
