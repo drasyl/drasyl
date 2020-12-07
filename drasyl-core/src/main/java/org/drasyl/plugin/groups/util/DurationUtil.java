@@ -53,4 +53,21 @@ public class DurationUtil {
             return b;
         }
     }
+
+    /**
+     * Returns the smaller of two {@link Duration} values.
+     *
+     * @param a an argument.
+     * @param b another argument.
+     * @return the smaller of {@code a} and {@code b}.
+     * @throws NullPointerException if one or both values are {@code null}
+     */
+    public static Duration min(final Duration a, final Duration b) {
+        if (a.compareTo(b) < 0) {
+            return a;
+        }
+        else {
+            return b;
+        }
+    }
 }

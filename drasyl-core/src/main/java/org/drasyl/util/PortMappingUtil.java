@@ -47,6 +47,8 @@ import java.util.stream.Collectors;
 import static java.time.Duration.ofMinutes;
 import static java.time.Duration.ofSeconds;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.plugin.groups.util.DurationUtil.max;
+import static org.drasyl.plugin.groups.util.DurationUtil.min;
 
 /**
  * Class for the creation of port mappings to make local services externally/publicly accessible.
@@ -291,7 +293,7 @@ public class PortMappingUtil {
                 }
                 externalAddressObservable.onNext(Optional.of(externalAdded));
 
-                scheduleMappingRefresh(ofSeconds(mappedPort.getLifetime()).dividedBy(2));
+                scheduleMappingRefresh(min(max(ofSeconds(mappedPort.getLifetime()).dividedBy(2), RETRY_DELAY), PORT_LIFETIME));
             }
             catch (final IllegalArgumentException e) {
                 // can occur when router returns non-positive mapping lifetime
