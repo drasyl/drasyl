@@ -202,7 +202,7 @@ public class PortMappingUtil {
         public PortMapping(final PortMapper mapper,
                            final InetSocketAddress address,
                            final Protocol protocol) {
-            this(mapper, address, protocol, BehaviorSubject.createDefault(Optional.empty()), DrasylScheduler.getInstanceLight());
+            this(mapper, address, protocol, BehaviorSubject.createDefault(Optional.empty()), DrasylScheduler.getInstanceHeavy());
         }
 
         /**
