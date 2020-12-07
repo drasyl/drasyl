@@ -29,8 +29,8 @@ import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.Identity;
-import org.drasyl.pipeline.skeleton.HandlerAdapter;
 import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.pipeline.skeleton.HandlerAdapter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -63,6 +63,7 @@ class PluginsIT {
                 .identityPrivateKey(identity.getPrivateKey())
                 .remoteExposeEnabled(false)
                 .remoteSuperPeerEnabled(false)
+                .remoteBindPort(0)
                 .build();
 
         node = new DrasylNode(config) {
