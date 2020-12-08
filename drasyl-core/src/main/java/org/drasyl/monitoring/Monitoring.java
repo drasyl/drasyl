@@ -106,9 +106,17 @@ public class Monitoring extends SimpleDuplexHandler<Object, Object, Address> {
                     }, Clock.SYSTEM);
 
                     // add common tags
+                    final String hostTag;
+                    if (!ctx.config().getMonitoringHostTag().isEmpty()) {
+                        hostTag = ctx.config().getMonitoringHostTag();
+                    }
+                    else {
+                        hostTag = ofNullable(NetworkUtil.getLocalHostName()).orElse("");
+                    }
+
                     newRegistry.config().commonTags(
                             "public_key", ctx.identity().getPublicKey().toString(),
-                            "host", ofNullable(NetworkUtil.getLocalHostName()).orElse("")
+                            "host", hostTag
                     );
 
                     // monitor PeersManager

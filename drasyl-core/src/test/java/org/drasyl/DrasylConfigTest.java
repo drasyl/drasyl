@@ -73,6 +73,7 @@ import static org.drasyl.DrasylConfig.MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT;
 import static org.drasyl.DrasylConfig.MESSAGE_HOP_LIMIT;
 import static org.drasyl.DrasylConfig.MESSAGE_MAX_CONTENT_LENGTH;
 import static org.drasyl.DrasylConfig.MONITORING_ENABLED;
+import static org.drasyl.DrasylConfig.MONITORING_HOST_TAG;
 import static org.drasyl.DrasylConfig.MONITORING_INFLUX_DATABASE;
 import static org.drasyl.DrasylConfig.MONITORING_INFLUX_PASSWORD;
 import static org.drasyl.DrasylConfig.MONITORING_INFLUX_REPORTING_FREQUENCY;
@@ -140,6 +141,7 @@ class DrasylConfigTest {
     private Duration localHostDiscoveryLeaseTime;
     private Duration composedMessageTransferTimeout;
     private boolean monitoringEnabled;
+    private String monitoringHostTag;
     private URI monitoringInfluxUri;
     private String monitoringInfluxUser;
     private String monitoringInfluxPassword;
@@ -179,6 +181,7 @@ class DrasylConfigTest {
         localHostDiscoveryLeaseTime = ofSeconds(60);
         composedMessageTransferTimeout = ofSeconds(60);
         monitoringEnabled = true;
+        monitoringHostTag = "test.example.com";
         monitoringInfluxUri = URI.create("http://localhost:8086");
         monitoringInfluxUser = "";
         monitoringInfluxPassword = "";
@@ -222,6 +225,7 @@ class DrasylConfigTest {
             when(typesafeConfig.getDuration(LOCAL_HOST_DISCOVERY_LEASE_TIME)).thenReturn(localHostDiscoveryLeaseTime);
             when(typesafeConfig.getDuration(MESSAGE_COMPOSED_MESSAGE_TRANSFER_TIMEOUT)).thenReturn(composedMessageTransferTimeout);
             when(typesafeConfig.getBoolean(MONITORING_ENABLED)).thenReturn(monitoringEnabled);
+            when(typesafeConfig.getString(MONITORING_HOST_TAG)).thenReturn(monitoringHostTag);
             when(typesafeConfig.getString(MONITORING_INFLUX_URI)).thenReturn(monitoringInfluxUri.toString());
             when(typesafeConfig.getString(MONITORING_INFLUX_USER)).thenReturn(monitoringInfluxUser);
             when(typesafeConfig.getString(MONITORING_INFLUX_PASSWORD)).thenReturn(monitoringInfluxPassword);
@@ -261,6 +265,7 @@ class DrasylConfigTest {
             assertEquals(localHostDiscoveryLeaseTime, config.getLocalHostDiscoveryLeaseTime());
             assertEquals(composedMessageTransferTimeout, config.getMessageComposedMessageTransferTimeout());
             assertEquals(monitoringEnabled, config.isMonitoringEnabled());
+            assertEquals(monitoringHostTag, config.getMonitoringHostTag());
             assertEquals(monitoringInfluxUri, config.getMonitoringInfluxUri());
             assertEquals(monitoringInfluxUser, config.getMonitoringInfluxUser());
             assertEquals(monitoringInfluxPassword, config.getMonitoringInfluxPassword());
@@ -288,7 +293,7 @@ class DrasylConfigTest {
                     serverHandshakeTimeout, remotePingTimeout, remotePingCommunicationTimeout, remoteUniteMinInterval, remotePingMaxPeers, serverEndpoints,
                     remoteExposeEnabled, messageMaxContentLength, messageHopLimit, composedMessageTransferTimeout, superPeerEnabled, superPeerEndpoint,
                     intraVmDiscoveryEnabled, localHostDiscoveryEnabled, Path.of(localHostDiscoveryPathAsString),
-                    localHostDiscoveryLeaseTime, monitoringEnabled, monitoringInfluxUri, monitoringInfluxUser,
+                    localHostDiscoveryLeaseTime, monitoringEnabled, monitoringHostTag, monitoringInfluxUri, monitoringInfluxUser,
                     monitoringInfluxPassword, monitoringInfluxDatabase, monitoringInfluxReportingFrequency, plugins,
                     marshallingInboundAllowedTypes, marshallingInboundAllowAllPrimitives, marshallingInboundAllowArrayOfDefinedTypes, marshallingInboundAllowedPackages,
                     marshallingOutboundAllowedTypes, marshallingOutboundAllowAllPrimitives, marshallingOutboundAllowArrayOfDefinedTypes, marshallingOutboundAllowedPackages);
@@ -511,6 +516,9 @@ class DrasylConfigTest {
                     .remoteEnabled(DEFAULT.isRemoteEnabled())
                     .remoteBindPort(DEFAULT.getRemoteBindPort())
                     .remotePingInterval(DEFAULT.getRemotePingInterval())
+                    .remotePingTimeout(DEFAULT.getRemotePingTimeout())
+                    .remotePingCommunicationTimeout(DEFAULT.getRemotePingCommunicationTimeout())
+                    .remoteUniteMinInterval(DEFAULT.getRemoteUniteMinInterval())
                     .remoteEndpoints(DEFAULT.getRemoteEndpoints())
                     .remoteExposeEnabled(DEFAULT.isRemoteExposeEnabled())
                     .messageMaxContentLength(DEFAULT.getMessageMaxContentLength())
@@ -519,9 +527,11 @@ class DrasylConfigTest {
                     .remoteSuperPeerEndpoint(DEFAULT.getRemoteSuperPeerEndpoint())
                     .intraVmDiscoveryEnabled(DEFAULT.isIntraVmDiscoveryEnabled())
                     .localHostDiscoveryEnabled(DEFAULT.isLocalHostDiscoveryEnabled())
+                    .localHostDiscoveryPath(DEFAULT.getLocalHostDiscoveryPath())
                     .localHostDiscoveryLeaseTime(DEFAULT.getLocalHostDiscoveryLeaseTime())
                     .messageComposedMessageTransferTimeout(DEFAULT.getMessageComposedMessageTransferTimeout())
                     .monitoringEnabled(DEFAULT.isMonitoringEnabled())
+                    .monitoringHost(DEFAULT.getMonitoringHostTag())
                     .monitoringInfluxUri(DEFAULT.getMonitoringInfluxUri())
                     .monitoringInfluxUser(DEFAULT.getMonitoringInfluxUser())
                     .monitoringInfluxPassword(DEFAULT.getMonitoringInfluxPassword())
@@ -543,7 +553,7 @@ class DrasylConfigTest {
     }
 
     static class MyPlugin implements DrasylPlugin {
-        public MyPlugin(final Config config) {
+        public MyPlugin() {
         }
     }
 
@@ -553,12 +563,6 @@ class DrasylConfigTest {
     static class MyPluginWithInvocationTargetException implements DrasylPlugin {
         public MyPluginWithInvocationTargetException(final Config config) throws IllegalAccessException {
             throw new IllegalAccessException("boom");
-        }
-    }
-
-    static class MyPluginWithExceptionallyConstructor implements DrasylPlugin {
-        private MyPluginWithExceptionallyConstructor(final Config config) {
-            throw new IllegalArgumentException("boom");
         }
     }
 }

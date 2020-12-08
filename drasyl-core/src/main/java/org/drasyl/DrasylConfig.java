@@ -86,6 +86,7 @@ public class DrasylConfig {
     static final String LOCAL_HOST_DISCOVERY_PATH = "drasyl.local-host-discovery.path";
     static final String LOCAL_HOST_DISCOVERY_LEASE_TIME = "drasyl.local-host-discovery.lease-time";
     static final String MONITORING_ENABLED = "drasyl.monitoring.enabled";
+    static final String MONITORING_HOST_TAG = "drasyl.monitoring.host-tag";
     static final String MONITORING_INFLUX_URI = "drasyl.monitoring.influx.uri";
     static final String MONITORING_INFLUX_USER = "drasyl.monitoring.influx.user";
     static final String MONITORING_INFLUX_PASSWORD = "drasyl.monitoring.influx.password";
@@ -126,6 +127,7 @@ public class DrasylConfig {
     private final Path localHostDiscoveryPath;
     private final Duration localHostDiscoveryLeaseTime;
     private final boolean monitoringEnabled;
+    private final String monitoringHostTag;
     private final URI monitoringInfluxUri;
     private final String monitoringInfluxUser;
     private final String monitoringInfluxPassword;
@@ -208,6 +210,7 @@ public class DrasylConfig {
 
         // Init monitoring config
         monitoringEnabled = config.getBoolean(MONITORING_ENABLED);
+        monitoringHostTag = config.getString(MONITORING_HOST_TAG);
         monitoringInfluxUri = getURI(config, MONITORING_INFLUX_URI);
         monitoringInfluxUser = config.getString(MONITORING_INFLUX_USER);
         monitoringInfluxPassword = config.getString(MONITORING_INFLUX_PASSWORD);
@@ -467,6 +470,7 @@ public class DrasylConfig {
                  final Path localHostDiscoveryPath,
                  final Duration localHostDiscoveryLeaseTime,
                  final boolean monitoringEnabled,
+                 final String monitoringHostTag,
                  final URI monitoringInfluxUri,
                  final String monitoringInfluxUser,
                  final String monitoringInfluxPassword,
@@ -506,6 +510,7 @@ public class DrasylConfig {
         this.localHostDiscoveryPath = localHostDiscoveryPath;
         this.localHostDiscoveryLeaseTime = localHostDiscoveryLeaseTime;
         this.monitoringEnabled = monitoringEnabled;
+        this.monitoringHostTag = monitoringHostTag;
         this.monitoringInfluxUri = monitoringInfluxUri;
         this.monitoringInfluxUser = monitoringInfluxUser;
         this.monitoringInfluxPassword = monitoringInfluxPassword;
@@ -524,7 +529,7 @@ public class DrasylConfig {
 
     @Override
     public int hashCode() {
-        return Objects.hash(networkId, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath, remoteBindHost, remoteEnabled, remoteBindPort, remotePingInterval, remotePingTimeout, remotePingCommunicationTimeout, remoteUniteMinInterval, remotePingMaxPeers, remoteEndpoints, remoteExposeEnabled, messageMaxContentLength, messageHopLimit, messageComposedMessageTransferTimeout, remoteSuperPeerEnabled, remoteSuperPeerEndpoint, intraVmDiscoveryEnabled, localHostDiscoveryEnabled, localHostDiscoveryPath, localHostDiscoveryLeaseTime, monitoringEnabled, monitoringInfluxUri, monitoringInfluxUser, monitoringInfluxPassword, monitoringInfluxDatabase, monitoringInfluxReportingFrequency, pluginSet, marshallingInboundAllowedTypes, marshallingInboundAllowAllPrimitives, marshallingInboundAllowArrayOfDefinedTypes, marshallingInboundAllowedPackages, marshallingOutboundAllowedTypes, marshallingOutboundAllowAllPrimitives, marshallingOutboundAllowArrayOfDefinedTypes, marshallingOutboundAllowedPackages);
+        return Objects.hash(networkId, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath, remoteBindHost, remoteEnabled, remoteBindPort, remotePingInterval, remotePingTimeout, remotePingCommunicationTimeout, remoteUniteMinInterval, remotePingMaxPeers, remoteEndpoints, remoteExposeEnabled, messageMaxContentLength, messageHopLimit, messageComposedMessageTransferTimeout, remoteSuperPeerEnabled, remoteSuperPeerEndpoint, intraVmDiscoveryEnabled, localHostDiscoveryEnabled, localHostDiscoveryPath, localHostDiscoveryLeaseTime, monitoringEnabled, monitoringHostTag, monitoringInfluxUri, monitoringInfluxUser, monitoringInfluxPassword, monitoringInfluxDatabase, monitoringInfluxReportingFrequency, pluginSet, marshallingInboundAllowedTypes, marshallingInboundAllowAllPrimitives, marshallingInboundAllowArrayOfDefinedTypes, marshallingInboundAllowedPackages, marshallingOutboundAllowedTypes, marshallingOutboundAllowAllPrimitives, marshallingOutboundAllowArrayOfDefinedTypes, marshallingOutboundAllowedPackages);
     }
 
     @Override
@@ -565,6 +570,7 @@ public class DrasylConfig {
                 Objects.equals(remoteSuperPeerEndpoint, that.remoteSuperPeerEndpoint) &&
                 Objects.equals(localHostDiscoveryPath, that.localHostDiscoveryPath) &&
                 Objects.equals(localHostDiscoveryLeaseTime, that.localHostDiscoveryLeaseTime) &&
+                Objects.equals(monitoringHostTag, that.monitoringHostTag) &&
                 Objects.equals(monitoringInfluxUri, that.monitoringInfluxUri) &&
                 Objects.equals(monitoringInfluxUser, that.monitoringInfluxUser) &&
                 Objects.equals(monitoringInfluxPassword, that.monitoringInfluxPassword) &&
@@ -605,6 +611,7 @@ public class DrasylConfig {
                 ", localHostDiscoveryPath=" + localHostDiscoveryPath +
                 ", localHostDiscoveryLeaseTime=" + localHostDiscoveryLeaseTime +
                 ", monitoringEnabled=" + monitoringEnabled +
+                ", monitoringHostTag=" + monitoringHostTag +
                 ", monitoringInfluxUri=" + monitoringInfluxUri +
                 ", monitoringInfluxUser='" + monitoringInfluxUser + '\'' +
                 ", monitoringInfluxPassword='" + maskSecret(monitoringInfluxPassword) + '\'' +
@@ -644,6 +651,10 @@ public class DrasylConfig {
 
     public boolean isMonitoringEnabled() {
         return monitoringEnabled;
+    }
+
+    public String getMonitoringHostTag() {
+        return monitoringHostTag;
     }
 
     public URI getMonitoringInfluxUri() {
@@ -870,6 +881,7 @@ public class DrasylConfig {
                 config.localHostDiscoveryPath,
                 config.localHostDiscoveryLeaseTime,
                 config.monitoringEnabled,
+                config.monitoringHostTag,
                 config.monitoringInfluxUri,
                 config.monitoringInfluxUser,
                 config.monitoringInfluxPassword,
@@ -914,6 +926,7 @@ public class DrasylConfig {
         private Path localHostDiscoveryPath;
         private Duration localHostDiscoveryLeaseTime;
         private boolean monitoringEnabled;
+        private String monitoringHost;
         private URI monitoringInfluxUri;
         private String monitoringInfluxUser;
         private String monitoringInfluxPassword;
@@ -932,6 +945,7 @@ public class DrasylConfig {
         private Builder() {
         }
 
+        @SuppressWarnings({ "java:S107" })
         public Builder(final int networkId,
                        final ProofOfWork identityProofOfWork,
                        final CompressedPublicKey identityPublicKey,
@@ -957,6 +971,7 @@ public class DrasylConfig {
                        final Path localHostDiscoveryPath,
                        final Duration localHostDiscoveryLeaseTime,
                        final boolean monitoringEnabled,
+                       final String monitoringHost,
                        final URI monitoringInfluxUri,
                        final String monitoringInfluxUser,
                        final String monitoringInfluxPassword,
@@ -978,6 +993,7 @@ public class DrasylConfig {
             this.identityPath = identityPath;
             this.remoteBindHost = remoteBindHost;
             this.remoteEnabled = remoteEnabled;
+            this.monitoringHost = monitoringHost;
             this.remoteBindPort = remoteBindPort;
             this.remotePingInterval = remotePingInterval;
             this.remotePingTimeout = remotePingTimeout;
@@ -1137,6 +1153,11 @@ public class DrasylConfig {
             return this;
         }
 
+        public Builder monitoringHost(final String monitoringHost) {
+            this.monitoringHost = monitoringHost;
+            return this;
+        }
+
         public Builder monitoringInfluxUri(final URI monitoringInfluxUri) {
             this.monitoringInfluxUri = monitoringInfluxUri;
             return this;
@@ -1208,11 +1229,7 @@ public class DrasylConfig {
         }
 
         public DrasylConfig build() {
-            return new DrasylConfig(networkId, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath, remoteBindHost, remoteEnabled, remoteBindPort, remotePingInterval, remotePingTimeout, remotePingCommunicationTimeout, remoteUniteMinInterval, remotePingMaxPeers, remoteEndpoints, remoteExposeEnabled, messageMaxContentLength, messageHopLimit, messageComposedMessageTransferTimeout, remoteSuperPeerEnabled, remoteSuperPeerEndpoint, intraVmDiscoveryEnabled, localHostDiscoveryEnabled, localHostDiscoveryPath, localHostDiscoveryLeaseTime, monitoringEnabled, monitoringInfluxUri, monitoringInfluxUser, monitoringInfluxPassword, monitoringInfluxDatabase, monitoringInfluxReportingFrequency, pluginSet, marshallingInboundAllowedTypes, marshallingInboundAllowAllPrimitives, marshallingInboundAllowArrayOfDefinedTypes, marshallingInboundAllowedPackages, marshallingOutboundAllowedTypes, marshallingOutboundAllowAllPrimitives, marshallingOutboundAllowArrayOfDefinedTypes, marshallingOutboundAllowedPackages);
-        }
-
-        public static Builder aDrasylConfig() {
-            return new Builder();
+            return new DrasylConfig(networkId, identityProofOfWork, identityPublicKey, identityPrivateKey, identityPath, remoteBindHost, remoteEnabled, remoteBindPort, remotePingInterval, remotePingTimeout, remotePingCommunicationTimeout, remoteUniteMinInterval, remotePingMaxPeers, remoteEndpoints, remoteExposeEnabled, messageMaxContentLength, messageHopLimit, messageComposedMessageTransferTimeout, remoteSuperPeerEnabled, remoteSuperPeerEndpoint, intraVmDiscoveryEnabled, localHostDiscoveryEnabled, localHostDiscoveryPath, localHostDiscoveryLeaseTime, monitoringEnabled, monitoringHost, monitoringInfluxUri, monitoringInfluxUser, monitoringInfluxPassword, monitoringInfluxDatabase, monitoringInfluxReportingFrequency, pluginSet, marshallingInboundAllowedTypes, marshallingInboundAllowAllPrimitives, marshallingInboundAllowArrayOfDefinedTypes, marshallingInboundAllowedPackages, marshallingOutboundAllowedTypes, marshallingOutboundAllowAllPrimitives, marshallingOutboundAllowArrayOfDefinedTypes, marshallingOutboundAllowedPackages);
         }
     }
 }

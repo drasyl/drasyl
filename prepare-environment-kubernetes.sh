@@ -82,6 +82,8 @@ spec:
           value: "false"
         - name: CONFIG_FORCE_drasyl_monitoring_enabled
           value: "true"
+        - name: CONFIG_FORCE_drasyl_monitoring_host__tag
+          value: "${host}"
         - name: CONFIG_FORCE_drasyl_monitoring_influx_uri
           value: https://influxdb.incorum.org
         - name: CONFIG_FORCE_drasyl_monitoring_influx_user
