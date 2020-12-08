@@ -553,7 +553,8 @@ class DrasylConfigTest {
     }
 
     static class MyPlugin implements DrasylPlugin {
-        public MyPlugin() {
+        // do not alter constructor signature. We need that for testing
+        public MyPlugin(final Config config) {
         }
     }
 
