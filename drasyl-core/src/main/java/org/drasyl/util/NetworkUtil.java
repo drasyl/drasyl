@@ -85,6 +85,9 @@ public final class NetworkUtil {
 
     /**
      * Determines the external IPv4 address.
+     * <p>
+     * Note: This is a blocking method, because it connects to external server that may react slowly
+     * or not at all.
      *
      * @return the external IPv4 address or {@code null} in case of error
      */
@@ -133,6 +136,9 @@ public final class NetworkUtil {
 
     /**
      * Determines the external IPv6 address.
+     * <p>
+     * Note: This is a blocking method, because it connects to external server that may react slowly
+     * or not at all.
      *
      * @return the external IPv6 address or {@code null} in case of error
      */
