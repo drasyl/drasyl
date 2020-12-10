@@ -1,0 +1,68 @@
+# Default values for drasyl.
+# This is a YAML-formatted file.
+# Declare variables to be passed into your templates.
+
+replicaCount: 1
+
+image:
+  repository: drasyl/drasyl
+  pullPolicy: IfNotPresent
+  # Overrides the image tag whose default is the chart appVersion.
+  tag: ""
+
+imagePullSecrets: []
+nameOverride: ""
+fullnameOverride: ""
+
+podAnnotations: {}
+
+podSecurityContext: {}
+  # fsGroup: 2000
+
+securityContext: {}
+  # capabilities:
+  #   drop:
+  #   - ALL
+  # readOnlyRootFilesystem: true
+  # runAsNonRoot: true
+  # runAsUser: 1000
+
+service:
+  type: ClusterIP
+  externalIPs: []
+  port: 22527
+
+resources: {}
+  # We usually recommend not to specify default resources and to leave this as a conscious
+  # choice for the user. This also increases chances charts run on environments with little
+  # resources, such as Minikube. If you do want to specify resources, uncomment the following
+  # lines, adjust them as necessary, and remove the curly braces after 'resources:'.
+  # limits:
+  #   cpu: 100m
+  #   memory: 128Mi
+  # requests:
+  #   cpu: 100m
+  #   memory: 128Mi
+
+podEnv: []
+  # Here you can pass environment variables to the drasyl pod
+  # - name: CONFIG_FORCE_drasyl_identity_proof__of__work
+  #   value: "6103667"
+  # - name: CONFIG_FORCE_drasyl_identity_public__key
+  #   value: "030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"
+  # - name: CONFIG_FORCE_drasyl_identity_private__key
+  #   value: "0b01459ef93b2b7dc22794a3b9b7e8fac293399cf9add5b2375d9c357a64546d"
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# required for deployments managed by gitlab
+gitlab:
+  app:
+  env:
+
+podArgs:
+  - node
