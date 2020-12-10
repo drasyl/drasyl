@@ -17,7 +17,7 @@
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-package org.drasyl.remote.message;
+package org.drasyl.remote.handler;
 
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.Unpooled;
@@ -28,7 +28,7 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
-import org.drasyl.remote.handler.ByteBuf2MessageHandler;
+import org.drasyl.remote.message.RemoteApplicationMessage;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
