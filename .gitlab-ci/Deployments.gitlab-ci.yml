@@ -32,6 +32,8 @@ variables:
 review:
   extends: .auto-deploy
   stage: review
+  variables:
+    JAVA_OPTS: "-Dio.netty.leakDetectionLevel=PARANOID -Dlogback.configurationFile=/usr/local/share/drasyl/logback.xml"
   before_script:
     - sh .gitlab/prepare-auto-deploy-values.yaml.sh > .gitlab/auto-deploy-values.yaml
   script:
@@ -95,7 +97,7 @@ staging:
     DRASYL_PROOF_OF_WORK: 10724607
     DRASYL_PUBLIC_KEY: 03096ae3080a369829a44847d5af1f652bef3f9921e9e1bbad64970babe6d3c502
     # DRASYL_PRIVATE_KEY is defined securely in GitLab CI/CD Settings
-    JAVA_OPTS: "-Dio.netty.leakDetectionLevel=PARANOID"
+    JAVA_OPTS: "-Dio.netty.leakDetectionLevel=PARANOID -Dlogback.configurationFile=/usr/local/share/drasyl/logback.xml"
   before_script:
     - sh .gitlab/prepare-auto-deploy-values.yaml.sh > .gitlab/auto-deploy-values.yaml
   script:
