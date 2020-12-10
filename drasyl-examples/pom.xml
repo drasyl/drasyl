@@ -45,18 +45,6 @@
                     <target>${maven.compiler.source}</target>
                 </configuration>
             </plugin>
-            <plugin>
-                <groupId>org.openjfx</groupId>
-                <artifactId>javafx-maven-plugin</artifactId>
-                <version>0.0.5</version>
-                <configuration>
-                    <jlinkImageName>drasyl-examples</jlinkImageName>
-                    <launcher>launcher</launcher>
-                    <mainClass>org.drasyl.example.chat.gui.ChatGUI</mainClass>
-                    <source>${maven.compiler.source}</source>
-                    <target>${maven.compiler.source}</target>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
 
@@ -82,13 +70,6 @@
         <dependency>
             <groupId>ch.qos.logback</groupId>
             <artifactId>logback-core</artifactId>
-        </dependency>
-
-        <!-- For the Chat GUI -->
-        <dependency>
-            <groupId>org.openjfx</groupId>
-            <artifactId>javafx-controls</artifactId>
-            <version>15.0.1</version>
         </dependency>
     </dependencies>
 
