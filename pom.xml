@@ -118,7 +118,7 @@
         <awaitility.version>4.0.3</awaitility.version>
         <netty.version>4.1.54.Final</netty.version>
         <guava.version>30.0-jre</guava.version>
-        <rxjava.version>3.0.7</rxjava.version>
+        <rxjava.version>3.0.8</rxjava.version>
         <commons.version>4.4</commons.version>
         <micrometer.version>1.6.1</micrometer.version>
         <maven.scm>1.11.2</maven.scm>
