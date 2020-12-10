@@ -26,20 +26,6 @@ if [[ -z "$PORT" ]]; then
 fi
 
 cat << EOF
-ingress:
-  enabled: true
-  annotations:
-    kubernetes.io/ingress.class: nginx
-    kubernetes.io/tls-acme: "true"
-  hosts:
-    - host: $(echo $CI_ENVIRONMENT_URL | awk -F[/:] '{print $4}')
-      paths:
-        - /
-  tls:
-    - secretName: $CI_PROJECT_ID-$CI_ENVIRONMENT_SLUG-tls
-      hosts:
-        - $(echo $CI_ENVIRONMENT_URL | awk -F[/:] '{print $4}')
-
 podArgs:
   - node
   - --verbose
@@ -78,6 +64,7 @@ podEnv:
     value: "$JAVA_OPTS"
 
 service:
+  type: ClusterIP
   port: $PORT
   externalIPs:
     - 134.100.11.112

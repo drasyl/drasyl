@@ -28,7 +28,7 @@ securityContext: {}
   # runAsUser: 1000
 
 service:
-  type: ClusterIP
+  type: NodePort
   externalIPs: []
   port: 22527
 

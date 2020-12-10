@@ -25,38 +25,15 @@ variables:
   # We don't need cache for stop a environment
   cache: {}
 
-.deploy-base-kubernetes: &deploy-base-kubernetes
-  image: registry.gitlab.com/gitlab-org/cluster-integration/auto-deploy-image:v0.17.2
-  script:
-    - sh ./prepare-environment-kubernetes.sh > kubernetes.yml
-    - kubectl apply -f kubernetes.yml
-  # We don't need cache for stop a environment
-  cache: {}
-
-.stop-base-kubernetes: &stop-base-kubernetes
-  image: registry.gitlab.com/gitlab-org/cluster-integration/auto-deploy-image:v0.17.2
-  variables:
-    GIT_STRATEGY: none
-  before_script:
-    - git clone -n $CI_REPOSITORY_URL $CI_PROJECT_NAME
-    - cd $CI_PROJECT_NAME
-    - git checkout $CI_COMMIT_SHA || git checkout master
-  script:
-    - sh ./prepare-environment-kubernetes.sh > kubernetes.yml
-    - kubectl delete -f kubernetes.yml
-  # We don't need cache for stop a environment
-  cache: {}
-
 .auto-deploy:
   image: "registry.gitlab.com/gitlab-org/cluster-integration/auto-deploy-image:v2.0.0"
   dependencies: []
-  before_script:
-    - sh .gitlab/prepare-auto-deploy-values.yaml.sh
-    - sh .gitlab/prepare-auto-deploy-values.yaml.sh > .gitlab/auto-deploy-values.yaml
 
 review:
   extends: .auto-deploy
   stage: review
+  before_script:
+    - sh .gitlab/prepare-auto-deploy-values.yaml.sh > .gitlab/auto-deploy-values.yaml
   script:
     - auto-deploy check_kube_domain
     - auto-deploy download_chart
@@ -118,6 +95,8 @@ staging:
     DRASYL_PUBLIC_KEY: 03096ae3080a369829a44847d5af1f652bef3f9921e9e1bbad64970babe6d3c502
     # DRASYL_PRIVATE_KEY is defined securely in GitLab CI/CD Settings
     JAVA_OPTS: "-Dio.netty.leakDetectionLevel=PARANOID"
+  before_script:
+    - sh .gitlab/prepare-auto-deploy-values.yaml.sh > .gitlab/auto-deploy-values.yaml
   script:
     - auto-deploy check_kube_domain
     - auto-deploy download_chart
@@ -133,25 +112,6 @@ staging:
       when: never
     - if: '$CI_COMMIT_BRANCH != "master"'
       when: never
-  tags:
-    - kubernetes
-    - staging
-
-stop_staging:
-  <<: *stop-base-kubernetes
-  stage: cleanup
-  variables:
-    GIT_STRATEGY: none
-    DRASYL_NETWORK_ID: -25421
-    DRASYL_PROOF_OF_WORK: 10724607
-    DRASYL_PUBLIC_KEY: 03096ae3080a369829a44847d5af1f652bef3f9921e9e1bbad64970babe6d3c502
-    # DRASYL_PRIVATE_KEY is defined securely in GitLab CI/CD Settings
-  only:
-    - master
-  when: manual
-  environment:
-    name: staging
-    action: stop
   tags:
     - kubernetes
     - staging
