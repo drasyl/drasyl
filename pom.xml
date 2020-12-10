@@ -116,11 +116,11 @@
         <hamcrest.version>2.2</hamcrest.version>
         <bouncycastle.version>1.67</bouncycastle.version>
         <awaitility.version>4.0.3</awaitility.version>
-        <netty.version>4.1.54.Final</netty.version>
+        <netty.version>4.1.55.Final</netty.version>
         <guava.version>30.0-jre</guava.version>
-        <rxjava.version>3.0.7</rxjava.version>
+        <rxjava.version>3.0.8</rxjava.version>
         <commons.version>4.4</commons.version>
-        <micrometer.version>1.6.1</micrometer.version>
+        <micrometer.version>1.6.2</micrometer.version>
         <maven.scm>1.11.2</maven.scm>
         <nexus.staging>1.6.8</nexus.staging>
         <portmapper.version>2.0.5</portmapper.version>
