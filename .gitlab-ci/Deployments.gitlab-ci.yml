@@ -1,5 +1,7 @@
 variables:
   APP_HOST: env.drasyl.org
+  ROLLOUT_STATUS_DISABLED: 1
+  AUTO_DEVOPS_DEPLOY_DEBUG: 1
 
 .deploy-base-docker: &deploy-base-docker
   image: drasyl/drasyl-build-images:docker-18.02-docker-compose-1.19-git-2.15.4
@@ -23,70 +25,71 @@ variables:
   # We don't need cache for stop a environment
   cache: {}
 
-.deploy-base-kubernetes: &deploy-base-kubernetes
-  image: registry.gitlab.com/gitlab-org/cluster-integration/auto-deploy-image:v0.17.2
-  script:
-    - sh ./prepare-environment-kubernetes.sh > kubernetes.yml
-    - kubectl delete --ignore-not-found -f kubernetes.yml
-    - kubectl apply -f kubernetes.yml
-  # We don't need cache for stop a environment
-  cache: {}
-
-.stop-base-kubernetes: &stop-base-kubernetes
-  image: registry.gitlab.com/gitlab-org/cluster-integration/auto-deploy-image:v0.17.2
-  variables:
-    GIT_STRATEGY: none
-  before_script:
-    - git clone -n $CI_REPOSITORY_URL $CI_PROJECT_NAME
-    - cd $CI_PROJECT_NAME
-    - git checkout $CI_COMMIT_SHA || git checkout master
-  script:
-    - sh ./prepare-environment-kubernetes.sh > kubernetes.yml
-    - kubectl delete -f kubernetes.yml
-  # We don't need cache for stop a environment
-  cache: {}
+.auto-deploy:
+  image: "registry.gitlab.com/gitlab-org/cluster-integration/auto-deploy-image:v2.0.0"
+  dependencies: []
 
 review:
-  <<: *deploy-base-kubernetes
+  extends: .auto-deploy
   stage: review
   variables:
-    DRASYL_PROOF_OF_WORK: 3338929
-    DRASYL_PUBLIC_KEY: 031a31ad3c6e04c5755c7cdd266759c27be9e96d2e42a9063d4e816643bfd37f8c
-    # DRASYL_PRIVATE_KEY is defined securely in GitLab CI/CD Settings
     JAVA_OPTS: "-Dio.netty.leakDetectionLevel=PARANOID -Dlogback.configurationFile=/usr/local/share/drasyl/logback.xml"
+  before_script:
+    - sh .gitlab/prepare-auto-deploy-values.yaml.sh > .gitlab/auto-deploy-values.yaml
+  script:
+    - auto-deploy check_kube_domain
+    - auto-deploy download_chart
+    - auto-deploy ensure_namespace
+    - auto-deploy initialize_tiller
+    - auto-deploy create_secret
+    - auto-deploy deploy
+    - auto-deploy persist_environment_url
   environment:
     name: review/$CI_COMMIT_REF_NAME
-    url: https://$CI_ENVIRONMENT_SLUG.$APP_HOST
+    url: http://$CI_ENVIRONMENT_SLUG.$APP_HOST
     on_stop: stop_review
-  except:
-    - master
+  artifacts:
+    paths: [environment_url.txt, tiller.log]
+    when: always
+  rules:
+    - if: '$CI_KUBERNETES_ACTIVE == null || $CI_KUBERNETES_ACTIVE == ""'
+      when: never
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: never
+    - if: '$REVIEW_DISABLED'
+      when: never
+    - if: '$CI_COMMIT_TAG || $CI_COMMIT_BRANCH'
   tags:
     - kubernetes
     - review
-  # We don't need cache for deploy a review
-  cache: {}
 
 stop_review:
-  <<: *stop-base-kubernetes
+  extends: .auto-deploy
   stage: cleanup
   variables:
-    DRASYL_PROOF_OF_WORK: 3338929
-    DRASYL_PUBLIC_KEY: 031a31ad3c6e04c5755c7cdd266759c27be9e96d2e42a9063d4e816643bfd37f8c
-    # DRASYL_PRIVATE_KEY is defined securely in GitLab CI/CD Settings
-  except:
-    - master
-  when: manual
+    GIT_STRATEGY: none
+  script:
+    - auto-deploy initialize_tiller
+    - auto-deploy delete
   environment:
     name: review/$CI_COMMIT_REF_NAME
     action: stop
+  allow_failure: true
+  rules:
+    - if: '$CI_KUBERNETES_ACTIVE == null || $CI_KUBERNETES_ACTIVE == ""'
+      when: never
+    - if: '$CI_COMMIT_BRANCH == "master"'
+      when: never
+    - if: '$REVIEW_DISABLED'
+      when: never
+    - if: '$CI_COMMIT_TAG || $CI_COMMIT_BRANCH'
+      when: manual
   tags:
     - kubernetes
     - review
-  # We don't need cache for stop a review
-  cache: {}
 
 staging:
-  <<: *deploy-base-kubernetes
+  extends: .auto-deploy
   stage: staging
   variables:
     PORT: 22527
@@ -95,31 +98,22 @@ staging:
     DRASYL_PUBLIC_KEY: 03096ae3080a369829a44847d5af1f652bef3f9921e9e1bbad64970babe6d3c502
     # DRASYL_PRIVATE_KEY is defined securely in GitLab CI/CD Settings
     JAVA_OPTS: "-Dio.netty.leakDetectionLevel=PARANOID -Dlogback.configurationFile=/usr/local/share/drasyl/logback.xml"
+  before_script:
+    - sh .gitlab/prepare-auto-deploy-values.yaml.sh > .gitlab/auto-deploy-values.yaml
+  script:
+    - auto-deploy check_kube_domain
+    - auto-deploy download_chart
+    - auto-deploy ensure_namespace
+    - auto-deploy initialize_tiller
+    - auto-deploy create_secret
+    - auto-deploy deploy
   environment:
     name: staging
-    url: https://$CI_ENVIRONMENT_SLUG.$APP_HOST
-  only:
-    - master
-  tags:
-    - kubernetes
-    - staging
-
-stop_staging:
-  <<: *stop-base-kubernetes
-  stage: cleanup
-  variables:
-    GIT_STRATEGY: none
-    PORT: 22527
-    DRASYL_NETWORK_ID: -25421
-    DRASYL_PROOF_OF_WORK: 10724607
-    DRASYL_PUBLIC_KEY: 03096ae3080a369829a44847d5af1f652bef3f9921e9e1bbad64970babe6d3c502
-    # DRASYL_PRIVATE_KEY is defined securely in GitLab CI/CD Settings
-  only:
-    - master
-  when: manual
-  environment:
-    name: staging
-    action: stop
+    url: http://$CI_ENVIRONMENT_SLUG.$APP_HOST
+  rules:
+    - if: '$CI_KUBERNETES_ACTIVE == null || $CI_KUBERNETES_ACTIVE == ""'
+      when: never
+    - if: '$CI_COMMIT_BRANCH == "master"'
   tags:
     - kubernetes
     - staging
@@ -131,7 +125,6 @@ production:
     APP_IMAGE: "${CI_REGISTRY_IMAGE}:latest"
     APP_DEPLOY_HOST: "production.${APP_HOST}"
     SENTRY_ENVIRONMENT: production
-    PORT: 22527
     DRASYL_NETWORK_ID: 1
     DRASYL_PROOF_OF_WORK: 10992904
     DRASYL_PUBLIC_KEY: 025fff6f625f5dee816d9f8fe43895479aecfda187cb6a3330894a07e698bc5bd8
@@ -156,7 +149,6 @@ stop_production:
     APP_IMAGE: "${CI_REGISTRY_IMAGE}:latest"
     APP_DEPLOY_HOST: "production.${APP_HOST}"
     SENTRY_ENVIRONMENT: production
-    PORT: 22527
     DRASYL_NETWORK_ID: 1
     DRASYL_PROOF_OF_WORK: 10992904
     DRASYL_PUBLIC_KEY: 025fff6f625f5dee816d9f8fe43895479aecfda187cb6a3330894a07e698bc5bd8

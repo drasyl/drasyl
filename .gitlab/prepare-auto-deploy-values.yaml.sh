@@ -63,9 +63,5 @@ podEnv:
   - name: JAVA_OPTS
     value: "$JAVA_OPTS"
 
-service:
-  type: ClusterIP
-  port: $PORT
-  externalIPs:
-    - 134.100.11.112
+port: $PORT
 EOF
