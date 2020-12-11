@@ -67,6 +67,6 @@ license_scanning:
 
 code_quality:
   rules:
-    - if: $CI_EXTENDED || $CODE_QUALITY_ENABLED
+    - if: $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH
       when: always
     - when: never

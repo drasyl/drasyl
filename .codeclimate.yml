@@ -1,0 +1,9 @@
+---
+version: "2"
+#plugins:
+#  duplication:
+#    enabled: false
+exclude_patterns:
+  - "**/target/"
+  - "**/src/test/"
+  - ".mvn/wrapper/"
