@@ -64,9 +64,3 @@ license_scanning:
     - if: $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH
       when: always
     - when: never
-
-code_quality:
-  rules:
-    - if: $CI_DEFAULT_BRANCH == $CI_COMMIT_BRANCH
-      when: always
-    - when: never
