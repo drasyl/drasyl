@@ -36,6 +36,7 @@ spec:
           ports:
             - name: drasyl
               containerPort: 22527
+              hostPort: 22527
               protocol: UDP
           resources:
             {{- toYaml .Values.resources | nindent 12 }}
