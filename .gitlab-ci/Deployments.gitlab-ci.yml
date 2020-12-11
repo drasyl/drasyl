@@ -41,6 +41,7 @@ review:
     - auto-deploy download_chart
     - auto-deploy ensure_namespace
     - auto-deploy initialize_tiller
+    - auto-deploy delete
     - auto-deploy create_secret
     - auto-deploy deploy
     - auto-deploy persist_environment_url
@@ -105,6 +106,7 @@ staging:
     - auto-deploy download_chart
     - auto-deploy ensure_namespace
     - auto-deploy initialize_tiller
+    - auto-deploy delete
     - auto-deploy create_secret
     - auto-deploy deploy
   environment:
