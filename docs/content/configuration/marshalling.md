@@ -31,6 +31,10 @@ A reckless implementation of a permitted class can leave the entire application 
     * [Automated Discovery of Deserialization Gadget Chains by Ian Haken](https://i.blackhat.com/us-18/Thu-August-9/us-18-Haken-Automated-Discovery-of-Deserialization-Gadget-Chains-wp.pdf)
     * [Marshalling Pickles by Chris Frohoff and Garbriel Lawrence](https://frohoff.github.io/appseccali-marshalling-pickles/)
 
+By default, this list contains the types `java.lang.String` and `java.lang.Number`. 
+If you set this property in your configuration, all existing entries will be removed.
+Therefore, make sure that you re-add these types to the list if needed.
+
 ## [`marshalling.inbound.allow-all-primitives`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.Builder.html#marshallingInboundAllowAllPrimitives(boolean)) / [`marshalling.outbound.allow-all-primitives`](https://www.javadoc.io/doc/org.drasyl/drasyl-core/latest/org/drasyl/DrasylConfig.Builder.html#marshallingOutboundAllowAllPrimitives(boolean))
 
 Whether Java's primitive data types should automatically be allowed. If this setting is activated, drasyl automatically (de-)serializes the types: 
