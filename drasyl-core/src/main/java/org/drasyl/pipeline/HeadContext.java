@@ -85,7 +85,7 @@ class HeadContext extends AbstractEndHandler {
                             "This can happen due to a missing codec. You can find more information regarding this here: " +
                             "https://docs.drasyl.org/configuration/marshalling/", msg, recipient);
                 }
-                future.completeExceptionally(new IllegalStateException("Message must be consumed before end of the pipeline."));
+                future.completeExceptionally(new IllegalStateException("Message has arrived at the end of the pipeline and was not consumed before by a handler. Therefore the message was dropped. This can happen due to a missing codec. You can find more information regarding this here: https://docs.drasyl.org/configuration/marshalling/"));
             }
         }
         finally {
