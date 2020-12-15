@@ -37,10 +37,6 @@ public class ProofOfWork {
     private int nonce;
 
     ProofOfWork(final int nonce) {
-        if (nonce < 0) {
-            throw new IllegalArgumentException("Nonce must be positive.");
-        }
-
         this.nonce = nonce;
     }
 
@@ -86,11 +82,11 @@ public class ProofOfWork {
     }
 
     private static ProofOfWork of() {
-        return of(0);
+        return of(Integer.MIN_VALUE);
     }
 
     public static ProofOfWork generateProofOfWork(final CompressedPublicKey publicKey,
-                                                  final short difficulty) {
+                                                  final byte difficulty) {
         LOG.info("Generate proof of work. This may take a while ...");
         final ProofOfWork pow = ProofOfWork.of();
 
@@ -103,8 +99,19 @@ public class ProofOfWork {
         return pow;
     }
 
-    public boolean isValid(final CompressedPublicKey publicKey, final short difficulty) {
+    /**
+     * Checks if the current proof of work is valid for given public key and difficulty.
+     *
+     * @param publicKey  the public key
+     * @param difficulty the difficulty
+     * @return if valid true, otherwise false
+     * @throws IllegalArgumentException if the difficulty is not in between [0,64]
+     */
+    public boolean isValid(final CompressedPublicKey publicKey, final byte difficulty) {
         requireNonNull(publicKey);
+        if (difficulty < 0 || difficulty > 64) {
+            throw new IllegalArgumentException("difficulty must in between the range of [0,64].");
+        }
 
         final String hash = generateHash(publicKey, nonce);
 
@@ -115,10 +122,10 @@ public class ProofOfWork {
         return Hashing.sha256Hex(publicKey.toString() + nonce);
     }
 
-    public static short getDifficulty(final ProofOfWork proofOfWork,
-                                      final CompressedPublicKey publicKey) {
+    public static byte getDifficulty(final ProofOfWork proofOfWork,
+                                     final CompressedPublicKey publicKey) {
         final String hash = generateHash(publicKey, proofOfWork.getNonce());
-        short i;
+        byte i;
 
         for (i = 0; i < hash.length(); i++) {
             if (hash.charAt(i) != '0') {

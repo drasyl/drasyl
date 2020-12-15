@@ -175,7 +175,15 @@ class DrasylPipelineIT {
 
         IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 
-        pipeline.addLast("exceptionProducer", new HandlerAdapter() {
+        pipeline.addFirst("exceptionCatcher", new HandlerAdapter() {
+            @Override
+            public void exceptionCaught(final HandlerContext ctx, final Exception cause) {
+                exceptions.onNext(cause);
+                super.exceptionCaught(ctx, cause);
+            }
+        });
+
+        pipeline.addFirst("exceptionProducer", new HandlerAdapter() {
             @Override
             public void read(final HandlerContext ctx,
                              final Address sender,
@@ -183,14 +191,6 @@ class DrasylPipelineIT {
                              final CompletableFuture<Void> future) {
                 super.read(ctx, sender, msg, future);
                 throw exception;
-            }
-        });
-
-        pipeline.addLast("exceptionCatcher", new HandlerAdapter() {
-            @Override
-            public void exceptionCaught(final HandlerContext ctx, final Exception cause) {
-                exceptions.onNext(cause);
-                super.exceptionCaught(ctx, cause);
             }
         });
 

@@ -89,6 +89,7 @@ import static org.drasyl.DrasylConfig.REMOTE_EXPOSE_ENABLED;
 import static org.drasyl.DrasylConfig.REMOTE_PING_INTERVAL;
 import static org.drasyl.DrasylConfig.REMOTE_SUPER_PEER_ENABLED;
 import static org.drasyl.DrasylConfig.REMOTE_SUPER_PEER_ENDPOINT;
+import static org.drasyl.DrasylConfig.getByte;
 import static org.drasyl.DrasylConfig.getChannelInitializer;
 import static org.drasyl.DrasylConfig.getEndpointList;
 import static org.drasyl.DrasylConfig.getInetAddress;
@@ -96,9 +97,7 @@ import static org.drasyl.DrasylConfig.getInetSocketAddress;
 import static org.drasyl.DrasylConfig.getPath;
 import static org.drasyl.DrasylConfig.getPlugins;
 import static org.drasyl.DrasylConfig.getPrivateKey;
-import static org.drasyl.DrasylConfig.getProofOfWork;
 import static org.drasyl.DrasylConfig.getPublicKey;
-import static org.drasyl.DrasylConfig.getShort;
 import static org.drasyl.DrasylConfig.getURI;
 import static org.drasyl.util.NetworkUtil.createInetAddress;
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -129,7 +128,7 @@ class DrasylConfigTest {
     private Set<Endpoint> serverEndpoints;
     private boolean remoteExposeEnabled;
     private int messageMaxContentLength;
-    private short messageHopLimit;
+    private byte messageHopLimit;
     private boolean superPeerEnabled;
     private Endpoint superPeerEndpoint;
     @Mock(answer = RETURNS_DEEP_STUBS)
@@ -171,7 +170,7 @@ class DrasylConfigTest {
         serverEndpoints = Set.of();
         remoteExposeEnabled = true;
         messageMaxContentLength = 1024;
-        messageHopLimit = 64;
+        messageHopLimit = (byte) 64;
         superPeerEnabled = true;
         superPeerEndpoint = Endpoint.of("udp://foo.bar:123#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22");
         identityPathAsString = "drasyl.identity.json";
@@ -196,6 +195,21 @@ class DrasylConfigTest {
         marshallingOutboundAllowAllPrimitives = true;
         marshallingOutboundAllowArrayOfDefinedTypes = true;
         marshallingOutboundAllowedPackages = List.of();
+    }
+
+    static class MyPlugin implements DrasylPlugin {
+        // do not alter constructor signature. We need that for testing
+        public MyPlugin(final Config config) {
+        }
+    }
+
+    static class MyPluginWithMissingMethod implements DrasylPlugin {
+    }
+
+    static class MyPluginWithInvocationTargetException implements DrasylPlugin {
+        public MyPluginWithInvocationTargetException(final Config config) throws IllegalAccessException {
+            throw new IllegalAccessException("boom");
+        }
     }
 
     @Nested
@@ -342,16 +356,6 @@ class DrasylConfigTest {
     }
 
     @Nested
-    class GetProofOfWork {
-        @Test
-        void shouldThrowExceptionForInvalidValue() {
-            final Config config = ConfigFactory.parseString("foo.bar = -1");
-
-            assertThrows(ConfigException.class, () -> getProofOfWork(config, "foo.bar"));
-        }
-    }
-
-    @Nested
     class GetPublicKey {
         @Test
         void shouldThrowExceptionForInvalidValue() {
@@ -387,7 +391,7 @@ class DrasylConfigTest {
         void shouldThrowExceptionForInvalidValue() {
             final Config config = ConfigFactory.parseString("foo.bar = 123456789");
 
-            assertThrows(ConfigException.class, () -> getShort(config, "foo.bar"));
+            assertThrows(ConfigException.class, () -> getByte(config, "foo.bar"));
         }
     }
 
@@ -549,21 +553,6 @@ class DrasylConfigTest {
                     .build();
 
             assertEquals(DEFAULT, config);
-        }
-    }
-
-    static class MyPlugin implements DrasylPlugin {
-        // do not alter constructor signature. We need that for testing
-        public MyPlugin(final Config config) {
-        }
-    }
-
-    static class MyPluginWithMissingMethod implements DrasylPlugin {
-    }
-
-    static class MyPluginWithInvocationTargetException implements DrasylPlugin {
-        public MyPluginWithInvocationTargetException(final Config config) throws IllegalAccessException {
-            throw new IllegalAccessException("boom");
         }
     }
 }

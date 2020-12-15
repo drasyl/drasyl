@@ -32,8 +32,8 @@ import java.util.Map;
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.DrasylConfig.getByte;
 import static org.drasyl.DrasylConfig.getInetAddress;
-import static org.drasyl.DrasylConfig.getShort;
 import static org.drasyl.DrasylConfig.getURI;
 import static org.drasyl.util.SecretUtil.maskSecret;
 
@@ -86,9 +86,9 @@ public class GroupsManagerConfig {
              */
             final Config groupConfig = entry.getValue().atKey("group").getConfig("group"); // NOSONAR
 
-            final short minDifficulty;
+            final byte minDifficulty;
             if (groupConfig.hasPath(GROUP_MIN_DIFFICULTY)) {
-                minDifficulty = getShort(groupConfig, GROUP_MIN_DIFFICULTY);
+                minDifficulty = getByte(groupConfig, GROUP_MIN_DIFFICULTY);
             }
             else {
                 minDifficulty = Group.GROUP_DEFAULT_MIN_DIFFICULTY;

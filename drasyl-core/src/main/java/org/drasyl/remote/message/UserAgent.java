@@ -18,65 +18,36 @@
  */
 package org.drasyl.remote.message;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
 import org.drasyl.DrasylNode;
+import org.drasyl.util.UnsignedShort;
 
-import java.util.Arrays;
-import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
-import java.util.stream.Collectors;
-
-import static java.util.function.Predicate.not;
+import java.io.IOException;
+import java.util.Properties;
 
 /**
  * This UserAgent is attached to each message and allows the recipient to learn about the
  * capabilities and configuration of the sender.
  */
 public class UserAgent {
-    private static final Pattern USER_AGENT_PATTERN = Pattern.compile("^drasyl/([^)]++\\))(?: ?\\((.*)\\))?");
-    @JsonValue
-    private final String text;
+    private final UnsignedShort version;
 
-    @JsonCreator
-    UserAgent(final String text) {
-        this.text = text;
-    }
-
-    @Override
-    public String toString() {
-        return text;
+    /**
+     * Initializes a new UserAgent.
+     *
+     * @param version positive number in range [0, 2^16]
+     * @throws IllegalArgumentException if not in range [0, 2^16]
+     */
+    UserAgent(final int version) {
+        this.version = UnsignedShort.of(version);
     }
 
     /**
-     * Tries to extract the drasyl version from this user agent.
+     * Initializes a new UserAgent.
      *
-     * @return the drasyl version or {@code null} if not found
+     * @param version version in big-endian format.
      */
-    public String getDrasylVersion() {
-        final Matcher matcher = USER_AGENT_PATTERN.matcher(text);
-        if (matcher.find()) {
-            return matcher.group(1);
-        }
-        else {
-            return null;
-        }
-    }
-
-    /**
-     * Tries to extract the comments from this user agent.
-     *
-     * @return the comments or an empty {@link Set} if not found
-     */
-    public Set<String> getComments() {
-        final Matcher matcher = USER_AGENT_PATTERN.matcher(text);
-        if (matcher.find() && matcher.group(2) != null) {
-            return Arrays.stream(matcher.group(2).split(";")).map(String::trim).filter(not(String::isBlank)).collect(Collectors.toSet());
-        }
-        else {
-            return Set.of();
-        }
+    public UserAgent(final byte[] version) {
+        this.version = UnsignedShort.of(version);
     }
 
     /**
@@ -86,14 +57,24 @@ public class UserAgent {
      * @return the generated user agent
      */
     public static UserAgent generate() {
-        return new UserAgent(String.format(
-                "drasyl/%s (%s/%s; %s; Java/%s:%s)",
-                DrasylNode.getVersion(),
-                System.getProperty("os.name"),
-                System.getProperty("os.version"),
-                System.getProperty("os.arch"),
-                System.getProperty("java.vm.specification.version"),
-                System.getProperty("java.version.date")
-        ));
+        final Properties properties = new Properties();
+        try {
+            properties.load(DrasylNode.class.getClassLoader().getResourceAsStream("project.properties"));
+            return new UserAgent(Integer.parseInt(properties.getProperty("protocol_version")));
+        }
+        catch (final IOException e) {
+            return new UserAgent(0);
+        }
+    }
+
+    public UnsignedShort getVersion() {
+        return version;
+    }
+
+    @Override
+    public String toString() {
+        return "UserAgent{" +
+                "version=" + version +
+                '}';
     }
 }

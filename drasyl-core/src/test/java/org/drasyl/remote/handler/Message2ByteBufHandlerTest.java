@@ -16,10 +16,11 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.remote.handler;
 
 import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufOutputStream;
+import io.netty.buffer.Unpooled;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.CryptoException;
@@ -37,6 +38,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
+
 @ExtendWith(MockitoExtension.class)
 class Message2ByteBufHandlerTest {
     @Mock
@@ -51,7 +54,7 @@ class Message2ByteBufHandlerTest {
     private TypeValidator outboundValidator;
 
     @Test
-    void shouldConvertMessageToByteBuf(@Mock final Address recipient) throws CryptoException {
+    void shouldConvertApplicationMessageToByteBuf(@Mock final Address recipient) throws CryptoException, IOException {
         final RemoteMessage message = new RemoteApplicationMessage(1337,
                 CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"),
                 ProofOfWork.of(3556154),
@@ -59,11 +62,19 @@ class Message2ByteBufHandlerTest {
                 "Hello World".getBytes()
         );
 
+        final ByteBuf byteBuf = Unpooled.buffer();
+        try (final ByteBufOutputStream out = new ByteBufOutputStream(byteBuf)) {
+            message.getPublicHeader().writeDelimitedTo(out);
+            message.getPrivateHeader().writeDelimitedTo(out);
+            message.getBody().writeDelimitedTo(out);
+        }
+
         final Message2ByteBufHandler handler = Message2ByteBufHandler.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
         final TestObserver<ByteBuf> outboundMessages = pipeline.outboundOnlyMessages(ByteBuf.class).test();
         pipeline.processOutbound(recipient, message);
 
         outboundMessages.awaitCount(1).assertValueCount(1);
+        outboundMessages.assertValue(byteBuf);
     }
 }

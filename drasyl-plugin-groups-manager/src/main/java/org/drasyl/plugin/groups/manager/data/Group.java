@@ -39,15 +39,15 @@ import static org.drasyl.util.SecretUtil.maskSecret;
 public class Group {
     public static final Duration GROUP_MIN_TIMEOUT = ofSeconds(60);
     public static final Duration GROUP_DEFAULT_TIMEOUT = GROUP_MIN_TIMEOUT;
-    public static final short GROUP_DEFAULT_MIN_DIFFICULTY = 0;
+    public static final byte GROUP_DEFAULT_MIN_DIFFICULTY = (byte) 0;
     private final String name;
     private final String credentials;
-    private final short minDifficulty;
+    private final byte minDifficulty;
     private final Duration timeout;
 
     private Group(final String name,
                   final String credentials,
-                  final short minDifficulty,
+                  final byte minDifficulty,
                   final Duration timeout) {
         if (minDifficulty < 0) {
             throw new IllegalArgumentException("minDifficulty must be non-negative");
@@ -64,7 +64,7 @@ public class Group {
     @JsonCreator
     private Group(@JsonProperty("name") final String name,
                   @JsonProperty("credentials") final String credentials,
-                  @JsonProperty("minDifficulty") final short minDifficulty,
+                  @JsonProperty("minDifficulty") final byte minDifficulty,
                   @JsonProperty("timeout") final long timeoutSeconds) {
         this(name, credentials, minDifficulty, ofSeconds(timeoutSeconds));
     }
@@ -77,7 +77,7 @@ public class Group {
         return credentials;
     }
 
-    public short getMinDifficulty() {
+    public byte getMinDifficulty() {
         return minDifficulty;
     }
 
@@ -137,7 +137,7 @@ public class Group {
      */
     public static Group of(final String name,
                            final String credentials,
-                           final short minDifficulty,
+                           final byte minDifficulty,
                            final Duration timeout) {
         return new Group(name, credentials, minDifficulty, timeout);
     }

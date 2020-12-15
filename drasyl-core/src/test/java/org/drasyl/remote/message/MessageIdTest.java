@@ -23,13 +23,8 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.IOException;
-
-import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
 import static org.drasyl.remote.message.MessageId.isValidMessageId;
 import static org.drasyl.remote.message.MessageId.randomMessageId;
-import static org.drasyl.util.JSONUtil.JACKSON_READER;
-import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
@@ -86,30 +81,6 @@ class MessageIdTest {
             final String string = MessageId.of("412176952b5b81fd13f84a7c").toString();
 
             assertEquals("412176952b5b81fd13f84a7c", string);
-        }
-    }
-
-    @Nested
-    class JsonDeserialization {
-        @Test
-        void shouldDeserializeToCorrectObject() throws IOException {
-            final String json = "\"QSF2lStbgf0T+Ep8\"";
-
-            assertEquals(
-                    MessageId.of("412176952b5b81fd13f84a7c"),
-                    JACKSON_READER.readValue(json, MessageId.class)
-            );
-        }
-    }
-
-    @Nested
-    class JsonSerialization {
-        @Test
-        void shouldSerializeToCorrectJson() throws IOException {
-            final MessageId id = MessageId.of("412176952b5b81fd13f84a7c");
-
-            assertThatJson(JACKSON_WRITER.writeValueAsString(id))
-                    .isEqualTo("\"QSF2lStbgf0T+Ep8\"");
         }
     }
 

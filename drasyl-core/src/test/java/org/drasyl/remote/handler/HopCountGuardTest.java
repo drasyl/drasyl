@@ -51,8 +51,8 @@ class HopCountGuardTest {
     @Test
     void shouldPassMessagesThatHaveNotReachedTheirHopCountLimitAndIncrementHopCount(@Mock final CompressedPublicKey address,
                                                                                     @Mock final RemoteMessage message) {
-        when(config.getMessageHopLimit()).thenReturn((short) 2);
-        when(message.getHopCount()).thenReturn((short) 1);
+        when(config.getMessageHopLimit()).thenReturn((byte) 2);
+        when(message.getHopCount()).thenReturn((byte) 1);
 
         final HopCountGuard handler = HopCountGuard.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
@@ -68,8 +68,8 @@ class HopCountGuardTest {
     @Test
     void shouldDiscardMessagesThatHaveReachedTheirHopCountLimit(@Mock final CompressedPublicKey address,
                                                                 @Mock final RemoteMessage message) throws InterruptedException {
-        when(config.getMessageHopLimit()).thenReturn((short) 1);
-        when(message.getHopCount()).thenReturn((short) 1);
+        when(config.getMessageHopLimit()).thenReturn((byte) 1);
+        when(message.getHopCount()).thenReturn((byte) 1);
 
         final HopCountGuard handler = HopCountGuard.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);

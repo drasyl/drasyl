@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.plugin.groups.manager;
 
 import com.fasterxml.jackson.core.JsonProcessingException;
@@ -173,7 +172,7 @@ public class GroupsManagerApi {
             try {
                 @SuppressWarnings("unchecked") final Map<String, Object> updateParams = JACKSON_READER.readValue(request.body(), Map.class);
                 final String credentials = updateParams.getOrDefault("credentials", group.getCredentials()).toString();
-                final short minDifficulty = Short.parseShort(updateParams.getOrDefault("minDifficulty", group.getMinDifficulty()).toString());
+                final byte minDifficulty = Byte.parseByte(updateParams.getOrDefault("minDifficulty", group.getMinDifficulty()).toString());
                 final Duration timeout = ofSeconds(Long.parseLong(updateParams.getOrDefault("timeout", group.getTimeoutSeconds()).toString()));
 
                 final Group newGroup = Group.of(name, credentials, minDifficulty, timeout);

@@ -18,34 +18,37 @@
  */
 package org.drasyl.remote.message;
 
-import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufOutputStream;
+import io.netty.buffer.PooledByteBufAllocator;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.Signature;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.remote.protocol.IntermediateEnvelope;
+import org.drasyl.remote.protocol.Protocol;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.IOException;
-
-import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
-import static org.drasyl.util.JSONUtil.JACKSON_READER;
-import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
 class RemoteApplicationMessageTest {
+    private final int networkId = 1;
     CompressedPublicKey sender;
     ProofOfWork proofOfWork;
     CompressedPublicKey recipient;
     private MessageId id;
-    private short hopCount;
-    private final int networkId = 1;
+    private byte hopCount;
+    @Mock
+    private UserAgent userAgent;
 
     @BeforeEach
     void setUp() throws CryptoException {
@@ -57,56 +60,36 @@ class RemoteApplicationMessageTest {
     }
 
     @Nested
-    class JsonDeserialization {
+    class Serialisation {
         @Test
-        void shouldDeserializeToCorrectObject() throws IOException {
-            final String json = "{\"@type\":\"" + RemoteApplicationMessage.class.getSimpleName() + "\",\"id\":\"QSF2lStbgf0T+Ep8\",\"networkId\":1,\"sender\":\"AwlE0gLOX/DubfAUgtIkzL7HJGWt3I5FeO3uqlmX9RG7\",\"proofOfWork\":6657650,\"recipient\":\"Az3j2mmfb5/71CfFZyWRBlW6ORO+T/VbE8Yo6VfIYP1V\",\"type\":\"[B\",\"payload\":\"AAEC\",\"userAgent\":\"\"}";
-
-            assertEquals(new RemoteApplicationMessage(
-                    networkId,
-                    sender,
-                    ProofOfWork.of(6657650),
-                    recipient,
-                    new byte[]{
-                            0x00,
-                            0x01,
-                            0x02
-                    }), JACKSON_READER.readValue(json, RemoteApplicationMessage.class));
-        }
-
-        @Test
-        void shouldDeserializeJsonWithoutHeadersToCorrectObject() throws IOException {
-            final String json = "{\"@type\":\"" + RemoteApplicationMessage.class.getSimpleName() + "\",\"id\":\"QSF2lStbgf0T+Ep8\",\"networkId\":1,\"sender\":\"AwlE0gLOX/DubfAUgtIkzL7HJGWt3I5FeO3uqlmX9RG7\",\"proofOfWork\":6657650,\"recipient\":\"Az3j2mmfb5/71CfFZyWRBlW6ORO+T/VbE8Yo6VfIYP1V\",\"payload\":\"AAEC\",\"userAgent\":\"\"}";
-
-            assertEquals(new RemoteApplicationMessage(networkId, sender, ProofOfWork.of(6657650), recipient, new byte[]{
+        void shouldSerialiseCorrectly() throws Exception {
+            final RemoteApplicationMessage message = new RemoteApplicationMessage(networkId, sender, proofOfWork, recipient, new byte[]{
                     0x00,
                     0x01,
                     0x02
-            }), JACKSON_READER.readValue(json, RemoteApplicationMessage.class));
-        }
+            });
+            final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
+            final ByteBufOutputStream out = new ByteBufOutputStream(byteBuf);
 
-        @Test
-        void shouldRejectIncompleteData() {
-            final String json = "{\"@type\":\"" + RemoteApplicationMessage.class.getSimpleName() + "\",\"id\":\"QSF2lStbgf0T+Ep8\",\"recipient\":\"Az3j2mmfb5/71CfFZyWRBlW6ORO+T/VbE8Yo6VfIYP1V\",\"payload\":\"AAEC\"}";
+            message.getPublicHeader().writeDelimitedTo(out);
+            message.getPrivateHeader().writeDelimitedTo(out);
+            message.getBody().writeDelimitedTo(out);
 
-            assertThrows(ValueInstantiationException.class, () -> JACKSON_READER.readValue(json, RemoteMessage.class));
+            final IntermediateEnvelope envelope = IntermediateEnvelope.of(byteBuf);
+            final RemoteApplicationMessage encoded = new RemoteApplicationMessage(envelope.getPublicHeader(), (Protocol.Application) envelope.getBody());
+
+            assertEquals(message, encoded);
         }
     }
 
     @Nested
-    class JsonSerialization {
+    class ToString {
         @Test
-        void shouldSerializeToCorrectJson() throws IOException {
-            final RemoteApplicationMessage message = new RemoteApplicationMessage(networkId, sender, proofOfWork, recipient, byte[].class.getName(), new byte[]{
-                    0x00,
-                    0x01,
-                    0x02
-            }, (short) 64, new Signature(new byte[]{}));
+        void shouldNotBeNull() {
+            final RemoteApplicationMessage message = new RemoteApplicationMessage(networkId, sender, proofOfWork, recipient, new byte[]{
+            });
 
-            assertThatJson(JACKSON_WRITER.writeValueAsString(message))
-                    .isObject()
-                    .containsEntry("@type", RemoteApplicationMessage.class.getSimpleName())
-                    .containsKeys("id", "networkId", "recipient", "hopCount", "sender", "type", "payload", "proofOfWork", "userAgent", "signature");
+            assertNotNull(message.toString());
         }
     }
 
@@ -145,6 +128,7 @@ class RemoteApplicationMessageTest {
             });
 
             assertEquals(message1, message2);
+            assertEquals(message1.getType(), message2.getType());
             assertNotEquals(message2, message3);
         }
     }
@@ -153,17 +137,17 @@ class RemoteApplicationMessageTest {
     class HashCode {
         @Test
         void notSameBecauseOfDifferentPayload() {
-            final RemoteApplicationMessage message1 = new RemoteApplicationMessage(id, networkId, sender, proofOfWork, recipient, hopCount, new Signature(new byte[]{}), new byte[]{
+            final RemoteApplicationMessage message1 = new RemoteApplicationMessage(id, userAgent, networkId, sender, proofOfWork, recipient, hopCount, new Signature(new byte[]{}), byte[].class.getName(), new byte[]{
                     0x00,
                     0x01,
                     0x02
             });
-            final RemoteApplicationMessage message2 = new RemoteApplicationMessage(id, networkId, sender, proofOfWork, recipient, hopCount, new Signature(new byte[]{}), new byte[]{
+            final RemoteApplicationMessage message2 = new RemoteApplicationMessage(id, userAgent, networkId, sender, proofOfWork, recipient, hopCount, new Signature(new byte[]{}), byte[].class.getName(), new byte[]{
                     0x00,
                     0x01,
                     0x02
             });
-            final RemoteApplicationMessage message3 = new RemoteApplicationMessage(id, networkId, sender, proofOfWork, recipient, hopCount, new Signature(new byte[]{}), new byte[]{
+            final RemoteApplicationMessage message3 = new RemoteApplicationMessage(id, userAgent, networkId, sender, proofOfWork, recipient, hopCount, new Signature(new byte[]{}), byte[].class.getName(), new byte[]{
                     0x03,
                     0x02,
                     0x01

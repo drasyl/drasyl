@@ -35,7 +35,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyShort;
+import static org.mockito.ArgumentMatchers.anyByte;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -53,7 +53,7 @@ class InvalidProofOfWorkFilterTest {
 
     @Test
     void shouldDropMessagesWithInvalidProofOfWork(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message) throws InterruptedException {
-        when(message.getProofOfWork().isValid(any(), anyShort())).thenReturn(false);
+        when(message.getProofOfWork().isValid(any(), anyByte())).thenReturn(false);
 
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
@@ -67,7 +67,7 @@ class InvalidProofOfWorkFilterTest {
 
     @Test
     void shouldPassMessagesWithValidProofOfWork(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message) {
-        when(message.getProofOfWork().isValid(any(), anyShort())).thenReturn(true);
+        when(message.getProofOfWork().isValid(any(), anyByte())).thenReturn(true);
 
         final InvalidProofOfWorkFilter handler = InvalidProofOfWorkFilter.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);

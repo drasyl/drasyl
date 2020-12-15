@@ -66,7 +66,7 @@ import static org.drasyl.plugin.groups.client.message.GroupJoinFailedMessage.Err
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyShort;
+import static org.mockito.ArgumentMatchers.anyByte;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
@@ -107,7 +107,7 @@ class GroupsManagerHandlerTest {
     @BeforeEach
     void setUp() {
         final Member member = Member.of(publicKey);
-        group = Group.of("name", "secret", (short) 0, Duration.ofSeconds(60));
+        group = Group.of("name", "secret", (byte) 0, Duration.ofSeconds(60));
         final Membership membership = Membership.of(member, group, 60L);
         memberships = Set.of(membership);
     }
@@ -197,7 +197,7 @@ class GroupsManagerHandlerTest {
             when(databaseAdapter.addGroupMember(any())).thenReturn(true);
             when(databaseAdapter.getGroupMembers(group.getName())).thenReturn(memberships);
             when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(group);
-            when(proofOfWork.isValid(any(), anyShort())).thenReturn(true);
+            when(proofOfWork.isValid(any(), anyByte())).thenReturn(true);
 
             final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
 
@@ -245,7 +245,7 @@ class GroupsManagerHandlerTest {
             final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork);
 
             when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(group);
-            when(proofOfWork.isValid(any(), anyShort())).thenReturn(false);
+            when(proofOfWork.isValid(any(), anyByte())).thenReturn(false);
 
             final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
 
@@ -270,7 +270,7 @@ class GroupsManagerHandlerTest {
 
             when(databaseAdapter.addGroupMember(any())).thenThrow(DatabaseException.class);
             when(databaseAdapter.getGroup(msg.getGroup().getName())).thenReturn(group);
-            when(proofOfWork.isValid(any(), anyShort())).thenReturn(true);
+            when(proofOfWork.isValid(any(), anyByte())).thenReturn(true);
 
             final CompletableFuture<Void> future = pipeline.processInbound(publicKey, msg);
 
@@ -291,7 +291,6 @@ class GroupsManagerHandlerTest {
                     inboundValidator,
                     outboundValidator,
                     handler);
-            final TestObserver<GroupsServerMessage> testObserver = pipeline.outboundOnlyMessages(GroupsServerMessage.class).test();
             final GroupJoinMessage msg = new GroupJoinMessage(org.drasyl.plugin.groups.client.Group.of(group.getName()), "secret", proofOfWork);
 
             when(databaseAdapter.getGroup(any())).thenThrow(DatabaseException.class);

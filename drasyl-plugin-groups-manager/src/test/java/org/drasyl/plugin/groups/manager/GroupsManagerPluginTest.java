@@ -20,10 +20,10 @@ package org.drasyl.plugin.groups.manager;
 
 import com.typesafe.config.ConfigFactory;
 import org.drasyl.pipeline.Pipeline;
+import org.drasyl.plugin.PluginEnvironment;
 import org.drasyl.plugin.groups.manager.data.Group;
 import org.drasyl.plugin.groups.manager.database.DatabaseAdapter;
 import org.drasyl.plugin.groups.manager.database.DatabaseException;
-import org.drasyl.plugin.PluginEnvironment;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -60,7 +60,7 @@ class GroupsManagerPluginTest {
         @Test
         void shouldInitDB() throws DatabaseException {
             final GroupsManagerPlugin plugin = new GroupsManagerPlugin(groupsManagerConfig, databaseAdapter);
-            final Group group = Group.of("group", "secret", (short) 0, Duration.ofSeconds(60));
+            final Group group = Group.of("group", "secret", (byte) 0, Duration.ofSeconds(60));
             when(groupsManagerConfig.getGroups()).thenReturn(Map.of(group.getName(), group));
 
             plugin.onBeforeStart(env);

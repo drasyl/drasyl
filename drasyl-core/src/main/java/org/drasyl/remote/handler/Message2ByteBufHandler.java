@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.remote.handler;
 
 import io.netty.buffer.ByteBuf;
@@ -26,14 +25,12 @@ import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.drasyl.remote.message.RemoteMessage;
+import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.concurrent.CompletableFuture;
 
-import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 
 /**
@@ -52,17 +49,26 @@ public class Message2ByteBufHandler extends SimpleOutboundHandler<RemoteMessage,
                                 final Address recipient,
                                 final RemoteMessage msg,
                                 final CompletableFuture<Void> future) {
-
         ByteBuf byteBuf = null;
         try {
-            byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
-            final OutputStream outputStream = new ByteBufOutputStream(byteBuf);
-            JACKSON_WRITER.writeValue(outputStream, msg);
+            if (msg instanceof IntermediateEnvelope) {
+                byteBuf = ((IntermediateEnvelope) msg).getByteBuf();
+            }
+            else {
+                byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
+                try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(byteBuf)) {
+                    msg.getPublicHeader().writeDelimitedTo(outputStream);
+                    msg.getPrivateHeader().writeDelimitedTo(outputStream);
+                    msg.getBody().writeDelimitedTo(outputStream);
+                }
+            }
 
             write(ctx, recipient, byteBuf, future);
         }
-        catch (final IOException e) {
-            byteBuf.release();
+        catch (final Exception e) {
+            if (byteBuf != null) {
+                byteBuf.release();
+            }
             LOG.error("Unable to serialize '{}': {}", sanitizeLogArg(msg), e.getMessage());
             future.completeExceptionally(new Exception("Message could not be serialized. This could indicate a bug in drasyl.", e));
         }

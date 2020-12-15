@@ -16,7 +16,6 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.plugin.groups.manager;
 
 import org.drasyl.plugin.groups.manager.data.Group;
@@ -118,7 +117,7 @@ class GroupsManagerApiTest {
 
             underTest.groupsCreate(request, response);
 
-            verify(database).addGroup(Group.of("steezy-vips", "s3cr3t_passw0rd", (short) 6, ofSeconds(60)));
+            verify(database).addGroup(Group.of("steezy-vips", "s3cr3t_passw0rd", (byte) 6, ofSeconds(60)));
         }
 
         @Test
@@ -181,7 +180,7 @@ class GroupsManagerApiTest {
 
             underTest.groupsUpdate(request, response);
 
-            verify(database).updateGroup(Group.of("steezy-vips", "s3cr3t_passw0rd", (short) 6, ofSeconds(90)));
+            verify(database).updateGroup(Group.of("steezy-vips", "s3cr3t_passw0rd", (byte) 6, ofSeconds(90)));
         }
 
         @Test

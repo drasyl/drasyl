@@ -18,32 +18,33 @@
  */
 package org.drasyl.remote.message;
 
-import com.fasterxml.jackson.databind.exc.ValueInstantiationException;
+import io.netty.buffer.ByteBuf;
+import io.netty.buffer.ByteBufOutputStream;
+import io.netty.buffer.PooledByteBufAllocator;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.remote.protocol.IntermediateEnvelope;
+import org.drasyl.remote.protocol.Protocol;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.io.IOException;
 import java.net.InetSocketAddress;
 
-import static net.javacrumbs.jsonunit.assertj.JsonAssertions.assertThatJson;
-import static org.drasyl.util.JSONUtil.JACKSON_READER;
-import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 
 @ExtendWith(MockitoExtension.class)
 class UniteMessageTest {
+    private final int networkId = 1;
     CompressedPublicKey sender;
     ProofOfWork proofOfWork;
     CompressedPublicKey recipient;
-    private final int networkId = 1;
     private CompressedPublicKey publicKey;
     private InetSocketAddress address;
 
@@ -57,41 +58,31 @@ class UniteMessageTest {
     }
 
     @Nested
-    class JsonDeserialization {
+    class Serialisation {
         @Test
-        void shouldDeserializeToCorrectObject() throws IOException, CryptoException {
-            final String json = "{\"@type\":\"" + UniteMessage.class.getSimpleName() + "\",\"id\":\"1ezQfnyMzVauPAHi\",\"networkId\":1,\"sender\":\"AwlE0gLOX/DubfAUgtIkzL7HJGWt3I5FeO3uqlmX9RG7\",\"proofOfWork\":6657650,\"recipient\":\"Az3j2mmfb5/71CfFZyWRBlW6ORO+T/VbE8Yo6VfIYP1V\",\"publicKey\":\"Al6RczQotTXoEv2UsDcsS/LVJSC0U4kgms/UAxDOMF/0\",\"address\":\"127.0.0.1:12345\",\"userAgent\":\"\"}";
+        void shouldSerialiseCorrectly() throws Exception {
+            final UniteMessage message = new UniteMessage(networkId, sender, proofOfWork, recipient, publicKey, new InetSocketAddress("127.0.0.1", 12345));
+            final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
+            final ByteBufOutputStream out = new ByteBufOutputStream(byteBuf);
 
-            assertEquals(new UniteMessage(
-                    networkId,
-                    CompressedPublicKey.of("030944d202ce5ff0ee6df01482d224ccbec72465addc8e4578edeeaa5997f511bb"),
-                    ProofOfWork.of(6657650),
-                    CompressedPublicKey.of("033de3da699f6f9ffbd427c56725910655ba3913be4ff55b13c628e957c860fd55"),
-                    CompressedPublicKey.of("025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4"),
-                    new InetSocketAddress("127.0.0.1", 12345)
-            ), JACKSON_READER.readValue(json, RemoteMessage.class));
-        }
+            message.getPublicHeader().writeDelimitedTo(out);
+            message.getPrivateHeader().writeDelimitedTo(out);
+            message.getBody().writeDelimitedTo(out);
 
-        @Test
-        void shouldRejectIncompleteData() {
-            final String json = "{\"@type\":\"" + UniteMessage.class.getSimpleName() + "\",\"id\":\"1ezQfnyMzVauPAHi\",\"recipient\":\"Az3j2mmfb5/71CfFZyWRBlW6ORO+T/VbE8Yo6VfIYP1V\"}";
+            final IntermediateEnvelope envelope = IntermediateEnvelope.of(byteBuf);
+            final UniteMessage encoded = new UniteMessage(envelope.getPublicHeader(), (Protocol.Unite) envelope.getBody());
 
-            assertThrows(ValueInstantiationException.class, () -> JACKSON_READER.readValue(json, RemoteMessage.class));
+            assertEquals(message, encoded);
         }
     }
 
     @Nested
-    class JsonSerialization {
+    class ToString {
         @Test
-        void shouldSerializeToCorrectJson() throws IOException {
-            final UniteMessage message = new UniteMessage(networkId, sender, proofOfWork, recipient, publicKey, address);
+        void shouldNotBeNull() {
+            final UniteMessage message = new UniteMessage(networkId, sender, proofOfWork, recipient, publicKey, InetSocketAddress.createUnresolved("127.0.0.1", 12345));
 
-            System.out.println(JACKSON_WRITER.writeValueAsString(message));
-
-            assertThatJson(JACKSON_WRITER.writeValueAsString(message))
-                    .isObject()
-                    .containsEntry("@type", UniteMessage.class.getSimpleName())
-                    .containsKeys("id", "networkId", "recipient", "hopCount", "sender", "publicKey", "address", "proofOfWork", "userAgent");
+            assertNotNull(message.toString());
         }
     }
 
@@ -120,6 +111,8 @@ class UniteMessageTest {
             final UniteMessage message3 = new UniteMessage(networkId, sender, proofOfWork, recipient, publicKey, InetSocketAddress.createUnresolved("127.0.0.1", 23456));
 
             assertEquals(message1, message2);
+            assertEquals(message1.getAddress(), message2.getAddress());
+            assertEquals(message1.getPublicKey(), message2.getPublicKey());
             assertNotEquals(message2, message3);
         }
     }

@@ -18,6 +18,7 @@
  */
 package org.drasyl.remote.handler;
 
+import com.google.protobuf.MessageLite;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.Crypto;
@@ -35,6 +36,7 @@ import org.drasyl.remote.message.MessageId;
 import org.drasyl.remote.message.RemoteApplicationMessage;
 import org.drasyl.remote.message.RemoteMessage;
 import org.drasyl.remote.message.UserAgent;
+import org.drasyl.remote.protocol.Protocol;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -150,6 +152,7 @@ class SignatureHandlerTest {
         when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
         when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
         when(sender.toUncompressedKey()).thenThrow(CryptoException.class);
+        when(sender.getCompressedKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3").getCompressedKey());
         final RemoteMessage message = new RemoteApplicationMessage(1, sender, proofOfWork, identity.getPublicKey(), new byte[]{});
         Crypto.sign(identity.getPrivateKey().toUncompressedKey(), message);
 
@@ -218,7 +221,7 @@ class SignatureHandlerTest {
         }
 
         @Override
-        public short getHopCount() {
+        public byte getHopCount() {
             return 0;
         }
 
@@ -229,6 +232,21 @@ class SignatureHandlerTest {
 
         @Override
         public Signature getSignature() {
+            return null;
+        }
+
+        @Override
+        public Protocol.PublicHeader getPublicHeader() {
+            return null;
+        }
+
+        @Override
+        public Protocol.PrivateHeader getPrivateHeader() {
+            return null;
+        }
+
+        @Override
+        public MessageLite getBody() {
             return null;
         }
 
