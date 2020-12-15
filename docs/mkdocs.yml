@@ -85,6 +85,7 @@ nav:
   - 'Configuration':
       - 'Overview': 'configuration/index.md'
       - 'Marshalling': 'configuration/marshalling.md'
+      - 'Logging': 'configuration/logging.md'
   - 'Command Line Tool': 'cli.md'
   - 'Public Super Peers': 'public-super-peers.md'
   - 'Architecture':
