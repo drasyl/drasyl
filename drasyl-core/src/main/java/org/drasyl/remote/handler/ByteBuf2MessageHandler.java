@@ -16,28 +16,32 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-
 package org.drasyl.remote.handler;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufInputStream;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
+import org.drasyl.remote.message.AcknowledgementMessage;
+import org.drasyl.remote.message.DiscoverMessage;
+import org.drasyl.remote.message.RemoteApplicationMessage;
 import org.drasyl.remote.message.RemoteMessage;
+import org.drasyl.remote.message.UniteMessage;
+import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.concurrent.CompletableFuture;
 
-import static java.util.Objects.requireNonNull;
-import static org.drasyl.util.JSONUtil.JACKSON_READER;
+import static org.drasyl.remote.protocol.Protocol.Acknowledgement;
+import static org.drasyl.remote.protocol.Protocol.Application;
+import static org.drasyl.remote.protocol.Protocol.Discovery;
+import static org.drasyl.remote.protocol.Protocol.Unite;
 import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 
 /**
- * Handler that converts a given {@link ByteBuf} to a {@link RemoteMessage}.
+ * Handler that converts a given {@link ByteBuf} to a {@link RemoteMessage} or {@link
+ * IntermediateEnvelope}.
  */
 public class ByteBuf2MessageHandler extends SimpleInboundHandler<ByteBuf, Address> {
     public static final ByteBuf2MessageHandler INSTANCE = new ByteBuf2MessageHandler();
@@ -53,17 +57,49 @@ public class ByteBuf2MessageHandler extends SimpleInboundHandler<ByteBuf, Addres
                                final ByteBuf byteBuf,
                                final CompletableFuture<Void> future) {
         try {
-            final InputStream inputStream = new ByteBufInputStream(byteBuf);
-            final RemoteMessage message = requireNonNull(JACKSON_READER.readValue(inputStream, RemoteMessage.class));
+            final IntermediateEnvelope envelope = IntermediateEnvelope.of(byteBuf);
 
-            ctx.fireRead(sender, message, future);
+            // This message is for us and we will fully decode it
+            if (envelope.getRecipient().equals(ctx.identity().getPublicKey())) {
+                try {
+                    final RemoteMessage remoteMessage;
+
+                    switch (envelope.getPrivateHeader().getType()) {
+                        case ACKNOWLEDGEMENT:
+                            remoteMessage = new AcknowledgementMessage(envelope.getPublicHeader(), (Acknowledgement) envelope.getBody());
+                            break;
+                        case APPLICATION:
+                            remoteMessage = new RemoteApplicationMessage(envelope.getPublicHeader(), (Application) envelope.getBody());
+                            break;
+                        case DISCOVERY:
+                            remoteMessage = new DiscoverMessage(envelope.getPublicHeader(), (Discovery) envelope.getBody());
+                            break;
+                        case UNITE:
+                            remoteMessage = new UniteMessage(envelope.getPublicHeader(), (Unite) envelope.getBody());
+                            break;
+                        default:
+                            throw new IllegalArgumentException("Message is not of any known type.");
+                    }
+
+                    ctx.fireRead(sender, remoteMessage, future);
+                }
+                finally {
+                    if (byteBuf.refCnt() != 0) {
+                        byteBuf.release();
+                    }
+                }
+            }
+            else {
+                // Just forward the message to the recipient
+                ctx.fireRead(sender, envelope, future);
+            }
         }
-        catch (final IOException e) {
-            LOG.warn("Unable to deserialize '{}': {}", sanitizeLogArg(byteBuf), e.getMessage());
+        catch (final Exception e) {
+            LOG.warn("Unable to deserialize '{}': {}", sanitizeLogArg(byteBuf), e);
             future.completeExceptionally(new Exception("Message could not be deserialized.", e));
-        }
-        finally {
-            byteBuf.release();
+            if (byteBuf.refCnt() != 0) {
+                byteBuf.release();
+            }
         }
     }
 }

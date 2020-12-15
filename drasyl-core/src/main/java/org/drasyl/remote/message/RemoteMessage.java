@@ -18,25 +18,19 @@
  */
 package org.drasyl.remote.message;
 
-import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-import com.fasterxml.jackson.annotation.JsonSubTypes;
-import com.fasterxml.jackson.annotation.JsonTypeInfo;
+import com.google.protobuf.MessageLite;
 import org.drasyl.crypto.Signable;
 import org.drasyl.crypto.Signature;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.remote.protocol.Protocol.PrivateHeader;
+import org.drasyl.remote.protocol.Protocol.PublicHeader;
+
+import java.io.IOException;
 
 /**
  * Describes messages that are used to communicate with remote nodes.
  */
-@JsonTypeInfo(use = JsonTypeInfo.Id.NAME)
-@JsonSubTypes({
-        @JsonSubTypes.Type(value = AcknowledgementMessage.class),
-        @JsonSubTypes.Type(value = RemoteApplicationMessage.class),
-        @JsonSubTypes.Type(value = DiscoverMessage.class),
-        @JsonSubTypes.Type(value = UniteMessage.class),
-})
-@JsonIgnoreProperties(ignoreUnknown = true)
 public interface RemoteMessage extends Signable {
     /**
      * Returns the unique id of this message. Each message generates a random id when it is
@@ -88,7 +82,7 @@ public interface RemoteMessage extends Signable {
      *
      * @return this message's hop count.
      */
-    short getHopCount();
+    byte getHopCount();
 
     /**
      * Increases the message's hop count.
@@ -101,4 +95,22 @@ public interface RemoteMessage extends Signable {
      * @return this message's signature.
      */
     Signature getSignature();
+
+    /**
+     * @return the public header of this message
+     * @throws IOException if the public header cannot be read read
+     */
+    PublicHeader getPublicHeader() throws IOException;
+
+    /**
+     * @return the private header of this message
+     * @throws IOException if the private header cannot be read read
+     */
+    PrivateHeader getPrivateHeader() throws IOException;
+
+    /**
+     * @return the body of this message
+     * @throws IOException if the body cannot be read read
+     */
+    MessageLite getBody() throws IOException;
 }

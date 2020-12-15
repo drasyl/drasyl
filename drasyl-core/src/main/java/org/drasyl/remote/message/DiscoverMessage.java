@@ -18,33 +18,21 @@
  */
 package org.drasyl.remote.message;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.drasyl.crypto.Signature;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.remote.protocol.Protocol;
+import org.drasyl.remote.protocol.Protocol.Discovery;
+import org.drasyl.remote.protocol.Protocol.PrivateHeader;
 
 import java.util.Objects;
+
+import static org.drasyl.remote.protocol.Protocol.MessageType.DISCOVERY;
 
 /**
  * This message is sent to other peers to inform them about the existence of this node.
  */
 public class DiscoverMessage extends AbstractMessage {
     private final long joinTime;
-
-    @JsonCreator
-    private DiscoverMessage(@JsonProperty("id") final MessageId id,
-                            @JsonProperty("userAgent") final UserAgent userAgent,
-                            @JsonProperty("networkId") final int networkId,
-                            @JsonProperty("sender") final CompressedPublicKey sender,
-                            @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
-                            @JsonProperty("recipient") final CompressedPublicKey recipient,
-                            @JsonProperty("hopCount") final short hopCount,
-                            @JsonProperty("signature") final Signature signature,
-                            @JsonProperty("childrenTime") final long joinTime) {
-        super(id, userAgent, networkId, sender, proofOfWork, recipient, hopCount, signature);
-        this.joinTime = joinTime;
-    }
 
     /**
      * Creates a new join message.
@@ -62,6 +50,12 @@ public class DiscoverMessage extends AbstractMessage {
                            final long joinTime) {
         super(networkId, sender, proofOfWork, recipient);
         this.joinTime = joinTime;
+    }
+
+    public DiscoverMessage(final Protocol.PublicHeader header,
+                           final Discovery body) throws Exception {
+        super(header);
+        this.joinTime = body.getChildrenTime();
     }
 
     public long getJoinTime() {
@@ -104,5 +98,19 @@ public class DiscoverMessage extends AbstractMessage {
                 ", joinTime=" + joinTime +
                 ", id=" + id +
                 '}';
+    }
+
+    @Override
+    public PrivateHeader getPrivateHeader() {
+        return PrivateHeader.newBuilder()
+                .setType(DISCOVERY)
+                .build();
+    }
+
+    @Override
+    public Discovery getBody() {
+        return Discovery.newBuilder()
+                .setChildrenTime(joinTime)
+                .build();
     }
 }

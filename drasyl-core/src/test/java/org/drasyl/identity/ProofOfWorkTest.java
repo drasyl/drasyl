@@ -47,21 +47,15 @@ class ProofOfWorkTest {
     }
 
     @Nested
-    class Of {
-        @Test
-        void shouldThrowExceptionOnNegativeNonce() {
-            assertThrows(IllegalArgumentException.class, () -> ProofOfWork.of(-1));
-        }
-    }
-
-    @Nested
     class GenerateProofOfWork {
         @Test
         void shouldGenerateCorrectProof() throws CryptoException {
-            final short difficulty = 1;
+            final byte difficulty = 1;
             final CompressedPublicKey publicKey = CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9");
             final ProofOfWork proof1 = ProofOfWork.generateProofOfWork(publicKey, difficulty);
             final ProofOfWork proof2 = ProofOfWork.generateProofOfWork(publicKey, difficulty);
+
+            System.out.println(proof1);
 
             assertTrue(proof1.isValid(publicKey, difficulty));
             assertTrue(proof2.isValid(publicKey, difficulty));
@@ -101,6 +95,18 @@ class ProofOfWorkTest {
             assertThatJson(JACKSON_WRITER.writeValueAsString(ProofOfWork.of(123)))
                     .when(Option.IGNORING_ARRAY_ORDER)
                     .isEqualTo("123");
+        }
+    }
+
+    @Nested
+    class Invalid {
+        @Test
+        void shouldThrowExceptionOnInvalidValue() throws CryptoException {
+            final CompressedPublicKey publicKey = CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9");
+            final ProofOfWork proof = ProofOfWork.generateProofOfWork(publicKey, (byte) 1);
+
+            assertThrows(IllegalArgumentException.class, () -> proof.isValid(publicKey, (byte) 65));
+            assertThrows(IllegalArgumentException.class, () -> proof.isValid(publicKey, (byte) -1));
         }
     }
 }

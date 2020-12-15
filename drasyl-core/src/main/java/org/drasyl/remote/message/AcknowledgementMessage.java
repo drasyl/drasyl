@@ -18,35 +18,24 @@
  */
 package org.drasyl.remote.message;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.drasyl.crypto.Signature;
+import com.google.protobuf.ByteString;
+import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.remote.protocol.Protocol;
+import org.drasyl.remote.protocol.Protocol.Acknowledgement;
+import org.drasyl.remote.protocol.Protocol.PrivateHeader;
 
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.remote.protocol.Protocol.MessageType.ACKNOWLEDGEMENT;
 
 /**
  * This message acts as an acknowledgement to a previously sent {@link DiscoverMessage}.
  */
 public class AcknowledgementMessage extends AbstractMessage implements ResponseMessage<DiscoverMessage> {
     protected final MessageId correspondingId;
-
-    @JsonCreator
-    private AcknowledgementMessage(@JsonProperty("id") final MessageId id,
-                                   @JsonProperty("userAgent") final UserAgent userAgent,
-                                   @JsonProperty("networkId") final int networkId,
-                                   @JsonProperty("sender") final CompressedPublicKey sender,
-                                   @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
-                                   @JsonProperty("recipient") final CompressedPublicKey recipient,
-                                   @JsonProperty("hopCount") final short hopCount,
-                                   @JsonProperty("signature") final Signature signature,
-                                   @JsonProperty("correspondingId") final MessageId correspondingId) {
-        super(id, userAgent, networkId, sender, proofOfWork, recipient, hopCount, signature);
-        this.correspondingId = requireNonNull(correspondingId);
-    }
 
     /**
      * Creates new welcome message.
@@ -64,6 +53,19 @@ public class AcknowledgementMessage extends AbstractMessage implements ResponseM
                                   final MessageId correspondingId) {
         super(networkId, sender, proofOfWork, recipient);
         this.correspondingId = requireNonNull(correspondingId);
+    }
+
+    /**
+     * Creates new welcome message.
+     *
+     * @param header          the public header
+     * @param acknowledgement the acknowledgement message body
+     * @throws CryptoException if the public header is not well-formed
+     */
+    public AcknowledgementMessage(final Protocol.PublicHeader header,
+                                  final Acknowledgement acknowledgement) throws Exception {
+        super(header);
+        this.correspondingId = requireNonNull(MessageId.of(acknowledgement.getCorrespondingId().toByteArray()));
     }
 
     @Override
@@ -102,5 +104,19 @@ public class AcknowledgementMessage extends AbstractMessage implements ResponseM
     @Override
     public MessageId getCorrespondingId() {
         return correspondingId;
+    }
+
+    @Override
+    public PrivateHeader getPrivateHeader() {
+        return PrivateHeader.newBuilder()
+                .setType(ACKNOWLEDGEMENT)
+                .build();
+    }
+
+    @Override
+    public Acknowledgement getBody() {
+        return Acknowledgement.newBuilder()
+                .setCorrespondingId(ByteString.copyFrom(correspondingId.getId()))
+                .build();
     }
 }

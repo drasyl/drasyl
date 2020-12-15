@@ -101,7 +101,7 @@ public class JDBCDatabaseAdapter implements DatabaseAdapter {
                 ps.setQueryTimeout(QUERY_TIMEOUT);
                 ps.setString(1, group.getName());
                 ps.setString(2, group.getCredentials());
-                ps.setInt(3, group.getMinDifficulty());
+                ps.setByte(3, group.getMinDifficulty());
                 ps.setLong(4, group.getTimeout().toMillis());
                 return ps.executeUpdate() > 0;
             }
@@ -162,7 +162,7 @@ public class JDBCDatabaseAdapter implements DatabaseAdapter {
                         return Group.of(
                                 rs.getString("name"),
                                 rs.getString("secret"),
-                                rs.getShort("minDifficulty"),
+                                rs.getByte("minDifficulty"),
                                 Duration.ofMillis(rs.getLong("timeout")));
                     }
                 }
@@ -346,7 +346,7 @@ public class JDBCDatabaseAdapter implements DatabaseAdapter {
             groups.add(Group.of(
                     rs.getString("name"),
                     rs.getString("secret"),
-                    rs.getShort("minDifficulty"),
+                    rs.getByte("minDifficulty"),
                     Duration.ofMillis(rs.getLong("timeout"))
             ));
         }
@@ -363,7 +363,7 @@ public class JDBCDatabaseAdapter implements DatabaseAdapter {
                     Group.of(
                             rs.getString("name"),
                             rs.getString("secret"),
-                            rs.getShort("minDifficulty"),
+                            rs.getByte("minDifficulty"),
                             Duration.ofMillis(rs.getLong("timeout"))),
                     rs.getLong("staleAt")
             ));

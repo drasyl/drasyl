@@ -18,39 +18,31 @@
  */
 package org.drasyl.remote.message;
 
-import com.fasterxml.jackson.annotation.JsonInclude;
-import org.drasyl.DrasylNode;
+import com.google.protobuf.ByteString;
 import org.drasyl.crypto.Signature;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.remote.protocol.Protocol.PublicHeader;
 
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Objects;
-import java.util.function.Supplier;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.remote.message.MessageId.randomMessageId;
-import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
 
 /**
  * Message that represents a message from one node to another one.
  */
-@SuppressWarnings({ "squid:S1444", "squid:ClassVariableVisibilityCheck" })
+@SuppressWarnings({ "squid:S1444", "squid:ClassVariableVisibilityCheck", "java:S107" })
 abstract class AbstractMessage implements RemoteMessage {
-    public static final Supplier<String> defaultUserAgentGenerator = () -> "drasyl/" + DrasylNode.getVersion() + " (" + System.getProperty("os.name") + "; "
-            + System.getProperty("os.arch") + "; Java/"
-            + System.getProperty("java.vm.specification.version") + ":" + System.getProperty("java.version.date")
-            + ")";
-    public static Supplier<String> userAgentGenerator = defaultUserAgentGenerator;
     protected final MessageId id;
     protected final UserAgent userAgent;
     protected final int networkId;
     protected final CompressedPublicKey sender;
     protected final ProofOfWork proofOfWork;
     protected final CompressedPublicKey recipient;
-    protected short hopCount;
-    @JsonInclude(JsonInclude.Include.NON_NULL)
+    protected byte hopCount;
     protected Signature signature;
 
     /**
@@ -70,7 +62,7 @@ abstract class AbstractMessage implements RemoteMessage {
                               final CompressedPublicKey sender,
                               final ProofOfWork proofOfWork,
                               final CompressedPublicKey recipient,
-                              final short hopCount,
+                              final byte hopCount,
                               final Signature signature) {
         this.id = requireNonNull(id);
         this.userAgent = requireNonNull(userAgent);
@@ -89,7 +81,7 @@ abstract class AbstractMessage implements RemoteMessage {
                               final CompressedPublicKey sender,
                               final ProofOfWork proofOfWork,
                               final CompressedPublicKey recipient,
-                              final short hopCount,
+                              final byte hopCount,
                               final Signature signature) {
         this(randomMessageId(), UserAgent.generate(), networkId, sender, proofOfWork, recipient, hopCount, signature);
     }
@@ -98,7 +90,7 @@ abstract class AbstractMessage implements RemoteMessage {
                               final CompressedPublicKey sender,
                               final ProofOfWork proofOfWork,
                               final CompressedPublicKey recipient) {
-        this(networkId, sender, proofOfWork, recipient, (short) 0, null);
+        this(networkId, sender, proofOfWork, recipient, (byte) 0, null);
     }
 
     protected AbstractMessage(final MessageId id,
@@ -106,9 +98,23 @@ abstract class AbstractMessage implements RemoteMessage {
                               final CompressedPublicKey sender,
                               final ProofOfWork proofOfWork,
                               final CompressedPublicKey recipient,
-                              final short hopCount,
+                              final byte hopCount,
                               final Signature signature) {
         this(id, UserAgent.generate(), networkId, sender, proofOfWork, recipient, hopCount, signature);
+    }
+
+    protected AbstractMessage(final PublicHeader header) throws Exception {
+        this(MessageId.of(header.getId().toByteArray()), new UserAgent(header.getUserAgent().toByteArray()),
+                header.getNetworkId(), CompressedPublicKey.of(header.getSender().toByteArray()),
+                ProofOfWork.of(header.getProofOfWork()),
+                CompressedPublicKey.of(header.getRecipient().toByteArray()),
+                header.getHopCount().byteAt(0),
+                null);
+
+        final byte[] sig = header.getSignature().toByteArray();
+        if (sig != null && sig.length != 0) {
+            setSignature(new Signature(sig));
+        }
     }
 
     @Override
@@ -142,7 +148,7 @@ abstract class AbstractMessage implements RemoteMessage {
     }
 
     @Override
-    public short getHopCount() {
+    public byte getHopCount() {
         return hopCount;
     }
 
@@ -186,7 +192,27 @@ abstract class AbstractMessage implements RemoteMessage {
     public void writeFieldsTo(final OutputStream outstream) throws IOException {
         final Signature tempSignature = this.signature;
         this.signature = null;
-        JACKSON_WRITER.writeValue(outstream, this);
+        getPublicHeader().writeDelimitedTo(outstream);
+        getPrivateHeader().writeDelimitedTo(outstream);
+        getBody().writeDelimitedTo(outstream);
         this.signature = tempSignature;
+    }
+
+    @Override
+    public PublicHeader getPublicHeader() {
+        final PublicHeader.Builder builder = PublicHeader.newBuilder()
+                .setId(ByteString.copyFrom(id.getId()))
+                .setUserAgent(ByteString.copyFrom(userAgent.getVersion().toBytes()))
+                .setNetworkId(networkId)
+                .setSender(ByteString.copyFrom(sender.getCompressedKey()))
+                .setProofOfWork(proofOfWork.intValue())
+                .setRecipient(ByteString.copyFrom(recipient.getCompressedKey()))
+                .setHopCount(ByteString.copyFrom(new byte[]{ hopCount }));
+
+        if (signature != null && signature.getBytes() != null) {
+            builder.setSignature(ByteString.copyFrom(signature.getBytes()));
+        }
+
+        return builder.build();
     }
 }

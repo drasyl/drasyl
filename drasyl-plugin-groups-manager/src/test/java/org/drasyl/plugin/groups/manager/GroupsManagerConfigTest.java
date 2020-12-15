@@ -55,7 +55,7 @@ class GroupsManagerConfigTest {
     @BeforeEach
     void setUp() {
         databaseURI = URI.create("jdbc:sqlite:file:groups?mode=memory&cache=shared");
-        group = Group.of("name", "secret", (short) 0, Duration.ofSeconds(60));
+        group = Group.of("name", "secret", (byte) 0, Duration.ofSeconds(60));
         groups = Map.of("name", group);
     }
 

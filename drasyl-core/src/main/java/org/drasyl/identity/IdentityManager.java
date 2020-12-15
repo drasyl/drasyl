@@ -55,7 +55,7 @@ import static org.drasyl.util.PathUtil.hasPosixSupport;
  * in the identity.
  */
 public class IdentityManager {
-    public static final short POW_DIFFICULTY = 6;
+    public static final byte POW_DIFFICULTY = 6;
     private static final Logger LOG = LoggerFactory.getLogger(IdentityManager.class);
     private final DrasylSupplier<Identity, IdentityManagerException> identityGenerator;
     private final DrasylConfig config;

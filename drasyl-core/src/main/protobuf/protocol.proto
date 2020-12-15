@@ -1,0 +1,64 @@
+syntax = "proto3";
+
+package org.drasyl.remote.protocol;
+
+message PublicHeader {
+    bytes id = 1; // 12 bytes fix
+    bytes userAgent = 2; // 2 bytes fix
+    int32 networkId = 3;
+    bytes sender = 4; // 33 bytes fix
+    int32 proofOfWork = 5;
+    bytes recipient = 6; // 33 bytes fix
+    bytes hopCount = 7; // 1 byte
+    bytes signature = 8; // 32 bytes fix
+}
+
+message PrivateHeader {
+    MessageType type = 1;
+}
+
+enum MessageType {
+    ACKNOWLEDGEMENT = 0;
+    APPLICATION = 1;
+    DISCOVERY = 2;
+    UNITE = 3;
+}
+
+message Acknowledgement {
+    bytes correspondingId = 1; // 12 bytes fix
+}
+
+message Application {
+    bytes payload = 1;
+    string type = 2;
+}
+
+message Discovery {
+    uint64 childrenTime = 1;
+}
+
+message Unite {
+    bytes publicKey = 1; // 33 bytes fix
+    string address = 2; // hostname
+    bytes port = 3; // 2 bytes fix
+}
+
+/**
+ * Chunking
+ */
+message ChunkHeader {
+    bytes id = 1; // 12 bytes fix
+    int32 networkId = 3;
+    bytes recipient = 6; // 33 bytes fix
+    bytes hopCount = 7; // 1 byte
+}
+
+message FirstChunk {
+    uint32 totalLength = 1;
+    bytes payload = 2;
+}
+
+message Chunk {
+    uint32 count = 1;
+    bytes payload = 2;
+}

@@ -18,93 +18,38 @@
  */
 package org.drasyl.remote.message;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
+import com.google.protobuf.ByteString;
 import org.drasyl.crypto.Signature;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.remote.protocol.Protocol;
+import org.drasyl.remote.protocol.Protocol.Application;
 
-import java.io.IOException;
-import java.io.OutputStream;
 import java.util.Arrays;
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
 import static org.drasyl.remote.message.MessageId.randomMessageId;
-import static org.drasyl.util.JSONUtil.JACKSON_WRITER;
+import static org.drasyl.remote.protocol.Protocol.MessageType.APPLICATION;
 
-public class RemoteApplicationMessage implements RemoteMessage {
+@SuppressWarnings({ "java:S107" })
+public class RemoteApplicationMessage extends AbstractMessage {
     protected final String type;
     protected final byte[] payload;
-    protected final MessageId id;
-    protected final UserAgent userAgent;
-    protected final int networkId;
-    protected final CompressedPublicKey sender;
-    protected final ProofOfWork proofOfWork;
-    protected final CompressedPublicKey recipient;
-    protected short hopCount;
-    protected Signature signature;
 
-    @JsonCreator
-    private RemoteApplicationMessage(@JsonProperty("id") final MessageId id,
-                                     @JsonProperty("userAgent") final UserAgent userAgent,
-                                     @JsonProperty("networkId") final int networkId,
-                                     @JsonProperty("sender") final CompressedPublicKey sender,
-                                     @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
-                                     @JsonProperty("recipient") final CompressedPublicKey recipient,
-                                     @JsonProperty("hopCount") final short hopCount,
-                                     @JsonProperty("signature") final Signature signature,
-                                     @JsonProperty("type") final String type,
-                                     @JsonProperty("payload") final byte[] payload) {
-        this.id = requireNonNull(id);
-        this.userAgent = requireNonNull(userAgent);
-        this.networkId = networkId;
-        this.sender = requireNonNull(sender);
-        this.proofOfWork = requireNonNull(proofOfWork);
-        this.recipient = requireNonNull(recipient);
-        if (hopCount < 0) {
-            throw new IllegalArgumentException("hopCount must not be negative.");
-        }
-        this.hopCount = hopCount;
-        this.signature = signature;
+    protected RemoteApplicationMessage(final MessageId id,
+                                       final UserAgent userAgent,
+                                       final int networkId,
+                                       final CompressedPublicKey sender,
+                                       final ProofOfWork proofOfWork,
+                                       final CompressedPublicKey recipient,
+                                       final byte hopCount,
+                                       final Signature signature,
+                                       final String type,
+                                       final byte[] payload) {
+        super(id, userAgent, networkId, sender, proofOfWork, recipient, hopCount, signature);
         this.type = Objects.requireNonNullElseGet(type, byte[].class::getName);
         this.payload = requireNonNull(payload);
-    }
-
-    @SuppressWarnings({ "java:S107" })
-    public RemoteApplicationMessage(final MessageId id,
-                                    final UserAgent userAgent,
-                                    final int networkId,
-                                    final CompressedPublicKey sender,
-                                    final ProofOfWork proofOfWork,
-                                    final CompressedPublicKey recipient,
-                                    final short hopCount,
-                                    final Signature signature,
-                                    final byte[] payload) {
-        this.id = requireNonNull(id);
-        this.userAgent = requireNonNull(userAgent);
-        this.networkId = networkId;
-        this.sender = requireNonNull(sender);
-        this.proofOfWork = requireNonNull(proofOfWork);
-        this.recipient = requireNonNull(recipient);
-        if (hopCount < 0) {
-            throw new IllegalArgumentException("hopCount must not be negative.");
-        }
-        this.hopCount = hopCount;
-        this.signature = signature;
-        this.type = byte[].class.getName();
-        this.payload = payload;
-    }
-
-    public RemoteApplicationMessage(final MessageId id,
-                                    final int networkId,
-                                    final CompressedPublicKey sender,
-                                    final ProofOfWork proofOfWork,
-                                    final CompressedPublicKey recipient,
-                                    final short hopCount,
-                                    final Signature signature,
-                                    final byte[] payload) {
-        this(id, UserAgent.generate(), networkId, sender, proofOfWork, recipient, hopCount, signature, payload);
     }
 
     /**
@@ -122,7 +67,7 @@ public class RemoteApplicationMessage implements RemoteMessage {
                                     final CompressedPublicKey recipient,
                                     final String type,
                                     final byte[] payload) {
-        this(networkId, sender, proofOfWork, recipient, type, payload, (short) 0, null);
+        this(networkId, sender, proofOfWork, recipient, type, payload, (byte) 0, null);
     }
 
     public RemoteApplicationMessage(final int networkId,
@@ -131,7 +76,7 @@ public class RemoteApplicationMessage implements RemoteMessage {
                                     final CompressedPublicKey recipient,
                                     final String type,
                                     final byte[] payload,
-                                    final short hopCount,
+                                    final byte hopCount,
                                     final Signature signature) {
         this(randomMessageId(), UserAgent.generate(), networkId, sender, proofOfWork, recipient, hopCount, signature, type, payload);
     }
@@ -150,7 +95,20 @@ public class RemoteApplicationMessage implements RemoteMessage {
                                     final ProofOfWork proofOfWork,
                                     final CompressedPublicKey recipient,
                                     final byte[] payload) {
-        this(networkId, sender, proofOfWork, recipient, byte[].class.getName(), payload, (short) 0, null);
+        this(networkId, sender, proofOfWork, recipient, byte[].class.getName(), payload, (byte) 0, null);
+    }
+
+    /**
+     * Creates a new message.
+     *
+     * @param header the public header
+     * @param body   the remote application message body
+     */
+    public RemoteApplicationMessage(final Protocol.PublicHeader header,
+                                    final Application body) throws Exception {
+        super(header);
+        this.payload = requireNonNull(body.getPayload().toByteArray());
+        this.type = requireNonNull(body.getType());
     }
 
     public byte[] getPayload() {
@@ -204,65 +162,22 @@ public class RemoteApplicationMessage implements RemoteMessage {
                 '}';
     }
 
-    @Override
-    public MessageId getId() {
-        return id;
-    }
-
-    @Override
-    public UserAgent getUserAgent() {
-        return userAgent;
-    }
-
-    @Override
-    public int getNetworkId() {
-        return networkId;
-    }
-
-    @Override
-    public CompressedPublicKey getSender() {
-        return sender;
-    }
-
-    @Override
-    public ProofOfWork getProofOfWork() {
-        return proofOfWork;
-    }
-
-    @Override
-    public CompressedPublicKey getRecipient() {
-        return recipient;
-    }
-
-    @Override
-    public short getHopCount() {
-        return hopCount;
-    }
-
-    @Override
-    public void incrementHopCount() {
-        hopCount++;
-    }
-
-    @Override
-    public Signature getSignature() {
-        return signature;
-    }
-
-    @Override
-    public void setSignature(final Signature signature) {
-        this.signature = signature;
-    }
-
-    @Override
-    public void writeFieldsTo(final OutputStream outstream) throws IOException {
-        final Signature tempSignature = this.signature;
-        this.signature = null;
-        JACKSON_WRITER.writeValue(outstream, this);
-        this.signature = tempSignature;
-    }
-
     public String getType() {
         return type;
+    }
+
+    @Override
+    public Protocol.PrivateHeader getPrivateHeader() {
+        return Protocol.PrivateHeader.newBuilder()
+                .setType(APPLICATION)
+                .build();
+    }
+
+    @Override
+    public Application getBody() {
+        return Application.newBuilder()
+                .setType(type)
+                .setPayload(ByteString.copyFrom(payload))
+                .build();
     }
 }

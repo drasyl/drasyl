@@ -76,12 +76,12 @@ import static org.drasyl.util.UriUtil.overridePort;
  * {@link DrasylPipeline}.
  */
 public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressWrapper> {
-    private static final Logger LOG = LoggerFactory.getLogger(UdpServer.class);
     public static final String UDP_SERVER = "UDP_SERVER";
+    private static final Logger LOG = LoggerFactory.getLogger(UdpServer.class);
     private final Bootstrap bootstrap;
     private final Scheduler scheduler;
-    private Set<Endpoint> actualEndpoints;
     private final Function<InetSocketAddress, Set<PortMapping>> portExposer;
+    private Set<Endpoint> actualEndpoints;
     private Channel channel;
     private Set<PortMapping> portMappings;
 
@@ -106,6 +106,50 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
                 null
         );
         actualEndpoints = Set.of();
+    }
+
+    /**
+     * Returns the {@link DatagramChannel} that fits best to the current environment. Under Linux
+     * the more performant {@link EpollDatagramChannel} is returned.
+     *
+     * @return {@link DatagramChannel} that fits best to the current environment
+     */
+    static Class<? extends DatagramChannel> getBestDatagramChannel() {
+        if (Epoll.isAvailable()) {
+            return EpollDatagramChannel.class;
+        }
+        else {
+            return NioDatagramChannel.class;
+        }
+    }
+
+    static Set<Endpoint> determineActualEndpoints(final Identity identity,
+                                                  final DrasylConfig config,
+                                                  final InetSocketAddress listenAddress) {
+        final Set<Endpoint> configEndpoints = config.getRemoteEndpoints();
+        if (!configEndpoints.isEmpty()) {
+            // read endpoints from config
+            return configEndpoints.stream().map(endpoint -> {
+                if (endpoint.getPort() == 0) {
+                    return Endpoint.of(overridePort(endpoint.getURI(), listenAddress.getPort()), identity.getPublicKey());
+                }
+                return endpoint;
+            }).collect(Collectors.toSet());
+        }
+
+        final Set<InetAddress> addresses;
+        if (listenAddress.getAddress().isAnyLocalAddress()) {
+            // use all available addresses
+            addresses = getAddresses();
+        }
+        else {
+            // use given host
+            addresses = Set.of(listenAddress.getAddress());
+        }
+        return addresses.stream()
+                .map(address -> createUri("udp", address.getHostAddress(), listenAddress.getPort()))
+                .map(address -> Endpoint.of(address, identity.getPublicKey()))
+                .collect(Collectors.toSet());
     }
 
     @Override
@@ -199,50 +243,6 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
             future.completeExceptionally(new Exception("Udp Channel is not present or is not writable."));
             byteBuf.release();
         }
-    }
-
-    /**
-     * Returns the {@link DatagramChannel} that fits best to the current environment. Under Linux
-     * the more performant {@link EpollDatagramChannel} is returned.
-     *
-     * @return {@link DatagramChannel} that fits best to the current environment
-     */
-    static Class<? extends DatagramChannel> getBestDatagramChannel() {
-        if (Epoll.isAvailable()) {
-            return EpollDatagramChannel.class;
-        }
-        else {
-            return NioDatagramChannel.class;
-        }
-    }
-
-    static Set<Endpoint> determineActualEndpoints(final Identity identity,
-                                                  final DrasylConfig config,
-                                                  final InetSocketAddress listenAddress) {
-        final Set<Endpoint> configEndpoints = config.getRemoteEndpoints();
-        if (!configEndpoints.isEmpty()) {
-            // read endpoints from config
-            return configEndpoints.stream().map(endpoint -> {
-                if (endpoint.getPort() == 0) {
-                    return Endpoint.of(overridePort(endpoint.getURI(), listenAddress.getPort()), identity.getPublicKey());
-                }
-                return endpoint;
-            }).collect(Collectors.toSet());
-        }
-
-        final Set<InetAddress> addresses;
-        if (listenAddress.getAddress().isAnyLocalAddress()) {
-            // use all available addresses
-            addresses = getAddresses();
-        }
-        else {
-            // use given host
-            addresses = Set.of(listenAddress.getAddress());
-        }
-        return addresses.stream()
-                .map(address -> createUri("udp", address.getHostAddress(), listenAddress.getPort()))
-                .map(address -> Endpoint.of(address, identity.getPublicKey()))
-                .collect(Collectors.toSet());
     }
 
     void exposeEndpoints(final HandlerContext ctx,

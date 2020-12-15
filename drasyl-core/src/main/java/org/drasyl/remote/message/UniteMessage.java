@@ -18,16 +18,19 @@
  */
 package org.drasyl.remote.message;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonProperty;
-import org.drasyl.crypto.Signature;
+import com.google.protobuf.ByteString;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
+import org.drasyl.remote.protocol.Protocol.PrivateHeader;
+import org.drasyl.remote.protocol.Protocol.PublicHeader;
+import org.drasyl.remote.protocol.Protocol.Unite;
+import org.drasyl.util.UnsignedShort;
 
 import java.net.InetSocketAddress;
 import java.util.Objects;
 
 import static java.util.Objects.requireNonNull;
+import static org.drasyl.remote.protocol.Protocol.MessageType.UNITE;
 
 /**
  * This message is sent to another node to inform them about the presence of a third node.
@@ -35,22 +38,6 @@ import static java.util.Objects.requireNonNull;
 public class UniteMessage extends AbstractMessage {
     private final CompressedPublicKey publicKey;
     private final InetSocketAddress address;
-
-    @JsonCreator
-    private UniteMessage(@JsonProperty("id") final MessageId id,
-                         @JsonProperty("userAgent") final UserAgent userAgent,
-                         @JsonProperty("networkId") final int networkId,
-                         @JsonProperty("sender") final CompressedPublicKey sender,
-                         @JsonProperty("proofOfWork") final ProofOfWork proofOfWork,
-                         @JsonProperty("recipient") final CompressedPublicKey recipient,
-                         @JsonProperty("hopCount") final short hopCount,
-                         @JsonProperty("signature") final Signature signature,
-                         @JsonProperty("publicKey") final CompressedPublicKey publicKey,
-                         @JsonProperty("address") final InetSocketAddress address) {
-        super(id, userAgent, networkId, sender, proofOfWork, recipient, hopCount, signature);
-        this.publicKey = requireNonNull(publicKey);
-        this.address = requireNonNull(address);
-    }
 
     public UniteMessage(final int networkId,
                         final CompressedPublicKey sender,
@@ -61,6 +48,13 @@ public class UniteMessage extends AbstractMessage {
         super(networkId, sender, proofOfWork, recipient);
         this.publicKey = requireNonNull(publicKey);
         this.address = requireNonNull(address);
+    }
+
+    public UniteMessage(final PublicHeader header,
+                        final Unite body) throws Exception {
+        super(header);
+        this.publicKey = requireNonNull(CompressedPublicKey.of(body.getPublicKey().toByteArray()));
+        this.address = new InetSocketAddress(body.getAddress(), UnsignedShort.of(body.getPort().toByteArray()).getValue());
     }
 
     public CompressedPublicKey getPublicKey() {
@@ -105,5 +99,21 @@ public class UniteMessage extends AbstractMessage {
                 ", address=" + address +
                 ", id=" + id +
                 '}';
+    }
+
+    @Override
+    public PrivateHeader getPrivateHeader() {
+        return PrivateHeader.newBuilder()
+                .setType(UNITE)
+                .build();
+    }
+
+    @Override
+    public Unite getBody() {
+        return Unite.newBuilder()
+                .setPublicKey(ByteString.copyFrom(publicKey.getCompressedKey()))
+                .setAddress(address.getHostString())
+                .setPort(ByteString.copyFrom(UnsignedShort.of(address.getPort()).toBytes()))
+                .build();
     }
 }

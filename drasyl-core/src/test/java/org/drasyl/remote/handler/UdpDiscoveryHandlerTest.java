@@ -76,11 +76,11 @@ class UdpDiscoveryHandlerTest {
     private Map<MessageId, Pair<DiscoverMessage, InetSocketAddressWrapper>> openPingsCache;
     @Mock
     private PeersManager peersManager;
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private Set<CompressedPublicKey> rendezvousPeers;
     @Mock
     private Map<Pair<CompressedPublicKey, CompressedPublicKey>, Boolean> uniteAttemptsCache;
-    @Mock
+    @Mock(answer = RETURNS_DEEP_STUBS)
     private Map<CompressedPublicKey, Peer> peers;
 
     @Test

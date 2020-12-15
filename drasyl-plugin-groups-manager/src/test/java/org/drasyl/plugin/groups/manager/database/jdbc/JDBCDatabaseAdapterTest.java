@@ -87,7 +87,7 @@ class JDBCDatabaseAdapterTest {
         @Test
         void shouldReturnTrueForNewGroup() throws DatabaseException {
             // prepare
-            final Group group = Group.of("name", "secret", (short) 0, ofSeconds(60));
+            final Group group = Group.of("name", "secret", (byte) 0, ofSeconds(60));
 
             // test
             assertTrue(database.addGroup(group));
@@ -96,7 +96,7 @@ class JDBCDatabaseAdapterTest {
         @Test
         void shouldReturnFalseOnAlreadyExistingGroup() throws DatabaseException {
             // prepare
-            final Group group = Group.of("name", "secret", (short) 0, ofSeconds(60));
+            final Group group = Group.of("name", "secret", (byte) 0, ofSeconds(60));
             database.addGroup(group);
 
             // test
@@ -109,7 +109,7 @@ class JDBCDatabaseAdapterTest {
         @Test
         void shouldReturnTrueForNewMember() throws DatabaseException {
             // prepare
-            final Group group = Group.of("name", "secret", (short) 0, ofSeconds(60));
+            final Group group = Group.of("name", "secret", (byte) 0, ofSeconds(60));
             final Member member = Member.of(publicKey);
             final Membership membership = Membership.of(member, group, 60);
             database.addGroup(group);
@@ -121,7 +121,7 @@ class JDBCDatabaseAdapterTest {
         @Test
         void shouldReturnFalseOnAlreadyExistingMembers() throws DatabaseException {
             // prepare
-            final Group group = Group.of("name", "secret", (short) 0, ofSeconds(60));
+            final Group group = Group.of("name", "secret", (byte) 0, ofSeconds(60));
             final Member member = Member.of(publicKey);
             final Membership membership = Membership.of(member, group, 60);
             database.addGroup(group);
@@ -137,7 +137,7 @@ class JDBCDatabaseAdapterTest {
         @Test
         void shouldReturnExistingGroup() throws DatabaseException {
             // prepare
-            final Group group = Group.of("name", "secret", (short) 0, ofSeconds(60));
+            final Group group = Group.of("name", "secret", (byte) 0, ofSeconds(60));
             database.addGroup(group);
 
             // test
@@ -150,7 +150,7 @@ class JDBCDatabaseAdapterTest {
         @Test
         void shouldReturnExistingGroups() throws DatabaseException {
             // prepare
-            final Group group = Group.of("name", "secret", (short) 0, ofSeconds(60));
+            final Group group = Group.of("name", "secret", (byte) 0, ofSeconds(60));
             database.addGroup(group);
 
             // test
@@ -168,7 +168,7 @@ class JDBCDatabaseAdapterTest {
         @Test
         void shouldReturnTrueForExistingGroup() throws DatabaseException {
             // prepare
-            final Group group = Group.of("name", "secret", (short) 0, ofSeconds(60));
+            final Group group = Group.of("name", "secret", (byte) 0, ofSeconds(60));
             database.addGroup(group);
 
             // test
@@ -186,16 +186,16 @@ class JDBCDatabaseAdapterTest {
         @Test
         void shouldReturnTrueForExistingGroup() throws DatabaseException {
             // prepare
-            final Group group = Group.of("name", "secret", (short) 0, ofSeconds(60));
+            final Group group = Group.of("name", "secret", (byte) 0, ofSeconds(60));
             database.addGroup(group);
 
             // test
-            assertTrue(database.updateGroup(Group.of("name", "secret", (short) 0, ofSeconds(120))));
+            assertTrue(database.updateGroup(Group.of("name", "secret", (byte) 0, ofSeconds(120))));
         }
 
         @Test
         void shouldReturnFalseForNonExistingGroup() throws DatabaseException {
-            assertFalse(database.updateGroup(Group.of("name", "secret", (short) 0, ofSeconds(120))));
+            assertFalse(database.updateGroup(Group.of("name", "secret", (byte) 0, ofSeconds(120))));
         }
     }
 
@@ -204,7 +204,7 @@ class JDBCDatabaseAdapterTest {
         @Test
         void shouldReturnGroupMembers() throws DatabaseException {
             // prepare
-            final Group group = Group.of("name", "secret", (short) 0, ofSeconds(60));
+            final Group group = Group.of("name", "secret", (byte) 0, ofSeconds(60));
             final Member member = Member.of(publicKey);
             final Membership membership = Membership.of(member, group, 60);
             database.addGroup(group);
@@ -220,7 +220,7 @@ class JDBCDatabaseAdapterTest {
         @Test
         void shouldReturnTrueForMembers() throws DatabaseException {
             // prepare
-            final Group group = Group.of("name", "secret", (short) 0, ofSeconds(60));
+            final Group group = Group.of("name", "secret", (byte) 0, ofSeconds(60));
             final Member member = Member.of(publicKey);
             final Membership membership = Membership.of(member, group, 60);
             database.addGroup(group);
@@ -233,7 +233,7 @@ class JDBCDatabaseAdapterTest {
         @Test
         void shouldReturnFalseForNonMember() throws DatabaseException {
             // prepare
-            final Group group = Group.of("name", "secret", (short) 0, ofSeconds(60));
+            final Group group = Group.of("name", "secret", (byte) 0, ofSeconds(60));
             final Member member = Member.of(publicKey);
             final Membership membership = Membership.of(member, group, 60);
             database.addGroup(group);
@@ -248,7 +248,7 @@ class JDBCDatabaseAdapterTest {
         @Test
         void shouldRemoveStaleMemberships() throws DatabaseException {
             // prepare
-            final Group group = Group.of("name", "secret", (short) 0, ofSeconds(60));
+            final Group group = Group.of("name", "secret", (byte) 0, ofSeconds(60));
             final Member member = Member.of(publicKey);
             final Membership membership = Membership.of(member, group, 60);
             database.addGroup(group);

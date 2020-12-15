@@ -18,8 +18,6 @@
  */
 package org.drasyl.remote.message;
 
-import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonValue;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.HexUtil;
 import org.drasyl.pipeline.message.AddressedEnvelope;
@@ -32,7 +30,6 @@ import java.util.Arrays;
  * This is an immutable object.
  */
 public class MessageId {
-    @JsonValue
     private final byte[] id;
 
     private MessageId(final byte[] id) {
@@ -87,7 +84,6 @@ public class MessageId {
         return id != null && id.length == 12;
     }
 
-    @JsonCreator
     public static MessageId of(final byte[] id) {
         return new MessageId(id);
     }
