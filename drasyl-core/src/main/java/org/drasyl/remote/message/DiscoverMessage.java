@@ -31,7 +31,7 @@ import static org.drasyl.remote.protocol.Protocol.MessageType.DISCOVERY;
 /**
  * This message is sent to other peers to inform them about the existence of this node.
  */
-public class DiscoverMessage extends AbstractMessage {
+public class DiscoverMessage extends AbstractMessage<Discovery> {
     private final long joinTime;
 
     /**

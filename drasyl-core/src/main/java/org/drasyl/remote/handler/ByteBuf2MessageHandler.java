@@ -18,6 +18,7 @@
  */
 package org.drasyl.remote.handler;
 
+import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
@@ -57,12 +58,12 @@ public class ByteBuf2MessageHandler extends SimpleInboundHandler<ByteBuf, Addres
                                final ByteBuf byteBuf,
                                final CompletableFuture<Void> future) {
         try {
-            final IntermediateEnvelope envelope = IntermediateEnvelope.of(byteBuf);
+            final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(byteBuf);
 
             // This message is for us and we will fully decode it
             if (envelope.getRecipient().equals(ctx.identity().getPublicKey())) {
                 try {
-                    final RemoteMessage remoteMessage;
+                    final RemoteMessage<? extends MessageLite> remoteMessage;
 
                     switch (envelope.getPrivateHeader().getType()) {
                         case ACKNOWLEDGEMENT:

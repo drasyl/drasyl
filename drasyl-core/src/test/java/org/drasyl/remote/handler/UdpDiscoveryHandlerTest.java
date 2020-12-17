@@ -18,6 +18,7 @@
  */
 package org.drasyl.remote.handler;
 
+import com.google.protobuf.MessageLite;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
@@ -252,7 +253,7 @@ class UdpDiscoveryHandlerTest {
 
     @Test
     void shouldRelayInboundMessageForKnownRecipient(@Mock final InetSocketAddressWrapper sender,
-                                                    @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message,
+                                                    @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage<MessageLite> message,
                                                     @Mock(answer = RETURNS_DEEP_STUBS) final Peer recipientPeer) {
         when(recipientPeer.isReachable(any())).thenReturn(true);
 
@@ -268,7 +269,7 @@ class UdpDiscoveryHandlerTest {
 
     @Test
     void shouldInitiateRendezvousForInboundMessageWithKnownSenderAndRecipient(@Mock final InetSocketAddressWrapper sender,
-                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message,
+                                                                              @Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage<MessageLite> message,
                                                                               @Mock(answer = RETURNS_DEEP_STUBS) final Peer senderPeer,
                                                                               @Mock(answer = RETURNS_DEEP_STUBS) final InetSocketAddressWrapper senderSocketAddress,
                                                                               @Mock(answer = RETURNS_DEEP_STUBS) final Peer recipientPeer,

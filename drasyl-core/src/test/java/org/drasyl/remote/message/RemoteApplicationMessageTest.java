@@ -18,6 +18,7 @@
  */
 package org.drasyl.remote.message;
 
+import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -75,7 +76,7 @@ class RemoteApplicationMessageTest {
             message.getPrivateHeader().writeDelimitedTo(out);
             message.getBody().writeDelimitedTo(out);
 
-            final IntermediateEnvelope envelope = IntermediateEnvelope.of(byteBuf);
+            final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(byteBuf);
             final RemoteApplicationMessage encoded = new RemoteApplicationMessage(envelope.getPublicHeader(), (Protocol.Application) envelope.getBody());
 
             assertEquals(message, encoded);

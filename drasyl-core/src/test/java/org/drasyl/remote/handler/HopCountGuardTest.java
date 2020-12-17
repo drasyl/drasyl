@@ -18,6 +18,7 @@
  */
 package org.drasyl.remote.handler;
 
+import com.google.protobuf.MessageLite;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.CompressedPublicKey;
@@ -50,7 +51,7 @@ class HopCountGuardTest {
 
     @Test
     void shouldPassMessagesThatHaveNotReachedTheirHopCountLimitAndIncrementHopCount(@Mock final CompressedPublicKey address,
-                                                                                    @Mock final RemoteMessage message) {
+                                                                                    @Mock final RemoteMessage<MessageLite> message) {
         when(config.getMessageHopLimit()).thenReturn((byte) 2);
         when(message.getHopCount()).thenReturn((byte) 1);
 
@@ -67,7 +68,7 @@ class HopCountGuardTest {
 
     @Test
     void shouldDiscardMessagesThatHaveReachedTheirHopCountLimit(@Mock final CompressedPublicKey address,
-                                                                @Mock final RemoteMessage message) throws InterruptedException {
+                                                                @Mock final RemoteMessage<MessageLite> message) throws InterruptedException {
         when(config.getMessageHopLimit()).thenReturn((byte) 1);
         when(message.getHopCount()).thenReturn((byte) 1);
 

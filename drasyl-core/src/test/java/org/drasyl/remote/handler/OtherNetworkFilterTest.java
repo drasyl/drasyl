@@ -18,6 +18,7 @@
  */
 package org.drasyl.remote.handler;
 
+import com.google.protobuf.MessageLite;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
@@ -50,7 +51,7 @@ class OtherNetworkFilterTest {
     private TypeValidator outboundValidator;
 
     @Test
-    void shouldDropMessagesFromOtherNetworks(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message) throws InterruptedException {
+    void shouldDropMessagesFromOtherNetworks(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage<MessageLite> message) throws InterruptedException {
         when(config.getNetworkId()).thenReturn(123);
         when(message.getNetworkId()).thenReturn(456);
 
@@ -65,7 +66,7 @@ class OtherNetworkFilterTest {
     }
 
     @Test
-    void shouldPassMessagesFromSameNetwork(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message) {
+    void shouldPassMessagesFromSameNetwork(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage<MessageLite> message) {
         when(config.getNetworkId()).thenReturn(123);
         when(message.getNetworkId()).thenReturn(123);
 

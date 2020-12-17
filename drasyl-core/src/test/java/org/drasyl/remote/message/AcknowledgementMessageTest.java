@@ -18,6 +18,7 @@
  */
 package org.drasyl.remote.message;
 
+import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.PooledByteBufAllocator;
@@ -61,7 +62,7 @@ class AcknowledgementMessageTest {
             message.getPrivateHeader().writeDelimitedTo(out);
             message.getBody().writeDelimitedTo(out);
 
-            final IntermediateEnvelope envelope = IntermediateEnvelope.of(byteBuf);
+            final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(byteBuf);
             final AcknowledgementMessage encoded = new AcknowledgementMessage(envelope.getPublicHeader(), (Protocol.Acknowledgement) envelope.getBody());
 
             assertEquals(message, encoded);

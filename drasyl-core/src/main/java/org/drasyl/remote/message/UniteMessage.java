@@ -35,7 +35,7 @@ import static org.drasyl.remote.protocol.Protocol.MessageType.UNITE;
 /**
  * This message is sent to another node to inform them about the presence of a third node.
  */
-public class UniteMessage extends AbstractMessage {
+public class UniteMessage extends AbstractMessage<Unite> {
     private final CompressedPublicKey publicKey;
     private final InetSocketAddress address;
 

@@ -34,7 +34,7 @@ import static org.drasyl.remote.protocol.Protocol.MessageType.ACKNOWLEDGEMENT;
 /**
  * This message acts as an acknowledgement to a previously sent {@link DiscoverMessage}.
  */
-public class AcknowledgementMessage extends AbstractMessage implements ResponseMessage<DiscoverMessage> {
+public class AcknowledgementMessage extends AbstractMessage<Acknowledgement> implements ResponseMessage<Acknowledgement> {
     protected final MessageId correspondingId;
 
     /**

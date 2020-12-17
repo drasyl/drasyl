@@ -38,6 +38,7 @@ import org.drasyl.pipeline.skeleton.HandlerAdapter;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.drasyl.remote.message.RemoteApplicationMessage;
 import org.drasyl.remote.message.RemoteMessage;
+import org.drasyl.remote.protocol.Protocol.Application;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
@@ -121,7 +122,7 @@ class DrasylPipelineIT {
             }
         });
 
-        final RemoteMessage message = new RemoteApplicationMessage(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), new byte[]{});
+        final RemoteMessage<Application> message = new RemoteApplicationMessage(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), new byte[]{});
         Crypto.sign(identity2.getPrivateKey().toUncompressedKey(), message);
 
         pipeline.processInbound(message.getSender(), message);
@@ -194,7 +195,7 @@ class DrasylPipelineIT {
             }
         });
 
-        final RemoteMessage message = new RemoteApplicationMessage(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), new byte[]{});
+        final RemoteMessage<Application> message = new RemoteApplicationMessage(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), new byte[]{});
         Crypto.sign(identity2.getPrivateKey().toUncompressedKey(), message);
 
         pipeline.processInbound(message.getSender(), message);
