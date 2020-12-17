@@ -19,8 +19,6 @@
 package org.drasyl.remote.handler;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufOutputStream;
-import io.netty.buffer.PooledByteBufAllocator;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
@@ -55,12 +53,7 @@ public class Message2ByteBufHandler extends SimpleOutboundHandler<RemoteMessage,
                 byteBuf = ((IntermediateEnvelope) msg).getByteBuf();
             }
             else {
-                byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
-                try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(byteBuf)) {
-                    msg.getPublicHeader().writeDelimitedTo(outputStream);
-                    msg.getPrivateHeader().writeDelimitedTo(outputStream);
-                    msg.getBody().writeDelimitedTo(outputStream);
-                }
+                byteBuf = IntermediateEnvelope.of(msg.getPublicHeader(), msg.getPrivateHeader(), msg.getBody()).getByteBuf();
             }
 
             write(ctx, recipient, byteBuf, future);
