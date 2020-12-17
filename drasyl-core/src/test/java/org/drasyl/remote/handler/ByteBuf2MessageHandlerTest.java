@@ -19,7 +19,6 @@
 package org.drasyl.remote.handler;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.Unpooled;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
@@ -127,12 +126,7 @@ class ByteBuf2MessageHandlerTest {
     @Test
     void shouldForwardMessageThatIsNotForUs(@Mock final Address sender) throws IOException {
         final AcknowledgementMessage message = new AcknowledgementMessage(1337, senderKey, proofOfWork, recipient, correspondingId);
-        final ByteBuf byteBuf = Unpooled.buffer();
-        try (final ByteBufOutputStream out = new ByteBufOutputStream(byteBuf)) {
-            message.getPublicHeader().writeDelimitedTo(out);
-            message.getPrivateHeader().writeDelimitedTo(out);
-            message.getBody().writeDelimitedTo(out);
-        }
+        final ByteBuf byteBuf = IntermediateEnvelope.of(message.getPublicHeader(), message.getPrivateHeader(), message.getBody()).getByteBuf();
 
         final ByteBuf2MessageHandler handler = ByteBuf2MessageHandler.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);

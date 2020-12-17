@@ -19,8 +19,6 @@
 package org.drasyl.remote.handler;
 
 import io.netty.buffer.ByteBuf;
-import io.netty.buffer.ByteBufOutputStream;
-import io.netty.buffer.Unpooled;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
 import org.drasyl.crypto.CryptoException;
@@ -33,6 +31,7 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.remote.message.RemoteApplicationMessage;
 import org.drasyl.remote.message.RemoteMessage;
+import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.Protocol.Application;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -62,13 +61,7 @@ class Message2ByteBufHandlerTest {
                 CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"),
                 "Hello World".getBytes()
         );
-
-        final ByteBuf byteBuf = Unpooled.buffer();
-        try (final ByteBufOutputStream out = new ByteBufOutputStream(byteBuf)) {
-            message.getPublicHeader().writeDelimitedTo(out);
-            message.getPrivateHeader().writeDelimitedTo(out);
-            message.getBody().writeDelimitedTo(out);
-        }
+        final ByteBuf byteBuf = IntermediateEnvelope.of(message.getPublicHeader(), message.getPrivateHeader(), message.getBody()).getByteBuf();
 
         final Message2ByteBufHandler handler = Message2ByteBufHandler.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
