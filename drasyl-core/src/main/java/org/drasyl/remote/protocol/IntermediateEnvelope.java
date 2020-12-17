@@ -21,6 +21,9 @@ package org.drasyl.remote.protocol;
 import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
+import io.netty.buffer.ByteBufOutputStream;
+import io.netty.buffer.PooledByteBufAllocator;
+import io.netty.buffer.Unpooled;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.crypto.Signature;
 import org.drasyl.identity.CompressedPublicKey;
@@ -71,6 +74,36 @@ public class IntermediateEnvelope implements ReferenceCounted, RemoteMessage {
      */
     public static IntermediateEnvelope of(final ByteBuf message) {
         return new IntermediateEnvelope(message);
+    }
+
+    /**
+     * Creates a message envelope from {@code publicHeader}, {@code privateHeader}, and {@code
+     * body}.
+     * <p>
+     * Node: This method will use a pooled {@link ByteBuf}.
+     *
+     * @param publicHeader  message's public header
+     * @param privateHeader message's private header
+     * @param body          the message
+     * @return an IntermediateEnvelope
+     * @throws IOException if {@code publicHeader}, {@code privateHeader}, and {@code body} can not
+     *                     be serialized
+     */
+    public static IntermediateEnvelope of(final PublicHeader publicHeader,
+                                          final PrivateHeader privateHeader,
+                                          final MessageLite body) throws IOException {
+        final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
+        try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(byteBuf)) {
+            publicHeader.writeDelimitedTo(outputStream);
+            privateHeader.writeDelimitedTo(outputStream);
+            body.writeDelimitedTo(outputStream);
+
+            return of(byteBuf);
+        }
+        catch (final IOException e) {
+            byteBuf.release();
+            throw e;
+        }
     }
 
     /**

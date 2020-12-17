@@ -110,12 +110,7 @@ class ByteBuf2MessageHandlerTest {
 
     private void convertToRemoteMessage(final Address sender,
                                         final RemoteMessage message) throws IOException {
-        final ByteBuf byteBuf = Unpooled.buffer();
-        try (final ByteBufOutputStream out = new ByteBufOutputStream(byteBuf)) {
-            message.getPublicHeader().writeDelimitedTo(out);
-            message.getPrivateHeader().writeDelimitedTo(out);
-            message.getBody().writeDelimitedTo(out);
-        }
+        final ByteBuf byteBuf = IntermediateEnvelope.of(message.getPublicHeader(), message.getPrivateHeader(), message.getBody()).getByteBuf();
 
         // Message is for us
         when(identity.getPublicKey()).thenReturn(recipient);
