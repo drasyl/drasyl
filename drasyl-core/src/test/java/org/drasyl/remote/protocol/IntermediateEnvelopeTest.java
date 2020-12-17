@@ -19,6 +19,7 @@
 package org.drasyl.remote.protocol;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.Unpooled;
@@ -80,7 +81,7 @@ class IntermediateEnvelopeTest {
     void shouldOnlyReturnHeaderAndNotChangingTheUnderlyingByteBuf() throws IOException {
         try {
             final byte[] backedByte = message.array();
-            final IntermediateEnvelope envelope = IntermediateEnvelope.of(message);
+            final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
 
             assertEquals(header, envelope.getPublicHeader());
             assertEquals((privateHeaderLength + bodyLength), envelope.getInternalByteBuf().readableBytes());
@@ -96,7 +97,7 @@ class IntermediateEnvelopeTest {
     @Test
     void shouldOnlyReturnPrivateHeaderButReadAlsoPublicHeader() throws IOException {
         try {
-            final IntermediateEnvelope envelope = IntermediateEnvelope.of(message);
+            final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
 
             assertEquals(privateHeader, envelope.getPrivateHeader());
             assertEquals(bodyLength, envelope.getInternalByteBuf().readableBytes());
@@ -111,7 +112,7 @@ class IntermediateEnvelopeTest {
     @Test
     void shouldOnlyReturnBodyButReadAll() throws IOException {
         try {
-            final IntermediateEnvelope envelope = IntermediateEnvelope.of(message);
+            final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
 
             assertEquals(body, envelope.getBody());
             assertEquals(0, envelope.getInternalByteBuf().readableBytes());

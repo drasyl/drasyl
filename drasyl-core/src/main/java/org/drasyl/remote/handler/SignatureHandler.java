@@ -18,6 +18,7 @@
  */
 package org.drasyl.remote.handler;
 
+import com.google.protobuf.MessageLite;
 import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.identity.CompressedPublicKey;
@@ -38,7 +39,7 @@ import java.util.concurrent.CompletableFuture;
  * information is written to the log.
  */
 @SuppressWarnings({ "java:S110" })
-public class SignatureHandler extends SimpleDuplexHandler<RemoteMessage, RemoteMessage, Address> {
+public class SignatureHandler extends SimpleDuplexHandler<RemoteMessage<MessageLite>, RemoteMessage<MessageLite>, Address> {
     public static final SignatureHandler INSTANCE = new SignatureHandler();
     public static final String SIGNATURE_HANDLER = "SIGNATURE_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(SignatureHandler.class);
@@ -49,7 +50,7 @@ public class SignatureHandler extends SimpleDuplexHandler<RemoteMessage, RemoteM
     @Override
     protected void matchedRead(final HandlerContext ctx,
                                final Address sender,
-                               final RemoteMessage msg,
+                               final RemoteMessage<MessageLite> msg,
                                final CompletableFuture<Void> future) {
         if (!ctx.identity().getPublicKey().equals(msg.getRecipient())) {
             // passthrough all messages not addressed to us
@@ -70,7 +71,7 @@ public class SignatureHandler extends SimpleDuplexHandler<RemoteMessage, RemoteM
      */
     private void inboundSafeguards(final HandlerContext ctx,
                                    final Address sender,
-                                   final RemoteMessage signedMessage,
+                                   final RemoteMessage<MessageLite> signedMessage,
                                    final CompletableFuture<Void> future) {
         if (signedMessage.getSignature() == null) {
             LOG.debug("Signed message `{}` has no signature.", signedMessage);
@@ -101,7 +102,7 @@ public class SignatureHandler extends SimpleDuplexHandler<RemoteMessage, RemoteM
      * @param msg message for which the public key is to be determined
      * @return public key or zero if it could not be determined
      */
-    private static PublicKey extractPublicKey(final RemoteMessage msg) {
+    private static PublicKey extractPublicKey(final RemoteMessage<MessageLite> msg) {
         final CompressedPublicKey compressedPublicKey = msg.getSender();
 
         try {
@@ -119,7 +120,7 @@ public class SignatureHandler extends SimpleDuplexHandler<RemoteMessage, RemoteM
     @Override
     protected void matchedWrite(final HandlerContext ctx,
                                 final Address recipient,
-                                final RemoteMessage msg,
+                                final RemoteMessage<MessageLite> msg,
                                 final CompletableFuture<Void> future) {
         if (!ctx.identity().getPublicKey().equals(msg.getSender())) {
             // passthrough all messages not addressed from us

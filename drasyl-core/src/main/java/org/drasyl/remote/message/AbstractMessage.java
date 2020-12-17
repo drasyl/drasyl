@@ -19,6 +19,7 @@
 package org.drasyl.remote.message;
 
 import com.google.protobuf.ByteString;
+import com.google.protobuf.MessageLite;
 import org.drasyl.crypto.Signature;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
@@ -35,7 +36,7 @@ import static org.drasyl.remote.message.MessageId.randomMessageId;
  * Message that represents a message from one node to another one.
  */
 @SuppressWarnings({ "squid:S1444", "squid:ClassVariableVisibilityCheck", "java:S107" })
-abstract class AbstractMessage implements RemoteMessage {
+abstract class AbstractMessage<T extends MessageLite> implements RemoteMessage<T> {
     protected final MessageId id;
     protected final UserAgent userAgent;
     protected final int networkId;

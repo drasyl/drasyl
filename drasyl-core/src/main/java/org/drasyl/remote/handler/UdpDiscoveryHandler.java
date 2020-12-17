@@ -19,6 +19,7 @@
 package org.drasyl.remote.handler;
 
 import com.google.common.cache.CacheBuilder;
+import com.google.protobuf.MessageLite;
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
@@ -54,7 +55,7 @@ import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
 
 @SuppressWarnings({ "java:S110" })
-public class UdpDiscoveryHandler extends SimpleDuplexHandler<RemoteMessage, RemoteMessage, Address> {
+public class UdpDiscoveryHandler extends SimpleDuplexHandler<RemoteMessage<? extends MessageLite>, RemoteMessage<? extends MessageLite>, Address> {
     private static final Logger LOG = LoggerFactory.getLogger(UdpDiscoveryHandler.class);
     public static final String UDP_DISCOVERY_HANDLER = "UDP_DISCOVERY_HANDLER";
     private static final Object path = UdpDiscoveryHandler.class;
@@ -111,7 +112,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<RemoteMessage, Remo
     @Override
     protected void matchedWrite(final HandlerContext ctx,
                                 final Address recipient,
-                                final RemoteMessage msg,
+                                final RemoteMessage<? extends MessageLite> msg,
                                 final CompletableFuture<Void> future) {
         if (msg instanceof RemoteApplicationMessage && directConnectionPeers.contains(msg.getRecipient())) {
             final Peer peer = peers.computeIfAbsent(msg.getRecipient(), key -> new Peer());
@@ -130,7 +131,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<RemoteMessage, Remo
     @Override
     protected void matchedRead(final HandlerContext ctx,
                                final Address sender,
-                               final RemoteMessage msg,
+                               final RemoteMessage<? extends MessageLite> msg,
                                final CompletableFuture<Void> future) {
         requireNonNull(msg);
         requireNonNull(sender);
@@ -350,7 +351,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<RemoteMessage, Remo
      * @param sender    the sender socket address
      */
     private void sendUnites(final HandlerContext ctx,
-                            final RemoteMessage msg,
+                            final RemoteMessage<? extends MessageLite> msg,
                             final InetSocketAddressWrapper recipient,
                             final InetSocketAddressWrapper sender) {
         // send recipient's information to sender
@@ -388,7 +389,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<RemoteMessage, Remo
      */
     private void processMessage(final HandlerContext ctx,
                                 final CompressedPublicKey recipient,
-                                final RemoteMessage msg,
+                                final RemoteMessage<? extends MessageLite> msg,
                                 final CompletableFuture<Void> future) {
         final Peer recipientPeer = peers.get(recipient);
         final CompressedPublicKey superPeerKey = ctx.peersManager().getSuperPeerKey();

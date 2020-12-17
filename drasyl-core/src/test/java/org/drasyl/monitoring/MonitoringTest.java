@@ -18,6 +18,7 @@
  */
 package org.drasyl.monitoring;
 
+import com.google.protobuf.MessageLite;
 import io.micrometer.core.instrument.Counter;
 import io.micrometer.core.instrument.MeterRegistry;
 import io.reactivex.rxjava3.observers.TestObserver;
@@ -122,7 +123,7 @@ class MonitoringTest {
 
         @Test
         void shouldPassthroughInboundMessages(@Mock final Address sender,
-                                              @Mock final RemoteMessage message) {
+                                              @Mock final RemoteMessage<MessageLite> message) {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
             final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
@@ -134,7 +135,7 @@ class MonitoringTest {
 
         @Test
         void shouldPassthroughOutboundMessages(@Mock final Address recipient,
-                                               @Mock final RemoteMessage message) {
+                                               @Mock final RemoteMessage<MessageLite> message) {
             final Monitoring handler = spy(new Monitoring(counters, registrySupplier, registry));
             final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
             final TestObserver<Pair<Address, Object>> outboundMessages = pipeline.outboundMessages().test();

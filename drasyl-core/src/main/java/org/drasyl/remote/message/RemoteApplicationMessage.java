@@ -33,7 +33,7 @@ import static org.drasyl.remote.message.MessageId.randomMessageId;
 import static org.drasyl.remote.protocol.Protocol.MessageType.APPLICATION;
 
 @SuppressWarnings({ "java:S107" })
-public class RemoteApplicationMessage extends AbstractMessage {
+public class RemoteApplicationMessage extends AbstractMessage<Application> {
     protected final String type;
     protected final byte[] payload;
 

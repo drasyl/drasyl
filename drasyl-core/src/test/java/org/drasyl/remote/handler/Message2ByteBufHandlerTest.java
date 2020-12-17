@@ -33,6 +33,7 @@ import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.remote.message.RemoteApplicationMessage;
 import org.drasyl.remote.message.RemoteMessage;
+import org.drasyl.remote.protocol.Protocol.Application;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -55,7 +56,7 @@ class Message2ByteBufHandlerTest {
 
     @Test
     void shouldConvertApplicationMessageToByteBuf(@Mock final Address recipient) throws CryptoException, IOException {
-        final RemoteMessage message = new RemoteApplicationMessage(1337,
+        final RemoteMessage<Application> message = new RemoteApplicationMessage(1337,
                 CompressedPublicKey.of("034a450eb7955afb2f6538433ae37bd0cbc09745cf9df4c7ccff80f8294e6b730d"),
                 ProofOfWork.of(3556154),
                 CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9"),

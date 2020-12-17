@@ -23,7 +23,6 @@ import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.PooledByteBufAllocator;
-import io.netty.buffer.Unpooled;
 import io.netty.util.ReferenceCounted;
 import org.drasyl.crypto.Signature;
 import org.drasyl.identity.CompressedPublicKey;
@@ -45,12 +44,12 @@ import java.io.IOException;
  * decoding the requested parts of the given {@link ByteBuf}. If a part was request it will be
  * translated into a Java object.
  */
-public class IntermediateEnvelope implements ReferenceCounted, RemoteMessage {
+public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCounted, RemoteMessage<T> {
     private final ByteBuf originalMessage;
     private final ByteBuf message;
     private PublicHeader publicHeader;
     private PrivateHeader privateHeader;
-    private MessageLite body;
+    private T body;
 
     private IntermediateEnvelope(final ByteBuf message) {
         if (!message.isReadable()) {
@@ -72,8 +71,8 @@ public class IntermediateEnvelope implements ReferenceCounted, RemoteMessage {
      * @return an IntermediateEnvelope
      * @throws IllegalArgumentException if the given {@link ByteBuf} is not readable
      */
-    public static IntermediateEnvelope of(final ByteBuf message) {
-        return new IntermediateEnvelope(message);
+    public static <T extends MessageLite> IntermediateEnvelope<T> of(final ByteBuf message) {
+        return new IntermediateEnvelope<T>(message);
     }
 
     /**
@@ -89,9 +88,9 @@ public class IntermediateEnvelope implements ReferenceCounted, RemoteMessage {
      * @throws IOException if {@code publicHeader}, {@code privateHeader}, and {@code body} can not
      *                     be serialized
      */
-    public static IntermediateEnvelope of(final PublicHeader publicHeader,
-                                          final PrivateHeader privateHeader,
-                                          final MessageLite body) throws IOException {
+    public static <T extends MessageLite> IntermediateEnvelope<T> of(final PublicHeader publicHeader,
+                                                                     final PrivateHeader privateHeader,
+                                                                     final MessageLite body) throws IOException {
         final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
         try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(byteBuf)) {
             publicHeader.writeDelimitedTo(outputStream);
@@ -158,23 +157,24 @@ public class IntermediateEnvelope implements ReferenceCounted, RemoteMessage {
      * @return the body
      * @throws IOException if the body cannot be read read
      */
-    public MessageLite getBody() throws IOException {
+    @SuppressWarnings("unchecked")
+    public T getBody() throws IOException {
         synchronized (this) {
             getPrivateHeader();
             if (body == null) {
                 try (final ByteBufInputStream in = new ByteBufInputStream(message)) {
                     switch (privateHeader.getType()) {
                         case ACKNOWLEDGEMENT:
-                            body = Acknowledgement.parseDelimitedFrom(in);
+                            body = (T) Acknowledgement.parseDelimitedFrom(in);
                             break;
                         case APPLICATION:
-                            body = Application.parseDelimitedFrom(in);
+                            body = (T) Application.parseDelimitedFrom(in);
                             break;
                         case UNITE:
-                            body = Unite.parseDelimitedFrom(in);
+                            body = (T) Unite.parseDelimitedFrom(in);
                             break;
                         case DISCOVERY:
-                            body = Discovery.parseDelimitedFrom(in);
+                            body = (T) Discovery.parseDelimitedFrom(in);
                             break;
                         default:
                             throw new IOException("Message is not of any known type.");

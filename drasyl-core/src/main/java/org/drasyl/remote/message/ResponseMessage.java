@@ -18,11 +18,13 @@
  */
 package org.drasyl.remote.message;
 
+import com.google.protobuf.MessageLite;
+
 /**
  * Messages of this type represent a response to a previously received {@link RemoteMessage}.
  */
 @SuppressWarnings("java:S2326")
-public interface ResponseMessage<R extends RemoteMessage> extends RemoteMessage {
+public interface ResponseMessage<T extends MessageLite> extends RemoteMessage<T> {
     /**
      * @return the id of the {@link RemoteMessage} to which this response corresponds
      */

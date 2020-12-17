@@ -31,7 +31,7 @@ import java.io.IOException;
 /**
  * Describes messages that are used to communicate with remote nodes.
  */
-public interface RemoteMessage extends Signable {
+public interface RemoteMessage<T extends MessageLite> extends Signable {
     /**
      * Returns the unique id of this message. Each message generates a random id when it is
      * created.
@@ -112,5 +112,5 @@ public interface RemoteMessage extends Signable {
      * @return the body of this message
      * @throws IOException if the body cannot be read read
      */
-    MessageLite getBody() throws IOException;
+    T getBody() throws IOException;
 }

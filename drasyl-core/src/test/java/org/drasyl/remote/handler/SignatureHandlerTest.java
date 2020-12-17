@@ -37,6 +37,7 @@ import org.drasyl.remote.message.RemoteApplicationMessage;
 import org.drasyl.remote.message.RemoteMessage;
 import org.drasyl.remote.message.UserAgent;
 import org.drasyl.remote.protocol.Protocol;
+import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -72,7 +73,7 @@ class SignatureHandlerTest {
         when(identity.getPrivateKey()).thenReturn(CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34"));
         when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
         when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
-        final RemoteMessage message = new RemoteApplicationMessage(1, identity.getPublicKey(), proofOfWork, identity.getPublicKey(), new byte[]{});
+        final RemoteMessage<Application> message = new RemoteApplicationMessage(1, identity.getPublicKey(), proofOfWork, identity.getPublicKey(), new byte[]{});
 
         final SignatureHandler handler = SignatureHandler.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
@@ -87,7 +88,7 @@ class SignatureHandlerTest {
     @Test
     void shouldCompleteFutureExceptionallyAndNotPassMessageIfSigningFailed() throws CryptoException, InterruptedException {
         when(identity.getPrivateKey().toUncompressedKey()).thenThrow(CryptoException.class);
-        final RemoteMessage message = new MyMessage(identity.getPublicKey(), proofOfWork, recipient);
+        final RemoteMessage<MessageLite> message = new MyMessage(identity.getPublicKey(), proofOfWork, recipient);
 
         final SignatureHandler handler = SignatureHandler.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
@@ -100,7 +101,7 @@ class SignatureHandlerTest {
 
     @Test
     void shouldPassthroughOutgoingMessagesFromOtherSender(@Mock final CompressedPublicKey recipient,
-                                                          @Mock final RemoteMessage message) {
+                                                          @Mock final RemoteMessage<MessageLite> message) {
         final SignatureHandler handler = SignatureHandler.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
         final TestObserver<Object> outboundMessages = pipeline.outboundOnlyMessages().test();
@@ -116,7 +117,7 @@ class SignatureHandlerTest {
         when(identity.getPrivateKey()).thenReturn(CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34"));
         when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
         when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
-        final RemoteMessage message = new RemoteApplicationMessage(1, identity.getPublicKey(), proofOfWork, identity.getPublicKey(), new byte[]{});
+        final RemoteMessage<Application> message = new RemoteApplicationMessage(1, identity.getPublicKey(), proofOfWork, identity.getPublicKey(), new byte[]{});
         Crypto.sign(identity.getPrivateKey().toUncompressedKey(), message);
 
         final SignatureHandler handler = SignatureHandler.INSTANCE;
@@ -134,7 +135,7 @@ class SignatureHandlerTest {
         when(identity.getPrivateKey()).thenReturn(CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34"));
         when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
         when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
-        final RemoteMessage message = new RemoteApplicationMessage(1, CompressedPublicKey.of("0248b7221b49775dcae85b02fdc9df41fbed6236c72c5c0356b59961190d3f8a13"), proofOfWork, identity.getPublicKey(), new byte[]{});
+        final RemoteMessage<Application> message = new RemoteApplicationMessage(1, CompressedPublicKey.of("0248b7221b49775dcae85b02fdc9df41fbed6236c72c5c0356b59961190d3f8a13"), proofOfWork, identity.getPublicKey(), new byte[]{});
         Crypto.sign(identity.getPrivateKey().toUncompressedKey(), message);
 
         final SignatureHandler handler = SignatureHandler.INSTANCE;
@@ -153,7 +154,7 @@ class SignatureHandlerTest {
         when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
         when(sender.toUncompressedKey()).thenThrow(CryptoException.class);
         when(sender.getCompressedKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3").getCompressedKey());
-        final RemoteMessage message = new RemoteApplicationMessage(1, sender, proofOfWork, identity.getPublicKey(), new byte[]{});
+        final RemoteMessage<Application> message = new RemoteApplicationMessage(1, sender, proofOfWork, identity.getPublicKey(), new byte[]{});
         Crypto.sign(identity.getPrivateKey().toUncompressedKey(), message);
 
         final SignatureHandler handler = SignatureHandler.INSTANCE;
@@ -166,7 +167,7 @@ class SignatureHandlerTest {
     }
 
     @Test
-    void shouldPassthroughIncomingMessagesForOtherRecipient(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage message) {
+    void shouldPassthroughIncomingMessagesForOtherRecipient(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage<MessageLite> message) {
         final SignatureHandler handler = SignatureHandler.INSTANCE;
         final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
         final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
@@ -177,7 +178,7 @@ class SignatureHandlerTest {
         inboundMessages.assertValue(Pair.of(message.getSender(), message));
     }
 
-    static class MyMessage implements RemoteMessage {
+    static class MyMessage implements RemoteMessage<MessageLite> {
         private final CompressedPublicKey sender;
         private final ProofOfWork proofOfWork;
         private final CompressedPublicKey recipient;

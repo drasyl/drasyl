@@ -18,6 +18,7 @@
  */
 package org.drasyl.remote.handler;
 
+import com.google.protobuf.MessageLite;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
@@ -30,7 +31,7 @@ import java.util.concurrent.CompletableFuture;
 /**
  * This handler filters out all messages received from other networks.
  */
-public class OtherNetworkFilter extends SimpleInboundHandler<RemoteMessage, Address> {
+public class OtherNetworkFilter extends SimpleInboundHandler<RemoteMessage<MessageLite>, Address> {
     public static final OtherNetworkFilter INSTANCE = new OtherNetworkFilter();
     public static final String OTHER_NETWORK_FILTER = "OTHER_NETWORK_FILTER";
     private static final Logger LOG = LoggerFactory.getLogger(OtherNetworkFilter.class);
@@ -41,7 +42,7 @@ public class OtherNetworkFilter extends SimpleInboundHandler<RemoteMessage, Addr
     @Override
     protected void matchedRead(final HandlerContext ctx,
                                final Address sender,
-                               final RemoteMessage msg,
+                               final RemoteMessage<MessageLite> msg,
                                final CompletableFuture<Void> future) {
         if (ctx.config().getNetworkId() == msg.getNetworkId()) {
             ctx.fireRead(sender, msg, future);
