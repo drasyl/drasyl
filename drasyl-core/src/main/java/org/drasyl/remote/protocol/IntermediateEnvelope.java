@@ -72,7 +72,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      * @throws IllegalArgumentException if the given {@link ByteBuf} is not readable
      */
     public static <T extends MessageLite> IntermediateEnvelope<T> of(final ByteBuf message) {
-        return new IntermediateEnvelope<T>(message);
+        return new IntermediateEnvelope<>(message);
     }
 
     /**
@@ -90,7 +90,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      */
     public static <T extends MessageLite> IntermediateEnvelope<T> of(final PublicHeader publicHeader,
                                                                      final PrivateHeader privateHeader,
-                                                                     final MessageLite body) throws IOException {
+                                                                     final T body) throws IOException {
         final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
         try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(byteBuf)) {
             publicHeader.writeDelimitedTo(outputStream);
