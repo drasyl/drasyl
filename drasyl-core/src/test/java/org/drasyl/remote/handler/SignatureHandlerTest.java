@@ -18,12 +18,9 @@
  */
 package org.drasyl.remote.handler;
 
-import com.google.protobuf.MessageLite;
 import io.reactivex.rxjava3.observers.TestObserver;
 import org.drasyl.DrasylConfig;
-import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
-import org.drasyl.crypto.Signature;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
@@ -32,23 +29,23 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
-import org.drasyl.remote.message.MessageId;
-import org.drasyl.remote.message.RemoteApplicationMessage;
-import org.drasyl.remote.message.RemoteMessage;
-import org.drasyl.remote.message.UserAgent;
-import org.drasyl.remote.protocol.Protocol;
+import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.util.Pair;
+import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
+import java.io.IOException;
 import java.util.concurrent.ExecutionException;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Answers.RETURNS_DEEP_STUBS;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -68,192 +65,111 @@ class SignatureHandlerTest {
     @Mock
     private CompressedPublicKey recipient;
 
-    @Test
-    void shouldSignUnsignedOutgoingMessages(@Mock final CompressedPublicKey recipient) throws CryptoException {
-        when(identity.getPrivateKey()).thenReturn(CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34"));
-        when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
-        when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
-        final RemoteMessage<Application> message = new RemoteApplicationMessage(1, identity.getPublicKey(), proofOfWork, identity.getPublicKey(), new byte[]{});
+    @Nested
+    class OutboundMessages {
+        @Test
+        void shouldArmOutgoingMessageFromMe(@Mock final CompressedPublicKey recipient) throws CryptoException, IOException {
+            when(identity.getPrivateKey()).thenReturn(CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34"));
+            when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
+            when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
+            final IntermediateEnvelope<Application> messageEnvelope = IntermediateEnvelope.application(1, identity.getPublicKey(), proofOfWork, identity.getPublicKey(), byte[].class.getName(), new byte[]{});
 
-        final SignatureHandler handler = SignatureHandler.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-        final TestObserver<RemoteMessage> outboundMessages = pipeline.outboundOnlyMessages(RemoteMessage.class).test();
+            final SignatureHandler handler = SignatureHandler.INSTANCE;
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+            final TestObserver<IntermediateEnvelope> outboundMessages = pipeline.outboundOnlyMessages(IntermediateEnvelope.class).test();
 
-        pipeline.processOutbound(recipient, message);
+            pipeline.processOutbound(recipient, messageEnvelope);
 
-        outboundMessages.awaitCount(1).assertValueCount(1);
-        outboundMessages.assertValue(m -> m.getSignature() != null);
+            outboundMessages.awaitCount(1).assertValueCount(1);
+            outboundMessages.assertValue(m -> m.getSignature().getBytes().length != 0);
+        }
+
+        @Test
+        void shouldPassthroughOutgoingMessageNotFromMe(@Mock final CompressedPublicKey recipient) throws CryptoException, IOException {
+            when(identity.getPrivateKey()).thenReturn(CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34"));
+            when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
+            when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
+            final IntermediateEnvelope<Application> messageEnvelope = IntermediateEnvelope.application(1, CompressedPublicKey.of("0248b7221b49775dcae85b02fdc9df41fbed6236c72c5c0356b59961190d3f8a13"), proofOfWork, identity.getPublicKey(), byte[].class.getName(), new byte[]{});
+
+            final SignatureHandler handler = SignatureHandler.INSTANCE;
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+            final TestObserver<IntermediateEnvelope> outboundMessages = pipeline.outboundOnlyMessages(IntermediateEnvelope.class).test();
+
+            pipeline.processOutbound(recipient, messageEnvelope);
+
+            outboundMessages.awaitCount(1).assertValueCount(1);
+            outboundMessages.assertValue(m -> m.getSignature().getBytes().length == 0);
+        }
+
+        @Test
+        void shouldCompleteFutureExceptionallyAndNotPassOutgoingMessageIfArmingFailed() throws CryptoException, InterruptedException, IOException {
+            when(identity.getPrivateKey()).thenReturn(CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34"));
+            when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
+            when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
+            final IntermediateEnvelope<Application> messageEnvelope = spy(IntermediateEnvelope.application(1, identity.getPublicKey(), proofOfWork, identity.getPublicKey(), byte[].class.getName(), new byte[]{}));
+            when(messageEnvelope.arm(identity.getPrivateKey())).thenThrow(IllegalStateException.class);
+
+            final SignatureHandler handler = SignatureHandler.INSTANCE;
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+            final TestObserver<IntermediateEnvelope> outboundMessages = pipeline.outboundOnlyMessages(IntermediateEnvelope.class).test();
+
+            assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, messageEnvelope).get());
+            outboundMessages.await(1, SECONDS);
+            outboundMessages.assertNoValues();
+        }
     }
 
-    @Test
-    void shouldCompleteFutureExceptionallyAndNotPassMessageIfSigningFailed() throws CryptoException, InterruptedException {
-        when(identity.getPrivateKey().toUncompressedKey()).thenThrow(CryptoException.class);
-        final RemoteMessage<MessageLite> message = new MyMessage(identity.getPublicKey(), proofOfWork, recipient);
+    @Nested
+    class InboundMessages {
+        @Test
+        void shouldDisarmIngoingMessageAddressedToMe(@Mock final CompressedPublicKey sender) throws CryptoException, IOException {
+            when(identity.getPrivateKey()).thenReturn(CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34"));
+            when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
+            when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
+            final IntermediateEnvelope<Application> messageEnvelope = IntermediateEnvelope.application(1, identity.getPublicKey(), proofOfWork, identity.getPublicKey(), byte[].class.getName(), new byte[]{}).arm(identity.getPrivateKey());
 
-        final SignatureHandler handler = SignatureHandler.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-        final TestObserver<Object> outboundMessages = pipeline.outboundOnlyMessages().test();
+            final SignatureHandler handler = SignatureHandler.INSTANCE;
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+            final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
 
-        assertThrows(ExecutionException.class, () -> pipeline.processOutbound(recipient, message).get());
-        outboundMessages.await(1, SECONDS);
-        outboundMessages.assertNoValues();
-    }
+            pipeline.processInbound(sender, messageEnvelope);
 
-    @Test
-    void shouldPassthroughOutgoingMessagesFromOtherSender(@Mock final CompressedPublicKey recipient,
-                                                          @Mock final RemoteMessage<MessageLite> message) {
-        final SignatureHandler handler = SignatureHandler.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-        final TestObserver<Object> outboundMessages = pipeline.outboundOnlyMessages().test();
-
-        pipeline.processOutbound(recipient, message);
-
-        outboundMessages.awaitCount(1).assertValueCount(1);
-        outboundMessages.assertValue(message);
-    }
-
-    @Test
-    void shouldPassSignedIncomingMessage() throws CryptoException {
-        when(identity.getPrivateKey()).thenReturn(CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34"));
-        when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
-        when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
-        final RemoteMessage<Application> message = new RemoteApplicationMessage(1, identity.getPublicKey(), proofOfWork, identity.getPublicKey(), new byte[]{});
-        Crypto.sign(identity.getPrivateKey().toUncompressedKey(), message);
-
-        final SignatureHandler handler = SignatureHandler.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
-
-        pipeline.processInbound(message.getSender(), message);
-
-        inboundMessages.awaitCount(1).assertValueCount(1);
-        inboundMessages.assertValue(Pair.of(identity.getPublicKey(), message));
-    }
-
-    @Test
-    void shouldNotPassIncomingMessageWithInvalidSignatureAndCompleteFutureExceptionally() throws CryptoException, InterruptedException {
-        when(identity.getPrivateKey()).thenReturn(CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34"));
-        when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
-        when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
-        final RemoteMessage<Application> message = new RemoteApplicationMessage(1, CompressedPublicKey.of("0248b7221b49775dcae85b02fdc9df41fbed6236c72c5c0356b59961190d3f8a13"), proofOfWork, identity.getPublicKey(), new byte[]{});
-        Crypto.sign(identity.getPrivateKey().toUncompressedKey(), message);
-
-        final SignatureHandler handler = SignatureHandler.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
-
-        assertThrows(ExecutionException.class, () -> pipeline.processInbound(message.getSender(), message).get());
-        inboundMessages.await(1, SECONDS);
-        inboundMessages.assertNoValues();
-    }
-
-    @Test
-    void shouldNotPassIncomingMessageAndCompleteFutureExceptionallyWhenPublicKeyCantBeExtracted(@Mock final CompressedPublicKey sender) throws CryptoException, InterruptedException {
-        when(identity.getPrivateKey()).thenReturn(CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34"));
-        when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
-        when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
-        when(sender.toUncompressedKey()).thenThrow(CryptoException.class);
-        when(sender.byteArrayValue()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3").byteArrayValue());
-        final RemoteMessage<Application> message = new RemoteApplicationMessage(1, sender, proofOfWork, identity.getPublicKey(), new byte[]{});
-        Crypto.sign(identity.getPrivateKey().toUncompressedKey(), message);
-
-        final SignatureHandler handler = SignatureHandler.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
-
-        assertThrows(ExecutionException.class, () -> pipeline.processInbound(message.getSender(), message).get());
-        inboundMessages.await(1, SECONDS);
-        inboundMessages.assertNoValues();
-    }
-
-    @Test
-    void shouldPassthroughIncomingMessagesForOtherRecipient(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage<MessageLite> message) {
-        final SignatureHandler handler = SignatureHandler.INSTANCE;
-        final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
-        final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
-
-        pipeline.processInbound(message.getSender(), message);
-
-        inboundMessages.awaitCount(1).assertValueCount(1);
-        inboundMessages.assertValue(Pair.of(message.getSender(), message));
-    }
-
-    static class MyMessage implements RemoteMessage<MessageLite> {
-        private final CompressedPublicKey sender;
-        private final ProofOfWork proofOfWork;
-        private final CompressedPublicKey recipient;
-
-        public MyMessage(final CompressedPublicKey sender,
-                         final ProofOfWork proofOfWork,
-                         final CompressedPublicKey recipient) {
-            this.sender = sender;
-            this.proofOfWork = proofOfWork;
-            this.recipient = recipient;
+            inboundMessages.awaitCount(1).assertValueCount(1);
+            inboundMessages.assertValue(p -> p.second() instanceof IntermediateEnvelope && ((IntermediateEnvelope) p.second()).getPrivateHeader() != null);
         }
 
-        @Override
-        public MessageId getId() {
-            return MessageId.of("89ba3cd9efb7570eb3126d11");
+        @Test
+        void shouldPassthroughIngoingMessageNotAddressedToMe(@Mock final CompressedPublicKey sender) throws CryptoException, IOException {
+            when(identity.getPrivateKey()).thenReturn(CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34"));
+            when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
+            when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
+            final IntermediateEnvelope<Application> messageEnvelope = IntermediateEnvelope.application(1, identity.getPublicKey(), proofOfWork, CompressedPublicKey.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"), byte[].class.getName(), new byte[]{}).arm(identity.getPrivateKey());
+
+            final SignatureHandler handler = SignatureHandler.INSTANCE;
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+            final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
+
+            pipeline.processInbound(sender, messageEnvelope);
+
+            inboundMessages.awaitCount(1).assertValueCount(1);
+            inboundMessages.assertValue(p -> p.second().equals(messageEnvelope));
         }
 
-        @Override
-        public UserAgent getUserAgent() {
-            return UserAgent.generate();
-        }
+        @Test
+        void shouldCompleteFutureExceptionallyAndNotPassIngoingMessageIfDisarmingFailed(@Mock final CompressedPublicKey sender) throws CryptoException, InterruptedException, IOException {
+            when(identity.getPrivateKey()).thenReturn(CompressedPrivateKey.of("05880bb5848fc8db0d8f30080b8c923860622a340aae55f4509d62f137707e34"));
+            when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
+            when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
+            final IntermediateEnvelope<Application> messageEnvelope = spy(IntermediateEnvelope.application(1, identity.getPublicKey(), proofOfWork, identity.getPublicKey(), byte[].class.getName(), new byte[]{}).arm(identity.getPrivateKey()));
+            when(messageEnvelope.disarm(any())).thenThrow(IllegalStateException.class);
 
-        @Override
-        public int getNetworkId() {
-            return 1;
-        }
+            final SignatureHandler handler = SignatureHandler.INSTANCE;
+            final EmbeddedPipeline pipeline = new EmbeddedPipeline(config, identity, peersManager, inboundValidator, outboundValidator, handler);
+            final TestObserver<Pair<Address, Object>> inboundMessages = pipeline.inboundMessages().test();
 
-        @Override
-        public CompressedPublicKey getSender() {
-            return sender;
-        }
-
-        @Override
-        public ProofOfWork getProofOfWork() {
-            return proofOfWork;
-        }
-
-        @Override
-        public CompressedPublicKey getRecipient() {
-            return recipient;
-        }
-
-        @Override
-        public byte getHopCount() {
-            return 0;
-        }
-
-        @Override
-        public void incrementHopCount() {
-
-        }
-
-        @Override
-        public Signature getSignature() {
-            return null;
-        }
-
-        @Override
-        public Protocol.PublicHeader getPublicHeader() {
-            return null;
-        }
-
-        @Override
-        public Protocol.PrivateHeader getPrivateHeader() {
-            return null;
-        }
-
-        @Override
-        public MessageLite getBody() {
-            return null;
-        }
-
-        @Override
-        public void setSignature(final Signature signature) {
-
+            assertThrows(ExecutionException.class, () -> pipeline.processInbound(sender, messageEnvelope).get());
+            inboundMessages.await(1, SECONDS);
+            inboundMessages.assertNoValues();
         }
     }
 }

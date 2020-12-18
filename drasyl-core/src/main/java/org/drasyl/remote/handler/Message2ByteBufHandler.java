@@ -23,7 +23,6 @@ import io.netty.buffer.ByteBuf;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
-import org.drasyl.remote.message.RemoteMessage;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -33,9 +32,9 @@ import java.util.concurrent.CompletableFuture;
 import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 
 /**
- * Handler that converts a given {@link RemoteMessage} to a {@link ByteBuf}.
+ * Handler that converts a given {@link IntermediateEnvelope} to a {@link ByteBuf}.
  */
-public class Message2ByteBufHandler extends SimpleOutboundHandler<RemoteMessage<MessageLite>, Address> {
+public class Message2ByteBufHandler extends SimpleOutboundHandler<IntermediateEnvelope<MessageLite>, Address> {
     public static final Message2ByteBufHandler INSTANCE = new Message2ByteBufHandler();
     public static final String MESSAGE_2_BYTE_BUF_HANDLER = "MESSAGE_2_BYTE_BUF_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(Message2ByteBufHandler.class);
@@ -46,16 +45,11 @@ public class Message2ByteBufHandler extends SimpleOutboundHandler<RemoteMessage<
     @Override
     protected void matchedWrite(final HandlerContext ctx,
                                 final Address recipient,
-                                final RemoteMessage<MessageLite> msg,
+                                final IntermediateEnvelope<MessageLite> msg,
                                 final CompletableFuture<Void> future) {
         ByteBuf byteBuf = null;
         try {
-            if (msg instanceof IntermediateEnvelope) {
-                byteBuf = ((IntermediateEnvelope<MessageLite>) msg).getByteBuf();
-            }
-            else {
-                byteBuf = IntermediateEnvelope.of(msg.getPublicHeader(), msg.getPrivateHeader(), msg.getBody()).getByteBuf();
-            }
+            byteBuf = msg.getByteBuf();
 
             write(ctx, recipient, byteBuf, future);
         }

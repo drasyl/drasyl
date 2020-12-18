@@ -16,7 +16,7 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.remote.message;
+package org.drasyl.remote.protocol;
 
 import org.drasyl.DrasylNode;
 import org.drasyl.util.UnsignedShort;

@@ -16,15 +16,15 @@
  *  You should have received a copy of the GNU Lesser General Public License
  *  along with drasyl.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.drasyl.remote.message;
+package org.drasyl.remote.protocol;
 
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.drasyl.remote.message.MessageId.isValidMessageId;
-import static org.drasyl.remote.message.MessageId.randomMessageId;
+import static org.drasyl.remote.protocol.MessageId.isValidMessageId;
+import static org.drasyl.remote.protocol.MessageId.randomMessageId;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;

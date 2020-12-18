@@ -25,7 +25,6 @@ import io.reactivex.rxjava3.observers.TestObserver;
 import io.reactivex.rxjava3.plugins.RxJavaPlugins;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import org.drasyl.DrasylConfig;
-import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
@@ -36,12 +35,12 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
-import org.drasyl.remote.message.RemoteApplicationMessage;
-import org.drasyl.remote.message.RemoteMessage;
+import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.remote.protocol.Protocol.Application;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
+import java.io.IOException;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
@@ -103,7 +102,7 @@ class DrasylPipelineIT {
     }
 
     @Test
-    void passMessageThroughThePipeline() throws CryptoException {
+    void passMessageThroughThePipeline() throws CryptoException, IOException {
         final TestObserver<Event> events = receivedEvents.test();
 
         final byte[] newPayload = new byte[]{
@@ -122,8 +121,7 @@ class DrasylPipelineIT {
             }
         });
 
-        final RemoteMessage<Application> message = new RemoteApplicationMessage(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), new byte[]{});
-        Crypto.sign(identity2.getPrivateKey().toUncompressedKey(), message);
+        final IntermediateEnvelope<Application> message = IntermediateEnvelope.application(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), byte[].class.getName(), new byte[]{}).arm(identity2.getPrivateKey());
 
         pipeline.processInbound(message.getSender(), message);
 
@@ -132,7 +130,7 @@ class DrasylPipelineIT {
     }
 
     @Test
-    void passEventThroughThePipeline() throws CryptoException {
+    void passEventThroughThePipeline() throws CryptoException, IOException {
         final TestObserver<Event> events = receivedEvents.test();
 
         final Event testEvent = new Event() {
@@ -151,18 +149,17 @@ class DrasylPipelineIT {
             }
         });
 
-        final RemoteApplicationMessage message = new RemoteApplicationMessage(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), new byte[]{});
-        Crypto.sign(identity2.getPrivateKey().toUncompressedKey(), message);
+        final IntermediateEnvelope<Application> message = IntermediateEnvelope.application(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), byte[].class.getName(), "Hallo Welt".getBytes()).arm(identity2.getPrivateKey());
 
         pipeline.processInbound(message.getSender(), message);
 
         events.awaitCount(2);
-        events.assertValueAt(0, new MessageEvent(identity2.getPublicKey(), message.getPayload()));
+        events.assertValueAt(0, new MessageEvent(message.getSender(), "Hallo Welt".getBytes()));
         events.assertValueAt(1, testEvent);
     }
 
     @Test
-    void exceptionShouldPassThroughThePipeline() throws CryptoException {
+    void exceptionShouldPassThroughThePipeline() throws CryptoException, IOException {
         final PublishSubject<Throwable> receivedExceptions = PublishSubject.create();
         final TestObserver<Throwable> exceptions = receivedExceptions.test();
 
@@ -195,8 +192,7 @@ class DrasylPipelineIT {
             }
         });
 
-        final RemoteMessage<Application> message = new RemoteApplicationMessage(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), new byte[]{});
-        Crypto.sign(identity2.getPrivateKey().toUncompressedKey(), message);
+        final IntermediateEnvelope<Application> message = IntermediateEnvelope.application(0, identity2.getPublicKey(), identity2.getProofOfWork(), identity1.getPublicKey(), byte[].class.getName(), new byte[]{}).arm(identity2.getPrivateKey());
 
         pipeline.processInbound(message.getSender(), message);
 
@@ -235,9 +231,9 @@ class DrasylPipelineIT {
     }
 
     @Test
-    void shouldNotPassthroughsMessagesWithDoneFuture() {
+    void shouldNotPassthroughsMessagesWithDoneFuture() throws IOException {
         final TestObserver<Object> outbounds = outboundMessages.test();
-        final RemoteApplicationMessage msg = new RemoteApplicationMessage(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), payload);
+        final IntermediateEnvelope<Application> msg = IntermediateEnvelope.application(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), byte[].class.getName(), payload);
 
         IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 
@@ -262,9 +258,9 @@ class DrasylPipelineIT {
     }
 
     @Test
-    void shouldNotPassthroughsMessagesWithExceptionallyFuture() {
+    void shouldNotPassthroughsMessagesWithExceptionallyFuture() throws IOException {
         final TestObserver<Object> outbounds = outboundMessages.test();
-        final RemoteApplicationMessage msg = new RemoteApplicationMessage(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), payload);
+        final IntermediateEnvelope<Application> msg = IntermediateEnvelope.application(0, identity1.getPublicKey(), identity1.getProofOfWork(), identity2.getPublicKey(), byte[].class.getName(), payload);
 
         IntStream.range(0, 10).forEach(i -> pipeline.addLast("handler" + i, new HandlerAdapter()));
 

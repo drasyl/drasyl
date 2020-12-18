@@ -19,17 +19,13 @@
 package org.drasyl.remote.handler;
 
 import com.google.protobuf.MessageLite;
-import org.drasyl.crypto.Crypto;
-import org.drasyl.crypto.CryptoException;
-import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
-import org.drasyl.remote.message.RemoteMessage;
+import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import java.security.PublicKey;
 import java.util.concurrent.CompletableFuture;
 
 /**
@@ -39,7 +35,7 @@ import java.util.concurrent.CompletableFuture;
  * information is written to the log.
  */
 @SuppressWarnings({ "java:S110" })
-public class SignatureHandler extends SimpleDuplexHandler<RemoteMessage<MessageLite>, RemoteMessage<MessageLite>, Address> {
+public class SignatureHandler extends SimpleDuplexHandler<IntermediateEnvelope<MessageLite>, IntermediateEnvelope<MessageLite>, Address> {
     public static final SignatureHandler INSTANCE = new SignatureHandler();
     public static final String SIGNATURE_HANDLER = "SIGNATURE_HANDLER";
     private static final Logger LOG = LoggerFactory.getLogger(SignatureHandler.class);
@@ -50,93 +46,38 @@ public class SignatureHandler extends SimpleDuplexHandler<RemoteMessage<MessageL
     @Override
     protected void matchedRead(final HandlerContext ctx,
                                final Address sender,
-                               final RemoteMessage<MessageLite> msg,
+                               IntermediateEnvelope<MessageLite> msg,
                                final CompletableFuture<Void> future) {
-        if (!ctx.identity().getPublicKey().equals(msg.getRecipient())) {
-            // passthrough all messages not addressed to us
+        try {
+            if (ctx.identity().getPublicKey().equals(msg.getRecipient())) {
+                // disarm all messages addressed to us
+                msg = msg.disarm(ctx.identity().getPrivateKey());
+            }
+
             ctx.fireRead(sender, msg, future);
         }
-        else {
-            inboundSafeguards(ctx, sender, msg, future);
+        catch (final IllegalStateException e) {
+            future.completeExceptionally(new Exception("Unable to disarm message", e));
+            LOG.debug("Can't disarm message `{}` due to the following error: ", msg, e);
         }
-    }
-
-    /**
-     * Only passthroughs messages with valid signature.
-     *
-     * @param ctx           handler context
-     * @param sender        message's sender
-     * @param signedMessage the signed message
-     * @param future        message future
-     */
-    private void inboundSafeguards(final HandlerContext ctx,
-                                   final Address sender,
-                                   final RemoteMessage<MessageLite> signedMessage,
-                                   final CompletableFuture<Void> future) {
-        if (signedMessage.getSignature() == null) {
-            LOG.debug("Signed message `{}` has no signature.", signedMessage);
-            future.completeExceptionally(new Exception("Signed message has no signature."));
-        }
-        else {
-            final PublicKey publicKey = extractPublicKey(signedMessage);
-
-            if (publicKey != null) {
-                if (Crypto.verifySignature(publicKey, signedMessage)) {
-                    ctx.fireRead(sender, signedMessage, future);
-                }
-                else {
-                    LOG.debug("Signature of the message `{}` was invalid.", signedMessage);
-                    future.completeExceptionally(new Exception("Signature was invalid."));
-                }
-            }
-            else {
-                LOG.debug("Could not find a matching public key for the message `{}`.", signedMessage);
-                future.completeExceptionally(new Exception("Could not find a matching public key for the message."));
-            }
-        }
-    }
-
-    /**
-     * Extract the public key of a message.
-     *
-     * @param msg message for which the public key is to be determined
-     * @return public key or zero if it could not be determined
-     */
-    private static PublicKey extractPublicKey(final RemoteMessage<MessageLite> msg) {
-        final CompressedPublicKey compressedPublicKey = msg.getSender();
-
-        try {
-            if (compressedPublicKey != null) {
-                return compressedPublicKey.toUncompressedKey();
-            }
-        }
-        catch (final CryptoException e) {
-            LOG.debug("Can't decompress public key due to the following error: ", e);
-        }
-
-        return null;
     }
 
     @Override
     protected void matchedWrite(final HandlerContext ctx,
                                 final Address recipient,
-                                final RemoteMessage<MessageLite> msg,
+                                IntermediateEnvelope<MessageLite> msg,
                                 final CompletableFuture<Void> future) {
-        if (!ctx.identity().getPublicKey().equals(msg.getSender())) {
-            // passthrough all messages not addressed from us
+        try {
+            if (ctx.identity().getPublicKey().equals(msg.getSender())) {
+                // arm all messages from us
+                msg = msg.arm(ctx.identity().getPrivateKey());
+            }
+
             ctx.write(recipient, msg, future);
         }
-        else {
-            try {
-                Crypto.sign(ctx.identity().getPrivateKey().toUncompressedKey(), msg);
-
-                ctx.write(recipient, msg, future);
-                LOG.trace("Signed the message `{}`", msg);
-            }
-            catch (final CryptoException e) {
-                future.completeExceptionally(e);
-                LOG.debug("Can't sign message `{}` due to the following error: ", msg, e);
-            }
+        catch (final IllegalStateException e) {
+            future.completeExceptionally(new Exception("Unable to arm message", e));
+            LOG.debug("Can't arm message `{}` due to the following error: ", msg, e);
         }
     }
 }

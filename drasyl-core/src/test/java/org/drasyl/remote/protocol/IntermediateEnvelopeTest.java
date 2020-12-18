@@ -28,11 +28,12 @@ import org.drasyl.crypto.Signature;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
-import org.drasyl.remote.message.MessageId;
-import org.drasyl.remote.message.UserAgent;
+import org.drasyl.remote.protocol.Protocol.Acknowledgement;
 import org.drasyl.remote.protocol.Protocol.Application;
+import org.drasyl.remote.protocol.Protocol.Discovery;
 import org.drasyl.remote.protocol.Protocol.PrivateHeader;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
+import org.drasyl.remote.protocol.Protocol.Unite;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
@@ -42,8 +43,12 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 
+import static org.drasyl.remote.protocol.Protocol.MessageType.ACKNOWLEDGEMENT;
 import static org.drasyl.remote.protocol.Protocol.MessageType.APPLICATION;
+import static org.drasyl.remote.protocol.Protocol.MessageType.DISCOVERY;
+import static org.drasyl.remote.protocol.Protocol.MessageType.UNITE;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -567,6 +572,54 @@ class IntermediateEnvelopeTest {
                 message.release();
                 disarmedEnvelope.release();
             }
+        }
+    }
+
+    @Nested
+    class TestAcknowledgement {
+        @Test
+        void shouldCreateEnvelopeWithAcknowledgementMessage() throws IOException {
+            final IntermediateEnvelope<Acknowledgement> acknowledgement = IntermediateEnvelope.acknowledgement(1, senderPublicKey, senderProofOfWork, recipientPublicKey, messageId);
+
+            assertEquals(1, acknowledgement.getPublicHeader().getNetworkId());
+            assertEquals(ACKNOWLEDGEMENT, acknowledgement.getPrivateHeader().getType());
+            assertEquals(ByteString.copyFrom(messageId.byteArrayValue()), acknowledgement.getBody().getCorrespondingId());
+        }
+    }
+
+    @Nested
+    class TestApplication {
+        @Test
+        void shouldCreateEnvelopeWithApplicationMessage() throws IOException {
+            final IntermediateEnvelope<Application> application = IntermediateEnvelope.application(1, senderPublicKey, senderProofOfWork, recipientPublicKey, String.class.getName(), new byte[]{});
+
+            assertEquals(1, application.getPublicHeader().getNetworkId());
+            assertEquals(APPLICATION, application.getPrivateHeader().getType());
+            assertEquals(String.class.getName(), application.getBody().getType());
+        }
+    }
+
+    @Nested
+    class TestDiscovery {
+        @Test
+        void shouldCreateEnvelopeWithDiscoveryMessage() throws IOException {
+            final IntermediateEnvelope<Discovery> discovery = IntermediateEnvelope.discovery(1, senderPublicKey, senderProofOfWork, recipientPublicKey, 1337L);
+
+            assertEquals(1, discovery.getPublicHeader().getNetworkId());
+            assertEquals(DISCOVERY, discovery.getPrivateHeader().getType());
+            assertEquals(1337L, discovery.getBody().getChildrenTime());
+        }
+    }
+
+    @Nested
+    class TestUnite {
+        @Test
+        void shouldCreateEnvelopeWithDiscoveryMessage() throws IOException {
+            final IntermediateEnvelope<Unite> unite = IntermediateEnvelope.unite(1, senderPublicKey, senderProofOfWork, recipientPublicKey, senderPublicKey, new InetSocketAddress(22527));
+
+            assertEquals(1, unite.getPublicHeader().getNetworkId());
+            assertEquals(UNITE, unite.getPrivateHeader().getType());
+            assertEquals(ByteString.copyFrom(senderPublicKey.byteArrayValue()), unite.getBody().getPublicKey());
         }
     }
 }
