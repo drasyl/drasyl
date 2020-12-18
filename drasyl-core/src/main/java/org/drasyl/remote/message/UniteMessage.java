@@ -111,7 +111,7 @@ public class UniteMessage extends AbstractMessage<Unite> {
     @Override
     public Unite getBody() {
         return Unite.newBuilder()
-                .setPublicKey(ByteString.copyFrom(publicKey.getCompressedKey()))
+                .setPublicKey(ByteString.copyFrom(publicKey.byteArrayValue()))
                 .setAddress(address.getHostString())
                 .setPort(ByteString.copyFrom(UnsignedShort.of(address.getPort()).toBytes()))
                 .build();

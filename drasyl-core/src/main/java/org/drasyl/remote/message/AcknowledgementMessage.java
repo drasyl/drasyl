@@ -116,7 +116,7 @@ public class AcknowledgementMessage extends AbstractMessage<Acknowledgement> imp
     @Override
     public Acknowledgement getBody() {
         return Acknowledgement.newBuilder()
-                .setCorrespondingId(ByteString.copyFrom(correspondingId.getId()))
+                .setCorrespondingId(ByteString.copyFrom(correspondingId.byteArrayValue()))
                 .build();
     }
 }

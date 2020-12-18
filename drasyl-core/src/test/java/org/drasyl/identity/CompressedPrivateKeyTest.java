@@ -44,7 +44,7 @@ class CompressedPrivateKeyTest {
         @Test
         void shouldReturnCorrectKeys() throws CryptoException {
             final CompressedPrivateKey compressedPrivateKey1 = privateKey;
-            final CompressedPrivateKey compressedPrivateKey2 = CompressedPrivateKey.of(compressedPrivateKey1.getCompressedKey());
+            final CompressedPrivateKey compressedPrivateKey2 = CompressedPrivateKey.of(compressedPrivateKey1.byteArrayValue());
             final CompressedPrivateKey compressedPrivateKey3 = CompressedPrivateKey.of(compressedPrivateKey2.toUncompressedKey());
 
             assertEquals(compressedPrivateKey1, compressedPrivateKey2);

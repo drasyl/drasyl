@@ -144,7 +144,7 @@ public class JDBCDatabaseAdapter implements DatabaseAdapter {
             return rtn;
         }
         catch (final SQLException e) {
-            throw new DatabaseException("Could not add new member '" + membership.getMember().getPublicKey().getCompressedKey() + "' to group '" + membership.getGroup().getName() + "'", e);
+            throw new DatabaseException("Could not add new member '" + membership.getMember().getPublicKey().byteArrayValue() + "' to group '" + membership.getGroup().getName() + "'", e);
         }
     }
 

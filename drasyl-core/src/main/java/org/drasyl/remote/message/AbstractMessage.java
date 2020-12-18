@@ -202,12 +202,12 @@ abstract class AbstractMessage<T extends MessageLite> implements RemoteMessage<T
     @Override
     public PublicHeader getPublicHeader() {
         final PublicHeader.Builder builder = PublicHeader.newBuilder()
-                .setId(ByteString.copyFrom(id.getId()))
+                .setId(ByteString.copyFrom(id.byteArrayValue()))
                 .setUserAgent(ByteString.copyFrom(userAgent.getVersion().toBytes()))
                 .setNetworkId(networkId)
-                .setSender(ByteString.copyFrom(sender.getCompressedKey()))
+                .setSender(ByteString.copyFrom(sender.byteArrayValue()))
                 .setProofOfWork(proofOfWork.intValue())
-                .setRecipient(ByteString.copyFrom(recipient.getCompressedKey()))
+                .setRecipient(ByteString.copyFrom(recipient.byteArrayValue()))
                 .setHopCount(ByteString.copyFrom(new byte[]{ hopCount }));
 
         if (signature != null && signature.getBytes() != null) {

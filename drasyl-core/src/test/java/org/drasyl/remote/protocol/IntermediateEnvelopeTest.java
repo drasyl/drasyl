@@ -51,12 +51,12 @@ class IntermediateEnvelopeTest {
     @BeforeEach
     void setUp() throws IOException, CryptoException {
         header = PublicHeader.newBuilder()
-                .setId(ByteString.copyFrom(MessageId.of("412176952b5b81fd13f84a7c").getId()))
+                .setId(ByteString.copyFrom(MessageId.of("412176952b5b81fd13f84a7c").byteArrayValue()))
                 .setUserAgent(ByteString.copyFrom(UserAgent.generate().getVersion().toBytes()))
                 .setNetworkId(1)
-                .setSender(ByteString.copyFrom(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9").getCompressedKey()))
+                .setSender(ByteString.copyFrom(CompressedPublicKey.of("0229041b273dd5ee1c2bef2d77ae17dbd00d2f0a2e939e22d42ef1c4bf05147ea9").byteArrayValue()))
                 .setProofOfWork(ProofOfWork.of(6657650).intValue())
-                .setRecipient(ByteString.copyFrom(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3").getCompressedKey()))
+                .setRecipient(ByteString.copyFrom(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3").byteArrayValue()))
                 .build();
 
         privateHeader = PrivateHeader.newBuilder()

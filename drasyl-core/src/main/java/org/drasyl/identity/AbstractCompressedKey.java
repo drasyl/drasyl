@@ -70,7 +70,7 @@ abstract class AbstractCompressedKey<K> implements Address {
 
     public abstract K toUncompressedKey() throws CryptoException;
 
-    public byte[] getCompressedKey() {
+    public byte[] byteArrayValue() {
         return this.compressedKey;
     }
 

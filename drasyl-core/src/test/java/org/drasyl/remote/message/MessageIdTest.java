@@ -111,7 +111,7 @@ class MessageIdTest {
 
         @Test
         void shouldReturnTrueForValidString() {
-            assertTrue(isValidMessageId(MessageId.of("f3d0aee7962de47a849bd7b0").getId()));
+            assertTrue(isValidMessageId(MessageId.of("f3d0aee7962de47a849bd7b0").byteArrayValue()));
         }
     }
 }

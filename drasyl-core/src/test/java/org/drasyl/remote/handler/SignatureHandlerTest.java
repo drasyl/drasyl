@@ -153,7 +153,7 @@ class SignatureHandlerTest {
         when(identity.getPublicKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3"));
         when(identity.getProofOfWork()).thenReturn(ProofOfWork.of(16425882));
         when(sender.toUncompressedKey()).thenThrow(CryptoException.class);
-        when(sender.getCompressedKey()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3").getCompressedKey());
+        when(sender.byteArrayValue()).thenReturn(CompressedPublicKey.of("030507fa840cc2f6706f285f5c6c055f0b7b3efb85885227cb306f176209ff6fc3").byteArrayValue());
         final RemoteMessage<Application> message = new RemoteApplicationMessage(1, sender, proofOfWork, identity.getPublicKey(), new byte[]{});
         Crypto.sign(identity.getPrivateKey().toUncompressedKey(), message);
 

@@ -61,7 +61,7 @@ public class MessageId {
         return HexUtil.bytesToHex(id);
     }
 
-    public byte[] getId() {
+    public byte[] byteArrayValue() {
         return id;
     }
 
