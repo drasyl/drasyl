@@ -117,7 +117,7 @@
         <hamcrest.version>2.2</hamcrest.version>
         <bouncycastle.version>1.67</bouncycastle.version>
         <awaitility.version>4.0.3</awaitility.version>
-        <netty.version>4.1.55.Final</netty.version>
+        <netty.version>4.1.56.Final</netty.version>
         <guava.version>30.0-jre</guava.version>
         <rxjava.version>3.0.8</rxjava.version>
         <commons.version>4.4</commons.version>
