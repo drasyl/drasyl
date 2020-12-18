@@ -19,7 +19,6 @@
 package org.drasyl.identity;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
-import com.fasterxml.jackson.annotation.JsonFormat;
 import com.fasterxml.jackson.annotation.JsonProperty;
 import org.drasyl.crypto.CryptoException;
 

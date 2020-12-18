@@ -31,7 +31,6 @@ import org.drasyl.event.NodeUpEvent;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
-import org.drasyl.remote.handler.SignatureHandler;
 import org.drasyl.util.NetworkUtil;
 import org.jetbrains.annotations.NotNull;
 import org.slf4j.Logger;

@@ -21,7 +21,6 @@ package org.drasyl;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.subjects.PublishSubject;
 import io.reactivex.rxjava3.subjects.Subject;
-import org.drasyl.crypto.Crypto;
 import org.drasyl.event.Event;
 import org.drasyl.util.DrasylScheduler;
 
