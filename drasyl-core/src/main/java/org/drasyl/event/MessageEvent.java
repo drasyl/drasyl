@@ -75,7 +75,7 @@ public class MessageEvent implements Event {
         }
         final MessageEvent that = (MessageEvent) o;
         return Objects.equals(sender, that.sender) &&
-                Objects.equals(payload, that.payload);
+                Objects.deepEquals(payload, that.payload);
     }
 
     @Override

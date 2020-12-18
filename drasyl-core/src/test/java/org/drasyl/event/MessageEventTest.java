@@ -60,6 +60,14 @@ class MessageEventTest {
             assertEquals(event1, event2);
             assertNotEquals(event1, event3);
         }
+
+        @Test
+        void sameBecauseOfEqualPayload() {
+            final MessageEvent event1 = new MessageEvent(sender, "Hallo Welt".getBytes());
+            final MessageEvent event2 = new MessageEvent(sender, "Hallo Welt".getBytes());
+
+            assertEquals(event1, event2);
+        }
     }
 
     @Nested
