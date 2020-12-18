@@ -178,6 +178,7 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
                         @Override
                         protected void channelRead0(final ChannelHandlerContext channelCtx,
                                                     final DatagramPacket msg) {
+                            LOG.trace("Datagram received {}", msg);
                             final ByteBuf byteBuf = msg.content();
                             byteBuf.retain();
                             ctx.pipeline().processInbound(InetSocketAddressWrapper.of(msg.sender()), byteBuf);
@@ -237,6 +238,7 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
                                 final CompletableFuture<Void> future) {
         if (channel != null && channel.isWritable()) {
             final DatagramPacket packet = new DatagramPacket(byteBuf, recipient.getAddress());
+            LOG.trace("Send Datagram {}", packet);
             FutureUtil.completeOnAllOf(future, FutureUtil.toFuture(channel.writeAndFlush(packet)));
         }
         else {
