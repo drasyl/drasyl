@@ -18,13 +18,17 @@
  */
 package org.drasyl.remote.protocol;
 
+import com.google.protobuf.ByteString;
 import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
 import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.util.ReferenceCounted;
+import org.drasyl.crypto.Crypto;
+import org.drasyl.crypto.CryptoException;
 import org.drasyl.crypto.Signature;
+import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
 import org.drasyl.remote.message.MessageId;
@@ -33,11 +37,16 @@ import org.drasyl.remote.message.UserAgent;
 import org.drasyl.remote.protocol.Protocol.Acknowledgement;
 import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.remote.protocol.Protocol.Discovery;
+import org.drasyl.remote.protocol.Protocol.MessageType;
 import org.drasyl.remote.protocol.Protocol.PrivateHeader;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
 import org.drasyl.remote.protocol.Protocol.Unite;
 
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.security.PublicKey;
 
 /**
  * This class allows to read a given {@link ByteBuf} encoded protobuf message in parts with only
@@ -99,8 +108,6 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
     /**
      * Creates a message envelope from {@code publicHeader}, {@code privateHeader}, and {@code
      * body}.
-     * <p>
-     * Node: This method will use a pooled {@link ByteBuf}.
      *
      * @param publicHeader  message's public header
      * @param privateHeader message's private header
@@ -117,6 +124,29 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
             publicHeader.writeDelimitedTo(outputStream);
             privateHeader.writeDelimitedTo(outputStream);
             body.writeDelimitedTo(outputStream);
+
+            return of(byteBuf);
+        }
+        catch (final IOException e) {
+            byteBuf.release();
+            throw e;
+        }
+    }
+
+    /**
+     * Creates a message envelope from {@code publicHeader} and {@code bytes}
+     *
+     * @param publicHeader message's public header
+     * @param bytes        message's remainder as bytes (may be encrypted)
+     * @return an IntermediateEnvelope
+     * @throws IOException if {@code publicHeader} and {@code bytes} can not be serialized
+     */
+    public static <T extends MessageLite> IntermediateEnvelope<T> of(final PublicHeader publicHeader,
+                                                                     final byte[] bytes) throws IOException {
+        final ByteBuf byteBuf = PooledByteBufAllocator.DEFAULT.buffer();
+        try (final ByteBufOutputStream outputStream = new ByteBufOutputStream(byteBuf)) {
+            publicHeader.writeDelimitedTo(outputStream);
+            outputStream.write(bytes);
 
             return of(byteBuf);
         }
@@ -178,28 +208,12 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      * @return the body
      * @throws IOException if the body cannot be read read
      */
-    @SuppressWarnings("unchecked")
     public T getBody() throws IOException {
         synchronized (this) {
             getPrivateHeader();
             if (body == null) {
                 try (final ByteBufInputStream in = new ByteBufInputStream(message)) {
-                    switch (privateHeader.getType()) {
-                        case ACKNOWLEDGEMENT:
-                            body = (T) Acknowledgement.parseDelimitedFrom(in);
-                            break;
-                        case APPLICATION:
-                            body = (T) Application.parseDelimitedFrom(in);
-                            break;
-                        case UNITE:
-                            body = (T) Unite.parseDelimitedFrom(in);
-                            break;
-                        case DISCOVERY:
-                            body = (T) Discovery.parseDelimitedFrom(in);
-                            break;
-                        default:
-                            throw new IOException("Message is not of any known type.");
-                    }
+                    body = bodyFromInputStream(privateHeader.getType(), in);
                 }
                 catch (final IOException e) {
                     throw new IOException("Can't read the given message do to the following exception: ", e);
@@ -345,5 +359,129 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
     @Override
     public void setSignature(final Signature signature) {
         // do nothing
+    }
+
+    /**
+     * Returns an armed version of this envelope for sending it through untrustworthy channels.
+     * <p>
+     * {@code privateKey} must match message's sender.
+     * <p>
+     * Arming includes the following steps:
+     * <ul>
+     * <li>encrypted {@link #privateHeader} and encrypted {@link #body} will be signed with {@code privateKey}</li>
+     * <li>{@link #privateHeader} and {@link #body} will be encrypted with recipient's public key (not implemented!)</li>
+     * </ul>
+     * <p>
+     * <b>Note: Do not forget to release the original {@link #message}</b>
+     *
+     * @param privateKey message is signed with this key
+     * @return the armed version of this envelope
+     * @throws IllegalStateException if arming was not possible
+     */
+    public IntermediateEnvelope<T> arm(final CompressedPrivateKey privateKey) {
+        try (final ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
+            getPrivateHeader().writeDelimitedTo(outputStream);
+            getBody().writeDelimitedTo(outputStream);
+
+            final byte[] bytes = outputStream.toByteArray();
+
+            // First sign and then encrypt. See: Krawczyk, Hugo. (2001). The Order of Encryption and Authentication for Protecting Communications (or: How Secure Is SSL?). 2139. 10.1007/3-540-44647-8_19.
+            final byte[] signature = Crypto.signMessage(privateKey.toUncompressedKey(), bytes);
+            final PublicHeader newPublicHeader = PublicHeader.newBuilder(getPublicHeader()).setSignature(ByteString.copyFrom(signature)).build();
+
+            // FIXME: encrypt payload (message's id is currently not covered by signature and can
+            //  therefore be forged. maybe we can prevent this by using the id as an initialisation
+            //  vector for our encryption?)
+            reverse(bytes);
+
+            return of(newPublicHeader, bytes);
+        }
+        catch (final IOException | CryptoException e) {
+            throw new IllegalStateException("Unable to arm message", e);
+        }
+    }
+
+    /**
+     * Returns a disarmed version of this envelope.
+     * <p>
+     * {@code privateKey} must match message's recipient (not implemented yet!).
+     * <p>
+     * Disarming includes the following steps:
+     * <ul>
+     * <li>the encrypted {@link #privateHeader} and encrypted {@link #body} will be decrypted with {@code privateKey} (not implemented yet!)
+     * <li>the signed portions of the message ({@link #privateHeader} and {@link #body}) are verified against sender's public key.
+     * </ul>
+     * <p>
+     * <b>Note: Do not forget to release the original {@link #message}</b>
+     *
+     * @return the disarmed version of this envelope
+     * @throws IllegalStateException if disarming was not possible
+     */
+    @SuppressWarnings({ "java:S1172" })
+    public IntermediateEnvelope<T> disarm(final CompressedPrivateKey privateKey) {
+        try {
+            final PublicKey sender = getSender().toUncompressedKey();
+            final byte[] signature = getPublicHeader().getSignature().toByteArray();
+            try (final ByteBufInputStream in = new ByteBufInputStream(message)) {
+                final byte[] bytes = in.readAllBytes();
+
+                // FIXME: decrypt payload
+                reverse(bytes);
+
+                // verify signature
+                if (Crypto.verifySignature(sender, bytes, signature)) {
+                    try (final ByteArrayInputStream decryptedIn = new ByteArrayInputStream(bytes)) {
+                        final PrivateHeader decryptedPrivateHeader = PrivateHeader.parseDelimitedFrom(decryptedIn);
+                        final T decryptedBody = bodyFromInputStream(decryptedPrivateHeader.getType(), decryptedIn);
+
+                        return of(getPublicHeader(), decryptedPrivateHeader, decryptedBody);
+                    }
+                }
+                else {
+                    throw new IllegalStateException("Invalid signature");
+                }
+            }
+        }
+        catch (final IOException | CryptoException e) {
+            throw new IllegalStateException("Unable to arm message", e);
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private T bodyFromInputStream(final MessageType type, final InputStream in) throws IOException {
+        switch (type) {
+            case ACKNOWLEDGEMENT:
+                return (T) Acknowledgement.parseDelimitedFrom(in);
+            case APPLICATION:
+                return (T) Application.parseDelimitedFrom(in);
+            case UNITE:
+                return (T) Unite.parseDelimitedFrom(in);
+            case DISCOVERY:
+                return (T) Discovery.parseDelimitedFrom(in);
+            default:
+                throw new IOException("Message is not of any known type.");
+        }
+    }
+
+    /**
+     * This method is just a placeholder and only mimics the behavior of a real encryption simulate
+     * (shift/replace bytes).
+     *
+     * @param bytes
+     */
+    private static void reverse(final byte[] bytes) {
+        if (bytes == null) {
+            return;
+        }
+        int i = 0;
+        int j = bytes.length - 1;
+        byte tmp;
+        while (j > i) {
+            tmp = bytes[j];
+            bytes[j] = bytes[i];
+            bytes[i] = tmp;
+            j--;
+            i++;
+        }
     }
 }
