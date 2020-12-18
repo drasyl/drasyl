@@ -34,6 +34,7 @@ import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.remote.protocol.Protocol.PrivateHeader;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -444,6 +445,127 @@ class IntermediateEnvelopeTest {
             }
             finally {
                 message.release();
+            }
+        }
+    }
+
+    @Nested
+    class Arm {
+        @Test
+        void shouldReturnSignedMessage() throws IOException {
+            final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
+            final IntermediateEnvelope<MessageLite> armedEnvelop = envelope.arm(senderPrivateKey);
+
+            try {
+                assertNotNull(armedEnvelop.getPublicHeader().getSignature());
+            }
+            finally {
+                message.release();
+                armedEnvelop.release();
+            }
+        }
+
+        @Test
+        void getPrivatHeaderShouldFailOnArmedMessage() {
+            final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
+            final IntermediateEnvelope<MessageLite> armedEnvelop = envelope.arm(senderPrivateKey);
+
+            try {
+                assertThrows(IOException.class, armedEnvelop::getPrivateHeader);
+            }
+            finally {
+                message.release();
+                armedEnvelop.release();
+            }
+        }
+
+        @Test
+        void getBodyShouldFailOnArmedMessage() {
+            final IntermediateEnvelope<MessageLite> envelope = IntermediateEnvelope.of(message);
+            final IntermediateEnvelope<MessageLite> armedEnvelop = envelope.arm(senderPrivateKey);
+
+            try {
+                assertThrows(IOException.class, armedEnvelop::getBody);
+            }
+            finally {
+                message.release();
+                armedEnvelop.release();
+            }
+        }
+    }
+
+    @Nested
+    class Disarm {
+        private IntermediateEnvelope<MessageLite> envelope;
+        private IntermediateEnvelope<MessageLite> armedEnvelop;
+
+        @BeforeEach
+        void setUp() {
+            envelope = IntermediateEnvelope.of(message);
+            armedEnvelop = envelope.arm(senderPrivateKey);
+        }
+
+        @Test
+        void shouldReturnDisarmedMessageIfSignatureIsValid() {
+            try {
+                assertNotNull(armedEnvelop.disarm(senderPrivateKey));
+            }
+            finally {
+                message.release();
+                armedEnvelop.release();
+            }
+        }
+
+        @Test
+        void shouldThrowExceptionIfSignatureIsNotValid() {
+            try {
+                // arm with wrong private key
+                armedEnvelop = envelope.arm(recipientPrivateKey);
+
+                assertThrows(IllegalStateException.class, () -> armedEnvelop.disarm(recipientPrivateKey));
+            }
+            finally {
+                message.release();
+                armedEnvelop.release();
+            }
+        }
+
+        @Test
+        @Disabled("Encryption not implemented yet")
+        void shouldThrowExceptionIfWrongPrivatKeyIsGiven() {
+            try {
+                assertThrows(IllegalStateException.class, () -> armedEnvelop.disarm(recipientPrivateKey));
+            }
+            finally {
+                message.release();
+                armedEnvelop.release();
+            }
+        }
+
+        @Test
+        void getPrivatHeaderShouldNotFailOnDisarmedMessage() throws IOException {
+            final IntermediateEnvelope<MessageLite> disarmedEnvelope = armedEnvelop.disarm(recipientPrivateKey);
+
+            try {
+                assertNotNull(disarmedEnvelope.getPrivateHeader());
+            }
+            finally {
+                message.release();
+                armedEnvelop.release();
+                disarmedEnvelope.release();
+            }
+        }
+
+        @Test
+        void getBodyShouldNotFailOnDisarmedMessage() throws IOException {
+            final IntermediateEnvelope<MessageLite> disarmedEnvelope = armedEnvelop.disarm(recipientPrivateKey);
+
+            try {
+                assertNotNull(disarmedEnvelope.getBody());
+            }
+            finally {
+                message.release();
+                disarmedEnvelope.release();
             }
         }
     }
