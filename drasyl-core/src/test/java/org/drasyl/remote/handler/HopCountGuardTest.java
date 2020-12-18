@@ -26,7 +26,7 @@ import org.drasyl.identity.Identity;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.codec.TypeValidator;
-import org.drasyl.remote.message.RemoteMessage;
+import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
@@ -51,7 +51,7 @@ class HopCountGuardTest {
 
     @Test
     void shouldPassMessagesThatHaveNotReachedTheirHopCountLimitAndIncrementHopCount(@Mock final CompressedPublicKey address,
-                                                                                    @Mock final RemoteMessage<MessageLite> message) {
+                                                                                    @Mock final IntermediateEnvelope<MessageLite> message) {
         when(config.getMessageHopLimit()).thenReturn((byte) 2);
         when(message.getHopCount()).thenReturn((byte) 1);
 
@@ -62,13 +62,13 @@ class HopCountGuardTest {
         pipeline.processOutbound(address, message);
 
         outboundMessages.awaitCount(1).assertValueCount(1);
-        outboundMessages.assertValue(m -> m instanceof RemoteMessage);
+        outboundMessages.assertValue(m -> m instanceof IntermediateEnvelope);
         verify(message).incrementHopCount();
     }
 
     @Test
     void shouldDiscardMessagesThatHaveReachedTheirHopCountLimit(@Mock final CompressedPublicKey address,
-                                                                @Mock final RemoteMessage<MessageLite> message) throws InterruptedException {
+                                                                @Mock final IntermediateEnvelope<MessageLite> message) throws InterruptedException {
         when(config.getMessageHopLimit()).thenReturn((byte) 1);
         when(message.getHopCount()).thenReturn((byte) 1);
 

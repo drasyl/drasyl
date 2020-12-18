@@ -26,7 +26,7 @@ import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.EmbeddedPipeline;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.codec.TypeValidator;
-import org.drasyl.remote.message.RemoteMessage;
+import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.drasyl.util.Pair;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -51,7 +51,7 @@ class OtherNetworkFilterTest {
     private TypeValidator outboundValidator;
 
     @Test
-    void shouldDropMessagesFromOtherNetworks(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage<MessageLite> message) throws InterruptedException {
+    void shouldDropMessagesFromOtherNetworks(@Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope<MessageLite> message) throws InterruptedException {
         when(config.getNetworkId()).thenReturn(123);
         when(message.getNetworkId()).thenReturn(456);
 
@@ -66,7 +66,7 @@ class OtherNetworkFilterTest {
     }
 
     @Test
-    void shouldPassMessagesFromSameNetwork(@Mock(answer = RETURNS_DEEP_STUBS) final RemoteMessage<MessageLite> message) {
+    void shouldPassMessagesFromSameNetwork(@Mock(answer = RETURNS_DEEP_STUBS) final IntermediateEnvelope<MessageLite> message) {
         when(config.getNetworkId()).thenReturn(123);
         when(message.getNetworkId()).thenReturn(123);
 

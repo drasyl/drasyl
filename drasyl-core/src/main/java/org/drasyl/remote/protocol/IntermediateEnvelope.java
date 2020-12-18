@@ -31,9 +31,6 @@ import org.drasyl.crypto.Signature;
 import org.drasyl.identity.CompressedPrivateKey;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.ProofOfWork;
-import org.drasyl.remote.message.MessageId;
-import org.drasyl.remote.message.RemoteMessage;
-import org.drasyl.remote.message.UserAgent;
 import org.drasyl.remote.protocol.Protocol.Acknowledgement;
 import org.drasyl.remote.protocol.Protocol.Application;
 import org.drasyl.remote.protocol.Protocol.Discovery;
@@ -41,19 +38,27 @@ import org.drasyl.remote.protocol.Protocol.MessageType;
 import org.drasyl.remote.protocol.Protocol.PrivateHeader;
 import org.drasyl.remote.protocol.Protocol.PublicHeader;
 import org.drasyl.remote.protocol.Protocol.Unite;
+import org.drasyl.util.UnsignedShort;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.net.InetSocketAddress;
 import java.security.PublicKey;
+
+import static org.drasyl.remote.protocol.MessageId.randomMessageId;
+import static org.drasyl.remote.protocol.Protocol.MessageType.ACKNOWLEDGEMENT;
+import static org.drasyl.remote.protocol.Protocol.MessageType.APPLICATION;
+import static org.drasyl.remote.protocol.Protocol.MessageType.DISCOVERY;
+import static org.drasyl.remote.protocol.Protocol.MessageType.UNITE;
 
 /**
  * This class allows to read a given {@link ByteBuf} encoded protobuf message in parts with only
  * decoding the requested parts of the given {@link ByteBuf}. If a part was request it will be
  * translated into a Java object.
  */
-public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCounted, RemoteMessage<T> {
+public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCounted {
     private final ByteBuf originalMessage;
     private final ByteBuf message;
     private PublicHeader publicHeader;
@@ -271,7 +276,6 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         return originalMessage.release(decrement);
     }
 
-    @Override
     public MessageId getId() {
         try {
             return MessageId.of(getPublicHeader().getId().toByteArray());
@@ -281,7 +285,6 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         }
     }
 
-    @Override
     public UserAgent getUserAgent() {
         try {
             return new UserAgent(getPublicHeader().getUserAgent().toByteArray());
@@ -291,7 +294,6 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         }
     }
 
-    @Override
     public int getNetworkId() {
         try {
             return getPublicHeader().getNetworkId();
@@ -301,7 +303,6 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         }
     }
 
-    @Override
     public CompressedPublicKey getSender() {
         try {
             return CompressedPublicKey.of(getPublicHeader().getSender().toByteArray());
@@ -311,7 +312,6 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         }
     }
 
-    @Override
     public ProofOfWork getProofOfWork() {
         try {
             return ProofOfWork.of(getPublicHeader().getProofOfWork());
@@ -321,7 +321,6 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         }
     }
 
-    @Override
     public CompressedPublicKey getRecipient() {
         try {
             return CompressedPublicKey.of(getPublicHeader().getRecipient().toByteArray());
@@ -331,7 +330,6 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         }
     }
 
-    @Override
     public byte getHopCount() {
         try {
             return getPublicHeader().getHopCount().byteAt(0);
@@ -341,12 +339,10 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         }
     }
 
-    @Override
     public void incrementHopCount() {
-        // do nothing
+        // FIXME: implement
     }
 
-    @Override
     public Signature getSignature() {
         try {
             return new Signature(getPublicHeader().getSignature().toByteArray());
@@ -354,11 +350,6 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         catch (final IOException e) {
             throw new IllegalArgumentException(e);
         }
-    }
-
-    @Override
-    public void setSignature(final Signature signature) {
-        // do nothing
     }
 
     /**
@@ -429,6 +420,9 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
                 reverse(bytes);
 
                 // verify signature
+                if (signature.length == 0) {
+                    throw new IllegalStateException("No signature");
+                }
                 if (Crypto.verifySignature(sender, bytes, signature)) {
                     try (final ByteArrayInputStream decryptedIn = new ByteArrayInputStream(bytes)) {
                         final PrivateHeader decryptedPrivateHeader = PrivateHeader.parseDelimitedFrom(decryptedIn);
@@ -442,7 +436,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
                 }
             }
         }
-        catch (final IOException | CryptoException e) {
+        catch (final IOException | CryptoException | IllegalArgumentException e) {
             throw new IllegalStateException("Unable to arm message", e);
         }
     }
@@ -483,5 +477,113 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
             j--;
             i++;
         }
+    }
+
+    /**
+     * Creates new acknowledgement message.
+     *
+     * @param networkId       the network id of the node server
+     * @param sender          the public key of the node server
+     * @param proofOfWork     the proof of work of the node server
+     * @param recipient       the public key of the recipient
+     * @param correspondingId the corresponding id of the previous join message
+     */
+    public static IntermediateEnvelope<Acknowledgement> acknowledgement(final int networkId,
+                                                                        final CompressedPublicKey sender,
+                                                                        final ProofOfWork proofOfWork,
+                                                                        final CompressedPublicKey recipient,
+                                                                        final MessageId correspondingId) throws IOException {
+        return of(
+                buildPublicHeader(networkId, sender, proofOfWork, recipient),
+                PrivateHeader.newBuilder()
+                        .setType(ACKNOWLEDGEMENT)
+                        .build(), Acknowledgement.newBuilder()
+                        .setCorrespondingId(ByteString.copyFrom(correspondingId.byteArrayValue()))
+                        .build()
+        );
+    }
+
+    private static Protocol.PublicHeader buildPublicHeader(final int networkId,
+                                                           final CompressedPublicKey sender,
+                                                           final ProofOfWork proofOfWork,
+                                                           final CompressedPublicKey recipient) {
+        return PublicHeader.newBuilder()
+                .setId(ByteString.copyFrom(randomMessageId().byteArrayValue()))
+                .setUserAgent(ByteString.copyFrom(UserAgent.generate().getVersion().toBytes()))
+                .setNetworkId(networkId)
+                .setSender(ByteString.copyFrom(sender.byteArrayValue()))
+                .setProofOfWork(proofOfWork.intValue())
+                .setRecipient(ByteString.copyFrom(recipient.byteArrayValue()))
+                .setHopCount(ByteString.copyFrom(new byte[]{ (byte) 0 }))
+                .build();
+    }
+
+    /**
+     * Creates new application message.
+     *
+     * @param networkId   the network the sender belongs to
+     * @param sender      the sender
+     * @param proofOfWork the sender's proof of work
+     * @param recipient   the recipient
+     * @param type        the payload type
+     * @param payload     the data to be sent
+     */
+    public static IntermediateEnvelope<Application> application(final int networkId,
+                                                                final CompressedPublicKey sender,
+                                                                final ProofOfWork proofOfWork,
+                                                                final CompressedPublicKey recipient,
+                                                                final String type,
+                                                                final byte[] payload) throws IOException {
+        return of(
+                buildPublicHeader(networkId, sender, proofOfWork, recipient),
+                PrivateHeader.newBuilder()
+                        .setType(APPLICATION)
+                        .build(), Application.newBuilder()
+                        .setType(type)
+                        .setPayload(ByteString.copyFrom(payload))
+                        .build()
+        );
+    }
+
+    /**
+     * Creates a new join message.
+     *
+     * @param networkId   the network of the joining node
+     * @param sender      the public key of the joining node
+     * @param proofOfWork the proof of work
+     * @param recipient   the public key of the node to join
+     * @param joinTime    if {@code 0} greater then 0, node will join a children.
+     */
+    public static IntermediateEnvelope<Discovery> discovery(final int networkId,
+                                                            final CompressedPublicKey sender,
+                                                            final ProofOfWork proofOfWork,
+                                                            final CompressedPublicKey recipient,
+                                                            final long joinTime) throws IOException {
+        return of(
+                buildPublicHeader(networkId, sender, proofOfWork, recipient),
+                PrivateHeader.newBuilder()
+                        .setType(DISCOVERY)
+                        .build(), Discovery.newBuilder()
+                        .setChildrenTime(joinTime)
+                        .build()
+        );
+    }
+
+    public static IntermediateEnvelope<Unite> unite(final int networkId,
+                                                    final CompressedPublicKey sender,
+                                                    final ProofOfWork proofOfWork,
+                                                    final CompressedPublicKey recipient,
+                                                    final CompressedPublicKey publicKey,
+                                                    final InetSocketAddress address) throws IOException {
+        return of(
+                buildPublicHeader(networkId, sender, proofOfWork, recipient),
+                PrivateHeader.newBuilder()
+                        .setType(UNITE)
+                        .build(), Unite.newBuilder()
+                        .setPublicKey(ByteString.copyFrom(publicKey.byteArrayValue()))
+                        .setAddress(address.getHostString())
+                        .setPort(ByteString.copyFrom(UnsignedShort.of(address.getPort()).toBytes()))
+                        .build()
+        );
     }
 }

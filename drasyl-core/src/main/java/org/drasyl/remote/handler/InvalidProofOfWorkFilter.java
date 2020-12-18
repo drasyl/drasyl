@@ -22,7 +22,7 @@ import com.google.protobuf.MessageLite;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
-import org.drasyl.remote.message.RemoteMessage;
+import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -33,7 +33,7 @@ import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
 /**
  * This handler filters out all messages received with invalid proof of work.
  */
-public class InvalidProofOfWorkFilter extends SimpleInboundHandler<RemoteMessage<MessageLite>, Address> {
+public class InvalidProofOfWorkFilter extends SimpleInboundHandler<IntermediateEnvelope<MessageLite>, Address> {
     public static final InvalidProofOfWorkFilter INSTANCE = new InvalidProofOfWorkFilter();
     public static final String INVALID_PROOF_OF_WORK_FILTER = "INVALID_PROOF_OF_WORK_FILTER";
     private static final Logger LOG = LoggerFactory.getLogger(InvalidProofOfWorkFilter.class);
@@ -44,7 +44,7 @@ public class InvalidProofOfWorkFilter extends SimpleInboundHandler<RemoteMessage
     @Override
     protected void matchedRead(final HandlerContext ctx,
                                final Address sender,
-                               final RemoteMessage<MessageLite> msg,
+                               final IntermediateEnvelope<MessageLite> msg,
                                final CompletableFuture<Void> future) {
         if (msg.getProofOfWork().isValid(msg.getSender(), POW_DIFFICULTY)) {
             ctx.fireRead(sender, msg, future);

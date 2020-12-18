@@ -22,6 +22,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.protobuf.MessageLite;
 import io.reactivex.rxjava3.disposables.Disposable;
 import org.drasyl.DrasylConfig;
+import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.NodeDownEvent;
 import org.drasyl.event.NodeUnrecoverableErrorEvent;
@@ -32,34 +33,44 @@ import org.drasyl.peer.PeerInformation;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.address.InetSocketAddressWrapper;
+import org.drasyl.pipeline.codec.ObjectHolder;
+import org.drasyl.pipeline.message.ApplicationMessage;
 import org.drasyl.pipeline.skeleton.SimpleDuplexHandler;
-import org.drasyl.remote.message.AcknowledgementMessage;
-import org.drasyl.remote.message.DiscoverMessage;
-import org.drasyl.remote.message.MessageId;
-import org.drasyl.remote.message.RemoteApplicationMessage;
-import org.drasyl.remote.message.RemoteMessage;
-import org.drasyl.remote.message.UniteMessage;
+import org.drasyl.remote.protocol.IntermediateEnvelope;
+import org.drasyl.remote.protocol.MessageId;
+import org.drasyl.remote.protocol.Protocol.Acknowledgement;
+import org.drasyl.remote.protocol.Protocol.Application;
+import org.drasyl.remote.protocol.Protocol.Discovery;
+import org.drasyl.remote.protocol.Protocol.Unite;
 import org.drasyl.util.Pair;
+import org.drasyl.util.UnsignedShort;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 
 import static java.lang.Boolean.TRUE;
 import static java.util.Objects.requireNonNull;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static org.drasyl.remote.protocol.Protocol.MessageType.ACKNOWLEDGEMENT;
+import static org.drasyl.remote.protocol.Protocol.MessageType.APPLICATION;
+import static org.drasyl.remote.protocol.Protocol.MessageType.DISCOVERY;
+import static org.drasyl.remote.protocol.Protocol.MessageType.UNITE;
+import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 
-@SuppressWarnings({ "java:S110" })
-public class UdpDiscoveryHandler extends SimpleDuplexHandler<RemoteMessage<? extends MessageLite>, RemoteMessage<? extends MessageLite>, Address> {
-    private static final Logger LOG = LoggerFactory.getLogger(UdpDiscoveryHandler.class);
+@SuppressWarnings({ "java:S110", "java:S1192" })
+public class UdpDiscoveryHandler extends SimpleDuplexHandler<IntermediateEnvelope<? extends MessageLite>, ApplicationMessage, Address> {
     public static final String UDP_DISCOVERY_HANDLER = "UDP_DISCOVERY_HANDLER";
+    private static final Logger LOG = LoggerFactory.getLogger(UdpDiscoveryHandler.class);
     private static final Object path = UdpDiscoveryHandler.class;
-    private final Map<MessageId, Pair<DiscoverMessage, InetSocketAddressWrapper>> openPingsCache;
+    private final Map<MessageId, OpenPing> openPingsCache;
     private final Map<Pair<CompressedPublicKey, CompressedPublicKey>, Boolean> uniteAttemptsCache;
     private final Map<CompressedPublicKey, Peer> peers;
     private final Set<CompressedPublicKey> directConnectionPeers;
@@ -69,7 +80,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<RemoteMessage<? ext
         openPingsCache = CacheBuilder.newBuilder()
                 .maximumSize(config.getRemotePingMaxPeers())
                 .expireAfterWrite(config.getRemotePingTimeout())
-                .<MessageId, Pair<DiscoverMessage, InetSocketAddressWrapper>>build()
+                .<MessageId, OpenPing>build()
                 .asMap();
         directConnectionPeers = new HashSet<>();
         if (config.getRemoteUniteMinInterval().toMillis() > 0) {
@@ -84,7 +95,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<RemoteMessage<? ext
         peers = new HashMap<>();
     }
 
-    UdpDiscoveryHandler(final Map<MessageId, Pair<DiscoverMessage, InetSocketAddressWrapper>> openPingsCache,
+    UdpDiscoveryHandler(final Map<MessageId, OpenPing> openPingsCache,
                         final Map<Pair<CompressedPublicKey, CompressedPublicKey>, Boolean> uniteAttemptsCache,
                         final Map<CompressedPublicKey, Peer> peers,
                         final Set<CompressedPublicKey> directConnectionPeers) {
@@ -109,66 +120,19 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<RemoteMessage<? ext
         ctx.fireEventTriggered(event, future);
     }
 
-    @Override
-    protected void matchedWrite(final HandlerContext ctx,
-                                final Address recipient,
-                                final RemoteMessage<? extends MessageLite> msg,
-                                final CompletableFuture<Void> future) {
-        if (msg instanceof RemoteApplicationMessage && directConnectionPeers.contains(msg.getRecipient())) {
-            final Peer peer = peers.computeIfAbsent(msg.getRecipient(), key -> new Peer());
-            peer.applicationTrafficOccurred();
-        }
-
-        if (recipient instanceof CompressedPublicKey) {
-            processMessage(ctx, (CompressedPublicKey) recipient, msg, future);
-        }
-        else {
-            // passthrough message
-            ctx.write(recipient, msg, future);
-        }
-    }
-
-    @Override
-    protected void matchedRead(final HandlerContext ctx,
-                               final Address sender,
-                               final RemoteMessage<? extends MessageLite> msg,
-                               final CompletableFuture<Void> future) {
-        requireNonNull(msg);
-        requireNonNull(sender);
-
-        if (sender instanceof InetSocketAddressWrapper && msg instanceof DiscoverMessage) {
-            handlePing(ctx, (InetSocketAddressWrapper) sender, (DiscoverMessage) msg, future);
-        }
-        else if (sender instanceof InetSocketAddressWrapper && msg instanceof AcknowledgementMessage) {
-            handlePong(ctx, (InetSocketAddressWrapper) sender, (AcknowledgementMessage) msg, future);
-        }
-        else if (msg instanceof UniteMessage && ctx.config().getRemoteSuperPeerEndpoint().getPublicKey().equals(msg.getSender())) {
-            handleUnite(ctx, (UniteMessage) msg, future);
-        }
-        else if (!msg.getRecipient().equals(ctx.identity().getPublicKey())) {
-            if (!ctx.config().isRemoteSuperPeerEnabled()) {
-                processMessage(ctx, msg.getRecipient(), msg, future);
-            }
-            else if (LOG.isDebugEnabled()) {
-                LOG.debug("We're not a super peer. Message {} from {} for relaying was dropped.", msg, sender);
-            }
-        }
-        else {
-            if (msg instanceof RemoteApplicationMessage && directConnectionPeers.contains(msg.getSender())) {
-                final Peer peer = peers.computeIfAbsent(msg.getSender(), key -> new Peer());
-                peer.applicationTrafficOccurred();
-            }
-
-            // passthrough message
-            ctx.fireRead(sender, msg, future);
-        }
-    }
-
     synchronized void startHeartbeat(final HandlerContext ctx) {
         if (heartbeatDisposable == null) {
             LOG.debug("Start heartbeat scheduler");
             heartbeatDisposable = ctx.scheduler()
                     .schedulePeriodicallyDirect(() -> doHeartbeat(ctx), 0, ctx.config().getRemotePingInterval().toMillis(), MILLISECONDS);
+        }
+    }
+
+    synchronized void stopHeartbeat() {
+        if (heartbeatDisposable != null) {
+            LOG.debug("Stop heartbeat scheduler");
+            heartbeatDisposable.dispose();
+            heartbeatDisposable = null;
         }
     }
 
@@ -181,14 +145,6 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<RemoteMessage<? ext
         removeStalePeers(ctx);
         pingSuperPeer(ctx);
         pingDirectConnectionPeers(ctx);
-    }
-
-    synchronized void stopHeartbeat() {
-        if (heartbeatDisposable != null) {
-            LOG.debug("Stop heartbeat scheduler");
-            heartbeatDisposable.dispose();
-            heartbeatDisposable = null;
-        }
     }
 
     /**
@@ -266,116 +222,41 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<RemoteMessage<? ext
         final CompressedPublicKey sender = ctx.identity().getPublicKey();
         final ProofOfWork proofOfWork = ctx.identity().getProofOfWork();
 
-        final DiscoverMessage message = new DiscoverMessage(networkId, sender, proofOfWork, publicKey, isChildrenJoin ? System.currentTimeMillis() : 0);
-        LOG.trace("Send {} to {}", message, recipientAddress);
-        openPingsCache.put(message.getId(), Pair.of(message, recipientAddress));
-        ctx.write(recipientAddress, message, future);
+        try {
+            final IntermediateEnvelope<Discovery> messageEnvelope = IntermediateEnvelope.discovery(networkId, sender, proofOfWork, publicKey, isChildrenJoin ? System.currentTimeMillis() : 0);
+            openPingsCache.put(messageEnvelope.getId(), new OpenPing(recipientAddress, isChildrenJoin));
+            LOG.trace("Send {} to {}", messageEnvelope, recipientAddress);
+            ctx.write(recipientAddress, messageEnvelope, future);
+        }
+        catch (final IOException e) {
+            future.completeExceptionally(new Exception("Unable to serialize " + Discovery.class.getSimpleName() + " message", e));
+        }
     }
 
-    private void handlePing(final HandlerContext ctx,
-                            final InetSocketAddressWrapper senderSocketAddress,
-                            final DiscoverMessage message,
-                            final CompletableFuture<Void> future) {
-        LOG.trace("Got {} from {}", message, senderSocketAddress);
-        final Peer peer = peers.computeIfAbsent(message.getSender(), key -> new Peer());
-        peer.setAddress(senderSocketAddress);
-        peer.inboundControlTrafficOccurred();
-
-        if (message.isChildrenJoin()) {
-            peer.inboundPongOccurred();
-            // store peer information
-            if (LOG.isDebugEnabled() && !ctx.peersManager().getChildrenKeys().contains(message.getSender()) && !ctx.peersManager().getPeer(message.getSender()).second().contains(path)) {
-                LOG.debug("PING! Add {} as children", message.getSender());
-            }
-            ctx.peersManager().setPeerInformationAndAddPathAndChildren(message.getSender(), PeerInformation.of(), path);
+    @Override
+    protected void matchedWrite(final HandlerContext ctx,
+                                final Address recipient,
+                                final ApplicationMessage msg,
+                                final CompletableFuture<Void> future) {
+        // record communication to keep active connections alive
+        if (directConnectionPeers.contains(msg.getRecipient())) {
+            final Peer peer = peers.computeIfAbsent(msg.getRecipient(), key -> new Peer());
+            peer.applicationTrafficOccurred();
         }
 
-        // reply with pong
-        final int networkId = ctx.config().getNetworkId();
-        final CompressedPublicKey sender = ctx.identity().getPublicKey();
-        final ProofOfWork proofOfWork = ctx.identity().getProofOfWork();
-        final AcknowledgementMessage response = new AcknowledgementMessage(networkId, sender, proofOfWork, message.getSender(), message.getId());
-
-        LOG.trace("Send {} to {}", response, senderSocketAddress);
-        ctx.write(senderSocketAddress, response, future);
-    }
-
-    private void handlePong(final HandlerContext ctx,
-                            final InetSocketAddressWrapper senderSocketAddress,
-                            final AcknowledgementMessage message,
-                            final CompletableFuture<Void> future) {
-        LOG.trace("Got {} from {}", message, senderSocketAddress);
-        final Pair<DiscoverMessage, InetSocketAddressWrapper> openRequest = openPingsCache.remove(message.getCorrespondingId());
-        if (openRequest != null) {
-            final Peer peer = peers.computeIfAbsent(message.getSender(), key -> new Peer());
-            peer.setAddress(senderSocketAddress);
-            peer.inboundControlTrafficOccurred();
-            peer.inboundPongOccurred();
-            if (openRequest.first().isChildrenJoin()) {
-                // store peer information
-                if (LOG.isDebugEnabled() && !ctx.peersManager().getChildrenKeys().contains(message.getSender()) && !ctx.peersManager().getPeer(message.getSender()).second().contains(path)) {
-                    LOG.debug("PONG! Add {} as super peer", message.getSender());
-                }
-                ctx.peersManager().setPeerInformationAndAddPathAndSetSuperPeer(message.getSender(), PeerInformation.of(), path);
+        if (recipient instanceof CompressedPublicKey) {
+            try {
+                final IntermediateEnvelope<Application> remoteMessageEnvelope = IntermediateEnvelope.application(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), msg.getRecipient(), msg.getContent().getClazzAsString(), msg.getContent().getObject());
+                processMessage(ctx, (CompressedPublicKey) recipient, remoteMessageEnvelope, future);
             }
-            else {
-                // store peer information
-                if (LOG.isDebugEnabled() && !ctx.peersManager().getPeer(message.getSender()).second().contains(path)) {
-                    LOG.debug("PONG! Add {} as peer", message.getSender());
-                }
-                ctx.peersManager().setPeerInformationAndAddPath(message.getSender(), PeerInformation.of(), path);
+            catch (final IOException e) {
+                future.completeExceptionally(new Exception("Unable to serialize " + Application.class.getSimpleName() + " message", e));
             }
-        }
-        future.complete(null);
-    }
-
-    private synchronized boolean shouldTryUnite(final CompressedPublicKey sender,
-                                                final CompressedPublicKey recipient) {
-        final Pair<CompressedPublicKey, CompressedPublicKey> key;
-        if (sender.hashCode() > recipient.hashCode()) {
-            key = Pair.of(sender, recipient);
         }
         else {
-            key = Pair.of(recipient, sender);
+            // passthrough message
+            ctx.write(recipient, msg, future);
         }
-        return uniteAttemptsCache != null && uniteAttemptsCache.putIfAbsent(key, TRUE) == null;
-    }
-
-    /**
-     * This method initiates a unite between the {@code sender} and {@code recipient}, by sending
-     * both the required information to establish a direct (P2P) connection.
-     *
-     * @param ctx       the handler context
-     * @param msg       the message
-     * @param recipient the recipient socket address
-     * @param sender    the sender socket address
-     */
-    private void sendUnites(final HandlerContext ctx,
-                            final RemoteMessage<? extends MessageLite> msg,
-                            final InetSocketAddressWrapper recipient,
-                            final InetSocketAddressWrapper sender) {
-        // send recipient's information to sender
-        final UniteMessage senderRendezvous = new UniteMessage(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), msg.getSender(), msg.getRecipient(), recipient.getAddress());
-        LOG.trace("Send {} to {}", senderRendezvous, sender);
-        ctx.write(sender, senderRendezvous, new CompletableFuture<>());
-
-        // send sender's information to recipient
-        final UniteMessage recipientRendezvous = new UniteMessage(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), msg.getRecipient(), msg.getSender(), sender.getAddress());
-        LOG.trace("Send {} to {}", recipientRendezvous, recipient);
-        ctx.write(recipient, recipientRendezvous, new CompletableFuture<>());
-    }
-
-    private void handleUnite(final HandlerContext ctx,
-                             final UniteMessage message,
-                             final CompletableFuture<Void> future) {
-        LOG.trace("Got {}", message);
-        final InetSocketAddressWrapper socketAddress = new InetSocketAddressWrapper(message.getAddress());
-        final Peer peer = peers.computeIfAbsent(message.getPublicKey(), key -> new Peer());
-        peer.setAddress(socketAddress);
-        peer.inboundControlTrafficOccurred();
-        peer.applicationTrafficOccurred();
-        directConnectionPeers.add(message.getPublicKey());
-        sendPing(ctx, message.getPublicKey(), socketAddress, false, future);
     }
 
     /**
@@ -389,7 +270,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<RemoteMessage<? ext
      */
     private void processMessage(final HandlerContext ctx,
                                 final CompressedPublicKey recipient,
-                                final RemoteMessage<? extends MessageLite> msg,
+                                final IntermediateEnvelope<? extends MessageLite> msg,
                                 final CompletableFuture<Void> future) {
         final Peer recipientPeer = peers.get(recipient);
         final CompressedPublicKey superPeerKey = ctx.peersManager().getSuperPeerKey();
@@ -421,7 +302,6 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<RemoteMessage<? ext
         else if (superPeerPeer != null) {
             final InetSocketAddressWrapper superPeerSocketAddress = superPeerPeer.getAddress();
             LOG.trace("No connection to {}. Send message to super peer.", recipient);
-
             ctx.write(superPeerSocketAddress, msg, future);
         }
         else {
@@ -430,11 +310,227 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<RemoteMessage<? ext
         }
     }
 
+    private synchronized boolean shouldTryUnite(final CompressedPublicKey sender,
+                                                final CompressedPublicKey recipient) {
+        final Pair<CompressedPublicKey, CompressedPublicKey> key;
+        if (sender.hashCode() > recipient.hashCode()) {
+            key = Pair.of(sender, recipient);
+        }
+        else {
+            key = Pair.of(recipient, sender);
+        }
+        return uniteAttemptsCache != null && uniteAttemptsCache.putIfAbsent(key, TRUE) == null;
+    }
+
+    /**
+     * This method initiates a unite between the {@code sender} and {@code recipient}, by sending
+     * both the required information to establish a direct (P2P) connection.
+     *
+     * @param ctx       the handler context
+     * @param msg       the message
+     * @param recipient the recipient socket address
+     * @param sender    the sender socket address
+     */
+    private void sendUnites(final HandlerContext ctx,
+                            final IntermediateEnvelope<? extends MessageLite> msg,
+                            final InetSocketAddressWrapper recipient,
+                            final InetSocketAddressWrapper sender) {
+        // send recipient's information to sender
+        try {
+            final IntermediateEnvelope<Unite> senderRendezvousEnvelope = IntermediateEnvelope.unite(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), msg.getSender(), msg.getRecipient(), recipient.getAddress());
+            LOG.trace("Send {} to {}", senderRendezvousEnvelope, sender);
+            ctx.write(sender, senderRendezvousEnvelope, new CompletableFuture<>());
+        }
+        catch (final IOException e) {
+            LOG.warn("Unable to serialize message `{}`", msg, e);
+        }
+
+        // send sender's information to recipient
+        try {
+            final IntermediateEnvelope<Unite> recipientRendezvousEnvelope = IntermediateEnvelope.unite(ctx.config().getNetworkId(), ctx.identity().getPublicKey(), ctx.identity().getProofOfWork(), msg.getRecipient(), msg.getSender(), sender.getAddress());
+            LOG.trace("Send {} to {}", recipientRendezvousEnvelope, recipient);
+            ctx.write(recipient, recipientRendezvousEnvelope, new CompletableFuture<>());
+        }
+        catch (final IOException e) {
+            LOG.warn("Unable to serialize message `{}`", msg, e);
+        }
+    }
+
+    @Override
+    protected void matchedRead(final HandlerContext ctx,
+                               final Address sender,
+                               final IntermediateEnvelope<? extends MessageLite> envelope,
+                               final CompletableFuture<Void> future) {
+        requireNonNull(envelope);
+        requireNonNull(sender);
+
+        try {
+            // This message is for us and we will fully decode it
+            if (envelope.getRecipient().equals(ctx.identity().getPublicKey())) {
+                handleMessage(ctx, sender, envelope, future);
+            }
+            else {
+                if (!ctx.config().isRemoteSuperPeerEnabled()) {
+                    processMessage(ctx, envelope.getRecipient(), envelope, future);
+                }
+                else if (LOG.isDebugEnabled()) {
+                    LOG.debug("We're not a super peer. Message {} from {} for relaying was dropped.", envelope, sender);
+                }
+            }
+        }
+        catch (final IOException | CryptoException | IllegalArgumentException e) {
+            LOG.warn("Unable to deserialize '{}': {}", sanitizeLogArg(envelope.getByteBuf()), e);
+            future.completeExceptionally(new Exception("Message could not be deserialized.", e));
+            if (envelope.getByteBuf().refCnt() != 0) {
+                envelope.getByteBuf().release();
+            }
+        }
+    }
+
+    @SuppressWarnings("unchecked")
+    private void handleMessage(final HandlerContext ctx,
+                               final Address sender,
+                               final IntermediateEnvelope<? extends MessageLite> envelope,
+                               final CompletableFuture<Void> future) throws IOException, CryptoException {
+        try {
+            if (sender instanceof InetSocketAddressWrapper && envelope.getPrivateHeader().getType() == DISCOVERY) {
+                handlePing(ctx, (InetSocketAddressWrapper) sender, (IntermediateEnvelope<Discovery>) envelope, future);
+            }
+            else if (sender instanceof InetSocketAddressWrapper && envelope.getPrivateHeader().getType() == ACKNOWLEDGEMENT) {
+                handlePong(ctx, (InetSocketAddressWrapper) sender, (IntermediateEnvelope<Acknowledgement>) envelope, future);
+            }
+            else if (envelope.getPrivateHeader().getType() == UNITE && ctx.config().getRemoteSuperPeerEndpoint().getPublicKey().equals(envelope.getSender())) {
+                handleUnite(ctx, (IntermediateEnvelope<Unite>) envelope, future);
+            }
+            else if (envelope.getPrivateHeader().getType() == APPLICATION) {
+                handleApplication(ctx, sender, (IntermediateEnvelope<Application>) envelope, future);
+            }
+            else {
+                // passthrough message
+                ctx.fireRead(sender, envelope, future);
+            }
+        }
+        finally {
+            if (envelope.getByteBuf().refCnt() != 0) {
+                envelope.getByteBuf().release();
+            }
+        }
+    }
+
+    private void handlePing(final HandlerContext ctx,
+                            final InetSocketAddressWrapper senderSocketAddress,
+                            final IntermediateEnvelope<Discovery> envelope,
+                            final CompletableFuture<Void> future) throws IOException, CryptoException {
+        final CompressedPublicKey sender = requireNonNull(CompressedPublicKey.of(envelope.getPublicHeader().getSender().toByteArray()));
+        final MessageId id = requireNonNull(MessageId.of(envelope.getPublicHeader().getId().toByteArray()));
+        final boolean childrenJoin = envelope.getBody().getChildrenTime() > 0;
+        LOG.trace("Got {} from {}", envelope, senderSocketAddress);
+        final Peer peer = peers.computeIfAbsent(sender, key -> new Peer());
+        peer.setAddress(senderSocketAddress);
+        peer.inboundControlTrafficOccurred();
+
+        if (childrenJoin) {
+            peer.inboundPongOccurred();
+            // store peer information
+            if (LOG.isDebugEnabled() && !ctx.peersManager().getChildrenKeys().contains(sender) && !ctx.peersManager().getPeer(sender).second().contains(path)) {
+                LOG.debug("PING! Add {} as children", sender);
+            }
+            ctx.peersManager().setPeerInformationAndAddPathAndChildren(sender, PeerInformation.of(), path);
+        }
+
+        // reply with pong
+        final int networkId = ctx.config().getNetworkId();
+        final CompressedPublicKey myPublicKey = ctx.identity().getPublicKey();
+        final ProofOfWork myProofOfWork = ctx.identity().getProofOfWork();
+        try {
+            final IntermediateEnvelope<Acknowledgement> responseEnvelope = IntermediateEnvelope.acknowledgement(networkId, myPublicKey, myProofOfWork, sender, id);
+            LOG.trace("Send {} to {}", responseEnvelope, senderSocketAddress);
+            ctx.write(senderSocketAddress, responseEnvelope, future);
+        }
+        catch (final IOException e) {
+            future.completeExceptionally(new Exception("Unable to serialize " + Acknowledgement.class.getSimpleName() + " message", e));
+        }
+    }
+
+    private void handlePong(final HandlerContext ctx,
+                            final InetSocketAddressWrapper senderSocketAddress,
+                            final IntermediateEnvelope<Acknowledgement> envelope,
+                            final CompletableFuture<Void> future) throws IOException, CryptoException {
+        final MessageId correspondingId = requireNonNull(MessageId.of(envelope.getBody().getCorrespondingId().toByteArray()));
+        final CompressedPublicKey sender = requireNonNull(CompressedPublicKey.of(envelope.getPublicHeader().getSender().toByteArray()));
+        LOG.trace("Got {} from {}", envelope, senderSocketAddress);
+        final OpenPing openPing = openPingsCache.remove(correspondingId);
+        if (openPing != null) {
+            final Peer peer = peers.computeIfAbsent(sender, key -> new Peer());
+            peer.setAddress(senderSocketAddress);
+            peer.inboundControlTrafficOccurred();
+            peer.inboundPongOccurred();
+            if (openPing.isChildrenJoin()) {
+                // store peer information
+                if (LOG.isDebugEnabled() && !ctx.peersManager().getChildrenKeys().contains(sender) && !ctx.peersManager().getPeer(sender).second().contains(path)) {
+                    LOG.debug("PONG! Add {} as super peer", sender);
+                }
+                ctx.peersManager().setPeerInformationAndAddPathAndSetSuperPeer(sender, PeerInformation.of(), path);
+            }
+            else {
+                // store peer information
+                if (LOG.isDebugEnabled() && !ctx.peersManager().getPeer(sender).second().contains(path)) {
+                    LOG.debug("PONG! Add {} as peer", sender);
+                }
+                ctx.peersManager().setPeerInformationAndAddPath(sender, PeerInformation.of(), path);
+            }
+        }
+        future.complete(null);
+    }
+
+    private void handleUnite(final HandlerContext ctx,
+                             final IntermediateEnvelope<Unite> envelope,
+                             final CompletableFuture<Void> future) throws IOException, CryptoException {
+        final CompressedPublicKey publicKey = requireNonNull(CompressedPublicKey.of(envelope.getBody().getPublicKey().toByteArray()));
+        final InetSocketAddress address = new InetSocketAddress(envelope.getBody().getAddress(), UnsignedShort.of(envelope.getBody().getPort().toByteArray()).getValue());
+        LOG.trace("Got {}", envelope);
+        final InetSocketAddressWrapper socketAddress = new InetSocketAddressWrapper(address);
+        final Peer peer = peers.computeIfAbsent(publicKey, key -> new Peer());
+        peer.setAddress(socketAddress);
+        peer.inboundControlTrafficOccurred();
+        peer.applicationTrafficOccurred();
+        directConnectionPeers.add(publicKey);
+        sendPing(ctx, publicKey, socketAddress, false, future);
+    }
+
+    private void handleApplication(final HandlerContext ctx,
+                                   final Address sender,
+                                   final IntermediateEnvelope<Application> envelope,
+                                   final CompletableFuture<Void> future) throws IOException {
+        if (directConnectionPeers.contains(envelope.getSender())) {
+            final Peer peer = peers.computeIfAbsent(envelope.getSender(), key -> new Peer());
+            peer.applicationTrafficOccurred();
+        }
+
+        // convert to ApplicationMessage
+        final ApplicationMessage applicationMessage = new ApplicationMessage(envelope.getSender(), envelope.getRecipient(), ObjectHolder.of(requireNonNull(envelope.getBody().getType()), requireNonNull(envelope.getBody().getPayload().toByteArray())));
+        ctx.fireRead(sender, applicationMessage, future);
+    }
+
     static class Peer {
         private InetSocketAddressWrapper address;
         private long lastInboundControlTrafficTime;
         private long lastInboundPongTime;
+
+        Peer(final InetSocketAddressWrapper address,
+             final long lastInboundControlTrafficTime,
+             final long lastInboundPongTime,
+             final long lastApplicationTrafficTime) {
+            this.address = address;
+            this.lastInboundControlTrafficTime = lastInboundControlTrafficTime;
+            this.lastInboundPongTime = lastInboundPongTime;
+            this.lastApplicationTrafficTime = lastApplicationTrafficTime;
+        }
+
         private long lastApplicationTrafficTime;
+
+        public Peer() {
+        }
 
         public InetSocketAddressWrapper getAddress() {
             return address;
@@ -446,8 +542,8 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<RemoteMessage<? ext
 
         /**
          * Returns the time when we last received a message from this peer. This includes all
-         * message types ({@link DiscoverMessage}, {@link AcknowledgementMessage}, {@link
-         * org.drasyl.pipeline.message.ApplicationMessage}, etc.)
+         * message types ({@link Discovery}, {@link Acknowledgement}, {@link Application}, {@link
+         * Unite}, etc.)
          */
         public long getLastInboundControlTrafficTime() {
             return lastInboundControlTrafficTime;
@@ -463,7 +559,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<RemoteMessage<? ext
 
         /**
          * Returns the time when we last sent or received a application-level message to or from
-         * this peer. This includes only message type {@link org.drasyl.pipeline.message.ApplicationMessage}
+         * this peer. This includes only message type {@link Application}
          */
         public long getLastApplicationTrafficTime() {
             return lastApplicationTrafficTime;
@@ -483,6 +579,50 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<RemoteMessage<? ext
 
         public boolean isReachable(final DrasylConfig config) {
             return lastInboundPongTime >= System.currentTimeMillis() - config.getRemotePingTimeout().toMillis();
+        }
+    }
+
+    public static class OpenPing {
+        private final InetSocketAddressWrapper address;
+        private final boolean isChildrenJoin;
+
+        public OpenPing(final InetSocketAddressWrapper address, final boolean isChildrenJoin) {
+            this.address = address;
+            this.isChildrenJoin = isChildrenJoin;
+        }
+
+        public InetSocketAddressWrapper getAddress() {
+            return address;
+        }
+
+        public boolean isChildrenJoin() {
+            return isChildrenJoin;
+        }
+
+        @Override
+        public int hashCode() {
+            return Objects.hash(address, isChildrenJoin);
+        }
+
+        @Override
+        public boolean equals(final Object o) {
+            if (this == o) {
+                return true;
+            }
+            if (o == null || getClass() != o.getClass()) {
+                return false;
+            }
+            final OpenPing openPing = (OpenPing) o;
+            return isChildrenJoin == openPing.isChildrenJoin &&
+                    Objects.equals(address, openPing.address);
+        }
+
+        @Override
+        public String toString() {
+            return "OpenPing{" +
+                    "address=" + address +
+                    ", isChildrenJoin=" + isChildrenJoin +
+                    '}';
         }
     }
 }

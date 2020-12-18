@@ -22,18 +22,18 @@ import com.google.protobuf.MessageLite;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
-import org.drasyl.remote.message.RemoteMessage;
+import org.drasyl.remote.protocol.IntermediateEnvelope;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 
 /**
- * This handler ensures that {@link RemoteMessage}s do not infinitely circulate in the network. It
+ * This handler ensures that {@link IntermediateEnvelope<MessageLite>}s do not infinitely circulate in the network. It
  * increments the hop counter of each outgoing message. If the limit of hops is reached, the message
  * is discarded. Otherwise the message can pass.
  */
-public class HopCountGuard extends SimpleOutboundHandler<RemoteMessage<MessageLite>, CompressedPublicKey> {
+public class HopCountGuard extends SimpleOutboundHandler<IntermediateEnvelope<MessageLite>, CompressedPublicKey> {
     public static final HopCountGuard INSTANCE = new HopCountGuard();
     public static final String HOP_COUNT_GUARD = "HOP_COUNT_GUARD";
     private static final Logger LOG = LoggerFactory.getLogger(HopCountGuard.class);
@@ -44,7 +44,7 @@ public class HopCountGuard extends SimpleOutboundHandler<RemoteMessage<MessageLi
     @Override
     protected void matchedWrite(final HandlerContext ctx,
                                 final CompressedPublicKey recipient,
-                                final RemoteMessage<MessageLite> msg,
+                                final IntermediateEnvelope<MessageLite> msg,
                                 final CompletableFuture<Void> future) {
         if (msg.getHopCount() < ctx.config().getMessageHopLimit()) {
             // route message to next hop (node)
