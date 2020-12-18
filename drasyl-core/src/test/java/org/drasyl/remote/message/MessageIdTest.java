@@ -37,8 +37,13 @@ class MessageIdTest {
     @Nested
     class Constructor {
         @Test
-        void shouldValidateGivenId() {
-            assertThrows(IllegalArgumentException.class, () -> MessageId.of("xyz"));
+        void shouldThrowExceptionOnInvalidId() {
+            assertThrows(IllegalArgumentException.class, () -> MessageId.of("412176952b"));
+        }
+
+        @Test
+        void shouldCreateObjectOnValidId() {
+            assertNotNull(MessageId.of("412176952b5b81fd13f84a7c"));
         }
     }
 
@@ -46,7 +51,6 @@ class MessageIdTest {
     class Equals {
         @Test
         void shouldRecognizeEqualPairs() {
-            System.out.println();
             final MessageId idA = MessageId.of("412176952b5b81fd13f84a7c");
             final MessageId idB = MessageId.of("412176952b5b81fd13f84a7c");
             final MessageId idC = MessageId.of("78c36c82b8d11c7217a011b3");

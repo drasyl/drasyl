@@ -51,6 +51,17 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
     private PrivateHeader privateHeader;
     private T body;
 
+    IntermediateEnvelope(final ByteBuf originalMessage,
+                         final ByteBuf message,
+                         final PublicHeader publicHeader,
+                         final PrivateHeader privateHeader, final T body) {
+        this.originalMessage = originalMessage;
+        this.message = message;
+        this.publicHeader = publicHeader;
+        this.privateHeader = privateHeader;
+        this.body = body;
+    }
+
     private IntermediateEnvelope(final ByteBuf message) {
         if (!message.isReadable()) {
             throw new IllegalArgumentException("The given message has no readable data.");
@@ -61,6 +72,16 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         this.publicHeader = null;
         this.privateHeader = null;
         this.body = null;
+    }
+
+    @Override
+    public String toString() {
+        return "IntermediateEnvelope{" +
+                "originalMessage=" + originalMessage +
+                ", publicHeader=" + publicHeader +
+                ", privateHeader=" + privateHeader +
+                ", body=" + body +
+                '}';
     }
 
     /**
@@ -249,7 +270,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
     @Override
     public UserAgent getUserAgent() {
         try {
-            return new UserAgent(getPublicHeader().toByteArray());
+            return new UserAgent(getPublicHeader().getUserAgent().toByteArray());
         }
         catch (final IOException e) {
             throw new IllegalArgumentException(e);

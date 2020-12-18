@@ -22,6 +22,7 @@ import org.drasyl.DrasylNode;
 import org.drasyl.util.UnsignedShort;
 
 import java.io.IOException;
+import java.util.Objects;
 import java.util.Properties;
 
 /**
@@ -48,6 +49,23 @@ public class UserAgent {
      */
     public UserAgent(final byte[] version) {
         this.version = UnsignedShort.of(version);
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(version);
+    }
+
+    @Override
+    public boolean equals(final Object o) {
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        final UserAgent userAgent = (UserAgent) o;
+        return Objects.equals(version, userAgent.version);
     }
 
     /**

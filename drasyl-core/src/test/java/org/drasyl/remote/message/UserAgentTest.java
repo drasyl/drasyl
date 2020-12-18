@@ -24,6 +24,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotEquals;
 
 @ExtendWith(MockitoExtension.class)
 class UserAgentTest {
@@ -39,7 +40,7 @@ class UserAgentTest {
     }
 
     @Nested
-    class GetProtocolVersion {
+    class GetVersion {
         @Test
         void shouldReturnVersionForFullUserAgent() {
             assertEquals(UserAgent.generate().getVersion(), USER_AGENT_1.getVersion());
@@ -48,6 +49,37 @@ class UserAgentTest {
         @Test
         void shouldReturnVersionForNoCommentsUserAgent() {
             assertEquals(1, USER_AGENT_2.getVersion().getValue());
+        }
+    }
+
+    @Nested
+    class Equals {
+        @Test
+        void shouldRecognizeEqualPairs() {
+            final UserAgent userAgentA = new UserAgent(1);
+            final UserAgent userAgentB = new UserAgent(1);
+            final UserAgent userAgentC = new UserAgent(2);
+
+            assertEquals(userAgentA, userAgentA);
+            assertEquals(userAgentA, userAgentB);
+            assertEquals(userAgentB, userAgentA);
+            assertNotEquals(null, userAgentA);
+            assertNotEquals(userAgentA, userAgentC);
+            assertNotEquals(userAgentC, userAgentA);
+        }
+    }
+
+    @Nested
+    class HashCode {
+        @Test
+        void shouldRecognizeEqualPairs() {
+            final UserAgent userAgentA = new UserAgent(1);
+            final UserAgent userAgentB = new UserAgent(1);
+            final UserAgent userAgentC = new UserAgent(2);
+
+            assertEquals(userAgentA.hashCode(), userAgentB.hashCode());
+            assertNotEquals(userAgentA.hashCode(), userAgentC.hashCode());
+            assertNotEquals(userAgentB.hashCode(), userAgentC.hashCode());
         }
     }
 }
