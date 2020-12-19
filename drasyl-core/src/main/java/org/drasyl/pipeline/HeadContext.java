@@ -18,7 +18,7 @@
  */
 package org.drasyl.pipeline;
 
-import io.netty.util.ReferenceCountUtil;
+import org.drasyl.util.ReferenceCountUtil;
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.identity.Identity;
@@ -89,7 +89,7 @@ class HeadContext extends AbstractEndHandler {
             }
         }
         finally {
-            ReferenceCountUtil.release(msg);
+            ReferenceCountUtil.safeRelease(msg);
         }
     }
 }
