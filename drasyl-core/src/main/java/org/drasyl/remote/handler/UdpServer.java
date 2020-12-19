@@ -31,6 +31,7 @@ import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
+import org.drasyl.util.ReferenceCountUtil;
 import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
@@ -242,8 +243,8 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
             FutureUtil.completeOnAllOf(future, FutureUtil.toFuture(channel.writeAndFlush(packet)));
         }
         else {
+            ReferenceCountUtil.safeRelease(byteBuf);
             future.completeExceptionally(new Exception("Udp Channel is not present or is not writable."));
-            byteBuf.release();
         }
     }
 
