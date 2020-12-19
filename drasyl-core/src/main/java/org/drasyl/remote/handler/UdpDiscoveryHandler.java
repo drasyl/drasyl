@@ -45,8 +45,8 @@ import org.drasyl.remote.protocol.Protocol.Unite;
 import org.drasyl.util.Pair;
 import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.UnsignedShort;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -158,10 +158,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<IntermediateEnvelop
         final CompressedPublicKey superPeerKey = ctx.config().getRemoteSuperPeerEndpoint().getPublicKey();
         new HashMap<>(peers).forEach(((publicKey, peer) -> {
             if (!peer.hasControlTraffic(ctx.config())) {
-                if (LOG.isDebugEnabled()) {
-                    final long lastInboundControlTrafficTime = peer.getLastInboundControlTrafficTime();
-                    LOG.debug("Last contact from {} is {}ms ago. Remove peer.", publicKey, System.currentTimeMillis() - lastInboundControlTrafficTime);
-                }
+                LOG.debug("Last contact from {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - peer.getLastInboundControlTrafficTime());
                 if (publicKey.equals(superPeerKey)) {
                     ctx.peersManager().unsetSuperPeerAndRemovePath(path);
                 }
@@ -204,10 +201,7 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<IntermediateEnvelop
             }
             // remove trivial communications, that does not send any user generated messages
             else {
-                final long lastCommunicationTime = peer.getLastApplicationTrafficTime();
-                if (LOG.isDebugEnabled()) {
-                    LOG.debug("Last application communication to {} is {}ms ago. Remove peer.", publicKey, System.currentTimeMillis() - lastCommunicationTime);
-                }
+                LOG.debug("Last application communication to {} is {}ms ago. Remove peer.", () -> publicKey, () -> System.currentTimeMillis() - peer.getLastApplicationTrafficTime());
                 ctx.peersManager().removeChildrenAndPath(publicKey, path);
                 directConnectionPeers.remove(publicKey);
             }
@@ -356,13 +350,13 @@ public class UdpDiscoveryHandler extends SimpleDuplexHandler<IntermediateEnvelop
                 if (!ctx.config().isRemoteSuperPeerEnabled()) {
                     processMessage(ctx, envelope.getRecipient(), envelope, future);
                 }
-                else if (LOG.isDebugEnabled()) {
+                else {
                     LOG.debug("We're not a super peer. Message {} from {} for relaying was dropped.", envelope, sender);
                 }
             }
         }
         catch (final IOException | CryptoException | IllegalArgumentException e) {
-            LOG.warn("Unable to deserialize '{}': {}", sanitizeLogArg(envelope.getByteBuf()), e);
+            LOG.warn("Unable to deserialize '{}': {}", () -> sanitizeLogArg(envelope.getByteBuf()), e::getMessage);
             future.completeExceptionally(new Exception("Message could not be deserialized.", e));
             ReferenceCountUtil.safeRelease(envelope);
         }

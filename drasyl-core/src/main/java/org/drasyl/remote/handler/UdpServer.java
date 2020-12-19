@@ -52,8 +52,8 @@ import org.drasyl.util.Pair;
 import org.drasyl.util.PortMappingUtil;
 import org.drasyl.util.PortMappingUtil.PortMapping;
 import org.drasyl.util.SetUtil;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.drasyl.util.logging.Logger;
+import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
