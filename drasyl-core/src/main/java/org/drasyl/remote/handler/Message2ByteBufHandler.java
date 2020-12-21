@@ -21,6 +21,7 @@ package org.drasyl.remote.handler;
 import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
 import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
@@ -35,6 +36,7 @@ import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 /**
  * Handler that converts a given {@link IntermediateEnvelope} to a {@link ByteBuf}.
  */
+@Stateless
 public class Message2ByteBufHandler extends SimpleOutboundHandler<IntermediateEnvelope<MessageLite>, Address> {
     public static final Message2ByteBufHandler INSTANCE = new Message2ByteBufHandler();
     public static final String MESSAGE_2_BYTE_BUF_HANDLER = "MESSAGE_2_BYTE_BUF_HANDLER";
