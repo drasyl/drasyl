@@ -21,6 +21,7 @@ package org.drasyl.remote.handler;
 import com.google.protobuf.MessageLite;
 import io.netty.buffer.ByteBuf;
 import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
@@ -31,6 +32,7 @@ import java.util.concurrent.CompletableFuture;
  * Handler that converts a given {@link ByteBuf} to a {@link IntermediateEnvelope} or {@link
  * IntermediateEnvelope}.
  */
+@Stateless
 public class ByteBuf2MessageHandler extends SimpleInboundHandler<ByteBuf, Address> {
     public static final ByteBuf2MessageHandler INSTANCE = new ByteBuf2MessageHandler();
     public static final String BYTE_BUF_2_MESSAGE_HANDLER = "BYTE_BUF_2_MESSAGE_HANDLER";
