@@ -29,6 +29,7 @@ import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
+import java.io.IOException;
 import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
@@ -56,7 +57,7 @@ public class Message2ByteBufHandler extends SimpleOutboundHandler<IntermediateEn
 
             write(ctx, recipient, byteBuf, future);
         }
-        catch (final Exception e) {
+        catch (final IOException e) {
             ReferenceCountUtil.safeRelease(byteBuf);
             LOG.error("Unable to serialize '{}': {}", sanitizeLogArg(msg), e.getMessage());
             future.completeExceptionally(new Exception("Message could not be serialized. This could indicate a bug in drasyl.", e));
