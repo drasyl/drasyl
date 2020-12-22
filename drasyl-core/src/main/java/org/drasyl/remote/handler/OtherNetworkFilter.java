@@ -59,8 +59,8 @@ public class OtherNetworkFilter extends SimpleInboundHandler<IntermediateEnvelop
             }
         }
         catch (final IllegalArgumentException e) {
-            ReferenceCountUtil.safeRelease(msg);
             LOG.error("Unable to read network id from message '{}': {}", sanitizeLogArg(msg), e.getMessage());
+            ReferenceCountUtil.safeRelease(msg);
             future.completeExceptionally(new Exception("Unable to read network id from message.", e));
         }
     }
