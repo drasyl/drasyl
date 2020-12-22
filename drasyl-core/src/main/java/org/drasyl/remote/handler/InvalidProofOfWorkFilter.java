@@ -24,12 +24,14 @@ import org.drasyl.pipeline.Stateless;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.SimpleInboundHandler;
 import org.drasyl.remote.protocol.IntermediateEnvelope;
+import org.drasyl.util.ReferenceCountUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.util.concurrent.CompletableFuture;
 
 import static org.drasyl.identity.IdentityManager.POW_DIFFICULTY;
+import static org.drasyl.util.LoggingUtil.sanitizeLogArg;
 
 /**
  * This handler filters out all messages received with invalid proof of work.
@@ -48,12 +50,19 @@ public class InvalidProofOfWorkFilter extends SimpleInboundHandler<IntermediateE
                                final Address sender,
                                final IntermediateEnvelope<MessageLite> msg,
                                final CompletableFuture<Void> future) {
-        if (msg.getProofOfWork().isValid(msg.getSender(), POW_DIFFICULTY)) {
-            ctx.fireRead(sender, msg, future);
+        try {
+            if (msg.getProofOfWork().isValid(msg.getSender(), POW_DIFFICULTY)) {
+                ctx.fireRead(sender, msg, future);
+            }
+            else {
+                LOG.trace("Message with invalid proof of work dropped: {}", msg);
+                future.completeExceptionally(new Exception("Message with invalid proof of work dropped"));
+            }
         }
-        else {
-            LOG.trace("Message with invalid proof of work dropped: {}", msg);
-            future.completeExceptionally(new Exception("Message with invalid proof of work dropped"));
+        catch (final IllegalArgumentException e) {
+            ReferenceCountUtil.safeRelease(msg);
+            LOG.error("Unable to read sender from message '{}': {}", sanitizeLogArg(msg), e.getMessage());
+            future.completeExceptionally(new Exception("Unable to read sender from message.", e));
         }
     }
 }
