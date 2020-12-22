@@ -164,7 +164,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      * representation of the full message.
      *
      * @return header of the message
-     * @throws IOException if the public header cannot be read read
+     * @throws IOException if the public header cannot be read
      */
     public PublicHeader getPublicHeader() throws IOException {
         synchronized (this) {
@@ -186,7 +186,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      * representation of the full message.
      *
      * @return the private header
-     * @throws IOException if the private header cannot be read read
+     * @throws IOException if the private header cannot be read
      */
     public PrivateHeader getPrivateHeader() throws IOException {
         synchronized (this) {
@@ -209,7 +209,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      * the full message.
      *
      * @return the body
-     * @throws IOException if the body cannot be read read
+     * @throws IOException if the body cannot be read
      */
     public T getBody() throws IOException {
         synchronized (this) {
@@ -232,7 +232,7 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
      * the full message.
      *
      * @return the body
-     * @throws IOException if the body cannot be read read
+     * @throws IOException if the body cannot be read
      */
     public T getBodyAndRelease() throws IOException {
         synchronized (this) {
@@ -335,6 +335,9 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         originalMessage = null;
     }
 
+    /**
+     * @throws IllegalArgumentException if id could not be read
+     */
     public MessageId getId() {
         try {
             return MessageId.of(getPublicHeader().getId().toByteArray());
@@ -344,6 +347,9 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         }
     }
 
+    /**
+     * @throws IllegalArgumentException if user agent could not be read
+     */
     public UserAgent getUserAgent() {
         try {
             return new UserAgent(getPublicHeader().getUserAgent().toByteArray());
@@ -353,6 +359,9 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         }
     }
 
+    /**
+     * @throws IllegalArgumentException if network id could not be read
+     */
     public int getNetworkId() {
         try {
             return getPublicHeader().getNetworkId();
@@ -362,6 +371,9 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         }
     }
 
+    /**
+     * @throws IllegalArgumentException if sender does not conform to a valid key
+     */
     public CompressedPublicKey getSender() {
         try {
             return CompressedPublicKey.of(getPublicHeader().getSender().toByteArray());
@@ -371,6 +383,9 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         }
     }
 
+    /**
+     * @throws IllegalArgumentException if proof of work could not be read
+     */
     public ProofOfWork getProofOfWork() {
         try {
             return ProofOfWork.of(getPublicHeader().getProofOfWork());
@@ -380,6 +395,9 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         }
     }
 
+    /**
+     * @throws IllegalArgumentException if recipient does not conform to a valid key
+     */
     public CompressedPublicKey getRecipient() {
         try {
             return CompressedPublicKey.of(getPublicHeader().getRecipient().toByteArray());
@@ -389,11 +407,14 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         }
     }
 
+    /**
+     * @throws IllegalArgumentException if hop count could not be read
+     */
     public byte getHopCount() {
         try {
             return getPublicHeader().getHopCount().byteAt(0);
         }
-        catch (final IOException e) {
+        catch (final IOException | IndexOutOfBoundsException e) {
             throw new IllegalArgumentException(e);
         }
     }
@@ -402,6 +423,9 @@ public class IntermediateEnvelope<T extends MessageLite> implements ReferenceCou
         // FIXME: implement
     }
 
+    /**
+     * @throws IllegalArgumentException if signature could not be read
+     */
     public Signature getSignature() {
         try {
             return new Signature(getPublicHeader().getSignature().toByteArray());
