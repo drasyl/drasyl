@@ -61,7 +61,7 @@ public class HopCountGuard extends SimpleOutboundHandler<IntermediateEnvelope<Me
             else {
                 // too many hops, discard message
                 LOG.debug("Hop Count limit has been reached. End of lifespan of message has been reached. Discard message '{}'", msg);
-
+                ReferenceCountUtil.safeRelease(msg);
                 future.completeExceptionally(new Exception("Hop Count limit has been reached. End of lifespan of message has been reached. Discard message."));
             }
         }
