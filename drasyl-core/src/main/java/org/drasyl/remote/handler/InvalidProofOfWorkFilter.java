@@ -57,12 +57,13 @@ public class InvalidProofOfWorkFilter extends SimpleInboundHandler<IntermediateE
             else {
                 LOG.trace("Message with invalid proof of work dropped: {}", msg);
                 future.completeExceptionally(new Exception("Message with invalid proof of work dropped"));
+                ReferenceCountUtil.safeRelease(msg);
             }
         }
         catch (final IllegalArgumentException e) {
             LOG.error("Unable to read sender from message '{}': {}", sanitizeLogArg(msg), e.getMessage());
-            ReferenceCountUtil.safeRelease(msg);
             future.completeExceptionally(new Exception("Unable to read sender from message.", e));
+            ReferenceCountUtil.safeRelease(msg);
         }
     }
 }
