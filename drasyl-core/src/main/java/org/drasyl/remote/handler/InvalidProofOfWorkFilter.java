@@ -61,7 +61,7 @@ public class InvalidProofOfWorkFilter extends SimpleInboundHandler<IntermediateE
             }
         }
         catch (final IllegalArgumentException e) {
-            LOG.error("Unable to read sender from message '{}': {}", sanitizeLogArg(msg), e.getMessage());
+            LOG.error("Unable to read sender from message '{}': {}", () -> sanitizeLogArg(msg), e::getMessage);
             future.completeExceptionally(new Exception("Unable to read sender from message.", e));
             ReferenceCountUtil.safeRelease(msg);
         }
