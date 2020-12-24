@@ -52,7 +52,7 @@ public class HopCountGuard extends SimpleOutboundHandler<IntermediateEnvelope<Me
                                 final IntermediateEnvelope<MessageLite> msg,
                                 final CompletableFuture<Void> future) {
         try {
-            if (msg.getHopCount() < ctx.config().getMessageHopLimit()) {
+            if (msg.getHopCount() < ctx.config().getRemoteMessageHopLimit()) {
                 // route message to next hop (node)
                 msg.incrementHopCount();
 

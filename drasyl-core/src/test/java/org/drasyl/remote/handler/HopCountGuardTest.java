@@ -52,7 +52,7 @@ class HopCountGuardTest {
     @Test
     void shouldPassMessagesThatHaveNotReachedTheirHopCountLimitAndIncrementHopCount(@Mock final CompressedPublicKey address,
                                                                                     @Mock final IntermediateEnvelope<MessageLite> message) {
-        when(config.getMessageHopLimit()).thenReturn((byte) 2);
+        when(config.getRemoteMessageHopLimit()).thenReturn((byte) 2);
         when(message.getHopCount()).thenReturn((byte) 1);
 
         final HopCountGuard handler = HopCountGuard.INSTANCE;
@@ -64,12 +64,13 @@ class HopCountGuardTest {
         outboundMessages.awaitCount(1).assertValueCount(1);
         outboundMessages.assertValue(m -> m instanceof IntermediateEnvelope);
         verify(message).incrementHopCount();
+        pipeline.close();
     }
 
     @Test
     void shouldDiscardMessagesThatHaveReachedTheirHopCountLimit(@Mock final CompressedPublicKey address,
                                                                 @Mock final IntermediateEnvelope<MessageLite> message) throws InterruptedException {
-        when(config.getMessageHopLimit()).thenReturn((byte) 1);
+        when(config.getRemoteMessageHopLimit()).thenReturn((byte) 1);
         when(message.getHopCount()).thenReturn((byte) 1);
 
         final HopCountGuard handler = HopCountGuard.INSTANCE;
@@ -80,5 +81,6 @@ class HopCountGuardTest {
 
         outboundMessages.await(1, SECONDS);
         outboundMessages.assertNoValues();
+        pipeline.close();
     }
 }

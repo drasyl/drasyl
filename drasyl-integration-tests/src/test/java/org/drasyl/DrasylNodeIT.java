@@ -22,6 +22,7 @@ import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.observers.TestObserver;
 import io.reactivex.rxjava3.subjects.ReplaySubject;
 import io.reactivex.rxjava3.subjects.Subject;
+import org.drasyl.crypto.Crypto;
 import org.drasyl.crypto.CryptoException;
 import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
@@ -47,6 +48,7 @@ import org.junit.jupiter.api.Timeout;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.concurrent.ExecutionException;
 
@@ -61,6 +63,7 @@ import static testutils.TestHelper.colorizedPrintln;
 
 class DrasylNodeIT {
     public static final long TIMEOUT = 15000L;
+    public static final int MESSAGE_MTU = 1024;
     private List<DrasylNode> nodes;
 
     @BeforeEach
@@ -141,6 +144,7 @@ class DrasylNodeIT {
                         .remoteSuperPeerEnabled(false)
                         .intraVmDiscoveryEnabled(false)
                         .localHostDiscoveryEnabled(false)
+                        .remoteMessageMtu(MESSAGE_MTU)
                         .build();
                 superPeer = createStartedNode(config);
                 final NodeEvent superPeerNodeUp = (NodeEvent) superPeer.second().filter(e -> e instanceof NodeUpEvent).firstElement().blockingGet();
@@ -161,6 +165,7 @@ class DrasylNodeIT {
                         .remoteSuperPeerEndpoint(Endpoint.of("udp://127.0.0.1:" + superPeerPort + "#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
                         .intraVmDiscoveryEnabled(false)
                         .localHostDiscoveryEnabled(false)
+                        .remoteMessageMtu(MESSAGE_MTU)
                         .build();
                 client1 = createStartedNode(config);
                 colorizedPrintln("CREATED client1", COLOR_CYAN, STYLE_REVERSED);
@@ -179,6 +184,7 @@ class DrasylNodeIT {
                         .remoteSuperPeerEndpoint(Endpoint.of("udp://127.0.0.1:" + superPeerPort + "#030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22"))
                         .intraVmDiscoveryEnabled(false)
                         .localHostDiscoveryEnabled(false)
+                        .remoteMessageMtu(MESSAGE_MTU)
                         .build();
                 client2 = createStartedNode(config);
                 colorizedPrintln("CREATED client2", COLOR_CYAN, STYLE_REVERSED);
@@ -232,6 +238,47 @@ class DrasylNodeIT {
                         .assertValueAt(0, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"))
                         .assertValueAt(1, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"))
                         .assertValueAt(2, e -> ((MessageEvent) e).getPayload().equals("Hallo Welt"));
+            }
+
+            @Test
+            @Timeout(value = TIMEOUT, unit = MILLISECONDS)
+            void applicationMessagesExceedingMtuShouldBeDelivered() {
+                final TestObserver<Event> superPeerMessages = superPeer.second().filter(e -> e instanceof MessageEvent).test();
+                final TestObserver<Event> client1Messages = client1.second().filter(e -> e instanceof MessageEvent).test();
+                final TestObserver<Event> client2Messages = client2.second().filter(e -> e instanceof MessageEvent).test();
+
+//        superPeer.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("SP: " + e));
+//        client1.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("C1: " + e));
+//        client2.second().filter(e -> e.getCode() == MESSAGE).subscribe(e -> System.err.println("C2: " + e));
+
+                //
+                // send messages
+                //
+                final byte[] payload = Crypto.randomBytes(MESSAGE_MTU);
+                final Set<String> identities = Set.of("030e54504c1b64d9e31d5cd095c6e470ea35858ad7ef012910a23c9d3b8bef3f22",
+                        "025e91733428b535e812fd94b0372c4bf2d52520b45389209acfd40310ce305ff4",
+                        "025fd887836759d83b9a5e1bc565e098351fd5b86aaa184e3fb95d6598e9f9398e");
+                for (final String recipient : identities) {
+                    superPeer.first().send(recipient, payload);
+                    client1.first().send(recipient, payload);
+                    client2.first().send(recipient, payload);
+                }
+
+                //
+                // verify
+                //
+                superPeerMessages.awaitCount(3).assertValueCount(3)
+                        .assertValueAt(0, e -> Objects.deepEquals(((MessageEvent) e).getPayload(), payload))
+                        .assertValueAt(1, e -> Objects.deepEquals(((MessageEvent) e).getPayload(), payload))
+                        .assertValueAt(2, e -> Objects.deepEquals(((MessageEvent) e).getPayload(), payload));
+                client1Messages.awaitCount(3).assertValueCount(3)
+                        .assertValueAt(0, e -> Objects.deepEquals(((MessageEvent) e).getPayload(), payload))
+                        .assertValueAt(1, e -> Objects.deepEquals(((MessageEvent) e).getPayload(), payload))
+                        .assertValueAt(2, e -> Objects.deepEquals(((MessageEvent) e).getPayload(), payload));
+                client2Messages.awaitCount(3).assertValueCount(3)
+                        .assertValueAt(0, e -> Objects.deepEquals(((MessageEvent) e).getPayload(), payload))
+                        .assertValueAt(1, e -> Objects.deepEquals(((MessageEvent) e).getPayload(), payload))
+                        .assertValueAt(2, e -> Objects.deepEquals(((MessageEvent) e).getPayload(), payload));
             }
 
             /**
