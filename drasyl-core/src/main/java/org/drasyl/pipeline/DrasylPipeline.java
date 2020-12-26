@@ -28,7 +28,6 @@ import org.drasyl.localhost.LocalHostDiscovery;
 import org.drasyl.loopback.handler.LoopbackInboundMessageSinkHandler;
 import org.drasyl.loopback.handler.LoopbackOutboundMessageSinkHandler;
 import org.drasyl.monitoring.Monitoring;
-import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.codec.ApplicationMessage2ObjectHolderHandler;
 import org.drasyl.pipeline.codec.DefaultCodec;
@@ -46,7 +45,6 @@ import org.drasyl.remote.handler.UdpServer;
 import org.drasyl.util.DrasylScheduler;
 
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
@@ -79,8 +77,7 @@ public class DrasylPipeline extends DefaultPipeline {
                           final Identity identity,
                           final PeersManager peersManager,
                           final AtomicBoolean started,
-                          final EventLoopGroup bossGroup,
-                          final Set<Endpoint> endpoints) {
+                          final EventLoopGroup bossGroup) {
         this.handlerNames = new ConcurrentHashMap<>();
         this.inboundValidator = TypeValidator.ofInboundValidator(config);
         this.outboundValidator = TypeValidator.ofOutboundValidator(config);
@@ -103,7 +100,7 @@ public class DrasylPipeline extends DefaultPipeline {
         addFirst(LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER, LoopbackOutboundMessageSinkHandler.INSTANCE);
 
         if (config.isLocalHostDiscoveryEnabled()) {
-            addFirst(LOCAL_HOST_DISCOVERY, new LocalHostDiscovery(config, identity.getPublicKey(), endpoints));
+            addFirst(LOCAL_HOST_DISCOVERY, new LocalHostDiscovery(config, identity.getPublicKey()));
         }
 
         // we trust peers within the same jvm. therefore we do not use signatures

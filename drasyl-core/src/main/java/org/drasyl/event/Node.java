@@ -19,10 +19,8 @@
 package org.drasyl.event;
 
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.Endpoint;
 
 import java.util.Objects;
-import java.util.Set;
 
 import static java.util.Objects.requireNonNull;
 
@@ -34,16 +32,19 @@ import static java.util.Objects.requireNonNull;
  */
 public class Node {
     private final Identity identity;
-    private final Set<Endpoint> endpoints;
+    private final int port;
 
-    Node(final Identity identity, final Set<Endpoint> endpoints) {
+    Node(final Identity identity, final int port) {
         this.identity = requireNonNull(identity);
-        this.endpoints = requireNonNull(endpoints);
+        if (port < 0) {
+            throw new IllegalArgumentException("port must be non-negative.");
+        }
+        this.port = port;
     }
 
     @Override
     public int hashCode() {
-        return Objects.hash(identity, endpoints);
+        return Objects.hash(identity, port);
     }
 
     @Override
@@ -56,14 +57,14 @@ public class Node {
         }
         final Node node = (Node) o;
         return Objects.equals(identity, node.identity) &&
-                Objects.equals(endpoints, node.endpoints);
+                port == port;
     }
 
     @Override
     public String toString() {
         return "Node{" +
                 "identity=" + identity +
-                ", endpoints=" + endpoints +
+                ", port=" + port +
                 '}';
     }
 
@@ -77,25 +78,26 @@ public class Node {
     }
 
     /**
-     * Returns the node's endpoints.
+     * Returns the node's server port.
      *
-     * @return the node's endpoints
+     * @return the node's server port
      */
-    public Set<Endpoint> getEndpoints() {
-        return endpoints;
+    public int getPort() {
+        return port;
     }
 
     /**
      * @throws NullPointerException if {@code identity} is {@code null}
      */
     public static Node of(final Identity identity) {
-        return of(identity, Set.of());
+        return of(identity, 0);
     }
 
     /**
-     * @throws NullPointerException if {@code identity} or {@code endpoint} is {@code null}
+     * @throws NullPointerException     if {@code identity} is {@code null}
+     * @throws IllegalArgumentException if {@code port} is negative
      */
-    public static Node of(final Identity identity, final Set<Endpoint> endpoints) {
-        return new Node(identity, Set.copyOf(endpoints));
+    public static Node of(final Identity identity, final int port) {
+        return new Node(identity, port);
     }
 }

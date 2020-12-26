@@ -100,7 +100,7 @@ class DrasylPipelineTest {
     void shouldCreateNewPipeline() {
         when(config.isRemoteEnabled()).thenReturn(true);
 
-        final Pipeline pipeline = new DrasylPipeline(eventConsumer, config, identity, peersManager, started, workerGroup, endpoints);
+        final Pipeline pipeline = new DrasylPipeline(eventConsumer, config, identity, peersManager, started, workerGroup);
 
         // Test if head and tail handlers are added
         assertNull(pipeline.get(DRASYL_HEAD_HANDLER));

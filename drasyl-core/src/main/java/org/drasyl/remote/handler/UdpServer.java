@@ -199,8 +199,8 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
                     exposeEndpoints(ctx, socketAddress);
                 }
 
-                // consume NodeUpEvent and publish NodeUpEvent with endpoint
-                ctx.fireEventTriggered(new NodeUpEvent(Node.of(ctx.identity(), actualEndpoints)), future);
+                // consume NodeUpEvent and publish NodeUpEvent with port
+                ctx.fireEventTriggered(new NodeUpEvent(Node.of(ctx.identity(), socketAddress.getPort())), future);
             }
             else {
                 // server start failed

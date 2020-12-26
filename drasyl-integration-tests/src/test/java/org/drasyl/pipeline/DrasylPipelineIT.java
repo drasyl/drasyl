@@ -30,7 +30,6 @@ import org.drasyl.event.Event;
 import org.drasyl.event.MessageEvent;
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.identity.Identity;
-import org.drasyl.peer.Endpoint;
 import org.drasyl.peer.PeersManager;
 import org.drasyl.pipeline.address.Address;
 import org.drasyl.pipeline.skeleton.HandlerAdapter;
@@ -41,7 +40,6 @@ import org.drasyl.util.ReferenceCountUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 
-import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.CompletionException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -85,8 +83,7 @@ class DrasylPipelineIT {
 
         final PeersManager peersManager = new PeersManager(receivedEvents::onNext, identity1);
         final AtomicBoolean started = new AtomicBoolean(true);
-        final Set<Endpoint> endpoints = Set.of();
-        pipeline = new DrasylPipeline(receivedEvents::onNext, config, identity1, peersManager, started, new NioEventLoopGroup(), endpoints);
+        pipeline = new DrasylPipeline(receivedEvents::onNext, config, identity1, peersManager, started, new NioEventLoopGroup());
         pipeline.addFirst("outboundMessages", new SimpleOutboundHandler<Object, CompressedPublicKey>() {
             @Override
             protected void matchedWrite(final HandlerContext ctx,
