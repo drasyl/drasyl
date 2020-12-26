@@ -29,9 +29,7 @@ import org.drasyl.loopback.handler.LoopbackInboundMessageSinkHandler;
 import org.drasyl.loopback.handler.LoopbackOutboundMessageSinkHandler;
 import org.drasyl.monitoring.Monitoring;
 import org.drasyl.peer.PeersManager;
-import org.drasyl.pipeline.codec.ApplicationMessage2ObjectHolderHandler;
 import org.drasyl.pipeline.codec.DefaultCodec;
-import org.drasyl.pipeline.codec.ObjectHolder2ApplicationMessageHandler;
 import org.drasyl.pipeline.codec.TypeValidator;
 import org.drasyl.remote.handler.ByteBuf2MessageHandler;
 import org.drasyl.remote.handler.ChunkingHandler;
@@ -54,9 +52,7 @@ import static org.drasyl.localhost.LocalHostDiscovery.LOCAL_HOST_DISCOVERY;
 import static org.drasyl.loopback.handler.LoopbackInboundMessageSinkHandler.LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER;
 import static org.drasyl.loopback.handler.LoopbackOutboundMessageSinkHandler.LOOPBACK_OUTBOUND_MESSAGE_SINK_HANDLER;
 import static org.drasyl.monitoring.Monitoring.MONITORING_HANDLER;
-import static org.drasyl.pipeline.codec.ApplicationMessage2ObjectHolderHandler.APP_MSG2OBJECT_HOLDER;
 import static org.drasyl.pipeline.codec.DefaultCodec.DEFAULT_CODEC;
-import static org.drasyl.pipeline.codec.ObjectHolder2ApplicationMessageHandler.OBJECT_HOLDER2APP_MSG;
 import static org.drasyl.remote.handler.ByteBuf2MessageHandler.BYTE_BUF_2_MESSAGE_HANDLER;
 import static org.drasyl.remote.handler.ChunkingHandler.CHUNKING_HANDLER;
 import static org.drasyl.remote.handler.HopCountGuard.HOP_COUNT_GUARD;
@@ -92,8 +88,6 @@ public class DrasylPipeline extends DefaultPipeline {
 
         // add default codec
         addFirst(DEFAULT_CODEC, DefaultCodec.INSTANCE);
-        addFirst(APP_MSG2OBJECT_HOLDER, ApplicationMessage2ObjectHolderHandler.INSTANCE);
-        addFirst(OBJECT_HOLDER2APP_MSG, ObjectHolder2ApplicationMessageHandler.INSTANCE);
 
         // local message delivery
         addFirst(LOOPBACK_INBOUND_MESSAGE_SINK_HANDLER, new LoopbackInboundMessageSinkHandler(started));

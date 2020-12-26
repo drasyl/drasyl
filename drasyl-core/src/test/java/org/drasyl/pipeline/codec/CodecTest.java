@@ -28,6 +28,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.concurrent.CompletableFuture;
+import java.util.function.BiConsumer;
 import java.util.function.Consumer;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -47,6 +48,7 @@ class CodecTest {
         final Codec<Object, Object, Address> codec = new Codec<>() {
             @Override
             void encode(final HandlerContext ctx,
+                        final Address recipient,
                         final Object msg,
                         final Consumer<Object> passOnConsumer) {
                 passOnConsumer.accept(msg);
@@ -54,9 +56,10 @@ class CodecTest {
 
             @Override
             void decode(final HandlerContext ctx,
+                        final Address sender,
                         final Object msg,
-                        final Consumer<Object> passOnConsumer) {
-                passOnConsumer.accept(msg);
+                        final BiConsumer<Address, Object> passOnConsumer) {
+                passOnConsumer.accept(sender, msg);
             }
         };
 
@@ -74,6 +77,7 @@ class CodecTest {
         final Codec<Object, Object, Address> codec = new Codec<>() {
             @Override
             void encode(final HandlerContext ctx,
+                        final Address recipient,
                         final Object msg,
                         final Consumer<Object> passOnConsumer) {
                 passOnConsumer.accept(msg);
@@ -81,9 +85,10 @@ class CodecTest {
 
             @Override
             void decode(final HandlerContext ctx,
+                        final Address sender,
                         final Object msg,
-                        final Consumer<Object> passOnConsumer) {
-                passOnConsumer.accept(msg);
+                        final BiConsumer<Address, Object> passOnConsumer) {
+                passOnConsumer.accept(sender, msg);
             }
         };
 
