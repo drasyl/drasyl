@@ -31,7 +31,6 @@ import io.netty.channel.epoll.EpollDatagramChannel;
 import io.netty.channel.socket.DatagramChannel;
 import io.netty.channel.socket.DatagramPacket;
 import io.netty.channel.socket.nio.NioDatagramChannel;
-import io.reactivex.rxjava3.core.Observable;
 import io.reactivex.rxjava3.core.Scheduler;
 import org.drasyl.DrasylConfig;
 import org.drasyl.event.Event;
@@ -47,27 +46,20 @@ import org.drasyl.pipeline.address.InetSocketAddressWrapper;
 import org.drasyl.pipeline.skeleton.SimpleOutboundHandler;
 import org.drasyl.util.DrasylScheduler;
 import org.drasyl.util.FutureUtil;
-import org.drasyl.util.Pair;
 import org.drasyl.util.PortMappingUtil;
 import org.drasyl.util.PortMappingUtil.PortMapping;
 import org.drasyl.util.ReferenceCountUtil;
-import org.drasyl.util.SetUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
 
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.util.Arrays;
-import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.concurrent.CompletableFuture;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
-import static java.util.Optional.ofNullable;
 import static org.drasyl.util.NetworkUtil.getAddresses;
-import static org.drasyl.util.ObservableUtil.pairWithPreviousObservable;
 import static org.drasyl.util.PortMappingUtil.Protocol.UDP;
 import static org.drasyl.util.UriUtil.createUri;
 import static org.drasyl.util.UriUtil.overridePort;
@@ -82,7 +74,6 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
     private final Bootstrap bootstrap;
     private final Scheduler scheduler;
     private final Function<InetSocketAddress, Set<PortMapping>> portExposer;
-    private Set<Endpoint> actualEndpoints;
     private Channel channel;
     private Set<PortMapping> portMappings;
 
@@ -106,7 +97,6 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
                 address -> PortMappingUtil.expose(address, UDP),
                 null
         );
-        actualEndpoints = Set.of();
     }
 
     /**
@@ -192,11 +182,10 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
                 // server successfully started
                 this.channel = channelFuture.channel();
                 final InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
-                actualEndpoints = determineActualEndpoints(ctx.identity(), ctx.config(), socketAddress);
                 LOG.debug("Server started and listening at {}", socketAddress);
 
                 if (ctx.config().isRemoteExposeEnabled()) {
-                    exposeEndpoints(ctx, socketAddress);
+                    createPortMappings(socketAddress);
                 }
 
                 // consume NodeUpEvent and publish NodeUpEvent with port
@@ -222,7 +211,7 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
             final InetSocketAddress socketAddress = (InetSocketAddress) channel.localAddress();
             LOG.debug("Stop Server listening at {}...", socketAddress);
             // shutdown server
-            unexposeEndpoints();
+            closePortMappings();
             channel.close().awaitUninterruptibly();
             channel = null;
             LOG.debug("Server stopped");
@@ -248,42 +237,11 @@ public class UdpServer extends SimpleOutboundHandler<ByteBuf, InetSocketAddressW
         }
     }
 
-    void exposeEndpoints(final HandlerContext ctx,
-                         final InetSocketAddress socketAddress) {
-        scheduler.scheduleDirect(() -> {
-            // create port mappings
-            portMappings = portExposer.apply(socketAddress);
-
-            // we need to observe these mappings because they can change or fail over time
-            final List<Observable<Optional<InetSocketAddress>>> externalAddressObservables = portMappings.stream().map(PortMapping::externalAddress).collect(Collectors.toList());
-            @SuppressWarnings("unchecked") final Observable<Set<InetSocketAddress>> allExternalAddressesObservable = Observable.combineLatest(
-                    externalAddressObservables,
-                    newMappings -> Arrays.stream(newMappings).map(o -> (Optional<InetSocketAddress>) o).filter(Optional::isPresent).map(Optional::get).collect(Collectors.toSet())
-            );
-            final Observable<Pair<Set<InetSocketAddress>, Set<InetSocketAddress>>> allExternalAddressesChangesObservable = pairWithPreviousObservable(allExternalAddressesObservable);
-
-            allExternalAddressesChangesObservable.subscribe(pair -> {
-                final Set<InetSocketAddress> currentAddresses = pair.first();
-                final Set<InetSocketAddress> previousAddresses = ofNullable(pair.second()).orElse(Set.of());
-
-                final Set<InetSocketAddress> addressesToRemove = SetUtil.difference(previousAddresses, currentAddresses);
-                final Set<Endpoint> endpointsToRemove = addressesToRemove.stream()
-                        .map(address -> createUri("udp", address.getHostName(), address.getPort()))
-                        .map(address -> Endpoint.of(address, ctx.identity().getPublicKey()))
-                        .collect(Collectors.toSet());
-                actualEndpoints.removeAll(endpointsToRemove);
-
-                final Set<InetSocketAddress> addressesToAdd = SetUtil.difference(currentAddresses, previousAddresses);
-                final Set<Endpoint> endpointsToAdd = addressesToAdd.stream()
-                        .map(address -> createUri("udp", address.getHostName(), address.getPort()))
-                        .map(address -> Endpoint.of(address, ctx.identity().getPublicKey()))
-                        .collect(Collectors.toSet());
-                actualEndpoints.addAll(endpointsToAdd);
-            });
-        });
+    void createPortMappings(final InetSocketAddress socketAddress) {
+        scheduler.scheduleDirect(() -> portMappings = portExposer.apply(socketAddress));
     }
 
-    private void unexposeEndpoints() {
+    private void closePortMappings() {
         scheduler.scheduleDirect(() -> {
             if (portMappings != null) {
                 portMappings.forEach(PortMapping::close);
