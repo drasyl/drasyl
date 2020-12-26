@@ -24,6 +24,8 @@ import org.drasyl.peer.Endpoint;
 import java.util.Objects;
 import java.util.Set;
 
+import static java.util.Objects.requireNonNull;
+
 /**
  * Used by {@link Event} to describe an event related to the local Node (e.g. {@link NodeUpEvent},
  * {@link NodeOnlineEvent}).
@@ -35,8 +37,8 @@ public class Node {
     private final Set<Endpoint> endpoints;
 
     Node(final Identity identity, final Set<Endpoint> endpoints) {
-        this.identity = identity;
-        this.endpoints = endpoints;
+        this.identity = requireNonNull(identity);
+        this.endpoints = requireNonNull(endpoints);
     }
 
     @Override
@@ -83,10 +85,16 @@ public class Node {
         return endpoints;
     }
 
+    /**
+     * @throws NullPointerException if {@code identity} is {@code null}
+     */
     public static Node of(final Identity identity) {
         return of(identity, Set.of());
     }
 
+    /**
+     * @throws NullPointerException if {@code identity} or {@code endpoint} is {@code null}
+     */
     public static Node of(final Identity identity, final Set<Endpoint> endpoints) {
         return new Node(identity, Set.copyOf(endpoints));
     }
