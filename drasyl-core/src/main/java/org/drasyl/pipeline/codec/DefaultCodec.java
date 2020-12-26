@@ -23,9 +23,9 @@ import io.netty.buffer.ByteBufInputStream;
 import io.netty.buffer.ByteBufOutputStream;
 import io.netty.buffer.PooledByteBufAllocator;
 import io.netty.buffer.Unpooled;
-import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.pipeline.HandlerContext;
 import org.drasyl.pipeline.Stateless;
+import org.drasyl.pipeline.address.Address;
 import org.drasyl.util.JSONUtil;
 import org.drasyl.util.logging.Logger;
 import org.drasyl.util.logging.LoggerFactory;
@@ -42,7 +42,7 @@ import static java.util.Objects.requireNonNull;
  */
 @Stateless
 @SuppressWarnings({ "java:S110" })
-public class DefaultCodec extends Codec<ObjectHolder, Object, CompressedPublicKey> {
+public class DefaultCodec extends Codec<ObjectHolder, Object, Address> {
     public static final DefaultCodec INSTANCE = new DefaultCodec();
     public static final String DEFAULT_CODEC = "defaultCodec";
     private static final Logger LOG = LoggerFactory.getLogger(DefaultCodec.class);

@@ -43,6 +43,7 @@ import java.util.function.Consumer;
  * encode/decode.
  * </p>
  */
+@SuppressWarnings({ "java:S110" })
 public abstract class Codec<E, D, A extends Address> extends SimpleDuplexHandler<E, D, A> {
     @Override
     protected void matchedRead(final HandlerContext ctx,

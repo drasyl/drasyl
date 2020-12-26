@@ -180,10 +180,10 @@ class SimpleDuplexHandlerTest {
     class InboundTest {
         @Test
         void shouldTriggerOnMatchedMessage() throws JsonProcessingException {
-            final SimpleDuplexEventAwareHandler<byte[], Event, Object, CompressedPublicKey> handler = new SimpleDuplexEventAwareHandler<>() {
+            final SimpleDuplexEventAwareHandler<byte[], Event, Object, Address> handler = new SimpleDuplexEventAwareHandler<>() {
                 @Override
                 protected void matchedWrite(final HandlerContext ctx,
-                                            final CompressedPublicKey recipient,
+                                            final Address recipient,
                                             final Object msg,
                                             final CompletableFuture<Void> future) {
                     ctx.write(recipient, msg, future);
@@ -198,7 +198,7 @@ class SimpleDuplexHandlerTest {
 
                 @Override
                 protected void matchedRead(final HandlerContext ctx,
-                                           final CompressedPublicKey sender,
+                                           final Address sender,
                                            final byte[] msg,
                                            final CompletableFuture<Void> future) {
                     // Emit this message as outbound message to test
@@ -234,10 +234,10 @@ class SimpleDuplexHandlerTest {
 
         @Test
         void shouldPassthroughsNotMatchingMessage() {
-            final SimpleDuplexHandler<List<?>, Object, CompressedPublicKey> handler = new SimpleDuplexHandler<>() {
+            final SimpleDuplexHandler<List<?>, Object, Address> handler = new SimpleDuplexHandler<>() {
                 @Override
                 protected void matchedWrite(final HandlerContext ctx,
-                                            final CompressedPublicKey recipient,
+                                            final Address recipient,
                                             final Object msg,
                                             final CompletableFuture<Void> future) {
                     ctx.write(recipient, msg, future);
@@ -252,7 +252,7 @@ class SimpleDuplexHandlerTest {
 
                 @Override
                 protected void matchedRead(final HandlerContext ctx,
-                                           final CompressedPublicKey sender,
+                                           final Address sender,
                                            final List<?> msg,
                                            final CompletableFuture<Void> future) {
                     // Emit this message as outbound message to test
@@ -291,10 +291,10 @@ class SimpleDuplexHandlerTest {
 
         @Test
         void shouldTriggerOnMatchedEvent() throws InterruptedException {
-            final SimpleDuplexEventAwareHandler<ApplicationMessage, NodeUpEvent, Object, CompressedPublicKey> handler = new SimpleDuplexEventAwareHandler<>(ApplicationMessage.class, NodeUpEvent.class, Object.class, CompressedPublicKey.class) {
+            final SimpleDuplexEventAwareHandler<ApplicationMessage, NodeUpEvent, Object, Address> handler = new SimpleDuplexEventAwareHandler<>(ApplicationMessage.class, NodeUpEvent.class, Object.class, CompressedPublicKey.class) {
                 @Override
                 protected void matchedWrite(final HandlerContext ctx,
-                                            final CompressedPublicKey recipient,
+                                            final Address recipient,
                                             final Object msg,
                                             final CompletableFuture<Void> future) {
                     ctx.write(recipient, msg, future);
@@ -309,7 +309,7 @@ class SimpleDuplexHandlerTest {
 
                 @Override
                 protected void matchedRead(final HandlerContext ctx,
-                                           final CompressedPublicKey sender,
+                                           final Address sender,
                                            final ApplicationMessage msg,
                                            final CompletableFuture<Void> future) {
                     ctx.fireRead(sender, msg, future);
@@ -329,10 +329,10 @@ class SimpleDuplexHandlerTest {
 
         @Test
         void shouldPassthroughsNotMatchingEvents() {
-            final SimpleDuplexEventAwareHandler<MyMessage, NodeUpEvent, Object, CompressedPublicKey> handler = new SimpleDuplexEventAwareHandler<>() {
+            final SimpleDuplexEventAwareHandler<MyMessage, NodeUpEvent, Object, Address> handler = new SimpleDuplexEventAwareHandler<>() {
                 @Override
                 protected void matchedWrite(final HandlerContext ctx,
-                                            final CompressedPublicKey recipient,
+                                            final Address recipient,
                                             final Object msg,
                                             final CompletableFuture<Void> future) {
                     ctx.write(recipient, msg, future);
@@ -347,7 +347,7 @@ class SimpleDuplexHandlerTest {
 
                 @Override
                 protected void matchedRead(final HandlerContext ctx,
-                                           final CompressedPublicKey sender,
+                                           final Address sender,
                                            final MyMessage msg,
                                            final CompletableFuture<Void> future) {
                     ctx.fireRead(sender, msg, future);

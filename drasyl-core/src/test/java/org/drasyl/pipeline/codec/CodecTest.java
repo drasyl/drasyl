@@ -20,6 +20,7 @@ package org.drasyl.pipeline.codec;
 
 import org.drasyl.identity.CompressedPublicKey;
 import org.drasyl.pipeline.HandlerContext;
+import org.drasyl.pipeline.address.Address;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -43,7 +44,7 @@ class CodecTest {
 
     @Test
     void shouldSkipDoneFutures() {
-        final Codec<Object, Object, CompressedPublicKey> codec = new Codec<>() {
+        final Codec<Object, Object, Address> codec = new Codec<>() {
             @Override
             void encode(final HandlerContext ctx,
                         final Object msg,
@@ -67,9 +68,10 @@ class CodecTest {
         verify(ctx).write(recipient, msg, future);
     }
 
+    @SuppressWarnings("unchecked")
     @Test
     void shouldCompleteParentFutureExceptionallyOnChildError() {
-        final Codec<Object, Object, CompressedPublicKey> codec = new Codec<>() {
+        final Codec<Object, Object, Address> codec = new Codec<>() {
             @Override
             void encode(final HandlerContext ctx,
                         final Object msg,
