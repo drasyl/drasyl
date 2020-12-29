@@ -57,7 +57,7 @@ public class Node {
         }
         final Node node = (Node) o;
         return Objects.equals(identity, node.identity) &&
-                port == port;
+                port == node.port;
     }
 
     @Override
