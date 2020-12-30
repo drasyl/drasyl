@@ -1,6 +1,6 @@
 # Marshalling
 
-drasyl can automatically (un-) marshall given objects. To prevent security risks through unrestricted marshalling, types and packages can be defined in the config that are handled automatically.
+drasyl can automatically (un-) marshall given objects using [Jackson](https://github.com/FasterXML/jackson). To prevent security risks through unrestricted marshalling, types and packages can be defined in the config that are handled automatically.
 
 !!! info
 
