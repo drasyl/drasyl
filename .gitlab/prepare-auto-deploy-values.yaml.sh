@@ -40,6 +40,8 @@ podEnv:
     value: "$DRASYL_PUBLIC_KEY"
   - name: CONFIG_FORCE_drasyl_identity_private__key
     value: "$DRASYL_PRIVATE_KEY"
+  - name: CONFIG_FORCE_drasyl_remote_bind__port
+    value: 22527
   - name: CONFIG_FORCE_drasyl_remote_expose_enabled
     value: "false"
   - name: CONFIG_FORCE_drasyl_remote_super__peer_enabled
